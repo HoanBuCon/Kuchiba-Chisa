@@ -12,9 +12,38 @@ from qdrant_client.http.models import (
     PointStruct,
     VectorParams,
 )
+from pydantic import BaseModel, ConfigDict, Field
 
 from app.config.settings import settings
 from app.infrastructure.logging.logger import get_logger
+
+log = get_logger(__name__)
+
+
+import enum
+
+class MemoryTier(str, enum.Enum):
+    CASUAL = "casual"
+    PERSONAL = "personal"
+    CRITICAL = "critical"
+
+class MemoryPayload(BaseModel):
+    """
+    Strict typing for vector payload metadata stored in Qdrant.
+    Required by architecture for user_id filters and RAG scoring.
+    """
+    user_id: str
+    conversation_id: Optional[str] = None
+    memory_type: str
+    memory_tier: MemoryTier = MemoryTier.CASUAL
+    importance_score: float = Field(ge=0.0, le=1.0)
+    emotion: dict[str, float] = Field(default_factory=dict, description="Snapshot of user's emotional state when memory was formed")
+    created_at: int # timestamp for recency calculation
+    text_content: str # the actual text that was embedded
+    
+    model_config = ConfigDict(extra="allow")
+
+
 
 log = get_logger(__name__)
 
@@ -104,21 +133,62 @@ class QdrantService:
             await self.create_collection(collection, vector_size=dim)
         log.info("All Qdrant collections initialized", count=len(ALL_COLLECTIONS))
 
-    # ── Vector Upsert ──────────────────────────────────────────────
-    async def upsert(
+    # ── Vector Upsert & Prune ──────────────────────────────────────────────
+    async def prune_user_memories(self, collection: str, user_id: str, cap: int = 200) -> None:
+        """
+        VPS Optimization: Enforce a hard cap of 200 LTM entries per user.
+        If exceeded, deletes the lowest importance memories (excluding critical tier).
+        """
+        user_filter = Filter(
+            must=[FieldCondition(key="user_id", match=MatchValue(value=user_id))]
+        )
+        count_result = await self._client.count(
+            collection_name=collection,
+            count_filter=user_filter,
+            exact=True
+        )
+        
+        if count_result.count > cap:
+            num_to_delete = count_result.count - cap
+            # Fetch all for the user to sort in memory (since max is roughly ~200, this is extremely fast)
+            points, _ = await self._client.scroll(
+                collection_name=collection,
+                scroll_filter=user_filter,
+                limit=cap + 50,
+                with_payload=True
+            )
+            
+            # Filter out critical tier
+            prunable = [p for p in points if p.payload and p.payload.get("memory_tier") != MemoryTier.CRITICAL.value]
+            # Sort by importance ascending (lowest first)
+            prunable.sort(key=lambda x: x.payload.get("importance_score", 1.0))
+            
+            if prunable and num_to_delete > 0:
+                to_delete = prunable[:num_to_delete]
+                ids_to_delete = [p.id for p in to_delete]
+                await self.delete_points(collection, ids_to_delete)
+                log.info("Pruned LTM entries for user mapping to VPS limits", user_id=user_id, pruned_count=len(ids_to_delete))
+
+    async def upsert_memory(
         self,
         collection: str,
-        points: list[dict[str, Any]],
+        point_id: str,
+        vector: list[float],
+        payload: MemoryPayload,
     ) -> None:
         """
-        Upsert a list of points. Each point must have 'id', 'vector', and 'payload'.
+        Upsert a single memory point.
         Payload MUST include 'user_id' for isolation enforcement.
         """
-        structured = [
-            PointStruct(id=p["id"], vector=p["vector"], payload=p["payload"])
-            for p in points
-        ]
-        await self._client.upsert(collection_name=collection, points=structured, wait=True)
+        structured = PointStruct(
+            id=point_id, 
+            vector=vector, 
+            payload=payload.model_dump()
+        )
+        await self._client.upsert(collection_name=collection, points=[structured], wait=True)
+        
+        # Enforce multi-user bounds immediately after insert
+        await self.prune_user_memories(collection, user_id=payload.user_id, cap=200)
 
     # ── Vector Search with User Isolation ─────────────────────────
     async def search_by_user(

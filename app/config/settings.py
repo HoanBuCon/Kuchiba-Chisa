@@ -38,18 +38,18 @@ class Settings(BaseSettings):
     # ── Qdrant ─────────────────────────────────────────────────
     QDRANT_URL: str = "http://localhost:6333"
     QDRANT_API_KEY: Optional[str] = None
-    QDRANT_EMBEDDING_DIM: int = 1536
+    QDRANT_EMBEDDING_DIM: int = 384
 
     # ── LLM — Groq ─────────────────────────────────────────────
     GROQ_API_KEY: str
-    GROQ_MODEL: str = "llama-3.3-70b-versatile"
-    GROQ_MAX_TOKENS: int = 4096
+    GROQ_MODEL: str = "llama-3.1-8b-instant"
+    GROQ_MAX_TOKENS: int = 16000
     GROQ_TEMPERATURE: float = Field(default=0.8, ge=0.0, le=2.0)
     GROQ_TIMEOUT: int = 30
 
     # ── Embeddings ─────────────────────────────────────────────
     OPENAI_API_KEY: Optional[str] = None
-    EMBEDDING_MODEL: str = "text-embedding-3-small"
+    EMBEDDING_MODEL: str = "sentence-transformers/all-MiniLM-L6-v2"
 
     # ── JWT ────────────────────────────────────────────────────
     JWT_SECRET: str = Field(min_length=32)

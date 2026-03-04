@@ -1,0 +1,22 @@
+from sqlalchemy import Column, Float, BigInteger, ForeignKey
+from sqlalchemy.dialects.postgresql import UUID
+from app.infrastructure.database.models.base import Base
+
+class EmotionState(Base):
+    """
+    Multi-User Safe Emotional State.
+    Each user has exactly one isolated emotional state profile mapping.
+    """
+    __tablename__ = "emotion_state"
+
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), primary_key=True, index=True, doc="The unique ID of the user")
+    
+    # Core Emotion Spectrum
+    joy = Column(Float, default=0.0, nullable=False)
+    sadness = Column(Float, default=0.0, nullable=False)
+    trust = Column(Float, default=0.0, nullable=False)
+    attachment = Column(Float, default=0.0, nullable=False)
+    irritation = Column(Float, default=0.0, nullable=False)
+    
+    # Unix timestamp for decay calculation
+    updated_at = Column(BigInteger, nullable=False, doc="Unix timestamp in milliseconds")

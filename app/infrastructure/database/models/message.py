@@ -13,7 +13,6 @@ if TYPE_CHECKING:
     from app.infrastructure.database.models.user import User
     from app.infrastructure.database.models.conversation import Conversation
     from app.infrastructure.database.models.memory_metadata import MemoryMetadata
-    from app.infrastructure.database.models.emotion import AffectionLog
 
 class MessageRole(str, enum.Enum):
     USER = "user"
@@ -40,9 +39,6 @@ class Message(Base, UUIDMixin, TimestampMixin):
     
     # One message might spawn multiple memory pieces
     memory_metadata: Mapped[list["MemoryMetadata"]] = relationship("MemoryMetadata", back_populates="source_message")
-    
-    # One message might trigger affection changes
-    affection_logs: Mapped[list["AffectionLog"]] = relationship("AffectionLog", back_populates="triggered_by_message")
 
     __table_args__ = (
         Index("ix_messages_created_desc", "created_at"),

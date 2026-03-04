@@ -8,7 +8,8 @@ from app.infrastructure.database.models.base import Base, UUIDMixin, TimestampMi
 
 if TYPE_CHECKING:
     from app.infrastructure.database.models.conversation import Conversation
-    from app.infrastructure.database.models.emotion import EmotionalState, AffectionLog
+    from app.infrastructure.database.models.emotion_state import EmotionState
+    from app.infrastructure.database.models.user_stats import UserStats
     from app.infrastructure.database.models.memory_metadata import MemoryMetadata
     from app.infrastructure.database.models.message import Message
 
@@ -34,11 +35,11 @@ class User(Base, UUIDMixin, TimestampMixin):
     memory_metadata: Mapped[list["MemoryMetadata"]] = relationship(
         "MemoryMetadata", back_populates="user", cascade="all, delete-orphan"
     )
-    emotional_state: Mapped["EmotionalState"] = relationship(
-        "EmotionalState", back_populates="user", uselist=False, cascade="all, delete-orphan"
+    emotion_state: Mapped["EmotionState"] = relationship(
+        "EmotionState", cascade="all, delete", uselist=False
     )
-    affection_logs: Mapped[list["AffectionLog"]] = relationship(
-        "AffectionLog", back_populates="user", cascade="all, delete-orphan"
+    user_stats: Mapped["UserStats"] = relationship(
+        "UserStats", cascade="all, delete", uselist=False
     )
 
     def __repr__(self) -> str:
