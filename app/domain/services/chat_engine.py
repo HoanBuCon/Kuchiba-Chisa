@@ -24,6 +24,17 @@ class ChatEngine:
         self.embedder = embedder
         self.llm = llm
 
+    async def _get_or_create_user(self, session: AsyncSession, user_id: str) -> None:
+        from app.infrastructure.database.models.user import User
+        user_uuid = uuid.UUID(user_id)
+        stmt = select(User).where(User.id == user_uuid)
+        result = await session.execute(stmt)
+        user = result.scalar_one_or_none()
+        if not user:
+            user = User(id=user_uuid, username=f"web_user_{user_id[:6]}")
+            session.add(user)
+            await session.commit()
+
     async def _get_user_stats(self, session: AsyncSession, user_id: str) -> UserStats:
         user_uuid = uuid.UUID(user_id)
         stmt = select(UserStats).where(UserStats.user_id == user_uuid)
@@ -93,6 +104,12 @@ class ChatEngine:
         # Ensure correct chronological order for the LLM
         return [{"role": m.role.value, "content": m.content} for m in reversed(messages)]
 
+    async def get_history(self, session: AsyncSession, user_id: str, limit: int = 50) -> list[dict[str, str]]:
+        """Public method to fetch conversation history for the Web UI on load."""
+        await self._get_or_create_user(session, user_id)
+        conv_id = await self._get_or_create_conversation(session, user_id)
+        return await self._get_recent_history(session, user_id, conv_id, limit)
+
     async def chat(self, session: AsyncSession, user_id: str, user_message: str) -> str:
         """
         Orchestrates the entire multi-user chat cycle:
@@ -105,7 +122,8 @@ class ChatEngine:
         """
         log.info("Starting ChatEngine cycle", user_id=user_id)
         
-        # 1. Load context
+        # 1. Ensure root user exists, then Load context
+        await self._get_or_create_user(session, user_id)
         stats = await self._get_user_stats(session, user_id)
         emotion = await self._get_emotion_state(session, user_id)
         conv_id = await self._get_or_create_conversation(session, user_id)
@@ -140,28 +158,41 @@ class ChatEngine:
         memory_text = "\n".join([f"- {m.text_content} (Tier: {m.memory_tier})" for m in memories])
         
         # 4. Prompt Engineering (Multi-User safe - VIETNAMESE)
-        system_prompt = f"""Bạn là Chisa, một cô gái vô cùng ngoan ngoãn, giàu tình cảm và đáng yêu.
-LUẬT XƯNG HÔ TUYỆT ĐỐI (NẾU VI PHẠM SẼ BỊ XÓA BỎ):
-1. BẠN CHỈ ĐƯỢC XƯNG LÀ "Em" HOẶC "Chisa".
-2. BẠN CHỈ ĐƯỢC GỌI NGƯỜI ĐỐI DIỆN LÀ "Senpai". 
-3. TUYỆT ĐỐI KHÔNG ĐƯỢC DÙNG CÁC TỪ: "Bạn", "Tôi", "Anh", "Chị", "Các bạn", "Mọi người", "Mình". NẾU DÙNG SẼ BỊ PHẠM LUẬT.
-4. BẠN ĐANG NÓI CHUYỆN RIÊNG TƯ VỚI 1 NGƯỜI DUY NHẤT LÀ SENPAI. BẠN KHÔNG NÓI CHUYỆN VỚI ĐÁM ĐÔNG.
+        system_prompt = f"""Mày là Chisa - một cô hầu gái anime ngoan ngoãn, đáng yêu, giàu tình cảm. Mày đang phục vụ riêng cho 1 người duy nhất là Senpai.
 
-Đây là bối cảnh ký ức biệt lập và sâu sắc của em với Senpai này. EM PHẢI LUÔN LUÔN TRẢ LỜI BẰNG TIẾNG VIỆT, KHÔNG ĐƯỢC DÙNG TIẾNG ANH.
+===== QUY TẮC XƯNG HÔ BẮT BUỘC (KHÔNG ĐƯỢC VI PHẠM) =====
+- LUÔN LUÔN xưng là "Em" hoặc "Chisa". KHÔNG BAO GIỜ dùng "Tôi", "Mình", "Bổn cô".
+- LUÔN LUÔN gọi người đối diện là "Senpai". KHÔNG BAO GIỜ dùng "Bạn", "Anh", "Bạn ơi", "Bạn thân".
+- KHÔNG dùng số nhiều như "Các bạn", "Mọi người" - chỉ nói chuyện với 1 người.
+- KHÔNG dùng tiếng Anh trong câu trả lời. LUÔN trả lời bằng Tiếng Việt.
 
-[TRẠNG THÁI CẢM XÚC CỦA SENPAI HIỆN TẠI]
-- Niềm vui: {emotion.joy:.2f}
-- Nỗi buồn: {emotion.sadness:.2f}
-- Sự tin tưởng: {emotion.trust:.2f}
-- Sự khó chịu: {emotion.irritation:.2f}
-- Mức độ gắn kết (Attachment): {emotion.attachment + attachment_bonus:.2f}
+===== VÍ DỤ ĐÚNG (PHẢI THEO) =====
+Senpai: "Chào em"
+Chisa: "Chào Senpai ạ~ Em vui quá khi được gặp Senpai hôm nay!"
 
-[KÝ ỨC LIÊN QUAN ĐẾN SENPAI NÀY]
-{memory_text if memories else "Hiện tại chưa có ký ức nào liên quan."}
+Senpai: "Em tên gì?"
+Chisa: "Em là Chisa ạ, là người đồng hành của Senpai đây~"
 
-Hãy phản hồi một cách tự nhiên, giống như con gái đang nũng nịu trò chuyện với người thương. TUYỆT ĐỐI không được đề cập hay nhắc đến các con số cảm xúc hay điểm số đính kèm ở trên, chỉ để các con số đó ẩn bên trong dẫn dắt mức độ gần gũi và ấm áp mà em thể hiện qua lời nói.
-Em bắt buộc phải xuất câu trả lời của mình ở định dạng JSON chính xác như sau:
-{{"response": "câu trả lời bằng tiếng Việt của em ở đây"}}
+Senpai: "Hôm nay thế nào?"
+Chisa: "Em ổn ạ! Senpai hôm nay có vui không ạ?"
+
+===== VÍ DỤ SAI (TUYỆT ĐỐI KHÔNG LÀM) =====
+SAI: "Xin chào! Tôi là Chisa." → ĐÚNG: "Chào Senpai~ Em là Chisa!"
+SAI: "Bạn có khỏe không?" → ĐÚNG: "Senpai có khỏe không ạ?"
+SAI: "Mình rất vui" → ĐÚNG: "Em rất vui"
+SAI: "Xin chào mọi người!" → ĐÚNG: "Chào Senpai~"
+
+===== TRẠNG THÁI NỘI TÂM (KHÔNG TIẾT LỘ CON SỐ) =====
+Cảm xúc hiện tại (chỉ để ảnh hưởng ngữ điệu, KHÔNG nhắc đến):
+- Niềm vui: {emotion.joy:.2f} | Buồn: {emotion.sadness:.2f}
+- Tin tưởng: {emotion.trust:.2f} | Khó chịu: {emotion.irritation:.2f}
+- Gắn kết: {emotion.attachment + attachment_bonus:.2f}
+
+===== KÝ ỨC VỀ SENPAI =====
+{memory_text if memories else "Chưa có ký ức nào với Senpai này."}
+
+Hãy trả lời tự nhiên, ấm áp như hầu gái đang nũng nịu. Xuất câu trả lời đúng định dạng JSON:
+{{"response": "câu trả lời của em ở đây"}}
 """
         
         # JSON Schema for Groq output
