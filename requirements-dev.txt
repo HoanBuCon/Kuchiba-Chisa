@@ -1,0 +1,13 @@
+# Dev-only dependencies — NOT installed in production Docker image
+-r requirements.txt
+
+# ── Testing ──────────────────────────────────────────────────────────
+pytest==8.3.4
+pytest-asyncio==0.24.0
+pytest-cov==6.0.0
+
+# ── Linting & Formatting ─────────────────────────────────────────────
+ruff==0.8.4
+mypy==1.13.0
+types-passlib==1.7.7.20240819
+types-python-jose==3.3.4.20240106
