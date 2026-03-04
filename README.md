@@ -12,7 +12,7 @@ Built for scale, stability, and speed using the bleeding edge Python ecosystem.
 
 <div align="center">
   <img src="assets/dance_chisa.gif" alt="Chisa Dance" height="200"/>
-  <img src="assets/chisa_eat.jpg" alt="Chisa Eat" height="200"/>
+  <img src="assets/Chisa_eat.jpg" alt="Chisa Eat" height="200"/>
   <img src="assets/play_chisa.gif" alt="Play Chisa" height="200"/>
 </div>
 
