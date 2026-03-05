@@ -50,7 +50,7 @@ COPY --from=builder /install /usr/local
 # Copy application source
 COPY --chown=chisa:chisa app/ ./app/
 COPY --chown=chisa:chisa alembic.ini ./
-COPY --chown=chisa:chisa alembic/ ./alembic/
+COPY --chown=chisa:chisa alembic_migrations/ ./alembic_migrations/
 
 # Switch to non-root user
 USER chisa
