@@ -143,5 +143,33 @@ class RAGRetriever:
         scored_memories.sort(key=lambda x: x.final_score, reverse=True)
         return scored_memories[:top_k]
 
+    async def retrieve_lore(
+        self,
+        query_vector: List[float],
+        top_k: int = 8,
+    ) -> List[str]:
+        """
+        Retrieves relevant Chisa lore chunks from the global `chisa_lore` collection.
+        Does not filter by user_id so all users share this core identity.
+        """
+        try:
+            candidates = await qdrant_service.search_lore(
+                collection="chisa_lore",
+                query_vector=query_vector,
+                limit=top_k,
+                score_threshold=0.1,
+            )
+        except Exception as e:
+            log.warning("Lore retrieval failed, skipping", error=str(e))
+            return []
+
+        results = []
+        for cand in candidates:
+            text = cand.get("payload", {}).get("text_content", "")
+            if text:
+                results.append(text)
+        return results
+
+
 # Singleton
 rag_retriever = RAGRetriever()

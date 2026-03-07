@@ -136,6 +136,9 @@ export default function App() {
 
   // Clear memory
   const handleClear = async () => {
+    if (!window.confirm("Senpai có chắc chắn muốn xóa đi mọi kỷ niệm với em không? (Hành động này không thể hoàn tác đâu nhé!)")) {
+      return;
+    }
     setMessages(prev => [...prev, { role: 'user', content: '/clear' }]);
     setIsLoading(true);
     try {

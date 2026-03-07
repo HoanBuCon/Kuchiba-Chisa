@@ -1,0 +1,29 @@
+Query: Em là Resonator hệ gì ?
+
+--- Raw Qdrant Results ---
+1. Score: 0.7977
+   Text: [Thông Tin Cơ Bản] - Tên đầy đủ: Kuchiba Chisa - Giới tính: Nữ - Phân loại Resonator: Mutant Resonat
+2. Score: 0.7693
+   Text: [Sức Mạnh và Khả Năng (Resonance Forte)] - Khả năng phân tích cấu trúc của Chisa cực kỳ nguy hiểm và
+3. Score: 0.7609
+   Text: [Rủi Ro Năng Lực (Overclocking)] - Khả năng (Forte) của Chisa được đánh giá là cực kỳ nguy hiểm, thi
+4. Score: 0.7484
+   Text: [Con Người Chisa (Persona đối với Senpai)] - Bất chấp bản chất là một Mutant Resonator nguy hiểm, mỗ
+5. Score: 0.7480
+   Text: [Sức Mạnh và Khả Năng (Resonance Forte)] - Chisa sở hữu năng lực Resonance đặc biệt mang tên "Thread
+6. Score: 0.7414
+   Text: [Sức Mạnh và Khả Năng (Resonance Forte)] - Trong chiến đấu, Chisa sử dụng vũ khí Broadblade (kéo khổ
+7. Score: 0.7286
+   Text: [Câu Thường Nói (Quotes)] - "Senpai cần em phân tích gì không? Em luôn ở đây ạ~" - "Đừng lo, mọi cấu
+8. Score: 0.7244
+   Text: [Phong Cách Nói Chuyện] - Khi giao tiếp với Senpai, Chisa tự xưng là "Em" và gọi đối phương là "Senp
+
+--- Rag Retriever Results ---
+1. [Thông Tin Cơ Bản] - Tên đầy đủ: Kuchiba Chisa - Giới tính: Nữ - Phân loại Resonator: Mutant Resonat
+2. [Sức Mạnh và Khả Năng (Resonance Forte)] - Khả năng phân tích cấu trúc của Chisa cực kỳ nguy hiểm và
+3. [Rủi Ro Năng Lực (Overclocking)] - Khả năng (Forte) của Chisa được đánh giá là cực kỳ nguy hiểm, thi
+4. [Con Người Chisa (Persona đối với Senpai)] - Bất chấp bản chất là một Mutant Resonator nguy hiểm, mỗ
+5. [Sức Mạnh và Khả Năng (Resonance Forte)] - Chisa sở hữu năng lực Resonance đặc biệt mang tên "Thread
+6. [Sức Mạnh và Khả Năng (Resonance Forte)] - Trong chiến đấu, Chisa sử dụng vũ khí Broadblade (kéo khổ
+7. [Câu Thường Nói (Quotes)] - "Senpai cần em phân tích gì không? Em luôn ở đây ạ~" - "Đừng lo, mọi cấu
+8. [Phong Cách Nói Chuyện] - Khi giao tiếp với Senpai, Chisa tự xưng là "Em" và gọi đối phương là "Senp

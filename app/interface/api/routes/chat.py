@@ -8,6 +8,10 @@ from app.infrastructure.embeddings.fastembed_adapter import FastEmbedAdapter
 from app.infrastructure.llm.adapters.groq import GroqAdapter
 from app.infrastructure.logging.logger import get_logger
 
+from app.domain.services.context_builder import ContextBuilder
+from app.domain.services.memory_manager import MemoryManager
+from app.infrastructure.vector.qdrant.qdrant_service import qdrant_service
+
 log = get_logger(__name__)
 
 router = APIRouter()
@@ -15,8 +19,15 @@ router = APIRouter()
 # Instantiate adapters once, since they are largely stateless or manage their own pools
 _embedder = FastEmbedAdapter()
 _llm = GroqAdapter()
-_chat_engine = ChatEngine(embedder=_embedder, llm=_llm)
+_context_builder = ContextBuilder()
+_memory_manager = MemoryManager(embedder=_embedder, qdrant=qdrant_service)
 
+_chat_engine = ChatEngine(
+    embedder=_embedder, 
+    llm=_llm,
+    context_builder=_context_builder,
+    memory_manager=_memory_manager
+)
 
 @router.post("/chat", response_model=ChatResponse)
 async def chat_endpoint(

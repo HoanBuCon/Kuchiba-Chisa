@@ -230,6 +230,49 @@ class QdrantService:
             wait=True,
         )
 
+    # ── Lore Search (global — no user isolation) ───────────────────
+    async def search_lore(
+        self,
+        collection: str,
+        query_vector: list[float],
+        limit: int = 4,
+        score_threshold: float = 0.3,
+    ) -> list[dict[str, Any]]:
+        """
+        Searches lore collection without user_id filter.
+        Lore is global shared character knowledge.
+        """
+        results = await self._client.search(
+            collection_name=collection,
+            query_vector=query_vector,
+            limit=limit,
+            score_threshold=score_threshold,
+            with_payload=True,
+        )
+        return [
+            {"id": r.id, "score": r.score, "payload": r.payload or {}}
+            for r in results
+        ]
+
+    async def upsert_lore(
+        self,
+        collection: str,
+        point_id: str,
+        vector: list[float],
+        text_content: str,
+        section: str = "general",
+    ) -> None:
+        """Upsert lore chunk — no user_id required."""
+        from qdrant_client.models import PointStruct as PS
+        await self._client.upsert(
+            collection_name=collection,
+            points=[PS(id=point_id, vector=vector, payload={
+                "text_content": text_content,
+                "section": section,
+            })],
+            wait=True,
+        )
+
     # ── Disconnect ─────────────────────────────────────────────────
     async def disconnect(self) -> None:
         await self._client.close()

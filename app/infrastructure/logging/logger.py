@@ -70,7 +70,10 @@ def configure_logging() -> None:
     # Also configure stdlib logging to route through structlog
     logging.basicConfig(
         format="%(message)s",
-        stream=sys.stdout,
+        handlers=[
+            logging.StreamHandler(sys.stdout),
+            logging.FileHandler("backend.log", encoding="utf-8")
+        ],
         level=logging.DEBUG if settings.is_dev else logging.INFO,
     )
 

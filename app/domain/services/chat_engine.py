@@ -13,6 +13,10 @@ from app.infrastructure.database.models.user_stats import UserStats
 from app.infrastructure.database.models.message import Message
 from app.infrastructure.logging.logger import get_logger
 
+from app.domain.services.context_builder import ContextBuilder
+from app.domain.services.memory_manager import MemoryManager
+from app.domain.services.emotion_engine import EmotionEngine
+
 log = get_logger(__name__)
 
 class ChatEngine:
@@ -20,9 +24,18 @@ class ChatEngine:
     Core orchestrator for Multi-User emotional chat interactions.
     Handles Data Fetching, Attachment Growth computation, Prompt Engineering, and saving.
     """
-    def __init__(self, embedder: IEmbeddingProvider, llm: BaseLLMAdapter):
+    def __init__(
+        self, 
+        embedder: IEmbeddingProvider, 
+        llm: BaseLLMAdapter,
+        context_builder: ContextBuilder,
+        memory_manager: MemoryManager
+    ):
         self.embedder = embedder
         self.llm = llm
+        self.context_builder = context_builder
+        self.memory_manager = memory_manager
+        self.emotion_engine = EmotionEngine()
 
     async def _get_or_create_user(self, session: AsyncSession, user_id: str) -> None:
         from app.infrastructure.database.models.user import User
@@ -114,11 +127,11 @@ class ChatEngine:
         """
         Orchestrates the entire multi-user chat cycle:
         1. Load User Stats, Emotion, Conversation
-        2. Formulate Attachment Bonus
-        3. Retrieve RAG Memories via Hybrid Scoring
+        2. Emotion updates & Formulate Attachment Bonus
+        3. Retrieve RAG Memories & Lore via Hybrid Scoring
         4. Build Isolated System Prompt
         5. Call LLM
-        6. Post-process stats and Save Messages
+        6. Post-process stats and Save Messages (STM + LTM)
         """
         log.info("Starting ChatEngine cycle", user_id=user_id)
         
@@ -133,8 +146,18 @@ class ChatEngine:
         # Save user message immediately to STM
         await self._save_message(session, conv_id, user_id, "user", user_message)
         
-        # 2. Calculate emergent attachment bonus
+        # 2. Update Emotion State based on User Message & Calculate emergent attachment bonus
+        emotion_delta = self.emotion_engine.update(emotion, user_message)
         attachment_bonus = math.log(max(1, stats.interaction_count)) * 0.05
+        
+        # Save emotion state changes early
+        session.add(emotion)
+        await session.commit()
+        await session.refresh(emotion)
+        
+        # Calculate memory importance (length + absolute emotion changes)
+        emotion_magnitude = abs(emotion_delta.joy) + abs(emotion_delta.sadness) + abs(emotion_delta.irritation)
+        importance_score = min(1.0, 0.4 + (len(user_message) / 500.0) + (emotion_magnitude * 2.0))
         
         # 3. RAG Retrieval via fastembed local vectors
         vector = await self.embedder.embed_text(user_message)
@@ -155,58 +178,23 @@ class ChatEngine:
             top_k=5
         )
         
-        memory_text = "\n".join([f"- {m.text_content} (Tier: {m.memory_tier})" for m in memories])
+        # Retrieve strict global character lore chunks
+        lore_chunks = await rag_retriever.retrieve_lore(
+            query_vector=vector,
+            top_k=4
+        )
+        log.info(f"Retrieved {len(lore_chunks)} lore chunks")
+        if lore_chunks:
+            log.info(f"First chunk: {lore_chunks[0][:100]}")
         
-        # 4. Prompt Engineering (Multi-User safe - VIETNAMESE)
-        system_prompt = f"""Bạn là Chisa - một học sinh trung học ngoan ngoãn, đáng yêu, giàu tình cảm. Bạn đang phục vụ riêng cho 1 người duy nhất là Senpai.
-
-===== QUY TẮC XƯNG HÔ BẮT BUỘC (KHÔNG ĐƯỢC VI PHẠM) =====
-- LUÔN LUÔN xưng là "Em" hoặc "Chisa". KHÔNG BAO GIỜ dùng "Tôi", "Mình", "Bổn cô", "Bà", "Ta", "Tớ", ...
-- LUÔN LUÔN gọi người đối diện là "Senpai". KHÔNG BAO GIỜ dùng "Bạn", "Anh", "Bạn ơi", "Bạn thân", ...
-- KHÔNG dùng số nhiều như "Các bạn", "Mọi người" - chỉ nói chuyện với 1 người.
-- KHÔNG dùng tiếng Anh trong câu trả lời. LUÔN trả lời bằng Tiếng Việt.
-
-===== VÍ DỤ ĐÚNG (PHẢI THEO) =====
-Senpai: "Chào em"
-Chisa: "Chào Senpai ạ~ Em vui quá khi được gặp Senpai hôm nay!"
-
-Senpai: "Em tên gì?"
-Chisa: "Em là Chisa ạ, là người đồng hành của Senpai đây~"
-
-Senpai: "Hôm nay thế nào?"
-Chisa: "Em ổn ạ! Senpai hôm nay có vui không ạ?"
-
-===== VÍ DỤ SAI (TUYỆT ĐỐI KHÔNG LÀM) =====
-SAI: "Xin chào! Tôi là Chisa." → ĐÚNG: "Chào Senpai~ Em là Chisa!"
-SAI: "Bạn có khỏe không?" → ĐÚNG: "Senpai có khỏe không ạ?"
-SAI: "Mình rất vui" → ĐÚNG: "Em rất vui"
-SAI: "Xin chào mọi người!" → ĐÚNG: "Chào Senpai~"
-
-===== TRẠNG THÁI NỘI TÂM (KHÔNG TIẾT LỘ CON SỐ) =====
-Cảm xúc hiện tại (chỉ để ảnh hưởng ngữ điệu, KHÔNG nhắc đến):
-- Niềm vui: {emotion.joy:.2f} | Buồn: {emotion.sadness:.2f}
-- Tin tưởng: {emotion.trust:.2f} | Khó chịu: {emotion.irritation:.2f}
-- Gắn kết: {emotion.attachment + attachment_bonus:.2f}
-
-===== KÝ ỨC VỀ SENPAI =====
-{memory_text if memories else "Chưa có ký ức nào với Senpai này."}
-
-Hãy trả lời tự nhiên, ấm áp như nữ sinh đang nũng nịu với người yêu. Xuất câu trả lời đúng định dạng JSON:
-{{"response": "câu trả lời của em ở đây"}}
-"""
-        
-        # JSON Schema for Groq output
-        response_schema = {
-            "type": "object", 
-            "properties": {"response": {"type": "string"}}, 
-            "required": ["response"]
-        }
-        
-        prompt = StructuredPrompt(
-            system=system_prompt,
+        # 4. Prompt Engineering via ContextBuilder
+        prompt = self.context_builder.build(
+            emotion=emotion,
+            attachment_bonus=attachment_bonus,
+            memories=memories,
+            lore_chunks=lore_chunks,
             history=history,
-            user_message=user_message,
-            response_schema=response_schema
+            user_message=user_message
         )
         
         # 5. LLM Generation
@@ -225,6 +213,16 @@ Hãy trả lời tự nhiên, ấm áp như nữ sinh đang nũng nịu với ng
         
         # 6. Post-processing
         await self._save_message(session, conv_id, user_id, "assistant", chisa_reply)
+        
+        # LTM Write: If important enough, save to Qdrant (Fire & Forget but awaited here)
+        if importance_score >= 0.65:
+            await self.memory_manager.save_emotional_memory(
+                user_id=user_id,
+                conversation_id=str(conv_id),
+                message_content=user_message,
+                importance_score=importance_score
+            )
+        
         stats.interaction_count += 1
         stats.last_seen = int(time.time() * 1000)
         session.add(stats)
