@@ -10,7 +10,6 @@ Design principles:
 
 from __future__ import annotations
 
-import re
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
@@ -21,21 +20,7 @@ if TYPE_CHECKING:
 
 log = get_logger(__name__)
 
-# ── Keyword Signals ──────────────────────────────────────────────────────────
-
-_POSITIVE_PATTERNS = re.compile(
-    r"\b(vui|hạnh phúc|tuyệt|cảm ơn|yêu|thích|good|great|happy|love|cảm ơn|tốt lắm|giỏi|dễ thương)\b",
-    re.IGNORECASE,
-)
-_NEGATIVE_PATTERNS = re.compile(
-    r"\b(tệ|chán|ghét|tức|bực|buồn|khó chịu|annoying|angry|sad|hate|terrible|fail|tôi không thích)\b",
-    re.IGNORECASE,
-)
-_RUDE_PATTERNS = re.compile(
-    r"\b(ngu|đần|xấu|trash|idiot|stupid|shut up|im lặng)\b",
-    re.IGNORECASE,
-)
-
+# Keyword Signals were removed in favor of LLM Classification
 
 @dataclass
 class EmotionDelta:
@@ -44,6 +29,7 @@ class EmotionDelta:
     sadness: float = 0.0
     trust: float = 0.0
     irritation: float = 0.0
+    attachment: float = 0.0
 
 
 class EmotionEngine:
@@ -55,14 +41,31 @@ class EmotionEngine:
     The caller must commit the session.
     """
 
-    # ── Delta constants ──────────────────────────────────────────────
-    JOY_GAIN = 0.06
-    JOY_DECAY = 0.02
-    SADNESS_GAIN = 0.05
-    SADNESS_DECAY = 0.03
-    TRUST_GAIN = 0.03          # Grows every turn naturally
-    IRRITATION_GAIN = 0.10
-    IRRITATION_DECAY = 0.05
+    # ── DEHA Constants ──────────────────────────────────────────────
+    BASELINES = {
+        "joy": 0.10,
+        "sadness": 0.00,
+        "trust": 0.50,
+        "irritation": 0.00,
+        "attachment": 0.00
+    }
+    
+    DECAY_RATES = {
+        "joy": 0.10,
+        "sadness": 0.15,
+        "trust": 0.02,
+        "irritation": 0.20,
+        "attachment": 0.00
+    }
+    
+    MAX_GAIN = {
+        "joy": 0.15,
+        "sadness": 0.20,
+        "trust": 0.05,
+        "irritation": 0.25,
+        "attachment": 0.02
+    }
+    
     CAP = 1.0
     FLOOR = 0.0
 
@@ -70,45 +73,53 @@ class EmotionEngine:
     def _clamp(value: float) -> float:
         return max(EmotionEngine.FLOOR, min(EmotionEngine.CAP, value))
 
-    def update(self, state: "EmotionState", user_message: str) -> EmotionDelta:
+    def update(self, state: "EmotionState", is_positive: bool = False, is_negative: bool = False, is_rude: bool = False) -> EmotionDelta:
         """
-        Analyse the user message and apply emotion deltas.
+        Apply emotion deltas based on flags provided by the LLM Sentiment Classifier.
         Returns an EmotionDelta summary for logging.
         """
-        is_positive = bool(_POSITIVE_PATTERNS.search(user_message))
-        is_negative = bool(_NEGATIVE_PATTERNS.search(user_message))
-        is_rude = bool(_RUDE_PATTERNS.search(user_message))
 
         delta = EmotionDelta()
 
-        # ── Joy ──────────────────────────────────────────────────────
+        # 1. Psychological Homeostasis (Natural Decay toward Baseline)
+        delta.joy = -self.DECAY_RATES["joy"] * (state.joy - self.BASELINES["joy"])
+        delta.sadness = -self.DECAY_RATES["sadness"] * (state.sadness - self.BASELINES["sadness"])
+        delta.trust = -self.DECAY_RATES["trust"] * (state.trust - self.BASELINES["trust"])
+        delta.irritation = -self.DECAY_RATES["irritation"] * (state.irritation - self.BASELINES["irritation"])
+        
+        # 2. Stimulus Application (Weber-Fechner Law + Plutchik Antagonism)
         if is_positive:
-            delta.joy = self.JOY_GAIN
-        else:
-            delta.joy = -self.JOY_DECAY
-        state.joy = self._clamp(state.joy + delta.joy)
-
-        # ── Sadness ──────────────────────────────────────────────────
-        if is_negative and not is_positive:
-            delta.sadness = self.SADNESS_GAIN
-        else:
-            delta.sadness = -self.SADNESS_DECAY
-        state.sadness = self._clamp(state.sadness + delta.sadness)
-
-        # ── Trust ────────────────────────────────────────────────────
-        # Grows naturally each turn; decreases on rudeness
+            joy_gain = self.MAX_GAIN["joy"] * (1.1 - state.joy) # Diminishing returns (1.1 instead of 1.0 so it doesn't freeze at 0.99)
+            delta.joy += joy_gain
+            delta.sadness -= (joy_gain * 1.5)      # Suppresses sadness
+            delta.irritation -= (joy_gain * 2.0)   # Heavily suppresses irritation
+            delta.trust += self.MAX_GAIN["trust"] * (1.1 - state.trust)
+            
+        if is_negative:
+            sad_gain = self.MAX_GAIN["sadness"] * (1.1 - state.sadness)
+            delta.sadness += sad_gain
+            delta.joy -= (sad_gain * 1.5)          # Suppresses joy
+            delta.trust -= 0.05
+            
         if is_rude:
-            delta.trust = -0.05
-        else:
-            delta.trust = self.TRUST_GAIN
-        state.trust = self._clamp(state.trust + delta.trust)
+            irr_gain = self.MAX_GAIN["irritation"] * (1.1 - state.irritation)
+            delta.irritation += irr_gain
+            delta.joy -= (irr_gain * 2.0)          # Heavily suppresses joy
+            delta.trust -= 0.10
+            delta.sadness += 0.05
+            
+        # 3. Attachment progression (Only grows if trust is high without rudeness)
+        if state.trust > 0.4 and not is_rude and not is_negative:
+            delta.attachment = self.MAX_GAIN["attachment"]
+        elif is_rude:
+            delta.attachment = -self.MAX_GAIN["attachment"]
 
-        # ── Irritation ───────────────────────────────────────────────
-        if is_rude or is_negative:
-            delta.irritation = self.IRRITATION_GAIN
-        else:
-            delta.irritation = -self.IRRITATION_DECAY
+        # Apply Deltas
+        state.joy = self._clamp(state.joy + delta.joy)
+        state.sadness = self._clamp(state.sadness + delta.sadness)
+        state.trust = self._clamp(state.trust + delta.trust)
         state.irritation = self._clamp(state.irritation + delta.irritation)
+        state.attachment = self._clamp(state.attachment + delta.attachment)
 
         log.debug(
             "EmotionEngine update applied",
@@ -116,6 +127,7 @@ class EmotionEngine:
             sadness=f"{state.sadness:.3f}",
             trust=f"{state.trust:.3f}",
             irritation=f"{state.irritation:.3f}",
+            attachment=f"{state.attachment:.3f}",
             signals={"pos": is_positive, "neg": is_negative, "rude": is_rude},
         )
         return delta

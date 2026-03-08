@@ -40,6 +40,7 @@ class GroqAdapter(BaseLLMAdapter):
         self._client = AsyncGroq(
             api_key=settings.GROQ_API_KEY,
             timeout=settings.GROQ_TIMEOUT,
+            max_retries=0,  # We handle retries manually; do not block for 18s automatically
         )
         self._model = settings.GROQ_MODEL
         self._max_tokens = settings.GROQ_MAX_TOKENS

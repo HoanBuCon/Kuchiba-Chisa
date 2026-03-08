@@ -23,7 +23,7 @@
 | **Backend API** | Python 3.11, FastAPI, Uvicorn (ASGI) |
 | **ORM / Database** | SQLAlchemy (async), Alembic migrations, PostgreSQL 15 |
 | **Vector Database (LTM)** | Qdrant (self-hosted hoặc cloud) |
-| **LLM Provider** | Groq API — model `llama-3.3-70b-versatile` |
+| **LLM Provider** | Groq API — model `llama-3.1-8b-instant` |
 | **Embeddings** | FastEmbed local — `sentence-transformers/all-MiniLM-L6-v2` |
 | **Cache** | Redis (dự phòng session / rate limiting) |
 | **Frontend** | React 18 + Vite, Bootstrap, Axios, Lucide-React |
@@ -110,7 +110,7 @@ sequenceDiagram
    - **Memory Retrieval:** Tìm kiếm trong bộ nhớ dài hạn (LTM) riêng biệt của người dùng đó (đã qua bộ lọc ID) để nhắc lại những kỷ niệm cũ.
 
 3. **Prompt Building & Generation (Tạo sinh):** 
-   - `ContextBuilder` tiến hành ghép khối: Đưa chỉ số cảm xúc ẩn vào hướng dẫn tính cách + Dán lore vào System Prompt + Đưa ký ức vào Context. Toàn bộ khối ngữ cảnh tĩnh này kết hợp với lịch sử chat được đẩy lên **Groq Llama-3 70B**.
+   - `ContextBuilder` tiến hành ghép khối: Đưa chỉ số cảm xúc ẩn vào hướng dẫn tính cách + Dán lore vào System Prompt + Đưa ký ức vào Context. Toàn bộ khối ngữ cảnh tĩnh này kết hợp với lịch sử chat được đẩy lên **Groq Llama-3.1 8B**.
 
 4. **Finalization (Đóng gói):** 
    - Sau khi có phản hồi, lời thoại của AI được lưu xuống bảng `messages`. 

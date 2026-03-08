@@ -22,6 +22,23 @@ class MemoryManager:
         self.embedder = embedder
         self.qdrant = qdrant
 
+    def calculate_importance(self, user_message: str, emotion_delta: any) -> float:
+        """
+        Calculates whether a message is worth storing in Emotional LTM based on heuristics.
+        """
+        importance = 0.4
+        importance += min(0.3, len(user_message) / 500.0)
+        
+        # Assuming emotion_delta has .joy, .sadness, etc. If it's a dict, we'd use .get
+        emotion_magnitude = abs(getattr(emotion_delta, "joy", 0)) + abs(getattr(emotion_delta, "sadness", 0)) + \
+                            abs(getattr(emotion_delta, "irritation", 0)) + abs(getattr(emotion_delta, "trust", 0))
+        importance += (emotion_magnitude * 2.5)
+        
+        if any(w in user_message.lower() for w in ["thích", "ghét", "sợ", "buồn", "yêu", "muốn", "tên anh", "anh là"]):
+            importance += 0.2
+            
+        return min(1.0, importance)
+
     async def save_emotional_memory(
         self,
         user_id: str,
