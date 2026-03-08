@@ -67,11 +67,13 @@ sequenceDiagram
     C->>API: POST /api/v1/chat {user_id, message}
     API->>CE: _chat(user_id, message)
     
-    Note over CE,DB: 1. State Recovery & Update
+    Note over CE,DB: 1. Sentiment & State Update
     CE->>DB: Get User, Conversation, History
     CE->>DB: Save User Message
-    CE->>EE: update(message, current_emotion)
-    EE-->>CE: emotion_deltas (joy, trust...)
+    CE->>LLM: _classify_emotion (LLM Context Sentiment)
+    LLM-->>CE: boolean flags (is_positive, is_negative, is_rude)
+    CE->>EE: DEHA.update(current_emotion, flags)
+    EE-->>CE: emotion_deltas (Homeostasis + Weber-Fechner)
     CE->>DB: Save new EmotionState
     
     Note over CE,QD: 2. RAG & Context Retrieval
@@ -101,9 +103,10 @@ sequenceDiagram
 
 #### Chi tiết các bước trong Pipeline:
 
-1. **State Recovery & Update (Phục hồi & Cập nhật trạng thái):** 
-   - Hệ thống xác định danh tính (UUID) và tải lên cuộc hội thoại hiện tại cùng lịch sử ngắn hạn (STM). 
-   - Tin nhắn mới được chuyển qua **EmotionEngine** để quét từ khóa. Cảm xúc (Joy, Sadness, Trust, Irritation) và độ gắn kết (Attachment) trong Database sẽ lập tức thay đổi dựa trên thái độ của người dùng.
+1. **LLM Sentiment Classification & Emotion Update (Tham vấn Ngữ cảnh & Cập nhật trạng thái Ngắn hạn):** 
+   - Hệ thống xác định danh tính (UUID) và tải lên cuộc hội thoại hiện tại cùng lịch sử 15 tin nhắn gần nhất.
+   - Thay vì dùng Regex khô khan, `ChatEngine` sẽ đẩy lịch sử này lên LLM nhỏ (`llama-3.1-8b-instant`) để làm nhiệm vụ **Phân loại cảm xúc ngữ cảnh (Contextual Sentiment Analysis)**. LLM sẽ tự lọc tiếng lóng, mỉa mai, trêu đùa và trả về 3 cờ mấu chốt: `is_positive`, `is_negative`, `is_rude`.
+   - Kết quả này được ném vào **EmotionEngine (DEHA)**. Thuật toán Cân Bằng Động (Homeostasis & Weber-Fechner) sẽ tính toán và tác động lực tương đối lên các điểm số Joy, Sadness, Irritation.. triệt tiêu các cảm xúc dư thừa theo phương trình tâm lý học Plutchik. Cảm xúc (Joy, Sadness, Trust, Irritation) và độ gắn kết (Attachment) sẽ lập tức thay đổi và lưu xuống DB.
    
 2. **RAG & Context Retrieval (Truy xuất ngữ cảnh):**
    - **Lore Retrieval:** Vector hoá tin nhắn người dùng và tìm kiếm trong không gian hệ `chisa_lore` trên Qdrant để trích xuất những mảnh thông tin (chunks) thiết lập nhân vật liên quan.

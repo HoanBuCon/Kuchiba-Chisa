@@ -1,0 +1,128 @@
+# 🚀 Chisa AI - Startup & Deployment Guide
+
+Tài liệu này hướng dẫn chi tiết cách thiết lập, khởi chạy và giám sát toàn bộ hệ thống Backend của **Kuchiba Chisa AI**.
+
+---
+
+## 1. Yêu cầu hệ thống (Prerequisites)
+
+Để chạy được toàn bộ hệ thống mượt mà, máy tính/server của bạn cần có:
+- **Hệ điều hành:** Windows (khuyến nghị chạy trên WSL2) / Linux / macOS.
+- **Môi trường:** Python `3.11`.
+- **Nền tảng Ảo hóa:** Docker Desktop (để chạy DB, Cache, Vector Search).
+- **Phần mềm quản lý source:** Git.
+
+---
+
+## 2. Thiết lập Lần đầu (First-time Setup)
+
+### Bước 2.1: Clone dự án và tạo Môi trường ảo (Virtualenv)
+```powershell
+git clone <repository_url>
+cd kuchiba_chisa
+python -m venv venv
+
+# Kích hoạt môi trường (Windows PowerShell):
+.\venv\Scripts\activate
+# (Nếu ở Linux/Mac): source venv/bin/activate
+```
+
+### Bước 2.2: Cài đặt thư viện (Dependencies)
+```powershell
+pip install -r requirements.txt
+```
+
+### Bước 2.3: Thiết lập Biến môi trường (.env)
+Copy file mẫu cấu hình để sử dụng:
+```powershell
+cp .env.example .env
+```
+Mở file `.env` lên và điền các khóa (API Key) cần thiết:
+- `GROQ_API_KEY`: Lấy từ trang quản trị developer của Groq.
+- `JWT_SECRET`: Một chuỗi ngẫu nhiên bảo mật của bạn.
+
+---
+
+## 3. Khởi chạy Hạ tầng (Infrastructure)
+
+Dự án phụ thuộc vào 3 mảnh ghép Core Services nằm trong Docker:
+1. **PostgreSQL** (Port 5432): Lưu trữ dữ liệu User, Tin nhắn (STM) và Trạng thái Cảm xúc tĩnh.
+2. **Redis** (Port 6379): Phục vụ Rate Limiting, Cache và làm Message Broker cho Celery.
+3. **Qdrant** (Port 6333): Vector Database lưu trữ Ký ức (Memories) và Cốt truyện (Lore).
+
+Để chạy tất cả dịch vụ này lên, hãy dùng lệnh:
+```powershell
+docker compose up -d --wait
+```
+*(Cờ `--wait` đảm bảo các hệ thống cơ sở dữ liệu đã Health-Check thành công trước khi bạn đi tiếp).*
+
+---
+
+## 4. Khởi tạo Database (Migrations)
+
+Dự án dùng **Alembic** để quản lý cấu trúc bảng PostgreSQL. Lần đầu tiện chạy dự án, bạn **BẮT BUỘC** phải build các bảng schema vào DB.
+Trong môi trường `venv`, chạy lệnh:
+```powershell
+alembic upgrade head
+```
+Nếu thành công, cơ sở dữ liệu của bạn đã có đủ bảng `users`, `messages`, `emotion_states`...
+
+---
+
+## 5. Khởi chạy Ứng dụng & Dịch vụ Nền
+
+### 5.1 Sử dụng Script tự động hóa (PowerShell)
+Nếu bạn lười gõ lệnh, dự án đã có sẵn file `start.ps1` ở thư mục gốc. Script này sẽ tự động:
+- Khởi động Docker Containers.
+- Reset lại các Terminal con.
+- Kích hoạt mội trường ảo và nổ máy Backend.
+- Bật Frontend lên ở localhost.
+```powershell
+.\start.ps1
+```
+
+### 5.2 Khởi chạy thủ công (Để tiện gỡ lỗi/debug)
+
+**Chạy Backend API (FastAPI):**
+```powershell
+uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+```
+Sau đó truy cập Swagger UI để theo dõi tài liệu API tại: `http://localhost:8000/docs`
+
+**Chạy Nạp Lore Vector (Chỉ cần chạy 1 lần nếu Cốt truyện thay đổi):**
+```powershell
+python scripts/ingest_chisa_lore.py
+```
+
+---
+
+## 6. Giám sát Hệ thống (Monitoring Scripts)
+
+Đây là những chức năng độc quyền của dự án giúp quan sát "não bộ" của Chisa chạy ngầm dưới dạng Real-Time (Theo thời gian thực). Bạn nên bật chúng ở các Tab Terminal riêng biệt song song với Backend.
+
+### 6.1 Gương soi Cảm xúc (Emotion Watcher)
+Hiển thị trực tiếp các xung động điểm cảm xúc (Joy, Sad, Irritation...) khi Chisa đang bị người dùng tác động, tích hợp bộ đếm DEHA Algorithm:
+```powershell
+python .\scripts\watch_emotions.py
+```
+
+### 6.2 Máy đo dòng Token (Token Consumption Watcher)
+Theo dõi lượng Token bị đốt cháy trực tiếp của mô hình Llama-3 theo từng tin nhắn, hữu ích để tối ưu chi phí và tránh lỗi `429 Rate Limit` từ Groq:
+```powershell
+python .\scripts\watch_tokens.py
+```
+
+---
+
+## 7. Các lỗi thường gặp (Troubleshooting)
+
+1. **Lỗi `429 Too Many Requests` từ Groq:** 
+   - Lý do: Gói Miễn phí của Groq giới hạn Token Per Minute (~14,400 TPM).
+   - Giải quyết: Nếu không nâng cấp lên Developer Plan ($5), hãy chờ khoảng 1 phút trước khi chat tiếp. Hệ thống đã được cấu hình Fail-fast (Vượt lỗi đi tiếp) mà không bị treo phần mềm.
+
+2. **Lỗi `OperationalError (could not translate host name, Connection Refused)`:**
+   - Lý do: Hạ tầng Docker chưa bật lên, hoặc Cổng 5432 (PostgreSQL)/6379 (Redis) đang bị ứng dụng khác chiếm dụng.
+   - Giải quyết: Bật Docker Desktop lên, chạy lệnh `docker compose down` rồi lên lại `docker compose up -d`.
+
+3. **Lỗi thiếu Thư viện (ModuleNotFoundError):**
+   - Giải quyết: Đảm bảo bạn đang ở môi trường ảo `(venv)` trước khi chạy bất kỳ script hay lệnh uvicorn nào. Chạy lại `pip install -r requirements.txt`.

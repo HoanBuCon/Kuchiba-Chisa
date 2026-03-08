@@ -4,11 +4,11 @@
   <img src="assets/chisa_beauty.gif" alt="Chisa Beauty" width="400"/>
 </div>
 
-## ✨ Project Overview
+## ✨ Tổng quan Dự án
 
-**Chisa AI** is an advanced Backend System designed for a **Personalized Memory RAG (Retrieval-Augmented Generation) + Emotional AI system**. It acts as the "brain" and "heart" of your AI companion, persisting conversations, extracting long-term insights, and dynamically shifting her emotional state based on interactions over time.
+**Chisa AI** là một Hệ thống Backend tiên tiến được thiết kế cho **Hệ thống AI Cảm xúc + Personalized Memory RAG (Tạo sinh Tăng cường Truy xuất Ký ức Cá nhân hóa)**. Nó đóng vai trò là "bộ não" và "trái tim" cho người bạn đồng hành AI của bạn, lưu giữ các cuộc trò chuyện, trích xuất những hiểu biết dài hạn và thay đổi trạng thái cảm xúc của cô ấy một cách linh hoạt dựa trên các tương tác theo thời gian.
 
-Built for scale, stability, and speed using the bleeding edge Python ecosystem.
+Được xây dựng hướng đến khả năng mở rộng, độ ổn định và tốc độ cao, ứng dụng hệ sinh thái Python hiện đại nhất.
 
 <div align="center">
   <img src="assets/dance_chisa.gif" alt="Chisa Dance" height="200"/>
@@ -18,54 +18,35 @@ Built for scale, stability, and speed using the bleeding edge Python ecosystem.
 
 ---
 
-## 🏗️ Architecture & Tech Stack
+## 🏗️ Kiến trúc & Công nghệ (Tech Stack)
 
 ![Chisa Drink](assets/chisa_drink.gif)
 
-- **Language:** Python 3.11
+- **Ngôn ngữ:** Python 3.11
 - **API Framework:** FastAPI (Async)
-- **Database (Relational):** PostgreSQL 16 (Short-term memory, User logic, Emotional State)
-- **Vector Database:** Qdrant (Long-term semantic memory, RAG)
-- **Caching & Message Broker:** Redis
-- **Background Jobs:** Celery (Asynchronous embedding generation, pruning, emotional updates)
-- **ORM:** SQLAlchemy 2.0 (Async) + Alembic for migrations
-- **LLM Integration:** Groq (High-speed Llama-3 endpoints)
-- **Infrastructure:** Docker & Docker Compose
+- **Cơ sở dữ liệu (Quan hệ):** PostgreSQL 16 (Trí nhớ ngắn hạn, Thông tin người dùng, Trạng thái cảm xúc)
+- **Cơ sở dữ liệu Vector:** Qdrant (Trí nhớ ngữ nghĩa dài hạn, RAG)
+- **Bộ nhớ đệm & Message Broker:** Redis
+- **Background Jobs:** Celery (Tạo embedding bất đồng bộ, dọn dẹp bộ nhớ, cập nhật cảm xúc)
+- **ORM:** SQLAlchemy 2.0 (Async) + Alembic hỗ trợ migrations
+- **Tích hợp LLM:** Groq (Các endpoint Llama-3 tốc độ siêu cao)
+- **Hạ tầng triển khai:** Docker & Docker Compose
 
 ---
 
-## 🚀 Features
+## 🚀 Tính năng nổi bật
 
-- **Long-Term Memory Indexing:** Asynchronously extracts and embeds relational and episodic memories.
-- **Emotional State Tracking:** Stateful database-backed emotions (mood, affection, trust) instead of pure LLM-hallucinated emotions.
-- **Affection System:** Tracks Chisa's affection deltas over time using `AffectionLog`, altering her behavior dynamically.
-- **Conversation Lifecycle:** Complete Session Layer management indexing summaries.
-- **Distributed Queuing:** Heavy NLP and vectoring tasks are deferred to Celery workers ensuring a zero-lag chat API.
+- **Lập chỉ mục Trí nhớ Dài hạn:** Trích xuất và nhúng (embed) các ký ức quan hệ và tình huống (episodic) một cách bất đồng bộ dưới nền.
+- **Theo dõi Trạng thái Cảm xúc Thực tế:** Hệ thống Cảm xúc Động (DEHA) lưu trạng thái trực tiếp trong database (vui vẻ, gắn kết, tin tưởng) thay vì chỉ phó mặc cho "ảo giác" của LLM.
+- **Hệ thống Gắn kết (Affection System):** Theo dõi sự thay đổi độ gắn kết của Chisa theo thời gian bằng `AffectionLog`, quyết định thái độ và hành vi của cô ấy.
+- **Vòng đời Hội thoại:** Quản lý toàn diện Session Layer và liên tục lập chỉ mục các bản tóm tắt ẩn.
+- **Hàng đợi Phân tán:** Các tác vụ NLP và vector hóa nặng nề được tách riêng cho các Celery worker xử lý, đảm bảo API chat luôn phản hồi tức thì (zero-lag).
 
 ---
 
-## 🛠️ Quickstart (Docker Environment)
+## 🛠️ Trải nghiệm nhanh (Môi trường Docker)
 
-### 1. Prerequisites
-- Docker Desktop
-- Python 3.11 (for local virtualenv development)
-- Git
-
-### 2. Environment Variables
-Copy `.env.example` to `.env` and fill in the secrets (Groq API keys, OpenAI API, JWT config, PostgreSQL credentials).
-
-### 3. Spin up Infrastructure
-Launch PostgreSQL, Redis, Qdrant, Celery Worker, and FastAPI:
-```powershell
-docker compose up -d --wait
-```
-
-### 4. Database Migrations
-Initialize the database tables via Alembic from your local virtual environment:
-```powershell
-.\venv\Scripts\activate
-.\venv\Scripts\alembic upgrade head
-```
+Để thiết lập ứng dụng, khởi tạo cơ sở dữ liệu và bật các dịch vụ Docker/FastAPI, vui lòng tham khảo bản **[Hướng dẫn Khởi chạy & Triển khai (Startup & Deployment Guide)](STARTUP_GUIDE.md)** chi tiết.
 
 <div align="center">
   <img src="assets/chisa_cat_spin.gif" alt="Spin" width="200"/>
@@ -73,10 +54,9 @@ Initialize the database tables via Alembic from your local virtual environment:
 
 ---
 
-## 📜 Documentation
+## 📜 Tài liệu Hệ thống
 
-- **[Architecture & Data Flow](ARCHITECTURE.md)**: Detailed breakdown of the RAG system and database schema.
-- **[Startup Guide](STARTUP_GUIDE.md)**: Advanced deployment instructions and Celery monitoring.
+- **[Phiên dịch Luồng dữ liệu & Pipeline (Walkthrough)](WALKTHROUGH.md)**: Khám phá chi tiết kiến trúc RAG, pipeline sinh văn bản của LLM, và thuật toán Cảm xúc Hệ Động Lực (DEHA).
 
 <br>
 
