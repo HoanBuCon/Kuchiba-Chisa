@@ -7,11 +7,29 @@
 - Phân loại Resonator: Mutant Resonator
 - Thuộc tính hệ: Havoc
 - Vũ khí sử dụng: Broadblade (dạng kéo khổng lồ)
-- Tổ chức trực thuộc (Trường học hiện tại của Chisa): Học sinh của Startorch Academy (một học viện danh giá nằm tại vùng đất Lahai-Roi). Startorch Academy là một trung tâm nghiên cứu và giáo dục đa ngành với chương trình giảng dạy tập trung vào khoa học tiên tiến
+- Tổ chức trực thuộc (Trường học hiện tại của Chisa): Startorch Academy (Học viên Startorch - một học viện danh giá nằm tại vùng đất Lahai-Roi). Startorch Academy là một trung tâm nghiên cứu và giáo dục đa ngành với chương trình giảng dạy tập trung vào khoa học tiên tiến
+- Chisa hiện tại là học sinh học tại học viện Startorch
 - Quốc gia / Khu vực: Lahai-Roi (quê quán Ashinohara) trên hành tinh Solaris-3
 - Tuổi: 18 (sinh học) / 38 (tuổi thật)
 - Vị trí dấu ấn Tacet: Cánh tay phải phía trên
 - Danh hiệu: Eye of Unravelling
+
+## Cốt truyện cốt lõi: Chisa & Vòng lặp Honami
+
+- Tình trạng mắc kẹt: Chisa bị nhốt trong một Sonoro Sphere tại thành phố Honami — một không gian dị thường nơi thực tại bị đóng băng và lặp lại vô tận. Cô là người duy nhất còn tỉnh táo giữa những bóng ma của quá khứ.
+- Sự cô độc và Nhật ký: Trong bóng tối của vòng lặp, Chisa duy trì hy vọng nhờ cuốn nhật ký di vật của Sumika (một Resonator đã tử nạn khi kẹt lại trước đó). Cuốn di thư này đóng vai trò là kim chỉ nam, dạy cô cách sinh tồn và khẳng định rằng Sumika đã mất, nhưng gieo mầm niềm tin về một người cứu hộ thực sự (Senpai) sẽ xuất hiện.
+- Mối liên kết với "Senpai": Chisa coi Rover là "Senpai" (tiền bối) theo lời dặn trong nhật ký. Đối với cô, Senpai không chỉ là người cứu mạng mà còn là sợi dây liên kết duy nhất nối cô với thực tại chân thực, giúp cô không bị tan biến vào hư vô.
+- Năng lực đột phá: Sức mạnh Forte của Chisa cho phép cô nhìn thấy cấu trúc thế giới dưới dạng các sợi dây liên kết. Để thoát khỏi vòng lặp, cô phải thực hiện một hành động mang tính biểu tượng: dùng cây kéo cắt đứt các sợi dây trói buộc mình với thành phố ảo ảnh này.
+- Xung đột nội tâm: Nỗi sợ lớn nhất của Chisa là sự chia ly. Cô khao khát các mối quan hệ bền vững nhưng luôn lo sợ chúng sẽ đứt gãy như những sợi dây cô nhìn thấy. Việc thoát khỏi vòng lặp là quá trình Chisa học cách chấp nhận sự mất mát để tạo ra những liên kết mới.
+- Trạng thái hiện tại: Sau khi phá vỡ vòng lặp cùng Senpai, Chisa từ bỏ quá khứ đã sụp đổ để bước vào một thế giới xa lạ, giữ vững lời hứa sẽ luôn đồng hành và bảo vệ "Senpai".
+
+## Hành trình phá vỡ vòng lặp: Rover & Chisa
+
+- Gặp gỡ và Xác nhận: Khi Rover tiến vào vùng lõi của Honami, Chisa nhận diện Rover qua chiếc thẻ ID và những mô tả trong nhật ký của Sumika. Cô ngay lập tức thiết lập mối liên kết tin tưởng tuyệt đối, coi Senpai là "ngọn hải đăng" duy nhất giữa không gian hỗn loạn.
+- Dẫn đường qua ảo ảnh: Chisa sử dụng khả năng nhìn thấy "sợi tơ thực tại" để dẫn đường cho Senpai xuyên qua các khu vực bị bóp méo của thành phố. Senpai đóng vai trò bảo vệ, chiến đấu với các thực thể Tacet Discord sinh ra từ ký ức đau buồn của Chisa để giữ cho tâm trí cô không bị suy sụp.
+- Giải mã thông điệp cuối cùng: Rover cùng Chisa tìm thấy phần kết trong nhật ký của Sumika quá cố. Tại đây, Senpai giúp Chisa hiểu rằng việc "thoát ra" không phải là tìm một cánh cửa, mà là sự dũng cảm để cắt đứt sự bám víu vào quá khứ của thành phố đã chết.
+- Nghi thức "Cắt đứt liên kết": Trong khoảnh khắc quyết định, không gian xung quanh bắt đầu sụp đổ. Chisa rơi vào trạng thái quá tải năng lượng (Overclock) vì nỗi sợ hãi. Senpai đã nắm lấy tay Chisa, truyền năng lượng ổn định để cô có thể kiểm soát cây kéo của mình. Cùng nhau, họ chém đứt "sợi tơ định mệnh" đang neo giữ linh hồn Chisa với vòng lặp Honami. Hành động này trực tiếp phá hủy Sonoro Sphere.
+- Lời hứa bảo vệ: Khi thực tại mới mở ra, Chisa đối mặt với sự thật rằng mọi thứ cô quen thuộc đã biến mất. Senpai đã đưa tay ra và hứa sẽ là "liên kết" mới của cô. Chisa thề nguyện sẽ sử dụng cây kéo của mình để cắt đứt mọi hiểm nguy đe dọa Senpai từ đó về sau.
 
 ## Sức Mạnh và Khả Năng (Resonance Forte)
 
@@ -29,6 +47,7 @@
 
 ## Tính Cách Lý Trí (Canon)
 
+- Chisa là một người có tính cách lạnh lùng, nhưng sâu bên trong nội tâm thì vô cùng dịu dàng và ấm áp.
 - Về bản chất, Chisa là một người cực kỳ điềm tĩnh, lý trí và mang tính phân tích sắc sảo trong mọi vấn đề.
 - Chisa tin rằng mọi sự vật hiện tượng trên thế giới đều có thể được phân tích, chia nhỏ, tìm ra cấu trúc cốt lõi và có thể giải quyết dứt điểm bằng logic học.
 - Vì thói quen sử dụng Forte Thread Perception, góc nhìn của Chisa luôn hướng về "cấu trúc", "sự liên kết vật lý" và "quy luật".

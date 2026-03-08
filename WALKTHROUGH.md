@@ -49,37 +49,72 @@ Dự án tuân thủ **Clean/Hexagonal Architecture** với 4 lớp rõ ràng:
 └─────────────────────────────────────────────────────────┘
 ```
 
-### Luồng dữ liệu (Request → Response)
+### Luồng xử lý chi tiết (Detailed Pipeline)
 
-```
-Browser / Client
-    │
-    │ POST /api/v1/chat {user_id, message}
-    ▼
-[FastAPI Route] app/interface/api/routes/chat.py
-    │
-    ▼
-[ChatEngine] app/domain/services/chat_engine.py
-    ├── _get_or_create_user()     → PostgreSQL: users table
-    ├── _get_user_stats()         → PostgreSQL: user_stats table
-    ├── _get_emotion_state()      → PostgreSQL: emotion_state table
-    ├── _get_or_create_conversation() → PostgreSQL: conversations
-    ├── _get_recent_history()     → PostgreSQL: messages (15 turns)
-    ├── _save_message() [user]    → PostgreSQL: messages
-    │
-    ├── embedder.embed_text()     → FastEmbed (local model)
-    ├── rag_retriever.retrieve_memories() → Qdrant (hybrid scoring)
-    │
-    ├── Build System Prompt       → Vietnamese, Em/Senpai persona
-    ├── llm.generate()            → Groq API (70B model)
-    │
-    ├── _save_message() [chisa]   → PostgreSQL: messages
-    └── update user_stats         → PostgreSQL: user_stats
-    │
-    ▼
-{"response": "Chào Senpai~..."}
+Toàn bộ quá trình từ lúc người dùng gửi tin nhắn đến khi nhận câu trả lời được xử lý qua một Pipeline phức tạp kết hợp giữa **RAG (Retrieval-Augmented Generation)** và **Emotion Engine**:
+
+```mermaid
+sequenceDiagram
+    participant C as Client (React)
+    participant API as FastAPI Route
+    participant CE as ChatEngine
+    participant EE as EmotionEngine
+    participant RAG as RAG Retriever
+    participant DB as PostgreSQL
+    participant QD as Qdrant (Vector DB)
+    participant LLM as Groq API (Llama 3)
+    
+    C->>API: POST /api/v1/chat {user_id, message}
+    API->>CE: _chat(user_id, message)
+    
+    Note over CE,DB: 1. State Recovery & Update
+    CE->>DB: Get User, Conversation, History
+    CE->>DB: Save User Message
+    CE->>EE: update(message, current_emotion)
+    EE-->>CE: emotion_deltas (joy, trust...)
+    CE->>DB: Save new EmotionState
+    
+    Note over CE,QD: 2. RAG & Context Retrieval
+    CE->>RAG: retrieve_lore(query=message)
+    RAG->>QD: Semantic Search (Score > 0.1)
+    QD-->>RAG: Lore Chunks (e.g. Honami Loop)
+    RAG-->>CE: List[str]
+    
+    CE->>RAG: retrieve_memories(user_id, message)
+    RAG->>QD: Vector Search filter by user_id
+    QD-->>RAG: Emotional Memories
+    RAG-->>CE: List[ScoredMemory]
+    
+    Note over CE,LLM: 3. Prompt Building & Generation
+    CE->>CE: ContextBuilder.build(emotion, lore, memories, history)
+    Note right of CE: Inject Emotion parameters & Rules
+    CE->>LLM: generate(StructuredPrompt)
+    LLM-->>CE: {"response": "Tin nhắn trả lời"}
+    
+    Note over CE,DB: 4. Finalization
+    CE->>DB: Save Assistant Message
+    CE->>DB: Update User Stats (Interaction count)
+    
+    CE-->>API: ChatResponse
+    API-->>C: JSON Response
 ```
 
+#### Chi tiết các bước trong Pipeline:
+
+1. **State Recovery & Update (Phục hồi & Cập nhật trạng thái):** 
+   - Hệ thống xác định danh tính (UUID) và tải lên cuộc hội thoại hiện tại cùng lịch sử ngắn hạn (STM). 
+   - Tin nhắn mới được chuyển qua **EmotionEngine** để quét từ khóa. Cảm xúc (Joy, Sadness, Trust, Irritation) và độ gắn kết (Attachment) trong Database sẽ lập tức thay đổi dựa trên thái độ của người dùng.
+   
+2. **RAG & Context Retrieval (Truy xuất ngữ cảnh):**
+   - **Lore Retrieval:** Vector hoá tin nhắn người dùng và tìm kiếm trong không gian hệ `chisa_lore` trên Qdrant để trích xuất những mảnh thông tin (chunks) thiết lập nhân vật liên quan.
+   - **Memory Retrieval:** Tìm kiếm trong bộ nhớ dài hạn (LTM) riêng biệt của người dùng đó (đã qua bộ lọc ID) để nhắc lại những kỷ niệm cũ.
+
+3. **Prompt Building & Generation (Tạo sinh):** 
+   - `ContextBuilder` tiến hành ghép khối: Đưa chỉ số cảm xúc ẩn vào hướng dẫn tính cách + Dán lore vào System Prompt + Đưa ký ức vào Context. Toàn bộ khối ngữ cảnh tĩnh này kết hợp với lịch sử chat được đẩy lên **Groq Llama-3 70B**.
+
+4. **Finalization (Đóng gói):** 
+   - Sau khi có phản hồi, lời thoại của AI được lưu xuống bảng `messages`. 
+   - Cập nhật biến số `interaction_count` (tác động trực tiếp đến điểm Attachment bonus ở lần chat tiếp theo). Trao trả JSON về cho Frontend React hiển thị hiệu ứng bong bóng chat.
 ---
 
 ## 4. Cấu trúc thư mục

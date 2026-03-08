@@ -77,7 +77,7 @@ def parse_lore_chunks(filepath: str) -> list[tuple[str, str]]:
         current_len = 0
         
         for para in paragraphs:
-            if current_len + len(para) > 500 and current_chunk:
+            if current_len + len(para) > 1000 and current_chunk:
                 combined_text = " ".join(current_chunk)
                 chunks.append((section_name, f"[{section_name}] {combined_text}"))
                 current_chunk = [para]
