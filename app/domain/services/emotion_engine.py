@@ -87,32 +87,50 @@ class EmotionEngine:
         delta.trust = -self.DECAY_RATES["trust"] * (state.trust - self.BASELINES["trust"])
         delta.irritation = -self.DECAY_RATES["irritation"] * (state.irritation - self.BASELINES["irritation"])
         
-        # 2. Stimulus Application (Weber-Fechner Law + Plutchik Antagonism)
+        # 2. Pre-calculate Psychological Multipliers (Trust & Attachment)
+        # Low trust (<0.5) dampens Joy and amplifies Negativity
+        # High trust (>0.5) amplifies Joy and dampens Negativity
+        trust_factor = state.trust
+        positivity_multiplier = 0.5 + trust_factor  # ranges 0.5x to 1.5x
+        negativity_multiplier = 1.5 - trust_factor  # ranges 1.5x to 0.5x
+
+        # 3. Stimulus Application (Weber-Fechner Law + Trust Modulation)
         if is_positive:
-            joy_gain = self.MAX_GAIN["joy"] * (1.1 - state.joy) # Diminishing returns (1.1 instead of 1.0 so it doesn't freeze at 0.99)
+            # Joy gain is multiplied by trust
+            joy_gain = self.MAX_GAIN["joy"] * (1.1 - state.joy) * positivity_multiplier
             delta.joy += joy_gain
             delta.sadness -= (joy_gain * 1.5)      # Suppresses sadness
             delta.irritation -= (joy_gain * 2.0)   # Heavily suppresses irritation
-            delta.trust += self.MAX_GAIN["trust"] * (1.1 - state.trust)
+            
+            # Trust is HARD to earn (diminishing very fast)
+            delta.trust += (self.MAX_GAIN["trust"] * 0.5) * (1.0 - state.trust)
             
         if is_negative:
-            sad_gain = self.MAX_GAIN["sadness"] * (1.1 - state.sadness)
+            # Sadness is amplified by low trust
+            sad_gain = self.MAX_GAIN["sadness"] * (1.1 - state.sadness) * negativity_multiplier
             delta.sadness += sad_gain
             delta.joy -= (sad_gain * 1.5)          # Suppresses joy
-            delta.trust -= 0.05
+            
+            # Trust is EASY to lose
+            delta.trust -= 0.15 * negativity_multiplier
             
         if is_rude:
-            irr_gain = self.MAX_GAIN["irritation"] * (1.1 - state.irritation)
+            # Irritation/Anger is amplified by low trust
+            irr_gain = self.MAX_GAIN["irritation"] * (1.1 - state.irritation) * negativity_multiplier
             delta.irritation += irr_gain
             delta.joy -= (irr_gain * 2.0)          # Heavily suppresses joy
-            delta.trust -= 0.10
             delta.sadness += 0.05
             
-        # 3. Attachment progression (Only grows if trust is high without rudeness)
-        if state.trust > 0.4 and not is_rude and not is_negative:
-            delta.attachment = self.MAX_GAIN["attachment"]
-        elif is_rude:
-            delta.attachment = -self.MAX_GAIN["attachment"]
+            # Trust is VERY EASY to lose when rude
+            delta.trust -= 0.25
+            
+        # 4. Attachment progression (Asymmetrical progression)
+        # Attachment only grows if trust is high without rudeness, and grows very slowly
+        if state.trust > 0.6 and not is_rude and not is_negative:
+            delta.attachment = (self.MAX_GAIN["attachment"] * 0.5) * (1.0 - state.attachment)
+        elif is_rude or is_negative:
+            # Attachment drops rapidly on abuse
+            delta.attachment = -self.MAX_GAIN["attachment"] * 2.5 * negativity_multiplier
 
         # Apply Deltas
         state.joy = self._clamp(state.joy + delta.joy)

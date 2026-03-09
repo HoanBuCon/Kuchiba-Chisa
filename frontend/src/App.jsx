@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import axios from 'axios';
-import { Send, MessageSquare, Trash2, Zap } from 'lucide-react';
+import { Send, MessageSquare, Trash2, Zap, Heart, Smile, Frown, Shield } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 
 // ── Persistent User ID (UUIDv4) ──────────────────────────────────────────
@@ -54,8 +54,52 @@ function Message({ msg }) {
   );
 }
 
+// ── Emotion Panel ──────────────────────────────────────────────────────────
+function EmotionPanel({ emotions }) {
+  const bars = [
+    { label: 'Vui vẻ', key: 'joy', icon: <Smile size={12} />, color: '#4caf50' },
+    { label: 'Buồn bã', key: 'sadness', icon: <Frown size={12} />, color: '#2196f3' },
+    { label: 'Tin tưởng', key: 'trust', icon: <Shield size={12} />, color: '#ffeb3b' },
+    { label: 'Khó chịu', key: 'irritation', icon: <Zap size={12} />, color: '#f44336' },
+    { label: 'Gắn kết', key: 'attachment', icon: <Heart size={12} />, color: '#e91e63' },
+  ];
+
+  return (
+    <div className="emotion-panel">
+      <div className="sidebar-section-label" style={{ padding: 0 }}>Cảm xúc (DEHA)</div>
+      <div className="emotion-list">
+        {bars.map(b => {
+          const val = emotions?.[b.key] || 0;
+          return (
+            <div className="emotion-item" key={b.key}>
+              <div className="emotion-header">
+                <span className="emotion-label" style={{ color: b.color }}>
+                  {b.icon} {b.label}
+                </span>
+                <span className="emotion-value" style={{ color: b.color }}>
+                  {Math.round(val * 100)}%
+                </span>
+              </div>
+              <div className="emotion-bar-bg">
+                <div 
+                  className="emotion-bar-fg" 
+                  style={{ 
+                    width: `${val * 100}%`, 
+                    background: b.color,
+                    color: b.color 
+                  }} 
+                />
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 // ── Sidebar ──────────────────────────────────────────────────────────────
-function Sidebar({ onClear }) {
+function Sidebar({ onClear, emotions }) {
   return (
     <aside className="sidebar">
       <div className="sidebar-logo">
@@ -68,6 +112,8 @@ function Sidebar({ onClear }) {
       <div className="sidebar-chisa-art">
         <img src="/chisa_drink.gif" alt="Chisa" className="sidebar-chisa-img" />
       </div>
+
+      <EmotionPanel emotions={emotions} />
 
       <span className="sidebar-section-label">Điều hướng</span>
 
@@ -102,6 +148,7 @@ export default function App() {
   const [messages, setMessages]             = useState([]);
   const [input, setInput]                   = useState('');
   const [isLoading, setIsLoading]           = useState(false);
+  const [emotions, setEmotions]             = useState({ joy: 0.5, sadness: 0.0, trust: 0.5, irritation: 0.0, attachment: 0.0 });
   const [isHistoryLoading, setIsHistoryLoading] = useState(true);
   const messagesEndRef = useRef(null);
   const textareaRef    = useRef(null);
@@ -121,6 +168,12 @@ export default function App() {
       })
       .catch(() => setMessages([GREETING]))
       .finally(() => setIsHistoryLoading(false));
+
+    axios.get(`${BASE}/chat/emotions/${getDeviceId()}`)
+      .then(res => {
+        if (res.data) setEmotions(res.data);
+      })
+      .catch(console.error);
   }, []);
 
   useEffect(() => { scrollToBottom(); }, [messages, isLoading]);
@@ -166,6 +219,9 @@ export default function App() {
       const res = await axios.post(`${BASE}/chat`, { user_id: getDeviceId(), message: userText });
       if (res.data?.response) {
         setMessages(prev => [...prev, { role: 'chisa', content: res.data.response }]);
+        if (res.data.emotions) {
+          setEmotions(res.data.emotions);
+        }
       } else throw new Error('bad response');
     } catch {
       setMessages(prev => [...prev, { role: 'chisa', content: '*(Lỗi kết nối)* Xin lỗi Senpai... Em đang gặp sự cố, hãy thử lại sau nhé!' }]);
@@ -180,7 +236,7 @@ export default function App() {
 
   return (
     <div className="app-shell">
-      <Sidebar onClear={handleClear} />
+      <Sidebar onClear={handleClear} emotions={emotions} />
 
       <div className="chat-panel">
         {/* Header */}

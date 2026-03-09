@@ -40,18 +40,39 @@ async def chat_endpoint(
     """
     log.info("Received chat request", user_id=request.user_id)
     try:
-        reply_text = await _chat_engine.chat(
+        reply_text, emotions = await _chat_engine.chat(
             session=session,
             user_id=request.user_id,
             user_message=request.message
         )
         return ChatResponse(
             response=reply_text,
-            user_id=request.user_id
+            user_id=request.user_id,
+            emotions=emotions
         )
     except Exception as e:
         log.error("Chat orchestration failed", error=str(e), user_id=request.user_id)
         raise HTTPException(status_code=500, detail="Internal server error during chat generation")
+
+
+@router.get("/chat/emotions/{user_id}")
+async def get_emotions(
+    user_id: str,
+    session: AsyncSession = Depends(get_db_session)
+) -> dict:
+    """Retrieves the current emotional state of Chisa for the frontend UI."""
+    try:
+        emotion = await _chat_engine._get_emotion_state(session, user_id)
+        return {
+            "joy": emotion.joy,
+            "sadness": emotion.sadness,
+            "trust": emotion.trust,
+            "irritation": emotion.irritation,
+            "attachment": emotion.attachment
+        }
+    except Exception as e:
+        log.error("Failed to fetch emotions", error=str(e), user_id=user_id)
+        raise HTTPException(status_code=500, detail="Could not retrieve emotions")
 
 
 @router.get("/chat/history/{user_id}")

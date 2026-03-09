@@ -7,3 +7,4 @@ class ChatRequest(BaseModel):
 class ChatResponse(BaseModel):
     response: str = Field(..., description="The generated response from Chisa")
     user_id: str = Field(..., description="Echoes back the user_id for tracking")
+    emotions: dict | None = Field(default=None, description="Current emotional state of Chisa")

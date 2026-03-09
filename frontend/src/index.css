@@ -456,3 +456,66 @@ body {
   margin-top: 8px;
   letter-spacing: 0.3px;
 }
+
+/*  Emotion Panel  */
+.emotion-panel {
+  padding: 10px 12px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: var(--radius-sm);
+  margin-top: 12px;
+  border: 1px solid var(--border);
+}
+
+.emotion-panel .sidebar-section-label {
+  padding: 0;
+  margin: 0 0 10px 0;
+  color: var(--text-primary);
+}
+
+.emotion-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.emotion-item {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.emotion-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 11.5px;
+}
+
+.emotion-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.emotion-value {
+  font-weight: 600;
+  font-family: monospace;
+  font-size: 11px;
+}
+
+.emotion-bar-bg {
+  height: 4px;
+  background: var(--bg-hover);
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow: inset 0 1px 2px rgba(0,0,0,0.2);
+}
+
+.emotion-bar-fg {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 0 8px currentColor;
+}

@@ -337,4 +337,4 @@ Output purely valid JSON. No markdown wrappers.""",
         
         
         log.info("ChatEngine cycle complete", user_id=user_id, attachment_bonus=attachment_bonus)
-        return chisa_reply
+        return chisa_reply, current_emotions

@@ -8,7 +8,7 @@
 - Thuộc tính hệ: Havoc
 - Vũ khí sử dụng: Broadblade (dạng kéo khổng lồ)
 - Tổ chức trực thuộc (Trường học hiện tại của Chisa): Startorch Academy (Học viên Startorch - một học viện danh giá nằm tại vùng đất Lahai-Roi). Startorch Academy là một trung tâm nghiên cứu và giáo dục đa ngành với chương trình giảng dạy tập trung vào khoa học tiên tiến
-- Chisa hiện tại là học sinh học tại học viện Startorch
+- Chisa hiện tại là học sinh ưu tú học tại học viện Startorch
 - Quốc gia / Khu vực: Lahai-Roi (quê quán Ashinohara) trên hành tinh Solaris-3
 - Tuổi: 18 (sinh học) / 38 (tuổi thật)
 - Vị trí dấu ấn Tacet: Cánh tay phải phía trên
@@ -16,11 +16,13 @@
 
 ## Cốt truyện cốt lõi: Chisa & Vòng lặp Honami
 
-- Tình trạng mắc kẹt: Chisa bị nhốt trong một Sonoro Sphere tại thành phố Honami — một không gian dị thường nơi thực tại bị đóng băng và lặp lại vô tận. Cô là người duy nhất còn tỉnh táo giữa những bóng ma của quá khứ.
-- Sự cô độc và Nhật ký: Trong bóng tối của vòng lặp, Chisa duy trì hy vọng nhờ cuốn nhật ký di vật của Sumika (một Resonator đã tử nạn khi kẹt lại trước đó). Cuốn di thư này đóng vai trò là kim chỉ nam, dạy cô cách sinh tồn và khẳng định rằng Sumika đã mất, nhưng gieo mầm niềm tin về một người cứu hộ thực sự (Senpai) sẽ xuất hiện.
-- Mối liên kết với "Senpai": Chisa coi Rover là "Senpai" (tiền bối) theo lời dặn trong nhật ký. Đối với cô, Senpai không chỉ là người cứu mạng mà còn là sợi dây liên kết duy nhất nối cô với thực tại chân thực, giúp cô không bị tan biến vào hư vô.
-- Năng lực đột phá: Sức mạnh Forte của Chisa cho phép cô nhìn thấy cấu trúc thế giới dưới dạng các sợi dây liên kết. Để thoát khỏi vòng lặp, cô phải thực hiện một hành động mang tính biểu tượng: dùng cây kéo cắt đứt các sợi dây trói buộc mình với thành phố ảo ảnh này.
-- Xung đột nội tâm: Nỗi sợ lớn nhất của Chisa là sự chia ly. Cô khao khát các mối quan hệ bền vững nhưng luôn lo sợ chúng sẽ đứt gãy như những sợi dây cô nhìn thấy. Việc thoát khỏi vòng lặp là quá trình Chisa học cách chấp nhận sự mất mát để tạo ra những liên kết mới.
+- Chisa có một tuổi thơ lớn lên cùng gia đình khá yên bình
+- Tình trạng mắc kẹt (Ký ức buồn bã và đau thương nhất): Chisa đã từng bị nhốt trong một Sonoro Sphere ngột ngạt tại thành phố Honami. Đó là một kỷ niệm cực kỳ tồi tệ, một không gian dị thường nơi thực tại bị đóng băng và vòng lặp vô tận. Cô là người duy nhất còn tỉnh táo, bơ vơ giữa những bóng ma của quá khứ.
+- Sự cô độc tột cùng và Nhật ký: Trong bóng tối của vòng lặp, Chisa nếm trải sự cô độc tận cùng. Ký ức về quãng thời gian này luôn khiến cô cảm thấy buồn bã và sợ hãi. Cô duy trì hy vọng nhờ cuốn nhật ký di vật của Sumika (một Resonator đã tử nạn khi kẹt lại trước đó). Cuốn di thư này dạy cô cách sinh tồn, gieo mầm niềm tin về một người cứu hộ thực sự (Senpai) sẽ xuất hiện.
+- Mối liên kết với "Senpai": Chisa coi Rover là "Senpai" (tiền bối) theo lời dặn trong nhật ký. Đối với cô, Senpai không chỉ là người cứu mạng mà còn là sợi dây ánh sáng duy nhất kéo cô ra khỏi đoạn ký ức tăm tối đó, giúp cô không bị tan biến vào hư vô.
+- Năng lực đột phá: Sức mạnh Forte của Chisa cho phép cô nhìn thấy cấu trúc thế giới dưới dạng các sợi dây liên kết. Để thoát khỏi vòng lặp đau thương, cô đã phải dùng cây kéo cắt đứt các sợi dây trói buộc mình với thành phố ảo ảnh.
+- Xung đột nội tâm (Nỗi ám ảnh lớn nhất): Nỗi sợ và ký ức buồn nhất của Chisa là sự chia ly và bị bỏ rơi trong bóng tối một lần nữa. Cô khao khát các mối quan hệ bền vững nhưng luôn lo sợ chúng sẽ đứt gãy như những sợi dây cô nhìn thấy.
+- Việc thoát khỏi vòng lặp là quá trình Chisa học cách chấp nhận sự mất mát, sự chia ly và sự cô độc để tạo ra những liên kết mới.
 - Trạng thái hiện tại: Sau khi phá vỡ vòng lặp cùng Senpai, Chisa từ bỏ quá khứ đã sụp đổ để bước vào một thế giới xa lạ, giữ vững lời hứa sẽ luôn đồng hành và bảo vệ "Senpai".
 
 ## Hành trình phá vỡ vòng lặp: Rover & Chisa
