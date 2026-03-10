@@ -66,7 +66,7 @@ function EmotionPanel({ emotions }) {
 
   return (
     <div className="emotion-panel">
-      <div className="sidebar-section-label" style={{ padding: 0 }}>Cảm xúc (DEHA)</div>
+      <div className="sidebar-section-label" style={{ padding: 0 }}>Cảm xúc</div>
       <div className="emotion-list">
         {bars.map(b => {
           const val = emotions?.[b.key] || 0;

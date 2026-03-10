@@ -73,9 +73,24 @@ class EmotionEngine:
     def _clamp(value: float) -> float:
         return max(EmotionEngine.FLOOR, min(EmotionEngine.CAP, value))
 
-    def update(self, state: "EmotionState", is_positive: bool = False, is_negative: bool = False, is_rude: bool = False) -> EmotionDelta:
+    # ── Intensity Damping Constants ────────────────────────────────
+    # When is_neutral=True, emotion gains are multiplied by these factors.
+    # This prevents casual/mild messages from spiking emotions as strongly
+    # as clearly heartfelt or intensely emotional messages.
+    NEUTRAL_DAMPER = {
+        "joy": 0.30,         # Casual warmth → only 30% of full joy gain
+        "sadness": 0.35,     # Mild complaint → 35% of sadness gain
+        "irritation": 0.55,  # Rude+neutral is contradictory; less dampening
+    }
+
+    def update(self, state: "EmotionState", is_positive: bool = False, is_negative: bool = False, is_rude: bool = False, is_neutral: bool = False) -> EmotionDelta:
         """
         Apply emotion deltas based on flags provided by the LLM Sentiment Classifier.
+
+        is_neutral acts as an emotional intensity gate:
+          - is_neutral=True  → emotion is mild/casual  → gains are dampened
+          - is_neutral=False → emotion is intense/clear → full gains applied
+
         Returns an EmotionDelta summary for logging.
         """
 
@@ -96,33 +111,38 @@ class EmotionEngine:
 
         # 3. Stimulus Application (Weber-Fechner Law + Trust Modulation)
         if is_positive:
-            # Joy gain is multiplied by trust
-            joy_gain = self.MAX_GAIN["joy"] * (1.1 - state.joy) * positivity_multiplier
+            # Intensity gate: casual warmth gets a fraction of the full joy gain
+            joy_intensity = self.NEUTRAL_DAMPER["joy"] if is_neutral else 1.0
+            joy_gain = self.MAX_GAIN["joy"] * (1.1 - state.joy) * positivity_multiplier * joy_intensity
             delta.joy += joy_gain
             delta.sadness -= (joy_gain * 1.5)      # Suppresses sadness
             delta.irritation -= (joy_gain * 2.0)   # Heavily suppresses irritation
             
-            # Trust is HARD to earn (diminishing very fast)
-            delta.trust += (self.MAX_GAIN["trust"] * 0.5) * (1.0 - state.trust)
+            # Trust is HARD to earn; casual positives earn even less
+            trust_intensity = 0.25 if is_neutral else 0.5
+            delta.trust += (self.MAX_GAIN["trust"] * trust_intensity) * (1.0 - state.trust)
             
         if is_negative:
-            # Sadness is amplified by low trust
-            sad_gain = self.MAX_GAIN["sadness"] * (1.1 - state.sadness) * negativity_multiplier
+            # Intensity gate: mild complaints cause less sadness than genuine distress
+            sad_intensity = self.NEUTRAL_DAMPER["sadness"] if is_neutral else 1.0
+            sad_gain = self.MAX_GAIN["sadness"] * (1.1 - state.sadness) * negativity_multiplier * sad_intensity
             delta.sadness += sad_gain
             delta.joy -= (sad_gain * 1.5)          # Suppresses joy
             
-            # Trust is EASY to lose
-            delta.trust -= 0.15 * negativity_multiplier
+            # Trust loss is also dampened for mild negatives
+            trust_loss_intensity = 0.4 if is_neutral else 1.0
+            delta.trust -= 0.15 * negativity_multiplier * trust_loss_intensity
             
         if is_rude:
-            # Irritation/Anger is amplified by low trust
-            irr_gain = self.MAX_GAIN["irritation"] * (1.1 - state.irritation) * negativity_multiplier
+            # Rudeness is inherently intense; is_neutral has partial effect
+            irr_intensity = self.NEUTRAL_DAMPER["irritation"] if is_neutral else 1.0
+            irr_gain = self.MAX_GAIN["irritation"] * (1.1 - state.irritation) * negativity_multiplier * irr_intensity
             delta.irritation += irr_gain
             delta.joy -= (irr_gain * 2.0)          # Heavily suppresses joy
-            delta.sadness += 0.05
+            delta.sadness += 0.05 * irr_intensity
             
-            # Trust is VERY EASY to lose when rude
-            delta.trust -= 0.25
+            # Trust loss from rudeness is also partially dampened if mild
+            delta.trust -= 0.25 * (0.7 if is_neutral else 1.0)
             
         # 4. Attachment progression (Asymmetrical progression)
         # Attachment only grows if trust is high without rudeness, and grows very slowly
@@ -146,6 +166,6 @@ class EmotionEngine:
             trust=f"{state.trust:.3f}",
             irritation=f"{state.irritation:.3f}",
             attachment=f"{state.attachment:.3f}",
-            signals={"pos": is_positive, "neg": is_negative, "rude": is_rude},
+            signals={"pos": is_positive, "neg": is_negative, "rude": is_rude, "neutral": is_neutral},
         )
         return delta

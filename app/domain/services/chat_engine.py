@@ -134,11 +134,15 @@ class ChatEngine:
         
         prompt = StructuredPrompt(
             system="""You are a strict conversational sentiment classifier for an Anime AI Chatbot named Chisa.
-Analyze the user's latest message IN CONTEXT of the previous conversation. 
-You must output a JSON with exactly three boolean flags:
-- "is_positive": True if the user is complimenting, showing affection, teasing playfully, or expressing happiness/gratitude towards Chisa.
+Analyze the user's latest message IN CONTEXT of the previous conversation.
+You must output a JSON with exactly four boolean flags:
+
+- "is_positive": True if the user is complimenting, showing affection, teasing playfully, or expressing clear happiness/gratitude towards Chisa.
 - "is_negative": True if the user is expressing genuine sadness, actual anger, complaining about Chisa, or saying Chisa did something wrong. IMPORTANT: Do NOT mark True for Vietnamese mock-frustration slang (e.g., 'thiệt tình', 'chịu chết', 'bó tay', 'cạn lời', 'hết cứu') used playfully.
 - "is_rude": True ONLY if the user is using explicit insults, hate speech, or severe hostility (e.g., "ngu", "chết đi", "rác rưởi").
+- "is_neutral": True if the emotional signal—whether positive or negative—is MILD or CASUAL in intensity (e.g., a friendly remark that is only slightly warm, a mild passing complaint, ordinary small talk, a simple question). Set False ONLY when the emotion is CLEARLY INTENSE or HEARTFELT (e.g., explicit love/deep affection, profound gratitude, genuine strong anger, or deeply felt sadness). When in doubt, default to True.
+
+IMPORTANT: is_neutral describes EMOTIONAL INTENSITY, not message category. A message can be is_positive=True AND is_neutral=True (mildly warm), or is_positive=True AND is_neutral=False (strongly heartfelt).
 
 Output purely valid JSON. No markdown wrappers.""",
             history=[],
@@ -148,11 +152,12 @@ Output purely valid JSON. No markdown wrappers.""",
                 "properties": {
                     "is_positive": {"type": "boolean"},
                     "is_negative": {"type": "boolean"},
-                    "is_rude": {"type": "boolean"}
+                    "is_rude": {"type": "boolean"},
+                    "is_neutral": {"type": "boolean"}
                 },
-                "required": ["is_positive", "is_negative", "is_rude"]
+                "required": ["is_positive", "is_negative", "is_rude", "is_neutral"]
             },
-            max_tokens=100,
+            max_tokens=120,
             temperature=0.0
         )
         
@@ -176,12 +181,13 @@ Output purely valid JSON. No markdown wrappers.""",
             return {
                 "is_positive": response.parsed.get("is_positive", False),
                 "is_negative": response.parsed.get("is_negative", False),
-                "is_rude": response.parsed.get("is_rude", False)
+                "is_rude": response.parsed.get("is_rude", False),
+                "is_neutral": response.parsed.get("is_neutral", True)
             }
         except Exception as e:
             log.warning("Emotion classification failed, falling back to neutral", error=str(e))
             # Safe Fallback to Neutral
-            return {"is_positive": False, "is_negative": False, "is_rude": False}
+            return {"is_positive": False, "is_negative": False, "is_rude": False, "is_neutral": True}
 
     async def get_history(self, session: AsyncSession, user_id: str, limit: int = 50) -> list[dict[str, str]]:
         """Public method to fetch conversation history for the Web UI on load."""
