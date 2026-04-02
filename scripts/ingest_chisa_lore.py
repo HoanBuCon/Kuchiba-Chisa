@@ -23,7 +23,7 @@ from app.infrastructure.embeddings.fastembed_adapter import FastEmbedAdapter
 from qdrant_client.http import models as qdrant_models
 
 
-LORE_FILE = os.path.join(os.path.dirname(__file__), "..", "assets", "chisa_lore.md")
+LORE_FILE = os.path.join(os.path.dirname(__file__), "..", "data", "lore", "chisa_lore.md")
 COLLECTION = "chisa_lore"
 VECTOR_SIZE = 384  # all-MiniLM-L6-v2
 
