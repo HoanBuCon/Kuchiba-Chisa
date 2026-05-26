@@ -17,6 +17,9 @@ from app.domain.services.emotion_engine import EmotionEngine
 from app.domain.services.rag_router import RAGRouter
 from app.domain.services.context_budget_manager import ContextBudgetManager
 from app.domain.services.memory_summarizer import MemorySummarizer
+from app.infrastructure.database.repositories.user_repository import SqlAlchemyUserRepository
+from app.infrastructure.database.repositories.emotion_repository import SqlAlchemyEmotionRepository
+from app.infrastructure.database.repositories.conversation_repository import SqlAlchemyConversationRepository
 import asyncio
 from app.infrastructure.logging.logger import get_logger
 
@@ -41,85 +44,11 @@ class ChatEngine:
         self.emotion_engine = EmotionEngine()
         self.memory_summarizer = MemorySummarizer(llm=llm, memory_manager=memory_manager)
 
-    async def _get_or_create_user(self, session: AsyncSession, user_id: str) -> None:
-        from app.infrastructure.database.models.user import User
+    async def get_emotion_state(self, session: AsyncSession, user_id: str) -> EmotionState:
+        """Public method to fetch/initialize the current emotional state of Chisa."""
         user_uuid = uuid.UUID(user_id)
-        stmt = select(User).where(User.id == user_uuid)
-        result = await session.execute(stmt)
-        user = result.scalar_one_or_none()
-        if not user:
-            user = User(id=user_uuid, username=f"web_user_{user_id[:6]}")
-            session.add(user)
-            await session.commit()
-
-    async def _get_user_stats(self, session: AsyncSession, user_id: str) -> UserStats:
-        user_uuid = uuid.UUID(user_id)
-        stmt = select(UserStats).where(UserStats.user_id == user_uuid)
-        result = await session.execute(stmt)
-        stats = result.scalar_one_or_none()
-        if not stats:
-            stats = UserStats(user_id=user_uuid, interaction_count=0, last_seen=int(time.time() * 1000))
-            session.add(stats)
-            await session.commit()
-            await session.refresh(stats)
-        return stats
-
-    async def _get_emotion_state(self, session: AsyncSession, user_id: str) -> EmotionState:
-        user_uuid = uuid.UUID(user_id)
-        stmt = select(EmotionState).where(EmotionState.user_id == user_uuid)
-        result = await session.execute(stmt)
-        state = result.scalar_one_or_none()
-        if not state:
-            state = EmotionState(user_id=user_uuid, updated_at=int(time.time() * 1000))
-            session.add(state)
-            await session.commit()
-            await session.refresh(state)
-        return state
-
-    async def _get_or_create_conversation(self, session: AsyncSession, user_id: str) -> uuid.UUID:
-        user_uuid = uuid.UUID(user_id)
-        # Get the most recent active conversation
-        from app.infrastructure.database.models.conversation import Conversation
-        stmt = select(Conversation).where(
-            Conversation.user_id == user_uuid,
-            Conversation.ended_at.is_(None)
-        ).order_by(Conversation.started_at.desc()).limit(1)
-        
-        conv = (await session.execute(stmt)).scalar_one_or_none()
-        if not conv:
-            conv = Conversation(id=uuid.uuid4(), user_id=user_uuid)
-            session.add(conv)
-            await session.commit()
-            await session.refresh(conv)
-        return conv.id
-
-    async def _save_message(self, session: AsyncSession, conv_id: uuid.UUID, user_id: str, role: str, content: str, token_count: int | None = None) -> None:
-        from app.infrastructure.database.models.message import Message, MessageRole
-        # role string to enum
-        enum_role = MessageRole.USER if role == "user" else MessageRole.ASSISTANT
-        msg = Message(
-            id=uuid.uuid4(),
-            conversation_id=conv_id,
-            user_id=uuid.UUID(user_id),
-            role=enum_role,
-            content=content,
-            token_count=token_count
-        )
-        session.add(msg)
-        await session.commit()
-
-    async def _get_recent_history(self, session: AsyncSession, user_id: str, conv_id: uuid.UUID, limit: int = 15) -> list[dict[str, str]]:
-        from app.infrastructure.database.models.message import Message
-        
-        result = await session.execute(
-            select(Message)
-            .where(Message.user_id == uuid.UUID(user_id), Message.conversation_id == conv_id)
-            .order_by(Message.created_at.desc())
-            .limit(limit)
-        )
-        msgs = result.scalars().all()
-        # Return chronologically (oldest first)
-        return [{"role": m.role.value, "content": m.content} for m in reversed(msgs)]
+        emotion_repo = SqlAlchemyEmotionRepository(session)
+        return await emotion_repo.get_emotion_state(user_uuid)
 
     async def _classify_emotion(self, user_message: str, history: list[dict[str, str]]) -> dict[str, bool]:
         """
@@ -195,9 +124,13 @@ Output purely valid JSON. No markdown wrappers.""",
 
     async def get_history(self, session: AsyncSession, user_id: str, limit: int = 50) -> list[dict[str, str]]:
         """Public method to fetch conversation history for the Web UI on load."""
-        await self._get_or_create_user(session, user_id)
-        conv_id = await self._get_or_create_conversation(session, user_id)
-        return await self._get_recent_history(session, user_id, conv_id, limit)
+        user_uuid = uuid.UUID(user_id)
+        user_repo = SqlAlchemyUserRepository(session)
+        conv_repo = SqlAlchemyConversationRepository(session)
+        
+        await user_repo.get_or_create_user(user_uuid)
+        conv_id = await conv_repo.get_or_create_conversation(user_uuid)
+        return await conv_repo.get_recent_history(user_uuid, conv_id, limit)
 
     async def chat(self, session: AsyncSession, user_id: str, user_message: str) -> str:
         """
@@ -211,16 +144,21 @@ Output purely valid JSON. No markdown wrappers.""",
         """
         log.info("Starting ChatEngine cycle", user_id=user_id)
         
-        # 1. Ensure root user exists, then Load context
-        await self._get_or_create_user(session, user_id)
-        stats = await self._get_user_stats(session, user_id)
-        emotion = await self._get_emotion_state(session, user_id)
-        conv_id = await self._get_or_create_conversation(session, user_id)
+        # 1. Initialize repositories & Load context
+        user_uuid = uuid.UUID(user_id)
+        user_repo = SqlAlchemyUserRepository(session)
+        emotion_repo = SqlAlchemyEmotionRepository(session)
+        conv_repo = SqlAlchemyConversationRepository(session)
         
-        history = await self._get_recent_history(session, user_id, conv_id)
+        await user_repo.get_or_create_user(user_uuid)
+        stats = await user_repo.get_user_stats(user_uuid)
+        emotion = await emotion_repo.get_emotion_state(user_uuid)
+        conv_id = await conv_repo.get_or_create_conversation(user_uuid)
+        
+        history = await conv_repo.get_recent_history(user_uuid, conv_id)
         
         # Save user message immediately to STM
-        await self._save_message(session, conv_id, user_id, "user", user_message)
+        await conv_repo.save_message(conv_id, user_uuid, "user", user_message)
         # 2. Smart RAG Routing & Initial Flags
         # RAG Router first to determine if it's a casual message or requires deep context
         rag_decisions = RAGRouter.should_retrieve(user_message)
@@ -233,16 +171,12 @@ Output purely valid JSON. No markdown wrappers.""",
         attachment_bonus = math.log(max(1, stats.interaction_count)) * 0.05
         
         # Save emotion state changes early
-        session.add(emotion)
-        await session.commit()
-        await session.refresh(emotion)
+        await emotion_repo.update_emotion(emotion)
         
         # Calculate memory importance from MemoryManager
         importance_score = self.memory_manager.calculate_importance(user_message, emotion_delta)
         
-        lore_chunks = []
-        memories = []
-        
+        # Format emotions for system context
         current_emotions = {
             "joy": emotion.joy,
             "sadness": emotion.sadness,
@@ -250,6 +184,9 @@ Output purely valid JSON. No markdown wrappers.""",
             "irritation": emotion.irritation,
             "attachment": emotion.attachment + attachment_bonus
         }
+        
+        lore_chunks = []
+        memories = []
         
         if rag_decisions["use_memory"] or rag_decisions["use_lore"]:
             vector = await self.embedder.embed_text(user_message)
@@ -314,10 +251,9 @@ Output purely valid JSON. No markdown wrappers.""",
         )
         
         # 6. Post-processing
-        await self._save_message(
-            session, 
+        await conv_repo.save_message(
             conv_id, 
-            user_id, 
+            user_uuid, 
             "assistant", 
             chisa_reply, 
             token_count=total_tokens
@@ -334,8 +270,7 @@ Output purely valid JSON. No markdown wrappers.""",
         
         stats.interaction_count += 1
         stats.last_seen = int(time.time() * 1000)
-        session.add(stats)
-        await session.commit()
+        await user_repo.update_stats(stats)
         
         # Background: Trigger long-term summarization every 40 interactions
         if stats.interaction_count > 0 and stats.interaction_count % 40 == 0:

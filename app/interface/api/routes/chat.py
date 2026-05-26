@@ -68,7 +68,7 @@ async def get_emotions(
 ) -> dict:
     """Retrieves the current emotional state of Chisa for the frontend UI."""
     try:
-        emotion = await _chat_engine._get_emotion_state(session, user_id)
+        emotion = await _chat_engine.get_emotion_state(session, user_id)
         return {
             "joy": emotion.joy,
             "sadness": emotion.sadness,
