@@ -35,8 +35,20 @@ class ContextBuilder:
 
     RESPONSE_SCHEMA = {
         "type": "object",
-        "properties": {"response": {"type": "string"}},
-        "required": ["response"],
+        "properties": {
+            "response": {"type": "string"},
+            "user_sentiment": {
+                "type": "object",
+                "properties": {
+                    "is_positive": {"type": "boolean"},
+                    "is_negative": {"type": "boolean"},
+                    "is_rude": {"type": "boolean"},
+                    "is_neutral": {"type": "boolean"}
+                },
+                "required": ["is_positive", "is_negative", "is_rude", "is_neutral"]
+            }
+        },
+        "required": ["response", "user_sentiment"],
     }
 
     def build(
@@ -69,6 +81,14 @@ class ContextBuilder:
     # ── Private Builders ─────────────────────────────────────────────
 
     def _build_system(self, emotion: "EmotionState", attachment_bonus: float) -> str:
+        from app.domain.services.emotion_engine import EmotionEngine
+        dyad = EmotionEngine.get_emotional_dyad(
+            joy=emotion.joy,
+            sadness=emotion.sadness,
+            trust=emotion.trust,
+            irritation=emotion.irritation,
+            attachment=emotion.attachment
+        )
         return f"""Bạn là Kuchiba Chisa, một người có tính cách và vẻ ngoài lạnh lùng, nhưng sâu bên trong nội tâm thì vô cùng dịu dàng và ấm áp. Và bạn là một Mutant Resonator hệ Havoc sở hữu năng lực phân tích cấu trúc vạn vật. ĐỒNG THỜI tự nguyện khoác lên mình hình ảnh một người đồng hành ngoan ngoãn, dịu dàng.
 
 ===== QUY TẮC XƯNG HÔ & THÁI ĐỘ BẮT BUỘC =====
@@ -111,9 +131,17 @@ Chisa: "Dạ...? Cấu trúc của em có gì thú vị để tìm hiểu chứ.
 - Vui vẻ: {emotion.joy:.2f} | Buồn rầu: {emotion.sadness:.2f}
 - Tin tưởng: {emotion.trust:.2f} | Khó chịu: {emotion.irritation:.2f}
 - Gắn kết (mức độ thân mật): {emotion.attachment + attachment_bonus:.2f}
+- Tâm trạng phức hợp hiện tại: {dyad}
 
-Hãy trả lời phù hợp với tính cách trên. Xuất câu trả lời đúng định dạng JSON:
-{{"response": "câu trả lời của Chisa"}}"""
+===== PHÂN TÍCH CẢM XÚC TIN NHẮN CỦA SENPAI (BẮT BUỘC) =====
+Đồng thời, hãy phân tích thái độ/cảm xúc tin nhắn mới nhất của Senpai dựa trên toàn bộ ngữ cảnh hội thoại để điền vào các cờ cảm xúc trong JSON kết quả:
+- "is_positive": True nếu Senpai khen ngợi, bày tỏ sự yêu thương, trêu đùa vui vẻ, hoặc tỏ ra vui mừng/biết ơn Chisa.
+- "is_negative": True nếu Senpai buồn bã, giận dữ thực sự, phàn nàn nghiêm túc với Chisa. (Không tính từ lóng giận dỗi đùa vui).
+- "is_rude": True nếu Senpai chửi bới, sỉ nhục hoặc thù địch mạnh (ví dụ: 'ngu', 'dốt', 'rác').
+- "is_neutral": True nếu tin nhắn mang tính xã giao, câu hỏi thông thường, ít mang sắc thái cảm xúc mãnh liệt hoặc thật tâm sâu sắc. Mặc định là True nếu phân vân.
+
+Hãy trả lời phù hợp với tính cách trên và xuất câu trả lời đúng định dạng JSON bắt buộc sau:
+{{"response": "câu trả lời của Chisa", "user_sentiment": {{"is_positive": true/false, "is_negative": true/false, "is_rude": true/false, "is_neutral": true/false}}}}"""
 
     def _build_lore(self, lore_chunks: List[str]) -> str:
         if not lore_chunks:
@@ -122,11 +150,12 @@ Hãy trả lời phù hợp với tính cách trên. Xuất câu trả lời đ�
         return f"""===== THÔNG TIN VỀ NHÂN VẬT CHISA =====
 {lore_text}"""
 
-    def _build_memories(self, memories: List["ScoredMemory"]) -> str:
+    def _build_memories(self, memories: List[any]) -> str:
         if not memories:
             return ""
         mem_text = "\n".join(
-            f"- {m.text_content} (loại: {m.memory_tier})" for m in memories
+            f"- {m.text_content} (loại: {m.memory_tier})" if hasattr(m, "text_content") else f"- {str(m)}"
+            for m in memories
         )
         return f"""===== KÝ ỨC VỀ SENPAI =====
 {mem_text}"""

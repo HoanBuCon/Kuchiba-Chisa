@@ -46,13 +46,13 @@ class Settings(BaseSettings):
     # ── LLM — Groq ─────────────────────────────────────────────
     GROQ_API_KEY: Optional[str] = None
     GROQ_MODEL: str = "llama-3.1-8b-instant"
-    GROQ_MAX_TOKENS: int = 8192
+    GROQ_MAX_TOKENS: int = 2048
     GROQ_TEMPERATURE: float = Field(default=0.8, ge=0.0, le=2.0)
     GROQ_TIMEOUT: int = 30
 
     # ── LLM — Gemini ─────────────────────────────────────────────
     GEMINI_API_KEY: Optional[str] = None
-    GEMINI_MODEL: str = "gemini-flash-latest"
+    GEMINI_MODEL: str = "gemini-2.5-flash-lite"
     GEMINI_MAX_TOKENS: int = 8192
     GEMINI_TEMPERATURE: float = Field(default=0.8, ge=0.0, le=2.0)
     GEMINI_TIMEOUT: int = 30

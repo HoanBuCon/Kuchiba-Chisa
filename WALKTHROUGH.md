@@ -33,6 +33,22 @@
 
 ---
 
+## ⚡ RAG Router Optimization (Token & DB Latency Conservation)
+
+We successfully refactored and optimized the RAG trigger router in [rag_router.py](file:///d:/Hoc_Tap/Code/Du_An_Ca_Nhan/Chisa_bot/kuchiba_chisa/app/domain/services/rag_router.py) to prevent aggressive, unnecessary vector database lookups and save tokens:
+
+1. **Regex Word Boundaries (`\b`)**: Replaced substring checks with Python's Unicode-aware `\b` regex boundaries to eliminate false positives (e.g., preventing `"nhóm"`, `"nhờ"` from matching the memory trigger `"nhớ"`, and preventing `"kéo dài"` from matching the lore trigger `"kéo"`).
+2. **Removed Aggressive Question Mark Trigger**: Eliminated `or "?" in msg_lower` from memory retrieval rules, substituting it with specific memory query phrases (e.g., `"nhớ không"`, `"phải không"`, `"đúng không"`, `"quên chưa"`, `"tên gì nhỉ"`). Normal questions (e.g., `"Trưa nay ăn cơm chưa?"`) now bypass retrieval perfectly.
+3. **Fine-Tuned Specific Lore Triggers**: Replaced generic single-word triggers like `"kéo"` and `"nhà"` with highly specific multi-word tokens like `"cây kéo"`, `"chiếc kéo"`, `"gia đình"`, `"quê hương"` to prevent accidental matching of general conversations.
+4. **Expanded `SMALL_TALK_PHRASES`**: Added comprehensive Vietnamese and English casual interjections, greetings, particles, and emojis to instantly filter out simple casual chit-chat.
+5. **Increased Fallback Length Threshold**: Raised the default RAG fallback character threshold from `30` to `65` characters, ensuring we only retrieve full DB context for complex or descriptive messages.
+
+### 🧪 Verification
+*   **Unit Tests**: Created a robust test suite [test_rag_router.py](file:///d:/Hoc_Tap/Code/Du_An_Ca_Nhan/Chisa_bot/kuchiba_chisa/tests/unit/test_rag_router.py) validating all boundary match cases, exclusions, and fallback limits. All **4 tests passed successfully**!
+*   **Integration Smoke Test**: Confirmed in the live E2E chat stream that greeting inputs and casual talk are correctly routed to prompt-only generation, while explicit lore/memory questions instantly call vector indexes with negligible latency.
+
+---
+
 ## 3. Kiến trúc — Hexagonal Architecture
 
 Dự án tuân thủ **Clean/Hexagonal Architecture** với 4 lớp rõ ràng:
@@ -62,40 +78,33 @@ sequenceDiagram
     participant RAG as RAG Retriever
     participant DB as PostgreSQL
     participant QD as Qdrant (Vector DB)
-    participant LLM as Groq API (Llama 3)
+    participant LLM as Groq/Gemini API
     
     C->>API: POST /api/v1/chat {user_id, message}
-    API->>CE: _chat(user_id, message)
+    API->>CE: chat(user_id, message)
     
-    Note over CE,DB: 1. Sentiment & State Update
+    Note over CE,DB: 1. Initialization
     CE->>DB: Get User, Conversation, History
-    CE->>DB: Save User Message
-    CE->>LLM: _classify_emotion (LLM Context Sentiment)
-    LLM-->>CE: boolean flags (is_positive, is_negative, is_rude)
-    CE->>EE: DEHA.update(current_emotion, flags)
-    EE-->>CE: emotion_deltas (Homeostasis + Weber-Fechner)
-    CE->>DB: Save new EmotionState
+    CE->>DB: Save User Message (STM)
     
-    Note over CE,QD: 2. RAG & Context Retrieval
-    CE->>RAG: retrieve_lore(query=message)
-    RAG->>QD: Semantic Search (Score > 0.1)
-    QD-->>RAG: Lore Chunks (e.g. Honami Loop)
-    RAG-->>CE: List[str]
+    Note over CE,QD: 2. RAG Routing & Retrieval
+    CE->>RAG: retrieve_lore / retrieve_memories (If triggered)
+    QD-->>CE: Relevant Lore Chunks & Memories
     
-    CE->>RAG: retrieve_memories(user_id, message)
-    RAG->>QD: Vector Search filter by user_id
-    QD-->>RAG: Emotional Memories
-    RAG-->>CE: List[ScoredMemory]
-    
-    Note over CE,LLM: 3. Prompt Building & Generation
+    Note over CE,LLM: 3. Unified Generation & Sentiment
     CE->>CE: ContextBuilder.build(emotion, lore, memories, history)
-    Note right of CE: Inject Emotion parameters & Rules
+    Note right of CE: Inject emotions & Plutchik Dyads
     CE->>LLM: generate(StructuredPrompt)
-    LLM-->>CE: {"response": "Tin nhắn trả lời"}
+    LLM-->>CE: {"response": "Reply", "user_sentiment": {...}}
     
-    Note over CE,DB: 4. Finalization
-    CE->>DB: Save Assistant Message
-    CE->>DB: Update User Stats (Interaction count)
+    Note over CE,EE: 4. Real-time Emotion Update & Time Decay
+    CE->>EE: update(emotion, user_sentiment)
+    Note right of EE: Continuous Exponential Decay
+    EE-->>CE: updated_emotions & dyad
+    CE->>DB: Save updated EmotionState (PostgreSQL)
+    
+    Note over CE,DB: 5. Finalization
+    CE->>DB: Save Assistant Message, Update Stats
     
     CE-->>API: ChatResponse
     API-->>C: JSON Response
@@ -103,10 +112,11 @@ sequenceDiagram
 
 #### Chi tiết các bước trong Pipeline:
 
-1. **LLM Sentiment Classification & Emotion Update (Tham vấn Ngữ cảnh & Cập nhật trạng thái Ngắn hạn):** 
+1. **Unified Single-Call Generation & Sentiment (Đồng bộ tạo sinh và Phân tích cảm xúc):** 
    - Hệ thống xác định danh tính (UUID) và tải lên cuộc hội thoại hiện tại cùng lịch sử 15 tin nhắn gần nhất.
-   - Thay vì dùng Regex khô khan, `ChatEngine` sẽ đẩy lịch sử này lên LLM nhỏ (`llama-3.1-8b-instant`) để làm nhiệm vụ **Phân loại cảm xúc ngữ cảnh (Contextual Sentiment Analysis)**. LLM sẽ tự lọc tiếng lóng, mỉa mai, trêu đùa và trả về 3 cờ mấu chốt: `is_positive`, `is_negative`, `is_rude`.
-   - Kết quả này được ném vào **EmotionEngine (DEHA)**. Thuật toán Cân Bằng Động (Homeostasis & Weber-Fechner) sẽ tính toán và tác động lực tương đối lên các điểm số Joy, Sadness, Irritation.. triệt tiêu các cảm xúc dư thừa theo phương trình tâm lý học Plutchik. Cảm xúc (Joy, Sadness, Trust, Irritation) và độ gắn kết (Attachment) sẽ lập tức thay đổi và lưu xuống DB.
+   - `ContextBuilder` tiến hành ghép khối: Đưa chỉ số cảm xúc ẩn và mô tả tâm trạng phức hợp Plutchik (*Dyads*) vào hướng dẫn tính cách + Dán lore vào System Prompt + Đưa ký ức vào Context.
+   - Toàn bộ khối ngữ cảnh tĩnh này kết hợp với lịch sử chat được gửi tới LLM (`Groq` hoặc `Gemini`) trong **một cuộc gọi duy nhất (Single-Call)**. LLM sẽ tự lọc tiếng lóng, mỉa mai, trêu đùa để trả về đồng thời câu thoại của Chisa và 4 cờ cảm xúc của Senpai (`is_positive`, `is_negative`, `is_rude`, `is_neutral`) dưới dạng một payload JSON hợp nhất.
+   - Kết quả này được chuyển vào **EmotionEngine**. Thuật toán Cân Bằng Động (Homeostasis & Weber-Fechner) kết hợp với **phân rã liên tục theo thời gian thực (Time-Aware Exponential Decay)** dựa trên khoảng cách giữa các lượt thoại thực tế để tính toán và lưu trạng thái cảm xúc mới nhất xuống DB PostgreSQL. Cực kỳ tối ưu hóa hiệu năng, giảm 50% số cuộc gọi API và tiết kiệm hàng ngàn tokens đầu vào.
    
 2. **RAG & Context Retrieval (Truy xuất ngữ cảnh):**
    - **Lore Retrieval:** Vector hoá tin nhắn người dùng và tìm kiếm trong không gian hệ `chisa_lore` trên Qdrant để trích xuất những mảnh thông tin (chunks) thiết lập nhân vật liên quan.

@@ -10,6 +10,8 @@ Design principles:
 
 from __future__ import annotations
 
+import math
+import time
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
@@ -20,7 +22,6 @@ if TYPE_CHECKING:
 
 log = get_logger(__name__)
 
-# Keyword Signals were removed in favor of LLM Classification
 
 @dataclass
 class EmotionDelta:
@@ -73,6 +74,46 @@ class EmotionEngine:
     def _clamp(value: float) -> float:
         return max(EmotionEngine.FLOOR, min(EmotionEngine.CAP, value))
 
+    @classmethod
+    def get_emotional_dyad(cls, joy: float, sadness: float, trust: float, irritation: float, attachment: float) -> str:
+        """
+        Calculates Plutchik emotional dyads and returns a descriptive Vietnamese string
+        representing Chisa's current complex psychological state.
+        """
+        complexes = []
+        
+        # 1. Love / Yêu mến (Joy + Trust)
+        if joy > 0.5 and trust > 0.6:
+            complexes.append("Yêu mến và tin tưởng tuyệt đối (Love)")
+        elif joy > 0.3 and trust > 0.5:
+            complexes.append("Ấm áp và dễ chịu (Warmth)")
+            
+        # 2. Guarded / Đề phòng (Irritation + Low Trust)
+        if irritation > 0.4 and trust < 0.4:
+            complexes.append("Đang giận dữ và vô cùng đề phòng, hoài nghi (Guarded / Hostile)")
+        elif irritation > 0.3:
+            complexes.append("Bực dọc, dỗi hờn nhẹ (Annoyed / Tsundere spikes)")
+            
+        # 3. Frustration / Bất lực, uất ức (Sadness + Irritation)
+        if sadness > 0.4 and irritation > 0.3:
+            complexes.append("Uất ức, bất lực và dỗi hờn (Frustrated / Bitter)")
+        elif sadness > 0.4:
+            complexes.append("U sầu, cảm thấy cô độc, tủi thân (Melancholy / Lonely)")
+            
+        # 4. Attachment & Shyness / Ngượng ngùng (Joy + Attachment)
+        if attachment > 0.4 and joy > 0.4:
+            complexes.append("Ngượng ngùng tột độ nhưng vô cùng hạnh phúc (Highly affectionate & Flustered)")
+        elif attachment > 0.3:
+            complexes.append("Gắn bó sâu sắc, thầm lặng hướng về Senpai (Deeply attached)")
+            
+        # Default fallback
+        if not complexes:
+            if trust > 0.7:
+                return "Bình yên, tin cậy và sẵn sàng lắng nghe (Tranquil & Trusting)"
+            return "Bình thường, điềm tĩnh và lý trí (Neutral & Analytical)"
+            
+        return ", ".join(complexes)
+
     # ── Intensity Damping Constants ────────────────────────────────
     # When is_neutral=True, emotion gains are multiplied by these factors.
     # This prevents casual/mild messages from spiking emotions as strongly
@@ -96,11 +137,36 @@ class EmotionEngine:
 
         delta = EmotionDelta()
 
-        # 1. Psychological Homeostasis (Natural Decay toward Baseline)
-        delta.joy = -self.DECAY_RATES["joy"] * (state.joy - self.BASELINES["joy"])
-        delta.sadness = -self.DECAY_RATES["sadness"] * (state.sadness - self.BASELINES["sadness"])
-        delta.trust = -self.DECAY_RATES["trust"] * (state.trust - self.BASELINES["trust"])
-        delta.irritation = -self.DECAY_RATES["irritation"] * (state.irritation - self.BASELINES["irritation"])
+        # 1. Time-Aware Psychological Homeostasis (Exponential Decay toward Baseline)
+        current_time_ms = int(time.time() * 1000)
+        
+        # Calculate elapsed time in seconds since last update
+        elapsed_sec = 0.0
+        if state.updated_at and state.updated_at > 0:
+            elapsed_sec = max(0.0, (current_time_ms - state.updated_at) / 1000.0)
+            
+        # Persist the current timestamp onto the state
+        state.updated_at = current_time_ms
+
+        # Half-lives in seconds for exponential decay:
+        # e.g., Joy decays by half every 45 minutes; Irritation decays by half every 15 minutes.
+        HALF_LIVES = {
+            "joy": 2700.0,        # 45 minutes
+            "sadness": 10800.0,    # 3 hours
+            "trust": 604800.0,     # 7 days (trust decays extremely slowly if not interacted)
+            "irritation": 900.0,   # 15 minutes (anger cools down quickly)
+        }
+
+        decay_factor = {}
+        for emotion, half_life in HALF_LIVES.items():
+            decay_constant = 0.69314718056 / half_life
+            decay_factor[emotion] = math.exp(-decay_constant * elapsed_sec)
+
+        # Calculate decay delta: decayed_value - current_value
+        delta.joy = (self.BASELINES["joy"] + (state.joy - self.BASELINES["joy"]) * decay_factor["joy"]) - state.joy
+        delta.sadness = (self.BASELINES["sadness"] + (state.sadness - self.BASELINES["sadness"]) * decay_factor["sadness"]) - state.sadness
+        delta.trust = (self.BASELINES["trust"] + (state.trust - self.BASELINES["trust"]) * decay_factor["trust"]) - state.trust
+        delta.irritation = (self.BASELINES["irritation"] + (state.irritation - self.BASELINES["irritation"]) * decay_factor["irritation"]) - state.irritation
         
         # 2. Pre-calculate Psychological Multipliers (Trust & Attachment)
         # Low trust (<0.5) dampens Joy and amplifies Negativity

@@ -197,6 +197,8 @@ export default function App() {
     try {
       const res = await axios.delete(`${BASE}/chat/clear/${getDeviceId()}`);
       setMessages([{ role: 'chisa', content: `🌸 ${res.data?.message || 'Ký ức đã được xóa!'}` }]);
+      // Reset UI emotions to default baseline values
+      setEmotions({ joy: 0.1, sadness: 0.0, trust: 0.5, irritation: 0.0, attachment: 0.0 });
     } catch {
       setMessages(prev => [...prev, { role: 'chisa', content: '*(Lỗi)* Em không thể xóa ký ức lúc này, hãy thử lại nhé!' }]);
     } finally {

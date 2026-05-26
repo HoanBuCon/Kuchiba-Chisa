@@ -50,78 +50,6 @@ class ChatEngine:
         emotion_repo = SqlAlchemyEmotionRepository(session)
         return await emotion_repo.get_emotion_state(user_uuid)
 
-    async def _classify_emotion(self, user_message: str, history: list[dict[str, str]]) -> dict[str, bool]:
-        """
-        Uses a fast, low-parameter model to perform context-aware sentiment analysis.
-        This replaces the fragile Regex keyword matching.
-        """
-        from app.infrastructure.llm.adapters.base import StructuredPrompt
-
-        # Use only the last 4 messages for classification context
-        short_history = history[-4:] if len(history) >= 4 else history
-        history_text = "\n".join([f"{m['role']}: {m['content']}" for m in short_history])
-        
-        prompt = StructuredPrompt(
-            system="""You are a strict conversational sentiment classifier for an Anime AI Chatbot named Chisa.
-Analyze the user's latest message IN CONTEXT of the previous conversation.
-You must output a JSON with exactly four boolean flags:
-
-- "is_positive": True if the user is complimenting, showing affection, teasing playfully, or expressing clear happiness/gratitude towards Chisa.
-- "is_negative": True if the user is expressing genuine sadness, actual anger, complaining about Chisa, or saying Chisa did something wrong. IMPORTANT: Do NOT mark True for Vietnamese mock-frustration slang (e.g., 'thiệt tình', 'chịu chết', 'bó tay', 'cạn lời', 'hết cứu') used playfully.
-- "is_rude": True ONLY if the user is using explicit insults, hate speech, or severe hostility (e.g., "ngu", "chết đi", "rác rưởi").
-- "is_neutral": True if the emotional signal—whether positive or negative—is MILD or CASUAL in intensity (e.g., a friendly remark that is only slightly warm, a mild passing complaint, ordinary small talk, a simple question). Set False ONLY when the emotion is CLEARLY INTENSE or HEARTFELT (e.g., explicit love/deep affection, profound gratitude, genuine strong anger, or deeply felt sadness). When in doubt, default to True.
-
-IMPORTANT: is_neutral describes EMOTIONAL INTENSITY, not message category. A message can be is_positive=True AND is_neutral=True (mildly warm), or is_positive=True AND is_neutral=False (strongly heartfelt).
-
-Output purely valid JSON. No markdown wrappers.""",
-            history=[],
-            user_message=f"Context History:\n{history_text}\n\nLatest User Message: {user_message}",
-            response_schema={
-                "type": "object",
-                "properties": {
-                    "is_positive": {"type": "boolean"},
-                    "is_negative": {"type": "boolean"},
-                    "is_rude": {"type": "boolean"},
-                    "is_neutral": {"type": "boolean"}
-                },
-                "required": ["is_positive", "is_negative", "is_rude", "is_neutral"]
-            },
-            max_tokens=120,
-            temperature=0.0
-        )
-        
-        try:
-            # We enforce a specific fast model for classification to save latency
-            # We temporarily override the configured model inside the adapter just for this call
-            original_model = getattr(self.llm, "_model", getattr(self.llm, "model_name", "llama-3.1-8b-instant"))
-            
-            from app.config.settings import settings
-            fast_model = "gemini-2.5-flash" if settings.LLM_PROVIDER == "gemini" else "llama-3.1-8b-instant"
-            
-            if hasattr(self.llm, "_model"):
-                self.llm._model = fast_model
-            elif hasattr(self.llm, "model_name"):
-                self.llm.model_name = fast_model
-                
-            response = await self.llm.generate(prompt)
-            
-            # Restore model
-            if hasattr(self.llm, "_model"):
-                self.llm._model = original_model
-            elif hasattr(self.llm, "model_name"):
-                self.llm.model_name = original_model
-                
-            return {
-                "is_positive": response.parsed.get("is_positive", False),
-                "is_negative": response.parsed.get("is_negative", False),
-                "is_rude": response.parsed.get("is_rude", False),
-                "is_neutral": response.parsed.get("is_neutral", True)
-            }
-        except Exception as e:
-            log.warning("Emotion classification failed, falling back to neutral", error=str(e))
-            # Safe Fallback to Neutral
-            return {"is_positive": False, "is_negative": False, "is_rude": False, "is_neutral": True}
-
     async def get_history(self, session: AsyncSession, user_id: str, limit: int = 50) -> list[dict[str, str]]:
         """Public method to fetch conversation history for the Web UI on load."""
         user_uuid = uuid.UUID(user_id)
@@ -132,15 +60,16 @@ Output purely valid JSON. No markdown wrappers.""",
         conv_id = await conv_repo.get_or_create_conversation(user_uuid)
         return await conv_repo.get_recent_history(user_uuid, conv_id, limit)
 
-    async def chat(self, session: AsyncSession, user_id: str, user_message: str) -> str:
+    async def chat(self, session: AsyncSession, user_id: str, user_message: str) -> tuple[str, dict]:
         """
-        Orchestrates the entire multi-user chat cycle:
-        1. Load User Stats, Emotion, Conversation
-        2. Emotion updates & Formulate Attachment Bonus
+        Orchestrates the entire multi-user chat cycle using Single-Call Joint Orchestration:
+        1. Load User Stats, Emotion, Conversation History
+        2. Format Emotions & Calculate Attachment Bonus
         3. Retrieve RAG Memories & Lore via Hybrid Scoring
-        4. Build Isolated System Prompt
-        5. Call LLM
-        6. Post-process stats and Save Messages (STM + LTM)
+        4. Build Joint System Prompt Context (incorporating emotional states)
+        5. Call LLM (Single-call parses Chisa's response AND user sentiment jointly)
+        6. Perform single Emotion update based on parsed sentiment flags
+        7. Save Assistant Message, update interaction count & trigger background summarizers
         """
         log.info("Starting ChatEngine cycle", user_id=user_id)
         
@@ -159,22 +88,13 @@ Output purely valid JSON. No markdown wrappers.""",
         
         # Save user message immediately to STM
         await conv_repo.save_message(conv_id, user_uuid, "user", user_message)
-        # 2. Smart RAG Routing & Initial Flags
+
+        # 2. Smart RAG Routing
         # RAG Router first to determine if it's a casual message or requires deep context
         rag_decisions = RAGRouter.should_retrieve(user_message)
         
-        # 3. Context-Aware Emotion Classification (Fast LLM Call)
-        emotion_flags = await self._classify_emotion(user_message, history)
-        
-        # Update Emotion State based on LLM Flags & Calculate emergent attachment bonus
-        emotion_delta = self.emotion_engine.update(emotion, **emotion_flags)
+        # Attachment bonus formulation (pre-calculation based on history)
         attachment_bonus = math.log(max(1, stats.interaction_count)) * 0.05
-        
-        # Save emotion state changes early
-        await emotion_repo.update_emotion(emotion)
-        
-        # Calculate memory importance from MemoryManager
-        importance_score = self.memory_manager.calculate_importance(user_message, emotion_delta)
         
         # Format emotions for system context
         current_emotions = {
@@ -216,7 +136,7 @@ Output purely valid JSON. No markdown wrappers.""",
             history=history
         )
         
-        # 4. Prompt Engineering via ContextBuilder using trimmed context
+        # 3. Prompt Engineering via ContextBuilder using trimmed context
         prompt = self.context_builder.build(
             emotion=emotion,
             attachment_bonus=attachment_bonus,
@@ -226,13 +146,12 @@ Output purely valid JSON. No markdown wrappers.""",
             user_message=user_message
         )
         
-        # 5. LLM Generation
+        # 4. LLM Generation (Unified Single-Call)
         response = await self.llm.generate(prompt)
         chisa_reply = response.parsed.get("response")
         
         # Fallback if the model hallucinated the JSON key but returned valid JSON
         if not chisa_reply and response.parsed:
-            # Get the first string value from the dictionary
             for val in response.parsed.values():
                 if isinstance(val, str) and val.strip():
                     chisa_reply = val
@@ -240,7 +159,30 @@ Output purely valid JSON. No markdown wrappers.""",
                     
         chisa_reply = chisa_reply or ""
         
-        # Log Token Consumption
+        # Extract sentiment flags safely from the unified response
+        user_sentiment = response.parsed.get("user_sentiment") or {}
+        if not isinstance(user_sentiment, dict):
+            user_sentiment = {}
+            
+        is_positive = user_sentiment.get("is_positive", False)
+        is_negative = user_sentiment.get("is_negative", False)
+        is_rude = user_sentiment.get("is_rude", False)
+        is_neutral = user_sentiment.get("is_neutral", True)
+        
+        # 5. Cập nhật Emotion State based on LLM Flags & Save to database for next turn
+        emotion_delta = self.emotion_engine.update(
+            emotion,
+            is_positive=is_positive,
+            is_negative=is_negative,
+            is_rude=is_rude,
+            is_neutral=is_neutral
+        )
+        await emotion_repo.update_emotion(emotion)
+        
+        # Calculate memory importance from MemoryManager
+        importance_score = self.memory_manager.calculate_importance(user_message, emotion_delta)
+        
+        # 6. Post-processing
         total_tokens = response.input_tokens + response.output_tokens
         log.info(
             "LLM Token Consumption", 
@@ -249,8 +191,7 @@ Output purely valid JSON. No markdown wrappers.""",
             output_tokens=response.output_tokens, 
             total_tokens=total_tokens
         )
-        
-        # 6. Post-processing
+
         await conv_repo.save_message(
             conv_id, 
             user_uuid, 
@@ -281,5 +222,14 @@ Output purely valid JSON. No markdown wrappers.""",
                 )
         
         
+        # Re-compute emotions after update so the frontend gets the true post-chat/time-decayed emotional state
+        updated_emotions = {
+            "joy": emotion.joy,
+            "sadness": emotion.sadness,
+            "trust": emotion.trust,
+            "irritation": emotion.irritation,
+            "attachment": emotion.attachment + attachment_bonus
+        }
+        
         log.info("ChatEngine cycle complete", user_id=user_id, attachment_bonus=attachment_bonus)
-        return chisa_reply, current_emotions
+        return chisa_reply, updated_emotions

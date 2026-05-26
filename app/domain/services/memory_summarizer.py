@@ -28,27 +28,45 @@ class MemorySummarizer:
         recent_history = history[-40:]
         chat_transcript = "\n".join([f"{msg['role'].upper()}: {msg['content']}" for msg in recent_history])
         
+        RESPONSE_SCHEMA = {
+            "type": "object",
+            "properties": {
+                "summary_points": {
+                    "type": "array",
+                    "items": {"type": "string"}
+                }
+            },
+            "required": ["summary_points"]
+        }
+
         system_instructions = (
             "You are an AI Memory Summarizer. Extract important facts about the user and their relationship with the AI. "
-            "Output concise bullet points strictly in Vietnamese. Do not output anything else. "
-            "Focus on: personal facts, preferences, emotional events, and relationship progress."
+            "Focus on: personal facts, preferences, emotional events, and relationship progress. "
+            "You must output a JSON object containing a 'summary_points' array of concise bullet points in Vietnamese."
         )
         
         user_prompt = f"Summarize this conversation transcript:\n\n{chat_transcript}"
         
         prompt = StructuredPrompt(
-            system_prompt=system_instructions,
+            system=system_instructions,
+            history=[],
             user_message=user_prompt,
-            response_schema=None # We want raw text output, not JSON
+            response_schema=RESPONSE_SCHEMA
         )
         
         try:
             response = await self.llm.generate(prompt)
-            summary_text = response.raw_response
+            summary_text = ""
+            if response.parsed and "summary_points" in response.parsed:
+                points = response.parsed["summary_points"]
+                if isinstance(points, list):
+                    summary_text = "\n".join(f"- {p}" for p in points)
+                else:
+                    summary_text = str(points)
             
-            # Fallback if raw_response is empty but parsed has a string
-            if not summary_text and response.parsed and "response" in response.parsed:
-                summary_text = response.parsed["response"]
+            # Fallback
+            if not summary_text and response.raw_content:
+                summary_text = response.raw_content.strip()
                 
             summary_text = summary_text.strip()
                 
