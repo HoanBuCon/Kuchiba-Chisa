@@ -5,7 +5,9 @@ from app.infrastructure.database.engine import get_db_session
 from app.interface.api.schemas.chat import ChatRequest, ChatResponse
 from app.domain.services.chat_engine import ChatEngine
 from app.infrastructure.embeddings.fastembed_adapter import FastEmbedAdapter
+from app.config.settings import settings
 from app.infrastructure.llm.adapters.groq import GroqAdapter
+from app.infrastructure.llm.adapters.gemini import GeminiAdapter
 from app.infrastructure.logging.logger import get_logger
 
 from app.domain.services.context_builder import ContextBuilder
@@ -18,7 +20,11 @@ router = APIRouter()
 
 # Instantiate adapters once, since they are largely stateless or manage their own pools
 _embedder = FastEmbedAdapter()
-_llm = GroqAdapter()
+
+if settings.LLM_PROVIDER == "gemini":
+    _llm = GeminiAdapter()
+else:
+    _llm = GroqAdapter()
 _context_builder = ContextBuilder()
 _memory_manager = MemoryManager(embedder=_embedder, qdrant=qdrant_service)
 
@@ -143,7 +149,7 @@ async def clear_user_memory(
                 log.warning("Could not clear Qdrant collection", collection=col, error=str(qe))
 
         log.info("User memory cleared via /clear command", user_id=user_id)
-        return {"status": "ok", "message": "Tất cả ký ức đã được xóa sạch~ Chisa sẽ gặp lại Senpai như lần đầu tiên!"}
+        return {"status": "ok", "message": "Tất cả ký ức đã được xóa. Chisa sẽ gặp lại Senpai như lần đầu tiên!"}
     except Exception as e:
         log.error("Failed to clear user memory", error=str(e), user_id=user_id)
         raise HTTPException(status_code=500, detail=f"Could not clear user memory: {str(e)}")

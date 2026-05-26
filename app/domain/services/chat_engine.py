@@ -165,10 +165,14 @@ Output purely valid JSON. No markdown wrappers.""",
             # We enforce a specific fast model for classification to save latency
             # We temporarily override the configured model inside the adapter just for this call
             original_model = getattr(self.llm, "_model", getattr(self.llm, "model_name", "llama-3.1-8b-instant"))
+            
+            from app.config.settings import settings
+            fast_model = "gemini-2.5-flash" if settings.LLM_PROVIDER == "gemini" else "llama-3.1-8b-instant"
+            
             if hasattr(self.llm, "_model"):
-                self.llm._model = "llama-3.1-8b-instant"
+                self.llm._model = fast_model
             elif hasattr(self.llm, "model_name"):
-                self.llm.model_name = "llama-3.1-8b-instant"
+                self.llm.model_name = fast_model
                 
             response = await self.llm.generate(prompt)
             
