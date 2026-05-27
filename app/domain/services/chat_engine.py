@@ -129,6 +129,38 @@ class ChatEngine:
                 if lore_chunks:
                     log.info(f"First chunk snippet: {lore_chunks[0][:100]}")
         
+        # RAG Emotion Seeding based on retrieved context
+        SAD_LORE_TERMS = {"buồn", "cô đơn", "cô độc", "sợ hãi", "buồn bã", "đau thương", "vòng lặp", "mất mát", "chia ly", "sonoro sphere", "honami", "overclock"}
+        user_message_lower = user_message.lower()
+        
+        # Only scan and seed emotions if the user's message itself touches upon tragic/sad terms
+        if any(term in user_message_lower for term in SAD_LORE_TERMS):
+            matches_count = 0
+            for chunk in lore_chunks:
+                chunk_lower = chunk.lower()
+                for term in SAD_LORE_TERMS:
+                    matches_count += chunk_lower.count(term)
+            for m in memories:
+                text = m.text_content if hasattr(m, "text_content") else str(m)
+                text_lower = text.lower()
+                for term in SAD_LORE_TERMS:
+                    matches_count += text_lower.count(term)
+
+            if matches_count > 0:
+                seeding_sadness = min(0.35, matches_count * 0.06)
+                seeding_irritation = min(0.20, matches_count * 0.03)
+                emotion.sadness = min(1.0, emotion.sadness + seeding_sadness)
+                emotion.irritation = min(1.0, emotion.irritation + seeding_irritation)
+                emotion.updated_at = int(time.time() * 1000)
+                log.info(
+                    "RAG Emotion Seeding applied",
+                    matches_count=matches_count,
+                    seeding_sadness=seeding_sadness,
+                    seeding_irritation=seeding_irritation,
+                    new_sadness=emotion.sadness,
+                    new_irritation=emotion.irritation
+                )
+
         # Token Budget Management
         trimmed_lore, trimmed_memories, trimmed_history = ContextBudgetManager.enforce_budget(
             lore_chunks=lore_chunks,
@@ -169,13 +201,26 @@ class ChatEngine:
         is_rude = user_sentiment.get("is_rude", False)
         is_neutral = user_sentiment.get("is_neutral", True)
         
+        chisa_sentiment = response.parsed.get("chisa_sentiment") or {}
+        if not isinstance(chisa_sentiment, dict):
+            chisa_sentiment = {}
+            
+        chisa_sad = chisa_sentiment.get("is_sad", False)
+        chisa_happy = chisa_sentiment.get("is_happy", False)
+        chisa_annoyed = chisa_sentiment.get("is_annoyed", False)
+        chisa_flustered = chisa_sentiment.get("is_flustered", False)
+        
         # 5. Cập nhật Emotion State based on LLM Flags & Save to database for next turn
         emotion_delta = self.emotion_engine.update(
             emotion,
             is_positive=is_positive,
             is_negative=is_negative,
             is_rude=is_rude,
-            is_neutral=is_neutral
+            is_neutral=is_neutral,
+            chisa_sad=chisa_sad,
+            chisa_happy=chisa_happy,
+            chisa_annoyed=chisa_annoyed,
+            chisa_flustered=chisa_flustered
         )
         await emotion_repo.update_emotion(emotion)
         

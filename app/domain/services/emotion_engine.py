@@ -124,7 +124,18 @@ class EmotionEngine:
         "irritation": 0.55,  # Rude+neutral is contradictory; less dampening
     }
 
-    def update(self, state: "EmotionState", is_positive: bool = False, is_negative: bool = False, is_rude: bool = False, is_neutral: bool = False) -> EmotionDelta:
+    def update(
+        self,
+        state: "EmotionState",
+        is_positive: bool = False,
+        is_negative: bool = False,
+        is_rude: bool = False,
+        is_neutral: bool = False,
+        chisa_sad: bool = False,
+        chisa_happy: bool = False,
+        chisa_annoyed: bool = False,
+        chisa_flustered: bool = False,
+    ) -> EmotionDelta:
         """
         Apply emotion deltas based on flags provided by the LLM Sentiment Classifier.
 
@@ -175,11 +186,15 @@ class EmotionEngine:
         positivity_multiplier = 0.5 + trust_factor  # ranges 0.5x to 1.5x
         negativity_multiplier = 1.5 - trust_factor  # ranges 1.5x to 0.5x
 
+        # Plutchik Mutual Exclusion Dampeners (Sadness dampens Joy, Joy dampens Sadness)
+        joy_dampener = max(0.2, 1.0 - state.sadness)
+        sad_dampener = max(0.2, 1.0 - state.joy)
+
         # 3. Stimulus Application (Weber-Fechner Law + Trust Modulation)
         if is_positive:
             # Intensity gate: casual warmth gets a fraction of the full joy gain
             joy_intensity = self.NEUTRAL_DAMPER["joy"] if is_neutral else 1.0
-            joy_gain = self.MAX_GAIN["joy"] * (1.1 - state.joy) * positivity_multiplier * joy_intensity
+            joy_gain = self.MAX_GAIN["joy"] * (1.1 - state.joy) * positivity_multiplier * joy_intensity * joy_dampener
             delta.joy += joy_gain
             delta.sadness -= (joy_gain * 1.5)      # Suppresses sadness
             delta.irritation -= (joy_gain * 2.0)   # Heavily suppresses irritation
@@ -191,7 +206,7 @@ class EmotionEngine:
         if is_negative:
             # Intensity gate: mild complaints cause less sadness than genuine distress
             sad_intensity = self.NEUTRAL_DAMPER["sadness"] if is_neutral else 1.0
-            sad_gain = self.MAX_GAIN["sadness"] * (1.1 - state.sadness) * negativity_multiplier * sad_intensity
+            sad_gain = self.MAX_GAIN["sadness"] * (1.1 - state.sadness) * negativity_multiplier * sad_intensity * sad_dampener
             delta.sadness += sad_gain
             delta.joy -= (sad_gain * 1.5)          # Suppresses joy
             
@@ -210,13 +225,41 @@ class EmotionEngine:
             # Trust loss from rudeness is also partially dampened if mild
             delta.trust -= 0.25 * (0.7 if is_neutral else 1.0)
             
+        # 3.5 Chisa Self-Emotion Triggers (with Plutchik Dampening & Opposition Suppression)
+        if chisa_sad:
+            delta.sadness += 0.12
+            # Sadness actively suppresses joy!
+            delta.joy -= 0.15 * state.sadness
+        if chisa_annoyed:
+            delta.irritation += 0.10
+            delta.joy -= 0.10 * state.irritation
+            delta.trust -= 0.05
+        if chisa_happy:
+            delta.joy += 0.08
+            # Joy actively suppresses sadness and irritation!
+            delta.sadness -= 0.10 * state.joy
+            delta.irritation -= 0.10 * state.joy
+        if chisa_flustered:
+            delta.joy += 0.05
+            delta.attachment += 0.01
+
         # 4. Attachment progression (Asymmetrical progression)
         # Attachment only grows if trust is high without rudeness, and grows very slowly
         if state.trust > 0.6 and not is_rude and not is_negative:
-            delta.attachment = (self.MAX_GAIN["attachment"] * 0.5) * (1.0 - state.attachment)
+            delta.attachment += (self.MAX_GAIN["attachment"] * 0.5) * (1.0 - state.attachment)
         elif is_rude or is_negative:
             # Attachment drops rapidly on abuse
-            delta.attachment = -self.MAX_GAIN["attachment"] * 2.5 * negativity_multiplier
+            delta.attachment += -self.MAX_GAIN["attachment"] * 2.5 * negativity_multiplier
+
+        # 4.5 Plutchik Cross-Emotion Inhibition Layer
+        # Enforces mathematical opposition between conflicting emotion channels on final values
+        final_joy = state.joy + delta.joy
+        final_sad = state.sadness + delta.sadness
+        if final_joy > 0.15 and final_sad > 0.15:
+            # The stronger emotion suppresses the weaker one
+            inhibition = min(final_joy, final_sad) * 0.7
+            delta.joy -= inhibition
+            delta.sadness -= inhibition
 
         # Apply Deltas
         state.joy = self._clamp(state.joy + delta.joy)
@@ -232,6 +275,15 @@ class EmotionEngine:
             trust=f"{state.trust:.3f}",
             irritation=f"{state.irritation:.3f}",
             attachment=f"{state.attachment:.3f}",
-            signals={"pos": is_positive, "neg": is_negative, "rude": is_rude, "neutral": is_neutral},
+            signals={
+                "pos": is_positive,
+                "neg": is_negative,
+                "rude": is_rude,
+                "neutral": is_neutral,
+                "chisa_sad": chisa_sad,
+                "chisa_happy": chisa_happy,
+                "chisa_annoyed": chisa_annoyed,
+                "chisa_flustered": chisa_flustered,
+            },
         )
         return delta
