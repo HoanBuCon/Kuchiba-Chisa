@@ -204,24 +204,32 @@ flowchart LR
 
 ```mermaid
 sequenceDiagram
-    participant FE as Frontend
-    participant API as FastAPI /chat
-    participant CE as ChatEngine
-    participant DB as Postgres
-    participant QD as Qdrant
-    participant LLM as Groq
+        participant FE as Frontend
+        participant API as FastAPI /chat
+        participant CE as ChatEngine
+        participant PG as Postgres
+        participant RR as RAGRouter
+        participant QD as Qdrant
+        participant LLM as Groq
 
-    FE->>API: POST message + user_id
-    API->>CE: chat(session, user_id, message)
-    CE->>DB: tạo/đọc user, conversation, lưu user message
-    CE->>LLM: classify sentiment (positive/negative/rude/neutral)
-    CE->>DB: cập nhật emotion_state + user_stats
-    CE->>QD: truy xuất memory/lore (nếu router bật)
-    CE->>LLM: generate reply từ prompt đã build + budget
-    CE->>DB: lưu assistant message + token_count
-    CE->>QD: lưu emotional memory quan trọng
-    CE-->>API: response + emotions
-    API-->>FE: JSON trả về
+        FE->>API: POST message + user_id
+        API->>CE: chat(session, user_id, message)
+        CE->>PG: tạo/đọc user, conversation, lưu user message
+        PG-->>CE: user/conversation info
+        CE->>RR: check RAG router (decide if retrieval needed)
+        alt router = yes
+            CE->>QD: truy xuất memory/lore
+            QD-->>CE: retrieved lore/memories
+        end
+        CE->>LLM: generate reply (include context: recent messages + lore)
+        LLM-->>CE: assistant completion + sentiment label + metadata
+        CE->>PG: cập nhật emotion_state + user_stats
+        CE->>PG: lưu assistant message + token_count
+        alt important memory
+            CE->>QD: upsert emotional memory
+        end
+        CE-->>API: response + emotions
+        API-->>FE: JSON trả về
 ```
 
 ### Luồng khởi tạo dữ liệu
@@ -292,30 +300,6 @@ sequenceDiagram
 ### Dữ liệu và hạ tầng
 
 - PostgreSQL
-- Redis
-- Qdrant
-- Docker + Docker Compose
-
-### AI stack
-
-- Groq API (LLM inference)
-- FastEmbed (embedding model dạng local/in-process)
-
-### Frontend
-
-- React + Vite
-- Axios
-- Bootstrap
-- ReactMarkdown
-- Lucide React
-
----
-
-## 8) Cấu hình và biến môi trường
-
-Các biến quan trọng đã được định nghĩa mẫu trong `.env.example`:
-
-- Nhóm ứng dụng: `APP_ENV`, `APP_HOST`, `APP_PORT`, `APP_DEBUG`, `SECRET_KEY`.
 - Nhóm DB: `DATABASE_URL`.
 - Nhóm Redis: `REDIS_URL`, `REDIS_PASSWORD`.
 - Nhóm Qdrant: `QDRANT_URL`, `QDRANT_API_KEY`, `QDRANT_EMBEDDING_DIM`.
