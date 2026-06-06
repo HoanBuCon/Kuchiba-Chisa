@@ -2,6 +2,8 @@
 
 Tài liệu này hướng dẫn chi tiết cách thiết lập, khởi chạy và giám sát toàn bộ hệ thống Backend của **Kuchiba Chisa AI**.
 
+Nội dung dưới đây phản ánh hiện trạng code trong workspace: backend là FastAPI, dữ liệu chạy qua PostgreSQL/Redis/Qdrant, worker dùng Celery, và frontend trong thư mục `frontend/` là một app Vite + React riêng.
+
 ---
 
 ## 1. Yêu cầu hệ thống (Prerequisites)
@@ -39,7 +41,11 @@ cp .env.example .env
 ```
 Mở file `.env` lên và điền các khóa (API Key) cần thiết:
 - `GROQ_API_KEY`: Lấy từ trang quản trị developer của Groq.
+- `LLM_PROVIDER`: Chọn `groq` hoặc `gemini`; mặc định trong code là `groq`.
+- `GEMINI_API_KEY`: Chỉ cần khi chuyển provider sang Gemini.
 - `JWT_SECRET`: Một chuỗi ngẫu nhiên bảo mật của bạn.
+
+Các biến còn lại trong `.env.example` đã có default để hỗ trợ local dev, nhưng khi lên production bạn nên khai báo đầy đủ và thay toàn bộ secret mặc định.
 
 ---
 
@@ -49,6 +55,8 @@ Dự án phụ thuộc vào 3 mảnh ghép Core Services nằm trong Docker:
 1. **PostgreSQL** (Port 5432): Lưu trữ dữ liệu User, Tin nhắn (STM) và Trạng thái Cảm xúc tĩnh.
 2. **Redis** (Port 6379): Phục vụ Rate Limiting, Cache và làm Message Broker cho Celery.
 3. **Qdrant** (Port 6333): Vector Database lưu trữ Ký ức (Memories) và Cốt truyện (Lore).
+
+`docker-compose.yml` hiện cũng dựng thêm 2 service ứng dụng: `app` (FastAPI) và `celery_worker` (background jobs).
 
 Để chạy tất cả dịch vụ này lên, hãy dùng lệnh:
 ```powershell
@@ -65,7 +73,7 @@ Trong môi trường `venv`, chạy lệnh:
 ```powershell
 alembic upgrade head
 ```
-Nếu thành công, cơ sở dữ liệu của bạn đã có đủ bảng `users`, `messages`, `emotion_states`...
+Nếu thành công, cơ sở dữ liệu của bạn đã có đủ bảng lõi để phục vụ chat, emotion state, memory metadata và thống kê người dùng.
 
 ---
 
@@ -89,6 +97,8 @@ uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 ```
 Sau đó truy cập Swagger UI để theo dõi tài liệu API tại: `http://localhost:8000/docs`
 
+Các route chính hiện có là `/api/v1/chat`, `/api/v1/chat/history/{user_id}`, `/api/v1/chat/emotions/{user_id}` và `/api/v1/chat/clear/{user_id}`; health check nằm ở nhóm route hệ thống.
+
 **Chạy Nạp Lore Vector (Chỉ cần chạy 1 lần nếu Cốt truyện thay đổi):**
 ```powershell
 python scripts/ingest_chisa_lore.py
@@ -99,6 +109,8 @@ python scripts/ingest_chisa_lore.py
 ## 6. Giám sát Hệ thống (Monitoring Scripts)
 
 Đây là những chức năng độc quyền của dự án giúp quan sát "não bộ" của Chisa chạy ngầm dưới dạng Real-Time (Theo thời gian thực). Bạn nên bật chúng ở các Tab Terminal riêng biệt song song với Backend.
+
+Các script này đọc dữ liệu hiện có từ database/vector store, nên sẽ hữu ích nhất sau khi đã chạy migration, khởi động infra và có ít nhất một luồng chat thực tế.
 
 ### 6.1 Gương soi Cảm xúc (Emotion Watcher)
 Hiển thị trực tiếp các xung động điểm cảm xúc (Joy, Sad, Irritation...) khi Chisa đang bị người dùng tác động, tích hợp bộ đếm DEHA Algorithm:
@@ -120,9 +132,13 @@ python .\scripts\watch_tokens.py
    - Lý do: Gói Miễn phí của Groq giới hạn Token Per Minute (~14,400 TPM).
    - Giải quyết: Nếu không nâng cấp lên Developer Plan ($5), hãy chờ khoảng 1 phút trước khi chat tiếp. Hệ thống đã được cấu hình Fail-fast (Vượt lỗi đi tiếp) mà không bị treo phần mềm.
 
-2. **Lỗi `OperationalError (could not translate host name, Connection Refused)`:**
+2. **Lỗi backend không khởi động được ngay lúc startup:**
+   - Lý do: `app/main.py` kiểm tra Postgres, Redis và Qdrant trong lifecycle startup. Nếu thiếu một trong ba dịch vụ này, backend có thể chỉ chạy ở chế độ cảnh báo trong dev hoặc dừng hẳn khi `APP_ENV=production`.
+   - Giải quyết: Kiểm tra lại `docker compose up -d --wait`, giá trị `DATABASE_URL`, `REDIS_URL`, `QDRANT_URL`, và log của từng service.
+
+3. **Lỗi `OperationalError (could not translate host name, Connection Refused)`:**
    - Lý do: Hạ tầng Docker chưa bật lên, hoặc Cổng 5432 (PostgreSQL)/6379 (Redis) đang bị ứng dụng khác chiếm dụng.
    - Giải quyết: Bật Docker Desktop lên, chạy lệnh `docker compose down` rồi lên lại `docker compose up -d`.
 
-3. **Lỗi thiếu Thư viện (ModuleNotFoundError):**
+4. **Lỗi thiếu Thư viện (ModuleNotFoundError):**
    - Giải quyết: Đảm bảo bạn đang ở môi trường ảo `(venv)` trước khi chạy bất kỳ script hay lệnh uvicorn nào. Chạy lại `pip install -r requirements.txt`.

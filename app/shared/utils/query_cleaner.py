@@ -15,11 +15,21 @@ def clean_query_for_rag(text: str) -> str:
     # Remove punctuation at ends
     text = re.sub(r'^[,\.\?\!\-\s]+|[,\.\?\!\-\s]+$', '', text)
     
+    # Remove name calls first (so particles like "nhỉ", "nhé" at the end can be cleaned afterwards)
+    names = ["chía chía", "chía chía", "chisa", "senpai"]
+    for name in names:
+        if text.endswith(name):
+            text = text[:-len(name)].strip()
+            text = re.sub(r'[,\.\?\!\-\s]+$', '', text).strip()
+        if text.startswith(name):
+            text = text[len(name):].strip()
+            text = re.sub(r'^[,\.\?\!\-\s\:]+', '', text).strip()
+
     # 1. Greetings
     greetings = [
         "chào ngày mới", "chào buổi sáng", "chào buổi tối", "chào buổi chiều",
         "chào em chisa", "chào chisa", "chào em", "chào senpai", "chào",
-        "hello chisa", "hello chías chías", "hello chía chía", "hello",
+        "hello chisa", "hello chía chía", "hello chía chía", "hello",
         "hi chisa", "hi", "hey chisa", "hey"
     ]
     for g in greetings:
@@ -59,18 +69,9 @@ def clean_query_for_rag(text: str) -> str:
             text = text[:-len(s)].strip()
             text = re.sub(r'[,\.\?\!\-\s]+$', '', text).strip()
             
-    # Remove name calls
-    names = ["chía chía", "chías chías", "chisa", "senpai"]
-    for name in names:
-        if text.endswith(name):
-            text = text[:-len(name)].strip()
-            text = re.sub(r'[,\.\?\!\-\s]+$', '', text).strip()
-        if text.startswith(name):
-            text = text[len(name):].strip()
-            text = re.sub(r'^[,\.\?\!\-\s\:]+', '', text).strip()
-            
     text = re.sub(r'^[,\.\?\!\-\s]+|[,\.\?\!\-\s]+$', '', text).strip()
     
     if not text:
         return original
     return text
+

@@ -1,9 +1,15 @@
 import re
 
+
 class RAGRouter:
     """
     Determines if a user message requires Vector Database Retrieval (RAG).
-    Conserves API latency and context usage for idle chit-chat.
+    
+    Architecture (post-refactor):
+    - Lore retrieval: Always performed via vector search + threshold filtering.
+      RAGRouter no longer gates lore — ChatEngine handles it directly.
+    - Memory retrieval: Still keyword-triggered (memory recall is intent-driven).
+    - Small talk detection: Shared utility to skip embedding entirely for trivial messages.
     """
     # Extremely common 1-3 word small talk phrases, greetings, emojis, and particles.
     SMALL_TALK_PHRASES = {
@@ -29,16 +35,32 @@ class RAGRouter:
         return bool(re.search(pattern, text))
 
     @classmethod
+    def is_small_talk(cls, message: str) -> bool:
+        """
+        Returns True if the message is trivial small talk that doesn't warrant
+        any RAG retrieval (neither lore nor memory).
+        Used by ChatEngine to skip embedding entirely for "ok", "haha", etc.
+        """
+        msg_lower = message.strip().lower()
+        return len(msg_lower) < 8 or msg_lower in cls.SMALL_TALK_PHRASES
+
+    @classmethod
     def should_retrieve(cls, message: str) -> dict[str, bool]:
+        """
+        Determines RAG retrieval needs for a message.
+        
+        Post-refactor:
+        - use_lore: Always starts as True (actual filtering done by vector threshold in ChatEngine).
+          Set to False only for small talk.
+        - use_memory: Keyword-triggered (memory recall is intent-driven).
+        """
         msg_lower = message.strip().lower()
 
-        # Rule 1: Too short or exact small talk
-        # Messages under 8 characters or exactly in the small talk set
-        if len(msg_lower) < 8 or msg_lower in cls.SMALL_TALK_PHRASES:
+        # Rule 1: Small talk — skip everything
+        if cls.is_small_talk(message):
             return {"use_lore": False, "use_memory": False}
 
         # Rule 2: Explicit triggers for Memory recall
-        # Removes aggressive "?" matching, substituting with exact query boundaries.
         memory_triggers = [
             "nhớ", "hôm trước", "đã nói", "tên anh", "tên tôi", "tên tớ", 
             "tên mình", "tên em", "sở thích", "đã kể", "kể em nghe", 
@@ -49,28 +71,10 @@ class RAGRouter:
         ]
         use_memory = any(cls._contains_word(msg_lower, trigger) for trigger in memory_triggers)
 
-        # Rule 3: Explicit triggers for Lore/Persona context
-        # Prevents false positive substring collisions (e.g., 'kéo' in 'kéo dài', 'nhà' in 'nhàn nhã')
-        # by checking boundaries and using specific multi-word tokens.
-        lore_triggers = [
-            "honami", "sumika", "cây kéo", "chiếc kéo", "kéo khổng lồ", 
-            "quá khứ", "cộng hưởng", "học viện", "startorch", "overclock", 
-            "overclocking", "năng lực", "resonance", "senpai là ai", 
-            "cô đơn", "cô độc", "gia đình", "quê hương", "sức mạnh", 
-            "chisa", "em là ai", "nỗi sợ", "sợ hãi", "lo sợ", "mèo", 
-            "mèo con", "chú mèo", "pha trà", "nấu ăn", "broadblade", 
-            "lahai-roi", "solaris-3", "ashinohara", "tacet", "sonoro", 
-            "forte", "nhật ký", "di vật", "vòng lặp"
-        ]
-        use_lore = any(cls._contains_word(msg_lower, trigger) for trigger in lore_triggers)
-
-        # Default fallback: If it's a long, descriptive message, 
-        # trigger both RAG pipelines to be safe and provide rich context.
-        # Threshold increased from 30 to 65 for optimal token conservation.
-        if not use_memory and not use_lore and len(msg_lower) > 65:
-            return {"use_lore": True, "use_memory": True}
-
+        # Lore is always searched via vector DB — ChatEngine handles threshold filtering
+        # We set use_lore=True here as a signal that embedding should be computed.
+        # ChatEngine will override this to False if no chunks pass the threshold.
         return {
-            "use_lore": use_lore,
+            "use_lore": True,
             "use_memory": use_memory
         }

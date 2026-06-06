@@ -1,5 +1,6 @@
 import time
 import math
+import re
 from typing import Any, List, Dict
 from pydantic import BaseModel
 from app.infrastructure.vector.qdrant.qdrant_service import qdrant_service
@@ -62,6 +63,35 @@ class RAGRetriever:
             score += max(0.0, 1.0 - diff)
             
         return score / len(keys)
+
+    @staticmethod
+    def _tokenize_query(text: str) -> list[str]:
+        tokens = re.findall(r"[\wÀ-ỹ]+", text.lower())
+        return [token for token in tokens if len(token) >= 2]
+
+    def _calculate_keyword_overlap(self, query_tokens: list[str], candidate_text: str) -> float:
+        if not query_tokens or not candidate_text:
+            return 0.0
+
+        candidate_lower = candidate_text.lower()
+        hits = 0
+        weighted_hits = 0.0
+
+        high_value_terms = {
+            "honami", "sumika", "tacet", "vòng", "cổ", "vòng cổ", "startorch",
+            "học viện", "broadblade", "kéo", "havoc", "overclock", "sonoro", "sphere",
+            "nhật ký", "ký ức", "trà", "pocky", "mèo", "socola", "đam mê", "sở thích", "yêu thích", "đặc biệt", "đáng nhớ"
+        }
+
+        for token in query_tokens:
+            if token in candidate_lower:
+                hits += 1
+                weighted_hits += 2.0 if token in high_value_terms else 1.0
+
+        if not hits:
+            return 0.0
+
+        return min(1.0, weighted_hits / max(4.0, len(query_tokens)))
 
     async def retrieve_memories(
         self,
@@ -146,28 +176,38 @@ class RAGRetriever:
     async def retrieve_lore(
         self,
         query_vector: List[float],
+        query_text: str = "",
         top_k: int = 8,
-    ) -> List[str]:
+        score_threshold: float = 0.3,
+    ) -> List[tuple[str, float]]:
         """
         Retrieves relevant Chisa lore chunks from the global `chisa_lore` collection.
-        Does not filter by user_id so all users share this core identity.
+        Returns list of (text_content, similarity_score) tuples sorted by score DESC.
+        The caller is responsible for applying its own quality threshold.
         """
         try:
             candidates = await qdrant_service.search_lore(
                 collection="chisa_lore",
                 query_vector=query_vector,
                 limit=top_k,
-                score_threshold=0.1,
+                score_threshold=score_threshold,
             )
         except Exception as e:
             log.warning("Lore retrieval failed, skipping", error=str(e))
             return []
 
+        query_tokens = self._tokenize_query(query_text)
         results = []
         for cand in candidates:
             text = cand.get("payload", {}).get("text_content", "")
+            score = cand.get("score", 0.0)
             if text:
-                results.append(text)
+                keyword_score = self._calculate_keyword_overlap(query_tokens, text)
+                hybrid_score = (score * 0.75) + (keyword_score * 0.25)
+                results.append((text, hybrid_score))
+
+        # Favor exact lore facts when keyword overlap is strong enough.
+        results.sort(key=lambda item: item[1], reverse=True)
         return results
 
 

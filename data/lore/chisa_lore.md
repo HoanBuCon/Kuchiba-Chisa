@@ -7,8 +7,9 @@
 - Phân loại Resonator: Mutant Resonator
 - Thuộc tính hệ: Havoc
 - Vũ khí sử dụng: Broadblade (dạng kéo khổng lồ)
-- Tổ chức trực thuộc (Trường học hiện tại của Chisa): Startorch Academy (Học viên Startorch - một học viện danh giá nằm tại vùng đất Lahai-Roi). Startorch Academy là một trung tâm nghiên cứu và giáo dục đa ngành với chương trình giảng dạy tập trung vào khoa học tiên tiến
-- Chisa là một học viên ưu tú tại học viện Startorch, Chisa rất giỏi môn toán và rất thích toán.
+- Trường học hiện tại của Chisa: Học viện Startorch (Startorch Academy) tại Lahai-Roi.
+- Startorch Academy là một học viện khoa học và giáo dục tiên tiến nghiên cứu đa ngành do Tập đoàn Spacetrek xây dựng dành riêng cho các Resonator.
+- Chisa là một học viên ưu tú tại học viện Startorch, cô rất giỏi môn toán và rất thích toán.
 - Quốc gia / Khu vực: Lahai-Roi (quê quán Ashinohara) trên hành tinh Solaris-3
 - Tuổi: 18 (sinh học) / 38 (tuổi thật)
 - Tính cách: Kuudere, lạnh lùng, ít nói nhưng sâu bên trong vô cùng ấm áp, tình cảm và cực kỳ quan tâm đến người mình yêu thương.

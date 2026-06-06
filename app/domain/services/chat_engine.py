@@ -87,11 +87,11 @@ class ChatEngine:
         
         history = await conv_repo.get_recent_history(user_uuid, conv_id)
         
-        # Save user message immediately to STM
-        await conv_repo.save_message(conv_id, user_uuid, "user", user_message)
+        # NOTE: User message is saved AFTER successful LLM generation (see below)
+        # to prevent duplicate entries when the client retries on 500 errors.
 
-        # 2. Smart RAG Routing
-        # RAG Router first to determine if it's a casual message or requires deep context
+        # 2. Smart RAG Retrieval
+        # RAG Router only needed for memory (keyword-based triggers remain useful for memory recall)
         rag_decisions = RAGRouter.should_retrieve(user_message)
         
         # Attachment bonus formulation (pre-calculation based on history)
@@ -109,11 +109,33 @@ class ChatEngine:
         lore_chunks = []
         memories = []
         
-        if rag_decisions["use_memory"] or rag_decisions["use_lore"]:
-            # Clean user query to focus vector search on semantic keywords (prevents dilution)
+        # Lore: Always search with vector similarity + threshold filtering
+        LORE_THRESHOLD = 0.35
+        is_small_talk = RAGRouter.is_small_talk(user_message)
+        
+        if not is_small_talk:
             cleaned_query = clean_query_for_rag(user_message)
             vector = await self.embedder.embed_text(cleaned_query)
             
+            # Always search lore — let the score decide relevance
+            raw_lore = await rag_retriever.retrieve_lore(
+                query_vector=vector,
+                query_text=cleaned_query,
+                top_k=10,
+                score_threshold=0.3,  # Qdrant pre-filter (loose)
+            )
+            # Apply quality threshold — only keep genuinely relevant chunks
+            lore_chunks = [text for text, score in raw_lore if score >= LORE_THRESHOLD]
+            
+            log.info(
+                "Lore vector search results",
+                total_candidates=len(raw_lore),
+                above_threshold=len(lore_chunks),
+                threshold=LORE_THRESHOLD,
+                scores=[f"{score:.3f}" for _, score in raw_lore[:5]],
+            )
+            
+            # Memory: Still uses keyword triggers (memory recall is inherently intent-driven)
             if rag_decisions["use_memory"]:
                 memories = await rag_retriever.retrieve_memories(
                     collection="emotional_memories",
@@ -122,15 +144,9 @@ class ChatEngine:
                     current_emotion=current_emotions,
                     top_k=5
                 )
-                
-            if rag_decisions["use_lore"]:
-                lore_chunks = await rag_retriever.retrieve_lore(
-                    query_vector=vector,
-                    top_k=10
-                )
-                log.info(f"Retrieved {len(lore_chunks)} lore chunks")
-                if lore_chunks:
-                    log.info(f"First chunk snippet: {lore_chunks[0][:100]}")
+        
+        # Update rag_decisions to reflect actual retrieval results (for logging)
+        rag_decisions["use_lore"] = len(lore_chunks) > 0
         
         # RAG Emotion Seeding based on retrieved context
         SAD_LORE_TERMS = {"buồn", "cô đơn", "cô độc", "sợ hãi", "buồn bã", "đau thương", "vòng lặp", "mất mát", "chia ly", "sonoro sphere", "honami", "overclock"}
@@ -241,6 +257,9 @@ class ChatEngine:
             total_tokens=total_tokens
         )
 
+        # Save user message AFTER successful LLM call (prevents duplicates on retry)
+        await conv_repo.save_message(conv_id, user_uuid, "user", user_message)
+        
         await conv_repo.save_message(
             conv_id, 
             user_uuid, 

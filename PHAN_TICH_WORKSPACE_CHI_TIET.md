@@ -2,6 +2,8 @@
 
 Tài liệu này tổng hợp đầy đủ mã nguồn hiện tại như một buổi handover kỹ thuật ở mức senior engineer.
 
+Ghi chú này được đối chiếu trực tiếp với code và cấu hình hiện có trong workspace, đặc biệt là `app/main.py`, `app/config/settings.py`, `app/interface/api/routes/chat.py`, `docker-compose.yml`, `.env.example`, `frontend/package.json` và các migration hiện hành.
+
 ---
 
 ## 1) Dự án làm gì?
@@ -27,6 +29,14 @@ Kiến trúc theo hướng phân lớp rõ ràng:
 - `interface`: API layer (routes + schemas).
 - `scripts`: tiện ích vận hành/test thủ công.
 - `frontend`: UI người dùng.
+
+### Hiện trạng runtime đang có trong code
+
+- Backend API là FastAPI, khởi động qua `app.main:app`.
+- Startup lifecycle kiểm tra Postgres, Redis và Qdrant, sau đó khởi tạo collection Qdrant theo kiểu idempotent.
+- API hiện include 2 nhóm route chính: `health` và `chat`.
+- `chat` đang cung cấp các endpoint cho chat, lịch sử chat, cảm xúc hiện tại và xóa memory theo `user_id`.
+- `docker-compose.yml` hiện dựng đủ `postgres`, `redis`, `qdrant`, `app` và `celery_worker`.
 
 ### Sơ đồ mức cao
 
@@ -80,6 +90,11 @@ flowchart LR
 - `app/main.py`: khởi tạo FastAPI app, lifespan, CORS, include router.
 - `app/config/settings.py`: đọc/validate biến môi trường bằng Pydantic Settings.
 
+### API routes hiện có
+
+- `app/interface/api/routes/health.py`: health/readiness cho Postgres, Redis, Qdrant.
+- `app/interface/api/routes/chat.py`: `POST /api/v1/chat`, `GET /api/v1/chat/emotions/{user_id}`, `GET /api/v1/chat/history/{user_id}`, `DELETE /api/v1/chat/clear/{user_id}`.
+
 ### Domain interfaces
 
 - `app/domain/interfaces/embedding_provider.py`: interface/protocol cho embedding provider.
@@ -126,6 +141,13 @@ flowchart LR
 - `app/infrastructure/queue/tasks/affection_tasks.py`: task nền cho affection (stub/chưa hoàn chỉnh).
 - `app/infrastructure/queue/tasks/embedding_tasks.py`: task nền embedding (stub/chưa hoàn chỉnh).
 - `app/infrastructure/queue/tasks/memory_tasks.py`: task nền memory (stub/chưa hoàn chỉnh).
+
+### Frontend hiện có
+
+- `frontend/src/main.jsx`: bootstrap React app.
+- `frontend/src/App.jsx`: UI chat chính.
+- `frontend/src/index.css`: style chính.
+- `frontend/package.json`: scripts `dev`, `build`, `lint`, `preview` với React 19 + Vite.
 
 ## `alembic_migrations/`
 
@@ -265,6 +287,7 @@ sequenceDiagram
 - Pydantic Settings
 - structlog/logging
 - Celery
+- Có hỗ trợ provider LLM chuyển đổi qua biến môi trường: Groq là mặc định, Gemini cũng đã được code sẵn trong `chat.py` và `settings.py`.
 
 ### Dữ liệu và hạ tầng
 
@@ -297,12 +320,13 @@ Các biến quan trọng đã được định nghĩa mẫu trong `.env.example`
 - Nhóm Redis: `REDIS_URL`, `REDIS_PASSWORD`.
 - Nhóm Qdrant: `QDRANT_URL`, `QDRANT_API_KEY`, `QDRANT_EMBEDDING_DIM`.
 - Nhóm Groq: `GROQ_API_KEY`, `GROQ_MODEL`, `GROQ_MAX_TOKENS`, `GROQ_TEMPERATURE`, `GROQ_TIMEOUT`.
+- Nhóm LLM đa provider: `LLM_PROVIDER`, `GEMINI_API_KEY`, `GEMINI_MODEL`, `GEMINI_MAX_TOKENS`, `GEMINI_TEMPERATURE`, `GEMINI_TIMEOUT`.
 - Nhóm embedding: `EMBEDDING_MODEL`, `OPENAI_API_KEY` (để tương thích một số ngữ cảnh).
 - Nhóm bảo mật/auth: `JWT_SECRET`, `JWT_ALGORITHM`, `JWT_EXPIRE_MINUTES`, `JWT_REFRESH_EXPIRE_DAYS`.
 - Nhóm giới hạn: `RATE_LIMIT_PER_MINUTE`.
 - Nhóm worker: `CELERY_BROKER_URL`, `CELERY_RESULT_BACKEND`, `WORKER_CONCURRENCY`.
 
-Nhận xét: cấu hình đã tương đối đầy đủ cho local/dev, nhưng cần khóa chặt profile production.
+Nhận xét: cấu hình đã tương đối đầy đủ cho local/dev, nhưng cần khóa chặt profile production. `settings.py` hiện bắt buộc `DATABASE_URL`, `SECRET_KEY` và `JWT_SECRET` phải đủ mạnh; các biến còn lại có default để hỗ trợ chạy local.
 
 ---
 
@@ -313,6 +337,7 @@ Nhận xét: cấu hình đã tương đối đầy đủ cho local/dev, nhưng 
 - API đang tin `user_id` do client gửi, chưa có cơ chế xác thực ownership mạnh.
 - Endpoint xóa memory theo `user_id` có thể bị lạm dụng nếu thiếu auth.
 - Có secret mẫu/giá trị mặc định trong tài liệu cấu hình, dễ bị dùng nhầm ở môi trường thật.
+- `clear_user_memory` đang xóa STM, emotion state, stats và các vector Qdrant theo `user_id`; luồng này đúng chức năng nhưng cần auth chặt khi đưa lên production.
 
 ### Mức trung bình
 
@@ -354,3 +379,11 @@ Nhận xét: cấu hình đã tương đối đầy đủ cho local/dev, nhưng 
 ## Kết luận
 
 Codebase có nền tảng tốt cho một chatbot có trí nhớ + cảm xúc: phân lớp rõ, pipeline hợp lý, và có đầy đủ thành phần AI hiện đại. Điểm cần nâng cấp trọng tâm nằm ở bảo mật định danh người dùng, độ chặt validation đầu ra LLM, và mở rộng test coverage cho các luồng nghiệp vụ quan trọng.
+
+Tóm tắt ngắn của workspace hiện tại:
+
+- Backend: FastAPI + SQLAlchemy Async + Alembic + Celery.
+- Storage: PostgreSQL 16, Redis 7, Qdrant.
+- AI: Groq là mặc định, Gemini đã có nhánh hỗ trợ.
+- Frontend: React 19 + Vite + Axios + Bootstrap.
+- Vận hành: Docker Compose dựng full stack local, kèm các script kiểm thử và ingest lore.
