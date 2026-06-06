@@ -22,6 +22,7 @@ from app.infrastructure.database.repositories.emotion_repository import SqlAlche
 from app.infrastructure.database.repositories.conversation_repository import SqlAlchemyConversationRepository
 import asyncio
 from app.infrastructure.logging.logger import get_logger
+from app.shared.utils.query_cleaner import clean_query_for_rag
 
 log = get_logger(__name__)
 
@@ -109,7 +110,9 @@ class ChatEngine:
         memories = []
         
         if rag_decisions["use_memory"] or rag_decisions["use_lore"]:
-            vector = await self.embedder.embed_text(user_message)
+            # Clean user query to focus vector search on semantic keywords (prevents dilution)
+            cleaned_query = clean_query_for_rag(user_message)
+            vector = await self.embedder.embed_text(cleaned_query)
             
             if rag_decisions["use_memory"]:
                 memories = await rag_retriever.retrieve_memories(
@@ -123,7 +126,7 @@ class ChatEngine:
             if rag_decisions["use_lore"]:
                 lore_chunks = await rag_retriever.retrieve_lore(
                     query_vector=vector,
-                    top_k=4
+                    top_k=10
                 )
                 log.info(f"Retrieved {len(lore_chunks)} lore chunks")
                 if lore_chunks:
@@ -175,7 +178,8 @@ class ChatEngine:
             memories=trimmed_memories,
             lore_chunks=trimmed_lore,
             history=trimmed_history,
-            user_message=user_message
+            user_message=user_message,
+            rag_decisions=rag_decisions
         )
         
         # 4. LLM Generation (Unified Single-Call)

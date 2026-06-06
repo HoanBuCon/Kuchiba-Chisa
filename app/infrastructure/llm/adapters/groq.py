@@ -124,7 +124,7 @@ class GroqAdapter(BaseLLMAdapter):
 
         parsed = await self.validate_response(raw, prompt.response_schema)
 
-        return LLMResponse(
+        llm_response = LLMResponse(
             raw_content=raw,
             parsed=parsed,
             input_tokens=response.usage.prompt_tokens if response.usage else 0,
@@ -132,6 +132,14 @@ class GroqAdapter(BaseLLMAdapter):
             model=self._model,
             finish_reason=finish_reason,
         )
+
+        try:
+            from app.infrastructure.logging.llm_logger import log_llm_transaction
+            await log_llm_transaction(prompt, llm_response)
+        except Exception as e:
+            log.warning("Failed to log transaction", error=str(e))
+
+        return llm_response
 
     # ── Stream (STUB) ──────────────────────────────────────────────
     async def stream(self, prompt: StructuredPrompt) -> AsyncIterator[str]:
@@ -145,11 +153,21 @@ class GroqAdapter(BaseLLMAdapter):
         Parse LLM JSON response and do basic structural validation.
         TODO (Phase 4): Add full Pydantic schema validation against schema arg.
         """
+        raw_cleaned = raw.strip()
         try:
-            parsed = json.loads(raw)
-        except json.JSONDecodeError as e:
-            log.error("LLM JSON parse failed", error=str(e), raw=raw[:200])
-            raise LLMInvalidResponseError(f"JSON parse error: {e}")
+            parsed = json.loads(raw_cleaned)
+        except json.JSONDecodeError:
+            try:
+                start = raw_cleaned.find('{')
+                end = raw_cleaned.rfind('}')
+                if start != -1 and end != -1 and end > start:
+                    candidate = raw_cleaned[start:end+1]
+                    parsed = json.loads(candidate)
+                else:
+                    raise LLMInvalidResponseError("No JSON object found in response")
+            except json.JSONDecodeError as e:
+                log.error("LLM JSON parse failed", error=str(e), raw=raw[:200])
+                raise LLMInvalidResponseError(f"JSON parse error: {e}")
 
         if not isinstance(parsed, dict):
             raise LLMInvalidResponseError("LLM response is not a JSON object")

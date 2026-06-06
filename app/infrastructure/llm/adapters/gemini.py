@@ -29,8 +29,8 @@ class GeminiAdapter(BaseLLMAdapter):
     Implements BaseLLMAdapter interface so it can be swapped seamlessly.
     """
 
-    _MAX_RETRIES = 3
-    _BASE_BACKOFF = 0.5  # seconds
+    _MAX_RETRIES = 5
+    _BASE_BACKOFF = 1.5  # seconds
 
     def __init__(self) -> None:
         api_key = settings.GEMINI_API_KEY
@@ -124,7 +124,7 @@ class GeminiAdapter(BaseLLMAdapter):
         input_tokens = response.usage_metadata.prompt_token_count if response.usage_metadata else 0
         output_tokens = response.usage_metadata.candidates_token_count if response.usage_metadata else 0
 
-        return LLMResponse(
+        llm_response = LLMResponse(
             raw_content=raw,
             parsed=parsed,
             input_tokens=input_tokens,
@@ -132,6 +132,14 @@ class GeminiAdapter(BaseLLMAdapter):
             model=self._model,
             finish_reason=finish_reason,
         )
+
+        try:
+            from app.infrastructure.logging.llm_logger import log_llm_transaction
+            await log_llm_transaction(prompt, llm_response)
+        except Exception as e:
+            log.warning("Failed to log transaction", error=str(e))
+
+        return llm_response
 
     # ── Stream (STUB) ──────────────────────────────────────────────
     async def stream(self, prompt: StructuredPrompt) -> AsyncIterator[str]:
@@ -144,11 +152,21 @@ class GeminiAdapter(BaseLLMAdapter):
         """
         Parse LLM JSON response and do basic structural validation.
         """
+        raw_cleaned = raw.strip()
         try:
-            parsed = json.loads(raw)
-        except json.JSONDecodeError as e:
-            log.error("LLM JSON parse failed", error=str(e), raw=raw[:200])
-            raise LLMInvalidResponseError(f"JSON parse error: {e}")
+            parsed = json.loads(raw_cleaned)
+        except json.JSONDecodeError:
+            try:
+                start = raw_cleaned.find('{')
+                end = raw_cleaned.rfind('}')
+                if start != -1 and end != -1 and end > start:
+                    candidate = raw_cleaned[start:end+1]
+                    parsed = json.loads(candidate)
+                else:
+                    raise LLMInvalidResponseError("No JSON object found in response")
+            except json.JSONDecodeError as e:
+                log.error("LLM JSON parse failed", error=str(e), raw=raw[:200])
+                raise LLMInvalidResponseError(f"JSON parse error: {e}")
 
         if not isinstance(parsed, dict):
             raise LLMInvalidResponseError("LLM response is not a JSON object")

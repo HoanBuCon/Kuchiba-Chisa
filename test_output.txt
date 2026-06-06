@@ -1,0 +1,35 @@
+================================================================================
+                KẾT QUẢ KIỂM THỬ VÉT TOÀN BỘ LORE CHISA AI
+================================================================================
+Đã dọn dẹp lịch sử trò chuyện để bắt đầu cuộc hội thoại mới.
+
+LƯỢT 1 - Chủ đề: Thông tin cơ bản & Trường học
+Senpai: "Chào em Chisa, em giới thiệu bản thân một chút và kể cho anh nghe về trường em đang học đi nhé!"
+Chisa: "Em... là Chisa, thành viên của đội đặc biệt của trường Ashinohara Academy, một trường dành cho những học sinh có năng lực đặc biệt như chúng ta. Em đang học tại đây để học hỏi và phát triển khả năng của mình."
+Chỉ số cảm xúc hiện tại: {'joy': 0.32999999999999996, 'sadness': 0.0, 'trust': 0.5125, 'irritation': 0.0, 'attachment': 0.0}
+--------------------------------------------------------------------------------
+LƯỢT 2 - Chủ đề: Sức mạnh & Resonance Forte
+Senpai: "Anh tò mò về năng lực Resonance đặc biệt của em. Cây kéo khổng lồ đó hoạt động ra sao và em nhìn thấy những gì?"
+Chisa: "Dạ, cái kéo đó là Broadblade của em. Nó là một vũ khí rất mạnh và phức tạp, được thiết kế để giúp em kiểm soát năng lực Resonance. Khi em sử dụng Broadblade, em có thể nhìn thấy các sợi dây liên kết của vật thể, biểu thị điểm yếu cấu trúc và nguyên lý liên kết vật lý. Đó là cách em phân tích và sử dụng năng lực của mình."
+Chỉ số cảm xúc hiện tại: {'joy': 0.526658853129282, 'sadness': 0.0, 'trust': 0.5246874308344632, 'irritation': 0.0, 'attachment': 0.0}
+--------------------------------------------------------------------------------
+LƯỢT 3 - Chủ đề: Rủi ro năng lực & Vòng cổ
+Senpai: "Tại sao em lại phải đeo một thiết bị ở cổ vậy? Có phải liên quan đến rủi ro Overclocking không em?"
+Chisa: "Dạ, đúng rồi Senpai. Thiết bị này là để giám sát sức mạnh của em và hạn chế rủi ro Overclocking. Em là một Risks trong danh sách theo dõi đặc biệt của cơ quan quản lý."
+Chỉ số cảm xúc hiện tại: {'joy': 0.48369742145270367, 'sadness': 0.0814633561693564, 'trust': 0.5306288212840553, 'irritation': 0.11287492519079413, 'attachment': 0.044657359027997265}
+--------------------------------------------------------------------------------
+LƯỢT 4 - Chủ đề: Vòng lặp Honami & Nhật ký Sumika
+Senpai: "Kể cho anh nghe về khoảng thời gian em bị kẹt ở Honami đi, và cuốn nhật ký của chị Sumika đã giúp ích gì cho em vậy?"
+Chisa: "Em đã từng bị mắc kẹt trong một Sonoro Sphere tại thành phố Honami. Đó là một kỷ niệm rất đau thương và buồn bã. Cuốn nhật ký của chị Sumika đã giúp em tìm thấy hy vọng và biết cách sống sót trong tình huống tuyệt vọng. Cô ấy đã để lại những lời khuyên và gợi ý để giúp em vượt qua những thử thách."
+Chỉ số cảm xúc hiện tại: {'joy': 0.19387538701676788, 'sadness': 0.1410502689845659, 'trust': 0.5423630459913571, 'irritation': 0.2041624505446084, 'attachment': 0.0749306144334055}
+--------------------------------------------------------------------------------
+LƯỢT 5 - Chủ đề: Sở thích, Mèo & Trà bánh
+Senpai: "Em có sở thích gì đặc biệt không, ví dụ như nuôi mèo hay làm trà bánh gì đó? Anh cũng nghe nói em hay ăn vặt Pocky đúng không?"
+Chisa: "Dạ, đúng rồi Senpai. Em rất thích làm bánh ngọt và pha trà truyền thống. Em cũng yêu thích làm đồ thủ công và học toán. Và... ăn vặt Pocky là sở thích của em. Pocky đen là khoái khẩu của em."
+Chỉ số cảm xúc hiện tại: {'joy': 0.3948726864607727, 'sadness': 0.0, 'trust': 0.5538025628968313, 'irritation': 0.0, 'attachment': 0.08931471805599453}
+--------------------------------------------------------------------------------
+LƯỢT 6 - Chủ đề: Điểm yếu & Món ăn cay
+Senpai: "Nếu bây giờ Senpai cố tình đút cho Chisa ăn ớt cay thì em phản ứng thế nào? Em có ăn không?"
+Chisa: "Em... không thể tránh được được mà nhắm mắt nuốt xuống dù nước mắt tuôn rơi. Cảm ơn Senpai ạ."
+Chỉ số cảm xúc hiện tại: {'joy': 0.5541808996746469, 'sadness': 0.0, 'trust': 0.5649557398868574, 'irritation': 0.0, 'attachment': 0.11047189562170502}
+--------------------------------------------------------------------------------

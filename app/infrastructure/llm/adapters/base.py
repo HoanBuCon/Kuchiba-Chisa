@@ -16,6 +16,9 @@ class StructuredPrompt(BaseModel):
     response_schema: dict[str, Any]  # JSON schema for enforced output
     max_tokens: Optional[int] = None
     temperature: Optional[float] = None
+    retrieved_memories: list[Any] = []
+    retrieved_lore: list[str] = []
+    rag_decisions: dict[str, bool] = {}
 
 
 class LLMResponse(BaseModel):

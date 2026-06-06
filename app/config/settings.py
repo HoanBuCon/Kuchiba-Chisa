@@ -59,7 +59,7 @@ class Settings(BaseSettings):
 
     # ── Embeddings ─────────────────────────────────────────────
     OPENAI_API_KEY: Optional[str] = None
-    EMBEDDING_MODEL: str = "sentence-transformers/all-MiniLM-L6-v2"
+    EMBEDDING_MODEL: str = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
 
     # ── JWT ────────────────────────────────────────────────────
     JWT_SECRET: str = Field(min_length=32)

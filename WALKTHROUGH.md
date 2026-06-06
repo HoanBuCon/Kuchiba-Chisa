@@ -352,6 +352,17 @@ cp .env.example .env
 
 ---
 
+## 📝 Hệ thống Clean LLM API Transaction Logger
+
+Dự án tích hợp một module ghi log giao dịch LLM API chuyên dụng tại `app/infrastructure/logging/llm_logger.py`. Module này phục vụ mục đích debug prompt, context retrieval và responses từ LLM với định dạng cực kỳ sạch sẽ và dễ đọc.
+
+### Đặc điểm nổi bật:
+* **Định dạng Clean & Cấu trúc:** Toàn bộ nội dung gửi đi (System prompt, Chat history, User message) và nhận về (Finish reason, Token usage, Raw JSON, Parsed response) được format gọn gàng, xuống dòng đầy đủ.
+* **Lưu vết Tự động & Liên tục:** Ghi trực tiếp vào file `llm_api_clean.txt` tại thư mục root. Mỗi giao dịch được phân cách bằng dấu `===== LƯỢT n =====` tăng dần liên tục, hỗ trợ hoàn hảo tiếng Việt (UTF-8).
+* **Bất đồng bộ (Non-blocking):** Quá trình ghi file log được thực thi bất đồng bộ thông qua `asyncio.to_thread` trong một thread pool riêng, đảm bảo không ảnh hưởng đến tốc độ phản hồi của chat engine.
+
+---
+
 ## 11. Scripts tiện ích
 
 | Script | Mục đích |

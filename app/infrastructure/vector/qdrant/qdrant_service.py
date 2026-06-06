@@ -197,7 +197,7 @@ class QdrantService:
         query_vector: list[float],
         user_id: str,
         limit: int = 10,
-        score_threshold: float = 0.5,
+        score_threshold: float = 0.65,
     ) -> list[dict[str, Any]]:
         """
         CRITICAL: All searches MUST use this method to enforce user isolation.

@@ -9,7 +9,7 @@ from app.config.settings import settings
 
 async def main():
     client = AsyncQdrantClient(url=settings.QDRANT_URL, timeout=10)
-    collections = ["emotional_memories", "conversation_summaries", "persona_embeddings", "user_facts"]
+    collections = ["emotional_memories", "conversation_summaries", "persona_embeddings", "user_facts", "chisa_lore"]
     for col in collections:
         try:
             await client.delete_collection(col)

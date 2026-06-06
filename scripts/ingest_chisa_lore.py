@@ -10,11 +10,20 @@ Run once (or re-run to refresh lore):
     python scripts/ingest_chisa_lore.py
 """
 
+import os
+os.environ["HF_HUB_DISABLE_SYMLINKS"] = "1"
 import asyncio
 import sys
-import os
 import uuid
+
 import re
+
+# Reconfigure stdout to use UTF-8 on Windows
+if sys.stdout.encoding != 'utf-8':
+    try:
+        sys.stdout.reconfigure(encoding='utf-8')
+    except Exception:
+        pass
 
 sys.path.append(os.getcwd())
 
@@ -52,8 +61,15 @@ def parse_lore_chunks(filepath: str) -> list[tuple[str, str]]:
     with open(filepath, "r", encoding="utf-8") as f:
         raw = f.read()
 
-    # Find all sections starting with ##
-    # Regex splits by "## " but keeps the content.
+    # Sections to ignore in RAG (since they are static guidelines already in the system prompt rules)
+    EXCLUDED_SECTIONS = {
+        "Tính Cách Lý Trí (Canon)",
+        "Nội Tâm và Quan Điểm Về Con Người",
+        "Con Người Chisa (Persona đối với Senpai)",
+        "Phong Cách Nói Chuyện",
+        "Câu Thường Nói (Quotes)"
+    }
+
     import re
     sections = re.split(r'\n## ', '\n' + raw)
     
@@ -68,27 +84,22 @@ def parse_lore_chunks(filepath: str) -> list[tuple[str, str]]:
             continue
             
         section_name = lines[0].strip()
+        if section_name in EXCLUDED_SECTIONS:
+            print(f"[*] Skipping persona/style section for RAG ingestion: '{section_name}'")
+            continue
+            
         section_body = lines[1].strip()
         
-        # Split body by lists (-) or empty paragraphs
-        paragraphs = [p.strip() for p in section_body.split("\n") if p.strip()]
+        # Split body by list items (-)
+        raw_lines = [l.strip() for l in section_body.split("\n") if l.strip()]
         
-        current_chunk = []
-        current_len = 0
-        
-        for para in paragraphs:
-            if current_len + len(para) > 1000 and current_chunk:
-                combined_text = " ".join(current_chunk)
-                chunks.append((section_name, f"[{section_name}] {combined_text}"))
-                current_chunk = [para]
-                current_len = len(para)
+        for line in raw_lines:
+            if line.startswith("-"):
+                content = line[1:].strip() # Remove the dash
+                if content:
+                    chunks.append((section_name, f"[{section_name}] {content}"))
             else:
-                current_chunk.append(para)
-                current_len += len(para)
-                
-        if current_chunk:
-            combined_text = " ".join(current_chunk)
-            chunks.append((section_name, f"[{section_name}] {combined_text}"))
+                chunks.append((section_name, f"[{section_name}] {line}"))
 
     return chunks
 
