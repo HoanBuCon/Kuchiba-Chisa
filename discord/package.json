@@ -1,0 +1,28 @@
+{
+  "name": "chisa-discord-bot",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Discord microservice for the Chisa core RAG backend",
+  "main": "src/index.js",
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js",
+    "register:commands": "node scripts/register-commands.js",
+    "check": "node --check src/index.js"
+  },
+  "dependencies": {
+    "@discordjs/rest": "^2.0.0",
+    "discord-api-types": "^0.37.0",
+    "discord.js": "^14.0.0",
+    "dotenv": "^16.0.0",
+    "pg": "^8.0.0",
+    "pino": "^9.0.0"
+  },
+  "devDependencies": {
+    "pino-pretty": "^13.0.0"
+  }
+}

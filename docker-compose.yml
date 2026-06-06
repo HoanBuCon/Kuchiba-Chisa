@@ -102,6 +102,28 @@ services:
         condition: service_started
     command: python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 4
 
+  # ── Discord Bot ──────────────────────────────────────────────────
+  discord:
+    build:
+      context: ./discord
+      dockerfile: Dockerfile
+    container_name: chisa_discord_bot
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql://chisa:chisa_secret@postgres:5432/chisa_db
+      CORE_RAG_BASE_URL: http://app:8000
+      CORE_RAG_CHAT_PATH: /api/v1/chat
+      CORE_RAG_CLEAR_PATH_TEMPLATE: /api/v1/chat/clear/{user_id}
+    networks:
+      - chisa_net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      app:
+        condition: service_started
+    command: node src/index.js
+
   # ── Celery Worker ───────────────────────────────────────────────
   celery_worker:
     build:
