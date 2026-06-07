@@ -110,4 +110,28 @@ export class InteractionRepository {
       [coreUserId, preserveInteractionId],
     );
   }
+
+  async createFromContext(context, { coreUserId, commandName, userMessage, status = 'pending', metadata = {} }) {
+    const isInteraction = typeof context.editReply === 'function';
+    const user = isInteraction ? context.user : context.author;
+    const channel = context.channel;
+    const guild = context.guild;
+
+    return this.createInteraction({
+      discordUserId: user.id,
+      coreUserId,
+      discordUserName: user.username,
+      discordUserGlobalName: user.globalName ?? null,
+      discordUserTag: user.tag ?? user.username,
+      discordGuildId: context.guildId ?? null,
+      discordGuildName: guild?.name ?? null,
+      discordChannelId: context.channelId,
+      discordChannelName: channel?.name ?? null,
+      discordMessageId: context.id,
+      commandName,
+      userMessage,
+      status,
+      metadata,
+    });
+  }
 }

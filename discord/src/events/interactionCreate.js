@@ -16,7 +16,15 @@ export async function execute(client, interaction) {
   }
 
   try {
-    await command.execute(client, interaction);
+    const discordUser = await client.services.repositories.users.ensureDiscordUser({
+      discordUserId: interaction.user.id,
+      discordGuildId: interaction.guildId || 'DM',
+      discordUserName: interaction.user.username,
+      discordUserGlobalName: interaction.user.globalName ?? null,
+      discordUserTag: interaction.user.tag ?? interaction.user.username,
+    });
+
+    await command.execute(client, interaction, discordUser);
   } catch (error) {
     client.services.logger.error(
       { err: error, commandName: interaction.commandName, userId: interaction.user?.id },

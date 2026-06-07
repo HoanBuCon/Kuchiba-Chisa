@@ -6,6 +6,7 @@ import { loadEvents } from './bot/loadEvents.js';
 import { ensureSchema, closePool, pool } from './database/pool.js';
 import { DiscordUserRepository } from './repositories/discordUserRepository.js';
 import { InteractionRepository } from './repositories/interactionRepository.js';
+import { GuildSettingsRepository } from './repositories/guildSettingsRepository.js';
 import { CoreRagClient } from './services/coreRagClient.js';
 import { RateLimiter } from './services/rateLimiter.js';
 import { PrefixCommandRunner } from './services/prefixCommandRunner.js';
@@ -20,6 +21,7 @@ export async function startApp() {
   const repositories = {
     users: new DiscordUserRepository(pool),
     interactions: new InteractionRepository(pool),
+    guildSettings: new GuildSettingsRepository(pool),
   };
   const rateLimiter = new RateLimiter(env.rateLimit);
   const coreRagClient = new CoreRagClient();
@@ -33,11 +35,7 @@ export async function startApp() {
     rateLimiter,
     coreRagClient,
     prefixCommandRunner: new PrefixCommandRunner({
-      logger,
-      rateLimiter,
-      repositories,
-      coreRagClient,
-      replyMaxChars: env.reply.maxChars,
+      client: botClient,
     }),
     repositories,
   };

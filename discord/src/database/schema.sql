@@ -1,6 +1,20 @@
+-- Migration: Support server-scoped memory
+DO $$
+BEGIN
+    -- Drop the unique constraint on discord_user_id if it exists
+    IF EXISTS (
+        SELECT 1 FROM pg_constraint WHERE conname = 'discord_users_discord_user_id_key'
+    ) THEN
+        ALTER TABLE discord_users DROP CONSTRAINT discord_users_discord_user_id_key;
+    END IF;
+END $$;
+
+ALTER TABLE discord_users ADD COLUMN IF NOT EXISTS discord_guild_id TEXT NOT NULL DEFAULT 'DM';
+
 CREATE TABLE IF NOT EXISTS discord_users (
     id BIGSERIAL PRIMARY KEY,
-    discord_user_id TEXT NOT NULL UNIQUE,
+    discord_user_id TEXT NOT NULL,
+    discord_guild_id TEXT NOT NULL DEFAULT 'DM',
     core_user_id UUID NOT NULL UNIQUE,
     discord_user_name TEXT,
     discord_user_global_name TEXT,
@@ -12,8 +26,36 @@ CREATE TABLE IF NOT EXISTS discord_users (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+CREATE UNIQUE INDEX IF NOT EXISTS idx_discord_users_uid_gid ON discord_users (discord_user_id, discord_guild_id);
 CREATE INDEX IF NOT EXISTS idx_discord_users_core_user_id ON discord_users (core_user_id);
 CREATE INDEX IF NOT EXISTS idx_discord_users_last_seen_at ON discord_users (last_seen_at DESC);
+
+-- Migration: Support multiple direct-chat channels per server
+DO $$
+BEGIN
+    -- Drop unique constraint on discord_guild_id if it exists
+    IF EXISTS (
+        SELECT 1 FROM pg_constraint WHERE conname = 'guild_settings_discord_guild_id_key'
+    ) THEN
+        ALTER TABLE guild_settings DROP CONSTRAINT guild_settings_discord_guild_id_key;
+    END IF;
+END $$;
+
+DELETE FROM guild_settings WHERE chisa_channel_id IS NULL;
+
+CREATE TABLE IF NOT EXISTS guild_settings (
+    id BIGSERIAL PRIMARY KEY,
+    discord_guild_id TEXT NOT NULL,
+    chisa_channel_id TEXT NOT NULL,
+    setup_by_user_id TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_guild_settings_channel_unique ON guild_settings (chisa_channel_id);
+
+-- Apply NOT NULL constraint to existing column
+ALTER TABLE guild_settings ALTER COLUMN chisa_channel_id SET NOT NULL;
 
 CREATE TABLE IF NOT EXISTS discord_interactions (
     id BIGSERIAL PRIMARY KEY,

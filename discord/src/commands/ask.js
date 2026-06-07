@@ -1,6 +1,6 @@
 import { SlashCommandBuilder } from 'discord.js';
 import { DEFAULT_COMMANDS } from '../config/constants.js';
-import { splitDiscordMessage, formatCoreResponse } from '../utils/reply.js';
+import { replyWithChunks } from '../utils/reply.js';
 
 export const data = new SlashCommandBuilder()
   .setName(DEFAULT_COMMANDS.ask)
@@ -13,7 +13,7 @@ export const data = new SlashCommandBuilder()
   )
   .setDMPermission(false);
 
-export async function execute(client, interaction) {
+export async function execute(client, interaction, discordUser) {
   const { logger, rateLimiter, repositories, coreRagClient } = client.services;
   const question = interaction.options.getString('message', true).trim();
   const rateKey = `${interaction.user.id}:ask`;
@@ -30,30 +30,11 @@ export async function execute(client, interaction) {
 
   await interaction.deferReply();
 
-  const discordUser = await repositories.users.ensureDiscordUser({
-    discordUserId: interaction.user.id,
-    discordUserName: interaction.user.username,
-    discordUserGlobalName: interaction.user.globalName ?? null,
-    discordUserTag: interaction.user.tag ?? interaction.user.username,
-  });
-
-  const interactionId = await repositories.interactions.createInteraction({
-    discordUserId: interaction.user.id,
+  const interactionId = await repositories.interactions.createFromContext(interaction, {
     coreUserId: discordUser.core_user_id,
-    discordUserName: interaction.user.username,
-    discordUserGlobalName: interaction.user.globalName ?? null,
-    discordUserTag: interaction.user.tag ?? interaction.user.username,
-    discordGuildId: interaction.guildId ?? null,
-    discordGuildName: interaction.guild?.name ?? null,
-    discordChannelId: interaction.channelId,
-    discordChannelName: interaction.channel?.name ?? null,
-    discordMessageId: interaction.id,
     commandName: data.name,
     userMessage: question,
-    metadata: {
-      source: 'discord',
-      command: data.name,
-    },
+    metadata: { source: 'discord', command: data.name },
   });
 
   try {
@@ -66,28 +47,61 @@ export async function execute(client, interaction) {
 
     await repositories.interactions.markSuccess(interactionId, {
       assistantMessage: result.response,
-      metadata: {
-        emotions: result.emotions,
-        source: 'core-rag',
-      },
+      metadata: { emotions: result.emotions, source: 'core-rag' },
     });
 
-    const formattedResponse = formatCoreResponse(result.response, result.emotions);
-    const chunks = splitDiscordMessage(formattedResponse, client.services.config.reply.maxChars);
-    await interaction.editReply({ content: chunks[0] || 'Chisa chưa tạo được phản hồi.' });
-
-    for (let index = 1; index < chunks.length; index += 1) {
-      await interaction.followUp({ content: chunks[index] });
-    }
+    await replyWithChunks(interaction, result.response, result.emotions, client);
   } catch (error) {
     logger.error({ err: error, userId: interaction.user.id, interactionId }, 'Discord /ask failed');
     await repositories.interactions.markFailure(interactionId, error instanceof Error ? error.message : String(error));
 
     const message = 'Xin lỗi, Chisa không thể trả lời lúc này. Hãy thử lại sau ít phút.';
-    if (interaction.deferred || interaction.replied) {
-      await interaction.editReply({ content: message });
-    } else {
-      await interaction.reply({ content: message, ephemeral: true });
-    }
+    await interaction.editReply({ content: message });
+  }
+}
+
+export async function executePrefix(client, message, question, discordUser) {
+  const { logger, rateLimiter, repositories, coreRagClient } = client.services;
+  const rateKey = `${message.author.id}:ask`;
+  const rate = rateLimiter.allow(rateKey);
+
+  if (!rate.allowed) {
+    const waitSeconds = Math.ceil((rate.resetAt - Date.now()) / 1000);
+    await message.reply(`Bạn đang gửi quá nhanh. Hãy chờ khoảng ${waitSeconds}s rồi thử lại.`);
+    return;
+  }
+
+  if (!question) {
+    await message.reply(`Dùng ${client.services.prefixCommandRunner?.prefix || 'c!'}ask <nội dung> để hỏi Chisa.`);
+    return;
+  }
+
+  await message.channel.sendTyping().catch(() => {});
+
+  const interactionId = await repositories.interactions.createFromContext(message, {
+    coreUserId: discordUser.core_user_id,
+    commandName: `${client.services.prefixCommandRunner?.prefix || 'c!'}ask`,
+    userMessage: question,
+    metadata: { source: 'discord', command: data.name, mode: 'prefix' },
+  });
+
+  try {
+    await repositories.interactions.markCoreRequest(interactionId);
+
+    const result = await coreRagClient.ask({
+      coreUserId: discordUser.core_user_id,
+      message: question,
+    });
+
+    await repositories.interactions.markSuccess(interactionId, {
+      assistantMessage: result.response,
+      metadata: { emotions: result.emotions, source: 'core-rag', mode: 'prefix' },
+    });
+
+    await replyWithChunks(message, result.response, result.emotions, client);
+  } catch (error) {
+    logger.error({ err: error, userId: message.author.id, interactionId }, 'Discord prefix ask failed');
+    await repositories.interactions.markFailure(interactionId, error instanceof Error ? error.message : String(error));
+    await message.reply('Xin lỗi, Chisa không thể trả lời lúc này. Hãy thử lại sau ít phút.');
   }
 }
