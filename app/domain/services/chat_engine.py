@@ -94,8 +94,9 @@ class ChatEngine:
         # RAG Router only needed for memory (keyword-based triggers remain useful for memory recall)
         rag_decisions = RAGRouter.should_retrieve(user_message)
         
-        # Attachment bonus formulation (pre-calculation based on history)
-        attachment_bonus = math.log(max(1, stats.interaction_count)) * 0.05
+        # Attachment bonus formulation (raw value based on interaction history)
+        # This bonus is dampened later based on final emotional state
+        attachment_bonus_raw = math.log(max(1, stats.interaction_count)) * 0.05
         
         # Format emotions for system context
         current_emotions = {
@@ -103,7 +104,7 @@ class ChatEngine:
             "sadness": emotion.sadness,
             "trust": emotion.trust,
             "irritation": emotion.irritation,
-            "attachment": emotion.attachment + attachment_bonus
+            "attachment": emotion.attachment + attachment_bonus_raw
         }
         
         lore_chunks = []
@@ -190,7 +191,7 @@ class ChatEngine:
         # 3. Prompt Engineering via ContextBuilder using trimmed context
         prompt = self.context_builder.build(
             emotion=emotion,
-            attachment_bonus=attachment_bonus,
+            attachment_bonus=attachment_bonus_raw,
             memories=trimmed_memories,
             lore_chunks=trimmed_lore,
             history=trimmed_history,
@@ -291,6 +292,22 @@ class ChatEngine:
         
         
         # Re-compute emotions after update so the frontend gets the true post-chat/time-decayed emotional state
+        # Dampen attachment_bonus when Chisa is emotionally withdrawing (hurt + irritated)
+        # This prevents the interaction-count bonus from overriding genuine emotional distress
+        attachment_bonus = attachment_bonus_raw
+        if emotion.sadness > 0.15 and emotion.irritation > 0.10:
+            # Dampening scales with severity: mild hurt = 70% bonus, severe = near-0% bonus
+            dampen_factor = max(0.0, 1.0 - (emotion.sadness * emotion.irritation * 3.0))
+            attachment_bonus = attachment_bonus_raw * dampen_factor
+            log.debug(
+                "Attachment bonus dampened",
+                raw=f"{attachment_bonus_raw:.4f}",
+                dampened=f"{attachment_bonus:.4f}",
+                dampen_factor=f"{dampen_factor:.3f}",
+                sadness=f"{emotion.sadness:.3f}",
+                irritation=f"{emotion.irritation:.3f}",
+            )
+        
         updated_emotions = {
             "joy": emotion.joy,
             "sadness": emotion.sadness,
@@ -299,5 +316,5 @@ class ChatEngine:
             "attachment": emotion.attachment + attachment_bonus
         }
         
-        log.info("ChatEngine cycle complete", user_id=user_id, attachment_bonus=attachment_bonus)
+        log.info("ChatEngine cycle complete", user_id=user_id, attachment_bonus=attachment_bonus, attachment_bonus_raw=attachment_bonus_raw)
         return chisa_reply, updated_emotions

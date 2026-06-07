@@ -26,17 +26,26 @@ export function splitDiscordMessage(text, maxLength = 1900) {
   return chunks.filter(Boolean);
 }
 
+const EMOTION_LABELS = {
+  joy: 'Vui vẻ',
+  sadness: 'Buồn bã',
+  trust: 'Tin tưởng',
+  irritation: 'Khó chịu',
+  attachment: 'Gắn kết'
+};
+
 export function formatCoreResponse(responseText, emotions) {
   const lines = [responseText?.trim() ?? ''];
 
   if (emotions && typeof emotions === 'object') {
     const emotionLine = Object.entries(emotions)
-      .map(([key, value]) => `${key}: ${Number(value).toFixed(2)}`)
+      .filter(([_, value]) => value !== null && value !== undefined)
+      .map(([key, value]) => `${EMOTION_LABELS[key] || key} (${Number(value).toFixed(2)})`)
       .join(' | ');
 
     if (emotionLine) {
       lines.push('');
-      lines.push(`Cảm xúc hiện tại: ${emotionLine}`);
+      lines.push(`*[Cảm xúc: ${emotionLine}]*`);
     }
   }
 

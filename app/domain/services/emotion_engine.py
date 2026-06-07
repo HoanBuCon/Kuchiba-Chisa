@@ -241,7 +241,9 @@ class EmotionEngine:
             delta.irritation -= 0.10 * state.joy
         if chisa_flustered:
             delta.joy += 0.05
-            delta.attachment += 0.01
+            # Only grow attachment from flustered if Chisa isn't simultaneously hurt
+            if not chisa_sad and not chisa_annoyed:
+                delta.attachment += 0.01
 
         # 4. Attachment progression (Asymmetrical progression)
         # Attachment only grows if trust is high without rudeness, and grows very slowly
@@ -260,6 +262,29 @@ class EmotionEngine:
             inhibition = min(final_joy, final_sad) * 0.7
             delta.joy -= inhibition
             delta.sadness -= inhibition
+
+        # 4.6 Emotional Withdrawal — Sadness + Irritation compound penalty on Attachment
+        # When Chisa is simultaneously hurt (sad) AND annoyed (irritated), she emotionally
+        # withdraws from Senpai. This models the psychological reality that sustained
+        # hurt + anger causes distancing, regardless of what the LLM classifier flagged.
+        final_sad_post = state.sadness + delta.sadness
+        final_irr_post = state.irritation + delta.irritation
+        SAD_WITHDRAWAL_THRESHOLD = 0.15    # Sadness must be noticeable
+        IRR_WITHDRAWAL_THRESHOLD = 0.10    # Irritation must also be present
+        
+        if final_sad_post > SAD_WITHDRAWAL_THRESHOLD and final_irr_post > IRR_WITHDRAWAL_THRESHOLD:
+            # Penalty scales with the product of sadness × irritation
+            # Mild: 0.2 × 0.1 = 0.02 → penalty ≈ 0.02
+            # Severe: 0.5 × 0.4 = 0.20 → penalty ≈ 0.10
+            withdrawal_intensity = final_sad_post * final_irr_post
+            withdrawal_penalty = min(0.10, withdrawal_intensity * 0.50)
+            delta.attachment -= withdrawal_penalty
+            log.debug(
+                "Emotional withdrawal triggered",
+                sadness=f"{final_sad_post:.3f}",
+                irritation=f"{final_irr_post:.3f}",
+                withdrawal_penalty=f"{withdrawal_penalty:.4f}",
+            )
 
         # Apply Deltas
         state.joy = self._clamp(state.joy + delta.joy)

@@ -1,6 +1,6 @@
 import { SlashCommandBuilder } from 'discord.js';
 import { DEFAULT_COMMANDS } from '../config/constants.js';
-import { splitDiscordMessage } from '../utils/reply.js';
+import { splitDiscordMessage, formatCoreResponse } from '../utils/reply.js';
 
 export const data = new SlashCommandBuilder()
   .setName(DEFAULT_COMMANDS.ask)
@@ -72,7 +72,8 @@ export async function execute(client, interaction) {
       },
     });
 
-    const chunks = splitDiscordMessage(result.response, client.services.config.reply.maxChars);
+    const formattedResponse = formatCoreResponse(result.response, result.emotions);
+    const chunks = splitDiscordMessage(formattedResponse, client.services.config.reply.maxChars);
     await interaction.editReply({ content: chunks[0] || 'Chisa chưa tạo được phản hồi.' });
 
     for (let index = 1; index < chunks.length; index += 1) {

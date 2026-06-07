@@ -1,5 +1,5 @@
 import { DEFAULT_COMMANDS, DEFAULT_PREFIX } from '../config/constants.js';
-import { splitDiscordMessage } from '../utils/reply.js';
+import { splitDiscordMessage, formatCoreResponse } from '../utils/reply.js';
 
 export class PrefixCommandRunner {
   constructor({ logger, rateLimiter, repositories, coreRagClient, replyMaxChars, prefix = DEFAULT_PREFIX, commands = DEFAULT_COMMANDS }) {
@@ -113,7 +113,8 @@ export class PrefixCommandRunner {
         },
       });
 
-      const chunks = splitDiscordMessage(result.response, this.replyMaxChars);
+      const formattedResponse = formatCoreResponse(result.response, result.emotions);
+      const chunks = splitDiscordMessage(formattedResponse, this.replyMaxChars);
       await message.reply({ content: chunks[0] || 'Chisa chưa tạo được phản hồi.', allowedMentions: { repliedUser: false } });
 
       for (let index = 1; index < chunks.length; index += 1) {
