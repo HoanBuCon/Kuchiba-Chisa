@@ -47,19 +47,24 @@ export function formatCoreResponse(responseText, emotions, client) {
   const lines = [responseText?.trim() ?? ''];
 
   if (emotions && typeof emotions === 'object') {
-    const emotionLine = Object.entries(emotions)
+    const emotionLines = Object.entries(emotions)
       .filter(([_, value]) => value !== null && value !== undefined)
       .map(([key, value]) => {
         const info = EMOTION_LABELS[key] || { label: key, emoji: '💬' };
         const customEmoji = getCustomEmoji(client, key);
         const emojiStr = customEmoji || info.emoji;
-        return `${emojiStr} ${info.label} (${Number(value).toFixed(2)})`;
-      })
-      .join(' | ');
+        let percent = Math.round(Number(value) * 100);
+        if (percent > 100) percent = 100;
+        if (percent < 0) percent = 0;
+        return `${emojiStr} ${info.label}: ${percent}%`;
+      });
 
-    if (emotionLine) {
+    if (emotionLines.length > 0) {
       lines.push('');
-      lines.push(`*[Cảm xúc: ${emotionLine}]*`);
+      lines.push('**[Trạng thái Cảm xúc]**');
+      lines.push('```');
+      lines.push(emotionLines.join('\n'));
+      lines.push('```');
     }
   }
 

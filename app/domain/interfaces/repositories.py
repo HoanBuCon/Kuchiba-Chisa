@@ -70,6 +70,7 @@ class IConversationRepository(Protocol):
         role: str,
         content: str,
         token_count: Optional[int] = None,
+        is_success: bool = True,
     ) -> None:
         """
         Persists a new message into STM.

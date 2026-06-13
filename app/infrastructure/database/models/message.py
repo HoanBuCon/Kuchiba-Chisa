@@ -3,7 +3,7 @@ from __future__ import annotations
 import uuid
 import enum
 from typing import TYPE_CHECKING
-from sqlalchemy import ForeignKey, Text, Integer, Enum as SQLEnum
+from sqlalchemy import ForeignKey, Text, Integer, Boolean, Enum as SQLEnum
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy import Index
 
@@ -32,6 +32,7 @@ class Message(Base, UUIDMixin, TimestampMixin):
     role: Mapped[MessageRole] = mapped_column(SQLEnum(MessageRole, name="message_role_enum", create_type=False), nullable=False)
     content: Mapped[str] = mapped_column(Text, nullable=False)
     token_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    is_success: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     
     # ── Relationships ─────────────────────────────────────────────────────────
     user: Mapped["User"] = relationship("User", back_populates="messages")

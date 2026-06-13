@@ -53,9 +53,9 @@ export async function execute(client, interaction, discordUser) {
     await replyWithChunks(interaction, result.response, result.emotions, client);
   } catch (error) {
     logger.error({ err: error, userId: interaction.user.id, interactionId }, 'Discord /ask failed');
-    await repositories.interactions.markFailure(interactionId, error instanceof Error ? error.message : String(error));
+    await repositories.interactions.pool.query('DELETE FROM discord_interactions WHERE id = $1', [interactionId]);
 
-    const message = 'Xin lỗi, Chisa không thể trả lời lúc này. Hãy thử lại sau ít phút.';
+    const message = 'Xin lỗi Senpai, Chisa không thể trả lời lúc này. Hãy thử lại sau ít phút.';
     await interaction.editReply({ content: message });
   }
 }
@@ -101,7 +101,8 @@ export async function executePrefix(client, message, question, discordUser) {
     await replyWithChunks(message, result.response, result.emotions, client);
   } catch (error) {
     logger.error({ err: error, userId: message.author.id, interactionId }, 'Discord prefix ask failed');
-    await repositories.interactions.markFailure(interactionId, error instanceof Error ? error.message : String(error));
-    await message.reply('Xin lỗi, Chisa không thể trả lời lúc này. Hãy thử lại sau ít phút.');
+    await repositories.interactions.pool.query('DELETE FROM discord_interactions WHERE id = $1', [interactionId]);
+    await message.reply('Xin lỗi Senpai, Chisa không thể trả lời lúc này. Hãy thử lại sau ít phút.');
+    await message.delete().catch(() => {});
   }
 }

@@ -44,6 +44,7 @@ class SqlAlchemyConversationRepository(IConversationRepository):
         role: str,
         content: str,
         token_count: Optional[int] = None,
+        is_success: bool = True,
     ) -> None:
         enum_role = MessageRole.USER if role == "user" else MessageRole.ASSISTANT
         msg = Message(
@@ -52,7 +53,8 @@ class SqlAlchemyConversationRepository(IConversationRepository):
             user_id=user_id,
             role=enum_role,
             content=content,
-            token_count=token_count
+            token_count=token_count,
+            is_success=is_success
         )
         self.session.add(msg)
         await self.session.commit()
@@ -64,7 +66,8 @@ class SqlAlchemyConversationRepository(IConversationRepository):
             select(Message)
             .where(
                 Message.user_id == user_id,
-                Message.conversation_id == conversation_id
+                Message.conversation_id == conversation_id,
+                Message.is_success == True
             )
             .order_by(Message.created_at.desc())
             .limit(limit)
