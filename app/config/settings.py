@@ -43,6 +43,9 @@ class Settings(BaseSettings):
     # ── LLM — Provider ─────────────────────────────────────────
     LLM_PROVIDER: Literal["groq", "gemini"] = Field(default="groq", validation_alias="LLM_PROVIDER")
 
+    # ── Chat Pipeline ──────────────────────────────────────────
+    CHAT_PIPELINE: Literal["legacy", "production"] = Field(default="legacy", validation_alias="CHAT_PIPELINE")
+
     # ── LLM — Groq ─────────────────────────────────────────────
     GROQ_API_KEY: Optional[str] = None
     GROQ_MODEL: str = "llama-3.1-8b-instant"

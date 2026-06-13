@@ -13,6 +13,7 @@ from app.infrastructure.logging.logger import get_logger
 from app.domain.services.context_builder import ContextBuilder
 from app.domain.services.memory_manager import MemoryManager
 from app.infrastructure.vector.qdrant.qdrant_service import qdrant_service
+from app.domain.services.production_pipeline import ProductionChatEngine, ProductionContextBuilder, MemoryExtractor
 
 log = get_logger(__name__)
 
@@ -25,14 +26,25 @@ if settings.LLM_PROVIDER == "gemini":
     _llm = GeminiAdapter()
 else:
     _llm = GroqAdapter()
+
+# Legacy Chat Engine
 _context_builder = ContextBuilder()
 _memory_manager = MemoryManager(embedder=_embedder, qdrant=qdrant_service)
-
 _chat_engine = ChatEngine(
     embedder=_embedder, 
     llm=_llm,
     context_builder=_context_builder,
     memory_manager=_memory_manager
+)
+
+# Production Chat Engine
+_production_context_builder = ProductionContextBuilder()
+_production_memory_extractor = MemoryExtractor(llm=_llm, embedder=_embedder, qdrant=qdrant_service)
+_production_chat_engine = ProductionChatEngine(
+    embedder=_embedder,
+    llm=_llm,
+    context_builder=_production_context_builder,
+    memory_extractor=_production_memory_extractor
 )
 
 @router.post("/chat", response_model=ChatResponse)
@@ -43,21 +55,30 @@ async def chat_endpoint(
     """
     Primary endpoint for User <-> AI interactions.
     Requires user_id to correctly scope STM, emotions, and RAG contexts.
+    Allows routing dynamically between legacy and production pipelines.
     """
-    log.info("Received chat request", user_id=request.user_id)
+    pipeline_to_use = request.pipeline or settings.CHAT_PIPELINE
+    log.info("Received chat request", user_id=request.user_id, pipeline=pipeline_to_use)
     try:
-        reply_text, emotions = await _chat_engine.chat(
-            session=session,
-            user_id=request.user_id,
-            user_message=request.message
-        )
+        if pipeline_to_use == "production":
+            reply_text, emotions = await _production_chat_engine.chat(
+                session=session,
+                user_id=request.user_id,
+                user_message=request.message
+            )
+        else:
+            reply_text, emotions = await _chat_engine.chat(
+                session=session,
+                user_id=request.user_id,
+                user_message=request.message
+            )
         return ChatResponse(
             response=reply_text,
             user_id=request.user_id,
             emotions=emotions
         )
     except Exception as e:
-        log.error("Chat orchestration failed", error=str(e), user_id=request.user_id)
+        log.error("Chat orchestration failed", error=str(e), user_id=request.user_id, pipeline=pipeline_to_use)
         raise HTTPException(status_code=500, detail="Internal server error during chat generation")
 
 
@@ -131,7 +152,7 @@ async def clear_user_memory(
 
         # 3. Clear Qdrant LTM vectors (best-effort, ignore per-collection failures)
         client = get_qdrant_client()
-        collections = ["emotional_memories", "conversation_summaries", "persona_embeddings", "user_facts"]
+        collections = ["emotional_memories", "conversation_summaries", "persona_embeddings", "user_facts", "memories"]
         for col in collections:
             try:
                 await client.delete(

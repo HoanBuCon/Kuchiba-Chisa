@@ -33,8 +33,8 @@ class GroqAdapter(BaseLLMAdapter):
     in Phase 4 (Core Domain Implementation).
     """
 
-    _MAX_RETRIES = 3
-    _BASE_BACKOFF = 0.5  # seconds
+    _MAX_RETRIES = 5
+    _BASE_BACKOFF = 1.0  # seconds
 
     def __init__(self) -> None:
         self._client = AsyncGroq(

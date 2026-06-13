@@ -19,8 +19,8 @@ log = get_logger(__name__)
 
 engine: AsyncEngine = create_async_engine(
     settings.DATABASE_URL,
-    echo=settings.is_dev,          # SQL query logging in dev
-    echo_pool=settings.is_dev,     # Pool event logging in dev
+    echo=False,          # Disable SQL query logging to prevent UnicodeEncodeError on Windows
+    echo_pool=False,
     pool_size=10,
     max_overflow=20,
     pool_pre_ping=True,            # Verify connections before use
