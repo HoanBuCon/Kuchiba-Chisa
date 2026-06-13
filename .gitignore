@@ -42,3 +42,6 @@ logs/
 # OS
 .DS_Store
 Thumbs.db
+
+# Ignored files
+llm_api_clean.txt
