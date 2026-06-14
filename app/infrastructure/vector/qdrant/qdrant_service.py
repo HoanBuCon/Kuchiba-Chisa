@@ -271,15 +271,19 @@ class QdrantService:
         vector: list[float],
         text_content: str,
         section: str = "general",
+        payload: dict = None,
     ) -> None:
         """Upsert lore chunk — no user_id required."""
         from qdrant_client.models import PointStruct as PS
+        upsert_payload = {
+            "text_content": text_content,
+            "section": section,
+        }
+        if payload:
+            upsert_payload.update(payload)
         await self._client.upsert(
             collection_name=collection,
-            points=[PS(id=point_id, vector=vector, payload={
-                "text_content": text_content,
-                "section": section,
-            })],
+            points=[PS(id=point_id, vector=vector, payload=upsert_payload)],
             wait=True,
         )
 

@@ -60,12 +60,24 @@ async def main():
     print("  [1] Câu hỏi đầy đủ ngữ cảnh  (Full Context – dễ)")
     print("  [2] Câu hỏi ngắn / ẩn ý      (Implicit Benchmark – khó)")
     print("-" * 60)
-    while True:
-        choice = input("Chọn mode (1 hoặc 2): ").strip()
-        if choice in ("1", "2"):
-            break
-        print("  ⚠️  Vui lòng nhập 1 hoặc 2.")
-    mode = int(choice)
+    mode_env = os.environ.get("LORE_TEST_MODE")
+    if mode_env in ("1", "2"):
+        mode = int(mode_env)
+        print(f"Selecting mode {mode} from environment variable LORE_TEST_MODE")
+    elif not sys.stdin.isatty():
+        mode = 2
+        print("Non-interactive terminal detected: defaulting to mode 2 (Implicit Benchmark)")
+    else:
+        while True:
+            try:
+                choice = input("Chọn mode (1 hoặc 2): ").strip()
+                if choice in ("1", "2"):
+                    break
+                print("  ⚠️  Vui lòng nhập 1 hoặc 2.")
+            except (EOFError, KeyboardInterrupt):
+                choice = "2"
+                break
+        mode = int(choice)
     print()
     # ───────────────────────────────────────────────────────────────────────────
 

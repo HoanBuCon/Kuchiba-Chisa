@@ -19,63 +19,83 @@ from qdrant_client.http import models as qdrant_models
 
 VECTOR_SIZE = 384
 
-COLLECTIONS = {
-    "character_lore": "data/lore/character_lore.md",
-    "world_lore": "data/lore/world_lore.md",
-    "story_lore": "data/lore/story_lore.md",
+COLLECTION_DIRS = {
+    "character_lore": ["data/lore/character_lore", "data/lore/relationship_lore"],
+    "world_lore": ["data/lore/world_lore"],
+    "story_lore": ["data/lore/story_lore"],
 }
 
-def _parse_bullets(section_body: str) -> list[str]:
-    bullets: list[str] = []
-    for line in section_body.split("\n"):
-        stripped = line.strip()
-        if not stripped or stripped.startswith("##"):
-            continue
-        if stripped.startswith("-"):
-            content = stripped[1:].strip()
-            if content:
-                bullets.append(content)
-        else:
-            bullets.append(stripped)
-    return bullets
-
-def parse_lore_chunks(filepath: str) -> list[tuple[str, str]]:
+def parse_markdown_to_parent_sections(filepath: str) -> list[dict]:
     if not os.path.exists(filepath):
         print(f"[!] File not found: {filepath}")
         return []
-        
-    with open(filepath, "r", encoding="utf-8") as f:
-        raw = f.read()
 
-    sections = re.split(r'\n## ', '\n' + raw)
-    chunks = []
+    with open(filepath, "r", encoding="utf-8") as f:
+        raw_content = f.read().strip()
+
+    basename = os.path.splitext(os.path.basename(filepath))[0]
+    default_title = " ".join([w.capitalize() for w in basename.split("_")])
+
+    # Case 1: File has H2 headings
+    if "\n## " in ("\n" + raw_content):
+        raw_sections = re.split(r'\n## ', '\n' + raw_content)
+        sections_list = []
+        for sec in raw_sections:
+            sec = sec.strip()
+            if not sec or sec.startswith("#"):  # Skip the H1 header section
+                continue
+            
+            parts = sec.split("\n", 1)
+            title = parts[0].strip()
+            body = parts[1].strip() if len(parts) > 1 else ""
+            
+            sections_list.append({
+                "title": title,
+                "parent_full_text": f"## {title}\n\n{body}",
+                "body_content": body
+            })
+        return sections_list
     
-    for section in sections:
-        section = section.strip()
-        if not section or section.startswith("#"):
+    # Case 2: Flat file without H2
+    else:
+        body_without_h1 = re.sub(r'^#[^\n]*\n', '', raw_content).strip()
+        return [{
+            "title": default_title,
+            "parent_full_text": raw_content,
+            "body_content": body_without_h1
+        }]
+
+def extract_child_chunks(body_text: str) -> list[str]:
+    child_chunks = []
+    lines = body_text.split("\n")
+    for line in lines:
+        line = line.strip()
+        if not line or line.startswith("##"):
             continue
-            
-        lines = section.split("\n", 1)
-        if len(lines) < 2:
-            continue
-            
-        section_name = lines[0].strip()
-        section_body = lines[1].strip()
-        bullets = _parse_bullets(section_body)
         
-        # We can chunk by bullet points
-        for bullet in bullets:
-            if bullet.strip():
-                chunks.append((section_name, f"[{section_name}] {bullet.strip()}"))
+        # Strip bullet points
+        if line.startswith("-"):
+            line = line[1:].strip()
+            
+        if len(line) > 250:
+            # Segment long paragraphs by sentences
+            sentences = re.split(r'(?<=[.!?]) +', line)
+            for sentence in sentences:
+                sentence = sentence.strip()
+                if sentence:
+                    child_chunks.append(sentence)
+        else:
+            if line:
+                child_chunks.append(line)
                 
-    return chunks
+    return child_chunks
 
 async def ensure_collections():
     client = get_qdrant_client()
     collections = await client.get_collections()
     names = [c.name for c in collections.collections]
     
-    for col_name in COLLECTIONS.keys():
+    for col_name in COLLECTION_DIRS.keys():
         if col_name in names:
             await client.delete_collection(collection_name=col_name)
             print(f"[*] Deleted existing collection: {col_name}")
@@ -91,7 +111,7 @@ async def ensure_collections():
 
 async def main():
     print("=" * 60)
-    print(" INGESTING PRODUCTION PIPELINE LORE")
+    print(" INGESTING PRODUCTION PIPELINE LORE (PARENT-CHILD SCHEMA)")
     print("=" * 60)
     
     # 1. Recreate collections
@@ -100,29 +120,59 @@ async def main():
     embedder = FastEmbedAdapter()
     
     # 2. Embed and upsert for each collection
-    for col_name, filepath in COLLECTIONS.items():
-        print(f"\nProcessing {filepath}...")
-        chunks = parse_lore_chunks(filepath)
-        print(f"[i] Parsed {len(chunks)} chunks for `{col_name}`")
+    for col_name, dirpaths in COLLECTION_DIRS.items():
+        print(f"\nProcessing collection `{col_name}`...")
         
         success = 0
-        for section, text in chunks:
-            try:
-                vector = await embedder.embed_text(text)
-                point_id = str(uuid.uuid4())
-                await qdrant_service.upsert_lore(
-                    collection=col_name,
-                    point_id=point_id,
-                    vector=vector,
-                    text_content=text,
-                    section=section,
-                )
-                print(f"  [+] [{section}] {text[:50]}...")
-                success += 1
-            except Exception as e:
-                print(f"  [!] Failed chunk [{section}]: {e}")
+        for dirpath in dirpaths:
+            if not os.path.exists(dirpath):
+                print(f"[!] Directory not found: {dirpath}")
+                continue
                 
-        print(f"[DONE] Ingested {success}/{len(chunks)} chunks into `{col_name}`")
+            for root, _, files in os.walk(dirpath):
+                for file in files:
+                    if file.endswith(".md"):
+                        filepath = os.path.join(root, file)
+                        sub_category = os.path.splitext(file)[0]
+                        
+                        parent_sections = parse_markdown_to_parent_sections(filepath)
+                        
+                        for parent_sec in parent_sections:
+                            parent_id = str(uuid.uuid4())
+                            parent_title = parent_sec["title"]
+                            parent_full_text = parent_sec["parent_full_text"]
+                            
+                            child_texts = extract_child_chunks(parent_sec["body_content"])
+                            
+                            for child_text in child_texts:
+                                try:
+                                    vector = await embedder.embed_text(child_text)
+                                    point_id = str(uuid.uuid4())
+                                    
+                                    # Create the metadata payload
+                                    payload = {
+                                        "parent_id": parent_id,
+                                        "parent_full_text": parent_full_text,
+                                        "category": col_name,
+                                        "sub_category": sub_category,
+                                        "character": "chisa",
+                                        "importance": 0.8,
+                                        "source_file": filepath.replace("\\", "/")
+                                    }
+                                    
+                                    await qdrant_service.upsert_lore(
+                                        collection=col_name,
+                                        point_id=point_id,
+                                        vector=vector,
+                                        text_content=child_text,
+                                        section=parent_title,
+                                        payload=payload
+                                    )
+                                    success += 1
+                                except Exception as e:
+                                    print(f"  [!] Failed child point in section [{parent_title}]: {e}")
+                                    
+        print(f"[DONE] Ingested {success} child points into `{col_name}`")
         
     print("\n[COMPLETE] Ingestion finished successfully.\n")
 

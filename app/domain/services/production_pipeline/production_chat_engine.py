@@ -40,6 +40,24 @@ class ProductionChatEngine:
         self.intent_classifier = IntentClassifier(llm=llm)
         self.emotion_engine = EmotionEngine()
 
+    def _deduplicate_parent_child(self, candidates: List[Dict[str, Any]]) -> List[str]:
+        seen_parents = set()
+        lore_chunks = []
+        for cand in candidates:
+            payload = cand.get("payload", {})
+            parent_id = payload.get("parent_id")
+            parent_text = payload.get("parent_full_text")
+            text = parent_text if parent_text else payload.get("text_content", "")
+            if not text:
+                continue
+            if parent_id:
+                if parent_id not in seen_parents:
+                    seen_parents.add(parent_id)
+                    lore_chunks.append(text)
+            else:
+                lore_chunks.append(text)
+        return lore_chunks
+
     async def get_emotion_state(self, session: AsyncSession, user_id: str) -> EmotionState:
         user_uuid = uuid.UUID(user_id)
         emotion_repo = SqlAlchemyEmotionRepository(session)
@@ -72,57 +90,73 @@ class ProductionChatEngine:
         
         try:
             # 2. Classify intent
-            intent = await self.intent_classifier.classify(user_message)
-            log.info("Production query classified", intent=intent.value, user_id=user_id)
+            intents = await self.intent_classifier.classify(user_message)
+            intent_values = [i.value for i in intents]
+            log.info("Production query classified", intents=intent_values, user_id=user_id)
             
-            # 3. Retrieve RAG context based on classified intent
+            # 3. Retrieve RAG context based on classified intents
             lore_chunks: List[str] = []
             memories: List[str] = []
             
             # Embed query if we need to search Qdrant
-            if intent != ChatIntent.OTHER:
+            if any(i != ChatIntent.OTHER for i in intents):
                 vector = await self.embedder.embed_text(user_message)
                 
-                if intent == ChatIntent.CHARACTER_LORE:
-                    candidates = await qdrant_service.search_lore(
-                        collection="character_lore",
-                        query_vector=vector,
-                        limit=5,
-                        score_threshold=0.35
+                # Set up retrieval tasks to run concurrently
+                retrieval_tasks = []
+                active_intents = []
+                
+                if ChatIntent.CHARACTER_LORE in intents:
+                    active_intents.append(ChatIntent.CHARACTER_LORE)
+                    retrieval_tasks.append(
+                        qdrant_service.search_lore(
+                            collection="character_lore",
+                            query_vector=vector,
+                            limit=6,
+                            score_threshold=0.35
+                        )
                     )
-                    lore_chunks = [cand.get("payload", {}).get("text_content", "") for cand in candidates]
-                    lore_chunks = [text for text in lore_chunks if text]
-                    
-                elif intent == ChatIntent.WORLD_LORE:
-                    candidates = await qdrant_service.search_lore(
-                        collection="world_lore",
-                        query_vector=vector,
-                        limit=5,
-                        score_threshold=0.35
+                if ChatIntent.WORLD_LORE in intents:
+                    active_intents.append(ChatIntent.WORLD_LORE)
+                    retrieval_tasks.append(
+                        qdrant_service.search_lore(
+                            collection="world_lore",
+                            query_vector=vector,
+                            limit=6,
+                            score_threshold=0.35
+                        )
                     )
-                    lore_chunks = [cand.get("payload", {}).get("text_content", "") for cand in candidates]
-                    lore_chunks = [text for text in lore_chunks if text]
-                    
-                elif intent == ChatIntent.STORY_LORE:
-                    candidates = await qdrant_service.search_lore(
-                        collection="story_lore",
-                        query_vector=vector,
-                        limit=5,
-                        score_threshold=0.35
+                if ChatIntent.STORY_LORE in intents:
+                    active_intents.append(ChatIntent.STORY_LORE)
+                    retrieval_tasks.append(
+                        qdrant_service.search_lore(
+                            collection="story_lore",
+                            query_vector=vector,
+                            limit=6,
+                            score_threshold=0.35
+                        )
                     )
-                    lore_chunks = [cand.get("payload", {}).get("text_content", "") for cand in candidates]
-                    lore_chunks = [text for text in lore_chunks if text]
-                    
-                elif intent == ChatIntent.MEMORY:
-                    candidates = await qdrant_service.search_by_user(
-                        collection="memories",
-                        query_vector=vector,
-                        user_id=user_id,
-                        limit=5,
-                        score_threshold=0.35
+                if ChatIntent.MEMORY in intents:
+                    active_intents.append(ChatIntent.MEMORY)
+                    retrieval_tasks.append(
+                        qdrant_service.search_by_user(
+                            collection="memories",
+                            query_vector=vector,
+                            user_id=user_id,
+                            limit=5,
+                            score_threshold=0.35
+                        )
                     )
-                    memories = [cand.get("payload", {}).get("text_content", "") for cand in candidates]
-                    memories = [text for text in memories if text]
+                
+                if retrieval_tasks:
+                    results = await asyncio.gather(*retrieval_tasks)
+                    for intent_type, candidate_list in zip(active_intents, results):
+                        if intent_type == ChatIntent.MEMORY:
+                            extracted_mems = [cand.get("payload", {}).get("text_content", "") for cand in candidate_list]
+                            memories.extend([text for text in extracted_mems if text])
+                        else:
+                            extracted_lore = self._deduplicate_parent_child(candidate_list)
+                            lore_chunks.extend(extracted_lore)
             
             # 4. Formulate Attachment Bonus
             attachment_bonus_raw = math.log(max(1, stats.interaction_count)) * 0.05
@@ -135,7 +169,7 @@ class ProductionChatEngine:
                 lore=lore_chunks,
                 history=history,
                 user_message=user_message,
-                intent_name=intent.value
+                intent_name=", ".join(intent_values)
             )
             
             # 6. LLM Generation
