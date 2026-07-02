@@ -12,6 +12,20 @@ def clean_query_for_rag(text: str) -> str:
     original = text
     text = text.lower().strip()
     
+    # Apply abbreviation replacements (lightweight, runs in microseconds)
+    abbreviations = {
+        r'\bko\b': 'không',
+        r'\bk\b': 'không',
+        r'\bđc\b': 'được',
+        r'\bkhg\b': 'không',
+        r'\bvs\b': 'với',
+        r'\bng\b': 'người',
+        r'\bgđ\b': 'gia đình',
+        r'\bthik\b': 'thích',
+    }
+    for pattern, repl in abbreviations.items():
+        text = re.sub(pattern, repl, text)
+        
     # Remove punctuation at ends
     text = re.sub(r'^[,\.\?\!\-\s]+|[,\.\?\!\-\s]+$', '', text)
     

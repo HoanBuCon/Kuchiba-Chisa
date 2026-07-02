@@ -103,6 +103,5 @@ export async function executePrefix(client, message, question, discordUser) {
     logger.error({ err: error, userId: message.author.id, interactionId }, 'Discord prefix ask failed');
     await repositories.interactions.pool.query('DELETE FROM discord_interactions WHERE id = $1', [interactionId]);
     await message.reply('Xin lỗi Senpai, Chisa không thể trả lời lúc này. Hãy thử lại sau ít phút.');
-    await message.delete().catch(() => {});
   }
 }

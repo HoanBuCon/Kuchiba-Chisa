@@ -1,373 +1,278 @@
-# Phân tích toàn bộ workspace `kuchiba_chisa`
+# Phân tích toàn bộ workspace `kuchiba_chisa` (Bản cập nhật chi tiết từ LLM Senior Engineer)
 
-Tài liệu này tổng hợp đầy đủ mã nguồn hiện tại như một buổi handover kỹ thuật ở mức senior engineer.
-
-Ghi chú này được đối chiếu trực tiếp với code và cấu hình hiện có trong workspace, đặc biệt là `app/main.py`, `app/config/settings.py`, `app/interface/api/routes/chat.py`, `docker-compose.yml`, `.env.example`, `frontend/package.json` và các migration hiện hành.
+Tài liệu này tổng hợp toàn bộ mã nguồn, kiến trúc hệ thống, logic nghiệp vụ AI/LLM, cấu trúc dữ liệu và các luồng vận hành của chatbot nhân vật **Kuchiba Chisa** dưới góc nhìn của một kỹ sư LLM chuyên môn cao. 
 
 ---
 
-## 1) Dự án làm gì?
+## 1. Tổng quan dự án & Nghiệp vụ cốt lõi
 
-Đây là hệ thống chatbot nhân vật Chisa, tập trung vào:
-
-- Trò chuyện nhiều lượt theo ngữ cảnh.
-- Ghi nhớ ngắn hạn (STM) bằng Postgres.
-- Ghi nhớ dài hạn (LTM) bằng vector database Qdrant.
-- Duy trì trạng thái cảm xúc theo từng người dùng (joy, sadness, trust, irritation, attachment).
-- Kết hợp RAG để truy xuất lore và ký ức cá nhân khi cần.
-
-Frontend React đóng vai trò giao diện chat; backend FastAPI xử lý toàn bộ nghiệp vụ, kết nối LLM Groq, embedding FastEmbed, Postgres, Redis, Qdrant.
+**Chisa AI** là hệ thống chatbot nhập vai nhân vật anime (Kuchiba Chisa trong game Wuthering Waves). Cô ấy là một Mutant Resonator hệ Havoc với năng lực phân tích cấu trúc vạn vật.
+*   **Mục tiêu**: Trò chuyện tự nhiên, nhập vai Kuudere (bề ngoài lạnh lùng lý trí, bên trong ấm áp ngọt ngào), ghi nhớ thông tin dài hạn của người dùng (Senpai), và biến chuyển cảm xúc linh hoạt dựa trên nội dung hội thoại.
+*   **Trọng tâm kỹ thuật**:
+    1.  **Bộ nhớ ngắn hạn (STM)**: Được lưu giữ thông qua lịch sử hội thoại trong PostgreSQL.
+    2.  **Bộ nhớ dài hạn (LTM)**: Được lưu giữ thông qua cơ chế RAG phân vùng trên Vector Database Qdrant sử dụng xếp hạng lai (Hybrid Scoring) và truy xuất cha-con (Parent-Child Retrieval).
+    3.  **Trạng thái cảm xúc**: Tính toán theo thời gian thực dựa trên 5 chỉ số cảm xúc ẩn (`joy`, `sadness`, `trust`, `irritation`, `attachment`), tích hợp mô hình phân rã thời gian và phản ứng Plutchik.
+    4.  **Hỗ trợ đa nền tảng**: Giao diện Web (React) và Bot Discord (Node.js).
 
 ---
 
-## 2) Kiến trúc hệ thống
+## 2. Kiến trúc hệ thống toàn cục
 
-Kiến trúc theo hướng phân lớp rõ ràng:
-
-- `domain`: nghiệp vụ cốt lõi (chat orchestration, emotion, memory, rag, context).
-- `infrastructure`: adapter công nghệ (DB, Redis, Qdrant, Groq, Celery, logging, embeddings).
-- `interface`: API layer (routes + schemas).
-- `scripts`: tiện ích vận hành/test thủ công.
-- `frontend`: UI người dùng.
-
-### Hiện trạng runtime đang có trong code
-
-- Backend API là FastAPI, khởi động qua `app.main:app`.
-- Startup lifecycle kiểm tra Postgres, Redis và Qdrant, sau đó khởi tạo collection Qdrant theo kiểu idempotent.
-- API hiện include 2 nhóm route chính: `health` và `chat`.
-- `chat` đang cung cấp các endpoint cho chat, lịch sử chat, cảm xúc hiện tại và xóa memory theo `user_id`.
-- `docker-compose.yml` hiện dựng đủ `postgres`, `redis`, `qdrant`, `app` và `celery_worker`.
-
-### Sơ đồ mức cao
+Hệ thống được thiết kế theo mô hình kiến trúc phân lớp rõ rệt (Clean/Hexagonal Architecture), tách biệt giữa Domain logic và Infrastructure adapters.
 
 ```mermaid
-flowchart LR
-    U[Frontend React] -->|HTTP /api/v1/chat| API[FastAPI Routes]
-    API --> CE[ChatEngine]
-    CE --> DB[(Postgres)]
-    CE --> EE[EmotionEngine]
-    CE --> RR[RAGRouter]
-    RR --> RG[RAGRetriever]
-    RG --> QD[(Qdrant)]
-    CE --> CB[ContextBuilder]
-    CE --> GB[ContextBudgetManager]
-    CE --> LLM[GroqAdapter]
-    CE --> MM[MemoryManager]
-    MM --> QD
-    API --> RED[(Redis)]
-    API -. async tasks .-> CEL[Celery Worker]
+flowchart TD
+    subgraph Clients [Client Layer]
+        FE[React Frontend] <-->|HTTP API| API[FastAPI Backend]
+        DBot[Discord Bot Node.js] <-->|HTTP API Client| API
+        DiscordPlatform[Discord Server] <-->|Gateway/Events| DBot
+    end
+
+    subgraph Backend [FastAPI Application]
+        API --> Routes[interface/api/routes]
+        Routes --> LegacyCE[ChatEngine Legacy]
+        Routes --> ProdCE[ProductionChatEngine]
+        
+        subgraph Domain [Core Domain Layer]
+            LegacyCE & ProdCE --> EE[EmotionEngine]
+            LegacyCE --> RR[RAGRouter]
+            LegacyCE --> CB[ContextBuilder]
+            ProdCE --> IC[IntentClassifier]
+            ProdCE --> PCB[ProductionContextBuilder]
+            ProdCE --> ME[MemoryExtractor]
+        end
+
+        subgraph Infra [Infrastructure Layer]
+            LLM[LLM Adapters: Groq / Gemini]
+            Embed[Embedding Adapter: FastEmbed]
+            LLMLog[llm_logger]
+        end
+    end
+
+    subgraph Storage [Storage Layer]
+        LegacyCE & ProdCE <--> DB[(PostgreSQL)]
+        DBot <--> DiscordDB[(PostgreSQL - Discord Bot Schema)]
+        ME & LegacyCE & ProdCE <--> Qdrant[(Qdrant Vector DB)]
+        API <--> Redis[(Redis Cache/Queue)]
+    end
+
+    Domain --> Infra
 ```
 
 ---
 
-## 3) Cấu trúc thư mục (đầy đủ file)
+## 3. Cấu trúc chi tiết mã nguồn trong Workspace
 
-## Root
+### 3.1. Backend (`app/`)
+*   `app/main.py`: Khởi tạo ứng dụng FastAPI, cấu hình CORS, thiết lập lifespan để kiểm tra kết nối và khởi tạo tài nguyên PostgreSQL, Redis, Qdrant khi startup.
+*   `app/config/settings.py`: Khai báo cấu hình hệ thống bằng `pydantic-settings`. Hỗ trợ chuyển đổi LLM Provider (`gemini` hoặc `groq`), thiết lập chế độ dev/production, các secret key, cấu hình token budget, v.v.
+*   `app/domain/`:
+    *   `services/chat_engine.py`: Điều phối luồng xử lý chat truyền thống (Legacy Pipeline).
+    *   `services/context_builder.py`: Xây dựng prompt tích hợp các trạng thái cảm xúc thô và lore/memory.
+    *   `services/context_budget_manager.py`: Kiểm soát kích thước prompt để không vượt quá giới hạn token.
+    *   `services/emotion_engine.py`: Lõi tính toán cập nhật cảm xúc dựa trên phản ứng cảm xúc của Chisa và Senpai.
+    *   `services/memory_manager.py`: Đánh giá độ quan trọng của tin nhắn để lưu giữ ký ức dài hạn.
+    *   `services/memory_summarizer.py`: Tóm tắt các hội thoại dài để tạo bộ nhớ nền.
+    *   `services/rag_retriever.py`: Thực hiện tìm kiếm và xếp hạng lai (Hybrid Scoring) cho memories; tìm kiếm cha-con (Parent-Child) và lọc từ khóa cho lore.
+    *   `services/rag_router.py`: Quyết định khi nào cần tìm kiếm RAG dựa trên regex/từ khóa.
+    *   `services/production_pipeline/`:
+        *   `production_chat_engine.py`: Bộ điều phối luồng chat nâng cao của Production Pipeline.
+        *   `intent_classifier.py`: Phân loại ý định của người dùng bằng màng lọc Regex/Từ khóa kết hợp LLM API.
+        *   `production_context_builder.py`: Tạo prompt với các nhãn cảm xúc định tính thông qua `StateManager` và kiểm soát token budget phân mảnh.
+        *   `memory_extractor.py`: Trích xuất thông tin thực tế (facts) và mối quan hệ ngầm chạy async.
+        *   `state_manager.py`: Định nghĩa nhãn định tính (`Low`/`Medium`/`High`) và `Mood` cho prompt.
+*   `app/infrastructure/`:
+    *   `database/`: Cấu hình SQLAlchemy Async, các model DB (`User`, `Conversation`, `Message`, `EmotionState`, `UserStats`, `MemoryMetadata`) và repositories.
+    *   `cache/redis/redis_service.py`: Quản lý cache và cơ chế lưu trữ session phụ trợ.
+    *   `embeddings/fastembed_adapter.py`: Vector hóa văn bản bằng model local `all-MiniLM-L6-v2`.
+    *   `llm/adapters/`: Chứa base adapter và hai adapter thực tế là `GroqAdapter` (llama-3.1-8b-instant) và `GeminiAdapter` (gemini-2.5-flash-lite).
+    *   `logging/`: Ghi log có cấu trúc thông qua `structlog` và module ghi log API `llm_logger.py` lưu vào file `llm_api_clean.txt`.
+    *   `queue/`: Cấu hình Celery App và các worker xử lý nền (affection, embedding, memory).
 
-- `.gitignore`: quy tắc ignore cho git.
-- `.env.example`: mẫu biến môi trường.
-- `README.md`: mô tả tổng quan dự án.
-- `WALKTHROUGH.md`: giải thích chi tiết flow và thành phần.
-- `STARTUP_GUIDE.md`: hướng dẫn chạy local + monitor.
-- `Makefile`: lệnh tiện dụng cho dev/test/lint/migrate.
-- `pyproject.toml`: cấu hình ruff, mypy, pytest, coverage.
-- `requirements-dev.txt`: dependency phục vụ phát triển.
-- `Dockerfile`: build backend container.
-- `docker-compose.yml`: dựng toàn bộ stack local (postgres/redis/qdrant/app/worker).
-- `alembic.ini`: cấu hình Alembic.
-- `start.ps1`: script startup trên Windows.
-- `LICENSE`: giấy phép MIT.
-- `debug_rag.txt`: file debug kết quả RAG.
+### 3.2. Bot Discord (`discord/`)
+*   `discord/src/app.js` & `index.js`: Điểm khởi chạy của bot, đăng ký các module, lắng nghe tín hiệu tắt dịch vụ (`SIGINT`, `SIGTERM`) để đóng kết nối an toàn.
+*   `discord/src/bot/`: Quản lý client discord, tự động nạp các commands và events.
+*   `discord/src/commands/`:
+    *   `ask.js`: Xử lý lệnh `/ask` hoặc tin nhắn prefix `c!ask`. Gửi request đến Backend FastAPI để lấy phản hồi của Chisa.
+    *   `clear.js`: Thực hiện xóa toàn bộ ký ức (gọi API `/chat/clear/{user_id}`).
+    *   `setup.js`: Cấu hình kênh trò chuyện trực tiếp (Direct Chat Channel) cho server.
+    *   `help.js`: Liệt kê danh sách lệnh.
+*   `discord/src/database/`: Quản lý kết nối PostgreSQL bằng Connection Pool và tự động khởi chạy database schema (`schema.sql`).
+*   `discord/src/events/`: Lắng nghe tin nhắn mới (`messageCreate`), phân phối lệnh, hỗ trợ trò chuyện tự động trong kênh setup.
+*   `discord/src/services/`:
+    *   `coreRagClient.js`: Client HTTP giao tiếp trực tiếp với Backend FastAPI có tích hợp cơ chế retry và backoff.
+    *   `rateLimiter.js`: Quản lý tần suất gửi tin nhắn của người dùng để tránh spam API.
+    *   `prefixCommandRunner.js`: Phân tích cú pháp tin nhắn có prefix.
 
-## `assets/`
-
-- `assets/chisa_lore.md`: lore gốc để ingest sang Qdrant.
-
-## `app/`
-
-### App entry + config
-
-- `app/main.py`: khởi tạo FastAPI app, lifespan, CORS, include router.
-- `app/config/settings.py`: đọc/validate biến môi trường bằng Pydantic Settings.
-
-### API routes hiện có
-
-- `app/interface/api/routes/health.py`: health/readiness cho Postgres, Redis, Qdrant.
-- `app/interface/api/routes/chat.py`: `POST /api/v1/chat`, `GET /api/v1/chat/emotions/{user_id}`, `GET /api/v1/chat/history/{user_id}`, `DELETE /api/v1/chat/clear/{user_id}`.
-
-### Domain interfaces
-
-- `app/domain/interfaces/embedding_provider.py`: interface/protocol cho embedding provider.
-
-### Domain services (xương sống nghiệp vụ)
-
-- `app/domain/services/chat_engine.py`: bộ điều phối toàn bộ luồng chat.
-- `app/domain/services/context_builder.py`: xây dựng prompt có cấu trúc từ hệ thống + lore + memory + history.
-- `app/domain/services/context_budget_manager.py`: quản lý ngân sách token, cắt bớt context.
-- `app/domain/services/emotion_engine.py`: cập nhật trạng thái cảm xúc theo rule.
-- `app/domain/services/memory_manager.py`: tính importance và lưu memory vào vector DB.
-- `app/domain/services/memory_summarizer.py`: tóm tắt hội thoại cho memory nền.
-- `app/domain/services/rag_retriever.py`: truy xuất memory/lore với scoring kết hợp.
-- `app/domain/services/rag_router.py`: quyết định có truy xuất RAG hay không.
-
-### Interface API
-
-- `app/interface/api/routes/chat.py`: endpoint chat, history, emotions, clear memory.
-- `app/interface/api/routes/health.py`: endpoint health/readiness.
-- `app/interface/api/schemas/chat.py`: schema request/response cho API chat.
-
-### Infrastructure database
-
-- `app/infrastructure/database/engine.py`: async engine + session maker + health checks.
-- `app/infrastructure/database/models/base.py`: declarative base + mixin.
-- `app/infrastructure/database/models/__init__.py`: export model cho Alembic.
-- `app/infrastructure/database/models/user.py`: bảng người dùng.
-- `app/infrastructure/database/models/conversation.py`: bảng hội thoại.
-- `app/infrastructure/database/models/message.py`: bảng tin nhắn.
-- `app/infrastructure/database/models/emotion_state.py`: bảng trạng thái cảm xúc.
-- `app/infrastructure/database/models/user_stats.py`: bảng thống kê user.
-- `app/infrastructure/database/models/memory_metadata.py`: metadata cho memory.
-
-### Infrastructure khác
-
-- `app/infrastructure/cache/redis/redis_service.py`: wrapper Redis service.
-- `app/infrastructure/embeddings/fastembed_adapter.py`: adapter embed query/text.
-- `app/infrastructure/llm/adapters/base.py`: abstraction cho LLM adapter.
-- `app/infrastructure/llm/adapters/groq.py`: adapter gọi Groq API + parse response.
-- `app/infrastructure/vector/qdrant/qdrant_service.py`: thao tác collection/search/filter Qdrant.
-- `app/infrastructure/logging/logger.py`: chuẩn hóa logging.
-- `app/infrastructure/queue/celery_app.py`: cấu hình Celery app.
-- `app/infrastructure/queue/worker.py`: entrypoint worker.
-- `app/infrastructure/queue/tasks/affection_tasks.py`: task nền cho affection (stub/chưa hoàn chỉnh).
-- `app/infrastructure/queue/tasks/embedding_tasks.py`: task nền embedding (stub/chưa hoàn chỉnh).
-- `app/infrastructure/queue/tasks/memory_tasks.py`: task nền memory (stub/chưa hoàn chỉnh).
-
-### Frontend hiện có
-
-- `frontend/src/main.jsx`: bootstrap React app.
-- `frontend/src/App.jsx`: UI chat chính.
-- `frontend/src/index.css`: style chính.
-- `frontend/package.json`: scripts `dev`, `build`, `lint`, `preview` với React 19 + Vite.
-
-## `alembic_migrations/`
-
-- `alembic_migrations/env.py`: bootstrap Alembic cho online/offline migration.
-- `alembic_migrations/script.py.mako`: template tạo revision.
-- `alembic_migrations/versions/f4eea57ac3c7_phase_3a_initial_schema.py`: migration schema ban đầu.
-- `alembic_migrations/versions/fb20eea4d022_create_true_uuid_userstats_and_.py`: migration bổ sung `emotion_state` và `user_stats`.
-
-## `scripts/`
-
-- `scripts/init_db.py`: tạo bảng trực tiếp qua SQLAlchemy metadata.
-- `scripts/run_alembic.py`: script chạy alembic command.
-- `scripts/init_qdrant.py`: khởi tạo collection vector DB.
-- `scripts/ingest_chisa_lore.py`: chunk + embed + upsert lore.
-- `scripts/wipe_qdrant.py`: xóa dữ liệu memory trong Qdrant.
-- `scripts/interactive_chat.py`: chạy chat kiểu CLI.
-- `scripts/clear_temp_user_memory.py`: dọn memory user tạm.
-- `scripts/watch_emotions.py`: theo dõi realtime emotion state.
-- `scripts/watch_tokens.py`: theo dõi token usage trong DB.
-- `scripts/test_api.py`: smoke test endpoint chat.
-- `scripts/test_chat_api.py`: kiểm tra nhiều user và cách ly dữ liệu.
-- `scripts/test_embeddings_integration.py`: kiểm tra pipeline embedding + vector search.
-- `scripts/test_emotion_intensity.py`: test logic intensity/damping cảm xúc.
-- `scripts/test_lore_recall.py`: test chất lượng truy xuất lore.
-- `scripts/test_py311_compatibility.py`: test tương thích async Python 3.11.
-- `scripts/test_query.py`: script test query (có dấu hiệu lệch so với API/service hiện tại).
-- `scripts/test_rag.py`: test truy xuất RAG và dump kết quả.
-- `scripts/test_sentiment.py`: test classify sentiment kết hợp history.
-
-## `tests/`
-
-- `tests/conftest.py`: fixture pytest + test client.
-- `tests/test_health.py`: test endpoint health/readiness.
-
-## `frontend/`
-
-- `frontend/.gitignore`: ignore frontend artifacts.
-- `frontend/README.md`: README mặc định Vite.
-- `frontend/package.json`: scripts + dependency frontend.
-- `frontend/package-lock.json`: lock dependency tree.
-- `frontend/index.html`: entry html.
-- `frontend/eslint.config.js`: cấu hình eslint.
-- `frontend/vite.config.js`: cấu hình vite dev server/build.
-- `frontend/src/main.jsx`: bootstrap React app.
-- `frontend/src/App.jsx`: màn hình chat chính và gọi API.
-- `frontend/src/index.css`: style chính.
-- `frontend/src/App.css`: css mẫu từ Vite.
+### 3.3. Giao diện Web (`frontend/`)
+*   Ứng dụng Single Page xây dựng trên React 18/19 + Vite + Bootstrap.
+*   `frontend/src/App.jsx`: Giao diện chat hai panel kiểu hiện đại (Sidebar quản lý kết nối, nút xóa ký ức, panel chính chứa bong bóng chat). Tự động tạo UUID duy nhất của thiết bị và lưu vào `localStorage`.
 
 ---
 
-## 4) Luồng chạy chính
+## 4. Chi tiết hai luồng xử lý Chat (Pipelines)
 
-### Luồng runtime chat
+Hệ thống có hai luồng xử lý chat được điều phối động thông qua tham số `pipeline` trong request hoặc thiết lập cấu hình `CHAT_PIPELINE` trong `.env`.
 
-```mermaid
-sequenceDiagram
-        participant FE as Frontend
-        participant API as FastAPI /chat
-        participant CE as ChatEngine
-        participant PG as Postgres
-        participant RR as RAGRouter
-        participant QD as Qdrant
-        participant LLM as Groq
+### 4.1. Legacy Pipeline (ChatEngine)
+1.  **Nhận tin nhắn**: Nhận `user_id` và tin nhắn từ client.
+2.  **Đọc ngữ cảnh**: Tải dữ liệu người dùng, chỉ số cảm xúc và lịch sử trò chuyện từ Postgres.
+3.  **RAG Router**: Kiểm tra xem câu hỏi có chứa từ khóa kích hoạt memory không.
+4.  **Truy xuất RAG**:
+    *   *Lore*: Tìm kiếm trên collection `chisa_lore` với vector tương đồng, giữ lại các chunk có điểm số >= `0.35`.
+    *   *Memory*: Nếu `RAGRouter` bật, truy vấn collection `emotional_memories` bằng vector.
+5.  **RAG Emotion Seeding**: Nếu tin nhắn chứa các từ khóa u sầu và RAG trả về các nội dung tương quan buồn, hệ thống sẽ chủ động cộng thêm điểm `sadness` và `irritation` trước khi gửi lên LLM.
+6.  **Xây dựng Prompt**: Kết hợp hướng dẫn tính cách nhân vật (System Prompt), chỉ số cảm xúc dạng số thô, lore, memory và lịch sử chat.
+7.  **Gọi LLM (Single-Call)**: Groq/Gemini trả về JSON gồm phản hồi thoại Chisa và sentiment phản ứng của Senpai (`is_positive`, `is_negative`, `is_rude`, `is_neutral`).
+8.  **Cập nhật cảm xúc**: `EmotionEngine` cập nhật trạng thái cảm xúc.
+9.  **Lưu trữ**: Lưu tin nhắn vào Postgres. Nếu tin nhắn có độ quan trọng cao (importance >= 0.65), lưu thêm vào Qdrant `emotional_memories`.
 
-        FE->>API: POST message + user_id
-        API->>CE: chat(session, user_id, message)
-        CE->>PG: tạo/đọc user, conversation, lưu user message
-        PG-->>CE: user/conversation info
-        CE->>RR: check RAG router (decide if retrieval needed)
-        alt router = yes
-            CE->>QD: truy xuất memory/lore
-            QD-->>CE: retrieved lore/memories
-        end
-        CE->>LLM: generate reply (include context: recent messages + lore)
-        LLM-->>CE: assistant completion + sentiment label + metadata
-        CE->>PG: cập nhật emotion_state + user_stats
-        CE->>PG: lưu assistant message + token_count
-        alt important memory
-            CE->>QD: upsert emotional memory
-        end
-        CE-->>API: response + emotions
-        API-->>FE: JSON trả về
+### 4.2. Production Pipeline (ProductionChatEngine)
+Được tối ưu hóa toàn diện để đạt hiệu năng cao, tiết kiệm token, cô lập dữ liệu và đảm bảo trải nghiệm Kuudere mượt mà nhất:
+
+```
+                  Senpai Message
+                        │
+                        ▼
+            [Tiền xử lý & Chuẩn hóa]
+             (query_cleaner.py:
+        Sửa từ viết tắt tiếng Việt ko, đc...)
+                        │
+                        ▼
+         [LLM Call 1: IntentClassifier]
+              (Fast-Path Pre-filter:
+            Tự phân loại small talk/OTHER,
+        hoặc regex keywords MEMORY/LORE nhanh)
+                        │
+         ┌──────────────┴──────────────┐
+         │ Có khớp rule / Small talk   │ Không khớp rule
+         ▼                             ▼
+   [Bypass LLM Call 1]        [LLM Call 1 - Slow Path]
+         │                             │
+         └──────────────┬──────────────┘
+                        │
+                        ▼ (Giao điểm Intents)
+   ┌────────────────────┼────────────────────┬────────────────────┐
+   ▼ CHARACTER_LORE     ▼ WORLD_LORE         ▼ STORY_LORE         ▼ MEMORY
+ [qdrant_service]     [qdrant_service]     [qdrant_service]     [rag_retriever]
+  character_lore       world_lore           story_lore           memories
+   collection           collection           collection          collection
+   (Parent-Child)       (Parent-Child)       (Parent-Child)     (Hybrid Scoring)
+   ┌────────────────────┴────────────────────┼────────────────────┘
+   ▼                                         ▼
+[Lore chunks: Parent deduplication &        [Memories: Recency, Importance,
+ Keyword Overlap re-ranking]                 Emotion Match re-ranking]
+   │                                         │
+   └────────────────────┬────────────────────┘
+                        │
+                        ▼
+[StateManager: Format emotions to qualitative levels (Low/Medium/High)]
+                        │
+                        ▼
+[ProductionContextBuilder: Trim & Enforce Token Budget]
+                        │
+                        ▼
+[LLM Call 2: Main Generation & Sentiment Analysis]
+                        │
+         ┌──────────────┴──────────────┐
+         ▼ (Đồng bộ)                   ▼ (Async Tasks - Chạy ngầm)
+  Save Postgres Messages,       ├──► [LLM Call 3: MemoryExtractor] (Fact saving)
+  Commit EmotionState,          └──► [LLM Call 4: Summarizer] (Every 50 turns)
+  Respond to Senpai
 ```
 
-### Luồng khởi tạo dữ liệu
+---
 
-- Chạy migration DB bằng Alembic.
-- Khởi tạo Qdrant collections.
-- Ingest lore từ `assets/chisa_lore.md`.
-- Khởi chạy backend + worker + frontend.
+## 5. Logic cảm xúc và tiến trình gắn kết (Emotion Engine)
+
+`EmotionEngine` áp dụng các nguyên lý tâm lý học số hóa vào chatbot:
+
+### 5.1. Mô hình Phân rã thời gian thực (Time-Aware Exponential Decay)
+Cảm xúc của Chisa tự động phai nhạt dần về mức mặc định (baseline) theo thời gian thực (Weber-Fechner Law), tính toán theo công thức suy hao mũ:
+$$V_{new} = Baseline + (V_{old} - Baseline) \times e^{-\lambda \times \Delta t}$$
+Trong đó, chu kỳ bán rã (Half-life) của từng cảm xúc được thiết lập cực kỳ thực tế:
+*   `joy` (Vui vẻ): Bán rã sau **45 phút** (hết vui nhanh).
+*   `sadness` (Buồn bã): Bán rã sau **3 giờ** (nỗi buồn dai dẳng).
+*   `trust` (Tin tưởng): Bán rã sau **7 ngày** (lòng tin bền vững).
+*   `irritation` (Tức giận/Dỗi): Bán rã sau **15 phút** (nhanh nguôi giận).
+
+### 5.2. Các cơ chế tương tác phức tạp
+*   **Intensity Damping**: Khi tin nhắn của Senpai được phân loại là `is_neutral = True`, mức độ tăng cảm xúc của Chisa sẽ bị triệt tiêu bớt (chỉ lấy 30% - 55% mức tối đa) để tránh các biến động cảm xúc quá đà từ các câu hỏi xã giao thông thường.
+*   **Plutchik Mutual Exclusion**: Joy và Sadness tự triệt tiêu lẫn nhau. Nếu cả hai cùng tăng cao sau lượt hội thoại, cảm xúc mạnh hơn sẽ triệt tiêu cảm xúc yếu hơn một lượng bằng $0.7 \times \min(joy, sadness)$.
+*   **Emotional Withdrawal (Rút lui cảm xúc)**: Khi Chisa đồng thời chịu tổn thương (`sadness > 0.15`) và bực tức (`irritation > 0.10`), cô ấy sẽ tự động lạnh nhạt và giữ khoảng cách. Trạng thái này sẽ áp hình phạt trực tiếp làm giảm điểm gắn kết (`attachment`), bất chấp các tác động bên ngoài khác.
+*   **Attachment Progression**: Điểm gắn kết tăng chậm dựa trên lịch sử tương tác (`math.log(max(1, interaction_count)) * 0.05`), nhưng nếu Senpai thô lỗ (`is_rude = True`) hoặc tiêu cực, điểm gắn kết sẽ sụt giảm nghiêm trọng.
 
 ---
 
-## 5) Module và class quan trọng
+## 6. Sơ đồ dữ liệu (Database Schemas)
 
-- `ChatEngine`: trung tâm điều phối toàn pipeline chat.
-- `EmotionEngine`: cập nhật vector cảm xúc theo tín hiệu sentiment.
-- `RAGRouter`: quyết định điều kiện kích hoạt retrieval (tránh truy xuất thừa).
-- `RAGRetriever`: lấy memory/lore bằng truy vấn vector và scoring lai (ngữ nghĩa + importance + recency + emotion).
-- `ContextBuilder`: hợp nhất persona, memory, lore, history thành prompt rõ ngữ cảnh.
-- `ContextBudgetManager`: giữ prompt trong giới hạn token an toàn.
-- `MemoryManager`: đánh giá độ quan trọng và lưu ký ức dài hạn.
-- `QdrantService`: tạo/search/filter payload theo `user_id`.
-- `GroqAdapter`: lớp giao tiếp LLM, parse/validate kết quả trả về.
+### 6.1. Core PostgreSQL (Backend)
+```
+┌────────────────────────────────────────────────────────────────────────┐
+│                                 USERS                                  │
+├───────────────┬──────────────────────────────┬─────────────────────────┤
+│ id (UUID, PK) │ username (VARCHAR)           │ discord_id (VARCHAR, N) │
+└───────────────┴──────────────────────────────┴─────────────────────────┘
+        │ 1
+        ├───┐
+        │ 1 │ 1
+┌───────┴───────┴───────┐             ┌──────────────────────────────────┐
+│     CONVERSATIONS     │             │          EMOTION_STATE           │
+├───────────────────────┤             ├──────────────────────────────────┤
+│ id (UUID, PK)         │             │ user_id (UUID, FK, Unique)       │
+│ user_id (UUID, FK)    │             │ joy, sadness, trust, irritation  │
+│ started_at (TIMESTAMP)│             │ attachment (FLOAT)               │
+│ ended_at (TIMESTAMP)  │             │ updated_at (BIGINT - Epoch MS)   │
+└───────┬───────────────┘             └──────────────────────────────────┘
+        │ 1
+        ├───┐
+        │   │ N
+┌───────┴───▼───────────┐             ┌──────────────────────────────────┐
+│       MESSAGES        │             │            USER_STATS            │
+├───────────────────────┤             ├──────────────────────────────────┤
+│ id (UUID, PK)         │             │ user_id (UUID, FK, Unique)       │
+│ conversation_id (FK)  │             │ interaction_count (INTEGER)      │
+│ user_id (UUID, FK)    │             │ last_seen (BIGINT - Epoch MS)    │
+│ role (user/assistant) │             └──────────────────────────────────┘
+│ content (TEXT)        │
+│ token_count (INT)     │             ┌──────────────────────────────────┐
+│ is_success (BOOLEAN)  │             │         MEMORY_METADATA          │
+│ created_at (TIMESTAMP)│             ├──────────────────────────────────┤
+└───────────────────────┘             │ id (UUID, PK)                    │
+                                      │ user_id (UUID, FK)               │
+                                      │ collection (VARCHAR)             │
+                                      │ qdrant_id (UUID)                 │
+                                      └──────────────────────────────────┘
+```
 
----
-
-## 6) Logic nghiệp vụ cốt lõi
-
-### Quản lý bộ nhớ
-
-- STM nằm trong DB (`messages`) để giữ hội thoại gần.
-- LTM nằm trong Qdrant cho retrieval dài hạn.
-- Chỉ lưu memory khi thông điệp đạt importance đủ cao.
-- Có cơ chế tóm tắt memory để giảm nhiễu context.
-
-### Cảm xúc theo user
-
-- Mỗi user có `emotion_state` riêng.
-- Tin nhắn được phân loại thành cờ sentiment.
-- `EmotionEngine` áp dụng rule tăng/giảm với damping để tránh dao động cực đoan.
-- Emotion hiện tại được đưa vào context để định hình giọng phản hồi.
-
-### RAG chọn lọc
-
-- Không phải mọi message đều gọi retrieval.
-- Router cân nhắc intent/ngữ cảnh để quyết định retrieval.
-- Nếu cần: lấy lore toàn cục + memory theo user rồi hợp nhất.
-
-### Tính nhất quán persona
-
-- Prompt hệ thống mang persona Chisa.
-- ContextBuilder chèn lore + memory đúng trật tự ưu tiên.
-- Budget manager cắt phần ít quan trọng trước để giữ mạch chính.
-
----
-
-## 7) Công nghệ sử dụng
-
-### Backend
-
-- Python 3.11
-- FastAPI
-- SQLAlchemy Async + Alembic
-- Pydantic Settings
-- structlog/logging
-- Celery
-- Có hỗ trợ provider LLM chuyển đổi qua biến môi trường: Groq là mặc định, Gemini cũng đã được code sẵn trong `chat.py` và `settings.py`.
-
-### Dữ liệu và hạ tầng
-
-- PostgreSQL
-- Nhóm DB: `DATABASE_URL`.
-- Nhóm Redis: `REDIS_URL`, `REDIS_PASSWORD`.
-- Nhóm Qdrant: `QDRANT_URL`, `QDRANT_API_KEY`, `QDRANT_EMBEDDING_DIM`.
-- Nhóm Groq: `GROQ_API_KEY`, `GROQ_MODEL`, `GROQ_MAX_TOKENS`, `GROQ_TEMPERATURE`, `GROQ_TIMEOUT`.
-- Nhóm LLM đa provider: `LLM_PROVIDER`, `GEMINI_API_KEY`, `GEMINI_MODEL`, `GEMINI_MAX_TOKENS`, `GEMINI_TEMPERATURE`, `GEMINI_TIMEOUT`.
-- Nhóm embedding: `EMBEDDING_MODEL`, `OPENAI_API_KEY` (để tương thích một số ngữ cảnh).
-- Nhóm bảo mật/auth: `JWT_SECRET`, `JWT_ALGORITHM`, `JWT_EXPIRE_MINUTES`, `JWT_REFRESH_EXPIRE_DAYS`.
-- Nhóm giới hạn: `RATE_LIMIT_PER_MINUTE`.
-- Nhóm worker: `CELERY_BROKER_URL`, `CELERY_RESULT_BACKEND`, `WORKER_CONCURRENCY`.
-
-Nhận xét: cấu hình đã tương đối đầy đủ cho local/dev, nhưng cần khóa chặt profile production. `settings.py` hiện bắt buộc `DATABASE_URL`, `SECRET_KEY` và `JWT_SECRET` phải đủ mạnh; các biến còn lại có default để hỗ trợ chạy local.
+### 6.2. Discord PostgreSQL (Bot Local DB)
+Sử dụng một cơ sở dữ liệu riêng để quản lý các tính năng đặc thù của Discord Guild.
+*   `discord_users`: Lưu thông tin thành viên Discord, liên kết trực tiếp `discord_user_id` và `discord_guild_id` với `core_user_id` (UUID) của hệ thống chính.
+*   `guild_settings`: Lưu cấu hình kênh chat tự động trực tiếp của từng máy chủ Discord (`chisa_channel_id`).
+*   `discord_interactions`: Log chi tiết mọi tương tác qua bot (nội dung, thời gian phản hồi, trạng thái `pending`/`success`/`failed`, emotions trả về).
 
 ---
 
-## 9) Rủi ro bảo mật và điểm yếu
+## 7. Rủi ro bảo mật & Nợ kỹ thuật hiện tại
 
-### Mức cao (ưu tiên xử lý ngay)
+### 7.1. Rủi ro bảo mật (P0 - Cần khắc phục trước khi Production)
+1.  **Xác thực người dùng yếu**: Client Web tự sinh UUID và gửi trực tiếp qua request `user_id`. Kẻ xấu có thể giả mạo `user_id` để đọc lịch sử chat, thao túng cảm xúc hoặc xóa bộ nhớ của người dùng khác.
+2.  **Thiếu cơ chế bảo vệ Endpoint nhạy cảm**: API `/chat/clear/{user_id}` cho phép xóa toàn bộ dữ liệu Postgres và vector Qdrant của bất kỳ user nào mà không cần xác thực token JWT.
+3.  **Lộ thông tin nhạy cảm qua log**: File log `llm_api_clean.txt` ghi lại toàn bộ prompt và dữ liệu thô của người dùng. Cần đảm bảo file này được phân quyền chặt chẽ hoặc tắt đi trong môi trường Production.
 
-- API đang tin `user_id` do client gửi, chưa có cơ chế xác thực ownership mạnh.
-- Endpoint xóa memory theo `user_id` có thể bị lạm dụng nếu thiếu auth.
-- Có secret mẫu/giá trị mặc định trong tài liệu cấu hình, dễ bị dùng nhầm ở môi trường thật.
-- `clear_user_memory` đang xóa STM, emotion state, stats và các vector Qdrant theo `user_id`; luồng này đúng chức năng nhưng cần auth chặt khi đưa lên production.
-
-### Mức trung bình
-
-- Validation output LLM còn lỏng, dễ sinh response không đúng schema mong muốn.
-- Có nguy cơ race condition khi dùng chung adapter/model nếu mutate trạng thái runtime.
-- Một số script test ghi file debug có thể làm lộ dữ liệu hội thoại nếu chạy trên máy chung.
-
-### Mức kỹ thuật vận hành
-
-- Có dấu hiệu lệch giữa script test và code hiện tại (drift), tăng rủi ro khi bảo trì.
-- Test chính thức trong `tests/` còn mỏng, chưa bao phủ deep business flow.
+### 7.2. Nợ kỹ thuật & Điểm hạn chế
+1.  **LLM Output Validation**: Dù sử dụng JSON Mode của LLM, đôi lúc mô hình vẫn có thể trả về sai schema hoặc rỗng dưới điều kiện quá tải. Cần một lớp validation nghiêm ngặt hơn (ví dụ: dùng Pydantic parser trong adapter).
+2.  **Kiểm thử tự động còn mỏng**: Thư mục `tests/` hiện tại mới chỉ có các test cases cho API health, logic emotion, và RAG router cơ bản. Các luồng phức tạp như tích hợp sâu API trong multi-user chưa được mở rộng.
+3.  **Race Condition**: Nếu người dùng nhấn gửi tin nhắn liên tục trên Web/Discord khi bot chưa kịp phản hồi, các tác vụ tính toán cảm xúc và ghi nhận tin nhắn đồng thời có thể gây sai lệch chỉ số.
 
 ---
 
-## 10) Đề xuất cải thiện
+## 8. Hướng phát triển & Kế hoạch hành động tiếp theo
 
-### Ưu tiên P0
+### 8.1. Tăng cường lớp bảo mật (Security Layer)
+*   Tích hợp middleware xác thực JWT hoặc Session tokens cho toàn bộ API Gateway.
+*   Đảm bảo `user_id` được trích xuất trực tiếp từ token đã xác thực, thay vì tin cậy tham số do client truyền lên.
 
-- Bắt buộc auth (JWT hoặc session), ánh xạ `user_id` từ token thay vì nhận trực tiếp từ client.
-- Bảo vệ endpoint xóa dữ liệu: auth + kiểm tra owner + audit log.
-- Tách model phân loại cảm xúc khỏi adapter dùng chung để tránh tranh chấp đồng thời.
-- Ép chính sách secrets production (không cho chạy với giá trị mặc định/yếu).
-
-### Ưu tiên P1
-
-- Nâng validation response LLM bằng schema strict (Pydantic/JSON schema).
-- Chuẩn hóa migration/model/script để tránh drift.
-- Đưa rate limiting vào middleware thực thi thật.
-- Tăng test tích hợp cho isolation theo user, clear memory, RAG quality.
-
-### Ưu tiên P2
-
-- Tách `VITE_API_URL` cho frontend thay vì hardcode localhost.
-- Chuẩn hóa tài liệu vận hành theo code hiện hành.
-- Thêm quan sát hệ thống (metrics, tracing) cho latency/token/cost.
-
----
-
-## Kết luận
-
-Codebase có nền tảng tốt cho một chatbot có trí nhớ + cảm xúc: phân lớp rõ, pipeline hợp lý, và có đầy đủ thành phần AI hiện đại. Điểm cần nâng cấp trọng tâm nằm ở bảo mật định danh người dùng, độ chặt validation đầu ra LLM, và mở rộng test coverage cho các luồng nghiệp vụ quan trọng.
-
-Tóm tắt ngắn của workspace hiện tại:
-
-- Backend: FastAPI + SQLAlchemy Async + Alembic + Celery.
-- Storage: PostgreSQL 16, Redis 7, Qdrant.
-- AI: Groq là mặc định, Gemini đã có nhánh hỗ trợ.
-- Frontend: React 19 + Vite + Axios + Bootstrap.
-- Vận hành: Docker Compose dựng full stack local, kèm các script kiểm thử và ingest lore.
+### 8.2. Mở rộng kiểm thử tự động (Test Suite Expansion)
+*   Viết các test case mô phỏng nhiều lượt trò chuyện liên tục để kiểm tra tính chính xác của `EmotionEngine` dưới các tín hiệu sentiment khác nhau.
+*   Thực hiện test kiểm tra cô lập dữ liệu (data isolation) giữa các người dùng để đảm bảo ký ức của Senpai này không bị lẫn sang Senpai khác.

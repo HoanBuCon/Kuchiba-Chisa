@@ -210,6 +210,63 @@ class RAGRetriever:
         results.sort(key=lambda item: item[1], reverse=True)
         return results
 
+    async def retrieve_lore_parent_child(
+        self,
+        collection: str,
+        query_vector: List[float],
+        query_text: str = "",
+        top_k: int = 6,
+        score_threshold: float = 0.35,
+    ) -> List[str]:
+        """
+        Retrieves relevant lore chunks using parent-child retrieval schema
+        and hybrid keyword re-ranking. Returns deduplicated parent texts.
+        """
+        try:
+            candidates = await qdrant_service.search_lore(
+                collection=collection,
+                query_vector=query_vector,
+                limit=15,  # Fetch more to allow for keyword boosting and deduplication
+                score_threshold=score_threshold,
+            )
+        except Exception as e:
+            log.warning("Lore parent-child retrieval failed", collection=collection, error=str(e))
+            return []
+
+        query_tokens = self._tokenize_query(query_text)
+        scored_candidates = []
+        
+        for cand in candidates:
+            payload = cand.get("payload", {})
+            child_text = payload.get("text_content", "")
+            score = cand.get("score", 0.0)
+            if child_text:
+                keyword_score = self._calculate_keyword_overlap(query_tokens, child_text)
+                hybrid_score = (score * 0.75) + (keyword_score * 0.25)
+                scored_candidates.append((cand, hybrid_score))
+
+        # Sort by hybrid score descending
+        scored_candidates.sort(key=lambda x: x[1], reverse=True)
+
+        # Deduplicate parent-child
+        seen_parents = set()
+        lore_chunks = []
+        for cand, _ in scored_candidates:
+            payload = cand.get("payload", {})
+            parent_id = payload.get("parent_id")
+            parent_text = payload.get("parent_full_text")
+            text = parent_text if parent_text else payload.get("text_content", "")
+            if not text:
+                continue
+            if parent_id:
+                if parent_id not in seen_parents:
+                    seen_parents.add(parent_id)
+                    lore_chunks.append(text)
+            else:
+                lore_chunks.append(text)
+                
+        return lore_chunks[:top_k]
+
 
 # Singleton
 rag_retriever = RAGRetriever()

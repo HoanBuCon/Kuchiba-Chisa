@@ -19,6 +19,8 @@ from app.infrastructure.database.repositories.user_repository import SqlAlchemyU
 from app.infrastructure.database.repositories.emotion_repository import SqlAlchemyEmotionRepository
 from app.infrastructure.database.repositories.conversation_repository import SqlAlchemyConversationRepository
 from app.infrastructure.logging.logger import get_logger
+from app.shared.utils.query_cleaner import clean_query_for_rag
+from app.domain.services.rag_retriever import rag_retriever
 
 log = get_logger(__name__)
 
@@ -89,18 +91,29 @@ class ProductionChatEngine:
         history = await conv_repo.get_recent_history(user_uuid, conv_id)
         
         try:
-            # 2. Classify intent
+            # 2. Formulate Attachment Bonus and current emotions snapshot
+            attachment_bonus_raw = math.log(max(1, stats.interaction_count)) * 0.05
+            current_emotions = {
+                "joy": emotion.joy,
+                "sadness": emotion.sadness,
+                "trust": emotion.trust,
+                "irritation": emotion.irritation,
+                "attachment": emotion.attachment + attachment_bonus_raw
+            }
+
+            # 3. Classify intent
             intents = await self.intent_classifier.classify(user_message)
             intent_values = [i.value for i in intents]
             log.info("Production query classified", intents=intent_values, user_id=user_id)
             
-            # 3. Retrieve RAG context based on classified intents
+            # 4. Retrieve RAG context based on classified intents
             lore_chunks: List[str] = []
             memories: List[str] = []
             
             # Embed query if we need to search Qdrant
             if any(i != ChatIntent.OTHER for i in intents):
-                vector = await self.embedder.embed_text(user_message)
+                cleaned_query = clean_query_for_rag(user_message)
+                vector = await self.embedder.embed_text(cleaned_query)
                 
                 # Set up retrieval tasks to run concurrently
                 retrieval_tasks = []
@@ -109,57 +122,56 @@ class ProductionChatEngine:
                 if ChatIntent.CHARACTER_LORE in intents:
                     active_intents.append(ChatIntent.CHARACTER_LORE)
                     retrieval_tasks.append(
-                        qdrant_service.search_lore(
+                        rag_retriever.retrieve_lore_parent_child(
                             collection="character_lore",
                             query_vector=vector,
-                            limit=6,
+                            query_text=cleaned_query,
+                            top_k=6,
                             score_threshold=0.35
                         )
                     )
                 if ChatIntent.WORLD_LORE in intents:
                     active_intents.append(ChatIntent.WORLD_LORE)
                     retrieval_tasks.append(
-                        qdrant_service.search_lore(
+                        rag_retriever.retrieve_lore_parent_child(
                             collection="world_lore",
                             query_vector=vector,
-                            limit=6,
+                            query_text=cleaned_query,
+                            top_k=6,
                             score_threshold=0.35
                         )
                     )
                 if ChatIntent.STORY_LORE in intents:
                     active_intents.append(ChatIntent.STORY_LORE)
                     retrieval_tasks.append(
-                        qdrant_service.search_lore(
+                        rag_retriever.retrieve_lore_parent_child(
                             collection="story_lore",
                             query_vector=vector,
-                            limit=6,
+                            query_text=cleaned_query,
+                            top_k=6,
                             score_threshold=0.35
                         )
                     )
                 if ChatIntent.MEMORY in intents:
                     active_intents.append(ChatIntent.MEMORY)
                     retrieval_tasks.append(
-                        qdrant_service.search_by_user(
+                        rag_retriever.retrieve_memories(
                             collection="memories",
                             query_vector=vector,
                             user_id=user_id,
-                            limit=5,
-                            score_threshold=0.35
+                            current_emotion=current_emotions,
+                            limit=10,
+                            top_k=5
                         )
                     )
                 
                 if retrieval_tasks:
                     results = await asyncio.gather(*retrieval_tasks)
-                    for intent_type, candidate_list in zip(active_intents, results):
+                    for intent_type, retrieved_data in zip(active_intents, results):
                         if intent_type == ChatIntent.MEMORY:
-                            extracted_mems = [cand.get("payload", {}).get("text_content", "") for cand in candidate_list]
-                            memories.extend([text for text in extracted_mems if text])
+                            memories.extend([m.text_content for m in retrieved_data if m.text_content])
                         else:
-                            extracted_lore = self._deduplicate_parent_child(candidate_list)
-                            lore_chunks.extend(extracted_lore)
-            
-            # 4. Formulate Attachment Bonus
-            attachment_bonus_raw = math.log(max(1, stats.interaction_count)) * 0.05
+                            lore_chunks.extend(retrieved_data)
             
             # 5. Build prompt context using ProductionContextBuilder
             prompt = self.context_builder.build(

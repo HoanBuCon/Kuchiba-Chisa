@@ -45,3 +45,5 @@ Thumbs.db
 
 # Ignored files
 llm_api_clean.txt
+rag_out.txt
+test_output.txt
