@@ -41,7 +41,7 @@ class Settings(BaseSettings):
     QDRANT_EMBEDDING_DIM: int = 384
 
     # ── LLM — Provider ─────────────────────────────────────────
-    LLM_PROVIDER: Literal["groq", "gemini"] = Field(default="groq", validation_alias="LLM_PROVIDER")
+    LLM_PROVIDER: Literal["groq", "gemini", "deepseek"] = Field(default="groq", validation_alias="LLM_PROVIDER")
 
     # ── Chat Pipeline ──────────────────────────────────────────
     CHAT_PIPELINE: Literal["legacy", "production"] = Field(default="legacy", validation_alias="CHAT_PIPELINE")
@@ -59,6 +59,14 @@ class Settings(BaseSettings):
     GEMINI_MAX_TOKENS: int = 8192
     GEMINI_TEMPERATURE: float = Field(default=0.8, ge=0.0, le=2.0)
     GEMINI_TIMEOUT: int = 30
+
+    # ── LLM — DeepSeek ──────────────────────────────────────────
+    DEEPSEEK_API_KEY: Optional[str] = None
+    DEEPSEEK_MODEL: str = "deepseek-chat"
+    DEEPSEEK_MAX_TOKENS: int = 8192
+    DEEPSEEK_TEMPERATURE: float = Field(default=0.8, ge=0.0, le=2.0)
+    DEEPSEEK_TIMEOUT: int = 60
+    DEEPSEEK_BASE_URL: str = "https://api.deepseek.com"
 
     # ── Embeddings ─────────────────────────────────────────────
     OPENAI_API_KEY: Optional[str] = None

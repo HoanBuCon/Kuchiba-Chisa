@@ -13,6 +13,7 @@ from app.infrastructure.database.models.message import Message
 from app.infrastructure.vector.qdrant.qdrant_service import qdrant_service, MemoryPayload
 from app.domain.services.emotion_engine import EmotionEngine
 from app.domain.services.production_pipeline.intent_classifier import IntentClassifier, ChatIntent
+from app.domain.services.production_pipeline.tool_router import LLMToolRouter
 from app.domain.services.production_pipeline.production_context_builder import ProductionContextBuilder
 from app.domain.services.production_pipeline.memory_extractor import MemoryExtractor
 from app.infrastructure.database.repositories.user_repository import SqlAlchemyUserRepository
@@ -39,7 +40,8 @@ class ProductionChatEngine:
         self.llm = llm
         self.context_builder = context_builder
         self.memory_extractor = memory_extractor
-        self.intent_classifier = IntentClassifier(llm=llm)
+        self.intent_classifier = IntentClassifier(llm=llm, embedder=embedder)
+        self.tool_router = LLMToolRouter(llm=llm, embedder=embedder)
         self.emotion_engine = EmotionEngine()
 
     def _deduplicate_parent_child(self, candidates: List[Dict[str, Any]]) -> List[str]:
@@ -101,20 +103,52 @@ class ProductionChatEngine:
                 "attachment": emotion.attachment + attachment_bonus_raw
             }
 
-            # 3. Classify intent
-            intents = await self.intent_classifier.classify(user_message)
+            # 3. Classify intent (Checking small talk regex fast-path first)
+            from app.domain.services.rag_router import RAGRouter
+            is_st = RAGRouter.is_small_talk(user_message)
+            
+            query_vector = None
+            cleaned_query = ""
+            if not is_st:
+                cleaned_query = clean_query_for_rag(user_message)
+                query_vector = await self.embedder.embed_text(cleaned_query)
+                
+            intents = await self.intent_classifier.classify(user_message, query_vector)
             intent_values = [i.value for i in intents]
             log.info("Production query classified", intents=intent_values, user_id=user_id)
             
-            # 4. Retrieve RAG context based on classified intents
+            # 4. Check for System Actions (Tầng 2 - LLM Tool Router)
+            tool_output_msg = None
+            if ChatIntent.SYSTEM_ACTION in intents:
+                tool_res = await self.tool_router.execute(
+                    user_message=cleaned_query or user_message,  # dùng cleaned để tránh Discord emoji
+                    session=session,
+                    user_id=user_id,
+                    query_vector=query_vector
+                )
+                tool_output_msg = tool_res.get("message")
+                log.info("Tool executed from SYSTEM_ACTION intent", tool_res=tool_res)
+                
+                # Reset local memory variables if database was cleared
+                if tool_res.get("tool") == "clear_chat_history":
+                    stats = await user_repo.get_user_stats(user_uuid)
+                    emotion = await emotion_repo.get_emotion_state(user_uuid)
+                    conv_id = await conv_repo.get_or_create_conversation(user_uuid)
+                    history = []
+                    current_emotions = {
+                        "joy": emotion.joy,
+                        "sadness": emotion.sadness,
+                        "trust": emotion.trust,
+                        "irritation": emotion.irritation,
+                        "attachment": emotion.attachment + attachment_bonus_raw
+                    }
+            
+            # 5. Retrieve RAG context based on classified intents
             lore_chunks: List[str] = []
             memories: List[str] = []
             
-            # Embed query if we need to search Qdrant
-            if any(i != ChatIntent.OTHER for i in intents):
-                cleaned_query = clean_query_for_rag(user_message)
-                vector = await self.embedder.embed_text(cleaned_query)
-                
+            # Skip RAG retrieve entirely if it is only small talk (ChatIntent.OTHER)
+            if query_vector and any(i not in [ChatIntent.OTHER, ChatIntent.SYSTEM_ACTION] for i in intents):
                 # Set up retrieval tasks to run concurrently
                 retrieval_tasks = []
                 active_intents = []
@@ -124,7 +158,7 @@ class ProductionChatEngine:
                     retrieval_tasks.append(
                         rag_retriever.retrieve_lore_parent_child(
                             collection="character_lore",
-                            query_vector=vector,
+                            query_vector=query_vector,
                             query_text=cleaned_query,
                             top_k=6,
                             score_threshold=0.35
@@ -135,7 +169,7 @@ class ProductionChatEngine:
                     retrieval_tasks.append(
                         rag_retriever.retrieve_lore_parent_child(
                             collection="world_lore",
-                            query_vector=vector,
+                            query_vector=query_vector,
                             query_text=cleaned_query,
                             top_k=6,
                             score_threshold=0.35
@@ -146,7 +180,7 @@ class ProductionChatEngine:
                     retrieval_tasks.append(
                         rag_retriever.retrieve_lore_parent_child(
                             collection="story_lore",
-                            query_vector=vector,
+                            query_vector=query_vector,
                             query_text=cleaned_query,
                             top_k=6,
                             score_threshold=0.35
@@ -157,7 +191,7 @@ class ProductionChatEngine:
                     retrieval_tasks.append(
                         rag_retriever.retrieve_memories(
                             collection="memories",
-                            query_vector=vector,
+                            query_vector=query_vector,
                             user_id=user_id,
                             current_emotion=current_emotions,
                             limit=10,
@@ -173,15 +207,21 @@ class ProductionChatEngine:
                         else:
                             lore_chunks.extend(retrieved_data)
             
-            # 5. Build prompt context using ProductionContextBuilder
+            # 6. Pass search results / tool output through context builder (NOT as user message)
+            # Injecting into user_message would confuse the LLM — it would treat results as user input.
+            # Instead, we pass it separately and let the context builder place it in the system prompt.
+            final_user_message = user_message
+
+            # 7. Build prompt context using ProductionContextBuilder
             prompt = self.context_builder.build(
                 emotion=emotion,
                 attachment_bonus=attachment_bonus_raw,
                 memories=memories,
                 lore=lore_chunks,
                 history=history,
-                user_message=user_message,
-                intent_name=", ".join(intent_values)
+                user_message=final_user_message,
+                intent_name=", ".join(intent_values),
+                tool_result=tool_output_msg or "",
             )
             
             # 6. LLM Generation

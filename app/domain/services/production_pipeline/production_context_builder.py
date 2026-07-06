@@ -70,6 +70,7 @@ class ProductionContextBuilder:
         history: List[Dict[str, str]],
         user_message: str,
         intent_name: str,
+        tool_result: str = "",
     ) -> StructuredPrompt:
         """
         Builds the production context using context building pipeline.
@@ -141,19 +142,48 @@ class ProductionContextBuilder:
             system_parts.extend(["", memories_text])
         if lore_text:
             system_parts.extend(["", lore_text])
+        if tool_result:
+            search_section = (
+                "[SEARCH RESULTS]\n"
+                "Em vừa tra cứu được thông tin sau đây từ internet. "
+                "Hãy tóm tắt và trả lời Senpai dựa trên nội dung này:\n"
+                f"{tool_result}"
+            )
+            system_parts.extend(["", search_section])
             
         system_prompt = "\n".join(system_parts)
         
-        # Enforce history budget of ~800 tokens
-        # Keep most recent history items first from the back
+        import json
         trimmed_history = []
         current_history_tokens = 0
         for turn in reversed(history):
-            turn_str = f"{turn.get('role', 'user')}: {turn.get('content', '')}"
+            role = turn.get("role", "user")
+            content = turn.get("content", "")
+            
+            # Format assistant messages as JSON to avoid contradicting JSON output mode
+            if role == "assistant" and not content.strip().startswith("{"):
+                assistant_json = {
+                    "response": content,
+                    "user_sentiment": {
+                        "is_positive": False,
+                        "is_negative": False,
+                        "is_rude": False,
+                        "is_neutral": True
+                    },
+                    "chisa_sentiment": {
+                        "is_sad": False,
+                        "is_happy": False,
+                        "is_annoyed": False,
+                        "is_flustered": False
+                    }
+                }
+                content = json.dumps(assistant_json, ensure_ascii=False)
+                
+            turn_str = f"{role}: {content}"
             turn_tokens = self._estimate_tokens(turn_str)
             if current_history_tokens + turn_tokens > 800:
                 break
-            trimmed_history.insert(0, turn)
+            trimmed_history.insert(0, {"role": role, "content": content})
             current_history_tokens += turn_tokens
 
         return StructuredPrompt(

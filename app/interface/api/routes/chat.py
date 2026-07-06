@@ -24,6 +24,9 @@ _embedder = FastEmbedAdapter()
 
 if settings.LLM_PROVIDER == "gemini":
     _llm = GeminiAdapter()
+elif settings.LLM_PROVIDER == "deepseek":
+    from app.infrastructure.llm.adapters.deepseek import DeepSeekAdapter
+    _llm = DeepSeekAdapter()
 else:
     _llm = GroqAdapter()
 
