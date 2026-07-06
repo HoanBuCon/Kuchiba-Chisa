@@ -8,18 +8,19 @@ class MockEmbedder:
         text_lower = text.lower()
         
         # Kiểm tra sự xuất hiện trong anchors
-        for intent, anchors in ROUTER_ANCHORS.items():
-            if any(anchor in text_lower or text_lower in anchor for anchor in anchors):
-                if intent == ChatIntent.CHARACTER_LORE:
-                    return [1.0, 0.0, 0.0, 0.0, 0.0]
-                elif intent == ChatIntent.WORLD_LORE:
-                    return [0.0, 1.0, 0.0, 0.0, 0.0]
-                elif intent == ChatIntent.STORY_LORE:
-                    return [0.0, 0.0, 1.0, 0.0, 0.0]
-                elif intent == ChatIntent.MEMORY:
-                    return [0.0, 0.0, 0.0, 1.0, 0.0]
-                elif intent == ChatIntent.SYSTEM_ACTION:
-                    return [0.0, 0.0, 0.0, 0.0, 1.0]
+        for intent, anchor_tuples in ROUTER_ANCHORS.items():
+            for anchor, _ in anchor_tuples:
+                if anchor in text_lower or text_lower in anchor:
+                    if intent == ChatIntent.CHARACTER_LORE:
+                        return [1.0, 0.0, 0.0, 0.0, 0.0]
+                    elif intent == ChatIntent.WORLD_LORE:
+                        return [0.0, 1.0, 0.0, 0.0, 0.0]
+                    elif intent == ChatIntent.STORY_LORE:
+                        return [0.0, 0.0, 1.0, 0.0, 0.0]
+                    elif intent == ChatIntent.MEMORY:
+                        return [0.0, 0.0, 0.0, 1.0, 0.0]
+                    elif intent == ChatIntent.SYSTEM_ACTION:
+                        return [0.0, 0.0, 0.0, 0.0, 1.0]
                     
         return [0.0, 0.0, 0.0, 0.0, 0.0]
 
@@ -42,7 +43,7 @@ async def test_semantic_router_classification():
     assert ChatIntent.WORLD_LORE in intents
 
     # 3. Test SYSTEM_ACTION
-    intents = await router.classify("xóa toàn bộ lịch sử trò chuyện")
+    intents = await router.classify("tóm tắt lại nội dung cuộc trò chuyện nãy giờ giúp anh")
     assert ChatIntent.SYSTEM_ACTION in intents
     
     intents_search = await router.classify("tra mạng giúp anh tin tức này")

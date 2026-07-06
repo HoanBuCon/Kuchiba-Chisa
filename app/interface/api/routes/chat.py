@@ -62,6 +62,23 @@ async def chat_endpoint(
     """
     pipeline_to_use = request.pipeline or settings.CHAT_PIPELINE
     log.info("Received chat request", user_id=request.user_id, pipeline=pipeline_to_use)
+
+    # Determine default username if not supplied
+    username = request.username
+    if not username and request.source == "web":
+        username = "Web Guest"
+
+    from app.infrastructure.logging.pipeline_tracker import pipeline_tracker
+    pipeline_tracker.start_trace(
+        user_id=request.user_id,
+        message=request.message,
+        pipeline=pipeline_to_use,
+        source=request.source,
+        username=username,
+        channel_name=request.channel_name,
+        guild_name=request.guild_name
+    )
+
     try:
         if pipeline_to_use == "production":
             reply_text, emotions = await _production_chat_engine.chat(
@@ -75,13 +92,26 @@ async def chat_endpoint(
                 user_id=request.user_id,
                 user_message=request.message
             )
+
+        loop_thinking_activated = pipeline_tracker.get_loop_thinking_activated()
+
+        pipeline_tracker.end_trace(
+            response_text=reply_text,
+            emotions=emotions,
+            status="success"
+        )
         return ChatResponse(
             response=reply_text,
             user_id=request.user_id,
-            emotions=emotions
+            emotions=emotions,
+            loop_thinking_activated=loop_thinking_activated
         )
     except Exception as e:
         log.error("Chat orchestration failed", error=str(e), user_id=request.user_id, pipeline=pipeline_to_use)
+        pipeline_tracker.end_trace(
+            status="failed",
+            error=str(e)
+        )
         raise HTTPException(status_code=500, detail="Internal server error during chat generation")
 
 

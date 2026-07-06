@@ -1,0 +1,1276 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chisa AI - Pipeline Visualizer</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #0b0813;
+            --panel-bg: rgba(20, 16, 32, 0.7);
+            --border-color: rgba(147, 51, 234, 0.2);
+            --border-hover: rgba(168, 85, 247, 0.5);
+            --accent-purple: #9333ea;
+            --accent-pink: #ec4899;
+            --text-main: #f3f4f6;
+            --text-muted: #9ca3af;
+            --neon-green: #10b981;
+            --neon-red: #ef4444;
+            --glow-purple: 0 0 15px rgba(147, 51, 234, 0.3);
+            --glow-pink: 0 0 15px rgba(236, 48, 153, 0.3);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(147, 51, 234, 0.15) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(236, 72, 153, 0.1) 0px, transparent 50%);
+        }
+
+        /* ── Header ── */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 24px;
+            border-bottom: 1px solid var(--border-color);
+            background: rgba(11, 8, 19, 0.85);
+            backdrop-filter: blur(10px);
+            z-index: 10;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .logo img {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            border: 1px solid var(--accent-purple);
+            box-shadow: var(--glow-purple);
+        }
+
+        .logo-text {
+            font-size: 20px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            background: linear-gradient(to right, var(--text-main), var(--accent-pink));
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .logo-text span {
+            color: var(--accent-purple);
+        }
+
+        .status-panel {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .ws-badge {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(20, 16, 32, 0.6);
+            padding: 6px 12px;
+            border-radius: 20px;
+            border: 1px solid var(--border-color);
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: var(--neon-red);
+        }
+
+        .dot.connected {
+            background-color: var(--neon-green);
+            box-shadow: 0 0 8px var(--neon-green);
+            animation: pulse 1.5s infinite;
+        }
+
+        /* ── Workspace Grid ── */
+        .workspace {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        /* ── Left Sidebar: Trace List ── */
+        .sidebar {
+            width: 300px;
+            border-right: 1px solid var(--border-color);
+            background: rgba(15, 12, 26, 0.4);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .sidebar-header {
+            padding: 16px;
+            border-bottom: 1px solid var(--border-color);
+            font-weight: 600;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-muted);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .trace-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px;
+        }
+
+        .trace-list::-webkit-scrollbar {
+            width: 6px;
+        }
+        .trace-list::-webkit-scrollbar-thumb {
+            background: rgba(147, 51, 234, 0.2);
+            border-radius: 3px;
+        }
+
+        .trace-item {
+            padding: 14px;
+            border-radius: 10px;
+            background: rgba(25, 20, 40, 0.3);
+            border: 1px solid var(--border-color);
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .trace-item:hover {
+            border-color: var(--border-hover);
+            transform: translateY(-2px);
+            box-shadow: var(--glow-purple);
+        }
+
+        .trace-item.active {
+            background: rgba(147, 51, 234, 0.15);
+            border-color: var(--accent-purple);
+            box-shadow: var(--glow-purple);
+        }
+
+        .trace-item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .trace-badge {
+            font-size: 11px;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .badge-success {
+            background: rgba(16, 185, 129, 0.15);
+            color: var(--neon-green);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+
+        .badge-failed {
+            background: rgba(239, 68, 68, 0.15);
+            color: var(--neon-red);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        .badge-processing {
+            background: rgba(245, 158, 11, 0.15);
+            color: #f59e0b;
+            border: 1px solid rgba(245, 158, 11, 0.3);
+        }
+
+        .source-badge {
+            font-size: 11px;
+            padding: 2px 6px;
+            border-radius: 4px;
+            background: rgba(255, 255, 255, 0.08);
+            color: var(--text-muted);
+        }
+
+        .source-discord {
+            background: rgba(88, 101, 242, 0.15);
+            color: #5865f2;
+            border: 1px solid rgba(88, 101, 242, 0.3);
+        }
+
+        .trace-item-message {
+            font-size: 13.5px;
+            color: var(--text-main);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            margin-bottom: 8px;
+        }
+
+        .trace-item-footer {
+            display: flex;
+            justify-content: space-between;
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+
+        /* ── Main Detail Panel ── */
+        .detail-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            background: rgba(10, 8, 16, 0.2);
+        }
+
+        .no-selection {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: var(--text-muted);
+            gap: 16px;
+        }
+
+        .no-selection-icon {
+            font-size: 48px;
+            color: rgba(147, 51, 234, 0.3);
+            animation: float 3s ease-in-out infinite;
+        }
+
+        .detail-header {
+            padding: 20px 24px;
+            border-bottom: 1px solid var(--border-color);
+            background: rgba(20, 16, 32, 0.4);
+        }
+
+        .detail-title-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .detail-title {
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .detail-meta-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+            gap: 12px;
+        }
+
+        .meta-card {
+            background: rgba(25, 20, 40, 0.5);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 10px;
+            font-size: 12px;
+        }
+
+        .meta-card-label {
+            color: var(--text-muted);
+            margin-bottom: 4px;
+        }
+
+        .meta-card-value {
+            font-weight: 600;
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--text-main);
+        }
+
+        /* ── Split Layout Workspace ── */
+        .detail-split-content {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .pipeline-tree-side {
+            width: 330px;
+            border-right: 1px solid var(--border-color);
+            background: rgba(15, 12, 26, 0.15);
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+            padding: 20px;
+        }
+
+        .pipeline-tree-side::-webkit-scrollbar {
+            width: 4px;
+        }
+        .pipeline-tree-side::-webkit-scrollbar-thumb {
+            background: rgba(147, 51, 234, 0.15);
+            border-radius: 2px;
+        }
+
+        .node-inspector-side {
+            flex: 1;
+            overflow-y: auto;
+            padding: 24px;
+            background: rgba(10, 8, 16, 0.35);
+        }
+
+        .node-inspector-side::-webkit-scrollbar {
+            width: 6px;
+        }
+        .node-inspector-side::-webkit-scrollbar-thumb {
+            background: rgba(147, 51, 234, 0.2);
+            border-radius: 3px;
+        }
+
+        /* ── RAG Decision Tree Visualizer ── */
+        .pipeline-tree {
+            display: flex;
+            flex-direction: column;
+            align-items: stretch;
+            gap: 8px;
+            position: relative;
+        }
+
+        .tree-node {
+            background: var(--panel-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 12px 14px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            user-select: none;
+        }
+
+        .tree-node:hover {
+            border-color: var(--border-hover);
+            background: rgba(147, 51, 234, 0.08);
+            transform: translateX(2px);
+        }
+
+        .tree-node.active {
+            border-color: var(--accent-pink);
+            background: rgba(236, 72, 153, 0.12);
+            box-shadow: var(--glow-pink);
+        }
+
+        .tree-node-title-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            overflow: hidden;
+        }
+
+        .tree-node-icon {
+            font-size: 16px;
+            min-width: 20px;
+            text-align: center;
+        }
+
+        .tree-node-title-text {
+            font-size: 13.5px;
+            font-weight: 600;
+            color: var(--text-main);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .tree-node-meta {
+            font-size: 11px;
+            color: var(--text-muted);
+            font-family: 'JetBrains Mono', monospace;
+            white-space: nowrap;
+        }
+
+        .tree-connector {
+            width: 2px;
+            height: 12px;
+            background: linear-gradient(to bottom, var(--accent-purple), var(--accent-pink));
+            margin: 0 auto;
+        }
+
+        .inspector-card {
+            background: var(--panel-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            overflow: hidden;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            animation: fadeIn 0.25s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .inspector-card-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 16px 20px;
+            background: rgba(147, 51, 234, 0.12);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .inspector-card-icon {
+            font-size: 20px;
+        }
+
+        .inspector-card-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-main);
+        }
+
+        .inspector-card-body {
+            padding: 20px;
+        }
+
+        .message-bubble-inspect {
+            background: rgba(147, 51, 234, 0.08);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 12px 16px;
+            font-size: 14px;
+            line-height: 1.6;
+            color: var(--text-main);
+            margin-top: 6px;
+            white-space: pre-wrap;
+        }
+
+        .key-value-list {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 12px;
+        }
+
+        .kv-item {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .kv-label {
+            font-size: 12px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .kv-value {
+            font-size: 13.5px;
+        }
+
+        .json-block {
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 6px;
+            padding: 12px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            color: #d1d5db;
+            overflow-x: auto;
+            max-height: 350px;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+
+        /* ── Specialized node designs ── */
+        .badge-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .intent-pill {
+            font-size: 12px;
+            padding: 4px 10px;
+            border-radius: 20px;
+            background: rgba(147, 51, 234, 0.15);
+            color: #d8b4fe;
+            border: 1px solid rgba(147, 51, 234, 0.3);
+        }
+
+        .tool-active-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(236, 72, 153, 0.15);
+            color: #fbcfe8;
+            border: 1px solid rgba(236, 72, 153, 0.3);
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-weight: 500;
+        }
+
+        .emotion-compare-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+            gap: 12px;
+        }
+
+        .emotion-compare-card {
+            background: rgba(25, 20, 40, 0.4);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 10px;
+            text-align: center;
+        }
+
+        .emotion-name {
+            font-size: 11px;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+        }
+
+        .emotion-delta-flow {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13px;
+        }
+
+        .val-old {
+            color: var(--text-muted);
+            text-decoration: line-through;
+        }
+
+        .val-new {
+            font-weight: 600;
+            color: var(--text-main);
+        }
+
+        .val-change-up {
+            color: var(--neon-green);
+            font-weight: bold;
+        }
+
+        .val-change-down {
+            color: var(--neon-red);
+            font-weight: bold;
+        }
+
+        .chunk-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .chunk-item {
+            background: rgba(255, 255, 255, 0.03);
+            border-left: 3px solid var(--accent-purple);
+            padding: 10px 14px;
+            font-size: 13px;
+            border-radius: 0 6px 6px 0;
+            line-height: 1.5;
+        }
+
+        .chunk-item-title {
+            font-size: 11px;
+            color: var(--accent-pink);
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        /* ── Animations ── */
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.2); opacity: 0.6; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+            100% { transform: translateY(0px); }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header>
+        <div class="logo">
+            <div class="logo-icon">🌸</div>
+            <div class="logo-text">CHISA<span>.</span>AI VISUALIZER</div>
+        </div>
+        <div class="status-panel">
+            <div class="ws-badge">
+                <span class="dot" id="ws-dot"></span>
+                <span id="ws-status">Connecting...</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Workspace Grid -->
+    <div class="workspace">
+        <!-- Sidebar: Trace List -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <span>Traces List</span>
+                <span id="trace-count">0 total</span>
+            </div>
+            <div class="trace-list" id="trace-list-container">
+                <!-- Trace items injected here -->
+            </div>
+        </aside>
+
+        <!-- Main Detail Panel -->
+        <main class="detail-panel" id="detail-panel">
+            <div class="no-selection" id="no-selection">
+                <div class="no-selection-icon">🔮</div>
+                <h3>Chọn một cuộc hội thoại từ danh sách để xem chi tiết pipeline RAG</h3>
+                <p style="color: var(--text-muted); font-size: 14px;">Hoặc gửi tin nhắn mới lên bot để quan sát thời gian thực.</p>
+            </div>
+            
+            <div id="detail-active-container" style="display: none; flex: 1; flex-direction: column; overflow: hidden;">
+                <!-- Detail Header -->
+                <div class="detail-header">
+                    <div class="detail-title-row">
+                        <h2 class="detail-title" id="det-message">Tin nhắn của user</h2>
+                        <span class="trace-badge" id="det-status-badge">SUCCESS</span>
+                    </div>
+                    <div class="detail-meta-grid">
+                        <div class="meta-card">
+                            <div class="meta-card-label">Trace ID</div>
+                            <div class="meta-card-value" id="det-id" style="font-size: 11px;">...</div>
+                        </div>
+                        <div class="meta-card">
+                            <div class="meta-card-label">Nguồn gửi</div>
+                            <div class="meta-card-value" id="det-source">Web UI</div>
+                        </div>
+                        <div class="meta-card">
+                            <div class="meta-card-label">Pipeline</div>
+                            <div class="meta-card-value" id="det-pipeline">production</div>
+                        </div>
+                        <div class="meta-card">
+                            <div class="meta-card-label">Tổng tokens</div>
+                            <div class="meta-card-value" id="det-tokens" style="color: var(--accent-pink);">0</div>
+                        </div>
+                        <div class="meta-card">
+                            <div class="meta-card-label">Độ trễ (Latency)</div>
+                            <div class="meta-card-value" id="det-latency" style="color: #60a5fa;">0ms</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Split content: Tree on left, Inspector on right -->
+                <div class="detail-split-content">
+                    <div class="pipeline-tree-side">
+                        <div class="pipeline-tree" id="pipeline-tree-container">
+                            <!-- Compact node steps injected here -->
+                        </div>
+                    </div>
+                    <div class="node-inspector-side">
+                        <div id="node-inspector-container">
+                            <!-- Active node details shown here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        let traces = [];
+        let selectedTraceId = null;
+
+        // WebSocket Connection
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const wsUrl = `${protocol}//${window.location.host}/api/v1/visualizer/ws`;
+        const wsDot = document.getElementById('ws-dot');
+        const wsStatus = document.getElementById('ws-status');
+
+        function connectWS() {
+            const socket = new WebSocket(wsUrl);
+
+            socket.onopen = () => {
+                wsDot.className = 'dot connected';
+                wsStatus.innerText = 'Online (Real-time)';
+            };
+
+            socket.onmessage = (event) => {
+                const trace = JSON.parse(event.data);
+                handleNewTrace(trace);
+            };
+
+            socket.onclose = () => {
+                wsDot.className = 'dot';
+                wsStatus.innerText = 'Disconnected (Reconnecting...)';
+                setTimeout(connectWS, 3000);
+            };
+        }
+
+        // Fetch initial traces
+        async function fetchInitialTraces() {
+            try {
+                const response = await fetch('/api/v1/visualizer/traces');
+                if (response.ok) {
+                    const data = await response.ok ? await response.json() : [];
+                    traces = data.reverse(); // Show latest first
+                    renderTraceList();
+                    if (traces.length > 0) {
+                        selectTrace(traces[0].id);
+                    }
+                }
+            } catch (error) {
+                console.error("Failed to fetch traces", error);
+            }
+        }
+
+        function handleNewTrace(trace) {
+            // Remove previous duplicate trace if it exists
+            traces = traces.filter(t => t.id !== trace.id);
+            // Insert at top
+            traces.unshift(trace);
+            
+            renderTraceList();
+
+            // Auto-select if no selection or if it matches current selection
+            if (!selectedTraceId || selectedTraceId === trace.id) {
+                selectTrace(trace.id);
+            }
+        }
+
+        function renderTraceList() {
+            const container = document.getElementById('trace-list-container');
+            const countLabel = document.getElementById('trace-count');
+            countLabel.innerText = `${traces.length} total`;
+            
+            container.innerHTML = '';
+            traces.forEach(t => {
+                const item = document.createElement('div');
+                item.className = `trace-item ${t.id === selectedTraceId ? 'active' : ''}`;
+                item.onclick = () => selectTrace(t.id);
+
+                const time = new Date(t.timestamp).toLocaleTimeString();
+                const sourceBadgeClass = t.source === 'discord' ? 'source-discord' : 'source-web';
+                const statusBadgeClass = t.status === 'success' ? 'badge-success' : (t.status === 'processing' ? 'badge-processing' : 'badge-failed');
+
+                item.innerHTML = `
+                    <div class="trace-item-header">
+                        <span class="trace-badge ${statusBadgeClass}">${t.status}</span>
+                        <span class="source-badge ${sourceBadgeClass}">${t.source}</span>
+                    </div>
+                    <div class="trace-item-message">"${t.message}"</div>
+                    <div class="trace-item-footer">
+                        <span>${time}</span>
+                        <span>${t.total_tokens || 0} tokens • ${t.latency_ms || 0}ms</span>
+                    </div>
+                `;
+                container.appendChild(item);
+            });
+        }
+
+        function selectTrace(id) {
+            selectedTraceId = id;
+            
+            // Mark active item in list UI
+            document.querySelectorAll('.trace-item').forEach((item, index) => {
+                const trace = traces[index];
+                if (trace && trace.id === id) {
+                    item.classList.add('active');
+                } else {
+                    item.classList.remove('active');
+                }
+            });
+
+            const trace = traces.find(t => t.id === id);
+            if (!trace) return;
+
+            document.getElementById('no-selection').style.display = 'none';
+            document.getElementById('detail-active-container').style.display = 'flex';
+
+            // Fill header
+            document.getElementById('det-message').innerText = `"${trace.message}"`;
+            document.getElementById('det-id').innerText = trace.id;
+            
+            const sourceBadge = document.getElementById('det-source');
+            sourceBadge.innerText = trace.source.toUpperCase();
+            sourceBadge.className = `meta-card-value source-badge ${trace.source === 'discord' ? 'source-discord' : 'source-web'}`;
+
+            document.getElementById('det-pipeline').innerText = trace.pipeline.toUpperCase();
+            document.getElementById('det-tokens').innerText = trace.total_tokens || 0;
+            document.getElementById('det-latency').innerText = `${trace.latency_ms || 0}ms`;
+
+            const statusBadge = document.getElementById('det-status-badge');
+            statusBadge.innerText = trace.status;
+            statusBadge.className = `trace-badge ${trace.status === 'success' ? 'badge-success' : (trace.status === 'processing' ? 'badge-processing' : 'badge-failed')}`;
+
+            // Build RAG steps tree
+            renderPipelineTree(trace);
+        }
+
+        let activeNodeId = null;
+        let activeNodesList = [];
+
+        function selectNode(nodeId) {
+            activeNodeId = nodeId;
+            
+            // Add active class to selected node, remove from others
+            activeNodesList.forEach(n => {
+                const el = document.getElementById(n.id);
+                if (el) {
+                    if (n.id === nodeId) {
+                        el.classList.add('active');
+                    } else {
+                        el.classList.remove('active');
+                    }
+                }
+            });
+            
+            // Render node details in the inspector
+            const node = activeNodesList.find(n => n.id === nodeId);
+            const inspectorContainer = document.getElementById('node-inspector-container');
+            if (node && inspectorContainer) {
+                inspectorContainer.innerHTML = node.render();
+            }
+        }
+
+        function renderPipelineTree(trace) {
+            const container = document.getElementById('pipeline-tree-container');
+            container.innerHTML = '';
+            
+            activeNodesList = [];
+            
+            // 1. User Input & Origin Node
+            let originDetailsHtml = '';
+            if (trace.source === 'discord') {
+                originDetailsHtml = `
+                    <div class="kv-item">
+                        <span class="kv-label">Nguồn (Source)</span>
+                        <span class="kv-value"><span class="source-badge source-discord">Discord Bot</span></span>
+                    </div>
+                    <div class="kv-item">
+                        <span class="kv-label">Username</span>
+                        <span class="kv-value"><b>${trace.username || 'N/A'}</b></span>
+                    </div>
+                    <div class="kv-item">
+                        <span class="kv-label">User ID</span>
+                        <span class="kv-value font-mono">${trace.user_id}</span>
+                    </div>
+                    <div class="kv-item">
+                        <span class="kv-label">Kênh (Channel)</span>
+                        <span class="kv-value">#${trace.channel_name || 'N/A'}</span>
+                    </div>
+                    <div class="kv-item">
+                        <span class="kv-label">Máy chủ (Server)</span>
+                        <span class="kv-value">🏟️ ${trace.guild_name || 'N/A'}</span>
+                    </div>
+                `;
+            } else {
+                originDetailsHtml = `
+                    <div class="kv-item">
+                        <span class="kv-label">Nguồn (Source)</span>
+                        <span class="kv-value"><span class="source-badge source-web">Web Platform</span></span>
+                    </div>
+                    <div class="kv-item">
+                        <span class="kv-label">Username</span>
+                        <span class="kv-value"><b>${trace.username || 'Web Guest'}</b></span>
+                    </div>
+                    <div class="kv-item">
+                        <span class="kv-label">User ID</span>
+                        <span class="kv-value font-mono">${trace.user_id}</span>
+                    </div>
+                `;
+            }
+            
+            activeNodesList.push({
+                id: 'node-start',
+                icon: '👤',
+                title: 'User Input',
+                meta: trace.source.toUpperCase(),
+                render: () => `
+                    <div class="inspector-card">
+                        <div class="inspector-card-header">
+                            <span class="inspector-card-icon">👤</span>
+                            <h3 class="inspector-card-title">User Input & Origin Details</h3>
+                        </div>
+                        <div class="inspector-card-body">
+                            <div class="key-value-list" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
+                                ${originDetailsHtml}
+                            </div>
+                            <div class="kv-item" style="margin-top: 20px;">
+                                <span class="kv-label">Tin nhắn thô (Message)</span>
+                                <div class="message-bubble-inspect">"${trace.message}"</div>
+                            </div>
+                        </div>
+                    </div>
+                `
+            });
+            
+            // 2. Intermediate steps
+            trace.steps.forEach((step, idx) => {
+                let icon = '⚙️';
+                let title = step.name;
+                let meta = '';
+                let renderDetails = () => '';
+                
+                if (step.name === 'intent_classification') {
+                    icon = '🔍';
+                    title = 'Intent Routing';
+                    const intentsList = step.data.intents || [];
+                    meta = step.data.is_small_talk ? 'Small Talk' : 'RAG Query';
+                    renderDetails = () => {
+                        const intentsList = step.data.intents || [];
+                        const intentPills = intentsList.map(i => `<span class="intent-pill">${i}</span>`).join('');
+                        return `
+                            <div class="inspector-card">
+                                <div class="inspector-card-header">
+                                    <span class="inspector-card-icon">🔍</span>
+                                    <h3 class="inspector-card-title">Intent Routing (Phân loại ý định)</h3>
+                                </div>
+                                <div class="inspector-card-body">
+                                    <div class="key-value-list">
+                                        <div class="kv-item">
+                                            <span class="kv-label">Bỏ qua RAG (is_small_talk)</span>
+                                            <span class="kv-value" style="font-weight: 600; color: ${step.data.is_small_talk ? 'var(--neon-green)' : 'var(--neon-red)'}">${step.data.is_small_talk}</span>
+                                        </div>
+                                        <div class="kv-item">
+                                            <span class="kv-label">Ý định nhận dạng (Intents)</span>
+                                            <div class="badge-list" style="margin-top: 4px;">${intentPills || '<span style="color: var(--text-muted);">Không có</span>'}</div>
+                                        </div>
+                                        <div class="kv-item">
+                                            <span class="kv-label">Truy vấn đã chuẩn hóa</span>
+                                            <span class="kv-value">"${step.data.cleaned_query || trace.message}"</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    };
+                }
+                else if (step.name === 'tool_routing') {
+                    icon = '🧰';
+                    title = 'Tool Router';
+                    const toolName = step.data.tool_name || 'none';
+                    meta = toolName !== 'none' ? toolName : 'no tool';
+                    renderDetails = () => `
+                        <div class="inspector-card">
+                            <div class="inspector-card-header">
+                                <span class="inspector-card-icon">🧰</span>
+                                <h3 class="inspector-card-title">Tool Execution Router (Định tuyến & Gọi Tool)</h3>
+                            </div>
+                            <div class="inspector-card-body">
+                                <div class="key-value-list">
+                                    <div class="kv-item">
+                                        <span class="kv-label">Tool chạy</span>
+                                        <span class="tool-active-badge">${toolName}</span>
+                                    </div>
+                                    <div class="kv-item">
+                                        <span class="kv-label">Điểm tin cậy (Confidence score)</span>
+                                        <span class="kv-value font-mono">${step.data.tool_score || 0.0}</span>
+                                    </div>
+                                    <div class="kv-item">
+                                        <span class="kv-label">Kết quả thực thi Tool</span>
+                                        <div class="json-block" style="margin-top: 4px;">${step.data.tool_result || 'Trống hoặc không hoạt động'}</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+                else if (step.name === 'rag_retrieval') {
+                    icon = '🧠';
+                    title = 'RAG Retrieval';
+                    const loreCount = step.data.retrieved_lore_chunks ? step.data.retrieved_lore_chunks.length : 0;
+                    const memCount = step.data.retrieved_memories ? step.data.retrieved_memories.length : 0;
+                    meta = `${loreCount} Lore, ${memCount} Mem`;
+                    renderDetails = () => {
+                        let loreChunksHtml = '<p style="color: var(--text-muted); font-size: 13px;">Không tìm thấy Lore phù hợp.</p>';
+                        if (loreCount > 0) {
+                            loreChunksHtml = '<div class="chunk-list">' + step.data.retrieved_lore_chunks.map((chunk, i) => `
+                                <div class="chunk-item">
+                                    <div class="chunk-item-title">Mảnh Lore #${i+1}</div>
+                                    <div>${chunk}</div>
+                                </div>
+                            `).join('') + '</div>';
+                        }
+
+                        let memoriesHtml = '<p style="color: var(--text-muted); font-size: 13px;">Không tìm thấy Ký ức phù hợp.</p>';
+                        if (memCount > 0) {
+                            memoriesHtml = '<div class="chunk-list">' + step.data.retrieved_memories.map((mem, i) => `
+                                <div class="chunk-item" style="border-left-color: var(--accent-pink);">
+                                    <div class="chunk-item-title" style="color: var(--accent-purple);">Ký ức #${i+1}</div>
+                                    <div>${mem}</div>
+                                </div>
+                            `).join('') + '</div>';
+                        }
+
+                        return `
+                            <div class="inspector-card">
+                                <div class="inspector-card-header">
+                                    <span class="inspector-card-icon">🧠</span>
+                                    <h3 class="inspector-card-title">RAG Retrieval (Truy xuất Vector DB)</h3>
+                                </div>
+                                <div class="inspector-card-body">
+                                    <div class="key-value-list">
+                                        <div class="kv-item">
+                                            <span class="kv-label">Các tập Lore đã quét</span>
+                                            <span class="kv-value">${step.data.lore_collections_queried ? step.data.lore_collections_queried.join(', ') : 'Character/World/Story Lore'}</span>
+                                        </div>
+                                        <div class="kv-item" style="margin-top: 10px;">
+                                            <span class="kv-label" style="margin-bottom: 8px;">Mảnh cốt truyện Lore (${loreCount})</span>
+                                            ${loreChunksHtml}
+                                        </div>
+                                        <div class="kv-item" style="margin-top: 10px;">
+                                            <span class="kv-label" style="margin-bottom: 8px;">Ký ức Memory (${memCount})</span>
+                                            ${memoriesHtml}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    };
+                }
+                else if (step.name === 'context_building') {
+                    icon = '🧱';
+                    title = 'Prompt Build';
+                    meta = `${step.data.history_count} msgs`;
+                    renderDetails = () => `
+                        <div class="inspector-card">
+                            <div class="inspector-card-header">
+                                <span class="inspector-card-icon">🧱</span>
+                                <h3 class="inspector-card-title">Prompt Construction (Lắp ghép ngữ cảnh)</h3>
+                            </div>
+                            <div class="inspector-card-body">
+                                <div class="key-value-list">
+                                    <div class="kv-item">
+                                        <span class="kv-label">System Instruction gửi lên LLM</span>
+                                        <div class="json-block" style="margin-top: 4px; font-family: 'Inter', sans-serif;">${step.data.system_prompt}</div>
+                                    </div>
+                                    <div class="kv-item">
+                                        <span class="kv-label">Lượng tin nhắn hội thoại ngắn hạn (STM)</span>
+                                        <span class="kv-value">${step.data.history_count} tin nhắn gần nhất</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+                else if (step.name === 'llm_generation') {
+                    icon = '🤖';
+                    title = 'LLM Generation';
+                    const tokens = step.data.total_tokens || 0;
+                    meta = `${tokens} tkn`;
+                    renderDetails = () => {
+                        const parsedJson = JSON.stringify(step.data.parsed_response, null, 2);
+                        return `
+                            <div class="inspector-card">
+                                <div class="inspector-card-header">
+                                    <span class="inspector-card-icon">🤖</span>
+                                    <h3 class="inspector-card-title">LLM Generation (${step.data.model || 'model'})</h3>
+                                </div>
+                                <div class="inspector-card-body">
+                                    <div class="key-value-list">
+                                        <div class="kv-item">
+                                            <span class="kv-label">Model</span>
+                                            <span class="kv-value font-mono">${step.data.model}</span>
+                                        </div>
+                                        <div class="kv-item">
+                                            <span class="kv-label">Token Breakdown</span>
+                                            <span class="kv-value">Input: <b>${step.data.input_tokens}</b> • Output: <b>${step.data.output_tokens}</b> • Tổng: <b>${tokens}</b></span>
+                                        </div>
+                                        <div class="kv-item">
+                                            <span class="kv-label">Finish Reason</span>
+                                            <span class="kv-value font-mono">${step.data.finish_reason}</span>
+                                        </div>
+                                        <div class="kv-item">
+                                            <span class="kv-label">Kết quả phân tích JSON (Parsed response)</span>
+                                            <pre class="json-block" style="margin-top: 4px;">${parsedJson}</pre>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    };
+                }
+                else if (step.name === 'emotion_update') {
+                    icon = '🎭';
+                    title = 'Emotion Updates';
+                    meta = 'applied';
+                    renderDetails = () => {
+                        const userSent = step.data.user_sentiment || {};
+                        const chisaSent = step.data.chisa_sentiment || {};
+                        let activeUserSent = Object.entries(userSent).filter(([k, v]) => v).map(([k]) => k).join(', ');
+                        let activeChisaSent = Object.entries(chisaSent).filter(([k, v]) => v).map(([k]) => k).join(', ');
+
+                        const oldEm = step.data.old_emotions || {};
+                        const newEm = step.data.new_emotions || {};
+                        let compareCards = '';
+                        const emotionLabels = {
+                            joy: 'Vui vẻ',
+                            sadness: 'Buồn bã',
+                            trust: 'Tin tưởng',
+                            irritation: 'Khó chịu',
+                            attachment: 'Gắn kết'
+                        };
+                        const emotionColors = {
+                            joy: '#4caf50',
+                            sadness: '#2196f3',
+                            trust: '#ffeb3b',
+                            irritation: '#f44336',
+                            attachment: '#e91e63'
+                        };
+
+                        Object.keys(emotionLabels).forEach(key => {
+                            const oldVal = oldEm[key] || 0;
+                            const newVal = newEm[key] || 0;
+                            const diff = newVal - oldVal;
+                            let diffHtml = '';
+                            if (diff > 0.001) {
+                                diffHtml = `<span class="val-change-up">▲+${Math.round(diff * 100)}%</span>`;
+                            } else if (diff < -0.001) {
+                                diffHtml = `<span class="val-change-down">▼${Math.round(diff * 100)}%</span>`;
+                            } else {
+                                diffHtml = `<span style="color: var(--text-muted); font-size: 11px;">--</span>`;
+                            }
+
+                            compareCards += `
+                                <div class="emotion-compare-card" style="border-color: rgba(255,255,255,0.05);">
+                                    <div class="emotion-name" style="color: ${emotionColors[key]}">${emotionLabels[key]}</div>
+                                    <div class="emotion-delta-flow">
+                                        <span class="val-old">${Math.round(oldVal * 100)}%</span>
+                                        <span>➔</span>
+                                        <span class="val-new" style="color: ${emotionColors[key]}">${Math.round(newVal * 100)}%</span>
+                                    </div>
+                                    <div style="margin-top: 6px; font-size: 11.5px;">${diffHtml}</div>
+                                </div>
+                            `;
+                        });
+
+                        return `
+                            <div class="inspector-card">
+                                <div class="inspector-card-header">
+                                    <span class="inspector-card-icon">🎭</span>
+                                    <h3 class="inspector-card-title">Emotion Updates (Cập nhật cảm xúc)</h3>
+                                </div>
+                                <div class="inspector-card-body">
+                                    <div class="key-value-list">
+                                        <div class="kv-item">
+                                            <span class="kv-label">Phân tích thái độ Senpai</span>
+                                            <span class="kv-value" style="font-weight: 500;">${activeUserSent ? `Nhận diện sắc thái: <span style="color: var(--accent-pink);">${activeUserSent}</span>` : 'Bình thường / Trung lập'}</span>
+                                        </div>
+                                        <div class="kv-item">
+                                            <span class="kv-label">Biểu cảm nội tâm của Chisa</span>
+                                            <span class="kv-value" style="font-weight: 500;">${activeChisaSent ? `Cảm xúc bộc lộ: <span style="color: var(--accent-purple);">${activeChisaSent}</span>` : 'Bình thường'}</span>
+                                        </div>
+                                        <div class="kv-item" style="margin-top: 15px;">
+                                            <span class="kv-label">Biến thiên chỉ số cảm xúc ẩn</span>
+                                            <div class="emotion-compare-grid" style="margin-top: 8px;">
+                                                ${compareCards}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    };
+                }
+                
+                activeNodesList.push({
+                    id: `node-step-${idx}`,
+                    icon,
+                    title,
+                    meta,
+                    render: renderDetails
+                });
+            });
+            
+            // 3. Add Final Output Node
+            activeNodesList.push({
+                id: 'node-end',
+                icon: '💬',
+                title: 'Chisa Response',
+                meta: 'OUTPUT',
+                render: () => `
+                    <div class="inspector-card">
+                        <div class="inspector-card-header">
+                            <span class="inspector-card-icon">💬</span>
+                            <h3 class="inspector-card-title">Chisa Response</h3>
+                        </div>
+                        <div class="inspector-card-body">
+                            <div class="key-value-list">
+                                <div class="kv-item">
+                                    <span class="kv-label">Lời thoại của Chisa (Response text)</span>
+                                    <div class="message-bubble-inspect" style="background: rgba(147, 51, 234, 0.05); font-size: 14.5px; border-left-color: var(--accent-pink);">
+                                        ${trace.response ? trace.response.replace(/\n/g, '<br>') : 'Không có phản hồi đầu ra'}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `
+            });
+            
+            // Build tree elements
+            activeNodesList.forEach((n, idx) => {
+                if (idx > 0) {
+                    const conn = document.createElement('div');
+                    conn.className = 'tree-connector';
+                    container.appendChild(conn);
+                }
+                
+                const nodeEl = document.createElement('div');
+                nodeEl.className = 'tree-node';
+                nodeEl.id = n.id;
+                nodeEl.onclick = () => selectNode(n.id);
+                
+                nodeEl.innerHTML = `
+                    <div class="tree-node-title-group">
+                        <span class="tree-node-icon">${n.icon}</span>
+                        <span class="tree-node-title-text">${n.title}</span>
+                    </div>
+                    <span class="tree-node-meta">${n.meta}</span>
+                `;
+                
+                container.appendChild(nodeEl);
+            });
+            
+            // Default select the first node (User Input)
+            if (activeNodesList.length > 0) {
+                selectNode(activeNodesList[0].id);
+            }
+        }
+
+        // Initialize on page load
+        window.addEventListener('DOMContentLoaded', () => {
+            fetchInitialTraces();
+            connectWS();
+        });
+    </script>
+</body>
+</html>

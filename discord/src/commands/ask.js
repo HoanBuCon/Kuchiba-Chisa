@@ -43,6 +43,9 @@ export async function execute(client, interaction, discordUser) {
     const result = await coreRagClient.ask({
       coreUserId: discordUser.core_user_id,
       message: question,
+      username: interaction.user.username,
+      channelName: interaction.channel ? (interaction.channel.name || 'DM') : 'DM',
+      guildName: interaction.guild ? interaction.guild.name : null,
     });
 
     await repositories.interactions.markSuccess(interactionId, {
@@ -78,6 +81,14 @@ export async function executePrefix(client, message, question, discordUser) {
 
   await message.channel.sendTyping().catch(() => {});
 
+  // Send thinking message placeholder
+  let thinkingMsg = null;
+  try {
+    thinkingMsg = await message.channel.send('*Chisa đang suy nghĩ...*');
+  } catch {
+    // Non-critical: proceed without thinking message if it fails
+  }
+
   const interactionId = await repositories.interactions.createFromContext(message, {
     coreUserId: discordUser.core_user_id,
     commandName: `${client.services.prefixCommandRunner?.prefix || 'c!'}ask`,
@@ -91,6 +102,9 @@ export async function executePrefix(client, message, question, discordUser) {
     const result = await coreRagClient.ask({
       coreUserId: discordUser.core_user_id,
       message: question,
+      username: message.author.username,
+      channelName: message.channel ? (message.channel.name || 'DM') : 'DM',
+      guildName: message.guild ? message.guild.name : null,
     });
 
     await repositories.interactions.markSuccess(interactionId, {
@@ -98,10 +112,21 @@ export async function executePrefix(client, message, question, discordUser) {
       metadata: { emotions: result.emotions, source: 'core-rag', mode: 'prefix' },
     });
 
+    // Delete thinking message before sending the actual reply
+    if (thinkingMsg) {
+      await thinkingMsg.delete().catch(() => {});
+    }
+
     await replyWithChunks(message, result.response, result.emotions, client);
   } catch (error) {
     logger.error({ err: error, userId: message.author.id, interactionId }, 'Discord prefix ask failed');
     await repositories.interactions.pool.query('DELETE FROM discord_interactions WHERE id = $1', [interactionId]);
+
+    // Delete thinking message on error too
+    if (thinkingMsg) {
+      await thinkingMsg.delete().catch(() => {});
+    }
+
     await message.reply('Xin lỗi Senpai, Chisa không thể trả lời lúc này. Hãy thử lại sau ít phút.');
   }
 }

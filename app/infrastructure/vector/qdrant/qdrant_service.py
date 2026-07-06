@@ -122,9 +122,27 @@ class QdrantService:
         vector_size: int,
         distance: Distance = Distance.COSINE,
     ) -> None:
-        if await self.collection_exists(name):
-            log.info("Collection already exists, skipping", collection=name)
-            return
+        try:
+            info = await self._client.get_collection(name)
+            existing_dim = None
+            vectors_config = info.config.params.vectors
+            if hasattr(vectors_config, "size"):
+                existing_dim = vectors_config.size
+            elif hasattr(vectors_config, "vectors") and hasattr(vectors_config.vectors, "size"):
+                existing_dim = vectors_config.vectors.size
+            elif isinstance(vectors_config, dict) and len(vectors_config) > 0:
+                first_val = list(vectors_config.values())[0]
+                existing_dim = getattr(first_val, "size", None)
+            
+            if existing_dim is not None and existing_dim != vector_size:
+                log.warning("Qdrant collection dimension mismatch, recreating", collection=name, expected=vector_size, found=existing_dim)
+                await self._client.delete_collection(name)
+            else:
+                log.info("Collection already exists with correct dimensions, skipping", collection=name)
+                return
+        except Exception:
+            # Collection does not exist or error reading config; proceed to create
+            pass
 
         await self._client.create_collection(
             collection_name=name,

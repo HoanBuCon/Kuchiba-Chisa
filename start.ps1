@@ -6,6 +6,49 @@
 
 $ROOT = $PSScriptRoot
 
+function Kill-ProcessOnPort {
+    param (
+        [int]$Port
+    )
+    Write-Host "[Chisa AI] Cleaning up port $Port..." -ForegroundColor Yellow
+    $connections = Get-NetTCPConnection -LocalPort $Port -State Listen -ErrorAction SilentlyContinue
+    if ($connections) {
+        foreach ($conn in $connections) {
+            $targetPid = $conn.OwningProcess
+            if ($targetPid) {
+                Write-Host "[Chisa AI] Terminating process $targetPid and its children listening on port $Port..." -ForegroundColor Red
+                taskkill.exe /F /T /PID $targetPid 2>$null
+                Stop-Process -Id $targetPid -Force -ErrorAction SilentlyContinue
+            }
+        }
+    } else {
+        # Fallback to netstat parsing if Get-NetTCPConnection doesn't return anything
+        $netstat = netstat -ano | Select-String "LISTENING" | Select-String ":$Port\s"
+        if ($netstat) {
+            $targetPids = @()
+            foreach ($line in $netstat) {
+                $parts = $line.ToString().Split(' ', [System.StringSplitOptions]::RemoveEmptyEntries)
+                if ($parts.Length -ge 5) {
+                    $targetPid = $parts[-1].Trim()
+                    if ($targetPid -ne "0" -and $targetPid -notin $targetPids) {
+                        $targetPids += $targetPid
+                    }
+                }
+            }
+            foreach ($targetPid in $targetPids) {
+                Write-Host "[Chisa AI] Terminating process $targetPid and its children listening on port $Port..." -ForegroundColor Red
+                taskkill.exe /F /T /PID $targetPid 2>$null
+                Stop-Process -Id $targetPid -Force -ErrorAction SilentlyContinue
+            }
+        }
+    }
+}
+
+# Clean up ports 8000 (Backend), 5173 (Frontend default), and 5174 (Frontend secondary)
+Kill-ProcessOnPort 8000
+Kill-ProcessOnPort 5173
+Kill-ProcessOnPort 5174
+
 Write-Host ""
 Write-Host "  CHISA AI - Starting up..." -ForegroundColor Red
 Write-Host "  Backend  -> http://localhost:8000" -ForegroundColor DarkGray

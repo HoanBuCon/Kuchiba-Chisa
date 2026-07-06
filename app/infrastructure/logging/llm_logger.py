@@ -2,26 +2,77 @@ import asyncio
 import os
 import re
 import datetime
-from typing import Any
+import contextvars
+from typing import Any, List
 from app.infrastructure.llm.adapters.base import StructuredPrompt, LLMResponse
 
 LOG_FILE_PATH = "llm_api_clean.txt"
 
-def _get_next_index() -> int:
-    if not os.path.exists(LOG_FILE_PATH):
-        return 1
-    try:
-        with open(LOG_FILE_PATH, "r", encoding="utf-8") as f:
-            content = f.read()
-        matches = re.findall(r"=====\s*LƯỢT\s+(\d+)\s*=====", content)
-        if matches:
-            return max(int(m) for m in matches) + 1
-    except Exception:
-        pass
-    return 1
+# Context variables to track Question Index and Turn Index within each request context
+request_question_idx: contextvars.ContextVar[int] = contextvars.ContextVar("request_question_idx", default=1)
+request_turn_idx: contextvars.ContextVar[int] = contextvars.ContextVar("request_turn_idx", default=1)
 
-def _write_log_sync(prompt: StructuredPrompt, response: LLMResponse) -> None:
-    idx = _get_next_index()
+
+def _write_routing_log_sync(
+    user_message: str,
+    is_small_talk: bool,
+    intents: List[str],
+    tool_name: str,
+    tool_score: float,
+    tool_result: str,
+    q_idx: int
+) -> None:
+    now_str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    
+    log_content = f"""================================================================================
+LẦN HỎI {q_idx}
+================================================================================
+Thời gian: {now_str}
+Tin nhắn của User: "{user_message}"
+
+[SEMANTIC ROUTING & TOOL DECISION]
+- Phân loại kiểu tin nhắn: {"Small Talk (Bypass RAG)" if is_small_talk else "Lore Talk (Truy cập RAG)"}
+- Định tuyến intent (Semantic Router): {intents}
+- Định tuyến Tool (Semantic Tool Router): Tool = "{tool_name}" (Confidence: {tool_score:.4f})
+- Kết quả thực thi Tool: {tool_result if tool_result else "Không kích hoạt hoặc bỏ qua"}
+
+================================================================================
+
+"""
+    with open(LOG_FILE_PATH, "a", encoding="utf-8") as f:
+        f.write(log_content)
+
+
+async def log_routing_transaction(
+    user_message: str,
+    is_small_talk: bool,
+    intents: List[str],
+    tool_name: str,
+    tool_score: float,
+    tool_result: str
+) -> None:
+    """
+    Asynchronously logs the Semantic Routing & Tool Decisions to the clean txt file.
+    Runs inside a thread pool to avoid blocking the event loop.
+    """
+    try:
+        q_idx = request_question_idx.get()
+        await asyncio.to_thread(
+            _write_routing_log_sync,
+            user_message,
+            is_small_talk,
+            intents,
+            tool_name,
+            tool_score,
+            tool_result,
+            q_idx
+        )
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).warning(f"Failed to write clean Routing log: {e}")
+
+
+def _write_log_sync(prompt: StructuredPrompt, response: LLMResponse, q_idx: int, t_idx: int) -> None:
     now_str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     
     # Format chat history
@@ -71,7 +122,8 @@ def _write_log_sync(prompt: StructuredPrompt, response: LLMResponse) -> None:
         memory_lines.append("  (Không có dữ liệu Ký ức được lấy)")
     memories_str = "\n".join(memory_lines)
     
-    log_content = f"""===== LƯỢT {idx} =====
+    log_content = f"""===== LƯỢT {t_idx} =====
+LẦN HỎI: {q_idx}
 Thời gian: {now_str}
 Model sử dụng: {response.model}
 
@@ -118,13 +170,34 @@ Total Tokens: {response.input_tokens + response.output_tokens}
     with open(LOG_FILE_PATH, "a", encoding="utf-8") as f:
         f.write(log_content)
 
+
 async def log_llm_transaction(prompt: StructuredPrompt, response: LLMResponse) -> None:
     """
     Asynchronously logs a complete LLM transaction (Request & Response) to a clean txt file.
     Runs inside a thread pool to avoid blocking the event loop.
     """
     try:
-        await asyncio.to_thread(_write_log_sync, prompt, response)
+        q_idx = request_question_idx.get()
+        t_idx = request_turn_idx.get()
+        # Increment the turn counter in the request context (main thread)
+        request_turn_idx.set(t_idx + 1)
+        
+        # Add LLM call step to the pipeline tracker
+        try:
+            from app.infrastructure.logging.pipeline_tracker import pipeline_tracker
+            pipeline_tracker.add_step("llm_generation", {
+                "model": response.model,
+                "input_tokens": response.input_tokens,
+                "output_tokens": response.output_tokens,
+                "total_tokens": response.input_tokens + response.output_tokens,
+                "finish_reason": response.finish_reason,
+                "raw_response": response.raw_content,
+                "parsed_response": response.parsed
+            })
+        except Exception:
+            pass
+
+        await asyncio.to_thread(_write_log_sync, prompt, response, q_idx, t_idx)
     except Exception as e:
         # Prevent logging errors from crashing the main chat flow
         import logging

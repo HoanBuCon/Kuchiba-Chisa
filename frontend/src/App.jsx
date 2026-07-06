@@ -148,10 +148,12 @@ export default function App() {
   const [messages, setMessages]             = useState([]);
   const [input, setInput]                   = useState('');
   const [isLoading, setIsLoading]           = useState(false);
+  const [isThinkingMode, setIsThinkingMode] = useState(false);
   const [emotions, setEmotions]             = useState({ joy: 0.5, sadness: 0.0, trust: 0.5, irritation: 0.0, attachment: 0.0 });
   const [isHistoryLoading, setIsHistoryLoading] = useState(true);
   const messagesEndRef = useRef(null);
   const textareaRef    = useRef(null);
+  const thinkingTimerRef = useRef(null);
 
   const scrollToBottom = () =>
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -217,6 +219,14 @@ export default function App() {
 
     setMessages(prev => [...prev, { role: 'user', content: userText }]);
     setIsLoading(true);
+    setIsThinkingMode(false);
+
+    // Escalate to Loop Thinking bubble after 6 seconds of loading
+    // (normal LLM replies take 2-4s; loop thinking takes 8-15s)
+    thinkingTimerRef.current = setTimeout(() => {
+      setIsThinkingMode(true);
+    }, 6000);
+
     try {
       const res = await axios.post(`${BASE}/chat`, { user_id: getDeviceId(), message: userText });
       if (res.data?.response) {
@@ -228,6 +238,8 @@ export default function App() {
     } catch {
       setMessages(prev => [...prev, { role: 'chisa', content: '*(Lỗi kết nối)* Xin lỗi Senpai... Em đang gặp sự cố, hãy thử lại sau nhé!' }]);
     } finally {
+      clearTimeout(thinkingTimerRef.current);
+      setIsThinkingMode(false);
       setIsLoading(false);
     }
   };
@@ -266,11 +278,25 @@ export default function App() {
             <div className="msg-row">
               <div className="msg-chisa">
                 <img src="/pet_chisa_gif.gif" className="chisa-avatar-img" alt="Chisa" />
-                <div className="typing-indicator">
-                  <div className="typing-dot" />
-                  <div className="typing-dot" />
-                  <div className="typing-dot" />
-                </div>
+                {isThinkingMode ? (
+                  <div className="thinking-mode-bubble">
+                    <div className="thinking-mode-label">
+                      <span className="thinking-mode-icon">⚙️</span>
+                      Chisa đang suy luận sâu...
+                    </div>
+                    <div className="thinking-mode-dots">
+                      <div className="thinking-mode-dot" />
+                      <div className="thinking-mode-dot" />
+                      <div className="thinking-mode-dot" />
+                    </div>
+                  </div>
+                ) : (
+                  <div className="typing-indicator">
+                    <div className="typing-dot" />
+                    <div className="typing-dot" />
+                    <div className="typing-dot" />
+                  </div>
+                )}
               </div>
             </div>
           )}

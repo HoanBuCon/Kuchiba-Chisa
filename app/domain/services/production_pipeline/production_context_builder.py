@@ -71,6 +71,7 @@ class ProductionContextBuilder:
         user_message: str,
         intent_name: str,
         tool_result: str = "",
+        conversation_summary: str | None = None,
     ) -> StructuredPrompt:
         """
         Builds the production context using context building pipeline.
@@ -138,16 +139,25 @@ class ProductionContextBuilder:
             "",
             format_section
         ]
+        if conversation_summary:
+            summary_section = (
+                "[CONVERSATION SUMMARY]\n"
+                "Tóm tắt cuộc trò chuyện nãy giờ của Senpai và em:\n"
+                f"{conversation_summary}"
+            )
+            system_parts.extend(["", summary_section])
         if memories_text:
             system_parts.extend(["", memories_text])
         if lore_text:
             system_parts.extend(["", lore_text])
         if tool_result:
             search_section = (
-                "[SEARCH RESULTS]\n"
-                "Em vừa tra cứu được thông tin sau đây từ internet. "
-                "Hãy tóm tắt và trả lời Senpai dựa trên nội dung này:\n"
-                f"{tool_result}"
+                "[SEARCH DATA]\n"
+                "Thông tin khách quan được tìm thấy từ internet:\n"
+                f"{tool_result}\n\n"
+                "HƯỚNG DẪN QUAN TRỌNG: Hãy trả lời Senpai một cách tự nhiên bằng giọng điệu Kuudere của em. "
+                "Tuyệt đối KHÔNG sử dụng các câu chuyển tiếp máy móc, rập khuôn hoặc tự phủ nhận (ví dụ: CẤM DÙNG 'Theo kết quả em tìm kiếm...', 'Dưới đây là kết quả...', 'Theo thông tin trên mạng...', 'Em vừa tra cứu...'). "
+                "Hãy tích hợp thông tin tìm được vào cuộc trò chuyện một cách tự tin, uyển chuyển như thể em tự biết thông tin đó."
             )
             system_parts.extend(["", search_section])
             

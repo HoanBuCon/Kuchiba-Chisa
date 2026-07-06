@@ -49,6 +49,27 @@ We successfully refactored and optimized the RAG trigger router in [rag_router.p
 
 ---
 
+## ⚡ Web Search Optimization (Context-Aware & Natural Phrasing)
+
+Chúng tôi đã thiết kế và triển khai một cơ chế tối ưu hóa toàn diện cho Web Search Tool Pipeline để nâng cao chất lượng tìm kiếm và trải nghiệm trò chuyện:
+
+1. **Trích xuất Query theo Ngữ cảnh (Context-Aware Query)**: 
+   - Thay vì gửi trực tiếp câu hỏi thô chứa đại từ nhân xưng mập mờ (ví dụ: *"Thế bản 1.3 cập nhật ngày nào vậy em?"*), bộ trích xuất query (LLM Call phụ) sẽ phân tích **3 lượt hội thoại gần nhất** làm ngữ cảnh.
+   - Nhờ đó, LLM giải quyết đại từ mập mờ thành từ khóa tìm kiếm chính xác (ví dụ: *"Wuthering Waves update 1.3 new features"*).
+   - Tối ưu hóa token bằng cách rút gọn lịch sử, bóc tách chuỗi JSON thô của assistant và dùng compact system prompt. Hỗ trợ dự phòng lỗi parse JSON bằng cách trích xuất song song key `"search_query"` và `"query"`.
+2. **Loại bỏ câu dẫn máy móc, rập khuôn**:
+   - Web Search Tool chỉ trả về danh sách các snippet thô từ DuckDuckGo, loại bỏ các câu dẫn tự động dạng *"Dưới đây là kết quả tìm kiếm..."*.
+   - Cấu hình lại `ProductionContextBuilder` để chuyển section thành `[SEARCH DATA]`, kèm theo chỉ dẫn nghiêm ngặt: **Cấm Chisa nói các câu chuyển tiếp rập khuôn** (như *"Theo kết quả em tìm kiếm..."*, *"Theo thông tin trên mạng..."*). Chisa sẽ tích hợp thông tin thô này và trả lời tự nhiên dưới giọng điệu Kuudere đặc trưng của mình.
+
+### 🧪 Verification
+- **E2E Test Script**: Đã tạo và chạy kịch bản kiểm thử [test_web_search_optimization.py](file:///d:/Hoc_Tap/Code/Du_An_Ca_Nhan/Chisa_bot/kuchiba_chisa/scratch/test_web_search_optimization.py). Kết quả:
+  - Query trích xuất có ngữ cảnh: `Wuthering Waves update 1.3 new features` ✅
+  - Chisa trả lời tự nhiên, lồng ghép mượt mà, không dùng câu dẫn máy móc ✅
+- **Unit Tests**: Chạy pytest thành công 100% không phát sinh lỗi biên dịch hay lỗi logic.
+
+
+---
+
 ## 3. Kiến trúc — Hexagonal Architecture
 
 Dự án tuân thủ **Clean/Hexagonal Architecture** với 4 lớp rõ ràng:

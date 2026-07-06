@@ -519,3 +519,86 @@ body {
   transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow: 0 0 8px currentColor;
 }
+
+/* ─── Loop Thinking Mode Bubble ──────────────────────────────────────── */
+@keyframes thinking-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(147, 51, 234, 0.4), 0 4px 24px rgba(147, 51, 234, 0.15); }
+  50%       { box-shadow: 0 0 0 8px rgba(147, 51, 234, 0), 0 4px 24px rgba(147, 51, 234, 0.35); }
+}
+
+@keyframes thinking-shimmer {
+  0%   { background-position: -200% center; }
+  100% { background-position:  200% center; }
+}
+
+@keyframes thinking-spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+.thinking-mode-bubble {
+  background: linear-gradient(135deg, rgba(88, 28, 135, 0.25), rgba(126, 34, 206, 0.18), rgba(167, 80, 255, 0.1));
+  border: 1px solid rgba(167, 80, 255, 0.35);
+  border-radius: var(--radius-lg) var(--radius-lg) var(--radius-lg) 4px;
+  padding: 12px 18px;
+  max-width: 70%;
+  animation: thinking-pulse 2s infinite ease-in-out;
+  position: relative;
+  overflow: hidden;
+}
+
+/* shimmer sweep */
+.thinking-mode-bubble::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    105deg,
+    transparent 30%,
+    rgba(200, 150, 255, 0.12) 50%,
+    transparent 70%
+  );
+  background-size: 200% 100%;
+  animation: thinking-shimmer 2.2s linear infinite;
+  pointer-events: none;
+}
+
+.thinking-mode-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #c084fc;
+  letter-spacing: 0.3px;
+  position: relative;
+  z-index: 1;
+}
+
+.thinking-mode-icon {
+  font-size: 16px;
+  animation: thinking-spin 2.5s linear infinite;
+  display: inline-block;
+  line-height: 1;
+}
+
+.thinking-mode-dots {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  position: relative;
+  z-index: 1;
+  margin-top: 8px;
+}
+
+.thinking-mode-dot {
+  width: 6px;
+  height: 6px;
+  background: #a855f7;
+  border-radius: 50%;
+  animation: typing-bounce 1.4s infinite ease-in-out both;
+}
+
+.thinking-mode-dot:nth-child(1) { animation-delay: -0.4s; }
+.thinking-mode-dot:nth-child(2) { animation-delay: -0.2s; }
+.thinking-mode-dot:nth-child(3) { animation-delay:    0s; }

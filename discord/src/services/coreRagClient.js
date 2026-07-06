@@ -67,19 +67,24 @@ export class CoreRagClient {
     throw lastError;
   }
 
-  async ask({ coreUserId, message }) {
+  async ask({ coreUserId, message, username, channelName, guildName }) {
     const url = this.buildUrl(this.chatPath);
     const payload = await this.requestJson(url, {
       method: 'POST',
       body: JSON.stringify({
         user_id: coreUserId,
         message,
+        source: 'discord',
+        username,
+        channel_name: channelName,
+        guild_name: guildName,
       }),
     });
 
     return {
       response: payload.response ?? '',
       emotions: payload.emotions ?? null,
+      loopThinkingActivated: payload.loop_thinking_activated ?? false,
       raw: payload,
     };
   }

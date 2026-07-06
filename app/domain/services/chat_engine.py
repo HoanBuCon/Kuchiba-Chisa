@@ -114,6 +114,12 @@ class ChatEngine:
             # Lore: Always search with vector similarity + threshold filtering
             LORE_THRESHOLD = 0.35
             is_small_talk = RAGRouter.is_small_talk(user_message)
+
+            from app.infrastructure.logging.pipeline_tracker import pipeline_tracker
+            pipeline_tracker.add_step("intent_classification", {
+                "is_small_talk": is_small_talk,
+                "should_retrieve_memory": rag_decisions.get("use_memory", False)
+            })
             
             if not is_small_talk:
                 cleaned_query = clean_query_for_rag(user_message)
@@ -149,6 +155,12 @@ class ChatEngine:
             
             # Update rag_decisions to reflect actual retrieval results (for logging)
             rag_decisions["use_lore"] = len(lore_chunks) > 0
+
+            pipeline_tracker.add_step("rag_retrieval", {
+                "lore_collections_queried": ["character_lore", "world_lore", "story_lore"] if not is_small_talk else [],
+                "retrieved_lore_chunks": lore_chunks,
+                "retrieved_memories": [m.text_content if hasattr(m, "text_content") else str(m) for m in memories]
+            })
             
             # RAG Emotion Seeding based on retrieved context
             SAD_LORE_TERMS = {"buồn", "cô đơn", "cô độc", "sợ hãi", "buồn bã", "đau thương", "vòng lặp", "mất mát", "chia ly", "sonoro sphere", "honami", "overclock"}
@@ -199,6 +211,12 @@ class ChatEngine:
                 user_message=user_message,
                 rag_decisions=rag_decisions
             )
+
+            pipeline_tracker.add_step("context_building", {
+                "system_prompt": prompt.system,
+                "history_count": len(prompt.history),
+                "token_budget_context": len(prompt.system) // 4 + len(prompt.user_message) // 4
+            })
             
             # 4. LLM Generation (Unified Single-Call)
             response = await self.llm.generate(prompt)
@@ -248,6 +266,29 @@ class ChatEngine:
                 chisa_flustered=chisa_flustered
             )
             await emotion_repo.update_emotion(emotion)
+
+            pipeline_tracker.add_step("emotion_update", {
+                "old_emotions": current_emotions,
+                "new_emotions": {
+                    "joy": emotion.joy,
+                    "sadness": emotion.sadness,
+                    "trust": emotion.trust,
+                    "irritation": emotion.irritation,
+                    "attachment": emotion.attachment + attachment_bonus_raw
+                },
+                "user_sentiment": {
+                    "is_positive": is_positive,
+                    "is_negative": is_negative,
+                    "is_rude": is_rude,
+                    "is_neutral": is_neutral
+                },
+                "chisa_sentiment": {
+                    "is_sad": chisa_sad,
+                    "is_happy": chisa_happy,
+                    "is_annoyed": chisa_annoyed,
+                    "is_flustered": chisa_flustered
+                }
+            })
             
             # Calculate memory importance from MemoryManager
             importance_score = self.memory_manager.calculate_importance(user_message, emotion_delta)

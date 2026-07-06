@@ -37,9 +37,11 @@ flowchart TD
             LegacyCE & ProdCE --> EE[EmotionEngine]
             LegacyCE --> RR[RAGRouter]
             LegacyCE --> CB[ContextBuilder]
-            ProdCE --> IC[IntentClassifier]
+            ProdCE --> SR[SemanticRouter]
+            ProdCE --> TR[LLMToolRouter]
             ProdCE --> PCB[ProductionContextBuilder]
             ProdCE --> ME[MemoryExtractor]
+            TR --> AT[Agent Tools: WebSearch, Summarize, EmotionReport]
         end
 
         subgraph Infra [Infrastructure Layer]
@@ -78,6 +80,8 @@ flowchart TD
     *   `services/production_pipeline/`:
         *   `production_chat_engine.py`: Bộ điều phối luồng chat nâng cao của Production Pipeline.
         *   `intent_classifier.py`: Phân loại ý định của người dùng bằng màng lọc Regex/Từ khóa kết hợp LLM API.
+        *   `semantic_router.py`: Tầng 1 - Định tuyến ngữ nghĩa (Semantic Routing) bằng NumPy để phân loại ý định người dùng (ChatIntent) nhanh chóng, tích hợp so sánh khoảng cách Cosine, tính toán độ lệch tự tin (Confidence Margin) và cộng điểm thưởng Explicit Anchor.
+        *   `tool_router.py`: Tầng 2 - Định tuyến và thực thi các Agent Tools có cấu trúc OOP, bao gồm Web Search (DuckDuckGo), Summarize Memory và Emotion Report.
         *   `production_context_builder.py`: Tạo prompt với các nhãn cảm xúc định tính thông qua `StateManager` và kiểm soát token budget phân mảnh.
         *   `memory_extractor.py`: Trích xuất thông tin thực tế (facts) và mối quan hệ ngầm chạy async.
         *   `state_manager.py`: Định nghĩa nhãn định tính (`Low`/`Medium`/`High`) và `Mood` cho prompt.
@@ -86,27 +90,27 @@ flowchart TD
     *   `cache/redis/redis_service.py`: Quản lý cache và cơ chế lưu trữ session phụ trợ.
     *   `embeddings/fastembed_adapter.py`: Vector hóa văn bản bằng model local `all-MiniLM-L6-v2`.
     *   `llm/adapters/`: Chứa base adapter và hai adapter thực tế là `GroqAdapter` (llama-3.1-8b-instant) và `GeminiAdapter` (gemini-2.5-flash-lite).
-    *   `logging/`: Ghi log có cấu trúc thông qua `structlog` và module ghi log API `llm_logger.py` lưu vào file `llm_api_clean.txt`.
+    *   `logging/`: Ghi log có cấu trúc thông qua `structlog` và module ghi log API `llm_logger.py` lưu vào file `llm_api_clean.txt`. Bao gồm `pipeline_tracker.py` — singleton theo dõi toàn bộ các bước xử lý của một request (steps, tokens, latency), tự động đặt flag `loop_thinking_activated = True` khi bước `thinking_loop_cycle_*` được ghi nhận.
     *   `queue/`: Cấu hình Celery App và các worker xử lý nền (affection, embedding, memory).
 
 ### 3.2. Bot Discord (`discord/`)
 *   `discord/src/app.js` & `index.js`: Điểm khởi chạy của bot, đăng ký các module, lắng nghe tín hiệu tắt dịch vụ (`SIGINT`, `SIGTERM`) để đóng kết nối an toàn.
 *   `discord/src/bot/`: Quản lý client discord, tự động nạp các commands và events.
 *   `discord/src/commands/`:
-    *   `ask.js`: Xử lý lệnh `/ask` hoặc tin nhắn prefix `c!ask`. Gửi request đến Backend FastAPI để lấy phản hồi của Chisa.
+    *   `ask.js`: Xử lý lệnh `/ask` hoặc tin nhắn prefix `c!ask`. Gửi request đến Backend FastAPI để lấy phản hồi của Chisa. **Khi nhận message (direct channel), bot sẽ gửi trước tin nhắn tạm thời `*Chisa đang suy nghĩ...*`, sau đó xóa đi và gửi reply thực sự (hoặc xóa khi lỗi).**
     *   `clear.js`: Thực hiện xóa toàn bộ ký ức (gọi API `/chat/clear/{user_id}`).
     *   `setup.js`: Cấu hình kênh trò chuyện trực tiếp (Direct Chat Channel) cho server.
     *   `help.js`: Liệt kê danh sách lệnh.
 *   `discord/src/database/`: Quản lý kết nối PostgreSQL bằng Connection Pool và tự động khởi chạy database schema (`schema.sql`).
 *   `discord/src/events/`: Lắng nghe tin nhắn mới (`messageCreate`), phân phối lệnh, hỗ trợ trò chuyện tự động trong kênh setup.
 *   `discord/src/services/`:
-    *   `coreRagClient.js`: Client HTTP giao tiếp trực tiếp với Backend FastAPI có tích hợp cơ chế retry và backoff.
+    *   `coreRagClient.js`: Client HTTP giao tiếp trực tiếp với Backend FastAPI có tích hợp cơ chế retry và backoff. **Forward thêm trường `loopThinkingActivated` từ API response để bot có thể nhận biết trạng thái suy luận.**
     *   `rateLimiter.js`: Quản lý tần suất gửi tin nhắn của người dùng để tránh spam API.
     *   `prefixCommandRunner.js`: Phân tích cú pháp tin nhắn có prefix.
 
 ### 3.3. Giao diện Web (`frontend/`)
 *   Ứng dụng Single Page xây dựng trên React 18/19 + Vite + Bootstrap.
-*   `frontend/src/App.jsx`: Giao diện chat hai panel kiểu hiện đại (Sidebar quản lý kết nối, nút xóa ký ức, panel chính chứa bong bóng chat). Tự động tạo UUID duy nhất của thiết bị và lưu vào `localStorage`.
+*   `frontend/src/App.jsx`: Giao diện chat hai panel kiểu hiện đại (Sidebar quản lý kết nối, nút xóa ký ức, panel chính chứa bong bóng chat). Tự động tạo UUID duy nhất của thiết bị và lưu vào `localStorage`. **Có cơ chế escalation 2 giây: nếu sau 2s kể từ khi gửi request mà chưa nhận được phản hồi, typing indicator thông thường sẽ chuyển thành bong bóng "Loop Thinking Mode" màu tím với animation pulse/shimmer và icon xoay để thông báo Chisa đang suy luận sâu.**
 
 ---
 
@@ -131,55 +135,90 @@ Hệ thống có hai luồng xử lý chat được điều phối động thôn
 Được tối ưu hóa toàn diện để đạt hiệu năng cao, tiết kiệm token, cô lập dữ liệu và đảm bảo trải nghiệm Kuudere mượt mà nhất:
 
 ```
-                  Senpai Message
-                        │
-                        ▼
-            [Tiền xử lý & Chuẩn hóa]
-             (query_cleaner.py:
-        Sửa từ viết tắt tiếng Việt ko, đc...)
-                        │
-                        ▼
-         [LLM Call 1: IntentClassifier]
-              (Fast-Path Pre-filter:
-            Tự phân loại small talk/OTHER,
-        hoặc regex keywords MEMORY/LORE nhanh)
-                        │
-         ┌──────────────┴──────────────┐
-         │ Có khớp rule / Small talk   │ Không khớp rule
-         ▼                             ▼
-   [Bypass LLM Call 1]        [LLM Call 1 - Slow Path]
-         │                             │
-         └──────────────┬──────────────┘
-                        │
-                        ▼ (Giao điểm Intents)
-   ┌────────────────────┼────────────────────┬────────────────────┐
-   ▼ CHARACTER_LORE     ▼ WORLD_LORE         ▼ STORY_LORE         ▼ MEMORY
- [qdrant_service]     [qdrant_service]     [qdrant_service]     [rag_retriever]
-  character_lore       world_lore           story_lore           memories
-   collection           collection           collection          collection
-   (Parent-Child)       (Parent-Child)       (Parent-Child)     (Hybrid Scoring)
-   ┌────────────────────┴────────────────────┼────────────────────┘
-   ▼                                         ▼
-[Lore chunks: Parent deduplication &        [Memories: Recency, Importance,
- Keyword Overlap re-ranking]                 Emotion Match re-ranking]
-   │                                         │
-   └────────────────────┬────────────────────┘
-                        │
-                        ▼
-[StateManager: Format emotions to qualitative levels (Low/Medium/High)]
-                        │
-                        ▼
-[ProductionContextBuilder: Trim & Enforce Token Budget]
-                        │
-                        ▼
-[LLM Call 2: Main Generation & Sentiment Analysis]
-                        │
-         ┌──────────────┴──────────────┐
-         ▼ (Đồng bộ)                   ▼ (Async Tasks - Chạy ngầm)
-  Save Postgres Messages,       ├──► [LLM Call 3: MemoryExtractor] (Fact saving)
-  Commit EmotionState,          └──► [LLM Call 4: Summarizer] (Every 50 turns)
-  Respond to Senpai
+                            Senpai Message
+                                  │
+                                  ▼
+                      [Tiền xử lý & Chuẩn hóa]
+                       (query_cleaner.py)
+                                  │
+                                  ▼
+             [LLM Call 1 / SemanticRouter - Tầng 1]
+           (Bypass qua Fast-path / Small-talk regex,
+       hoặc phân loại Cosine Similarity trên NumPy RAM)
+                                  │
+               ┌──────────────────┴──────────────────┐
+               ▼ (Có SYSTEM_ACTION)                  ▼ (LORE / MEMORY / OTHER)
+     [Tầng 2: LLMToolRouter (OOP Tools)]      [Lọc & Phân phối RAG Collections]
+               │                                     │
+       ┌───────┼───────┐                     ┌───────┼───────┐
+       ▼       ▼       ▼                     ▼       ▼       ▼
+    [Search] [Report][Summarize]          [Lore]  [Memory] [Other]
+       │       │       │                     │       │       │
+       ▼       ▼       ▼                     ▼       ▼       ▼
+  [Internet] [Postgre] [DB Commit]        [Qdrant] [Qdrant] [Chitchat]
+       │       │       │                     │       │       │
+       └───────┬───────┘                     └───────┬───────┘
+               ▼                                     ▼
+         [Tool Output]                         [RAG Context Chunks]
+               │                                     │
+               └──────────────────┬──────────────────┘
+                                  │
+                                  ▼
+        [StateManager: Định tính hóa nhãn cảm xúc ẩn]
+                                  │
+                                  ▼
+               [ProductionContextBuilder: Ghép Prompt]
+                                  │
+                                  ▼
+              [LLM Call 2: Sinh câu trả lời & Phân tích tâm lý]
+                                  │
+               ┌──────────────────┴──────────────────┐
+               ▼ (Đồng bộ)                           ▼ (Async Tasks - Chạy ngầm)
+        Save Postgres Messages,               ├──► [LLM Call 3: MemoryExtractor] (Fact saving)
+        Commit EmotionState,                  └──► [LLM Call 4: Summarizer] (Every 50 turns)
+        Respond to Senpai
 ```
+
+Hệ thống định tuyến hành động hệ thống được chia làm 2 Tầng:
+- **Tầng 1 (SemanticRouter)**: Định tuyến các tin nhắn Senpai vào 5 intents. Khi intent `SYSTEM_ACTION` được kích hoạt thông qua cơ chế Margin check và Keyword guard nghiêm ngặt để tránh false positive, luồng sẽ được rẽ sang Tầng 2.
+- **Tầng 2 (LLMToolRouter)**: Định tuyến ở cấp độ tool (Tool-level). Sử dụng kiến trúc OOP với `BaseAgentTool` để đóng gói các công cụ:
+  1. `WebSearchAgentTool`: Dùng LLM tối giản (Level 2b) kết hợp **3 lượt hội thoại gần nhất** để phân tích ngữ cảnh, giải quyết đại từ mập mờ thành từ khóa tìm kiếm chính xác. Sau đó cào HTML DuckDuckGo lấy các snippets thô và **trích xuất nội dung trang gốc đầu tiên (Deep Page Content)** — tải trực tiếp HTML trang kết quả, lọc bỏ layout/script/style và lấy nội dung văn bản thực tế để LLM có số liệu chính xác, không bịa.
+  2. `ConversationSummarizerAgentTool`: Trích xuất lịch sử thoại và yêu cầu LLM tóm tắt, lưu vào sqlite.
+  3. `EmotionReportAgentTool`: Xuất chỉ số cảm xúc dạng báo cáo định lượng.
+
+### 4.3. Information Alignment Check & Loop Thinking Agent
+
+Đây là cơ chế chống ảo giác (anti-hallucination) được tích hợp vào Production Pipeline, hoạt động **sau bước RAG retrieval**, trước khi tạo câu trả lời cuối:
+
+```
+[RAG Retrieval] → [Information Alignment Check (LLM)]
+                         │
+              ┌──────────┴──────────┐
+   is_aligned=True           is_aligned=False
+              │                    │
+   [Tiếp tục phản hồi]    [Loop Thinking Agent]
+                                   │
+                         ┌─────────┴──────────┐
+                    Cycle 1: LLM suy luận     │
+                    → has_enough_info=False    │
+                    → Tạo search_query        │
+                    → WebSearchAgentTool       │
+                    → Deep Page Fetch         │
+                         │                    │
+                    Cycle 2: LLM đọc kết quả  │
+                    → has_enough_info=True    │
+                         └────────────────────┘
+                                   │
+                    [Phản hồi với dữ liệu thực]
+```
+
+**`_assess_alignment(user_message, context_text)`**: Sau khi RAG thu thập context, LLM đánh giá xem context có chứa đủ thông tin thực tế và cụ thể để trả lời không. Câu hỏi về small talk → luôn `is_aligned=True`. Câu hỏi về giá xăng, thời tiết, sự kiện thực tế mà không có số liệu → `is_aligned=False`.
+
+**`_run_thinking_loop(...)`**: Khi `is_aligned=False`, Agent Suy luận được kích hoạt chạy tối đa 2 cycles. Mỗi cycle LLM quyết định có cần search thêm không và tạo query tối ưu. Mỗi cycle được log vào `pipeline_tracker` với step tên `thinking_loop_cycle_N`, điều này tự động set flag `loop_thinking_activated=True` trong trace. Flag này được đưa vào `ChatResponse` để client (Discord/Web) biết cần hiển thị trạng thái đặc biệt.
+
+**Thông báo đến người dùng**:
+- **Discord**: Bot gửi `*Chisa đang suy nghĩ...*` ngay trước khi gọi API, xóa tin nhắn đó sau khi nhận reply.
+- **Web**: Sau 2 giây isLoading mà chưa có phản hồi, typing indicator thông thường escalate thành **bong bóng Loop Thinking Mode** màu tím với gradient animation, shimmer sweep và icon xoay `⚙️`.
 
 ---
 
