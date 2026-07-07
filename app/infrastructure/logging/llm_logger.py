@@ -11,6 +11,24 @@ LOG_FILE_PATH = "llm_api_clean.txt"
 # Context variables to track Question Index and Turn Index within each request context
 request_question_idx: contextvars.ContextVar[int] = contextvars.ContextVar("request_question_idx", default=1)
 request_turn_idx: contextvars.ContextVar[int] = contextvars.ContextVar("request_turn_idx", default=1)
+llm_call_purpose: contextvars.ContextVar[str] = contextvars.ContextVar("llm_call_purpose", default="unknown")
+enable_clean_log: contextvars.ContextVar[bool] = contextvars.ContextVar("enable_clean_log", default=False)
+
+LLM_PURPOSE_LABELS: dict[str, str] = {
+    "chat_response": "Trả lời Chisa (call chính)",
+    "alignment_assessor": "Alignment Assessor",
+    "web_search_query_extract": "Web Search · trích query",
+    "unknown": "LLM call (không gắn nhãn)",
+}
+
+
+def purpose_label(purpose: str) -> str:
+    if purpose in LLM_PURPOSE_LABELS:
+        return LLM_PURPOSE_LABELS[purpose]
+    if purpose.startswith("thinking_loop_cycle_"):
+        n = purpose.replace("thinking_loop_cycle_", "")
+        return f"Loop Thinking · Cycle {n}"
+    return purpose
 
 
 def _write_routing_log_sync(
@@ -56,6 +74,8 @@ async def log_routing_transaction(
     Runs inside a thread pool to avoid blocking the event loop.
     """
     try:
+        if not enable_clean_log.get():
+            return
         q_idx = request_question_idx.get()
         await asyncio.to_thread(
             _write_routing_log_sync,
@@ -185,6 +205,7 @@ async def log_llm_transaction(prompt: StructuredPrompt, response: LLMResponse) -
         # Add LLM call step to the pipeline tracker
         try:
             from app.infrastructure.logging.pipeline_tracker import pipeline_tracker
+            purpose = llm_call_purpose.get()
             pipeline_tracker.add_step("llm_generation", {
                 "model": response.model,
                 "input_tokens": response.input_tokens,
@@ -192,10 +213,17 @@ async def log_llm_transaction(prompt: StructuredPrompt, response: LLMResponse) -
                 "total_tokens": response.input_tokens + response.output_tokens,
                 "finish_reason": response.finish_reason,
                 "raw_response": response.raw_content,
-                "parsed_response": response.parsed
+                "parsed_response": response.parsed,
+                "purpose": purpose,
+                "purpose_label": purpose_label(purpose),
+                "call_index": t_idx,
+                "token_source": "api",
             })
         except Exception:
             pass
+
+        if not enable_clean_log.get():
+            return
 
         await asyncio.to_thread(_write_log_sync, prompt, response, q_idx, t_idx)
     except Exception as e:

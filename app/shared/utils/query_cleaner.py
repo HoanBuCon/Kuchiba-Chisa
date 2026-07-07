@@ -71,7 +71,7 @@ def clean_query_for_rag(text: str) -> str:
             
     # 3. Suffixes and particles
     suffixes = [
-        "đi chía chía", "đi chías chías", "đi chisa", "đi em", "đi anh",
+        "đi chía chía", "đi chisa", "đi em", "đi anh",
         "nhé chía chía", "nhé chisa", "nhé em", "nhé",
         "nha chía chía", "nha chisa", "nha em", "nha",
         "đi chứ", "đi", "với", "ạ", "thế nào", "nhỉ", "sao", "được không"

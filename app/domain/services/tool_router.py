@@ -1,4 +1,5 @@
 import asyncio
+import re
 import numpy as np
 from typing import Any, Dict, List, Optional, Tuple
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -8,7 +9,7 @@ from app.domain.interfaces.embedding_provider import IEmbeddingProvider
 from app.infrastructure.logging.logger import get_logger
 
 # Import modular tools
-from app.domain.services.production_pipeline.tools import (
+from app.domain.services.tools import (
     BaseAgentTool,
     WebSearchAgentTool,
     ConversationSummarizerAgentTool,
@@ -93,6 +94,38 @@ class SemanticToolRouter:
         return best_tool, best_score
 
 
+class KeywordToolRouter:
+    """
+    Fast-path regex guard cho định tuyến tool.
+    Nếu khớp cứng theo mẫu tường minh thì bỏ qua embedding routing.
+    """
+
+    PATTERNS: Dict[str, List[str]] = {
+        "web_search": [
+            r"(tra mạng|lên mạng|search google|tra cứu trên internet)",
+            r"(em tìm kiếm|em tra|em tìm).{0,10}(trên internet|trên mạng|giúp anh)",
+            r"(lên web|kiểm tra xem|tìm hiểu xem|tra giúp|tìm giúp).{0,20}",
+        ],
+        # Map về tên tool thực tế trong codebase để giữ backward compatibility.
+        "summarize_conversation_memory": [
+            r"tóm tắt.{0,15}(cuộc trò chuyện|hội thoại|nãy giờ|buổi chat|session)",
+            r"(tổng hợp|tổng kết).{0,15}(cuộc trò chuyện|những gì|điểm chính|nãy giờ)",
+            r"(ghi lại|nhắc lại|liệt kê lại).{0,15}(điểm chính|cuộc trò chuyện|hội thoại)",
+        ],
+        "get_emotion_report": [
+            r"(cho anh xem|xuất|hiển thị|xem).{0,15}(cảm xúc|chỉ số|bảng đo|báo cáo)",
+            r"(báo cáo cảm xúc|tâm trạng theo số liệu|chỉ số cảm xúc)",
+        ],
+    }
+
+    @classmethod
+    def match(cls, msg_lower: str) -> Optional[str]:
+        for tool_name, patterns in cls.PATTERNS.items():
+            if any(re.search(pattern, msg_lower) for pattern in patterns):
+                return tool_name
+        return None
+
+
 # ──────────────────────────────────────────────────────────────────
 # Tầng 2 – Hybrid Tool Router Coordinator
 # ──────────────────────────────────────────────────────────────────
@@ -143,13 +176,19 @@ class LLMToolRouter:
         """
         Thực thi định tuyến và xử lý tác vụ tương ứng.
         """
-        # ── Level 2a: Định tuyến tool bằng Cosine Similarity
-        if query_vector is not None:
-            tool_name, score = await self.semantic_tool_router.route(query_vector)
+        # ── Level 2a.0: Keyword fast-path (bypass embedding)
+        keyword_match = KeywordToolRouter.match(user_message.strip().lower())
+        if keyword_match:
+            tool_name, score = keyword_match, 1.0
+            log.info("Tool routing via keyword fast-path", tool=tool_name)
         else:
-            log.warning("No pre-computed query_vector provided to LLMToolRouter, embedding on-the-fly")
-            vec = await self.embedder.embed_text(user_message)
-            tool_name, score = await self.semantic_tool_router.route(vec)
+            # ── Level 2a: Định tuyến tool bằng Cosine Similarity
+            if query_vector is not None:
+                tool_name, score = await self.semantic_tool_router.route(query_vector)
+            else:
+                log.warning("No pre-computed query_vector provided to LLMToolRouter, embedding on-the-fly")
+                vec = await self.embedder.embed_text(user_message)
+                tool_name, score = await self.semantic_tool_router.route(vec)
 
         log.info("Tool routing decided", tool_name=tool_name, score=round(score, 4), user_id=user_id)
 

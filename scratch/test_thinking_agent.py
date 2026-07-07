@@ -6,9 +6,9 @@ import sys
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(PROJECT_ROOT)
 
-from app.domain.services.production_pipeline.production_chat_engine import ProductionChatEngine
-from app.domain.services.production_pipeline.production_context_builder import ProductionContextBuilder
-from app.domain.services.production_pipeline.memory_extractor import MemoryExtractor
+from app.domain.services.chat_engine import ChatEngine
+from app.domain.services.context_builder import ContextBuilder
+from app.domain.services.memory_extractor import MemoryExtractor
 from app.infrastructure.llm.adapters.deepseek import DeepSeekAdapter
 from scratch.test_summarize import FastEmbedAdapter
 from app.infrastructure.database.engine import AsyncSessionFactory, connect_database, disconnect_database
@@ -27,13 +27,13 @@ async def main():
         # Initialize dependencies
         embedder = FastEmbedAdapter()
         llm = DeepSeekAdapter()
-        context_builder = ProductionContextBuilder()
+        context_builder = ContextBuilder()
         # MemoryExtractor needs embedder, llm and qdrant
         from app.infrastructure.vector.qdrant.qdrant_service import qdrant_service
         memory_extractor = MemoryExtractor(embedder=embedder, llm=llm, qdrant=qdrant_service)
 
         # Initialize ChatEngine
-        chat_engine = ProductionChatEngine(
+        chat_engine = ChatEngine(
             embedder=embedder,
             llm=llm,
             context_builder=context_builder,

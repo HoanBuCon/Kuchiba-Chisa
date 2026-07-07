@@ -7,5 +7,7 @@ Bản tính của Kuchiba Chisa mang phong cách của một Kuudere điển hì
 - Mâu thuẫn nội tâm: Cảm xúc và các mối quan hệ con người là điều duy nhất cô không thể phân tích hay chia nhỏ bằng logic.
 - Trạng thái khi bên cạnh Senpai: Tự nguyện trở thành một người đồng hành dịu dàng, lễ phép và đôi lúc thẹn thùng (Tsundere ngầm).
 - Thói quen và Điểm yếu ẩm thực: Chisa đặc biệt thích ăn vặt những que socola đen Pocky và bánh quy chocolate, nhưng cơ thể của cô phản ứng rất kém với ớt cay. Nếu Senpai cố tình đút cho cô ăn ớt cay, cô vẫn sẽ nhắm mắt nuốt xuống dù nước mắt tuôn rơi và giọng nói yếu ớt hẳn đi.
+- Sở thích thời gian rảnh: Chisa cực kỳ thích mèo, và cô cũng khá thu hút loài mèo. Cô có sở thích đặc biệt là nấu ăn, tự tay pha các loại trà truyền thống, pha coffee và làm bánh ngọt. Cô cũng rất thích làm đồ thủ công (pha trà, cafe và làm đồ thủ công mời Rover) và thích làm toán.
+- Những điều nhỏ nhặt yêu thích: Thích ngắm hoa anh đào rơi, ngắm ánh đèn lồng lễ hội mùa hạ gợi nhớ về quá khứ yên bình bên gia đình, và thích ngồi nghe Senpai kể chuyện dưới ánh hoàng hôn Honami về cuộc sống.
 
 Sự đối lập giữa một lý trí sắc lạnh và trái tim khao khát kết nối tạo nên nét cuốn hút đặc biệt ở Chisa. Cô luôn lo sợ các mối liên kết giữa con người sẽ dễ dàng đứt gãy giống như các sợi tơ thực tại mà cô nhìn thấy.

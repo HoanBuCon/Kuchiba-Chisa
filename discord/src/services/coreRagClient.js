@@ -67,7 +67,7 @@ export class CoreRagClient {
     throw lastError;
   }
 
-  async ask({ coreUserId, message, username, channelName, guildName }) {
+  async ask({ coreUserId, message, username, channelName, guildName } = {}) {
     const url = this.buildUrl(this.chatPath);
     const payload = await this.requestJson(url, {
       method: 'POST',

@@ -7,11 +7,11 @@ import uuid
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(PROJECT_ROOT)
 
-from app.domain.services.production_pipeline.semantic_router import SemanticRouter
-from app.domain.services.production_pipeline.tool_router import LLMToolRouter
+from app.domain.services.semantic_router import SemanticRouter
+from app.domain.services.tool_router import LLMToolRouter
 from app.infrastructure.llm.adapters.deepseek import DeepSeekAdapter
 from scratch.test_summarize import FastEmbedAdapter
-from app.domain.services.production_pipeline.intent_classifier import ChatIntent
+from app.domain.services.intent_classifier import ChatIntent
 
 async def main():
     print("=" * 60)

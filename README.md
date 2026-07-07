@@ -23,13 +23,13 @@
 ![Chisa Drink](assets/chisa_drink.gif)
 
 - **Ngôn ngữ:** Python 3.11
-- **API Framework:** FastAPI (Async)
+- **API Framework:** FastAPI (Async) + Real-Time WebSockets
 - **Cơ sở dữ liệu (Quan hệ):** PostgreSQL 16 (Trí nhớ ngắn hạn, Thông tin người dùng, Trạng thái cảm xúc)
 - **Cơ sở dữ liệu Vector:** Qdrant (Trí nhớ ngữ nghĩa dài hạn, RAG)
 - **Bộ nhớ đệm & Message Broker:** Redis
 - **Background Jobs:** Celery (Tạo embedding bất đồng bộ, dọn dẹp bộ nhớ, cập nhật cảm xúc)
 - **ORM:** SQLAlchemy 2.0 (Async) + Alembic hỗ trợ migrations
-- **Tích hợp LLM:** Groq (Các endpoint Llama-3 tốc độ siêu cao)
+- **Tích hợp LLM:** Groq (Llama-3.1-8B) & DeepSeek (deepseek-v4-flash)
 - **Hạ tầng triển khai:** Docker & Docker Compose
 
 ---
@@ -40,6 +40,7 @@
 - **Theo dõi Trạng thái Cảm xúc Thực tế:** Hệ thống Cảm xúc Động (DEHA) lưu trạng thái trực tiếp trong database (vui vẻ, gắn kết, tin tưởng) thay vì chỉ phó mặc cho "ảo giác" của LLM.
 - **Hệ thống Gắn kết (Affection System):** Theo dõi sự thay đổi độ gắn kết của Chisa theo thời gian bằng `AffectionLog`, quyết định thái độ và hành vi của cô ấy.
 - **Vòng đời Hội thoại:** Quản lý toàn diện Session Layer và liên tục lập chỉ mục các bản tóm tắt ẩn.
+- **Bảng điều khiển Trực quan thời gian thực (Visualizer Dashboard):** Trang giám sát thời gian thực (`http://localhost:8000/visualizer`) sử dụng WebSocket để hiển thị toàn bộ dấu vết thực thi (execution traces) của RAG pipeline, suy luận Loop Thinking, prompt budget và biểu đồ cảm xúc biến thiên (có thiết kế responsive).
 - **Hàng đợi Phân tán:** Các tác vụ NLP và vector hóa nặng nề được tách riêng cho các Celery worker xử lý, đảm bảo API chat luôn phản hồi tức thì (zero-lag).
 
 ---
@@ -56,6 +57,8 @@
 
 ## 📜 Tài liệu Hệ thống
 
+- **[Phân Tích Cấu Trúc Hệ Thống (Detailed Architecture Analysis)](PHAN_TICH_WORKSPACE_CHI_TIET.md)**: Tài liệu phân tích sâu chi tiết cấu trúc mã nguồn dự án sau refactor, thiết kế cơ sở dữ liệu PostgreSQL/Qdrant, mô hình lớp dịch vụ phẳng và luồng đi của dữ liệu.
+- **[Hướng Dẫn Khởi Chạy & Triển Khai (Startup & Deployment Guide)](STARTUP_GUIDE.md)**: Hướng dẫn thiết lập môi trường, cấu hình `.env`, chạy database migration và khởi động máy chủ FastAPI/Discord bot.
 - **[Phiên dịch Luồng dữ liệu & Pipeline (Walkthrough)](WALKTHROUGH.md)**: Khám phá chi tiết kiến trúc RAG, pipeline sinh văn bản của LLM, và thuật toán Cảm xúc Hệ Động Lực (DEHA).
 
 <br>

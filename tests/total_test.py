@@ -75,7 +75,6 @@ def parse_llm_transactions(new_content: str):
 async def main():
     import argparse
     parser = argparse.ArgumentParser(description="Chisa Bot Integration & Lore Benchmark Tool")
-    parser.add_argument("--pipeline", choices=["legacy", "production"], help="Chat pipeline to test")
     parser.add_argument("--mode", type=int, choices=[1, 2], help="Question type (1 or 2)")
     args = parser.parse_args()
 
@@ -83,19 +82,7 @@ async def main():
     print("       CHISA BOT INTEGRATION & LORE BENCHMARK TOOL")
     print("=" * 60)
     
-    pipeline = args.pipeline
-    if not pipeline:
-        # 1. Pipeline selection
-        while True:
-            print("Chọn Chat Pipeline:")
-            print("  [1] Legacy Pipeline")
-            print("  [2] Production Pipeline")
-            choice = input("Lựa chọn (1 hoặc 2): ").strip()
-            if choice in ("1", "2"):
-                pipeline = "legacy" if choice == "1" else "production"
-                break
-            print("⚠️ Vui lòng nhập 1 hoặc 2.")
-        print("-" * 60)
+    pipeline = "production"
     
     question_type = args.mode
     if not question_type:
@@ -163,12 +150,11 @@ async def main():
                 
             payload = {
                 "user_id": user_id,
-                "message": question,
-                "pipeline": pipeline
+                "message": question
             }
             
             try:
-                response = await client.post(chat_url, json=payload)
+                response = await client.post(chat_url, json=payload, headers={"X-Enable-Clean-Log": "true"})
                 response.raise_for_status()
                 data = response.json()
                 chisa_reply = data.get("response", "")

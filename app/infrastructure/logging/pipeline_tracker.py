@@ -13,6 +13,13 @@ class PipelineTracker:
         self.history: List[Dict[str, Any]] = []
         self.listeners: Set[Callable[[Dict[str, Any]], Any]] = set()
 
+    def _notify_listeners(self, event: Dict[str, Any]):
+        for listener in list(self.listeners):
+            try:
+                listener(event)
+            except Exception:
+                pass
+
     def start_trace(self, user_id: str, message: str, pipeline: str, source: str = "web", username: str = None, channel_name: str = None, guild_name: str = None) -> str:
         trace_id = str(uuid.uuid4())
         trace = {
@@ -61,6 +68,13 @@ class PipelineTracker:
             # Auto-flag loop thinking activation
             if name.startswith("thinking_loop_cycle_"):
                 trace["loop_thinking_activated"] = True
+
+            self._notify_listeners({
+                "type": "step",
+                "trace_id": trace.get("id"),
+                "step": step,
+                "loop_thinking_activated": trace.get("loop_thinking_activated", False),
+            })
         except Exception:
             pass  # Fail-safe to avoid impacting the main thread
 
@@ -87,12 +101,12 @@ class PipelineTracker:
             if len(self.history) > self.max_history:
                 self.history.pop(0)
 
-            # Notify listeners (e.g. WebSockets)
-            for listener in list(self.listeners):
-                try:
-                    listener(trace)
-                except Exception:
-                    pass
+            # Notify listeners (e.g. SSE/WebSocket subscribers)
+            self._notify_listeners({
+                "type": "complete",
+                "trace_id": trace.get("id"),
+                "trace": trace,
+            })
 
             # Clear context variable
             current_trace_var.set({})

@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.infrastructure.llm.adapters.base import BaseLLMAdapter, StructuredPrompt
 from app.domain.interfaces.embedding_provider import IEmbeddingProvider
-from app.domain.services.production_pipeline.tools.base import BaseAgentTool
+from app.domain.services.tools.base import BaseAgentTool
 from app.infrastructure.database.models.conversation import Conversation
 from app.infrastructure.database.models.message import Message
 from app.infrastructure.logging.logger import get_logger

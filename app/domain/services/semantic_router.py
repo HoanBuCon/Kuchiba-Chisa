@@ -1,7 +1,7 @@
 import asyncio
 import numpy as np
 from typing import List, Dict, Optional, Set
-from app.domain.services.production_pipeline.intent_classifier import ChatIntent
+from app.domain.services.intent_classifier import ChatIntent
 from app.domain.interfaces.embedding_provider import IEmbeddingProvider
 from app.infrastructure.logging.logger import get_logger
 
@@ -18,6 +18,7 @@ ROUTER_ANCHORS: Dict[ChatIntent, List[tuple]] = {
         ("kéo của em để làm gì", False),
         ("em trông như thế nào", False),
         ("tóc của em màu gì vậy", False),
+        ("cây kéo của em dùng để làm gì vậy", False),
         # --- Sở thích & thói quen ---
         ("chisa thích ăn món gì", False),
         ("sở thích của em là gì", False),
@@ -25,12 +26,15 @@ ROUTER_ANCHORS: Dict[ChatIntent, List[tuple]] = {
         ("chisa thích ăn vặt gì", False),
         ("em thích làm gì nhất lúc rảnh", False),
         ("em có thói quen gì đặc biệt không", False),
+        ("em thích ăn gì nè", False),
         # --- Thân thế & xuất xứ ---
         ("em bao nhiêu tuổi thế", False),
         ("em học trường nào", False),
         ("em sinh ra ở đâu vậy", False),
         ("gia đình của em thế nào", False),
         ("em có anh chị em ruột không", False),
+        ("em bao nhiêu tuổi", False),
+        ("chisa học trường nào vậy", False),
         # --- Tính cách & tâm lý ---
         ("tính cách của em thế nào", False),
         ("em có điểm yếu gì không", False),
@@ -100,12 +104,18 @@ ROUTER_ANCHORS: Dict[ChatIntent, List[tuple]] = {
         ("tên của anh là gì", False),
         ("anh đang làm nghề gì thế", False),
         ("anh bao nhiêu tuổi nhỉ", False),
+        ("ông anh tên gì nè", False),
+        ("anh tên gì vậy em", False),
+        ("tên anh là gì", False),
+        ("anh tên gì", False),
         # --- Ký ức & hứa hẹn ---
         ("hôm qua anh đã hứa gì với em", False),
         ("ngày mai anh có bài phỏng vấn ở đâu", False),
         ("hôm trước anh nói gì với em nhớ không", False),
         ("lần trước chúng ta đã đồng ý điều gì", False),
         ("anh đã từng kể về gia đình chưa", False),
+        ("hồi trước anh có kể không nhỉ", False),
+        ("trước đây anh có nói gì đó về", False),
         # --- Sở thích & cá nhân ---
         ("ngày trước anh kể cho em nghe về sở thích của anh chưa", False),
         ("sở thích của anh là gì", False),
@@ -153,7 +163,8 @@ ROUTER_ANCHORS: Dict[ChatIntent, List[tuple]] = {
 
 # Score bonus cộng thêm vào cosine similarity khi câu query khớp với explicit anchor.
 # Cosine similarity không thể scale bằng nhân scalar nên dùng additive offset.
-EXPLICIT_ANCHOR_BONUS = 0.04
+# Tăng từ 0.04 → 0.06 để anchor tường minh có sức ảnh hưởng rõ hơn khi cạnh tranh intent.
+EXPLICIT_ANCHOR_BONUS = 0.06
 
 # Ngưỡng khoảng cách tối thiểu (Top1 − Top2) để coi routing là "tự tin".
 # Nếu nhỏ hơn ngưỡng này → model đang phân vân → áp dụng keyword guard chặt hơn.

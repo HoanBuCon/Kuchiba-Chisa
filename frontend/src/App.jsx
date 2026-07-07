@@ -19,6 +19,82 @@ const getDeviceId = () => {
 const BASE = 'http://localhost:8000/api/v1';
 const GREETING = { role: 'chisa', content: 'Chào Senpai~ Em là Chisa đây ♡  Hôm nay Senpai có gì muốn tâm sự với em không?' };
 
+async function streamChatResponse(payload, { onLoopThinkingStart } = {}) {
+  const response = await fetch(`${BASE}/chat/stream`, {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      accept: 'text/event-stream',
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok || !response.body) {
+    const errorText = await response.text().catch(() => '');
+    throw new Error(errorText || `HTTP ${response.status}`);
+  }
+
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = '';
+  let finalPayload = null;
+
+  const parseChunk = (chunk) => {
+    const lines = chunk.split(/\r?\n/);
+    let eventName = 'message';
+    const dataLines = [];
+
+    for (const line of lines) {
+      if (line.startsWith('event:')) {
+        eventName = line.slice(6).trim();
+      } else if (line.startsWith('data:')) {
+        dataLines.push(line.slice(5).trimStart());
+      }
+    }
+
+    const dataText = dataLines.join('\n');
+    const data = dataText ? JSON.parse(dataText) : {};
+    return { eventName, data };
+  };
+
+  while (true) {
+    const { value, done } = await reader.read();
+    if (done) {
+      break;
+    }
+
+    buffer += decoder.decode(value, { stream: true });
+
+    let boundaryIndex = buffer.indexOf('\n\n');
+    while (boundaryIndex !== -1) {
+      const rawChunk = buffer.slice(0, boundaryIndex).trim();
+      buffer = buffer.slice(boundaryIndex + 2);
+      boundaryIndex = buffer.indexOf('\n\n');
+
+      if (!rawChunk) {
+        continue;
+      }
+
+      const { eventName, data } = parseChunk(rawChunk);
+      if (eventName === 'loop_thinking_started' && typeof onLoopThinkingStart === 'function') {
+        onLoopThinkingStart(data);
+      }
+      if (eventName === 'complete') {
+        finalPayload = data;
+      }
+      if (eventName === 'error') {
+        throw new Error(data?.message || 'Không thể tạo phản hồi');
+      }
+    }
+  }
+
+  if (!finalPayload) {
+    throw new Error('Stream kết thúc mà không có phản hồi cuối cùng');
+  }
+
+  return finalPayload;
+}
+
 // ── Message Renderer ─────────────────────────────────────────────────────
 function Message({ msg }) {
   if (msg.role === 'user') {
@@ -153,7 +229,6 @@ export default function App() {
   const [isHistoryLoading, setIsHistoryLoading] = useState(true);
   const messagesEndRef = useRef(null);
   const textareaRef    = useRef(null);
-  const thinkingTimerRef = useRef(null);
 
   const scrollToBottom = () =>
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -221,24 +296,27 @@ export default function App() {
     setIsLoading(true);
     setIsThinkingMode(false);
 
-    // Escalate to Loop Thinking bubble after 6 seconds of loading
-    // (normal LLM replies take 2-4s; loop thinking takes 8-15s)
-    thinkingTimerRef.current = setTimeout(() => {
-      setIsThinkingMode(true);
-    }, 6000);
-
     try {
-      const res = await axios.post(`${BASE}/chat`, { user_id: getDeviceId(), message: userText });
-      if (res.data?.response) {
-        setMessages(prev => [...prev, { role: 'chisa', content: res.data.response }]);
-        if (res.data.emotions) {
-          setEmotions(res.data.emotions);
+      const res = await streamChatResponse(
+        { user_id: getDeviceId(), message: userText, source: 'web' },
+        {
+          onLoopThinkingStart: () => {
+            setIsThinkingMode(true);
+          },
+        },
+      );
+
+      if (res?.response) {
+        setMessages(prev => [...prev, { role: 'chisa', content: res.response }]);
+        if (res.emotions) {
+          setEmotions(res.emotions);
         }
-      } else throw new Error('bad response');
+      } else {
+        throw new Error('bad response');
+      }
     } catch {
       setMessages(prev => [...prev, { role: 'chisa', content: '*(Lỗi kết nối)* Xin lỗi Senpai... Em đang gặp sự cố, hãy thử lại sau nhé!' }]);
     } finally {
-      clearTimeout(thinkingTimerRef.current);
       setIsThinkingMode(false);
       setIsLoading(false);
     }

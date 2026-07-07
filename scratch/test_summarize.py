@@ -17,11 +17,11 @@ from app.infrastructure.database.models.user import User
 from app.infrastructure.database.models.emotion_state import EmotionState
 from app.infrastructure.database.models.user_stats import UserStats
 
-from app.domain.services.production_pipeline.production_chat_engine import ProductionChatEngine
+from app.domain.services.chat_engine import ChatEngine
 from app.domain.interfaces.embedding_provider import IEmbeddingProvider
 from app.infrastructure.llm.adapters.deepseek import DeepSeekAdapter
-from app.domain.services.production_pipeline.production_context_builder import ProductionContextBuilder
-from app.domain.services.production_pipeline.memory_extractor import MemoryExtractor
+from app.domain.services.context_builder import ContextBuilder
+from app.domain.services.memory_extractor import MemoryExtractor
 
 class FastEmbedAdapter(IEmbeddingProvider):
     def __init__(self):
@@ -51,11 +51,11 @@ async def main():
     # Initialize components
     embedder = FastEmbedAdapter()
     llm = DeepSeekAdapter()
-    context_builder = ProductionContextBuilder()
+    context_builder = ContextBuilder()
     from app.infrastructure.vector.qdrant.qdrant_service import qdrant_service
     memory_extractor = MemoryExtractor(llm=llm, embedder=embedder, qdrant=qdrant_service)
 
-    chat_engine = ProductionChatEngine(
+    chat_engine = ChatEngine(
         embedder=embedder,
         llm=llm,
         context_builder=context_builder,

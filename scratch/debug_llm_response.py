@@ -17,10 +17,11 @@ from sqlalchemy.orm import sessionmaker
 from app.config.settings import settings
 from app.infrastructure.embeddings.fastembed_adapter import FastEmbedAdapter
 from app.infrastructure.llm.adapters.deepseek import DeepSeekAdapter
-from app.domain.services.production_pipeline.production_context_builder import ProductionContextBuilder
-from app.domain.services.production_pipeline.state_manager import StateManager
-from app.domain.services.production_pipeline.memory_extractor import MemoryExtractor
-from app.domain.services.production_pipeline.production_chat_engine import ProductionChatEngine
+from app.domain.services.context_builder import ContextBuilder
+from app.domain.services.state_manager import StateManager
+from app.domain.services.memory_extractor import MemoryExtractor
+from app.domain.services.chat_engine import ChatEngine
+from app.domain.services.rag.retriever_lore import LoreRetriever
 from app.infrastructure.vector.qdrant.qdrant_service import qdrant_service
 
 async def debug_response():
@@ -32,10 +33,10 @@ async def debug_response():
     # Initialize components
     embedder = FastEmbedAdapter()
     llm = DeepSeekAdapter()
-    context_builder = ProductionContextBuilder()
+    context_builder = ContextBuilder()
     memory_extractor = MemoryExtractor(llm=llm, embedder=embedder, qdrant=qdrant_service)
     
-    chat_engine = ProductionChatEngine(
+    chat_engine = ChatEngine(
         embedder=embedder,
         llm=llm,
         context_builder=context_builder,
@@ -51,8 +52,8 @@ async def debug_response():
         print("Matched Intents:", [i.value for i in intents])
         
         # Retrieve lore
-        from app.domain.services.rag_retriever import rag_retriever
-        lore_chunks = await rag_retriever.retrieve_lore_parent_child(
+        lore_retriever = LoreRetriever()
+        lore_chunks = await lore_retriever.retrieve_lore_parent_child(
             collection="character_lore",
             query_vector=query_vector,
             query_text=user_message,

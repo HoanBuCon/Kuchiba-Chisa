@@ -10,7 +10,7 @@ if sys.stdout.encoding != 'utf-8':
         pass
 
 from app.infrastructure.embeddings.fastembed_adapter import FastEmbedAdapter
-from app.domain.services.production_pipeline.intent_classifier import IntentClassifier
+from app.domain.services.intent_classifier import IntentClassifier
 from app.shared.utils.query_cleaner import clean_query_for_rag
 
 async def test_classifier():

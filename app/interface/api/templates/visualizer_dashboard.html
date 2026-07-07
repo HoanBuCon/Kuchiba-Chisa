@@ -7,18 +7,35 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg-color: #0b0813;
-            --panel-bg: rgba(20, 16, 32, 0.7);
-            --border-color: rgba(147, 51, 234, 0.2);
-            --border-hover: rgba(168, 85, 247, 0.5);
-            --accent-purple: #9333ea;
-            --accent-pink: #ec4899;
-            --text-main: #f3f4f6;
-            --text-muted: #9ca3af;
-            --neon-green: #10b981;
-            --neon-red: #ef4444;
-            --glow-purple: 0 0 15px rgba(147, 51, 234, 0.3);
-            --glow-pink: 0 0 15px rgba(236, 48, 153, 0.3);
+            --bg-base: #0d0d0d;
+            --bg-elevated: #141414;
+            --bg-surface: #1c1c1c;
+            --bg-hover: #212121;
+            --bg-color: var(--bg-base);
+            --panel-bg: rgba(28, 28, 28, 0.82);
+            --border-color: rgba(255, 255, 255, 0.06);
+            --border-hover: rgba(229, 57, 53, 0.35);
+            --accent-red: #e53935;
+            --accent-red-dark: #c62828;
+            --accent-red-dim: rgba(229, 57, 53, 0.18);
+            --accent-red-glow: rgba(229, 57, 53, 0.25);
+            --accent-purple: var(--accent-red);
+            --accent-pink: #ff5252;
+            --text-main: #f0f0f0;
+            --text-muted: #888888;
+            --neon-green: #4caf50;
+            --neon-red: #e53935;
+            --glow-purple: 0 0 15px var(--accent-red-glow);
+            --glow-pink: 0 0 12px rgba(255, 82, 82, 0.35);
+            --scrollbar-size: 8px;
+            --scrollbar-track: rgba(20, 20, 20, 0.95);
+            --scrollbar-thumb: rgba(229, 57, 53, 0.42);
+            --scrollbar-thumb-hover: rgba(229, 57, 53, 0.62);
+            --scrollbar-thumb-active: rgba(255, 82, 82, 0.78);
+        }
+
+        html {
+            color-scheme: dark;
         }
 
         * {
@@ -29,15 +46,16 @@
 
         body {
             font-family: 'Inter', sans-serif;
-            background-color: var(--bg-color);
+            background-color: var(--bg-base);
             color: var(--text-main);
             height: 100vh;
             overflow: hidden;
             display: flex;
             flex-direction: column;
-            background-image: 
-                radial-gradient(at 0% 0%, rgba(147, 51, 234, 0.15) 0px, transparent 50%),
-                radial-gradient(at 100% 100%, rgba(236, 72, 153, 0.1) 0px, transparent 50%);
+            background-image:
+                radial-gradient(ellipse at 0% 0%, rgba(229, 57, 53, 0.14) 0%, transparent 52%),
+                radial-gradient(ellipse at 100% 100%, rgba(120, 0, 0, 0.18) 0%, transparent 48%),
+                linear-gradient(165deg, #080808 0%, #0d0d0d 45%, #140909 100%);
         }
 
         /* ── Header ── */
@@ -47,8 +65,8 @@
             align-items: center;
             padding: 16px 24px;
             border-bottom: 1px solid var(--border-color);
-            background: rgba(11, 8, 19, 0.85);
-            backdrop-filter: blur(10px);
+            background: rgba(13, 13, 13, 0.92);
+            backdrop-filter: blur(12px);
             z-index: 10;
         }
 
@@ -58,11 +76,29 @@
             gap: 12px;
         }
 
+        .logo-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid rgba(229, 57, 53, 0.45);
+            box-shadow: 0 0 12px var(--accent-red-glow);
+            flex-shrink: 0;
+            background: var(--bg-surface);
+        }
+
+        .logo-icon img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
         .logo img {
             width: 32px;
             height: 32px;
             border-radius: 8px;
-            border: 1px solid var(--accent-purple);
+            border: 1px solid var(--accent-red);
             box-shadow: var(--glow-purple);
         }
 
@@ -70,14 +106,15 @@
             font-size: 20px;
             font-weight: 700;
             letter-spacing: 1px;
-            background: linear-gradient(to right, var(--text-main), var(--accent-pink));
+            background: linear-gradient(to right, #f0f0f0, var(--accent-red));
             -webkit-background-clip: text;
             background-clip: text;
             -webkit-text-fill-color: transparent;
         }
 
         .logo-text span {
-            color: var(--accent-purple);
+            color: var(--accent-red);
+            -webkit-text-fill-color: var(--accent-red);
         }
 
         .status-panel {
@@ -90,12 +127,13 @@
             display: flex;
             align-items: center;
             gap: 8px;
-            background: rgba(20, 16, 32, 0.6);
+            background: var(--accent-red-dim);
             padding: 6px 12px;
             border-radius: 20px;
-            border: 1px solid var(--border-color);
+            border: 1px solid rgba(229, 57, 53, 0.22);
             font-size: 13px;
             font-weight: 500;
+            color: var(--text-main);
         }
 
         .dot {
@@ -122,7 +160,7 @@
         .sidebar {
             width: 300px;
             border-right: 1px solid var(--border-color);
-            background: rgba(15, 12, 26, 0.4);
+            background: var(--bg-elevated);
             display: flex;
             flex-direction: column;
             overflow: hidden;
@@ -147,18 +185,94 @@
             padding: 10px;
         }
 
-        .trace-list::-webkit-scrollbar {
-            width: 6px;
+        /* ── Dark scrollbars (Firefox) ── */
+        .json-block,
+        pre.json-block,
+        .chunk-list,
+        .trace-list,
+        .pipeline-tree-side,
+        .node-inspector-side,
+        .inspector-card-body,
+        .message-bubble-inspect {
+            scrollbar-width: thin;
+            scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
         }
-        .trace-list::-webkit-scrollbar-thumb {
-            background: rgba(147, 51, 234, 0.2);
-            border-radius: 3px;
+
+        /* ── Dark scrollbars (WebKit / Chromium / Edge) ── */
+        .json-block::-webkit-scrollbar,
+        pre.json-block::-webkit-scrollbar,
+        .chunk-list::-webkit-scrollbar,
+        .trace-list::-webkit-scrollbar,
+        .pipeline-tree-side::-webkit-scrollbar,
+        .node-inspector-side::-webkit-scrollbar,
+        .inspector-card-body::-webkit-scrollbar,
+        .message-bubble-inspect::-webkit-scrollbar {
+            width: var(--scrollbar-size);
+            height: var(--scrollbar-size);
+        }
+
+        .json-block::-webkit-scrollbar-track,
+        pre.json-block::-webkit-scrollbar-track,
+        .chunk-list::-webkit-scrollbar-track,
+        .trace-list::-webkit-scrollbar-track,
+        .pipeline-tree-side::-webkit-scrollbar-track,
+        .node-inspector-side::-webkit-scrollbar-track,
+        .inspector-card-body::-webkit-scrollbar-track,
+        .message-bubble-inspect::-webkit-scrollbar-track {
+            background: var(--scrollbar-track);
+            border-radius: 4px;
+        }
+
+        .json-block::-webkit-scrollbar-thumb,
+        pre.json-block::-webkit-scrollbar-thumb,
+        .chunk-list::-webkit-scrollbar-thumb,
+        .trace-list::-webkit-scrollbar-thumb,
+        .pipeline-tree-side::-webkit-scrollbar-thumb,
+        .node-inspector-side::-webkit-scrollbar-thumb,
+        .inspector-card-body::-webkit-scrollbar-thumb,
+        .message-bubble-inspect::-webkit-scrollbar-thumb {
+            background: var(--scrollbar-thumb);
+            border-radius: 4px;
+            border: 2px solid var(--scrollbar-track);
+        }
+
+        .json-block::-webkit-scrollbar-thumb:hover,
+        pre.json-block::-webkit-scrollbar-thumb:hover,
+        .chunk-list::-webkit-scrollbar-thumb:hover,
+        .trace-list::-webkit-scrollbar-thumb:hover,
+        .pipeline-tree-side::-webkit-scrollbar-thumb:hover,
+        .node-inspector-side::-webkit-scrollbar-thumb:hover,
+        .inspector-card-body::-webkit-scrollbar-thumb:hover,
+        .message-bubble-inspect::-webkit-scrollbar-thumb:hover {
+            background: var(--scrollbar-thumb-hover);
+        }
+
+        .json-block::-webkit-scrollbar-thumb:active,
+        pre.json-block::-webkit-scrollbar-thumb:active,
+        .chunk-list::-webkit-scrollbar-thumb:active,
+        .trace-list::-webkit-scrollbar-thumb:active,
+        .pipeline-tree-side::-webkit-scrollbar-thumb:active,
+        .node-inspector-side::-webkit-scrollbar-thumb:active,
+        .inspector-card-body::-webkit-scrollbar-thumb:active,
+        .message-bubble-inspect::-webkit-scrollbar-thumb:active {
+            background: var(--scrollbar-thumb-active);
+        }
+
+        .json-block::-webkit-scrollbar-corner,
+        pre.json-block::-webkit-scrollbar-corner,
+        .chunk-list::-webkit-scrollbar-corner,
+        .trace-list::-webkit-scrollbar-corner,
+        .pipeline-tree-side::-webkit-scrollbar-corner,
+        .node-inspector-side::-webkit-scrollbar-corner,
+        .inspector-card-body::-webkit-scrollbar-corner,
+        .message-bubble-inspect::-webkit-scrollbar-corner {
+            background: var(--scrollbar-track);
         }
 
         .trace-item {
             padding: 14px;
             border-radius: 10px;
-            background: rgba(25, 20, 40, 0.3);
+            background: var(--bg-surface);
             border: 1px solid var(--border-color);
             margin-bottom: 10px;
             cursor: pointer;
@@ -172,8 +286,8 @@
         }
 
         .trace-item.active {
-            background: rgba(147, 51, 234, 0.15);
-            border-color: var(--accent-purple);
+            background: var(--accent-red-dim);
+            border-color: rgba(229, 57, 53, 0.45);
             box-shadow: var(--glow-purple);
         }
 
@@ -224,6 +338,12 @@
             border: 1px solid rgba(88, 101, 242, 0.3);
         }
 
+        .source-web {
+            background: var(--accent-red-dim);
+            color: var(--accent-red);
+            border: 1px solid rgba(229, 57, 53, 0.22);
+        }
+
         .trace-item-message {
             font-size: 13.5px;
             color: var(--text-main);
@@ -246,7 +366,7 @@
             display: flex;
             flex-direction: column;
             overflow: hidden;
-            background: rgba(10, 8, 16, 0.2);
+            background: rgba(13, 13, 13, 0.35);
         }
 
         .no-selection {
@@ -261,14 +381,14 @@
 
         .no-selection-icon {
             font-size: 48px;
-            color: rgba(147, 51, 234, 0.3);
+            color: rgba(229, 57, 53, 0.35);
             animation: float 3s ease-in-out infinite;
         }
 
         .detail-header {
             padding: 20px 24px;
             border-bottom: 1px solid var(--border-color);
-            background: rgba(20, 16, 32, 0.4);
+            background: rgba(20, 20, 20, 0.75);
         }
 
         .detail-title-row {
@@ -290,7 +410,7 @@
         }
 
         .meta-card {
-            background: rgba(25, 20, 40, 0.5);
+            background: var(--bg-surface);
             border: 1px solid var(--border-color);
             border-radius: 8px;
             padding: 10px;
@@ -308,6 +428,32 @@
             color: var(--text-main);
         }
 
+        .meta-card-tokens {
+            position: relative;
+        }
+
+        .meta-card-tokens #det-tokens-hint {
+            display: none;
+            position: absolute;
+            top: 105%;
+            left: 0;
+            background: rgba(20, 20, 20, 0.98);
+            border: 1px solid rgba(255, 82, 82, 0.3);
+            border-radius: 6px;
+            padding: 10px;
+            width: max-content;
+            max-width: 320px;
+            z-index: 100;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
+            line-height: 1.5;
+            color: var(--text-main) !important;
+            font-size: 11px;
+        }
+
+        .meta-card-tokens:hover #det-tokens-hint {
+            display: block;
+        }
+
         /* ── Split Layout Workspace ── */
         .detail-split-content {
             display: flex;
@@ -318,34 +464,18 @@
         .pipeline-tree-side {
             width: 330px;
             border-right: 1px solid var(--border-color);
-            background: rgba(15, 12, 26, 0.15);
+            background: rgba(20, 20, 20, 0.55);
             display: flex;
             flex-direction: column;
             overflow-y: auto;
             padding: 20px;
         }
 
-        .pipeline-tree-side::-webkit-scrollbar {
-            width: 4px;
-        }
-        .pipeline-tree-side::-webkit-scrollbar-thumb {
-            background: rgba(147, 51, 234, 0.15);
-            border-radius: 2px;
-        }
-
         .node-inspector-side {
             flex: 1;
             overflow-y: auto;
             padding: 24px;
-            background: rgba(10, 8, 16, 0.35);
-        }
-
-        .node-inspector-side::-webkit-scrollbar {
-            width: 6px;
-        }
-        .node-inspector-side::-webkit-scrollbar-thumb {
-            background: rgba(147, 51, 234, 0.2);
-            border-radius: 3px;
+            background: rgba(13, 13, 13, 0.5);
         }
 
         /* ── RAG Decision Tree Visualizer ── */
@@ -373,13 +503,13 @@
 
         .tree-node:hover {
             border-color: var(--border-hover);
-            background: rgba(147, 51, 234, 0.08);
+            background: var(--accent-red-dim);
             transform: translateX(2px);
         }
 
         .tree-node.active {
-            border-color: var(--accent-pink);
-            background: rgba(236, 72, 153, 0.12);
+            border-color: var(--accent-red);
+            background: rgba(229, 57, 53, 0.14);
             box-shadow: var(--glow-pink);
         }
 
@@ -387,7 +517,9 @@
             display: flex;
             align-items: center;
             gap: 8px;
+            min-width: 0;
             overflow: hidden;
+            flex: 1 1 auto;
         }
 
         .tree-node-icon {
@@ -410,12 +542,15 @@
             color: var(--text-muted);
             font-family: 'JetBrains Mono', monospace;
             white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            min-width: 0;
         }
 
         .tree-connector {
             width: 2px;
             height: 12px;
-            background: linear-gradient(to bottom, var(--accent-purple), var(--accent-pink));
+            background: linear-gradient(to bottom, var(--accent-red-dark), var(--accent-red));
             margin: 0 auto;
         }
 
@@ -439,7 +574,7 @@
             align-items: center;
             gap: 12px;
             padding: 16px 20px;
-            background: rgba(147, 51, 234, 0.12);
+            background: var(--accent-red-dim);
             border-bottom: 1px solid var(--border-color);
         }
 
@@ -458,15 +593,15 @@
         }
 
         .message-bubble-inspect {
-            background: rgba(147, 51, 234, 0.08);
-            border: 1px solid var(--border-color);
+            background: rgba(229, 57, 53, 0.08);
+            border: 1px solid rgba(229, 57, 53, 0.15);
             border-radius: 8px;
             padding: 12px 16px;
             font-size: 14px;
             line-height: 1.6;
             color: var(--text-main);
             margin-top: 6px;
-            white-space: pre-wrap;
+            white-space: pre-line;
         }
 
         .key-value-list {
@@ -493,14 +628,15 @@
         }
 
         .json-block {
-            background: rgba(0, 0, 0, 0.4);
-            border: 1px solid rgba(255, 255, 255, 0.05);
+            background: rgba(0, 0, 0, 0.45);
+            border: 1px solid var(--border-color);
             border-radius: 6px;
             padding: 12px;
             font-family: 'JetBrains Mono', monospace;
             font-size: 12px;
-            color: #d1d5db;
+            color: #d4d4d4;
             overflow-x: auto;
+            overflow-y: auto;
             max-height: 350px;
             white-space: pre-wrap;
             word-break: break-all;
@@ -517,18 +653,18 @@
             font-size: 12px;
             padding: 4px 10px;
             border-radius: 20px;
-            background: rgba(147, 51, 234, 0.15);
-            color: #d8b4fe;
-            border: 1px solid rgba(147, 51, 234, 0.3);
+            background: var(--accent-red-dim);
+            color: #ff8a80;
+            border: 1px solid rgba(229, 57, 53, 0.28);
         }
 
         .tool-active-badge {
             display: inline-flex;
             align-items: center;
             gap: 6px;
-            background: rgba(236, 72, 153, 0.15);
-            color: #fbcfe8;
-            border: 1px solid rgba(236, 72, 153, 0.3);
+            background: rgba(229, 57, 53, 0.2);
+            color: #ffabab;
+            border: 1px solid rgba(229, 57, 53, 0.35);
             padding: 4px 10px;
             border-radius: 6px;
             font-weight: 500;
@@ -541,7 +677,7 @@
         }
 
         .emotion-compare-card {
-            background: rgba(25, 20, 40, 0.4);
+            background: var(--bg-surface);
             border: 1px solid var(--border-color);
             border-radius: 8px;
             padding: 10px;
@@ -592,7 +728,7 @@
 
         .chunk-item {
             background: rgba(255, 255, 255, 0.03);
-            border-left: 3px solid var(--accent-purple);
+            border-left: 3px solid var(--accent-red);
             padding: 10px 14px;
             font-size: 13px;
             border-radius: 0 6px 6px 0;
@@ -618,13 +754,80 @@
             50% { transform: translateY(-10px); }
             100% { transform: translateY(0px); }
         }
+
+        /* ── Responsive Design ── */
+        @media (max-width: 1024px) {
+            body {
+                height: auto;
+                overflow: auto;
+            }
+
+            .workspace {
+                flex-direction: column;
+                height: auto;
+                overflow: visible;
+            }
+
+            .sidebar {
+                width: 100%;
+                height: 300px;
+                border-right: none;
+                border-bottom: 1px solid var(--border-color);
+            }
+
+            .detail-panel {
+                height: auto;
+                overflow: visible;
+            }
+
+            .detail-split-content {
+                flex-direction: column;
+                height: auto;
+                overflow: visible;
+            }
+
+            .pipeline-tree-side {
+                width: 100%;
+                border-right: none;
+                border-bottom: 1px solid var(--border-color);
+                max-height: 350px;
+            }
+
+            .node-inspector-side {
+                width: 100%;
+                overflow: visible;
+            }
+
+            header {
+                flex-direction: column;
+                gap: 12px;
+                text-align: center;
+            }
+        }
+
+        @media (max-width: 600px) {
+            .detail-meta-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+            .emotion-compare-grid {
+                grid-template-columns: 1fr;
+            }
+            .sidebar {
+                height: 220px;
+            }
+            .pipeline-tree-side {
+                max-height: 250px;
+            }
+        }
     </style>
 </head>
 <body>
     <!-- Header -->
     <header>
         <div class="logo">
-            <div class="logo-icon">🌸</div>
+            <div class="logo-icon">
+                <img src="/assets/dance_chisa.gif" alt="Chisa">
+            </div>
             <div class="logo-text">CHISA<span>.</span>AI VISUALIZER</div>
         </div>
         <div class="status-panel">
@@ -651,7 +854,7 @@
         <!-- Main Detail Panel -->
         <main class="detail-panel" id="detail-panel">
             <div class="no-selection" id="no-selection">
-                <div class="no-selection-icon">🔮</div>
+                <div class="no-selection-icon">🔴</div>
                 <h3>Chọn một cuộc hội thoại từ danh sách để xem chi tiết pipeline RAG</h3>
                 <p style="color: var(--text-muted); font-size: 14px;">Hoặc gửi tin nhắn mới lên bot để quan sát thời gian thực.</p>
             </div>
@@ -673,16 +876,17 @@
                             <div class="meta-card-value" id="det-source">Web UI</div>
                         </div>
                         <div class="meta-card">
-                            <div class="meta-card-label">Pipeline</div>
-                            <div class="meta-card-value" id="det-pipeline">production</div>
+                            <div class="meta-card-label">Thời gian gửi</div>
+                            <div class="meta-card-value" id="det-time" style="font-size: 13px;">...</div>
                         </div>
-                        <div class="meta-card">
-                            <div class="meta-card-label">Tổng tokens</div>
-                            <div class="meta-card-value" id="det-tokens" style="color: var(--accent-pink);">0</div>
+                        <div class="meta-card meta-card-tokens">
+                            <div class="meta-card-label">Tổng tokens API</div>
+                            <div class="meta-card-value" id="det-tokens" style="color: var(--accent-red); cursor: help;">0</div>
+                            <div id="det-tokens-hint" style="font-size: 10px; color: var(--text-muted); margin-top: 4px; line-height: 1.4;"></div>
                         </div>
                         <div class="meta-card">
                             <div class="meta-card-label">Độ trễ (Latency)</div>
-                            <div class="meta-card-value" id="det-latency" style="color: #60a5fa;">0ms</div>
+                            <div class="meta-card-value" id="det-latency" style="color: #ff8a80;">0ms</div>
                         </div>
                     </div>
                 </div>
@@ -708,6 +912,55 @@
         let traces = [];
         let selectedTraceId = null;
 
+        /** Lấy tất cả bước LLM trong trace (số liệu từ API provider). */
+        function getLlmSteps(trace) {
+            return (trace.steps || []).filter(s => s.name === 'llm_generation');
+        }
+
+        function llmPurposeTitle(step) {
+            const label = step.data.purpose_label || step.data.purpose || 'LLM call';
+            return `LLM · ${label}`;
+        }
+
+        function escapeHtml(text) {
+            if (text == null) return '';
+            return String(text)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        function webSearchSourceLabel(source) {
+            if (!source) return 'Không rõ';
+            if (source === 'system_action') return 'Lệnh tra mạng trực tiếp (System Action)';
+            if (source.startsWith('thinking_loop_cycle_')) {
+                const n = source.replace('thinking_loop_cycle_', '');
+                return `Loop Thinking · Cycle ${n}`;
+            }
+            return source;
+        }
+
+        /** Tổng input+output API cộng mọi LLM call trong request. */
+        function sumApiTokens(trace) {
+            return getLlmSteps(trace).reduce(
+                (sum, s) => sum + (s.data.total_tokens || 0), 0
+            );
+        }
+
+        function formatLlmBreakdownHint(trace) {
+            const steps = getLlmSteps(trace);
+            if (!steps.length) return 'Chưa có LLM call trong trace này.';
+            return steps.map(s => {
+                const lbl = s.data.purpose_label || s.data.purpose || `#${s.data.call_index || '?'}`;
+                const tot = s.data.total_tokens || 0;
+                const inp = s.data.input_tokens || 0;
+                const out = s.data.output_tokens || 0;
+                return `${lbl}: ${tot} (in ${inp} + out ${out})`;
+            }).join(' · ');
+        }
+
         // WebSocket Connection
         const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
         const wsUrl = `${protocol}//${window.location.host}/api/v1/visualizer/ws`;
@@ -723,8 +976,15 @@
             };
 
             socket.onmessage = (event) => {
-                const trace = JSON.parse(event.data);
-                handleNewTrace(trace);
+                const payload = JSON.parse(event.data);
+
+                // WS sends event envelopes:
+                // - step: { type, trace_id, step, ... }
+                // - complete: { type, trace_id, trace: {...full trace...} }
+                // Only complete contains full trace fields used by list rendering.
+                if (payload?.type === 'complete' && payload?.trace) {
+                    handleNewTrace(payload.trace);
+                }
             };
 
             socket.onclose = () => {
@@ -740,7 +1000,7 @@
                 const response = await fetch('/api/v1/visualizer/traces');
                 if (response.ok) {
                     const data = await response.ok ? await response.json() : [];
-                    traces = data.reverse(); // Show latest first
+                    traces = data.reverse().slice(0, 50); // Show latest first, limit to 50
                     renderTraceList();
                     if (traces.length > 0) {
                         selectTrace(traces[0].id);
@@ -752,10 +1012,16 @@
         }
 
         function handleNewTrace(trace) {
+            if (!trace || !trace.id || !trace.message) {
+                return;
+            }
             // Remove previous duplicate trace if it exists
             traces = traces.filter(t => t.id !== trace.id);
             // Insert at top
             traces.unshift(trace);
+            if (traces.length > 50) {
+                traces = traces.slice(0, 50);
+            }
             
             renderTraceList();
 
@@ -788,7 +1054,7 @@
                     <div class="trace-item-message">"${t.message}"</div>
                     <div class="trace-item-footer">
                         <span>${time}</span>
-                        <span>${t.total_tokens || 0} tokens • ${t.latency_ms || 0}ms</span>
+                        <span>${sumApiTokens(t) || t.total_tokens || 0} API tok • ${t.latency_ms || 0}ms</span>
                     </div>
                 `;
                 container.appendChild(item);
@@ -822,8 +1088,10 @@
             sourceBadge.innerText = trace.source.toUpperCase();
             sourceBadge.className = `meta-card-value source-badge ${trace.source === 'discord' ? 'source-discord' : 'source-web'}`;
 
-            document.getElementById('det-pipeline').innerText = trace.pipeline.toUpperCase();
-            document.getElementById('det-tokens').innerText = trace.total_tokens || 0;
+            document.getElementById('det-time').innerText = new Date(trace.timestamp).toLocaleString('vi-VN');
+            document.getElementById('det-tokens').innerText = `${trace.total_tokens || sumApiTokens(trace) || 0}`;
+            document.getElementById('det-tokens-hint').innerText =
+                `Cộng mọi LLM call (API thực tế). ${formatLlmBreakdownHint(trace)}`;
             document.getElementById('det-latency').innerText = `${trace.latency_ms || 0}ms`;
 
             const statusBadge = document.getElementById('det-status-badge');
@@ -888,7 +1156,7 @@
                     </div>
                     <div class="kv-item">
                         <span class="kv-label">Máy chủ (Server)</span>
-                        <span class="kv-value">🏟️ ${trace.guild_name || 'N/A'}</span>
+                        <span class="kv-value">${trace.guild_name || 'N/A'}</span>
                     </div>
                 `;
             } else {
@@ -998,14 +1266,106 @@
                                         <span class="kv-label">Kết quả thực thi Tool</span>
                                         <div class="json-block" style="margin-top: 4px;">${step.data.tool_result || 'Trống hoặc không hoạt động'}</div>
                                     </div>
+                                    ${toolName === 'web_search' ? `
+                                    <div class="kv-item" style="padding: 8px; background: var(--accent-red-dim); border-radius: 6px; font-size: 12px; color: var(--text-muted);">
+                                        Chi tiết snippets / URL / deep page → xem node <b>Web Search</b> ngay bên dưới trên timeline.
+                                    </div>` : ''}
                                 </div>
                             </div>
                         </div>
                     `;
                 }
+                else if (step.name === 'web_search') {
+                    icon = '🌐';
+                    title = 'Web Search';
+                    const query = step.data.optimized_query || step.data.search_query || '';
+                    const snippetCount = (step.data.snippets || []).length;
+                    const status = step.data.status || 'unknown';
+                    meta = query
+                        ? `"${query.length > 42 ? query.slice(0, 42) + '…' : query}" · ${snippetCount} snippet`
+                        : (status === 'success' ? `${snippetCount} snippet` : status);
+                    renderDetails = () => {
+                        const snippets = step.data.snippets || [];
+                        const urls = step.data.source_urls || [];
+                        const statusColor = step.data.status === 'success'
+                            ? 'var(--neon-green)'
+                            : (step.data.status === 'error' ? 'var(--neon-red)' : 'var(--text-muted)');
+
+                        const snippetsHtml = snippets.length
+                            ? `<div class="chunk-list">${snippets.map((s, i) => `
+                                <div class="chunk-item" style="border-left-color: var(--accent-red);">
+                                    <div class="chunk-item-title" style="color: #ff8a80;">Snippet #${i + 1}</div>
+                                    <div>${escapeHtml(s)}</div>
+                                </div>
+                            `).join('')}</div>`
+                            : '<p style="color: var(--text-muted); font-size: 13px;">Không có snippet DuckDuckGo.</p>';
+
+                        const urlsHtml = urls.length
+                            ? `<ul style="margin: 6px 0 0 0; padding-left: 18px; font-size: 12px; line-height: 1.6;">${urls.map(u => `
+                                <li><a href="${escapeHtml(u)}" target="_blank" rel="noopener noreferrer" style="color: var(--accent-red); word-break: break-all;">${escapeHtml(u)}</a></li>
+                            `).join('')}</ul>`
+                            : '<span style="color: var(--text-muted);">Không có URL</span>';
+
+                        const deepUrl = step.data.deep_page_url;
+                        const deepPreview = step.data.deep_page_preview;
+                        const deepSection = deepUrl ? `
+                            <div class="kv-item" style="margin-top: 10px;">
+                                <span class="kv-label">Deep page (trang gốc đã tải)</span>
+                                <div style="margin-top: 6px;">
+                                    <a href="${escapeHtml(deepUrl)}" target="_blank" rel="noopener noreferrer" style="color: var(--accent-red); font-size: 12px; word-break: break-all;">${escapeHtml(deepUrl)}</a>
+                                    ${deepPreview ? `<div class="json-block" style="margin-top: 8px; max-height: 240px; overflow-y: auto; white-space: pre-wrap; font-size: 12px;">${escapeHtml(deepPreview)}</div>` : ''}
+                                </div>
+                            </div>
+                        ` : '';
+
+                        const fullResult = step.data.full_result || '';
+                        return `
+                            <div class="inspector-card">
+                                <div class="inspector-card-header">
+                                    <span class="inspector-card-icon">🌐</span>
+                                    <h3 class="inspector-card-title">Web Search (DuckDuckGo)</h3>
+                                </div>
+                                <div class="inspector-card-body">
+                                    <div class="key-value-list">
+                                        <div class="kv-item" style="padding: 10px; background: var(--accent-red-dim); border-radius: 6px; border-left: 3px solid var(--accent-red);">
+                                            <span class="kv-label" style="color: #ff8a80;">Nguồn kích hoạt</span>
+                                            <span class="kv-value" style="font-size: 12px; margin-top: 4px; display: block;">${escapeHtml(webSearchSourceLabel(step.data.source))}</span>
+                                        </div>
+                                        <div class="kv-item">
+                                            <span class="kv-label">Trạng thái</span>
+                                            <span class="kv-value" style="font-weight: 600; color: ${statusColor}">${escapeHtml(step.data.status || 'unknown')}</span>
+                                        </div>
+                                        <div class="kv-item">
+                                            <span class="kv-label">Tin nhắn gốc / ngữ cảnh</span>
+                                            <span class="kv-value">"${escapeHtml(step.data.original_message || '—')}"</span>
+                                        </div>
+                                        <div class="kv-item">
+                                            <span class="kv-label">Query sau tối ưu (LLM)</span>
+                                            <span class="kv-value font-mono">"${escapeHtml(step.data.optimized_query || '—')}"</span>
+                                        </div>
+                                        <div class="kv-item" style="margin-top: 10px;">
+                                            <span class="kv-label" style="margin-bottom: 8px;">Snippets DuckDuckGo (${snippets.length})</span>
+                                            ${snippetsHtml}
+                                        </div>
+                                        <div class="kv-item" style="margin-top: 10px;">
+                                            <span class="kv-label">URL kết quả tìm kiếm</span>
+                                            ${urlsHtml}
+                                        </div>
+                                        ${deepSection}
+                                        ${fullResult ? `
+                                        <div class="kv-item" style="margin-top: 10px;">
+                                            <span class="kv-label">Payload đưa vào prompt (full)</span>
+                                            <div class="json-block" style="margin-top: 4px; max-height: 320px; overflow-y: auto; white-space: pre-wrap; font-size: 12px;">${escapeHtml(fullResult)}</div>
+                                        </div>` : ''}
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    };
+                }
                 else if (step.name === 'rag_retrieval') {
                     icon = '🧠';
-                    title = 'RAG Retrieval';
+                    title = 'RAG';
                     const loreCount = step.data.retrieved_lore_chunks ? step.data.retrieved_lore_chunks.length : 0;
                     const memCount = step.data.retrieved_memories ? step.data.retrieved_memories.length : 0;
                     meta = `${loreCount} Lore, ${memCount} Mem`;
@@ -1023,8 +1383,8 @@
                         let memoriesHtml = '<p style="color: var(--text-muted); font-size: 13px;">Không tìm thấy Ký ức phù hợp.</p>';
                         if (memCount > 0) {
                             memoriesHtml = '<div class="chunk-list">' + step.data.retrieved_memories.map((mem, i) => `
-                                <div class="chunk-item" style="border-left-color: var(--accent-pink);">
-                                    <div class="chunk-item-title" style="color: var(--accent-purple);">Ký ức #${i+1}</div>
+                                <div class="chunk-item" style="border-left-color: #ff5252;">
+                                    <div class="chunk-item-title" style="color: #ff8a80;">Ký ức #${i+1}</div>
                                     <div>${mem}</div>
                                 </div>
                             `).join('') + '</div>';
@@ -1034,7 +1394,7 @@
                             <div class="inspector-card">
                                 <div class="inspector-card-header">
                                     <span class="inspector-card-icon">🧠</span>
-                                    <h3 class="inspector-card-title">RAG Retrieval (Truy xuất Vector DB)</h3>
+                                    <h3 class="inspector-card-title">RAG (Truy xuất Vector DB)</h3>
                                 </div>
                                 <div class="inspector-card-body">
                                     <div class="key-value-list">
@@ -1056,53 +1416,281 @@
                         `;
                     };
                 }
-                else if (step.name === 'context_building') {
-                    icon = '🧱';
-                    title = 'Prompt Build';
-                    meta = `${step.data.history_count} msgs`;
-                    renderDetails = () => `
-                        <div class="inspector-card">
-                            <div class="inspector-card-header">
-                                <span class="inspector-card-icon">🧱</span>
-                                <h3 class="inspector-card-title">Prompt Construction (Lắp ghép ngữ cảnh)</h3>
-                            </div>
-                            <div class="inspector-card-body">
-                                <div class="key-value-list">
-                                    <div class="kv-item">
-                                        <span class="kv-label">System Instruction gửi lên LLM</span>
-                                        <div class="json-block" style="margin-top: 4px; font-family: 'Inter', sans-serif;">${step.data.system_prompt}</div>
-                                    </div>
-                                    <div class="kv-item">
-                                        <span class="kv-label">Lượng tin nhắn hội thoại ngắn hạn (STM)</span>
-                                        <span class="kv-value">${step.data.history_count} tin nhắn gần nhất</span>
+                else if (step.name === 'information_alignment_check') {
+                    icon = '⚖️';
+                    title = 'Alignment Check';
+                    const isAligned = step.data.is_aligned;
+                    meta = isAligned ? 'đủ context' : 'cần bổ sung';
+                    renderDetails = () => {
+                        const alignedColor = isAligned ? 'var(--neon-green)' : 'var(--neon-red)';
+                        const willLoop = step.data.triggers_loop_thinking === true;
+                        const loreCount = step.data.lore_count ?? 0;
+                        const memCount = step.data.memory_count ?? 0;
+                        const hasContext = step.data.has_rag_context === true;
+
+                        let nextAction = isAligned
+                            ? 'Context đủ → bỏ qua Loop Thinking, đi thẳng tới Prompt Build.'
+                            : (willLoop
+                                ? 'Context chưa đủ → kích hoạt Loop Thinking (web search).'
+                                : 'Context chưa đủ nhưng không chạy Loop Thinking (small talk / bypass).');
+
+                        return `
+                            <div class="inspector-card">
+                                <div class="inspector-card-header">
+                                    <span class="inspector-card-icon">⚖️</span>
+                                    <h3 class="inspector-card-title">Information Alignment Check (Đánh giá ngữ cảnh)</h3>
+                                </div>
+                                <div class="inspector-card-body">
+                                    <div class="key-value-list">
+                                        <div class="kv-item">
+                                            <span class="kv-label">Context đủ trả lời? (is_aligned)</span>
+                                            <span class="kv-value" style="font-weight: 600; color: ${alignedColor}">${isAligned}</span>
+                                        </div>
+                                        <div class="kv-item">
+                                            <span class="kv-label">Lý do đánh giá (reason)</span>
+                                            <div class="json-block" style="margin-top: 4px; font-family: 'Inter', sans-serif; white-space: pre-wrap; line-height: 1.5;">${step.data.reason || '(Không có lý do)'}</div>
+                                        </div>
+                                        <div class="kv-item">
+                                            <span class="kv-label">RAG context đã retrieve</span>
+                                            <span class="kv-value">${hasContext ? `Có (${loreCount} lore, ${memCount} memory)` : 'Không có / rỗng'}</span>
+                                        </div>
+                                        <div class="kv-item">
+                                            <span class="kv-label">Kích hoạt Loop Thinking?</span>
+                                            <span class="kv-value" style="font-weight: 600; color: ${willLoop ? 'var(--accent-red)' : 'var(--text-muted)'}">${willLoop}</span>
+                                        </div>
+                                        <div class="kv-item">
+                                            <span class="kv-label">Hành động tiếp theo</span>
+                                            <span class="kv-value" style="font-size: 13px; line-height: 1.5;">${nextAction}</span>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-                        </div>
-                    `;
+                        `;
+                    };
+                }
+                else if (step.name.startsWith('thinking_loop_cycle_')) {
+                    icon = '🔄';
+                    const cycleNum = step.name.replace('thinking_loop_cycle_', '');
+                    title = `Loop Thinking · Cycle ${cycleNum}`;
+                    const hasEnough = step.data.has_enough_info;
+                    const didSearch = !!(step.data.search_query && step.data.search_query.trim());
+                    meta = hasEnough ? 'đủ thông tin' : (didSearch ? 'đã search' : 'suy luận');
+                    renderDetails = () => {
+                        const thinkingText = step.data.thinking || '(Không có nội dung thinking)';
+                        const searchQuery = step.data.search_query || '';
+                        const searchResult = step.data.search_result || '';
+                        const hasEnoughInfo = step.data.has_enough_info;
+
+                        let searchSection = '';
+                        if (searchQuery) {
+                            searchSection = `
+                                <div class="kv-item">
+                                    <span class="kv-label">Truy vấn Web Search</span>
+                                    <span class="kv-value">"${searchQuery}"</span>
+                                </div>
+                                <div class="kv-item">
+                                    <span class="kv-label">Kết quả Search</span>
+                                    <div class="json-block" style="margin-top: 4px; max-height: 320px; overflow-y: auto; white-space: pre-wrap;">${searchResult || '(Trống)'}</div>
+                                </div>
+                            `;
+                        } else if (searchResult) {
+                            searchSection = `
+                                <div class="kv-item">
+                                    <span class="kv-label">Trạng thái tìm kiếm</span>
+                                    <span class="kv-value">${searchResult}</span>
+                                </div>
+                            `;
+                        }
+
+                        return `
+                            <div class="inspector-card">
+                                <div class="inspector-card-header">
+                                    <span class="inspector-card-icon">🔄</span>
+                                    <h3 class="inspector-card-title">Loop Thinking · Chu kỳ ${cycleNum}</h3>
+                                </div>
+                                <div class="inspector-card-body">
+                                    <div class="key-value-list">
+                                        <div class="kv-item">
+                                            <span class="kv-label">Đủ thông tin trả lời? (has_enough_info)</span>
+                                            <span class="kv-value" style="font-weight: 600; color: ${hasEnoughInfo ? 'var(--neon-green)' : 'var(--neon-red)'}">${hasEnoughInfo}</span>
+                                        </div>
+                                        <div class="kv-item">
+                                            <span class="kv-label">Quá trình suy luận (Thinking)</span>
+                                            <div class="json-block" style="margin-top: 4px; font-family: 'Inter', sans-serif; white-space: pre-wrap; line-height: 1.5;">${thinkingText}</div>
+                                        </div>
+                                        ${searchSection}
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    };
+                }
+                else if (step.name === 'context_building') {
+                    icon = '🧱';
+                    title = 'Prompt Build (budget)';
+                    const audit = step.data.budget_audit || {};
+                    const totalUsed = step.data.total_estimated_tokens ?? audit.total_used ?? 0;
+                    const ceiling = step.data.effective_ceiling ?? audit.effective_ceiling ?? 0;
+                    const withinBudget = step.data.within_budget ?? audit.within_budget;
+                    const modeLabel = step.data.budget_mode || audit.mode || 'unknown';
+                    meta = `ước lượng ${totalUsed} tok`;
+                    renderDetails = () => {
+                        const used = audit.used || {};
+                        const grants = audit.grants || {};
+                        const sectionLabels = {
+                            skeleton: 'Skeleton (persona+state+format)',
+                            user: 'User message',
+                            summary: 'Conversation summary',
+                            search: 'Search data',
+                            lore: 'Lore',
+                            memory: 'Memory',
+                            history: 'History (STM)',
+                        };
+                        let budgetBars = '';
+                        const barColors = {
+                            skeleton: '#b71c1c',
+                            user: '#757575',
+                            summary: '#ff7043',
+                            search: '#e53935',
+                            lore: '#ef5350',
+                            memory: '#ff5252',
+                            history: '#c62828',
+                        };
+                        Object.keys(sectionLabels).forEach(key => {
+                            const val = used[key] || 0;
+                            if (val <= 0) return;
+                            const pct = ceiling > 0 ? Math.min(100, Math.round((val / ceiling) * 100)) : 0;
+                            const grant = grants[key] !== undefined ? grants[key] : '—';
+                            budgetBars += `
+                                <div style="margin-bottom: 10px;">
+                                    <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 3px;">
+                                        <span>${sectionLabels[key]}</span>
+                                        <span class="font-mono">${val} tok <span style="color: var(--text-muted);">(grant: ${grant})</span></span>
+                                    </div>
+                                    <div style="background: rgba(255,255,255,0.06); border-radius: 4px; height: 8px; overflow: hidden;">
+                                        <div style="width: ${pct}%; height: 100%; background: ${barColors[key] || '#888'}; border-radius: 4px;"></div>
+                                    </div>
+                                </div>
+                            `;
+                        });
+
+                        const reallocated = (audit.reallocated_from || []).length
+                            ? audit.reallocated_from.join(', ')
+                            : 'Không có';
+                        const trimmed = (audit.trimmed_sections || []).length
+                            ? audit.trimmed_sections.join(', ')
+                            : 'Không có';
+                        const statusColor = withinBudget ? 'var(--neon-green)' : 'var(--neon-red)';
+                        const legacyTokens = step.data.token_budget_context;
+
+                        return `
+                            <div class="inspector-card">
+                                <div class="inspector-card-header">
+                                    <span class="inspector-card-icon">🧱</span>
+                                    <h3 class="inspector-card-title">Prompt Build · Ước lượng Budget (nội bộ)</h3>
+                                </div>
+                                <div class="inspector-card-body">
+                                    <div class="key-value-list">
+                                        <div class="kv-item" style="padding: 10px; background: rgba(255, 112, 67, 0.08); border-radius: 6px; border-left: 3px solid #ff7043;">
+                                            <span class="kv-label" style="color: #ff7043;">⚠ Không phải số token API</span>
+                                            <span class="kv-value" style="font-size: 12px; line-height: 1.5; margin-top: 4px; display: block;">
+                                                ${step.data.token_source_note || 'Dùng TokenEstimator (2 ký tự/token + headroom 5%) để cắt context. So sánh với Input API ở node LLM · Trả lời Chisa — hai số thường khác nhau.'}
+                                            </span>
+                                        </div>
+                                        <div class="kv-item">
+                                            <span class="kv-label">Nguồn số liệu</span>
+                                            <span class="kv-value font-mono">${step.data.token_source || 'budget_estimate'} (nội bộ)</span>
+                                        </div>
+                                        <div class="kv-item">
+                                            <span class="kv-label">Budget mode</span>
+                                            <span class="kv-value font-mono">${modeLabel}</span>
+                                        </div>
+                                        <div class="kv-item">
+                                            <span class="kv-label">Ước lượng tổng prompt / Trần flex</span>
+                                            <span class="kv-value font-mono"><b>${totalUsed}</b> / ${ceiling} token</span>
+                                        </div>
+                                        <div class="kv-item">
+                                            <span class="kv-label">Trong ngân sách (within_budget)</span>
+                                            <span class="kv-value" style="font-weight: 600; color: ${statusColor}">${withinBudget}</span>
+                                        </div>
+                                        <div class="kv-item">
+                                            <span class="kv-label">Priority profile (intent)</span>
+                                            <span class="kv-value font-mono">${audit.priority_profile || 'default'}</span>
+                                        </div>
+                                        <div class="kv-item">
+                                            <span class="kv-label">Flex pool ban đầu</span>
+                                            <span class="kv-value font-mono">${audit.flex_pool_initial ?? '—'} token</span>
+                                        </div>
+                                        <div class="kv-item">
+                                            <span class="kv-label">Tái phân bổ từ section trống</span>
+                                            <span class="kv-value">${reallocated}</span>
+                                        </div>
+                                        <div class="kv-item">
+                                            <span class="kv-label">Section bị cắt (trimmed)</span>
+                                            <span class="kv-value">${trimmed}</span>
+                                        </div>
+                                        <div class="kv-item">
+                                            <span class="kv-label">STM giữ lại</span>
+                                            <span class="kv-value">${step.data.history_count} tin nhắn</span>
+                                        </div>
+                                        ${legacyTokens ? `<div class="kv-item"><span class="kv-label">Legacy metric (system+user only)</span><span class="kv-value font-mono">${legacyTokens} tok</span></div>` : ''}
+                                        <div class="kv-item" style="margin-top: 12px;">
+                                            <span class="kv-label" style="margin-bottom: 8px;">Phân bổ token theo section</span>
+                                            ${budgetBars || '<span style="color: var(--text-muted);">Không có dữ liệu budget_audit</span>'}
+                                        </div>
+                                        <div class="kv-item" style="margin-top: 12px;">
+                                            <span class="kv-label">System Instruction gửi lên LLM</span>
+                                            <div class="json-block" style="margin-top: 4px; font-family: 'Inter', sans-serif; max-height: 320px; overflow-y: auto;">${step.data.system_prompt || ''}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    };
                 }
                 else if (step.name === 'llm_generation') {
                     icon = '🤖';
-                    title = 'LLM Generation';
+                    const purposeLabel = step.data.purpose_label || step.data.purpose || 'LLM call';
+                    title = llmPurposeTitle(step);
                     const tokens = step.data.total_tokens || 0;
-                    meta = `${tokens} tkn`;
+                    const callIdx = step.data.call_index != null ? `#${step.data.call_index}` : '';
+                    meta = `API ${tokens} tok ${callIdx}`;
                     renderDetails = () => {
                         const parsedJson = JSON.stringify(step.data.parsed_response, null, 2);
                         return `
                             <div class="inspector-card">
                                 <div class="inspector-card-header">
                                     <span class="inspector-card-icon">🤖</span>
-                                    <h3 class="inspector-card-title">LLM Generation (${step.data.model || 'model'})</h3>
+                                    <h3 class="inspector-card-title">${llmPurposeTitle(step)}</h3>
                                 </div>
                                 <div class="inspector-card-body">
                                     <div class="key-value-list">
+                                        <div class="kv-item" style="padding: 10px; background: rgba(76,175,80,0.08); border-radius: 6px; border-left: 3px solid var(--neon-green);">
+                                            <span class="kv-label" style="color: var(--neon-green);">✓ Số liệu API thực tế (provider)</span>
+                                            <span class="kv-value" style="font-size: 12px; line-height: 1.5; margin-top: 4px; display: block;">
+                                                Input/Output lấy từ <b>${step.data.model || 'model'}</b>. Chỉ tính <b>lần gọi LLM này</b>.
+                                                Tổng header trace = cộng tất cả các node LLM trong pipeline.
+                                            </span>
+                                        </div>
+                                        <div class="kv-item">
+                                            <span class="kv-label">Mục đích call (purpose)</span>
+                                            <span class="kv-value font-mono">${purposeLabel}</span>
+                                        </div>
+                                        <div class="kv-item">
+                                            <span class="kv-label">Thứ tự call trong request</span>
+                                            <span class="kv-value font-mono">${step.data.call_index != null ? `LLM call #${step.data.call_index}` : '—'}</span>
+                                        </div>
+                                        <div class="kv-item">
+                                            <span class="kv-label">Nguồn số liệu</span>
+                                            <span class="kv-value font-mono">${step.data.token_source || 'api'}</span>
+                                        </div>
                                         <div class="kv-item">
                                             <span class="kv-label">Model</span>
                                             <span class="kv-value font-mono">${step.data.model}</span>
                                         </div>
                                         <div class="kv-item">
-                                            <span class="kv-label">Token Breakdown</span>
-                                            <span class="kv-value">Input: <b>${step.data.input_tokens}</b> • Output: <b>${step.data.output_tokens}</b> • Tổng: <b>${tokens}</b></span>
+                                            <span class="kv-label">Token Breakdown (API)</span>
+                                            <span class="kv-value">Input: <b>${step.data.input_tokens}</b> • Output: <b>${step.data.output_tokens}</b> • Tổng call này: <b>${tokens}</b></span>
                                         </div>
                                         <div class="kv-item">
                                             <span class="kv-label">Finish Reason</span>
@@ -1151,10 +1739,14 @@
                             const newVal = newEm[key] || 0;
                             const diff = newVal - oldVal;
                             let diffHtml = '';
-                            if (diff > 0.001) {
-                                diffHtml = `<span class="val-change-up">▲+${Math.round(diff * 100)}%</span>`;
-                            } else if (diff < -0.001) {
-                                diffHtml = `<span class="val-change-down">▼${Math.round(diff * 100)}%</span>`;
+                            if (diff > 0.0001) {
+                                const diffPct = diff * 100;
+                                const formatted = Math.abs(diffPct) < 1.0 ? diffPct.toFixed(1) : Math.round(diffPct);
+                                diffHtml = `<span class="val-change-up">▲+${formatted}%</span>`;
+                            } else if (diff < -0.0001) {
+                                const diffPct = diff * 100;
+                                const formatted = Math.abs(diffPct) < 1.0 ? Math.abs(diffPct).toFixed(1) : Math.abs(Math.round(diffPct));
+                                diffHtml = `<span class="val-change-down">▼${formatted}%</span>`;
                             } else {
                                 diffHtml = `<span style="color: var(--text-muted); font-size: 11px;">--</span>`;
                             }
@@ -1182,11 +1774,11 @@
                                     <div class="key-value-list">
                                         <div class="kv-item">
                                             <span class="kv-label">Phân tích thái độ Senpai</span>
-                                            <span class="kv-value" style="font-weight: 500;">${activeUserSent ? `Nhận diện sắc thái: <span style="color: var(--accent-pink);">${activeUserSent}</span>` : 'Bình thường / Trung lập'}</span>
+                                            <span class="kv-value" style="font-weight: 500;">${activeUserSent ? `Nhận diện sắc thái: <span style="color: #ff8a80;">${activeUserSent}</span>` : 'Bình thường / Trung lập'}</span>
                                         </div>
                                         <div class="kv-item">
                                             <span class="kv-label">Biểu cảm nội tâm của Chisa</span>
-                                            <span class="kv-value" style="font-weight: 500;">${activeChisaSent ? `Cảm xúc bộc lộ: <span style="color: var(--accent-purple);">${activeChisaSent}</span>` : 'Bình thường'}</span>
+                                            <span class="kv-value" style="font-weight: 500;">${activeChisaSent ? `Cảm xúc bộc lộ: <span style="color: var(--accent-red);">${activeChisaSent}</span>` : 'Bình thường'}</span>
                                         </div>
                                         <div class="kv-item" style="margin-top: 15px;">
                                             <span class="kv-label">Biến thiên chỉ số cảm xúc ẩn</span>
@@ -1226,9 +1818,7 @@
                             <div class="key-value-list">
                                 <div class="kv-item">
                                     <span class="kv-label">Lời thoại của Chisa (Response text)</span>
-                                    <div class="message-bubble-inspect" style="background: rgba(147, 51, 234, 0.05); font-size: 14.5px; border-left-color: var(--accent-pink);">
-                                        ${trace.response ? trace.response.replace(/\n/g, '<br>') : 'Không có phản hồi đầu ra'}
-                                    </div>
+                                    <div class="message-bubble-inspect" style="background: rgba(229, 57, 53, 0.08); font-size: 14.5px; border-left: 3px solid var(--accent-red);">${trace.response ? trace.response.replace(/\n/g, '<br>') : 'Không có phản hồi đầu ra'}</div>
                                 </div>
                             </div>
                         </div>

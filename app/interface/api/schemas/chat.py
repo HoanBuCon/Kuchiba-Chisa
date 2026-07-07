@@ -4,7 +4,6 @@ from pydantic import BaseModel, Field
 class ChatRequest(BaseModel):
     user_id: str = Field(..., description="The unique identifier for the user (e.g. discord:12345 or web:user_id)")
     message: str = Field(..., description="The message text from the user")
-    pipeline: Optional[str] = Field(default=None, description="Optional override for the chat pipeline to use ('legacy' or 'production')")
     source: Optional[str] = Field(default="web", description="The origin source of the request ('web' or 'discord')")
     username: Optional[str] = Field(default=None, description="Optional username of the sender")
     channel_name: Optional[str] = Field(default=None, description="Optional channel name (if discord)")

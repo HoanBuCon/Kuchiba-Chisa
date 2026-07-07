@@ -6,4 +6,4 @@ Sonoro Sphere (Vực Thẳm Âm Vực) là những chiều không gian khép kí
 - Quy luật thực tại: Thời gian và không gian bị ngưng đọng, tạo ra các vòng lặp vô tận và tái hiện ảo ảnh quá khứ.
 - Cơ chế giải thể: Bắt buộc phải phá hủy lõi năng lượng trung tâm hoặc chém đứt sợi tơ định mệnh neo giữ.
 
-Sonoro Sphere Honami là nơi đã giam cầm Kuchiba Chisa suốt 20 năm, đóng băng thành phố trong một ngày duy nhất. Việc phá hủy Sonoro Sphere này yêu cầu năng lực cắt đứt liên kết cấu trúc đặc biệt của cô.
+Sonoro Sphere Honami là nơi đã giam cầm Kuchiba Chisa suốt 2 tháng (nhưng vì thời gian chênh lệch nên thực tế đã là 20 năm), đóng băng thành phố trong một ngày duy nhất. Việc phá hủy Sonoro Sphere này yêu cầu năng lực cắt đứt liên kết cấu trúc đặc biệt của cô.

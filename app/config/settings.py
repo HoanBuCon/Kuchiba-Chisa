@@ -43,8 +43,6 @@ class Settings(BaseSettings):
     # ── LLM — Provider ─────────────────────────────────────────
     LLM_PROVIDER: Literal["groq", "gemini", "deepseek"] = Field(default="groq", validation_alias="LLM_PROVIDER")
 
-    # ── Chat Pipeline ──────────────────────────────────────────
-    CHAT_PIPELINE: Literal["legacy", "production"] = Field(default="legacy", validation_alias="CHAT_PIPELINE")
 
     # ── LLM — Groq ─────────────────────────────────────────────
     GROQ_API_KEY: Optional[str] = None
@@ -55,14 +53,14 @@ class Settings(BaseSettings):
 
     # ── LLM — Gemini ─────────────────────────────────────────────
     GEMINI_API_KEY: Optional[str] = None
-    GEMINI_MODEL: str = "gemini-2.5-flash-lite"
+    GEMINI_MODEL: str = "gemini-flash-lite"
     GEMINI_MAX_TOKENS: int = 8192
     GEMINI_TEMPERATURE: float = Field(default=0.8, ge=0.0, le=2.0)
     GEMINI_TIMEOUT: int = 30
 
     # ── LLM — DeepSeek ──────────────────────────────────────────
     DEEPSEEK_API_KEY: Optional[str] = None
-    DEEPSEEK_MODEL: str = "deepseek-chat"
+    DEEPSEEK_MODEL: str = "deepseek-v4-flash"
     DEEPSEEK_MAX_TOKENS: int = 8192
     DEEPSEEK_TEMPERATURE: float = Field(default=0.8, ge=0.0, le=2.0)
     DEEPSEEK_TIMEOUT: int = 60
@@ -85,6 +83,16 @@ class Settings(BaseSettings):
     CELERY_BROKER_URL: str = "redis://localhost:6379/1"
     CELERY_RESULT_BACKEND: str = "redis://localhost:6379/2"
     WORKER_CONCURRENCY: int = 4
+
+    # ── Prompt Budget ──────────────────────────────────────────
+    PROMPT_BUDGET_SMALL_TALK: int = 5000
+    PROMPT_BUDGET_RAG: int = 8000
+    PROMPT_BUDGET_LOOP: int = 12000
+    PROMPT_CHARS_PER_TOKEN: int = 2
+    PROMPT_FLEX_RATIO: float = Field(default=0.08, ge=0.0, le=0.25)
+    PROMPT_SKELETON_HEADROOM: float = Field(default=0.05, ge=0.0, le=0.25)
+    PROMPT_HISTORY_MIN_TURNS: int = Field(default=4, ge=1, le=20)
+    PROMPT_REALLOCATE_EMPTY: bool = True
 
     # ── Derived Properties ─────────────────────────────────────
     @property

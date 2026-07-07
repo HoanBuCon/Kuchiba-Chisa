@@ -3,8 +3,11 @@ from __future__ import annotations
 from contextlib import asynccontextmanager
 from typing import AsyncIterator
 
+from pathlib import Path
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 from app.config.settings import settings
 from app.infrastructure.logging.logger import configure_logging, get_logger
@@ -16,6 +19,9 @@ from app.interface.api.routes import health, chat, visualizer
 # Configure logging before anything else
 configure_logging()
 log = get_logger(__name__)
+
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+ASSETS_DIR = PROJECT_ROOT / "assets"
 
 
 # ─── Application Lifespan ────────────────────────────────────────────────────
@@ -103,6 +109,11 @@ def create_app() -> FastAPI:
     app.include_router(chat.router, prefix="/api/v1", tags=["Chat"])
     app.include_router(visualizer.router, tags=["Visualizer"])
     # app.include_router(users.router, prefix="/api/v1", tags=["Users"])
+
+    if ASSETS_DIR.is_dir():
+        app.mount("/assets", StaticFiles(directory=str(ASSETS_DIR)), name="assets")
+    else:
+        log.warning("Assets directory not found; /assets static route disabled", path=str(ASSETS_DIR))
 
     return app
 

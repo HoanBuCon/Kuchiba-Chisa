@@ -20,8 +20,8 @@
 
 | Layer | Công nghệ |
 |---|---|
-| **Backend API** | Python 3.11, FastAPI, Uvicorn (ASGI) |
-| **ORM / Database** | SQLAlchemy (async), Alembic migrations, PostgreSQL 15 |
+| **Backend API** | Python 3.11, FastAPI + WebSockets, Uvicorn (ASGI) |
+| **ORM / Database** | SQLAlchemy (async), Alembic migrations, PostgreSQL 16 |
 | **Vector Database (LTM)** | Qdrant (self-hosted hoặc cloud) |
 | **LLM Provider** | Groq API — model `llama-3.1-8b-instant` |
 | **Embeddings** | FastEmbed local — `sentence-transformers/all-MiniLM-L6-v2` |
@@ -49,6 +49,35 @@ We successfully refactored and optimized the RAG trigger router in [rag_router.p
 
 ---
 
+## ⚡ Hybrid Intent + Tool Routing Optimization (Latest)
+
+Đã triển khai tối ưu theo hướng 2 lớp Fast-Path + Semantic fallback cho cả intent routing và tool routing:
+
+1. **Intent Layer (IntentClassifier) nâng độ chính xác**
+- L2 keyword matching chuyển sang word-boundary regex `(?<!\\w)...(?!\\w)` để giảm false positive do substring match.
+- Bổ sung `SYSTEM_ACTION` fast-path bằng regex cho nhóm lệnh tường minh: tóm tắt hội thoại, báo cáo cảm xúc, tra mạng.
+- L4 tiếp tục giữ vai trò fallback an toàn, trả `OTHER` khi không có rule hoặc semantic match.
+
+2. **Semantic Intent Layer (SemanticRouter) tăng độ quyết đoán**
+- `EXPLICIT_ANCHOR_BONUS` tăng từ `0.04` lên `0.06`.
+- Mở rộng anchors theo văn phong Nam (ví dụ: "ông anh tên gì nè", "em thích ăn gì nè") để tăng khả năng bao phủ truy vấn thực tế.
+
+3. **Tool Layer có Keyword Fast-Path trước embedding**
+- Thêm `KeywordToolRouter` trong `app/domain/services/tool_router.py`.
+- Nếu regex khớp lệnh tường minh, router chọn tool trực tiếp với score `1.0`.
+- Nếu không khớp mới fallback sang `SemanticToolRouter` (cosine similarity), giảm số lần embedding không cần thiết.
+
+4. **Test coverage routing được mở rộng**
+- Thêm mới `tests/unit/test_intent_classifier.py`.
+- Thêm mới `tests/unit/test_tool_router.py`.
+- Mở rộng `tests/unit/test_semantic_router.py` với case false positive và case ambiguous message.
+
+### 🧪 Verification
+- Chạy: `.\\venv\\Scripts\\pytest tests/unit/test_semantic_router.py tests/unit/test_intent_classifier.py tests/unit/test_tool_router.py -v`
+- Kết quả: **11 passed**.
+
+---
+
 ## ⚡ Web Search Optimization (Context-Aware & Natural Phrasing)
 
 Chúng tôi đã thiết kế và triển khai một cơ chế tối ưu hóa toàn diện cho Web Search Tool Pipeline để nâng cao chất lượng tìm kiếm và trải nghiệm trò chuyện:
@@ -67,6 +96,89 @@ Chúng tôi đã thiết kế và triển khai một cơ chế tối ưu hóa to
   - Chisa trả lời tự nhiên, lồng ghép mượt mà, không dùng câu dẫn máy móc ✅
 - **Unit Tests**: Chạy pytest thành công 100% không phát sinh lỗi biên dịch hay lỗi logic.
 
+---
+
+## ⚡ RAG Modularization & Loop Thinking Refactor
+
+Chúng tôi đã thực hiện tái cấu trúc toàn diện mã nguồn RAG hiện tại từ các module monolith rải rác (`rag_retriever.py`, `rag_router.py` và các phương thức đánh giá/suy nghĩ lặp trong `production_chat_engine.py`) thành một cấu trúc package modular chuyên nghiệp tại `app/domain/services/rag/`:
+
+1. **Kiến trúc Modular RAG Package**:
+   - `base.py`: Định nghĩa `ScoredMemory`, `RAGContext`.
+   - `reranker.py`: Đóng gói thuật toán tính toán keyword overlap (`KeywordOverlapReranker`) và hybrid scoring cho memories (`HybridMemoryScorer`).
+   - `retriever_memory.py` / `retriever_lore.py`: Tách biệt các class retriever chuyên biệt cho Memory và Lore để tăng tính cô lập và dễ mở rộng.
+   - `assessor.py`: Đóng gói bộ đánh giá độ thẳng hàng của thông tin (`ContextAssessor`).
+   - `thinking_loop.py`: Đóng gói agent suy nghĩ lặp (`ThinkingLoopAgent`) thực thi Web Search tự động bù đắp thông tin bị thiếu.
+   - `pipeline.py`: Class `RAGPipeline` điều phối E2E luồng RAG.
+2. **Dọn sạch Chat Engine & Tương thích ngược**:
+   - `ProductionChatEngine` được dọn sạch toàn bộ các phương thức private liên quan đến RAG và Loop Thinking, chỉ cần gọi một dòng duy nhất qua `rag_pipeline.retrieve_and_align(...)`.
+   - Thư viện `rag_retriever` cũ hoạt động như một Legacy Adapter để import và chuyển tiếp các hàm tương thích ngược từ package `rag` mới, đảm bảo code cũ (`chat_engine.py`) hoạt động bình thường mà không bị crash.
+
+### 🧪 Verification
+- **E2E Test Script**: Đã tạo và chạy kịch bản kiểm thử [test_rag_refactored_pipeline.py](file:///d:/Hoc_Tap/Code/Du_An_Ca_Nhan/Chisa_bot/kuchiba_chisa/scratch/test_rag_refactored_pipeline.py).
+  - Tương thích ngược legacy adapter: OK ✅
+  - Truy xuất Lore Parent-Child: OK ✅
+  - Bypass small talk: OK ✅
+  - Kích hoạt Loop Thinking (suy nghĩ lặp và Web Search tự sửa sai): OK ✅
+- **Unit Tests**: Chạy pytest thành công 100%.
+
+---
+
+## ⚡ Legacy Mode Removal & Services Restructuring
+
+Chúng tôi đã thực hiện loại bỏ hoàn toàn **Legacy Mode**, đưa **Production Pipeline** trở thành pipeline duy nhất mặc định của hệ thống, đồng thời tái cấu trúc thư mục lớp dịch vụ (`app/domain/services/`) phẳng và gọn gàng hơn:
+
+1. **Xóa bỏ Legacy Code & Config**:
+   - Xóa bỏ cấu hình `CHAT_PIPELINE` trong `settings.py` và `.env`. Mặc định hệ thống luôn chạy bằng Production Pipeline.
+   - Xóa các file dịch vụ legacy: `chat_engine.py` (legacy cũ), `context_builder.py` (legacy cũ), `rag_router.py` (cũ), và `rag_retriever.py` (legacy adapter cũ).
+   - Xóa file unit test của legacy RAG Router: `tests/unit/test_rag_router.py`.
+2. **Tái Cấu Trúc Lớp Dịch Vụ Phẳng**:
+   - Chuyển tất cả các file từ `app/domain/services/production_pipeline/` ra phẳng thư mục `app/domain/services/`.
+   - Đổi tên `production_chat_engine.py` thành `chat_engine.py` (class `ChatEngine`).
+   - Đổi tên `production_context_builder.py` thành `context_builder.py` (class `ContextBuilder`).
+   - Di chuyển toàn bộ các modular tools từ `production_pipeline/tools/` sang `app/domain/services/tools/`.
+   - Xóa bỏ thư mục rỗng `production_pipeline/`.
+3. **Cập Nhật Import Đường Dẫn Toàn Codebase**:
+   - Sửa toàn bộ import từ `app.domain.services.production_pipeline.*` thành `app.domain.services.*` trong codebase, routes, test suite và các scratch files.
+   - API Endpoint `/chat` giờ đây chỉ khởi tạo duy nhất `ChatEngine` mới và chạy trực tiếp, loại bỏ hoàn toàn switch-logic.
+
+### 🧪 Verification
+- **E2E Test Script**: Cập nhật và chạy thành công [test_rag_refactored_pipeline.py](file:///d:/Hoc_Tap/Code/Du_An_Ca_Nhan/Chisa_bot/kuchiba_chisa/scratch/test_rag_refactored_pipeline.py).
+  - Tương thích ngược gọi trực tiếp Memory & Lore retrievers thành công ✅
+  - Loop Thinking (Iterative Web Search) chạy qua 2 cycles cào DuckDuckGo và deep page thành công ✅
+- **Unit Tests**: Chạy pytest thành công 100% (5 unit tests còn lại đều PASSED).
+
+---
+
+## ⚡ Dynamic Context Budgeting (Quản lý Ngân sách Động)
+
+Để tối ưu chi phí gọi API mà không bóp nghẹt khả năng tự sửa sai (Loop Thinking) hoặc làm mất mạch chat tự nhiên, hệ thống tích hợp `ContextBudgetManager` với cấu hình ngân sách linh hoạt:
+
+1. **Phân bổ ngân sách động theo trạng thái tin nhắn**:
+   - **Small Talk (Bypass RAG):** Giới hạn tối đa **5000 tokens** (dành toàn bộ không gian còn lại cho History).
+   - **RAG Talk (Chat thông thường):** Giới hạn tối đa **8000 tokens** (Lore tối đa 1200, Memory tối đa 800, còn lại cho History).
+   - **Loop Thinking (Web Search sâu):** Giới hạn tối đa **12000 tokens** (Lore tối đa 1500, Memory tối đa 1000, phần còn lại cực rộng rãi dành cho History & Deep Page Web Search).
+2. **Sửa đổi hệ số token thực tế**:
+   - Cấu hình lại hệ số token tiếng Việt thành **2 ký tự ≈ 1 token** (phù hợp với thực tế mã hóa của tokenizer ngoại quốc như Llama/DeepSeek), tránh hiện tượng dội token thực tế vượt quá ngân sách mong muốn.
+
+### 🧪 Verification
+- **Test Case dynamic budget**: Đã tạo kịch bản [test_budget_enforcement.py](file:///d:/Hoc_Tap/Code/Du_An_Ca_Nhan/Chisa_bot/kuchiba_chisa/scratch/test_budget_enforcement.py) xác thực khả năng cắt tỉa thông minh:
+  - *Small Talk:* Loại bỏ hoàn toàn RAG. Giữ nguyên vẹn 20 messages của History (2873 tokens). Tổng cộng 2873 tokens (Đạt yêu cầu <= 4200) ✅.
+  - *RAG Talk:* Lore cắt còn 4 chunks (996 tokens <= 1200). Memory cắt còn 4 chunks (800 tokens <= 800). History cắt giữ 36 messages mới nhất. Tổng cộng 7088 tokens (Đạt yêu cầu <= 7200) ✅.
+  - *Loop Thinking:* Lore giữ trọn 5 chunks (1245 tokens). Memory giữ trọn 5 chunks (1000 tokens). History giữ được tới **61 messages** mới nhất nhờ ngân sách mở rộng. Tổng cộng 11190 tokens (Đạt yêu cầu <= 11200) ✅.
+
+---
+
+## ⚡ Real-Time Pipeline Visualizer (Bảng điều khiển trực quan Chisa AI)
+
+Để theo dõi, gỡ lỗi và đánh giá các hành vi nghiệp vụ ẩn của bot (như trích xuất RAG, suy luận Loop Thinking, prompt budget, thay đổi cảm xúc định lượng), dự án tích hợp một trang dashboard giám sát thời gian thực:
+- **Địa chỉ:** `http://localhost:8000/visualizer`
+- **Công nghệ:** FastAPI WebSocket + Vanilla JS + HTML5.
+- **Tính năng nổi bật:**
+  1. **Danh sách Execution Traces:** Hiển thị thời gian thực tất cả các tin nhắn gửi đến bot, trạng thái xử lý, tổng tokens tiêu thụ và thời gian phản hồi/độ trễ (latency).
+  2. **Pipeline Node Steps Tree:** Sơ đồ dạng cây thể hiện trình tự logic đi của request: `User Input` ➔ `Intent Routing` ➔ `Tool Router` ➔ `RAG` ➔ `Alignment Check` ➔ `Loop Thinking (Cycle 1 & 2)` ➔ `Prompt Build (budget)` ➔ `Chisa Response`.
+  3. **Node Inspector:** Click vào từng node để xem chi tiết JSON payload thô, các đoạn văn bản (lore/memory) được truy xuất, query tìm kiếm DuckDuckGo, nội dung trang web gốc được cào (Deep Page Content) và cấu trúc prompt gửi lên LLM.
+  4. **Thời gian gửi & Emotion Deltas:** Hiển thị thời gian gửi chính xác dạng local time (`toLocaleString`). Biểu đồ theo dõi trạng thái cảm xúc ẩn của Chisa chỉ ra các mức độ tăng giảm với độ chính xác thập phân (ví dụ: `▲+0.2%` hoặc `▼1%`), giúp debug thuật toán suy hao cảm xúc DEHA cực kỳ chính xác.
+  5. **Thiết kế Responsive:** Sử dụng CSS media queries để tự động co giãn và chuyển sang bố cục dọc (stack) mượt mà trên máy tính bảng và thiết bị di động.
 
 ---
 
@@ -96,7 +208,7 @@ sequenceDiagram
     participant API as FastAPI Route
     participant CE as ChatEngine
     participant EE as EmotionEngine
-    participant RAG as RAG Retriever
+    participant RAG as RAGPipeline
     participant DB as PostgreSQL
     participant QD as Qdrant (Vector DB)
     participant LLM as Groq/Gemini API
@@ -108,9 +220,10 @@ sequenceDiagram
     CE->>DB: Get User, Conversation, History
     CE->>DB: Save User Message (STM)
     
-    Note over CE,QD: 2. RAG Routing & Retrieval
-    CE->>RAG: retrieve_lore / retrieve_memories (If triggered)
-    QD-->>CE: Relevant Lore Chunks & Memories
+    Note over CE,RAG: 2. E2E RAG Pipeline
+    CE->>RAG: retrieve_and_align(...)
+    QD-->>RAG: Lore Chunks & Memories
+    RAG-->>CE: aligned RAGContext (with Loop Thinking search results if unaligned)
     
     Note over CE,LLM: 3. Unified Generation & Sentiment
     CE->>CE: ContextBuilder.build(emotion, lore, memories, history)
@@ -412,7 +525,7 @@ python scripts/clear_temp_user_memory.py
 | Persona em/Senpai (70B model) | ✅ Cải thiện đáng kể |
 | Long-Term Memory write (Qdrant) | ✅ Hoàn thiện (Tự động lưu qua MemoryManager) |
 | Emotion state update logic | ✅ Hoàn thiện (Tự động cập nhật qua EmotionEngine) |
-| Discord Bot integration | 🔲 Chưa làm |
+| Discord Bot integration | ✅ Hoàn thiện (Tương tác qua slash commands & direct channels) |
 | Authentication / user login | 🔲 Dùng device UUID tạm thời |
 | Production deployment | 🔲 Dockerfile có, chưa deploy |
-| Test coverage | 🔲 `tests/` còn trống |
+| Test coverage | ✅ Hoàn thiện (25 unit/integration tests passed) |

@@ -1,59 +1,56 @@
 import time
 import math
 import uuid
-from typing import Optional
+import asyncio
+from typing import Tuple, Dict, Any, List
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
 
 from app.domain.interfaces.embedding_provider import IEmbeddingProvider
 from app.infrastructure.llm.adapters.base import BaseLLMAdapter, StructuredPrompt
-from app.domain.services.rag_retriever import rag_retriever
 from app.infrastructure.database.models.emotion_state import EmotionState
-from app.infrastructure.database.models.user_stats import UserStats
-from app.infrastructure.database.models.message import Message
-from app.domain.services.context_builder import ContextBuilder
-from app.domain.services.memory_manager import MemoryManager
+from app.infrastructure.vector.qdrant.qdrant_service import qdrant_service, MemoryPayload
 from app.domain.services.emotion_engine import EmotionEngine
-from app.domain.services.rag_router import RAGRouter
-from app.domain.services.context_budget_manager import ContextBudgetManager
-from app.domain.services.memory_summarizer import MemorySummarizer
+from app.domain.services.intent_classifier import IntentClassifier, ChatIntent
+from app.domain.services.tool_router import LLMToolRouter
+from app.domain.services.context_builder import ContextBuilder
+from app.domain.services.budget_mode import BudgetMode
+from app.domain.services.memory_extractor import MemoryExtractor
 from app.infrastructure.database.repositories.user_repository import SqlAlchemyUserRepository
 from app.infrastructure.database.repositories.emotion_repository import SqlAlchemyEmotionRepository
 from app.infrastructure.database.repositories.conversation_repository import SqlAlchemyConversationRepository
-import asyncio
 from app.infrastructure.logging.logger import get_logger
 from app.shared.utils.query_cleaner import clean_query_for_rag
+from app.shared.utils.user_identity import normalize_user_id
+from app.domain.services.rag import rag_pipeline
 
 log = get_logger(__name__)
 
 class ChatEngine:
     """
-    Core orchestrator for Multi-User emotional chat interactions.
-    Handles Data Fetching, Attachment Growth computation, Prompt Engineering, and saving.
+    Production-grade chat orchestrator using Phase 1-10 pipeline.
     """
     def __init__(
-        self, 
-        embedder: IEmbeddingProvider, 
+        self,
+        embedder: IEmbeddingProvider,
         llm: BaseLLMAdapter,
         context_builder: ContextBuilder,
-        memory_manager: MemoryManager
+        memory_extractor: MemoryExtractor,
     ):
         self.embedder = embedder
         self.llm = llm
         self.context_builder = context_builder
-        self.memory_manager = memory_manager
+        self.memory_extractor = memory_extractor
+        self.intent_classifier = IntentClassifier(llm=llm, embedder=embedder)
+        self.tool_router = LLMToolRouter(llm=llm, embedder=embedder)
         self.emotion_engine = EmotionEngine()
-        self.memory_summarizer = MemorySummarizer(llm=llm, memory_manager=memory_manager)
 
     async def get_emotion_state(self, session: AsyncSession, user_id: str) -> EmotionState:
-        """Public method to fetch/initialize the current emotional state of Chisa."""
-        user_uuid = uuid.UUID(user_id)
+        user_uuid = normalize_user_id(user_id)
         emotion_repo = SqlAlchemyEmotionRepository(session)
         return await emotion_repo.get_emotion_state(user_uuid)
 
     async def get_history(self, session: AsyncSession, user_id: str, limit: int = 50) -> list[dict[str, str]]:
-        """Public method to fetch conversation history for the Web UI on load."""
-        user_uuid = uuid.UUID(user_id)
+        user_uuid = normalize_user_id(user_id)
         user_repo = SqlAlchemyUserRepository(session)
         conv_repo = SqlAlchemyConversationRepository(session)
         
@@ -61,21 +58,11 @@ class ChatEngine:
         conv_id = await conv_repo.get_or_create_conversation(user_uuid)
         return await conv_repo.get_recent_history(user_uuid, conv_id, limit)
 
-    async def chat(self, session: AsyncSession, user_id: str, user_message: str) -> tuple[str, dict]:
-        """
-        Orchestrates the entire multi-user chat cycle using Single-Call Joint Orchestration:
-        1. Load User Stats, Emotion, Conversation History
-        2. Format Emotions & Calculate Attachment Bonus
-        3. Retrieve RAG Memories & Lore via Hybrid Scoring
-        4. Build Joint System Prompt Context (incorporating emotional states)
-        5. Call LLM (Single-call parses Chisa's response AND user sentiment jointly)
-        6. Perform single Emotion update based on parsed sentiment flags
-        7. Save Assistant Message, update interaction count & trigger background summarizers
-        """
+    async def chat(self, session: AsyncSession, user_id: str, user_message: str) -> Tuple[str, Dict[str, float]]:
         log.info("Starting ChatEngine cycle", user_id=user_id)
         
         # 1. Initialize repositories & Load context
-        user_uuid = uuid.UUID(user_id)
+        user_uuid = normalize_user_id(user_id)
         user_repo = SqlAlchemyUserRepository(session)
         emotion_repo = SqlAlchemyEmotionRepository(session)
         conv_repo = SqlAlchemyConversationRepository(session)
@@ -85,21 +72,40 @@ class ChatEngine:
         emotion = await emotion_repo.get_emotion_state(user_uuid)
         conv_id = await conv_repo.get_or_create_conversation(user_uuid)
         
-        history = await conv_repo.get_recent_history(user_uuid, conv_id)
-        
-        # NOTE: User message is saved AFTER successful LLM generation (see below)
-        # to prevent duplicate entries when the client retries on 500 errors.
+        # Fetch conversation summary and messages count
+        from sqlalchemy import select, func
+        from app.infrastructure.database.models.conversation import Conversation
+        from app.infrastructure.database.models.message import Message
 
+        conv_stmt = select(Conversation).where(Conversation.id == conv_id)
+        conv_obj = (await session.execute(conv_stmt)).scalar_one_or_none()
+        conv_summary = conv_obj.summary if conv_obj else None
+
+        msg_count_stmt = (
+            select(func.count(Message.id))
+            .where(
+                Message.conversation_id == conv_id,
+                Message.is_success == True
+            )
+        )
+        total_msgs = (await session.execute(msg_count_stmt)).scalar() or 0
+
+        # Trigger auto-summarize if count >= 20
+        if total_msgs >= 20 and (not conv_summary or total_msgs % 10 == 0):
+            asyncio.create_task(self._auto_summarize_conversation(user_id, conv_id))
+
+        history = await conv_repo.get_recent_history(user_uuid, conv_id, limit=40)
+
+        # Initialize ContextVars for request-scoped logging
+        from app.infrastructure.logging.llm_logger import request_question_idx, request_turn_idx, log_routing_transaction
+        
+        question_idx = len([m for m in history if m.get("role") == "user"]) + 1
+        request_question_idx.set(question_idx)
+        request_turn_idx.set(1)
+        
         try:
-            # 2. Smart RAG Retrieval
-            # RAG Router only needed for memory (keyword-based triggers remain useful for memory recall)
-            rag_decisions = RAGRouter.should_retrieve(user_message)
-            
-            # Attachment bonus formulation (raw value based on interaction history)
-            # This bonus is dampened later based on final emotional state
+            # 2. Formulate Attachment Bonus and current emotions snapshot
             attachment_bonus_raw = math.log(max(1, stats.interaction_count)) * 0.05
-            
-            # Format emotions for system context
             current_emotions = {
                 "joy": emotion.joy,
                 "sadness": emotion.sadness,
@@ -107,122 +113,140 @@ class ChatEngine:
                 "irritation": emotion.irritation,
                 "attachment": emotion.attachment + attachment_bonus_raw
             }
+
+            # 3. Classify intent (Checking small talk regex fast-path first)
+            is_st = IntentClassifier.is_small_talk(user_message)
             
-            lore_chunks = []
-            memories = []
-            
-            # Lore: Always search with vector similarity + threshold filtering
-            LORE_THRESHOLD = 0.35
-            is_small_talk = RAGRouter.is_small_talk(user_message)
+            query_vector = None
+            cleaned_query = ""
+            if not is_st:
+                cleaned_query = clean_query_for_rag(user_message)
+                query_vector = await self.embedder.embed_text(cleaned_query)
+                
+            intents = await self.intent_classifier.classify(user_message, query_vector)
+            intent_values = [i.value for i in intents]
+            log.info("Production query classified", intents=intent_values, user_id=user_id)
 
             from app.infrastructure.logging.pipeline_tracker import pipeline_tracker
             pipeline_tracker.add_step("intent_classification", {
-                "is_small_talk": is_small_talk,
-                "should_retrieve_memory": rag_decisions.get("use_memory", False)
+                "is_small_talk": is_st,
+                "intents": intent_values,
+                "cleaned_query": cleaned_query
             })
             
-            if not is_small_talk:
-                cleaned_query = clean_query_for_rag(user_message)
-                vector = await self.embedder.embed_text(cleaned_query)
-                
-                # Always search lore — let the score decide relevance
-                raw_lore = await rag_retriever.retrieve_lore(
-                    query_vector=vector,
-                    query_text=cleaned_query,
-                    top_k=10,
-                    score_threshold=0.3,  # Qdrant pre-filter (loose)
+            # 4. Check for System Actions (Tầng 2 - LLM Tool Router)
+            tool_output_msg = None
+            tool_name = "none"
+            tool_score = 0.0
+            tool_res = None
+            if ChatIntent.SYSTEM_ACTION in intents:
+                tool_res = await self.tool_router.execute(
+                    user_message=cleaned_query or user_message,  # dùng cleaned để tránh Discord emoji
+                    session=session,
+                    user_id=user_id,
+                    query_vector=query_vector,
+                    history=history
                 )
-                # Apply quality threshold — only keep genuinely relevant chunks
-                lore_chunks = [text for text, score in raw_lore if score >= LORE_THRESHOLD]
-                
-                log.info(
-                    "Lore vector search results",
-                    total_candidates=len(raw_lore),
-                    above_threshold=len(lore_chunks),
-                    threshold=LORE_THRESHOLD,
-                    scores=[f"{score:.3f}" for _, score in raw_lore[:5]],
-                )
-                
-                # Memory: Still uses keyword triggers (memory recall is inherently intent-driven)
-                if rag_decisions["use_memory"]:
-                    memories = await rag_retriever.retrieve_memories(
-                        collection="emotional_memories",
-                        query_vector=vector,
-                        user_id=user_id,
-                        current_emotion=current_emotions,
-                        top_k=5
-                    )
-            
-            # Update rag_decisions to reflect actual retrieval results (for logging)
-            rag_decisions["use_lore"] = len(lore_chunks) > 0
+                tool_output_msg = tool_res.get("message")
+                tool_name = tool_res.get("tool", "none")
+                tool_score = tool_res.get("score", 0.0)
+                log.info("Tool executed from SYSTEM_ACTION intent", tool_res=tool_res)
 
-            pipeline_tracker.add_step("rag_retrieval", {
-                "lore_collections_queried": ["character_lore", "world_lore", "story_lore"] if not is_small_talk else [],
-                "retrieved_lore_chunks": lore_chunks,
-                "retrieved_memories": [m.text_content if hasattr(m, "text_content") else str(m) for m in memories]
+            # Log Semantic Routing & Tool Decisions
+            await log_routing_transaction(
+                user_message=user_message,
+                is_small_talk=is_st,
+                intents=intent_values,
+                tool_name=tool_name,
+                tool_score=tool_score,
+                tool_result=tool_output_msg or ""
+            )
+
+            pipeline_tracker.add_step("tool_routing", {
+                "tool_name": tool_name,
+                "tool_score": tool_score,
+                "tool_result": tool_output_msg or ""
             })
+
+            if tool_name == "web_search" and tool_res:
+                from app.domain.services.tools.web_search import web_search_trace_payload
+                pipeline_tracker.add_step(
+                    "web_search",
+                    web_search_trace_payload(
+                        tool_res,
+                        source="system_action",
+                        original_message=user_message,
+                    ),
+                )
             
-            # RAG Emotion Seeding based on retrieved context
-            SAD_LORE_TERMS = {"buồn", "cô đơn", "cô độc", "sợ hãi", "buồn bã", "đau thương", "vòng lặp", "mất mát", "chia ly", "sonoro sphere", "honami", "overclock"}
-            user_message_lower = user_message.lower()
-            
-            # Only scan and seed emotions if the user's message itself touches upon tragic/sad terms
-            if any(term in user_message_lower for term in SAD_LORE_TERMS):
-                matches_count = 0
-                for chunk in lore_chunks:
-                    chunk_lower = chunk.lower()
-                    for term in SAD_LORE_TERMS:
-                        matches_count += chunk_lower.count(term)
-                for m in memories:
-                    text = m.text_content if hasattr(m, "text_content") else str(m)
-                    text_lower = text.lower()
-                    for term in SAD_LORE_TERMS:
-                        matches_count += text_lower.count(term)
-    
-                if matches_count > 0:
-                    seeding_sadness = min(0.35, matches_count * 0.06)
-                    seeding_irritation = min(0.20, matches_count * 0.03)
-                    emotion.sadness = min(1.0, emotion.sadness + seeding_sadness)
-                    emotion.irritation = min(1.0, emotion.irritation + seeding_irritation)
-                    emotion.updated_at = int(time.time() * 1000)
-                    log.info(
-                        "RAG Emotion Seeding applied",
-                        matches_count=matches_count,
-                        seeding_sadness=seeding_sadness,
-                        seeding_irritation=seeding_irritation,
-                        new_sadness=emotion.sadness,
-                        new_irritation=emotion.irritation
-                    )
-    
-            # Token Budget Management
-            trimmed_lore, trimmed_memories, trimmed_history = ContextBudgetManager.enforce_budget(
-                lore_chunks=lore_chunks,
-                memories=memories,
-                history=history
+            # 5. E2E RAG Pipeline (Retrieval, Context Assessment, and Loop Thinking)
+            rag_context = await rag_pipeline.retrieve_and_align(
+                session=session,
+                user_id=user_id,
+                user_message=user_message,
+                query_vector=query_vector,
+                cleaned_query=cleaned_query,
+                intents=intents,
+                current_emotions=current_emotions,
+                history=history,
+                llm=self.llm,
+                embedder=self.embedder,
+                web_search_tool=self.tool_router.tool_map.get("web_search"),
+                is_small_talk=is_st
             )
             
-            # 3. Prompt Engineering via ContextBuilder using trimmed context
-            prompt = self.context_builder.build(
+            lore_chunks = rag_context.lore_chunks
+            memories = rag_context.memories
+            tool_output_msg = rag_context.tool_output_msg
+            is_aligned = rag_context.is_aligned
+            alignment_reason = rag_context.alignment_reason
+
+
+
+            # 7. Pass search results / tool output through context builder (NOT as user message)
+            # Injecting into user_message would confuse the LLM — it would treat results as user input.
+            # Instead, we pass it separately and let the context builder place it in the system prompt.
+            final_user_message = user_message
+
+            budget_mode = BudgetMode.resolve(
+                is_small_talk=is_st,
+                has_thinking_steps=len(rag_context.thinking_steps) > 0,
+            )
+
+            build_result = self.context_builder.build(
                 emotion=emotion,
                 attachment_bonus=attachment_bonus_raw,
-                memories=trimmed_memories,
-                lore_chunks=trimmed_lore,
-                history=trimmed_history,
-                user_message=user_message,
-                rag_decisions=rag_decisions
+                memories=memories,
+                lore=lore_chunks,
+                history=history,
+                user_message=final_user_message,
+                intent_name=", ".join(intent_values),
+                tool_result=tool_output_msg or "",
+                conversation_summary=conv_summary,
+                budget_mode=budget_mode,
             )
+            prompt = build_result.prompt
+            budget_audit = build_result.audit
 
             pipeline_tracker.add_step("context_building", {
                 "system_prompt": prompt.system,
                 "history_count": len(prompt.history),
-                "token_budget_context": len(prompt.system) // 4 + len(prompt.user_message) // 4
+                "budget_mode": budget_mode.value,
+                "budget_audit": budget_audit.to_dict(),
+                "total_estimated_tokens": budget_audit.total_used,
+                "effective_ceiling": budget_audit.effective_ceiling,
+                "within_budget": budget_audit.within_budget,
+                "token_source": "budget_estimate",
+                "token_source_note": "Ước lượng nội bộ (2 ký tự/token + headroom). Khác số Input API ở bước LLM · Trả lời Chisa.",
             })
             
-            # 4. LLM Generation (Unified Single-Call)
+            # 6. LLM Generation
+            from app.infrastructure.logging.llm_logger import llm_call_purpose
+            llm_call_purpose.set("chat_response")
             response = await self.llm.generate(prompt)
             chisa_reply = response.parsed.get("response")
             
-            # Fallback if the model hallucinated the JSON key but returned valid JSON
+            # Fallback if parsing has mismatched JSON key but correct raw JSON string
             if not chisa_reply and response.parsed:
                 for val in response.parsed.values():
                     if isinstance(val, str) and val.strip():
@@ -231,30 +255,28 @@ class ChatEngine:
                         
             chisa_reply = chisa_reply or ""
             if not chisa_reply.strip():
-                log.warning("LLM returned empty response or failed to parse", user_id=user_id)
+                log.warning("LLM returned empty response or failed to parse JSON in production pipeline", user_id=user_id)
                 raise ValueError("Empty response from LLM")
-            
-            # Extract sentiment flags safely from the unified response
-            user_sentiment = response.parsed.get("user_sentiment") or {}
+                
+            # Extract sentiment flags safely with defensive type checking
+            user_sentiment = response.parsed.get("user_sentiment")
             if not isinstance(user_sentiment, dict):
                 user_sentiment = {}
-                
             is_positive = user_sentiment.get("is_positive", False)
             is_negative = user_sentiment.get("is_negative", False)
             is_rude = user_sentiment.get("is_rude", False)
             is_neutral = user_sentiment.get("is_neutral", True)
             
-            chisa_sentiment = response.parsed.get("chisa_sentiment") or {}
+            chisa_sentiment = response.parsed.get("chisa_sentiment")
             if not isinstance(chisa_sentiment, dict):
                 chisa_sentiment = {}
-                
             chisa_sad = chisa_sentiment.get("is_sad", False)
             chisa_happy = chisa_sentiment.get("is_happy", False)
             chisa_annoyed = chisa_sentiment.get("is_annoyed", False)
             chisa_flustered = chisa_sentiment.get("is_flustered", False)
             
-            # 5. Cập nhật Emotion State based on LLM Flags & Save to database for next turn
-            emotion_delta = self.emotion_engine.update(
+            # 7. Update Emotion State
+            self.emotion_engine.update(
                 emotion,
                 is_positive=is_positive,
                 is_negative=is_negative,
@@ -290,70 +312,47 @@ class ChatEngine:
                 }
             })
             
-            # Calculate memory importance from MemoryManager
-            importance_score = self.memory_manager.calculate_importance(user_message, emotion_delta)
-            
-            # 6. Post-processing
+            # 8. Save messages to Postgres
             total_tokens = response.input_tokens + response.output_tokens
-            log.info(
-                "LLM Token Consumption", 
-                user_id=user_id, 
-                input_tokens=response.input_tokens, 
-                output_tokens=response.output_tokens, 
-                total_tokens=total_tokens
-            )
-    
-            # Save user message AFTER successful LLM call (prevents duplicates on retry)
             await conv_repo.save_message(conv_id, user_uuid, "user", user_message, is_success=True)
-            
             await conv_repo.save_message(
-                conv_id, 
-                user_uuid, 
-                "assistant", 
-                chisa_reply, 
+                conv_id,
+                user_uuid,
+                "assistant",
+                chisa_reply,
                 token_count=total_tokens,
                 is_success=True
             )
-            
-            # LTM Write: If important enough, save to Qdrant (Fire & Forget but awaited here)
-            if importance_score >= 0.65:
-                await self.memory_manager.save_emotional_memory(
-                    user_id=user_id,
-                    conversation_id=str(conv_id),
-                    message_content=user_message,
-                    importance_score=importance_score
-                )
             
             stats.interaction_count += 1
             stats.last_seen = int(time.time() * 1000)
             await user_repo.update_stats(stats)
             
-            # Background: Trigger long-term summarization every 40 interactions
-            if stats.interaction_count > 0 and stats.interaction_count % 40 == 0:
-                full_history = await self.get_history(session, user_id, limit=40)
-                if len(full_history) >= 20:
-                    asyncio.create_task(
-                        self.memory_summarizer.summarize_and_store(user_id, str(conv_id), full_history)
+            # 9. Trigger background fact extraction (asynchronous task)
+            asyncio.create_task(
+                self.memory_extractor.extract_and_store(
+                    user_id=user_id,
+                    conversation_id=str(conv_id),
+                    user_message=user_message
+                )
+            )
+            
+            # 10. Periodically trigger background summarization (every 50 interactions)
+            if stats.interaction_count > 0 and stats.interaction_count % 50 == 0:
+                asyncio.create_task(
+                    self._summarize_and_store_memories(
+                        user_id=user_id,
+                        conv_id=str(conv_id),
+                        history=history[-40:]
                     )
-            
-            
-            # Re-compute emotions after update so the frontend gets the true post-chat/time-decayed emotional state
-            # Dampen attachment_bonus when Chisa is emotionally withdrawing (hurt + irritated)
-            # This prevents the interaction-count bonus from overriding genuine emotional distress
+                )
+                
+            # Recompute dampening details for return
             attachment_bonus = attachment_bonus_raw
             if emotion.sadness > 0.15 and emotion.irritation > 0.10:
-                # Dampening scales with severity: mild hurt = 70% bonus, severe = near-0% bonus
                 dampen_factor = max(0.0, 1.0 - (emotion.sadness * emotion.irritation * 3.0))
                 attachment_bonus = attachment_bonus_raw * dampen_factor
-                log.debug(
-                    "Attachment bonus dampened",
-                    raw=f"{attachment_bonus_raw:.4f}",
-                    dampened=f"{attachment_bonus:.4f}",
-                    dampen_factor=f"{dampen_factor:.3f}",
-                    sadness=f"{emotion.sadness:.3f}",
-                    irritation=f"{emotion.irritation:.3f}",
-                )
-            
+                
             updated_emotions = {
                 "joy": emotion.joy,
                 "sadness": emotion.sadness,
@@ -362,13 +361,137 @@ class ChatEngine:
                 "attachment": emotion.attachment + attachment_bonus
             }
             
-            log.info("ChatEngine cycle complete", user_id=user_id, attachment_bonus=attachment_bonus, attachment_bonus_raw=attachment_bonus_raw)
+            log.info("ChatEngine cycle complete", user_id=user_id)
             return chisa_reply, updated_emotions
+            
         except Exception as e:
-            log.warning("Chat generation failed, saving user message as failed/unsuccessful", user_id=user_id, error=str(e))
+            log.warning("Production chat generation failed, saving user message as failed", user_id=user_id, error=str(e))
             try:
                 await session.rollback()
                 await conv_repo.save_message(conv_id, user_uuid, "user", user_message, is_success=False)
             except Exception as db_err:
-                log.error("Failed to save failed message to database", error=str(db_err))
+                log.error("Failed to save failed message to database in production pipeline", error=str(db_err))
             raise e
+
+    async def _summarize_and_store_memories(self, user_id: str, conv_id: str, history: list[dict[str, str]]) -> None:
+        """
+        Background task summarizing chat and saving summary points to the memories collection.
+        """
+        log.info("Starting background summarization for memories collection", user_id=user_id)
+        chat_transcript = "\n".join([f"{msg['role'].upper()}: {msg['content']}" for msg in history])
+        
+        RESPONSE_SCHEMA = {
+            "type": "object",
+            "properties": {
+                "summary_points": {
+                    "type": "array",
+                    "items": {"type": "string"}
+                }
+            },
+            "required": ["summary_points"]
+        }
+        
+        system_instructions = (
+            "You are an AI Memory Summarizer. Extract important facts about the user and their relationship with the AI.\n"
+            "Focus on: personal facts, preferences, emotional events, and relationship progress.\n"
+            "You must output a JSON object containing a 'summary_points' array of concise bullet points in Vietnamese."
+        )
+        
+        user_prompt = f"Summarize this conversation transcript:\n\n{chat_transcript}"
+        prompt = StructuredPrompt(
+            system=system_instructions,
+            history=[],
+            user_message=user_prompt,
+            response_schema=RESPONSE_SCHEMA
+        )
+        
+        try:
+            response = await self.llm.generate(prompt)
+            if response.parsed and "summary_points" in response.parsed:
+                points = response.parsed["summary_points"]
+                if isinstance(points, list):
+                    for point in points:
+                        point = point.strip()
+                        if len(point) > 5:
+                            vector = await self.embedder.embed_text(point)
+                            point_id = str(uuid.uuid4())
+                            payload = MemoryPayload(
+                                user_id=user_id,
+                                conversation_id=conv_id,
+                                memory_type="shared_memories",
+                                importance_score=0.7,
+                                created_at=int(time.time()),
+                                text_content=point,
+                            )
+                            await qdrant_service.upsert_memory(
+                                collection="memories",
+                                point_id=point_id,
+                                vector=vector,
+                                payload=payload
+                            )
+                    log.info("Successfully summarized conversation and saved points to memories collection", user_id=user_id)
+        except Exception as e:
+            log.error("Failed to run background summarization for memories collection", error=str(e), user_id=user_id)
+
+    async def _auto_summarize_conversation(self, user_id: str, conv_id: uuid.UUID) -> None:
+        """
+        Background task to auto-summarize the conversation if message count >= 20.
+        """
+        log.info("Starting background conversation auto-summarization...", conv_id=str(conv_id))
+        from app.infrastructure.database.engine import AsyncSessionFactory
+        from sqlalchemy import select
+        from app.infrastructure.database.models.conversation import Conversation
+        from app.infrastructure.database.models.message import Message
+
+        async with AsyncSessionFactory() as session:
+            try:
+                # Fetch all messages in this conversation (ordered chronologically)
+                msg_stmt = (
+                    select(Message)
+                    .where(
+                        Message.conversation_id == conv_id,
+                        Message.is_success == True
+                    )
+                    .order_by(Message.created_at.asc())
+                )
+                msgs = (await session.execute(msg_stmt)).scalars().all()
+                if not msgs:
+                    log.info("No messages in conversation to auto-summarize", conv_id=str(conv_id))
+                    return
+
+                # Build chat transcript for LLM
+                chat_transcript = "\n".join([f"{m.role.value.upper()}: {m.content}" for m in msgs])
+
+                system_prompt = (
+                    "You are a conversation summarizer for Kuchiba Chisa, a character from Wuthering Waves.\n"
+                    "Analyze the conversation transcript provided and summarize the key discussion points, "
+                    "user's preferences, interests, emotional vibe, and current relationship context.\n"
+                    "Keep the summary concise, informative, in Vietnamese, and write it in a structured paragraph or bullet points.\n"
+                    "You MUST output the result as a valid JSON object matching the requested schema containing a 'summary' key."
+                )
+
+                prompt = StructuredPrompt(
+                    system=system_prompt,
+                    history=[],
+                    user_message=f"Please summarize this conversation transcript:\n\n{chat_transcript}",
+                    response_schema=self.tool_router.SUMMARIZE_CONVERSATION_SCHEMA,
+                    retrieved_memories=[],
+                    retrieved_lore=[],
+                    rag_decisions={}
+                )
+
+                response = await self.llm.generate(prompt)
+                summary_text = (response.parsed or {}).get("summary", "").strip()
+                if not summary_text:
+                    summary_text = response.raw_content or ""
+
+                if summary_text:
+                    # Get conversation object and update it
+                    conv_stmt = select(Conversation).where(Conversation.id == conv_id)
+                    conv = (await session.execute(conv_stmt)).scalar_one_or_none()
+                    if conv:
+                        conv.summary = summary_text
+                        await session.commit()
+                        log.info("Conversation auto-summarized successfully", conv_id=str(conv_id))
+            except Exception as e:
+                log.error("Failed to run background auto-summarization", error=str(e), conv_id=str(conv_id))

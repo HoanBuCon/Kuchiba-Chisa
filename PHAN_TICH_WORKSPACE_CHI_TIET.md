@@ -30,31 +30,31 @@ flowchart TD
 
     subgraph Backend [FastAPI Application]
         API --> Routes[interface/api/routes]
-        Routes --> LegacyCE[ChatEngine Legacy]
-        Routes --> ProdCE[ProductionChatEngine]
+        Routes --> CE[ChatEngine]
         
         subgraph Domain [Core Domain Layer]
-            LegacyCE & ProdCE --> EE[EmotionEngine]
-            LegacyCE --> RR[RAGRouter]
-            LegacyCE --> CB[ContextBuilder]
-            ProdCE --> SR[SemanticRouter]
-            ProdCE --> TR[LLMToolRouter]
-            ProdCE --> PCB[ProductionContextBuilder]
-            ProdCE --> ME[MemoryExtractor]
+            CE --> EE[EmotionEngine]
+            CE --> SR[SemanticRouter]
+            CE --> TR[LLMToolRouter]
+            CE --> RAGP[RAGPipeline: Memory/Lore/Assessor/LoopThinking]
+            CE --> CB[ContextBuilder]
+            CE --> ME[MemoryExtractor]
             TR --> AT[Agent Tools: WebSearch, Summarize, EmotionReport]
+            RAGP --> AT
         end
 
         subgraph Infra [Infrastructure Layer]
-            LLM[LLM Adapters: Groq / Gemini]
+            LLM[LLM Adapters: Groq / Gemini / DeepSeek]
             Embed[Embedding Adapter: FastEmbed]
             LLMLog[llm_logger]
         end
     end
 
     subgraph Storage [Storage Layer]
-        LegacyCE & ProdCE <--> DB[(PostgreSQL)]
+        CE <--> DB[(PostgreSQL)]
         DBot <--> DiscordDB[(PostgreSQL - Discord Bot Schema)]
-        ME & LegacyCE & ProdCE <--> Qdrant[(Qdrant Vector DB)]
+        RAGP <--> Qdrant[(Qdrant Vector DB)]
+        ME <--> Qdrant
         API <--> Redis[(Redis Cache/Queue)]
     end
 
@@ -69,22 +69,26 @@ flowchart TD
 *   `app/main.py`: Khởi tạo ứng dụng FastAPI, cấu hình CORS, thiết lập lifespan để kiểm tra kết nối và khởi tạo tài nguyên PostgreSQL, Redis, Qdrant khi startup.
 *   `app/config/settings.py`: Khai báo cấu hình hệ thống bằng `pydantic-settings`. Hỗ trợ chuyển đổi LLM Provider (`gemini` hoặc `groq`), thiết lập chế độ dev/production, các secret key, cấu hình token budget, v.v.
 *   `app/domain/`:
-    *   `services/chat_engine.py`: Điều phối luồng xử lý chat truyền thống (Legacy Pipeline).
-    *   `services/context_builder.py`: Xây dựng prompt tích hợp các trạng thái cảm xúc thô và lore/memory.
+    *   `services/chat_engine.py`: Bộ điều phối luồng chat chính của hệ thống (trước đây là ProductionChatEngine).
+    *   `services/context_builder.py`: Tạo prompt với các nhãn cảm xúc định tính thông qua `StateManager` và kiểm soát token budget phân mảnh.
     *   `services/context_budget_manager.py`: Kiểm soát kích thước prompt để không vượt quá giới hạn token.
     *   `services/emotion_engine.py`: Lõi tính toán cập nhật cảm xúc dựa trên phản ứng cảm xúc của Chisa và Senpai.
-    *   `services/memory_manager.py`: Đánh giá độ quan trọng của tin nhắn để lưu giữ ký ức dài hạn.
-    *   `services/memory_summarizer.py`: Tóm tắt các hội thoại dài để tạo bộ nhớ nền.
-    *   `services/rag_retriever.py`: Thực hiện tìm kiếm và xếp hạng lai (Hybrid Scoring) cho memories; tìm kiếm cha-con (Parent-Child) và lọc từ khóa cho lore.
-    *   `services/rag_router.py`: Quyết định khi nào cần tìm kiếm RAG dựa trên regex/từ khóa.
-    *   `services/production_pipeline/`:
-        *   `production_chat_engine.py`: Bộ điều phối luồng chat nâng cao của Production Pipeline.
-        *   `intent_classifier.py`: Phân loại ý định của người dùng bằng màng lọc Regex/Từ khóa kết hợp LLM API.
-        *   `semantic_router.py`: Tầng 1 - Định tuyến ngữ nghĩa (Semantic Routing) bằng NumPy để phân loại ý định người dùng (ChatIntent) nhanh chóng, tích hợp so sánh khoảng cách Cosine, tính toán độ lệch tự tin (Confidence Margin) và cộng điểm thưởng Explicit Anchor.
-        *   `tool_router.py`: Tầng 2 - Định tuyến và thực thi các Agent Tools có cấu trúc OOP, bao gồm Web Search (DuckDuckGo), Summarize Memory và Emotion Report.
-        *   `production_context_builder.py`: Tạo prompt với các nhãn cảm xúc định tính thông qua `StateManager` và kiểm soát token budget phân mảnh.
-        *   `memory_extractor.py`: Trích xuất thông tin thực tế (facts) và mối quan hệ ngầm chạy async.
-        *   `state_manager.py`: Định nghĩa nhãn định tính (`Low`/`Medium`/`High`) và `Mood` cho prompt.
+    *   `services/intent_classifier.py`: Phân loại ý định của người dùng bằng màng lọc Regex/Từ khóa kết hợp LLM API.
+    *   `services/semantic_router.py`: Tầng 1 - Định tuyến ngữ nghĩa (Semantic Routing) bằng NumPy để phân loại ý định người dùng (ChatIntent) nhanh chóng, tích hợp so sánh khoảng cách Cosine, tính toán độ lệch tự tin (Confidence Margin) và cộng điểm thưởng Explicit Anchor.
+    *   `services/tool_router.py`: Tầng 2 - Định tuyến và thực thi các Agent Tools có cấu trúc OOP.
+    *   `services/memory_extractor.py`: Trích xuất thông tin thực tế (facts) và mối quan hệ ngầm chạy async.
+    *   `services/state_manager.py`: Định nghĩa nhãn định tính (`Low`/`Medium`/`High`) và `Mood` cho prompt.
+    *   `services/tools/`: Thư mục các Agent Tools:
+        *   `base.py`: Lớp cơ sở `BaseAgentTool`.
+        *   `web_search.py`: Tìm kiếm thông tin cập nhật trên Internet qua DuckDuckGo và tối ưu hóa query với ngữ cảnh 3 lượt chat gần nhất.
+        *   `summarize.py`: Tóm tắt phiên hội thoại đang hoạt động.
+        *   `emotion_report.py`: Xuất báo cáo cảm xúc định lượng.
+    *   `services/rag/`: Package modular RAG bao gồm:
+        *   `base.py`: Định nghĩa Pydantic models `ScoredMemory` và `RAGContext`.
+        *   `reranker.py`: Đóng gói `KeywordOverlapReranker` và `HybridMemoryScorer`.
+        *   `retriever_memory.py` / `retriever_lore.py`: Truy xuất memories và lore từ Qdrant.
+        *   `assessor.py` / `thinking_loop.py`: Đánh giá alignment và thực thi Loop Thinking (Web Search).
+        *   `pipeline.py`: Bộ điều phối `RAGPipeline` E2E tích hợp alignment check và thinking loop.
 *   `app/infrastructure/`:
     *   `database/`: Cấu hình SQLAlchemy Async, các model DB (`User`, `Conversation`, `Message`, `EmotionState`, `UserStats`, `MemoryMetadata`) và repositories.
     *   `cache/redis/redis_service.py`: Quản lý cache và cơ chế lưu trữ session phụ trợ.
@@ -92,6 +96,9 @@ flowchart TD
     *   `llm/adapters/`: Chứa base adapter và hai adapter thực tế là `GroqAdapter` (llama-3.1-8b-instant) và `GeminiAdapter` (gemini-2.5-flash-lite).
     *   `logging/`: Ghi log có cấu trúc thông qua `structlog` và module ghi log API `llm_logger.py` lưu vào file `llm_api_clean.txt`. Bao gồm `pipeline_tracker.py` — singleton theo dõi toàn bộ các bước xử lý của một request (steps, tokens, latency), tự động đặt flag `loop_thinking_activated = True` khi bước `thinking_loop_cycle_*` được ghi nhận.
     *   `queue/`: Cấu hình Celery App và các worker xử lý nền (affection, embedding, memory).
+*   `app/interface/`:
+    *   `api/routes/`: Các REST API endpoints (`chat.py`, `health.py`) và WebSocket endpoint phục vụ dashboard.
+    *   `api/templates/visualizer_dashboard.html`: Trang giao diện HTML/CSS/JS của Bảng điều khiển trực quan thời gian thực (Visualizer Dashboard), kết nối trực tiếp với backend bằng WebSockets và có thiết kế responsive đầy đủ.
 
 ### 3.2. Bot Discord (`discord/`)
 *   `discord/src/app.js` & `index.js`: Điểm khởi chạy của bot, đăng ký các module, lắng nghe tín hiệu tắt dịch vụ (`SIGINT`, `SIGTERM`) để đóng kết nối an toàn.
@@ -114,24 +121,11 @@ flowchart TD
 
 ---
 
-## 4. Chi tiết hai luồng xử lý Chat (Pipelines)
+## 4. Chi tiết luồng xử lý Chat (Chat Pipeline)
 
-Hệ thống có hai luồng xử lý chat được điều phối động thông qua tham số `pipeline` trong request hoặc thiết lập cấu hình `CHAT_PIPELINE` trong `.env`.
+Hệ thống sử dụng một pipeline duy nhất được tối ưu hóa toàn diện để đạt hiệu năng cao, tiết kiệm token, cô lập dữ liệu và đảm bảo trải nghiệm Kuudere mượt mà nhất:
 
-### 4.1. Legacy Pipeline (ChatEngine)
-1.  **Nhận tin nhắn**: Nhận `user_id` và tin nhắn từ client.
-2.  **Đọc ngữ cảnh**: Tải dữ liệu người dùng, chỉ số cảm xúc và lịch sử trò chuyện từ Postgres.
-3.  **RAG Router**: Kiểm tra xem câu hỏi có chứa từ khóa kích hoạt memory không.
-4.  **Truy xuất RAG**:
-    *   *Lore*: Tìm kiếm trên collection `chisa_lore` với vector tương đồng, giữ lại các chunk có điểm số >= `0.35`.
-    *   *Memory*: Nếu `RAGRouter` bật, truy vấn collection `emotional_memories` bằng vector.
-5.  **RAG Emotion Seeding**: Nếu tin nhắn chứa các từ khóa u sầu và RAG trả về các nội dung tương quan buồn, hệ thống sẽ chủ động cộng thêm điểm `sadness` và `irritation` trước khi gửi lên LLM.
-6.  **Xây dựng Prompt**: Kết hợp hướng dẫn tính cách nhân vật (System Prompt), chỉ số cảm xúc dạng số thô, lore, memory và lịch sử chat.
-7.  **Gọi LLM (Single-Call)**: Groq/Gemini trả về JSON gồm phản hồi thoại Chisa và sentiment phản ứng của Senpai (`is_positive`, `is_negative`, `is_rude`, `is_neutral`).
-8.  **Cập nhật cảm xúc**: `EmotionEngine` cập nhật trạng thái cảm xúc.
-9.  **Lưu trữ**: Lưu tin nhắn vào Postgres. Nếu tin nhắn có độ quan trọng cao (importance >= 0.65), lưu thêm vào Qdrant `emotional_memories`.
-
-### 4.2. Production Pipeline (ProductionChatEngine)
+### 4.1. Chat Engine Pipeline (ChatEngine)
 Được tối ưu hóa toàn diện để đạt hiệu năng cao, tiết kiệm token, cô lập dữ liệu và đảm bảo trải nghiệm Kuudere mượt mà nhất:
 
 ```
@@ -186,6 +180,32 @@ Hệ thống định tuyến hành động hệ thống được chia làm 2 T�
   2. `ConversationSummarizerAgentTool`: Trích xuất lịch sử thoại và yêu cầu LLM tóm tắt, lưu vào sqlite.
   3. `EmotionReportAgentTool`: Xuất chỉ số cảm xúc dạng báo cáo định lượng.
 
+### 4.2. Hybrid Routing Optimization (Cập nhật mới)
+
+Đã triển khai tối ưu hóa hybrid routing theo hướng giảm false positive và giảm số lần embedding không cần thiết:
+
+1. **IntentClassifier L2 dùng word-boundary regex chặt**:
+    - Hàm `_phrase_match(...)` dùng mẫu `(?<!\\w)...(?!\\w)` thay vì substring match.
+    - Giảm lỗi bắt nhầm intent khi câu chứa từ khóa ở ngữ cảnh không liên quan.
+
+2. **SYSTEM_ACTION Fast-Path ở L2**:
+    - Bổ sung tập regex pattern tường minh cho: tóm tắt hội thoại, báo cáo cảm xúc, web search.
+    - Các lệnh rõ ràng như "tóm tắt nãy giờ" có thể ra quyết định ngay tại L2 trước khi vào semantic scoring.
+
+3. **SemanticRouter được tinh chỉnh tăng tính quyết đoán**:
+    - `EXPLICIT_ANCHOR_BONUS` đã tăng lên `0.06`.
+    - Bổ sung thêm một số anchor theo văn phong Nam giúp tăng độ phủ truy vấn thực tế.
+
+4. **Tool Router có Keyword Fast-Path trước semantic routing**:
+    - Thêm lớp `KeywordToolRouter` trong `tool_router.py`.
+    - Nếu query khớp regex cứng thì trả thẳng tool (`web_search`, `summarize_conversation_memory`, `get_emotion_report`) với score `1.0`.
+    - Nếu không khớp mới fallback sang `SemanticToolRouter` (cosine similarity), giúp tiết kiệm tài nguyên embedding.
+
+5. **Bổ sung test unit cho routing**:
+    - `tests/unit/test_intent_classifier.py`: kiểm tra small-talk bypass, L2 keyword fast-path, chống false positive, SYSTEM_ACTION fast-path.
+    - `tests/unit/test_tool_router.py`: kiểm tra ánh xạ keyword -> tool và trường hợp không khớp.
+    - `tests/unit/test_semantic_router.py`: bổ sung case false positive và case mơ hồ.
+
 ### 4.3. Information Alignment Check & Loop Thinking Agent
 
 Đây là cơ chế chống ảo giác (anti-hallucination) được tích hợp vào Production Pipeline, hoạt động **sau bước RAG retrieval**, trước khi tạo câu trả lời cuối:
@@ -212,9 +232,11 @@ Hệ thống định tuyến hành động hệ thống được chia làm 2 T�
                     [Phản hồi với dữ liệu thực]
 ```
 
-**`_assess_alignment(user_message, context_text)`**: Sau khi RAG thu thập context, LLM đánh giá xem context có chứa đủ thông tin thực tế và cụ thể để trả lời không. Câu hỏi về small talk → luôn `is_aligned=True`. Câu hỏi về giá xăng, thời tiết, sự kiện thực tế mà không có số liệu → `is_aligned=False`.
+**`ContextAssessor` (đánh giá sự thẳng hàng)**: Sau khi RAG thu thập context, LLM đánh giá xem context có chứa đủ thông tin thực tế và cụ thể để trả lời không. Câu hỏi về small talk → luôn `is_aligned=True`. Câu hỏi về giá xăng, thời tiết, sự kiện thực tế mà không có số liệu → `is_aligned=False`.
 
-**`_run_thinking_loop(...)`**: Khi `is_aligned=False`, Agent Suy luận được kích hoạt chạy tối đa 2 cycles. Mỗi cycle LLM quyết định có cần search thêm không và tạo query tối ưu. Mỗi cycle được log vào `pipeline_tracker` với step tên `thinking_loop_cycle_N`, điều này tự động set flag `loop_thinking_activated=True` trong trace. Flag này được đưa vào `ChatResponse` để client (Discord/Web) biết cần hiển thị trạng thái đặc biệt.
+**`ThinkingLoopAgent` (Loop Thinking & Self-Correction)**: Khi `is_aligned=False`, Agent Suy luận được kích hoạt chạy tối đa 2 cycles. Mỗi cycle LLM quyết định có cần search thêm không và tạo query tối ưu. Mỗi cycle được log vào `pipeline_tracker` với step tên `thinking_loop_cycle_N` để cập nhật trạng thái hoạt động suy nghĩ lặp.
+
+**`RAGPipeline` (Điều phối E2E RAG)**: Phối hợp toàn bộ các bước truy xuất song song (Lore & Memory), gọi `ContextAssessor` để xác thực thông tin, và kích hoạt `ThinkingLoopAgent` nếu thông tin bị thiếu. Toàn bộ logic này được đóng gói độc lập bên trong `app/domain/services/rag/`, giúp `ProductionChatEngine` tinh gọn và sạch sẽ hơn.
 
 **Thông báo đến người dùng**:
 - **Discord**: Bot gửi `*Chisa đang suy nghĩ...*` ngay trước khi gọi API, xóa tin nhắn đó sau khi nhận reply.
@@ -315,3 +337,75 @@ Sử dụng một cơ sở dữ liệu riêng để quản lý các tính năng 
 ### 8.2. Mở rộng kiểm thử tự động (Test Suite Expansion)
 *   Viết các test case mô phỏng nhiều lượt trò chuyện liên tục để kiểm tra tính chính xác của `EmotionEngine` dưới các tín hiệu sentiment khác nhau.
 *   Thực hiện test kiểm tra cô lập dữ liệu (data isolation) giữa các người dùng để đảm bảo ký ức của Senpai này không bị lẫn sang Senpai khác.
+
+---
+
+## 9. Phân Tích Hiện Tượng Dội Token & Trùng Lặp 2x2 Loop Thinking
+
+### 9.1. Phân tích luồng thực thi thực tế vs. Hiện thị Visualizer
+
+Khi kiểm thử các câu hỏi yêu cầu RAG sâu nhưng cơ sở dữ liệu cục bộ bị trống hoặc thiếu thông tin (ví dụ: *"Em có sở thích gì vào thời gian rảnh?"*), chúng ta quan sát thấy tổng số LLM call lên tới **7 lượt** và tiêu tốn **~17.6k tokens**.
+
+Trên Visualizer hiển thị trình tự:
+`User input -> Intent routing -> tool router -> LLM Alignment Assesor -> LLM Loop Thinking Cycle 1 -> LLM Web Search trích query -> LLM Loop Thinking Cycle 2 -> LLM Web search trích query -> RAG Retrieval -> Alignment check -> web search -> Loop Thinking Cycle 1 -> web search -> Loop thinking cycle 2 -> ...`
+
+Thực chất, hệ thống **không** chạy song song 2x2 lần loop thinking. Hiện tượng này xảy ra do hai nguyên nhân chính:
+
+1. **Lệch trình tự ghi log bước (Visualizer Step Order Mismatch):**
+   * Trong `chat_engine.py`, các LLM calls (Alignment Assessor, Loop Thinking Cycles, Web Search query optimizer) được thực hiện bên trong hàm `rag_pipeline.retrieve_and_align()`.
+   * Mỗi khi có một LLM generate, module `llm_logger.py` sẽ **ngay lập tức** đẩy bước `llm_generation` vào `pipeline_tracker` theo thời gian thực.
+   * Ngược lại, các bước giải thích logic tĩnh như `rag_retrieval`, `information_alignment_check` hay các bước tóm tắt chu kỳ `thinking_loop_cycle_X` chỉ được `chat_engine.py` thêm vào **sau khi** hàm `retrieve_and_align()` đã chạy xong hoàn toàn và trả về kết quả.
+   * Điều này khiến Visualizer nhận các bước thực tế (LLM call) trước, và các bước giải thích sau, tạo nên sơ đồ timeline lộn xộn, dài lê thê và gây cảm giác trùng lặp.
+
+2. **Dội LLM Call dư thừa tại mỗi chu kỳ Loop Thinking (Query Optimization Redundancy):**
+   * Trong mỗi chu kỳ (cycle) của `ThinkingLoopAgent`, LLM suy luận đã có đầy đủ ngữ cảnh để tự tạo ra một câu truy vấn rất tối ưu (`search_query`).
+   * Tuy nhiên, khi câu truy vấn này được gửi vào `WebSearchAgentTool.execute()`, công cụ tìm kiếm này lại gọi tiếp LLM `_extract_search_query()` để "tối ưu hóa" lần thứ hai.
+   * Lỗi thiết kế này làm dội số lượng LLM call lên gấp đôi: **2 LLM calls/cycle** (1 để suy luận tạo query + 1 để tối ưu hóa query). Với 2 chu kỳ, hệ thống tiêu tốn tới **4 LLM calls** chỉ để tìm kiếm thông tin trên mạng!
+
+### 9.2. Sơ đồ luồng RAG & Loop Thinking hiện tại
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant CE as ChatEngine
+    participant RP as RAGPipeline
+    participant AA as ContextAssessor (LLM)
+    participant TL as ThinkingLoopAgent (LLM)
+    participant WS as WebSearchAgentTool (LLM)
+
+    CE->>RP: retrieve_and_align()
+    RP->>AA: assess_alignment() [LLM Call 1]
+    AA-->>RP: is_aligned=False
+    
+    rect rgb(40, 20, 20)
+        Note over RP, WS: Loop Thinking Cycles (Max 2)
+        RP->>TL: run()
+        
+        Note over TL: Cycle 1
+        TL->>TL: Generate search_query [LLM Call 2]
+        TL->>WS: execute(search_query)
+        WS->>WS: _extract_search_query() [LLM Call 3 - DƯ THỪA]
+        WS-->>TL: DuckDuckGo Results + Deep Page
+        
+        Note over TL: Cycle 2
+        TL->>TL: Read results & Generate new query [LLM Call 4]
+        TL->>WS: execute(new_query)
+        WS->>WS: _extract_search_query() [LLM Call 5 - DƯ THỪA]
+        WS-->>TL: DuckDuckGo Results
+    end
+    
+    TL-->>RP: Accumulated Context
+    RP-->>CE: RAGContext
+```
+
+### 9.3. Hướng giải quyết & Kế hoạch tối ưu
+
+1. **Bypass Query Optimization trong Loop Thinking:**
+   * Thêm tham số `bypass_optimize: bool = False` vào `WebSearchAgentTool.execute()`.
+   * Khi `bypass_optimize=True` (được gọi từ trong `ThinkingLoopAgent`), công cụ tìm kiếm sẽ lấy thẳng `search_query` do Loop Agent sinh ra để tìm kiếm DuckDuckGo, loại bỏ hoàn toàn cuộc gọi LLM `_extract_search_query()`.
+   * Tiết kiệm ngay lập tức **2 LLM calls** (~1.5k - 2k tokens) và giảm 2-3 giây độ trễ cho mỗi phản hồi cần suy nghĩ sâu.
+
+2. **Đồng bộ hóa thứ tự ghi log bước (Real-time Step Logging):**
+   * Di chuyển việc gọi `pipeline_tracker.add_step()` cho các bước `rag_retrieval`, `information_alignment_check` và các chu kỳ `thinking_loop_cycle_X` vào **bên trong** `RAGPipeline` và `ThinkingLoopAgent` ngay tại thời điểm thực thi.
+   * Đảm bảo các bước giải thích logic và các cuộc gọi LLM thực tế được ghi nhận đan xen đúng theo trình tự thời gian thực tế, hiển thị timeline trực quan, không còn bị lặp hay dồn về cuối.
+

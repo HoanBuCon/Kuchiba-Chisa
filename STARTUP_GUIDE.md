@@ -124,6 +124,12 @@ Theo dõi lượng Token bị đốt cháy trực tiếp của mô hình Llama-3
 python .\scripts\watch_tokens.py
 ```
 
+### 6.3 Bảng điều khiển trực quan Web (Chisa AI Visualizer Dashboard)
+Giám sát toàn bộ luồng RAG, suy luận Loop Thinking, ngân sách token và cập nhật trạng thái cảm xúc theo thời gian thực dưới giao diện Web trực quan:
+- **Địa chỉ:** `http://localhost:8000/visualizer`
+- **Tính năng:** Theo dõi các vết thực thi (execution traces), chi tiết từng bước RAG (Lore, Memory), phân bổ ngân sách token (Prompt Budget), thời gian phản hồi/độ trễ và biến thiên trạng thái cảm xúc chi tiết.
+- Giao diện có thiết kế responsive đầy đủ, hỗ trợ tốt cả trên PC, máy tính bảng và thiết bị di động.
+
 ---
 
 ## 7. Các lỗi thường gặp (Troubleshooting)

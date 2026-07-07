@@ -1,6 +1,6 @@
 import pytest
-from app.domain.services.production_pipeline.semantic_router import SemanticRouter, ROUTER_ANCHORS
-from app.domain.services.production_pipeline.intent_classifier import ChatIntent
+from app.domain.services.semantic_router import SemanticRouter, ROUTER_ANCHORS
+from app.domain.services.intent_classifier import ChatIntent
 
 class MockEmbedder:
     async def embed_text(self, text: str) -> list[float]:
@@ -51,4 +51,24 @@ async def test_semantic_router_classification():
 
     # 4. Test không khớp (không vượt ngưỡng threshold)
     intents = await router.classify("hôm nay ăn gì nhỉ")
+    assert len(intents) == 0
+
+
+@pytest.mark.asyncio
+async def test_semantic_router_avoids_character_false_positive():
+    embedder = MockEmbedder()
+    router = SemanticRouter(embedder=embedder, threshold=0.7)
+    await router.initialize()
+
+    intents = await router.classify("game có vũ khí không")
+    assert ChatIntent.CHARACTER_LORE not in intents
+
+
+@pytest.mark.asyncio
+async def test_semantic_router_ambiguous_message_returns_no_intent():
+    embedder = MockEmbedder()
+    router = SemanticRouter(embedder=embedder, threshold=0.7)
+    await router.initialize()
+
+    intents = await router.classify("em có biết gì về vũ khí")
     assert len(intents) == 0

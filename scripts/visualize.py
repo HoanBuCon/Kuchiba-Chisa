@@ -102,6 +102,10 @@ def main():
     print("       CHISA AI PIPELINE VISUALIZATION ACTIVE")
     print("=======================================================")
     print(" - Link Visualizer: {}".format(visualizer_url))
+    print(" - Logo: /assets/dance_chisa.gif (cùng website Chisa)")
+    print(" - Theme: đỏ–đen gradient (giống website Chisa)")
+    print(" - Flex Budget breakdown: step 'Prompt Build' (context_building)")
+    print(" - Web Search: node 'Web Search' (snippets, URLs, deep page)")
     print(" - Press Ctrl+C to exit this script.")
     print("=======================================================")
     

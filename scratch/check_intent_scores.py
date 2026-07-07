@@ -11,7 +11,7 @@ if sys.stdout.encoding != 'utf-8':
         pass
 
 from app.infrastructure.embeddings.fastembed_adapter import FastEmbedAdapter
-from app.domain.services.production_pipeline.semantic_router import SemanticRouter
+from app.domain.services.semantic_router import SemanticRouter
 import numpy as np
 
 async def test_scores():

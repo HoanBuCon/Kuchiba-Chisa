@@ -6,10 +6,30 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.infrastructure.llm.adapters.base import BaseLLMAdapter, StructuredPrompt
 from app.domain.interfaces.embedding_provider import IEmbeddingProvider
-from app.domain.services.production_pipeline.tools.base import BaseAgentTool
+from app.domain.services.tools.base import BaseAgentTool
 from app.infrastructure.logging.logger import get_logger
 
 log = get_logger(__name__)
+
+
+def web_search_trace_payload(
+    res: Dict[str, Any],
+    *,
+    source: str,
+    original_message: str = "",
+) -> Dict[str, Any]:
+    """Chuẩn hóa payload cho pipeline visualizer."""
+    return {
+        "source": source,
+        "original_message": original_message,
+        "optimized_query": res.get("optimized_query") or res.get("search_query") or "",
+        "status": res.get("status", "unknown"),
+        "snippets": res.get("snippets") or [],
+        "source_urls": res.get("source_urls") or [],
+        "deep_page_url": res.get("deep_page_url"),
+        "deep_page_preview": res.get("deep_page_preview"),
+        "full_result": res.get("message", ""),
+    }
 
 
 class WebSearchAgentTool(BaseAgentTool):
@@ -66,9 +86,16 @@ class WebSearchAgentTool(BaseAgentTool):
         **kwargs
     ) -> Dict[str, Any]:
         history = kwargs.get("history")
-        # Level 2b: Optimize query using LLM with context
-        search_query = await self._extract_search_query(user_message, llm, history)
+        bypass_optimize = kwargs.get("bypass_optimize", False)
+        
+        if bypass_optimize:
+            search_query = user_message
+        else:
+            # Level 2b: Optimize query using LLM with context
+            search_query = await self._extract_search_query(user_message, llm, history)
+            
         res = await self._web_search(search_query)
+        res["optimized_query"] = search_query
         return res
 
     async def _extract_search_query(
@@ -104,14 +131,18 @@ class WebSearchAgentTool(BaseAgentTool):
         system_prompt = (
             "You are a search query optimizer for a chatbot named Kuchiba Chisa (Wuthering Waves).\n"
             "Given the recent conversation history and the latest user message, generate a single, highly optimized English or Vietnamese search query "
-            "that resolves pronouns (e.g., 'em' -> 'Kuchiba Chisa', 'game này' -> 'Wuthering Waves') and captures the core search intent.\n"
-            "Remove all conversational fillers (e.g., 'tra giúp', 'cho hỏi', 'em ơi').\n"
+            "specifically designed for search engines (like DuckDuckGo):\n"
+            "- Keep it short, focused, and composed of key keywords targeting the specific question topic (typically 2-4 keywords).\n"
+            "- Focus directly on the specific subject/attribute asked (e.g. if asking about hobbies, use 'Sở thích của Kuchiba Chisa'; if asking about age, use 'Tuổi Kuchiba Chisa').\n"
+            "- Remove all conversational fillers, question particles, greetings, and generic question words (e.g. do NOT use 'cho hỏi', 'em ơi', 'là gì', 'được không', 'của em').\n"
+            "- Resolve all pronouns and relative terms to their absolute names (e.g. 'em' -> 'Kuchiba Chisa', 'game này' -> 'The Games user was talking about').\n"
+            "- Do NOT mix conversational Vietnamese and English words unnecessarily. Use clean, direct keywords.\n"
             "You MUST output the result as a valid JSON object with key 'search_query'."
         )
 
         user_prompt = (
-            f"[Lịch sử hội thoại gần đây]:\n{history_str}\n\n"
-            f"[Câu hỏi mới nhất của Senpai]: \"{user_message}\""
+            f"[Recent Conversation History]:\n{history_str}\n\n"
+            f"[Latest User Message]: \"{user_message}\""
         )
 
         prompt = StructuredPrompt(
@@ -131,6 +162,8 @@ class WebSearchAgentTool(BaseAgentTool):
         )
 
         try:
+            from app.infrastructure.logging.llm_logger import llm_call_purpose
+            llm_call_purpose.set("web_search_query_extract")
             response = await llm.generate(prompt)
             parsed = response.parsed or {}
             query = (parsed.get("search_query") or parsed.get("query") or "").strip()
@@ -160,12 +193,10 @@ class WebSearchAgentTool(BaseAgentTool):
                 raw = re.findall(pattern, html, re.DOTALL)
                 if raw:
                     cleaned = []
+                    import html
                     for s in raw:
                         c = re.sub(r'<[^>]+>', '', s)
-                        c = (c.replace('&nbsp;', ' ').replace('&amp;', '&')
-                               .replace('&lt;', '<').replace('&gt;', '>')
-                               .replace('&quot;', '"').replace('&#x27;', "'")
-                               .strip())
+                        c = html.unescape(c).strip()
                         if c:
                             cleaned.append(c)
                     if cleaned:
@@ -200,10 +231,8 @@ class WebSearchAgentTool(BaseAgentTool):
             # Remove remaining tags
             text = re.sub(r'<[^>]+>', ' ', html_content)
             # Decode entities
-            text = (text.replace('&nbsp;', ' ').replace('&amp;', '&')
-                        .replace('&lt;', '<').replace('&gt;', '>')
-                        .replace('&quot;', '"').replace('&#x27;', "'")
-                        .replace('\r', '\n'))
+            import html
+            text = html.unescape(text).replace('\r', '\n')
             # Collapse whitespace
             text = re.sub(r'\n\s*\n', '\n\n', text)
             text = re.sub(r'[ \t]+', ' ', text)
@@ -216,19 +245,33 @@ class WebSearchAgentTool(BaseAgentTool):
 
                 if not (200 <= response.status_code < 300):
                     log.warning("DuckDuckGo search failed", status_code=response.status_code)
-                    return {"status": "error", "message": f"Không thể kết nối dịch vụ tìm kiếm (Mã lỗi: {response.status_code})."}
+                    return {
+                        "status": "error",
+                        "message": f"Không thể kết nối dịch vụ tìm kiếm (Mã lỗi: {response.status_code}).",
+                        "search_query": query,
+                        "snippets": [],
+                        "source_urls": [],
+                    }
 
                 snippets = _parse_snippets(response.text)
                 results = snippets[:4]
 
                 if not results:
-                    return {"status": "success", "message": "Không tìm thấy kết quả tìm kiếm nào phù hợp trên internet."}
+                    return {
+                        "status": "success",
+                        "message": "Không tìm thấy kết quả tìm kiếm nào phù hợp trên internet.",
+                        "search_query": query,
+                        "snippets": [],
+                        "source_urls": [],
+                    }
 
                 results_str = "SEARCH SNIPPETS:\n" + "\n".join([f"- {r}" for r in results])
                 
                 # Fetch page content of top result to extract real numbers/prices
                 urls = _extract_urls(response.text)
                 fetched_content = []
+                deep_page_url = None
+                deep_page_preview = None
                 for target_url in urls[:2]:
                     # Skip common social media domains that won't have the table/article
                     if any(domain in target_url for domain in ["youtube.com", "facebook.com", "twitter.com", "instagram.com"]):
@@ -241,6 +284,8 @@ class WebSearchAgentTool(BaseAgentTool):
                             if len(cleaned_text) > 100:
                                 # Truncate content to keep prompt token size reasonable (approx. 1000 chars)
                                 content_snippet = cleaned_text[:1000]
+                                deep_page_url = target_url
+                                deep_page_preview = content_snippet
                                 fetched_content.append(f"SOURCE URL: {target_url}\nCONTENT: {content_snippet}")
                                 break # Just get the first successful page to save tokens
                     except Exception as pe:
@@ -252,8 +297,19 @@ class WebSearchAgentTool(BaseAgentTool):
                 log.info("Web search completed successfully", count=len(results), got_deep_content=bool(fetched_content))
                 return {
                     "status": "success",
-                    "message": results_str
+                    "message": results_str,
+                    "search_query": query,
+                    "snippets": results,
+                    "source_urls": urls[:4],
+                    "deep_page_url": deep_page_url,
+                    "deep_page_preview": deep_page_preview,
                 }
         except Exception as e:
             log.error("Failed to execute web search in WebSearchAgentTool", error=str(e))
-            return {"status": "error", "message": f"Gặp lỗi khi tìm kiếm thông tin: {str(e)}"}
+            return {
+                "status": "error",
+                "message": f"Gặp lỗi khi tìm kiếm thông tin: {str(e)}",
+                "search_query": query,
+                "snippets": [],
+                "source_urls": [],
+            }

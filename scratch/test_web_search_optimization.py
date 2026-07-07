@@ -6,8 +6,8 @@ import sys
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(PROJECT_ROOT)
 
-from app.domain.services.production_pipeline.tools.web_search import WebSearchAgentTool
-from app.domain.services.production_pipeline.production_context_builder import ProductionContextBuilder
+from app.domain.services.tools.web_search import WebSearchAgentTool
+from app.domain.services.context_builder import ContextBuilder
 from app.infrastructure.llm.adapters.deepseek import DeepSeekAdapter
 from scratch.test_summarize import FastEmbedAdapter
 from app.infrastructure.database.models.emotion_state import EmotionState
@@ -21,7 +21,7 @@ async def main():
     embedder = FastEmbedAdapter()
     llm = DeepSeekAdapter()
     web_search_tool = WebSearchAgentTool()
-    context_builder = ProductionContextBuilder()
+    context_builder = ContextBuilder()
 
     # 1. Giả định lịch sử trò chuyện có context Wuthering Waves
     history = [
@@ -55,11 +55,11 @@ async def main():
     tool_output = search_result.get("message", "")
     print(f"[+] Snippets thô thu được:\n{tool_output}")
 
-    # 3. Lắp prompt thông qua ProductionContextBuilder để kiểm tra phản hồi của Chisa
-    print("\n[*] Tiến hành lắp prompt thông qua ProductionContextBuilder...")
+    # 3. Lắp prompt thông qua ContextBuilder để kiểm tra phản hồi của Chisa
+    print("\n[*] Tiến hành lắp prompt thông qua ContextBuilder...")
     dummy_emotion = EmotionState(joy=0.5, sadness=0.0, trust=0.8, irritation=0.0, attachment=0.6)
     
-    prompt = context_builder.build(
+    build_result = context_builder.build(
         emotion=dummy_emotion,
         attachment_bonus=0.05,
         memories=[],
@@ -67,8 +67,9 @@ async def main():
         history=history,
         user_message=user_message,
         intent_name="SYSTEM_ACTION",
-        tool_result=tool_output
+        tool_result=tool_output,
     )
+    prompt = build_result.prompt
 
     print("\n[*] Gửi prompt đến LLM chính để sinh câu thoại của Chisa...")
     response = await llm.generate(prompt)
