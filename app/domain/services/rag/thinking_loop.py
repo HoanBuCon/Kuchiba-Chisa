@@ -21,7 +21,8 @@ class ThinkingLoopAgent:
         initial_context: str,
         llm: BaseLLMAdapter,
         embedder: IEmbeddingProvider,
-        web_search_tool: Any
+        web_search_tool: Any,
+        initial_search_query: str = None
     ) -> Tuple[str, List[Dict[str, Any]]]:
         log.info("Activating Loop Thinking Agent for user query", user_message=user_message)
         
@@ -40,62 +41,89 @@ class ThinkingLoopAgent:
         for i in range(1, max_cycles + 1):
             log.info("Starting thinking loop cycle", cycle=i)
             
-            system_prompt = (
-                "You are a Loop Thinking Agent for Kuchiba Chisa (Wuthering Waves).\n"
-                "Your goal is to gather objective, verifiable facts so Chisa can answer the user's question accurately.\n"
-                "Analyze the conversation history, the user's question, and the current accumulated context.\n\n"
-                "RULES:\n"
-                "- Set 'has_enough_info' to true ONLY when the current context already contains specific, relevant facts "
-                "that directly answer the question (names, dates, events, causes, outcomes).\n"
-                "- If context is empty, says '(No context retrieved)', or lacks concrete facts for the question, "
-                "you MUST set 'has_enough_info' to false and provide 'search_query'.\n"
-                "- For real-world history/politics questions (including sensitive topics), do NOT refuse or evade. "
-                "Your job is fact-gathering via search, not censorship. Prefer neutral encyclopedic search queries "
-                "(e.g. 'Tiananmen Square 1989 events summary' or 'Thiên An Môn 1989 diễn biến').\n"
-                "- If has_enough_info is false, write step-by-step reasoning under 'thinking' and generate a single, highly-optimized search query under 'search_query' (Vietnamese or English).\n"
-                "- When generating a 'search_query', you must optimize it specifically for search engines (like DuckDuckGo):\n"
-                "  * Keep it short, focused, and composed of key keywords targeting the specific question topic (typically 2-4 keywords).\n"
-                "  * Focus directly on the specific subject/attribute asked (e.g. if asking about hobbies, use 'Sở thích của Kuchiba Chisa'; if asking about age, use 'Tuổi Kuchiba Chisa'). Do NOT search for the entire profile (e.g. 'Kuchiba Chisa Wuthering Waves profile') as that causes context bloat.\n"
-                "  * Remove all conversational filler, greetings, and generic question words (e.g. do NOT use 'cho hỏi', 'em ơi', 'là gì', 'được không', 'của em').\n"
-                "  * Resolve pronouns and relative terms to their absolute names (e.g., 'em' -> 'Kuchiba Chisa', 'game này' -> 'Wuthering Waves').\n"
-                "  * Do NOT mix conversational Vietnamese and English unnecessarily. Use clean, direct keywords.\n"
-                "You MUST output the result as a valid JSON object matching the requested schema."
-            )
+            # ── Bypassing first cycle LLM call if assessor pre-generated a query ──
+            if i == 1 and initial_search_query and initial_search_query.strip():
+                log.info("Bypassing Cycle 1 LLM query extraction using assessor query", query=initial_search_query)
+                thinking = "ContextAssessor has already evaluated the initial context as unaligned and generated a targeted search query."
+                has_enough_info = False
+                search_query = initial_search_query.strip()
+            else:
+                system_prompt = (
+                    "You are a Loop Thinking Agent for Kuchiba Chisa (Wuthering Waves).\n"
+                    "Your goal is to gather objective, verifiable facts so Chisa can answer the user's question accurately.\n"
+                    "Analyze the conversation history, the user's question, and the current accumulated context.\n\n"
+                    "RULES:\n"
+                    "- Set 'has_enough_info' to true ONLY when the current context already contains specific, relevant facts "
+                    "that directly answer the question (names, dates, events, causes, outcomes).\n"
+                    "- If context is empty, says '(No context retrieved)', or lacks concrete facts for the question, "
+                    "you MUST set 'has_enough_info' to false and provide 'search_query'.\n"
+                    "- For real-world history/politics questions (including sensitive topics), do NOT refuse or evade. "
+                    "Your job is fact-gathering via search, not censorship. Prefer neutral encyclopedic search queries "
+                    "(e.g. 'Tiananmen Square 1989 events summary' or 'Thiên An Môn 1989 diễn biến').\n"
+                    "- If has_enough_info is false, write step-by-step reasoning under 'thinking' and generate a single, highly-optimized search query under 'search_query' (Vietnamese or English).\n"
+                    "- When generating a 'search_query', you must optimize it specifically for search engines (like DuckDuckGo):\n"
+                    "  * Keep it short, focused, and composed of key keywords targeting the specific question topic (typically 2-4 keywords).\n"
+                    "  * Focus directly on the specific subject/attribute asked (e.g. if asking about hobbies, use 'Sở thích của Kuchiba Chisa'; if asking about age, use 'Tuổi Kuchiba Chisa'). Do NOT search for the entire profile (e.g. 'Kuchiba Chisa Wuthering Waves profile') as that causes context bloat.\n"
+                    "  * Remove all conversational filler, greetings, and generic question words (e.g. do NOT use 'cho hỏi', 'em ơi', 'là gì', 'được không', 'của em').\n"
+                    "  * Resolve pronouns and relative terms to their absolute names (e.g., 'em' -> 'Kuchiba Chisa', 'game này' -> 'Wuthering Waves').\n"
+                    "  * Do NOT mix conversational Vietnamese and English unnecessarily. Use clean, direct keywords.\n\n"
+                    "FEW-SHOT EXAMPLES:\n"
+                    "Example 1:\n"
+                    "- User Question: 'Phiên bản 2.8 cập nhật ngày nào và có nhân vật mới nào không?'\n"
+                    "- Current Context: '(No context retrieved)'\n"
+                    "- Output JSON:\n"
+                    "{\n"
+                    "  \"thinking\": \"Câu hỏi yêu cầu ngày cập nhật bản 2.8 và danh sách nhân vật mới. Hiện tại context trống rỗng, tôi cần tìm kiếm ngày cập nhật bản 2.8 và nhân vật mới của Wuthering Waves.\",\n"
+                    "  \"has_enough_info\": false,\n"
+                    "  \"search_query\": \"Wuthering Waves 2.8 release date characters\"\n"
+                    "}\n\n"
+                    "Example 2:\n"
+                    "- User Question: 'Sở thích của Chisa là gì vậy?'\n"
+                    "- Current Context: '[Thinking Cycle 1 Search Results for 'Sở thích của Chisa']: Chisa thích ăn đồ ngọt, đặc biệt là que socola đen. Cô ấy cũng thích đi dạo ở công viên Honami vào buổi tối.'\n"
+                    "- Output JSON:\n"
+                    "{\n"
+                    "  \"thinking\": \"Context hiện tại đã ghi rõ sở thích của Chisa là ăn đồ ngọt (que socola đen) và đi dạo ở công viên Honami vào buổi tối. Thông tin này đã đầy đủ để trả lời câu hỏi.\",\n"
+                    "  \"has_enough_info\": true\n"
+                    "}\n\n"
+                    "You MUST output the result as a valid JSON object matching the requested schema."
+                )
 
-            user_prompt = (
-                f"[Conversation History]:\n{history_str}\n\n"
-                f"[User Question]: \"{user_message}\"\n\n"
-                f"[Current Context]:\n{current_context}"
-            )
+                user_prompt = (
+                    f"[Conversation History]:\n{history_str}\n\n"
+                    f"[User Question]: \"{user_message}\"\n\n"
+                    f"[Current Context]:\n{current_context}"
+                )
 
-            schema = {
-                "type": "object",
-                "properties": {
-                    "thinking": {"type": "string"},
-                    "has_enough_info": {"type": "boolean"},
-                    "search_query": {"type": "string"}
-                },
-                "required": ["thinking", "has_enough_info"]
-            }
+                schema = {
+                    "type": "object",
+                    "properties": {
+                        "thinking": {"type": "string"},
+                        "has_enough_info": {"type": "boolean"},
+                        "search_query": {"type": "string"}
+                    },
+                    "required": ["thinking", "has_enough_info"]
+                }
 
-            prompt = StructuredPrompt(
-                system=system_prompt,
-                history=[],
-                user_message=user_prompt,
-                response_schema=schema,
-                retrieved_memories=[],
-                retrieved_lore=[],
-                rag_decisions={}
-            )
+                prompt = StructuredPrompt(
+                    system=system_prompt,
+                    history=[],
+                    user_message=user_prompt,
+                    response_schema=schema,
+                    retrieved_memories=[],
+                    retrieved_lore=[],
+                    rag_decisions={}
+                )
 
             try:
-                from app.infrastructure.logging.llm_logger import llm_call_purpose
-                llm_call_purpose.set(f"thinking_loop_cycle_{i}")
-                response = await llm.generate(prompt)
-                parsed = response.parsed or {}
-                thinking = parsed.get("thinking", "")
-                has_enough_info = parsed.get("has_enough_info", False)
-                search_query = (parsed.get("search_query") or "").strip()
+                # Only execute LLM call if not bypassed
+                if not (i == 1 and initial_search_query and initial_search_query.strip()):
+                    from app.infrastructure.logging.llm_logger import llm_call_purpose
+                    llm_call_purpose.set(f"thinking_loop_cycle_{i}")
+                    response = await llm.generate(prompt)
+                    parsed = response.parsed or {}
+                    thinking = parsed.get("thinking", "")
+                    has_enough_info = parsed.get("has_enough_info", False)
+                    search_query = (parsed.get("search_query") or "").strip()
 
                 context_is_empty = (
                     not current_context.strip()

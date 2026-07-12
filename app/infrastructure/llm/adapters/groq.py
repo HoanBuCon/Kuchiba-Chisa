@@ -141,11 +141,32 @@ class GroqAdapter(BaseLLMAdapter):
 
         return llm_response
 
-    # ── Stream (STUB) ──────────────────────────────────────────────
+    # ── Stream ─────────────────────────────────────────────────────
     async def stream(self, prompt: StructuredPrompt) -> AsyncIterator[str]:
-        """STUB: Streaming support — full implementation in Phase 4."""
-        log.warning("GroqAdapter.stream() is a stub — not yet implemented")
-        yield ""
+        """
+        Streams structured prompt response from Groq.
+        """
+        messages = [
+            {"role": "system", "content": prompt.system},
+            *prompt.history,
+            {"role": "user", "content": prompt.user_message},
+        ]
+        try:
+            response_stream = await self._client.chat.completions.create(
+                model=self._model,
+                messages=messages,  # type: ignore[arg-type]
+                max_tokens=prompt.max_tokens or self._max_tokens,
+                temperature=prompt.temperature or self._temperature,
+                response_format={"type": "json_object"},
+                stream=True
+            )
+            async for chunk in response_stream:
+                content = chunk.choices[0].delta.content or ""
+                if content:
+                    yield content
+        except Exception as e:
+            log.error("Groq streaming failed", error=str(e))
+            yield ""
 
     # ── Validate Response ──────────────────────────────────────────
     async def validate_response(self, raw: str, schema: dict[str, Any]) -> dict[str, Any]:

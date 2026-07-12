@@ -149,8 +149,52 @@ class DeepSeekAdapter(BaseLLMAdapter):
         return llm_response
 
     async def stream(self, prompt: StructuredPrompt) -> AsyncIterator[str]:
-        log.warning("DeepSeekAdapter.stream() is not yet implemented")
-        yield ""
+        """
+        Streams response chunks from DeepSeek API.
+        """
+        messages = [
+            {"role": "system", "content": prompt.system},
+            *prompt.history,
+            {"role": "user", "content": prompt.user_message},
+        ]
+        url = f"{self._base_url}/chat/completions"
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {self._api_key}"
+        }
+        payload = {
+            "model": self._model,
+            "messages": messages,
+            "max_tokens": prompt.max_tokens or self._max_tokens,
+            "temperature": prompt.temperature or self._temperature,
+            "response_format": {"type": "json_object"},
+            "stream": True
+        }
+        try:
+            async with httpx.AsyncClient(timeout=float(self._timeout)) as client:
+                async with client.stream("POST", url, headers=headers, json=payload) as response:
+                    if response.status_code != 200:
+                        log.error("DeepSeek stream failed", status_code=response.status_code)
+                        yield ""
+                        return
+                    
+                    async for line in response.aiter_lines():
+                        if not line:
+                            continue
+                        if line.startswith("data: "):
+                            data_str = line[6:].strip()
+                            if data_str == "[DONE]":
+                                break
+                            try:
+                                chunk_json = json.loads(data_str)
+                                content = chunk_json["choices"][0]["delta"].get("content", "")
+                                if content:
+                                    yield content
+                            except Exception:
+                                continue
+        except Exception as e:
+            log.error("DeepSeek streaming failed", error=str(e))
+            yield ""
 
     async def validate_response(self, raw: str, schema: dict[str, Any]) -> dict[str, Any]:
         raw_cleaned = raw.strip()

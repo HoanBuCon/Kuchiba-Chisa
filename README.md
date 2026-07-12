@@ -40,6 +40,7 @@
 - **Theo dõi Trạng thái Cảm xúc Thực tế:** Hệ thống Cảm xúc Động (DEHA) lưu trạng thái trực tiếp trong database (vui vẻ, gắn kết, tin tưởng) thay vì chỉ phó mặc cho "ảo giác" của LLM.
 - **Hệ thống Gắn kết (Affection System):** Theo dõi sự thay đổi độ gắn kết của Chisa theo thời gian bằng `AffectionLog`, quyết định thái độ và hành vi của cô ấy.
 - **Vòng đời Hội thoại:** Quản lý toàn diện Session Layer và liên tục lập chỉ mục các bản tóm tắt ẩn.
+- **Tối ưu hóa Định tuyến & Khởi chạy (Fast Cold-Start & Routing)**: Tích hợp định tuyến ý định đa lớp Hybrid Intent Routing, màng lọc từ khóa động (Dynamic Keyword Guards) tránh truy xuất RAG nhầm cho câu hỏi Fact phổ thông ngoài game, sinh vector anchors hàng loạt (Batch Embedding) và nạp sẵn vào RAM khi khởi động server (Lifespan Pre-warming) giúp triệt tiêu hoàn toàn độ trễ khởi động lạnh.
 - **Bảng điều khiển Trực quan thời gian thực (Visualizer Dashboard):** Trang giám sát thời gian thực (`http://localhost:8000/visualizer`) sử dụng WebSocket để hiển thị toàn bộ dấu vết thực thi (execution traces) của RAG pipeline, suy luận Loop Thinking, prompt budget và biểu đồ cảm xúc biến thiên (có thiết kế responsive).
 - **Hàng đợi Phân tán:** Các tác vụ NLP và vector hóa nặng nề được tách riêng cho các Celery worker xử lý, đảm bảo API chat luôn phản hồi tức thì (zero-lag).
 

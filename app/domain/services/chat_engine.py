@@ -2,8 +2,9 @@ import time
 import math
 import uuid
 import asyncio
-from typing import Tuple, Dict, Any, List
+from typing import Tuple, Dict, Any, List, Optional, Callable
 from sqlalchemy.ext.asyncio import AsyncSession
+from app.config.settings import settings
 
 from app.domain.interfaces.embedding_provider import IEmbeddingProvider
 from app.infrastructure.llm.adapters.base import BaseLLMAdapter, StructuredPrompt
@@ -58,7 +59,7 @@ class ChatEngine:
         conv_id = await conv_repo.get_or_create_conversation(user_uuid)
         return await conv_repo.get_recent_history(user_uuid, conv_id, limit)
 
-    async def chat(self, session: AsyncSession, user_id: str, user_message: str) -> Tuple[str, Dict[str, float]]:
+    async def chat(self, session: AsyncSession, user_id: str, user_message: str, on_token: Optional[Callable[[str], Any]] = None) -> Tuple[str, Dict[str, float]]:
         log.info("Starting ChatEngine cycle", user_id=user_id)
         
         # 1. Initialize repositories & Load context
@@ -121,10 +122,15 @@ class ChatEngine:
             cleaned_query = ""
             if not is_st:
                 cleaned_query = clean_query_for_rag(user_message)
-                query_vector = await self.embedder.embed_text(cleaned_query)
                 
-            intents = await self.intent_classifier.classify(user_message, query_vector)
+            intents, query_vector = await self.intent_classifier.classify(user_message, query_vector)
             intent_values = [i.value for i in intents]
+
+            # If RAG is triggered but we skipped semantic routing (fast-path rules matched), generate query_vector now
+            if not is_st and query_vector is None:
+                rag_intents = {ChatIntent.CHARACTER_LORE, ChatIntent.WORLD_LORE, ChatIntent.STORY_LORE, ChatIntent.MEMORY}
+                if any(intent in rag_intents for intent in intents):
+                    query_vector = await self.embedder.embed_text(cleaned_query)
             log.info("Production query classified", intents=intent_values, user_id=user_id)
 
             from app.infrastructure.logging.pipeline_tracker import pipeline_tracker
@@ -243,7 +249,101 @@ class ChatEngine:
             # 6. LLM Generation
             from app.infrastructure.logging.llm_logger import llm_call_purpose
             llm_call_purpose.set("chat_response")
-            response = await self.llm.generate(prompt)
+            
+            if on_token:
+                # Streaming LLM response parsing on-the-fly
+                class IncrementalJsonParser:
+                    def __init__(self):
+                        self.buffer = ""
+                        self.found_key = False
+                        self.in_string = False
+                        self.escaped = False
+
+                    def feed(self, chunk: str) -> str:
+                        output = []
+                        if not self.found_key:
+                            self.buffer += chunk
+                            import re
+                            match = re.search(r'"response"\s*:\s*"', self.buffer)
+                            if match:
+                                self.found_key = True
+                                remaining = self.buffer[match.end():]
+                                self.buffer = ""
+                                for char in remaining:
+                                    if self.escaped:
+                                        if char == 'n':
+                                            output.append('\n')
+                                        elif char == 't':
+                                            output.append('\t')
+                                        else:
+                                            output.append(char)
+                                        self.escaped = False
+                                    elif char == '\\':
+                                        self.escaped = True
+                                    elif char == '"':
+                                        self.in_string = False
+                                        break
+                                    else:
+                                        output.append(char)
+                                self.in_string = True
+                        else:
+                            for char in chunk:
+                                if self.escaped:
+                                    if char == 'n':
+                                        output.append('\n')
+                                    elif char == 't':
+                                        output.append('\t')
+                                    else:
+                                        output.append(char)
+                                    self.escaped = False
+                                elif char == '\\':
+                                    self.escaped = True
+                                elif char == '"':
+                                    self.in_string = False
+                                    break
+                                else:
+                                    output.append(char)
+                        return "".join(output)
+
+                parser = IncrementalJsonParser()
+                raw_chunks = []
+                async for chunk in self.llm.stream(prompt):
+                    raw_chunks.append(chunk)
+                    parsed_token = parser.feed(chunk)
+                    if parsed_token:
+                        if asyncio.iscoroutinefunction(on_token):
+                            await on_token(parsed_token)
+                        else:
+                            on_token(parsed_token)
+                
+                raw_response = "".join(raw_chunks)
+                parsed = await self.llm.validate_response(raw_response, prompt.response_schema)
+                from app.shared.utils.token_estimator import TokenEstimator
+                est_input = (
+                    TokenEstimator.estimate(prompt.system)
+                    + TokenEstimator.estimate_messages(prompt.history)
+                    + TokenEstimator.estimate(prompt.user_message)
+                )
+                est_output = TokenEstimator.estimate(raw_response)
+
+                from app.infrastructure.llm.adapters.base import LLMResponse
+                response = LLMResponse(
+                    raw_content=raw_response,
+                    parsed=parsed,
+                    input_tokens=est_input,
+                    output_tokens=est_output,
+                    model=self.llm._model,
+                    finish_reason="stop",
+                )
+
+                try:
+                    from app.infrastructure.logging.llm_logger import log_llm_transaction
+                    await log_llm_transaction(prompt, response)
+                except Exception as log_ex:
+                    log.warning("Failed to log streaming transaction", error=str(log_ex))
+            else:
+                response = await self.llm.generate(prompt)
+
             chisa_reply = response.parsed.get("response")
             
             # Fallback if parsing has mismatched JSON key but correct raw JSON string
@@ -254,6 +354,23 @@ class ChatEngine:
                         break
                         
             chisa_reply = chisa_reply or ""
+            
+            # Enforce output token limit control
+            from app.shared.utils.token_estimator import TokenEstimator
+            estimated_tokens = TokenEstimator.estimate(chisa_reply)
+            if estimated_tokens > settings.MAX_RESPONSE_TOKENS:
+                log.warning(
+                    "Bot response exceeded maximum output token limit. Truncating.",
+                    user_id=user_id,
+                    estimated_tokens=estimated_tokens,
+                    limit=settings.MAX_RESPONSE_TOKENS
+                )
+                chisa_reply = TokenEstimator.trim_to_budget(
+                    chisa_reply,
+                    settings.MAX_RESPONSE_TOKENS,
+                    suffix="... (phản hồi bị cắt ngắn do vượt quá giới hạn độ dài)"
+                )
+
             if not chisa_reply.strip():
                 log.warning("LLM returned empty response or failed to parse JSON in production pipeline", user_id=user_id)
                 raise ValueError("Empty response from LLM")

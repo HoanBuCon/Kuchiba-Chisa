@@ -26,7 +26,7 @@ async def test_small_talk_bypass_returns_other_without_semantic():
     classifier = IntentClassifier(llm=DummyLLM(), embedder=DummyEmbedder())
     classifier.semantic_router = FailSemanticRouter()
 
-    intents = await classifier.classify("hihi")
+    intents, _ = await classifier.classify("hihi")
 
     assert intents == [ChatIntent.OTHER]
 
@@ -36,7 +36,7 @@ async def test_memory_keyword_fast_path_without_semantic():
     classifier = IntentClassifier(llm=DummyLLM(), embedder=DummyEmbedder())
     classifier.semantic_router = FailSemanticRouter()
 
-    intents = await classifier.classify("tên anh là gì")
+    intents, _ = await classifier.classify("tên anh là gì")
 
     assert ChatIntent.MEMORY in intents
 
@@ -45,7 +45,7 @@ async def test_memory_keyword_fast_path_without_semantic():
 async def test_character_false_positive_prevented_by_boundary_regex():
     classifier = IntentClassifier(llm=DummyLLM(), embedder=DummyEmbedder())
 
-    intents = await classifier.classify("game có vũ khí không", query_vector=[0.0, 0.0, 0.0])
+    intents, _ = await classifier.classify("game có vũ khí không", query_vector=[0.0, 0.0, 0.0])
 
     assert ChatIntent.CHARACTER_LORE not in intents
 
@@ -55,6 +55,6 @@ async def test_system_action_fast_path_without_semantic():
     classifier = IntentClassifier(llm=DummyLLM(), embedder=DummyEmbedder())
     classifier.semantic_router = FailSemanticRouter()
 
-    intents = await classifier.classify("tóm tắt cuộc trò chuyện nãy giờ")
+    intents, _ = await classifier.classify("tóm tắt cuộc trò chuyện nãy giờ")
 
     assert ChatIntent.SYSTEM_ACTION in intents

@@ -19,7 +19,7 @@ const getDeviceId = () => {
 const BASE = 'http://localhost:8000/api/v1';
 const GREETING = { role: 'chisa', content: 'Chào Senpai~ Em là Chisa đây ♡  Hôm nay Senpai có gì muốn tâm sự với em không?' };
 
-async function streamChatResponse(payload, { onLoopThinkingStart } = {}) {
+async function streamChatResponse(payload, { onLoopThinkingStart, onToken } = {}) {
   const response = await fetch(`${BASE}/chat/stream`, {
     method: 'POST',
     headers: {
@@ -78,6 +78,9 @@ async function streamChatResponse(payload, { onLoopThinkingStart } = {}) {
       const { eventName, data } = parseChunk(rawChunk);
       if (eventName === 'loop_thinking_started' && typeof onLoopThinkingStart === 'function') {
         onLoopThinkingStart(data);
+      }
+      if (eventName === 'token' && typeof onToken === 'function') {
+        onToken(data?.token || '');
       }
       if (eventName === 'complete') {
         finalPayload = data;
@@ -225,6 +228,7 @@ export default function App() {
   const [input, setInput]                   = useState('');
   const [isLoading, setIsLoading]           = useState(false);
   const [isThinkingMode, setIsThinkingMode] = useState(false);
+  const [streamedText, setStreamedText]     = useState('');
   const [emotions, setEmotions]             = useState({ joy: 0.5, sadness: 0.0, trust: 0.5, irritation: 0.0, attachment: 0.0 });
   const [isHistoryLoading, setIsHistoryLoading] = useState(true);
   const messagesEndRef = useRef(null);
@@ -295,6 +299,7 @@ export default function App() {
     setMessages(prev => [...prev, { role: 'user', content: userText }]);
     setIsLoading(true);
     setIsThinkingMode(false);
+    setStreamedText('');
 
     try {
       const res = await streamChatResponse(
@@ -303,6 +308,10 @@ export default function App() {
           onLoopThinkingStart: () => {
             setIsThinkingMode(true);
           },
+          onToken: (token) => {
+            setIsThinkingMode(false);
+            setStreamedText(prev => prev + token);
+          }
         },
       );
 
@@ -319,6 +328,7 @@ export default function App() {
     } finally {
       setIsThinkingMode(false);
       setIsLoading(false);
+      setStreamedText('');
     }
   };
 
@@ -356,7 +366,13 @@ export default function App() {
             <div className="msg-row">
               <div className="msg-chisa">
                 <img src="/pet_chisa_gif.gif" className="chisa-avatar-img" alt="Chisa" />
-                {isThinkingMode ? (
+                {streamedText ? (
+                  <div className="chisa-bubble">
+                    <div className="chisa-content">
+                      <ReactMarkdown>{streamedText}</ReactMarkdown>
+                    </div>
+                  </div>
+                ) : isThinkingMode ? (
                   <div className="thinking-mode-bubble">
                     <div className="thinking-mode-label">
                       <span className="thinking-mode-icon">⚙️</span>

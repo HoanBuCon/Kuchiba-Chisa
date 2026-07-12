@@ -136,6 +136,13 @@
             color: var(--text-main);
         }
 
+        .btn-download:hover {
+            background: var(--accent-red) !important;
+            border-color: var(--accent-red) !important;
+            box-shadow: 0 0 10px rgba(229, 57, 53, 0.4);
+            transform: translateY(-1px);
+        }
+
         .dot {
             width: 8px;
             height: 8px;
@@ -865,6 +872,9 @@
                     <div class="detail-title-row">
                         <h2 class="detail-title" id="det-message">Tin nhắn của user</h2>
                         <span class="trace-badge" id="det-status-badge">SUCCESS</span>
+                        <button id="btn-download-report" class="btn-download" style="margin-left: auto; display: flex; align-items: center; gap: 6px; background: var(--accent-red-dim); border: 1px solid rgba(229, 57, 53, 0.4); border-radius: 6px; color: var(--text-main); font-weight: 600; padding: 6px 12px; font-size: 13px; cursor: pointer; transition: all 0.2s ease;">
+                            <span>📥</span> Tải báo cáo
+                        </button>
                     </div>
                     <div class="detail-meta-grid">
                         <div class="meta-card">
@@ -1855,6 +1865,138 @@
                 selectNode(activeNodesList[0].id);
             }
         }
+
+        // Download Report handler
+        document.getElementById('btn-download-report').addEventListener('click', () => {
+            if (!selectedTraceId) return;
+            const trace = traces.find(t => t.id === selectedTraceId);
+            if (!trace) return;
+
+            let md = `# BÁO CÁO PIPELINE RAG - CHISA AI\n\n`;
+            md += `*   **Trace ID:** \`${trace.id}\`\n`;
+            md += `*   **Trạng thái:** ${trace.status || 'UNKNOWN'}\n`;
+            md += `*   **Nguồn gửi:** ${trace.source || 'Web/Discord'}\n`;
+            md += `*   **Thời gian:** ${new Date(trace.timestamp || trace.created_at || Date.now()).toLocaleString('vi-VN')}\n`;
+            md += `*   **Độ trễ (Latency):** ${trace.latency_ms || 0}ms\n`;
+            md += `*   **Tổng Tokens API:** ${sumApiTokens(trace)} tokens\n\n`;
+            md += `---\n\n`;
+
+            md += `## 1. Tin nhắn của User (User Input)\n`;
+            md += `> **Message:** ${trace.message || '(Empty)'}\n\n`;
+            md += `*   **Intents Classified:** ${trace.intents ? trace.intents.join(', ') : 'None'}\n\n`;
+
+            md += `## 2. Các bước trong RAG Pipeline\n\n`;
+
+            if (trace.steps && trace.steps.length) {
+                trace.steps.forEach((step, idx) => {
+                    md += `### Bước ${idx + 1}: ${step.name.toUpperCase()}\n`;
+                    md += `*   **Thời gian:** ${step.timestamp || '—'}\n`;
+                    md += `*   **Thời gian hoàn thành:** ${step.completed_at || '—'}\n`;
+                    
+                    if (step.name === 'qdrant_retrieval' || step.name === 'retrieval') {
+                        md += `#### Chi tiết Truy vấn Qdrant:\n`;
+                        md += `*   **Phân loại Intent:** \`${step.data.query_intent || '—'}\`\n`;
+                        md += `*   **Should Retrieve:** \`${step.data.should_retrieve}\`\n`;
+                        const chunks = step.data.retrieved_chunks || [];
+                        md += `*   **Số lượng chunks tìm thấy:** ${chunks.length}\n\n`;
+                        if (chunks.length > 0) {
+                            md += `##### Chunks retrieved:\n`;
+                            chunks.forEach((c, cIdx) => {
+                                md += `**Chunk #${cIdx + 1}** (Score: ${c.score != null ? c.score.toFixed(4) : 'N/A'}, Base Score: ${c.base_score != null ? c.base_score.toFixed(4) : 'N/A'}, Keyword Score: ${c.keyword_score != null ? c.keyword_score.toFixed(4) : 'N/A'}, Type: ${c.payload?.type || 'lore'})\n`;
+                                md += `\`\`\`text\n${c.payload?.text || c.text || ''}\n\`\`\`\n\n`;
+                            });
+                        }
+                    } 
+                    else if (step.name === 'information_alignment_check' || step.name === 'context_assessment') {
+                        md += `#### Đánh giá sự phù hợp của Context:\n`;
+                        md += `*   **Aligned (Đủ thông tin?):** \`${step.data.is_aligned}\`\n`;
+                        md += `*   **Lý do:** ${step.data.reason || '—'}\n`;
+                        if (step.data.generated_search_query) {
+                            md += `*   **Search Query đề xuất:** \`${step.data.generated_search_query}\`\n`;
+                        }
+                        md += `\n`;
+                    }
+                    else if (step.name === 'thinking_loop') {
+                        md += `#### Loop Thinking Cycles:\n`;
+                        const cycles = step.data.cycles || [];
+                        cycles.forEach(c => {
+                            md += `##### Cycle #${c.cycle_index}:\n`;
+                            md += `*   **Đủ thông tin? (has_enough_info):** \`${c.has_enough_info}\`\n`;
+                            md += `*   **Reasoning (Thinking):**\n> ${c.thinking || '—'}\n\n`;
+                            if (c.search_query) {
+                                md += `*   **Search Query:** \`${c.search_query}\`\n`;
+                            }
+                            if (c.search_results) {
+                                md += `*   **Kết quả tìm kiếm:**\n`;
+                                const snippets = c.search_results.snippets || [];
+                                snippets.forEach((snip, sIdx) => {
+                                    md += `  ${sIdx + 1}. ${snip}\n`;
+                                });
+                                if (c.search_results.deep_page_url) {
+                                    md += `*   **Deep Page Crawled:** [${c.search_results.deep_page_url}](${c.search_results.deep_page_url})\n`;
+                                    md += `*   **Deep Page Preview:**\n\`\`\`text\n${c.search_results.deep_page_preview || ''}\n\`\`\`\n`;
+                                }
+                            }
+                            md += `\n`;
+                        });
+                    }
+                    else if (step.name === 'context_building') {
+                        md += `#### Cắt và dựng Context (Prompt Builder):\n`;
+                        md += `*   **Mode:** \`${step.data.budget_mode || '—'}\`\n`;
+                        md += `*   **Ước lượng Token Prompt / Trần:** \`${step.data.total_estimated_tokens || 0} / ${step.data.effective_ceiling || 0}\`\n`;
+                        md += `*   **Trong ngân sách (within_budget):** \`${step.data.within_budget}\`\n`;
+                        md += `##### Phân bổ chi tiết:\n`;
+                        const used = step.data.budget_audit?.used || {};
+                        Object.entries(used).forEach(([k, v]) => {
+                            md += `- **${k}:** ${v} tokens\n`;
+                        });
+                        md += `\n`;
+                    }
+                    else if (step.name === 'llm_generation') {
+                        md += `#### Lượt gọi LLM sinh văn bản:\n`;
+                        md += `*   **Model:** \`${step.data.model || '—'}\`\n`;
+                        md += `*   **Purpose:** \`${step.data.purpose_label || step.data.purpose || '—'}\`\n`;
+                        md += `*   **Tokens:** Input: ${step.data.input_tokens || 0} | Output: ${step.data.output_tokens || 0} | Tổng: ${step.data.total_tokens || 0}\n`;
+                        md += `*   **Finish Reason:** \`${step.data.finish_reason || '—'}\`\n`;
+                        md += `##### Phản hồi thô JSON:\n`;
+                        md += `\`\`\`json\n${JSON.stringify(step.data.parsed_response, null, 2)}\n\`\`\`\n\n`;
+                    }
+                    else if (step.name === 'emotion_update') {
+                        md += `#### Cập nhật Trạng thái Cảm xúc:\n`;
+                        md += `*   **Thái độ người dùng:** ${JSON.stringify(step.data.user_sentiment)}\n`;
+                        md += `*   **Cảm xúc Chisa bộc lộ:** ${JSON.stringify(step.data.chisa_sentiment)}\n`;
+                        md += `##### Cảm xúc ẩn biến thiên:\n`;
+                        const oldE = step.data.old_emotions || {};
+                        const newE = step.data.new_emotions || {};
+                        Object.keys(newE).forEach(key => {
+                            md += `- **${key.toUpperCase()}:** ${Math.round((oldE[key] || 0)*100)}% ➔ ${Math.round((newE[key] || 0)*100)}%\n`;
+                        });
+                        md += `\n`;
+                    }
+                    else {
+                        md += `#### Chi tiết dữ liệu:\n`;
+                        md += `\`\`\`json\n${JSON.stringify(step.data, null, 2)}\n\`\`\`\n\n`;
+                    }
+                    md += `\n`;
+                });
+            } else {
+                md += `*(Không ghi nhận bước trung gian nào)*\n\n`;
+            }
+
+            md += `## 3. Phản hồi của Chisa (Chisa Response)\n`;
+            md += `> **Response:** ${trace.response || '(Không có phản hồi)'}\n`;
+
+            const blob = new Blob([md], { type: 'text/markdown;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            const dateStr = new Date(trace.timestamp || trace.created_at || Date.now()).toISOString().split('T')[0];
+            a.download = `chisa_report_${trace.id.substring(0, 8)}_${dateStr}.md`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        });
 
         // Initialize on page load
         window.addEventListener('DOMContentLoaded', () => {

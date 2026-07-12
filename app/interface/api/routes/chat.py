@@ -1,5 +1,6 @@
 import asyncio
 import json
+from typing import Callable, Optional, Any
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import StreamingResponse
@@ -63,7 +64,7 @@ def _start_chat_trace(request: ChatRequest, username: str | None) -> str:
     )
 
 
-async def _run_chat_request(session: AsyncSession, request: ChatRequest) -> tuple[str, dict, bool]:
+async def _run_chat_request(session: AsyncSession, request: ChatRequest, on_token: Optional[Callable[[str], Any]] = None) -> tuple[str, dict, bool]:
     from app.infrastructure.logging.pipeline_tracker import pipeline_tracker
 
     try:
@@ -71,6 +72,7 @@ async def _run_chat_request(session: AsyncSession, request: ChatRequest) -> tupl
             session=session,
             user_id=request.user_id,
             user_message=request.message,
+            on_token=on_token,
         )
         loop_thinking_activated = pipeline_tracker.get_loop_thinking_activated()
 
@@ -179,10 +181,14 @@ async def chat_stream_endpoint(
 
     async def runner():
         try:
+            async def sse_on_token(token: str):
+                queue.put_nowait({"type": "token", "trace_id": trace_id, "data": {"token": token}})
+
             async with AsyncSessionFactory() as session:
                 reply_text, emotions, loop_thinking_activated = await _run_chat_request(
                     session=session,
                     request=request,
+                    on_token=sse_on_token,
                 )
             queue.put_nowait({
                 "type": "complete",

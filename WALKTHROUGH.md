@@ -529,3 +529,133 @@ python scripts/clear_temp_user_memory.py
 | Authentication / user login | 🔲 Dùng device UUID tạm thời |
 | Production deployment | 🔲 Dockerfile có, chưa deploy |
 | Test coverage | ✅ Hoàn thiện (25 unit/integration tests passed) |
+
+---
+
+## 13. Phân tích & Đánh giá Hệ thống RAG (Production-Ready Audit)
+
+Dưới đây là báo cáo phân tích chi tiết về thiết kế hệ thống RAG hiện tại của Chisa AI dưới góc nhìn của một kỹ sư thiết kế hệ thống AI giàu kinh nghiệm thực chiến.
+
+### 13.1 Những điểm đã làm tốt (Strengths)
+
+1. **Thiết kế Modular RAG Package:** Kiến trúc được phân rã rất sạch sẽ tại `app/domain/services/rag/`. Việc phân tách các module chuyên biệt (`base.py`, `retriever_memory.py`, `retriever_lore.py`, `reranker.py`, `assessor.py`, `thinking_loop.py`, `pipeline.py`) giúp codebase dễ bảo trì, dễ viết unit test độc lập và tuân thủ nguyên lý Single Responsibility (SRP).
+2. **Dynamic Context Budgeting (Quản lý ngân sách động):** Lớp `ContextBudgetManager` với cơ chế phân bổ token linh hoạt (flex allocation) theo 3 trạng thái (`SMALL_TALK`, `RAG`, `LOOP`) là một điểm cộng cực lớn. Việc định dạng hệ số token thực tế của Tiếng Việt (2 ký tự ≈ 1 token) giúp kiểm soát chính xác chi phí API và ngăn chặn triệt để lỗi tràn Context Window của LLM.
+3. **Cô lập dữ liệu người dùng (Strict Isolation):** Bộ lọc `user_id` được áp dụng triệt để ở mức Qdrant metadata (`search_by_user`) đảm bảo tính bảo mật và riêng tư dữ liệu, ngăn ngừa rò rỉ ký ức giữa các tài khoản khác nhau trong hệ thống multi-user.
+4. **Song song hóa tác vụ (Parallel Retrieval):** Sử dụng `asyncio.gather` để truy xuất song song nhiều collection lore và memories cùng lúc giúp giảm thiểu đáng kể độ trễ I/O của DB.
+5. **Bộ lọc Intent đa tầng thông minh:** Sự kết hợp giữa bộ lọc thô (L1/L2 regex fast-path) và bộ định tuyến vector ngữ nghĩa (L3 Semantic Router với margin confidence) giúp lọc bỏ 95% các yêu cầu casual chit-chat mà không cần gọi vector search/embedding, tiết kiệm thời gian phản hồi.
+6. **Thread-Safe CPU Offloading:** Adapter `FastEmbedAdapter` chạy các phép nhân ma trận nặng (CPU-bound) trong một ThreadPool riêng thông qua `asyncio.to_thread`. Điều này giúp event loop của FastAPI không bao giờ bị nghẽn (non-blocking).
+
+---
+
+### 13.2 Những điểm chưa làm tốt & Logic Bugs (Weaknesses)
+
+#### 🐞 Bug 1: Lỗi Tokenizer tiếng Việt trong Keyword Overlap Reranker
+*   **Vị trí:** [reranker.py](file:///d:/Hoc_Tap/Code/Du_An_Ca_Nhan/Chisa_bot/kuchiba_chisa/app/domain/services/rag/reranker.py) -> class `KeywordOverlapReranker`.
+*   **Nguyên nhân:** Hàm `tokenize` sử dụng regex `re.findall(r"[\wÀ-ỹ]+", text.lower())` để tách từ. Trong tiếng Việt, từ ghép thường chứa khoảng trắng (ví dụ: `"vòng cổ"`, `"nhật ký"`, `"sở thích"`). Regex này sẽ bẻ vụn câu thành các từ đơn (monosyllabic tokens) như `["vòng", "cổ", "nhật", "ký"]`.
+*   **Hậu quả:** Khi vòng lặp `for token in query_tokens` kiểm tra điều kiện `token in self.high_value_terms`, phép so sánh luôn trả về `False` đối với các cụm từ ghép trong danh sách high-value (như `"vòng cổ"`, `"nhật ký"`, `"sở thích"`). Kết quả là các từ khóa quan trọng nhất của Lore không bao giờ được nhận diện chính xác và không nhận được hệ số boost điểm `weighted_hits = 2.0`. Chúng bị hạ cấp xuống điểm hit thường (1.0).
+
+#### ⚠️ Vấn đề 2: Khởi tạo Embedding lãng phí (Redundant Embedding Generation)
+*   **Vị trí:** [chat_engine.py](file:///d:/Hoc_Tap/Code/Du_An_Ca_Nhan/Chisa_bot/kuchiba_chisa/app/domain/services/chat_engine.py) -> hàm `chat`.
+*   **Nguyên nhân:** Vector embedding của câu hỏi người dùng được tạo sinh ngay ở đầu quy trình xử lý nếu không phải small talk thô: `query_vector = await self.embedder.embed_text(cleaned_query)`.
+*   **Hậu quả:** Nếu Intent Classifier định tuyến câu hỏi là `SYSTEM_ACTION` (ví dụ: yêu cầu "tóm tắt cuộc trò chuyện" hoặc "báo cáo cảm xúc") hoặc định tuyến là `OTHER` (không thuộc diện truy xuất RAG), vector embedding này sẽ bị vứt bỏ hoàn toàn. Điều này gây lãng phí tài nguyên CPU (cho local model) hoặc chi phí API/độ trễ mạng không cần thiết.
+
+#### ⚠️ Vấn đề 3: Cào Deep Page tuần tự (Sequential HTTP Crawling)
+*   **Vị trí:** [web_search.py](file:///d:/Hoc_Tap/Code/Du_An_Ca_Nhan/Chisa_bot/kuchiba_chisa/app/domain/services/tools/web_search.py) -> hàm `_web_search`.
+*   **Nguyên nhân:** Bot duyệt qua các URL kết quả tìm kiếm và thực hiện cào sâu dữ liệu bằng một vòng lặp tuần tự (`for target_url in urls[:2]`).
+*   **Hậu quả:** Nếu trang web đầu tiên bị chậm hoặc treo, httpx Client sẽ phải đợi đầy 6.0 giây timeout rồi mới chuyển sang trang thứ hai. Điều này tạo ra thắt nút cổ chai (bottleneck) về độ trễ cho toàn bộ pipeline chat.
+
+#### ⚠️ Vấn đề 4: Tự động xóa Collection nguy hiểm (Destructive Schema Management)
+*   **Vị trí:** [qdrant_service.py](file:///d:/Hoc_Tap/Code/Du_An_Ca_Nhan/Chisa_bot/kuchiba_chisa/app/infrastructure/vector/qdrant/qdrant_service.py) -> hàm `create_collection`.
+*   **Nguyên nhân:** Khi khởi động, nếu phát hiện kích thước vector lưu trên Qdrant lệch với cấu hình (ví dụ: khi nâng cấp model embedding), hệ thống sẽ lập tức chạy lệnh `await self._client.delete_collection(name)` để tạo lại.
+*   **Hậu quả:** Trong môi trường Production thực tế, hành vi tự động xóa collection này sẽ ngay lập tức hủy diệt toàn bộ dữ liệu bộ nhớ dài hạn (LTM) của hàng ngàn người dùng đã tích lũy qua nhiều tháng. Đây là một rủi ro vận hành cực kỳ nghiêm trọng.
+
+---
+
+### 13.3 Các khoảng trống chưa đạt chuẩn Production-Ready (Non-Production Gaps)
+
+1. **Cơ chế Tìm kiếm Web dựa trên Scraping thiếu ổn định:**
+   *   `WebSearchAgentTool` đang cào trực tiếp trang HTML của DuckDuckGo (`html.duckduckgo.com/html/`). Các công cụ tìm kiếm có cơ chế chống cào cực kỳ nghiêm ngặt (Cloudflare, CAPTCHA, IP rate limit) và cấu hình HTML có thể thay đổi bất cứ lúc nào khiến bộ parser regex bị vỡ. Hệ thống sẽ lập tức mất khả năng tìm kiếm web khi chạy thực tế.
+2. **Thiếu cơ chế dự phòng và chịu lỗi (Resilience & Failover):**
+   *   Các lời gọi API tới LLM (Groq/Gemini) và Vector DB không có cơ chế tự động thử lại (Retry) với exponential backoff.
+   *   Không có LLM Fallback: Nếu API chính (ví dụ: Groq) bị cạn kiệt rate limit (429) hoặc gặp lỗi máy chủ (5xx), hệ thống sẽ trả về lỗi 500 hoặc ngắt kết nối thay vì tự động chuyển hướng sang nhà cung cấp dự phòng (như Gemini hoặc DeepSeek).
+3. **Độ trễ phản hồi (Response Latency) quá cao khi chạy Loop Thinking:**
+   *   Mỗi lượt suy nghĩ của `ThinkingLoopAgent` chạy tuần tự: LLM phân tích ngữ cảnh ➔ Gửi yêu cầu tìm kiếm ➔ Cào dữ liệu deep page ➔ LLM tự đánh giá lại.
+   *   Với cấu hình tối đa 2 cycles, quy trình này có thể ngốn từ **10 - 15 giây** trước khi trả kết quả về cho user. Đây là khoảng thời gian quá dài đối với trải nghiệm trò chuyện thời gian thực.
+4. **Thiếu Token-by-Token Streaming thực tế:**
+   *   Mặc dù API `/chat/stream` hỗ trợ SSE, nó chỉ dùng để thông báo trạng thái "bắt đầu Loop" và trả về cục JSON kết quả cuối cùng. SSE không truyền trực tiếp luồng ký tự (stream tokens) của câu trả lời từ LLM về UI. Người dùng sẽ phải nhìn màn hình trống và chờ đợi rất lâu trước khi nhận được phản hồi.
+5. **Cơ chế Đánh giá Hội thoại thô sơ:**
+   *   Lớp `ContextAssessor` sử dụng một prompt LLM zero-shot để đánh giá sự thẳng hàng thông tin. Cơ chế này vừa tốn kém token vừa có xác suất không ổn định (non-deterministic). Không có lớp kiểm thử tự động hay kiểm định chéo (guardrails) để đảm bảo chất lượng của bộ Assess.
+
+---
+
+### 13.4 Đề xuất phương án cải tiến và Lộ trình tối ưu (Roadmap)
+
+```mermaid
+graph TD
+    A[Tối ưu hóa Pipeline RAG] --> B[Sửa Logic Bugs]
+    A --> C[Nâng cấp Production Gaps]
+    A --> D[Tối ưu Latency & UX]
+    
+    B --> B1["Tokenizer tiếng Việt nâng cao<br>(underthesea / n-grams)"]
+    B --> B2["Trì hoãn tạo Embedding<br>(Deferred Embedding)"]
+    
+    C --> C1["Sử dụng Official Search API<br>(Tavily / Serper)"]
+    C --> C2["Retry & Fallback LLM<br>(Tenacity / Provider Router)"]
+    
+    D --> D1["Song song hóa Deep Web Crawling<br>(asyncio.gather)"]
+    D --> D2["Real token-by-token Streaming<br>(SSE Token Stream)"]
+```
+
+#### 📋 Lộ trình thực hiện chi tiết:
+
+1.  **Sửa lỗi tách từ tiếng Việt:**
+    *   Nâng cấp `KeywordOverlapReranker` để sinh các token dạng n-gram (bigram, trigram) khi duyệt qua query, hoặc tích hợp thư viện tách từ tiếng Việt chuyên dụng như `underthesea` (lightweight).
+    *   *Ví dụ:* Cụm từ *"kể về vòng cổ"* sẽ được tách thành các token `["kể về", "vòng cổ", "vòng", "cổ"]`, giúp khớp chính xác với cụm từ khóa `"vòng cổ"` trong `high_value_terms`.
+2.  **Triển khai trì hoãn sinh Embedding (Deferred Embedding):**
+    *   Chỉnh sửa `ChatEngine.chat` để chuyển bước sinh vector `embed_text` xuống **sau** khi `IntentClassifier` hoàn tất. Chỉ gọi tạo embedding khi và chỉ khi danh sách intents được phân loại có chứa ít nhất một intent yêu cầu RAG (`CHARACTER_LORE`, `WORLD_LORE`, `STORY_LORE`, hoặc `MEMORY`).
+3.  **Thay thế Web Scraper bằng API tìm kiếm chính thức:**
+    *   Tích hợp dịch vụ tìm kiếm chuyên dụng dành cho RAG Agent như **Tavily API**, **Serper API** hoặc **Brave Search API**. Các API này đã tự động tối ưu hóa việc trích xuất văn bản thô, lọc nhiễu HTML, trả về cấu trúc JSON sạch sẽ và cực kỳ khó bị chặn IP.
+4.  **Song song hóa và đặt giới hạn cào Deep Page:**
+    *   Thay thế vòng lặp cào tuần tự bằng `asyncio.gather` để tải nội dung của 2 trang web hàng đầu cùng lúc, áp dụng thời gian chờ chặt chẽ (ví dụ: tối đa 2.5 giây cho cả hai trang).
+5.  **Thiết lập cơ chế Chịu lỗi đa lớp (Multi-Provider Resilience):**
+    *   Sử dụng thư viện `tenacity` để cấu hình retry tự động cho các truy vấn LLM khi gặp mã lỗi 429 hoặc 503.
+    *   Xây dựng một `FallbackLLMAdapter` bao bọc bên ngoài. Nếu Groq trả về lỗi liên tiếp 3 lần, hệ thống sẽ tự động định tuyến yêu cầu sang Gemini API hoặc DeepSeek API để bảo đảm dịch vụ không bị gián đoạn.
+6.  **Cải tiến SSE để stream token LLM trực tiếp:**
+    *   Tái cấu trúc API `/chat/stream` để đọc trực tiếp generator từ LLM (`stream=True`). Truyền các token sinh ra dưới dạng các event SSE liên tục (ví dụ: `event: token\ndata: "Em"\n\n`). Điều này giúp người dùng nhìn thấy bot gõ chữ ngay lập tức sau 1-2 giây, loại bỏ hoàn toàn cảm giác phản hồi chậm (perceived latency).
+7.  **Chính sách Bảo vệ Collection an toàn:**
+    *   Thay vì xóa collection khi lệch cấu hình, hãy ném ra một ngoại lệ nghiêm trọng (Exception) hoặc gửi thông báo cảnh báo qua Telegram/Discord cho kỹ sư vận hành để thực hiện di chuyển dữ liệu (migration) một cách an toàn thông qua collection phụ.
+
+---
+
+## ⚡ CẬP NHẬT PHIÊN BẢN OPTIMIZED (PRODUCTION-READY UPGRADES)
+
+Chúng tôi đã hoàn thành việc nâng cấp toàn bộ hệ thống lên chuẩn **Production-Ready** và tối ưu hóa khả năng chịu tải cao cùng với trải nghiệm người dùng tối ưu:
+
+1.  **Sửa triệt để lỗi Tokenizer tiếng Việt**:
+    *   `KeywordOverlapReranker` hiện tại tách từ theo n-grams (unigrams + bigrams + trigrams) giúp khớp hoàn hảo các từ ghép tiếng Việt (như `"vòng cổ"`, `"nhật ký"`).
+    *   Ngăn chặn pha loãng điểm số bằng cách giữ nguyên số lượng từ đơn làm mẫu số chia.
+2.  **Trì hoãn sinh Embedding & Caching**:
+    *   Embedding chỉ được tính khi cần truy xuất RAG hoặc dùng Semantic routing. Các kịch bản Small Talk regex không tốn một embedding call nào.
+    *   Tích hợp Redis cache (`chisa:embedding_cache`) với TTL 10 phút để lưu trữ vector cho các truy vấn trùng lặp.
+3.  **Hệ thống Web Search siêu phục hồi**:
+    *   Tích hợp Redis cache (`chisa:search_cache`) lưu kết quả tìm kiếm trong 2 giờ.
+    *   Hỗ trợ chuỗi nhà cung cấp tìm kiếm dự phòng: Tavily ➔ Serper ➔ thư viện `duckduckgo_search` ➔ DDG HTML Scraper.
+    *   Song song hóa cào deep page bằng `asyncio.gather` với thời gian chờ tối đa 2.0 giây.
+4.  **Tối ưu hóa Loop Thinking (Bỏ qua Cycle 1)**:
+    *   `ContextAssessor` sẽ trích xuất query tìm kiếm ngay khi phát hiện context bị lệch.
+    *   `ThinkingLoopAgent` nhận query này và bỏ qua LLM call đầu tiên ở Cycle 1, tiết kiệm 1 LLM call và giảm 1.5 - 2s độ trễ.
+    *   Thêm few-shot CoT giúp tăng khả năng suy luận logic.
+5.  **Streaming Token-by-Token thực sự qua SSE**:
+    *   Các adapter Gemini, Groq, DeepSeek được nâng cấp hàm `stream()`.
+    *   Bộ lọc JSON động (`IncrementalJsonParser`) bóc tách và stream trực tiếp trường `"response"` về client dưới dạng `event: token`.
+    *   Frontend React cập nhật text và render Markdown thời gian thực giúp mang lại cảm giác gõ chữ tức thì.
+6.  **Kiểm soát Token Đầu Ra & Tải Báo Cáo**:
+    *   Đặt trần cứng `MAX_RESPONSE_TOKENS: int = 20000` bảo vệ hệ thống khỏi các câu trả lời quá dài.
+    *   Thêm nút **"Tải báo cáo"** xuất toàn bộ thông tin trace (RAG status, thinking cycles, tokens, emotions) ra file Markdown (.md) trực tiếp trên giao diện Visualizer.
+7.  **Tối ưu hóa Khởi động lạnh Semantic Router (Batch Embedding)**:
+    *   Hàm `initialize` của `SemanticRouter` hiện đã được chuyển sang chế độ **Batch Mode**, gom toàn bộ các anchors từ tất cả các ý định để gửi một lượt duy nhất tới `embed_batch`. Tận dụng tối đa khả năng xử lý song song của FastEmbed (ONNX C++), giúp rút ngắn thời gian khởi động từ **~3000ms xuống ~150ms**.
+8.  **Pre-warming tại Startup Lifespan**:
+    *   Khởi chạy tiến trình sinh vector cho anchors ngay tại sự kiện startup lifespan của FastAPI trong [app/main.py](file:///d:/Hoc_Tap/Code/Du_An_Ca_Nhan/Chisa_bot/kuchiba_chisa/app/main.py). Điều này giúp anchors đã sẵn sàng trên RAM trước khi nhận tin nhắn đầu tiên của người dùng, mang lại phản hồi zero-latency tức thì.
+9.  **Bộ lọc Từ khóa Động (Dynamic Keyword Guards) cho Lore**:
+    *   Bổ sung bộ lọc từ khóa bảo vệ cho `CHARACTER_LORE`, `WORLD_LORE`, và `STORY_LORE` khi mô hình phân vân (`is_uncertain`). Giúp ngăn chặn triệt để các câu hỏi factual phổ thông bên ngoài (như giá cổ phiếu FPT, Vinfast) kích hoạt nhầm database RAG lookup, hướng câu hỏi đi đúng vào fallback `OTHER` để chạy Web Search/Loop Thinking chính xác.
+

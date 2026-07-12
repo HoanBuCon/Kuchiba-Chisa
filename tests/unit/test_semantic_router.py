@@ -24,6 +24,13 @@ class MockEmbedder:
                     
         return [0.0, 0.0, 0.0, 0.0, 0.0]
 
+    async def embed_batch(self, texts: list[str]) -> list[list[float]]:
+        results = []
+        for text in texts:
+            vec = await self.embed_text(text)
+            results.append(vec)
+        return results
+
 
 @pytest.mark.asyncio
 async def test_semantic_router_classification():

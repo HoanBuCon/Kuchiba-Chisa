@@ -95,6 +95,9 @@ Nếu bạn lười gõ lệnh, dự án đã có sẵn file `start.ps1` ở th�
 ```powershell
 uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 ```
+> [!NOTE]
+> Khi ứng dụng FastAPI khởi động, hệ thống sẽ tự động thực hiện **Pre-warming** tải và nhúng (embed) toàn bộ anchors định tuyến ngữ nghĩa bằng **Batch Mode** trực tiếp lên RAM. Nhờ đó, tin nhắn đầu tiên của người dùng sẽ được phản hồi ngay lập tức (zero cold-start latency).
+
 Sau đó truy cập Swagger UI để theo dõi tài liệu API tại: `http://localhost:8000/docs`
 
 Các route chính hiện có là `/api/v1/chat`, `/api/v1/chat/history/{user_id}`, `/api/v1/chat/emotions/{user_id}` và `/api/v1/chat/clear/{user_id}`; health check nằm ở nhóm route hệ thống.

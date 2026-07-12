@@ -14,7 +14,7 @@ class ContextAssessor:
         user_message: str,
         context_text: str,
         llm: BaseLLMAdapter
-    ) -> Tuple[bool, str]:
+    ) -> Tuple[bool, str, str]:
         system_prompt = (
             "You are an Information Alignment Assessor.\n"
             "Evaluate whether the retrieved context contains enough specific, factual, and relevant information to fully "
@@ -26,6 +26,9 @@ class ContextAssessor:
             "irrelevant game/fiction lore, you MUST set 'is_aligned' to false.\n"
             "If the user's message is simple casual conversation (greeting, small talk, emotional check-in) that doesn't "
             "require factual data lookup, set 'is_aligned' to true.\n"
+            "If you set 'is_aligned' to false, you MUST generate a single, highly optimized search query under the key 'search_query' "
+            "specifically designed for search engines (like DuckDuckGo) to retrieve the missing factual information. "
+            "Keep the query short, composed of key keywords (typically 2-4 keywords), resolve pronouns (e.g. 'em' -> 'Chisa'), and remove all conversational fillers/question particles.\n"
             "You MUST output the result as a valid JSON object matching the requested schema."
         )
 
@@ -38,7 +41,8 @@ class ContextAssessor:
             "type": "object",
             "properties": {
                 "is_aligned": {"type": "boolean"},
-                "reason": {"type": "string"}
+                "reason": {"type": "string"},
+                "search_query": {"type": "string"}
             },
             "required": ["is_aligned", "reason"]
         }
@@ -60,8 +64,9 @@ class ContextAssessor:
             parsed = response.parsed or {}
             is_aligned = parsed.get("is_aligned", True)
             reason = parsed.get("reason", "No reason provided")
-            log.info("Information alignment check complete", is_aligned=is_aligned, reason=reason)
-            return is_aligned, reason
+            search_query = parsed.get("search_query", "").strip()
+            log.info("Information alignment check complete", is_aligned=is_aligned, reason=reason, search_query=search_query)
+            return is_aligned, reason, search_query
         except Exception as e:
             log.warning("Information alignment check failed, defaulting to True", error=str(e))
-            return True, "Check failed, defaulting to aligned"
+            return True, "Check failed, defaulting to aligned", ""

@@ -118,12 +118,15 @@ class RAGPipeline:
                 )
 
             if retrieval_tasks:
-                results = await asyncio.gather(*retrieval_tasks)
-                for intent_type, retrieved_data in zip(active_intents, results):
-                    if intent_type == "MEMORY":
-                        memories.extend([m.text_content for m in retrieved_data if m.text_content])
-                    else:
-                        lore_chunks.extend(retrieved_data)
+                try:
+                    results = await asyncio.gather(*retrieval_tasks)
+                    for intent_type, retrieved_data in zip(active_intents, results):
+                        if intent_type == "MEMORY":
+                            memories.extend([m.text_content for m in retrieved_data if m.text_content])
+                        else:
+                            lore_chunks.extend(retrieved_data)
+                except Exception as ex:
+                    log.error("Failed to retrieve data from Qdrant vector database", error=str(ex))
 
         # 1.1 Track retrieval step in real-time
         pipeline_tracker.add_step("rag_retrieval", {
@@ -150,21 +153,27 @@ class RAGPipeline:
         # 3. Assess context alignment
         is_aligned = True
         alignment_reason = "Small talk or system bypass"
+        search_query = ""
         if not is_small_talk and query_vector:
-            is_aligned, alignment_reason = await self.assessor.assess_alignment(
+            is_aligned, alignment_reason, search_query = await self.assessor.assess_alignment(
                 user_message=user_message,
                 context_text=retrieved_context_str,
                 llm=llm
             )
-            # 3.1 Track alignment check in real-time
-            pipeline_tracker.add_step("information_alignment_check", {
-                "is_aligned": is_aligned,
-                "reason": alignment_reason,
-                "triggers_loop_thinking": (not is_aligned) and (not is_small_talk),
-                "lore_count": len(lore_chunks),
-                "memory_count": len(memories),
-                "has_rag_context": bool(lore_chunks or memories),
-            })
+            
+            # Log assessment result in trace
+            pipeline_tracker.add_step(
+                name="information_alignment_check",
+                data={
+                    "is_aligned": is_aligned,
+                    "reason": alignment_reason,
+                    "triggers_loop_thinking": not is_aligned,
+                    "lore_count": len(lore_chunks),
+                    "memory_count": len(memories),
+                    "has_rag_context": len(lore_chunks) > 0 or len(memories) > 0,
+                    "generated_search_query": search_query
+                }
+            )
 
         # 4. Thinking Loop (Web Search Iteration) if context is not aligned
         tool_output_msg = ""
@@ -178,7 +187,8 @@ class RAGPipeline:
                 initial_context=retrieved_context_str,
                 llm=llm,
                 embedder=embedder,
-                web_search_tool=web_search_tool
+                web_search_tool=web_search_tool,
+                initial_search_query=search_query
             )
             did_search = any(step.get("search_query") for step in thinking_steps)
             if did_search or retrieved_context_str.strip() not in ("", "(No context retrieved)"):

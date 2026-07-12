@@ -33,7 +33,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     Startup: connect and verify all services.
     Shutdown: gracefully close all connections.
     """
-    log.info("🌸 Chisa API starting up...", env=settings.APP_ENV)
+    log.info("[Chisa] Chisa API starting up...", env=settings.APP_ENV)
 
     # ── Startup ──────────────────────────────────────────────────
     startup_errors: list[str] = []
@@ -68,7 +68,15 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     elif startup_errors:
         log.warning("Non-fatal startup warnings (dev mode)", issues=startup_errors)
 
-    log.info("🌸 Chisa API ready", port=settings.APP_PORT)
+    # Pre-warm Semantic Router anchors
+    try:
+        if chat._chat_engine.intent_classifier.semantic_router:
+            log.info("Pre-warming Semantic Router anchors...")
+            await chat._chat_engine.intent_classifier.semantic_router.initialize()
+    except Exception as e:
+        log.warning("Failed to pre-warm semantic router anchors during startup", error=str(e))
+
+    log.info("[Chisa] Chisa API ready", port=settings.APP_PORT)
     yield
 
     # ── Shutdown ─────────────────────────────────────────────────

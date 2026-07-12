@@ -141,11 +141,37 @@ class GeminiAdapter(BaseLLMAdapter):
 
         return llm_response
 
-    # ── Stream (STUB) ──────────────────────────────────────────────
+    # ── Stream ─────────────────────────────────────────────────────
     async def stream(self, prompt: StructuredPrompt) -> AsyncIterator[str]:
-        """STUB: Streaming support — full implementation later."""
-        log.warning("GeminiAdapter.stream() is a stub — not yet implemented")
-        yield ""
+        """
+        Streams structured prompt response from Gemini.
+        """
+        contents = []
+        for msg in prompt.history:
+            role = "user" if msg["role"] == "user" else "model"
+            contents.append({"role": role, "parts": [{"text": msg["content"]}]})
+        
+        contents.append({"role": "user", "parts": [{"text": prompt.user_message}]})
+
+        try:
+            config = types.GenerateContentConfig(
+                temperature=prompt.temperature or self._temperature,
+                max_output_tokens=prompt.max_tokens or self._max_tokens,
+                response_mime_type="application/json",
+                system_instruction=prompt.system
+            )
+            
+            response_stream = await self._client.aio.models.generate_content_stream(
+                model=self._model,
+                contents=contents,
+                config=config
+            )
+            async for chunk in response_stream:
+                if chunk.text:
+                    yield chunk.text
+        except Exception as e:
+            log.error("Gemini streaming failed", error=str(e))
+            yield ""
 
     # ── Validate Response ──────────────────────────────────────────
     async def validate_response(self, raw: str, schema: dict[str, Any]) -> dict[str, Any]:

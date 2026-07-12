@@ -23,7 +23,7 @@ class DummyLoreRetriever:
 
 class DummyAssessor:
     async def assess_alignment(self, user_message, context_text, llm):
-        return True, "aligned"
+        return True, "aligned", ""
 
 
 class DummyThinkingLoop:

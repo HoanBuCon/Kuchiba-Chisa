@@ -192,19 +192,24 @@ Hệ thống định tuyến hành động hệ thống được chia làm 2 T�
     - Bổ sung tập regex pattern tường minh cho: tóm tắt hội thoại, báo cáo cảm xúc, web search.
     - Các lệnh rõ ràng như "tóm tắt nãy giờ" có thể ra quyết định ngay tại L2 trước khi vào semantic scoring.
 
-3. **SemanticRouter được tinh chỉnh tăng tính quyết đoán**:
+3. **SemanticRouter được tinh chỉnh tăng tính quyết đoán & Khởi chạy tức thì**:
     - `EXPLICIT_ANCHOR_BONUS` đã tăng lên `0.06`.
-    - Bổ sung thêm một số anchor theo văn phong Nam giúp tăng độ phủ truy vấn thực tế.
+    - Bổ sung cơ chế **Batch Embedding** thu thập toàn bộ anchors của các intent và gọi `embed_batch` một lần duy nhất, tối ưu hóa thời gian tính toán vector từ **~3000ms xuống ~150ms**.
+    - Tích hợp gọi khởi tạo anchors trực tiếp vào **startup lifespan** của FastAPI trong [main.py](file:///d:/Hoc_Tap/Code/Du_An_Ca_Nhan/Chisa_bot/kuchiba_chisa/app/main.py), loại bỏ hoàn toàn độ trễ khởi động lạnh (zero cold-start latency) cho tin nhắn đầu tiên.
 
-4. **Tool Router có Keyword Fast-Path trước semantic routing**:
+4. **Dynamic Keyword Guards cho tất cả các ý định Lore và Memory**:
+    - Màng lọc từ khóa bảo vệ được cấu hình chặt chẽ cho `MEMORY`, `CHARACTER_LORE`, `WORLD_LORE`, và `STORY_LORE` khi mức độ tự tin phân loại thấp (`is_uncertain`).
+    - Điều này ngăn chặn việc các câu hỏi thực tế phổ thông (như giá cổ phiếu FPT, Vinfast) bị định tuyến sai vào kho Lore/Memory, hướng luồng xử lý trôi về `OTHER` để chạy Web Search chuẩn xác.
+
+5. **Tool Router có Keyword Fast-Path trước semantic routing**:
     - Thêm lớp `KeywordToolRouter` trong `tool_router.py`.
     - Nếu query khớp regex cứng thì trả thẳng tool (`web_search`, `summarize_conversation_memory`, `get_emotion_report`) với score `1.0`.
     - Nếu không khớp mới fallback sang `SemanticToolRouter` (cosine similarity), giúp tiết kiệm tài nguyên embedding.
 
-5. **Bổ sung test unit cho routing**:
+6. **Bổ sung test unit cho routing**:
     - `tests/unit/test_intent_classifier.py`: kiểm tra small-talk bypass, L2 keyword fast-path, chống false positive, SYSTEM_ACTION fast-path.
     - `tests/unit/test_tool_router.py`: kiểm tra ánh xạ keyword -> tool và trường hợp không khớp.
-    - `tests/unit/test_semantic_router.py`: bổ sung case false positive và case mơ hồ.
+    - `tests/unit/test_semantic_router.py`: bổ sung case false positive và case mơ hồ, đồng thời mock cơ chế `embed_batch` mới.
 
 ### 4.3. Information Alignment Check & Loop Thinking Agent
 

@@ -139,11 +139,11 @@ class IntentClassifier:
         msg_lower = message.strip().lower()
         return len(msg_lower) < 8 or msg_lower in cls.SMALL_TALK_PHRASES
 
-    async def classify(self, user_message: str, query_vector: Optional[List[float]] = None) -> List["ChatIntent"]:
+    async def classify(self, user_message: str, query_vector: Optional[List[float]] = None) -> tuple[List["ChatIntent"], Optional[List[float]]]:
         # ── L1: Small talk detection ──
         if self.is_small_talk(user_message):
             log.debug("Intent fast-path: small talk detected", user_message=user_message)
-            return [ChatIntent.OTHER]
+            return [ChatIntent.OTHER], None
 
         msg_lower = user_message.strip().lower()
         high_conf_intents: List[ChatIntent] = []
@@ -172,11 +172,17 @@ class IntentClassifier:
                 intents=[i.value for i in high_conf_intents],
                 user_message=user_message,
             )
-            return high_conf_intents
+            return high_conf_intents, None
 
         # ── L3: Semantic Router ──
         if self.semantic_router:
             try:
+                # Lazy embedding generation for semantic routing
+                if query_vector is None and self.embedder:
+                    from app.shared.utils.query_cleaner import clean_query_for_rag
+                    cleaned = clean_query_for_rag(user_message)
+                    query_vector = await self.embedder.embed_text(cleaned)
+
                 matched_intents = await self.semantic_router.classify(user_message, query_vector)
                 if matched_intents:
                     log.info(
@@ -184,10 +190,10 @@ class IntentClassifier:
                         intents=[i.value for i in matched_intents],
                         user_message=user_message,
                     )
-                    return matched_intents
+                    return matched_intents, query_vector
             except Exception as e:
                 log.warning("Semantic Router classification failed, falling back to OTHER", error=str(e))
 
         # ── L4: Fallback ──
         log.info("Intent fallback: no rule or semantic match, returning OTHER", user_message=user_message)
-        return [ChatIntent.OTHER]
+        return [ChatIntent.OTHER], query_vector

@@ -70,6 +70,11 @@ class Settings(BaseSettings):
     OPENAI_API_KEY: Optional[str] = None
     EMBEDDING_MODEL: str = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
 
+    # ── Search API Keys (Optional Free Tiers) ──────────────────
+    TAVILY_API_KEY: Optional[str] = None
+    SERPER_API_KEY: Optional[str] = None
+    ENABLE_PAID_SEARCH: bool = False
+
     # ── JWT ────────────────────────────────────────────────────
     JWT_SECRET: str = Field(min_length=32)
     JWT_ALGORITHM: str = "HS256"
@@ -93,6 +98,7 @@ class Settings(BaseSettings):
     PROMPT_SKELETON_HEADROOM: float = Field(default=0.05, ge=0.0, le=0.25)
     PROMPT_HISTORY_MIN_TURNS: int = Field(default=4, ge=1, le=20)
     PROMPT_REALLOCATE_EMPTY: bool = True
+    MAX_RESPONSE_TOKENS: int = 20000
 
     # ── Derived Properties ─────────────────────────────────────
     @property

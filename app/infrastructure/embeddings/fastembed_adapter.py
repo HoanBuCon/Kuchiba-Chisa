@@ -67,9 +67,35 @@ class FastEmbedAdapter(IEmbeddingProvider):
 
     async def embed_text(self, text: str) -> List[float]:
         """
-        Embed a single string text into a vector of floats.
+        Embed a single string text into a vector of floats, cached in Redis.
         """
+        cleaned = text.strip().lower()
+        if not cleaned:
+            return []
+
+        # Try cache lookup first
+        try:
+            import hashlib
+            import json
+            from app.infrastructure.cache.redis.redis_service import redis_service
+
+            h = hashlib.md5(cleaned.encode("utf-8")).hexdigest()
+            cache_key = f"chisa:embedding_cache:{h}"
+            cached = await redis_service.get(cache_key)
+            if cached:
+                log.debug("Embedding cache hit", text=cleaned[:30])
+                return json.loads(cached)
+        except Exception as e:
+            log.warning("Embedding cache read failed, falling back to generation", error=str(e))
+
         results = await self.embed_batch([text])
         if not results:
             raise EmbeddingGenerationError("No embedding was returned for the text.")
+
+        # Cache the result for 10 minutes (600s)
+        try:
+            await redis_service.set(cache_key, json.dumps(results[0]), ttl=600)
+        except Exception as e:
+            log.warning("Embedding cache write failed", error=str(e))
+
         return results[0]

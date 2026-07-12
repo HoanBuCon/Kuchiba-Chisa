@@ -10,7 +10,7 @@ from app.infrastructure.logging.logger import configure_logging, get_logger
 configure_logging()
 log = get_logger(__name__)
 
-log.info("🌸 Chisa Celery Worker starting...")
+log.info("[Chisa] Chisa Celery Worker starting...")
 
 
 def start() -> None:

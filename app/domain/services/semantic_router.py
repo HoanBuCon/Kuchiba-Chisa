@@ -194,29 +194,44 @@ class SemanticRouter:
         self._initialized = False
 
     async def initialize(self) -> None:
-        """Sinh và cache các vector embedding của các Anchors vào bộ nhớ RAM"""
+        """Sinh và cache các vector embedding của các Anchors vào bộ nhớ RAM bằng Batch Mode"""
         async with self._lock:
             if self._initialized:
                 return
 
-            log.info("Initializing Semantic Router anchors...")
+            log.info("Initializing Semantic Router anchors in batch mode...")
+            import numpy as np
+
+            # 1. Thu thập tất cả anchors thành danh sách phẳng để batch
+            flat_anchors = []
+            mapping = []  # Lưu list của tuple: (intent, index_in_intent, is_explicit)
             for intent, anchor_tuples in ROUTER_ANCHORS.items():
-                vectors = []
-                explicit_idx: Set[int] = set()
-                for i, (text, is_explicit) in enumerate(anchor_tuples):
-                    try:
-                        vec = await self.embedder.embed_text(text)
-                        vectors.append(vec)
+                for idx, (text, is_explicit) in enumerate(anchor_tuples):
+                    flat_anchors.append(text)
+                    mapping.append((intent, idx, is_explicit))
+
+            if flat_anchors:
+                try:
+                    # 2. Sinh embedding hàng loạt (FastEmbed xử lý song song rất nhanh)
+                    flat_vectors = await self.embedder.embed_batch(flat_anchors)
+                    
+                    # 3. Phân bổ ngược lại cho các ma trận theo từng intent
+                    for (intent, idx, is_explicit), vec in zip(mapping, flat_vectors):
+                        if intent not in self.route_embeddings:
+                            count = len(ROUTER_ANCHORS[intent])
+                            dim = len(vec)
+                            self.route_embeddings[intent] = np.zeros((count, dim))
+                            self.explicit_indices[intent] = set()
+                            
+                        self.route_embeddings[intent][idx] = vec
                         if is_explicit:
-                            explicit_idx.add(i)
-                    except Exception as e:
-                        log.error("Failed to embed anchor text", text=text, error=str(e))
-                if vectors:
-                    self.route_embeddings[intent] = np.array(vectors)
-                    self.explicit_indices[intent] = explicit_idx
+                            self.explicit_indices[intent].add(idx)
+                except Exception as e:
+                    log.error("Failed to batch embed anchors for SemanticRouter", error=str(e))
+                    raise
 
             self._initialized = True
-            log.info("Semantic Router anchors initialized successfully ✓")
+            log.info("Semantic Router anchors initialized successfully via batching")
 
     def _cosine_similarity(self, q_vec: np.ndarray, anchor_matrix: np.ndarray) -> np.ndarray:
         """Tính cosine similarity giữa vector truy vấn và ma trận anchors"""
@@ -324,6 +339,73 @@ class SemanticRouter:
                     else:
                         if not (has_keyword or score >= 0.94):
                             log.debug("SYSTEM_ACTION rejected: no keyword and score below hard threshold", score=score)
+                            continue
+
+                # Extra strict validation for MEMORY to avoid false positives on general talk / factual questions
+                elif intent == ChatIntent.MEMORY:
+                    has_memory_kw = any(kw in msg_lower for kw in [
+                        "anh", "tớ", "mình", "tên", "biệt danh", "sở thích", "thích",
+                        "tuổi", "nghề", "công việc", "hứa", "nói", "kể", "phỏng vấn",
+                        "gia đình", "quen", "kỷ niệm", "nhớ", "ước mơ", "mơ", "nhắc",
+                        "ngày mai", "hôm trước", "hôm qua", "trước đây", "lần trước",
+                        "chúng ta", "tụi mình", "tớ với em"
+                    ])
+                    if is_uncertain:
+                        if not has_memory_kw:
+                            log.debug("MEMORY rejected: uncertain margin + no keyword", score=score, margin=confidence_margin)
+                            continue
+                    else:
+                        if not (has_memory_kw or score >= 0.90):
+                            log.debug("MEMORY rejected: no keyword and score below hard threshold", score=score)
+                            continue
+
+                # Extra validation for CHARACTER_LORE to avoid false positives on unrelated topics
+                elif intent == ChatIntent.CHARACTER_LORE:
+                    has_char_kw = any(kw in msg_lower for kw in [
+                        "em", "chisa", "kéo", "vòng cổ", "vũ khí", "forte", "resonance",
+                        "tuổi", "thích", "sở thích", "sợ", "yếu", "mạnh", "trường", "sinh",
+                        "món ăn", "món tủ", "resonance liberation"
+                    ])
+                    if is_uncertain:
+                        if not has_char_kw:
+                            log.debug("CHARACTER_LORE rejected: uncertain margin + no keyword", score=score, margin=confidence_margin)
+                            continue
+                    else:
+                        if not (has_char_kw or score >= 0.88):
+                            log.debug("CHARACTER_LORE rejected: no keyword and score below hard threshold", score=score)
+                            continue
+
+                # Extra validation for WORLD_LORE to avoid false positives on unrelated topics
+                elif intent == ChatIntent.WORLD_LORE:
+                    has_world_kw = any(kw in msg_lower for kw in [
+                        "game", "waves", "wuwa", "tacet", "echo", "jinzhou", "huanglong",
+                        "sphere", "sonoro", "lahai-roi", "lahai roi", "resonator", "aether",
+                        "union", "forgery", "concerto", "thế giới", "vùng", "bản đồ", "map"
+                    ])
+                    if is_uncertain:
+                        if not has_world_kw:
+                            log.debug("WORLD_LORE rejected: uncertain margin + no keyword", score=score, margin=confidence_margin)
+                            continue
+                    else:
+                        if not (has_world_kw or score >= 0.88):
+                            log.debug("WORLD_LORE rejected: no keyword and score below hard threshold", score=score)
+                            continue
+
+                # Extra validation for STORY_LORE to avoid false positives on unrelated topics
+                elif intent == ChatIntent.STORY_LORE:
+                    has_story_kw = any(kw in msg_lower for kw in [
+                        "truyện", "cốt truyện", "story", "ending", "chapter", "chương", "act",
+                        "loop", "vòng lặp", "honami", "startorch", "festival", "lễ hội",
+                        "sumika", "nhật ký", "jiyan", "phrolova", "rover", "crownless",
+                        "quan hệ", "quen", "gặp"
+                    ])
+                    if is_uncertain:
+                        if not has_story_kw:
+                            log.debug("STORY_LORE rejected: uncertain margin + no keyword", score=score, margin=confidence_margin)
+                            continue
+                    else:
+                        if not (has_story_kw or score >= 0.88):
+                            log.debug("STORY_LORE rejected: no keyword and score below hard threshold", score=score)
                             continue
 
                 matched_intents.append(intent)

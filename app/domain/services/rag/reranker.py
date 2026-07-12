@@ -15,8 +15,18 @@ class KeywordOverlapReranker:
         }
 
     def tokenize(self, text: str) -> List[str]:
-        tokens = re.findall(r"[\wÀ-ỹ]+", text.lower())
-        return [token for token in tokens if len(token) >= 2]
+        if not text:
+            return []
+        words = re.findall(r"[\wÀ-ỹ]+", text.lower())
+        tokens = [w for w in words if len(w) >= 2]
+        
+        # Generate bigrams and trigrams for compound Vietnamese words
+        n = len(words)
+        bigrams = [" ".join(words[i:i+2]) for i in range(n-1)]
+        trigrams = [" ".join(words[i:i+3]) for i in range(n-2)]
+        
+        all_tokens = tokens + bigrams + trigrams
+        return [t for t in all_tokens if len(t) >= 2]
 
     def calculate_score(self, query_tokens: List[str], candidate_text: str) -> float:
         if not query_tokens or not candidate_text:
@@ -26,6 +36,9 @@ class KeywordOverlapReranker:
         hits = 0
         weighted_hits = 0.0
 
+        # Separate unigrams (single words) to use as the denominator base
+        unigrams = [t for t in query_tokens if " " not in t]
+
         for token in query_tokens:
             if token in candidate_lower:
                 hits += 1
@@ -34,7 +47,8 @@ class KeywordOverlapReranker:
         if not hits:
             return 0.0
 
-        return min(1.0, weighted_hits / max(4.0, len(query_tokens)))
+        # Prevent denominator inflation from bigrams/trigrams by using unigrams count
+        return min(1.0, weighted_hits / max(4.0, len(unigrams)))
 
 
 class HybridMemoryScorer:
