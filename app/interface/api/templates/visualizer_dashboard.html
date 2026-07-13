@@ -1461,6 +1461,20 @@
                                             <div class="json-block" style="margin-top: 4px; font-family: 'Inter', sans-serif; white-space: pre-wrap; line-height: 1.5;">${step.data.reason || '(Không có lý do)'}</div>
                                         </div>
                                         <div class="kv-item">
+                                            <span class="kv-label">Conversation Context
+                                                <span style="margin-left: 8px; font-size: 10px; padding: 2px 7px; border-radius: 10px; font-weight: 600; background: ${step.data.history_mode === 'summary' ? 'rgba(139,92,246,0.25)' : 'rgba(59,130,246,0.2)'}; color: ${step.data.history_mode === 'summary' ? '#a78bfa' : '#60a5fa'}">${step.data.history_mode === 'summary' ? '📋 Summary' : '💬 Raw (4 msgs)'}</span>
+                                            </span>
+                                            <div class="json-block" style="margin-top: 4px; font-family: monospace; white-space: pre-wrap; font-size: 11px; max-height: 150px; overflow-y: auto; background: rgba(0,0,0,0.2); padding: 8px; border-radius: 4px;">${step.data.history || '(Không có)'}</div>
+                                        </div>
+                                        <div class="kv-item">
+                                            <span class="kv-label">Latest Query (Câu hỏi cuối)</span>
+                                            <div class="json-block" style="margin-top: 4px; font-family: monospace; white-space: pre-wrap; font-size: 11px; background: rgba(0,0,0,0.2); padding: 8px; border-radius: 4px;">${step.data.latest_query || '(Không có)'}</div>
+                                        </div>
+                                        <div class="kv-item">
+                                            <span class="kv-label">Retrieved Context (Dữ liệu đã nạp)</span>
+                                            <div class="json-block" style="margin-top: 4px; font-family: monospace; white-space: pre-wrap; font-size: 11px; max-height: 250px; overflow-y: auto; background: rgba(0,0,0,0.2); padding: 8px; border-radius: 4px;">${step.data.retrieved_context || '(Không có)'}</div>
+                                        </div>
+                                        <div class="kv-item">
                                             <span class="kv-label">RAG context đã retrieve</span>
                                             <span class="kv-value">${hasContext ? `Có (${loreCount} lore, ${memCount} memory)` : 'Không có / rỗng'}</span>
                                         </div>

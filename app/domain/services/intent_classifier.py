@@ -70,6 +70,9 @@ class IntentClassifier:
         "ngày mai anh phỏng vấn", "nhớ biệt danh của anh",
         "tên anh là", "tên tớ là", "tên mình là",
         "anh đang học gì", "anh làm nghề gì", "công việc của anh",
+        "ông anh tên gì", "senpai tên gì", "ước mơ của anh", "anh hứa gì với em",
+        "anh thích nghe nhạc gì", "anh sinh năm bao nhiêu", "quê anh ở đâu",
+        "anh thích đọc sách gì", "gia đình của anh", "anh quen em thế nào"
     ]
 
     # CHARACTER_LORE: Chỉ bắt khi đề cập rõ "của em" / "của chisa"
@@ -84,6 +87,10 @@ class IntentClassifier:
         "em sinh ra ở đâu", "tính cách của em",
         "resonance của em", "forte của chisa",
         "em sợ điều gì", "điểm yếu của em",
+        "em bao tuổi rồi", "tiểu sử của em", "lý lịch của em", "năng lực của em",
+        "em ăn được ớt không", "món em ghét nhất", "sở thích lúc rảnh của em",
+        "em thích mèo không", "thiết bị ở cổ em", "vòng cổ của em",
+        "thuộc tính nguyên tố của em", "dấu ấn tacet mark của em"
     ]
 
     # WORLD_LORE: Thuật ngữ đặc thù thế giới game — bắt chính xác
@@ -92,7 +99,11 @@ class IntentClassifier:
         "lahai-roi", "lahai roi", "mutant resonator",
         "resonator là gì", "tacet field là gì",
         "echo là gì", "resonance liberation",
-        "aether union", "black shores", "huanglong",
+        "fracidust", "black shores", "huanglong",
+        "tacet discord là cái gì", "mutant resonator là sao",
+        "lahai-roi ở vùng nào", "solaris 3 là hành tinh nào",
+        "jinzhou ở đâu", "huanglong là gì", "fracidust là thế nào",
+        "echo là cái gì", "thành phố jinzhou", "thế giới solaris"
     ]
 
     # STORY_LORE: Sự kiện / arc cốt truyện cụ thể
@@ -102,6 +113,9 @@ class IntentClassifier:
         "companion quest", "chapter 3", "chương 3",
         "cốt truyện chapter", "câu chuyện của sumika",
         "nhật ký của sumika", "sự kiện startorch",
+        "di thư của sumika", "cuốn sổ của sumika",
+        "vòng lặp honami là sao", "chapter 3 cốt truyện",
+        "lễ hội startorch có gì", "startorch school festival"
     ]
 
     # SYSTEM_ACTION: Lệnh tường minh — bắt bằng regex pattern (linh hoạt hơn phrase match)

@@ -57,6 +57,7 @@ class RAGPipeline:
         embedder: IEmbeddingProvider,
         web_search_tool: Any,
         is_small_talk: bool = False,
+        conversation_summary: str = None,
     ) -> RAGContext:
         """
         Runs E2E RAG Pipeline: Retrieves memory & lore, checks alignment, and runs thinking loop if necessary.
@@ -78,7 +79,7 @@ class RAGPipeline:
                         collection="character_lore",
                         query_vector=query_vector,
                         query_text=cleaned_query,
-                        top_k=6,
+                        top_k=5,
                         score_threshold=0.35
                     )
                 )
@@ -89,7 +90,7 @@ class RAGPipeline:
                         collection="world_lore",
                         query_vector=query_vector,
                         query_text=cleaned_query,
-                        top_k=6,
+                        top_k=5,
                         score_threshold=0.35
                     )
                 )
@@ -100,7 +101,7 @@ class RAGPipeline:
                         collection="story_lore",
                         query_vector=query_vector,
                         query_text=cleaned_query,
-                        top_k=6,
+                        top_k=5,
                         score_threshold=0.35
                     )
                 )
@@ -154,24 +155,33 @@ class RAGPipeline:
         is_aligned = True
         alignment_reason = "Small talk or system bypass"
         search_query = ""
+        use_lore = True
         if not is_small_talk and query_vector:
-            is_aligned, alignment_reason, search_query = await self.assessor.assess_alignment(
+            is_aligned, alignment_reason, search_query, use_lore = await self.assessor.assess_alignment(
                 user_message=user_message,
                 context_text=retrieved_context_str,
-                llm=llm
+                llm=llm,
+                history=history,
+                conversation_summary=conversation_summary,
             )
             
             # Log assessment result in trace
+            history_mode = "summary" if (conversation_summary and conversation_summary.strip()) else "raw"
             pipeline_tracker.add_step(
                 name="information_alignment_check",
                 data={
                     "is_aligned": is_aligned,
                     "reason": alignment_reason,
                     "triggers_loop_thinking": not is_aligned,
+                    "use_lore": use_lore,
                     "lore_count": len(lore_chunks),
                     "memory_count": len(memories),
                     "has_rag_context": len(lore_chunks) > 0 or len(memories) > 0,
-                    "generated_search_query": search_query
+                    "generated_search_query": search_query,
+                    "history_mode": history_mode,
+                    "history": conversation_summary.strip() if history_mode == "summary" else "(raw - last 4 msgs)",
+                    "latest_query": user_message,
+                    "retrieved_context": retrieved_context_str
                 }
             )
 
@@ -195,7 +205,7 @@ class RAGPipeline:
                 tool_output_msg = retrieved_context_str
 
         return RAGContext(
-            lore_chunks=lore_chunks,
+            lore_chunks=lore_chunks if use_lore else [],
             memories=memories,
             tool_output_msg=tool_output_msg,
             is_aligned=is_aligned,

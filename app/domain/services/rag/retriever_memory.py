@@ -21,7 +21,7 @@ class MemoryRetriever:
         user_id: str,
         current_emotion: Dict[str, float] = None,
         limit: int = 15,
-        top_k: int = 8
+        top_k: int = 5
     ) -> List[ScoredMemory]:
         try:
             candidates = await qdrant_service.search_by_user(

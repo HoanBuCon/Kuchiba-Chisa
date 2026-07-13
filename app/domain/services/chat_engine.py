@@ -198,7 +198,8 @@ class ChatEngine:
                 llm=self.llm,
                 embedder=self.embedder,
                 web_search_tool=self.tool_router.tool_map.get("web_search"),
-                is_small_talk=is_st
+                is_small_talk=is_st,
+                conversation_summary=conv_summary,
             )
             
             lore_chunks = rag_context.lore_chunks
@@ -251,15 +252,18 @@ class ChatEngine:
             llm_call_purpose.set("chat_response")
             
             if on_token:
-                # Streaming LLM response parsing on-the-fly
                 class IncrementalJsonParser:
                     def __init__(self):
                         self.buffer = ""
                         self.found_key = False
                         self.in_string = False
                         self.escaped = False
+                        self.finished = False
 
                     def feed(self, chunk: str) -> str:
+                        if self.finished:
+                            return ""
+                        
                         output = []
                         if not self.found_key:
                             self.buffer += chunk
@@ -267,6 +271,7 @@ class ChatEngine:
                             match = re.search(r'"response"\s*:\s*"', self.buffer)
                             if match:
                                 self.found_key = True
+                                self.in_string = True
                                 remaining = self.buffer[match.end():]
                                 self.buffer = ""
                                 for char in remaining:
@@ -282,27 +287,29 @@ class ChatEngine:
                                         self.escaped = True
                                     elif char == '"':
                                         self.in_string = False
+                                        self.finished = True
                                         break
                                     else:
                                         output.append(char)
-                                self.in_string = True
                         else:
-                            for char in chunk:
-                                if self.escaped:
-                                    if char == 'n':
-                                        output.append('\n')
-                                    elif char == 't':
-                                        output.append('\t')
+                            if self.in_string:
+                                for char in chunk:
+                                    if self.escaped:
+                                        if char == 'n':
+                                            output.append('\n')
+                                        elif char == 't':
+                                            output.append('\t')
+                                        else:
+                                            output.append(char)
+                                        self.escaped = False
+                                    elif char == '\\':
+                                        self.escaped = True
+                                    elif char == '"':
+                                        self.in_string = False
+                                        self.finished = True
+                                        break
                                     else:
                                         output.append(char)
-                                    self.escaped = False
-                                elif char == '\\':
-                                    self.escaped = True
-                                elif char == '"':
-                                    self.in_string = False
-                                    break
-                                else:
-                                    output.append(char)
                         return "".join(output)
 
                 parser = IncrementalJsonParser()

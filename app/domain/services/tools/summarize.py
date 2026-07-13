@@ -36,6 +36,7 @@ class ConversationSummarizerAgentTool(BaseAgentTool):
             "hãy ghi lại những điểm chính trong cuộc trò chuyện",
             "tổng kết lại nãy giờ nói gì đi",
             "tóm tắt ký ức của chúng ta lại đi",
+            "liệt kê các điểm chính nãy giờ",
             # --- Diễn đạt khác ---
             "em tóm gọn lại những gì chúng ta đã nói đi",
             "anh muốn biết chúng ta đã bàn về gì",
@@ -45,6 +46,9 @@ class ConversationSummarizerAgentTool(BaseAgentTool):
             "ghi nhớ và tóm tắt cuộc trò chuyện nãy giờ",
             "tóm tắt session chat này cho anh",
             "cho anh xem tổng quan cuộc hội thoại hôm nay",
+            "nói lại những gì nãy giờ chúng ta trò chuyện",
+            "tóm tắt những gì anh với em nói chuyện từ nãy",
+            "em tóm tắt lại ký ức chung của chúng ta nãy giờ đi",
         ]
 
     async def execute(

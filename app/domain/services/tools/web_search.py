@@ -61,6 +61,9 @@ class WebSearchAgentTool(BaseAgentTool):
             "kiểm tra xem trên internet có thông tin gì chưa",
             "tìm xem bây giờ có gì mới không",
             "tra xem sự kiện này thế nào",
+            "tra cứu google xem tin tức wuthering waves hôm nay",
+            "search thông tin sự kiện mới trên mạng giúp anh",
+            "tra giúp anh tin tức này",
             # --- Thông tin thực tế / thời gian thực ---
             "khi nào game cập nhật phiên bản mới nhất",
             "phiên bản tiếp theo ra mắt bao giờ vậy",
@@ -75,6 +78,8 @@ class WebSearchAgentTool(BaseAgentTool):
             "có nhiều ưu đãi gì trong sự kiện này không",
             "giải thưởng của giải đấu wuthering waves hiện tại là gì",
             "cập nhật mới nhất của wuthering waves có những gì",
+            "tìm kiếm xem sự kiện leak có gì không",
+            "lên mạng tìm hiểu thông tin wuthering waves",
         ]
 
     async def execute(
@@ -172,11 +177,11 @@ class WebSearchAgentTool(BaseAgentTool):
             "You are a search query optimizer for a chatbot named Kuchiba Chisa (Wuthering Waves).\n"
             "Given the recent conversation history and the latest user message, generate a single, highly optimized English or Vietnamese search query "
             "specifically designed for search engines (like DuckDuckGo):\n"
-            "- Keep it short, focused, and composed of key keywords targeting the specific question topic (typically 2-4 keywords).\n"
-            "- Focus directly on the specific subject/attribute asked (e.g. if asking about hobbies, use 'Sở thích của Kuchiba Chisa'; if asking about age, use 'Tuổi Kuchiba Chisa').\n"
-            "- Remove all conversational fillers, question particles, greetings, and generic question words (e.g. do NOT use 'cho hỏi', 'em ơi', 'là gì', 'được không', 'của em').\n"
-            "- Resolve all pronouns and relative terms to their absolute names (e.g. 'em' -> 'Kuchiba Chisa', 'game này' -> 'The Games user was talking about').\n"
-            "- Do NOT mix conversational Vietnamese and English words unnecessarily. Use clean, direct keywords.\n"
+            "- Keep it focused and keyword-based. Strip out conversational fillers, greetings, punctuation, and generic question words (e.g., 'cho hỏi', 'em ơi', 'là gì', 'được không', 'của em', 'vậy em', 'nhé').\n"
+            "- Resolve pronouns and relative terms to their absolute names (e.g., 'em' -> 'Kuchiba Chisa', 'game này' -> 'Wuthering Waves').\n"
+            "- CRITICAL FOR RELEVANCE: Retain all distinct semantic constraints from the user's question. Do NOT over-truncate. A high-quality query must combine: (1) the primary Subject/Entity, (2) the target Action/Attribute, and (3) key qualifiers (such as Location, Nationality, or specific Industry). Omitting any of these distinct constraints makes the search too broad and yields useless results.\n"
+            "- Focus on semantic completeness: include all distinct constraints in a concise manner (typically 4 to 8 search terms). Do not search for a broad profile if the user asks about a very specific attribute.\n"
+            "- Keep the language consistent: use clean, direct keywords matching the language of the query. Do NOT mix conversational Vietnamese and English.\n"
             "You MUST output the result as a valid JSON object with key 'search_query'."
         )
 

@@ -34,6 +34,10 @@ class EmotionReportAgentTool(BaseAgentTool):
             "xuất báo cáo cảm xúc của em ra",
             "chỉ số tâm lý của em hiện tại",
             "bảng thống kê cảm xúc của chisa đâu",
+            "em đo tâm trạng của em hiện tại xem nào",
+            "chỉ số tình cảm của em với anh",
+            "kiểm tra cảm xúc của chisa",
+            "cho xem chỉ số cảm xúc",
             # --- Diễn đạt tự nhiên về tâm trạng ---
             "cảm xúc hiện tại của em như thế nào",
             "trạng thái nội tâm của em thế nào",
@@ -45,6 +49,8 @@ class EmotionReportAgentTool(BaseAgentTool):
             "cảm xúc nào đang chiếm ưu thế trong em",
             "xúc cảm hiện tại của em là gì",
             "em có vui không báo cáo đi",
+            "em đang thấy thế nào rồi",
+            "hiện tại tâm lý em ổn không",
         ]
 
     async def execute(

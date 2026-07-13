@@ -26,7 +26,7 @@ from app.domain.services.memory_extractor import MemoryExtractor
 class FastEmbedAdapter(IEmbeddingProvider):
     def __init__(self):
         from fastembed import TextEmbedding
-        self.model = TextEmbedding(model_name="sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2")
+        self.model = TextEmbedding(model_name="intfloat/multilingual-e5-small")
 
     async def embed_text(self, text: str) -> list[float]:
         embeddings = list(self.model.embed([text]))

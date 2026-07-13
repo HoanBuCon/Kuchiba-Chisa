@@ -16,8 +16,9 @@ sys.path.append(os.getcwd())
 from app.infrastructure.vector.qdrant.qdrant_service import qdrant_service, get_qdrant_client
 from app.infrastructure.embeddings.fastembed_adapter import FastEmbedAdapter
 from qdrant_client.http import models as qdrant_models
+from app.config.settings import settings
 
-VECTOR_SIZE = 384
+VECTOR_SIZE = settings.QDRANT_EMBEDDING_DIM
 
 COLLECTION_DIRS = {
     "character_lore": ["data/lore/character_lore", "data/lore/relationship_lore"],

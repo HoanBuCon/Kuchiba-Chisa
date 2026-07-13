@@ -30,12 +30,12 @@ sys.path.append(os.getcwd())
 from app.infrastructure.vector.qdrant.qdrant_service import qdrant_service, get_qdrant_client
 from app.infrastructure.embeddings.fastembed_adapter import FastEmbedAdapter
 from qdrant_client.http import models as qdrant_models
-
+from app.config.settings import settings
 
 LORE_FILE = os.path.join(os.path.dirname(__file__), "..", "data", "lore", "chisa_lore.md")
 LORE_DIR = os.path.dirname(LORE_FILE)
 COLLECTION = "chisa_lore"
-VECTOR_SIZE = 384  # all-MiniLM-L6-v2
+VECTOR_SIZE = settings.QDRANT_EMBEDDING_DIM
 
 
 async def ensure_collection():

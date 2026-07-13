@@ -19,6 +19,8 @@ ROUTER_ANCHORS: Dict[ChatIntent, List[tuple]] = {
         ("em trông như thế nào", False),
         ("tóc của em màu gì vậy", False),
         ("cây kéo của em dùng để làm gì vậy", False),
+        ("chisa dùng kéo khổng lồ để làm gì", False),
+        ("vũ khí chính của chisa là gì", False),
         # --- Sở thích & thói quen ---
         ("chisa thích ăn món gì", False),
         ("sở thích của em là gì", False),
@@ -27,6 +29,8 @@ ROUTER_ANCHORS: Dict[ChatIntent, List[tuple]] = {
         ("em thích làm gì nhất lúc rảnh", False),
         ("em có thói quen gì đặc biệt không", False),
         ("em thích ăn gì nè", False),
+        ("em thích mèo hay thích chó hơn", False),
+        ("em ăn cay được không chisa", False),
         # --- Thân thế & xuất xứ ---
         ("em bao nhiêu tuổi thế", False),
         ("em học trường nào", False),
@@ -35,6 +39,8 @@ ROUTER_ANCHORS: Dict[ChatIntent, List[tuple]] = {
         ("em có anh chị em ruột không", False),
         ("em bao nhiêu tuổi", False),
         ("chisa học trường nào vậy", False),
+        ("tuổi thật của chisa là bao nhiêu", False),
+        ("chisa sinh năm bao nhiêu", False),
         # --- Tính cách & tâm lý ---
         ("tính cách của em thế nào", False),
         ("em có điểm yếu gì không", False),
@@ -48,6 +54,7 @@ ROUTER_ANCHORS: Dict[ChatIntent, List[tuple]] = {
         ("em mạnh nhất ở điểm nào", False),
         ("em có kỹ năng gì ngoài chiến đấu", False),
         ("kỹ năng đặc biệt của chisa là gì", False),
+        ("forte thread perception là gì", False),
     ],
     ChatIntent.WORLD_LORE: [
         # --- Khái niệm cốt lõi ---
@@ -58,14 +65,19 @@ ROUTER_ANCHORS: Dict[ChatIntent, List[tuple]] = {
         ("mutant resonator là gì", False),
         ("echo là gì trong wuthering waves", False),
         ("resonance liberation hoạt động thế nào", False),
+        ("thế giới solaris 3 có gì đặc biệt", False),
+        ("giải thích về tacet field cho anh", False),
+        ("mutant resonator khác gì resonator thường", False),
+        ("tacet discord hoạt động ra sao", False),
         # --- Địa danh & tổ chức ---
         ("thành phố Jinzhou ở đâu", False),
         ("Lahai-roi ở đâu", False),
         ("Huanglong nằm ở đâu trong thế giới game", False),
-        ("Aether Union là tổ chức gì", False),
+        ("Fracidust là tổ chức gì", False),
         ("Montcalm là gì vậy", False),
         ("Black Shores là nơi nào", False),
         ("thế giới trong game có bao nhiêu vùng", False),
+        ("Fracidust là tổ chức thế nào", False),
         # --- Cơ chế & lịch sử thế giới ---
         ("năng lượng tacet field hoạt động thế nào", False),
         ("concerto mechanic trong game là gì", False),
@@ -85,17 +97,21 @@ ROUTER_ANCHORS: Dict[ChatIntent, List[tuple]] = {
         ("làm sao em sống sót qua vòng lặp", False),
         ("chisa đã trải qua những gì trong vòng lặp", False),
         ("vòng lặp thời gian xảy ra như thế nào", False),
+        ("vòng lặp honami kết thúc thế nào", False),
         # --- Arc Startorch & Sumika ---
         ("lễ hội startorch", False),
         ("sự kiện startorch school festival", False),
         ("câu chuyện của sumika", False),
         ("nhật ký của sumika nói gì", False),
         ("sự kiện đêm trước startorch xảy ra gì", False),
+        ("chuyện gì xảy ra với sumika", False),
+        ("lễ hội trường startorch có sự kiện gì", False),
         # --- Mối quan hệ nhân vật ---
         ("mối quan hệ của chisa với jiyan là gì", False),
         ("chisa và phrolova có quen nhau không", False),
         ("senpai trong truyện là ai", False),
         ("honami và chisa có mối liên hệ gì", False),
+        ("chisa gặp senpai lần đầu ở đâu", False),
     ],
     ChatIntent.MEMORY: [
         # --- Danh tính người dùng ---
@@ -108,6 +124,8 @@ ROUTER_ANCHORS: Dict[ChatIntent, List[tuple]] = {
         ("anh tên gì vậy em", False),
         ("tên anh là gì", False),
         ("anh tên gì", False),
+        ("em nhớ gì về nghề nghiệp của anh không", False),
+        ("anh sinh ngày nào em biết không", False),
         # --- Ký ức & hứa hẹn ---
         ("hôm qua anh đã hứa gì với em", False),
         ("ngày mai anh có bài phỏng vấn ở đâu", False),
@@ -116,6 +134,8 @@ ROUTER_ANCHORS: Dict[ChatIntent, List[tuple]] = {
         ("anh đã từng kể về gia đình chưa", False),
         ("hồi trước anh có kể không nhỉ", False),
         ("trước đây anh có nói gì đó về", False),
+        ("lần trước anh bảo ngày mai anh làm gì", False),
+        ("chúng ta đã hứa hẹn điều gì với nhau", False),
         # --- Sở thích & cá nhân ---
         ("ngày trước anh kể cho em nghe về sở thích của anh chưa", False),
         ("sở thích của anh là gì", False),
@@ -138,12 +158,14 @@ ROUTER_ANCHORS: Dict[ChatIntent, List[tuple]] = {
         ("tổng kết lại những gì nãy giờ anh và em nói đi", True),
         ("em ghi lại những điểm chính cuộc trò chuyện này giúp anh", True),
         ("cho anh xem tóm tắt cuộc hội thoại hôm nay", True),
+        ("liệt kê các điểm chính nãy giờ", True),
         # === EMOTION REPORT ===
         ("hiển thị bảng đo cảm xúc của em đi", True),
         ("cho anh xem chỉ số cảm xúc hiện tại của em", True),
         ("em đang cảm thấy thế nào bây giờ theo số liệu", False),
         ("xuất báo cáo cảm xúc của em ra đi", True),
         ("em cho anh xem tâm trạng hiện tại theo số liệu", True),
+        ("em đo tâm trạng của em hiện tại xem nào", True),
         # === EXPLICIT WEB SEARCH ===
         ("tra mạng giúp anh tin tức này", True),
         ("em lên mạng tìm hiểu xem sao nhé", True),
@@ -158,6 +180,8 @@ ROUTER_ANCHORS: Dict[ChatIntent, List[tuple]] = {
         ("em tìm giúp anh thông tin này trên internet", True),
         ("lên web kiểm tra xem có tin tức gì chưa", True),
         ("tra xem sự kiện game này diễn ra thế nào", True),
+        ("tra cứu google xem tin tức wuthering waves hôm nay", True),
+        ("search thông tin sự kiện mới trên mạng giúp anh", True),
     ]
 }
 
@@ -379,7 +403,7 @@ class SemanticRouter:
                 elif intent == ChatIntent.WORLD_LORE:
                     has_world_kw = any(kw in msg_lower for kw in [
                         "game", "waves", "wuwa", "tacet", "echo", "jinzhou", "huanglong",
-                        "sphere", "sonoro", "lahai-roi", "lahai roi", "resonator", "aether",
+                        "sphere", "sonoro", "lahai-roi", "lahai roi", "resonator", "fracidust",
                         "union", "forgery", "concerto", "thế giới", "vùng", "bản đồ", "map"
                     ])
                     if is_uncertain:

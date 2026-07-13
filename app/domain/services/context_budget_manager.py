@@ -82,7 +82,7 @@ class ContextBudgetManager:
             "sections": {
                 "summary": (0, 500, 900),
                 "search": (0, 800, 1600),
-                "lore": (0, 1000, 1600),
+                "lore": (0, 2500, 3500),
                 "memory": (0, 600, 1000),
                 "history": (600, 2400, 4000),
             },
@@ -91,7 +91,7 @@ class ContextBudgetManager:
             "sections": {
                 "summary": (0, 600, 1000),
                 "search": (400, 1800, 3200),
-                "lore": (0, 800, 1500),
+                "lore": (0, 2000, 3000),
                 "memory": (0, 600, 1000),
                 "history": (800, 3500, 6000),
             },

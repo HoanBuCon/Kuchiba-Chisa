@@ -49,14 +49,14 @@ class LoreRetriever:
         collection: str,
         query_vector: List[float],
         query_text: str = "",
-        top_k: int = 6,
+        top_k: int = 5,
         score_threshold: float = 0.35,
     ) -> List[str]:
         try:
             candidates = await qdrant_service.search_lore(
                 collection=collection,
                 query_vector=query_vector,
-                limit=15,  # Fetch more to allow for re-ranking and deduplication
+                limit=15,
                 score_threshold=score_threshold,
             )
         except Exception as e:
