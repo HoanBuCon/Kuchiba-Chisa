@@ -53,6 +53,9 @@ export class CoreRagClient {
         return payload ?? {};
       } catch (error) {
         lastError = error;
+        if (error.status && error.status >= 400 && error.status < 500) {
+          throw error;
+        }
         const isLastAttempt = attempt >= retries;
         if (isLastAttempt) {
           break;

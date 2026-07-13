@@ -1662,9 +1662,21 @@
                                             <span class="kv-label" style="margin-bottom: 8px;">Phân bổ token theo section</span>
                                             ${budgetBars || '<span style="color: var(--text-muted);">Không có dữ liệu budget_audit</span>'}
                                         </div>
+                                        ${step.data.prompt_components ? `
                                         <div class="kv-item" style="margin-top: 12px;">
-                                            <span class="kv-label">System Instruction gửi lên LLM</span>
-                                            <div class="json-block" style="margin-top: 4px; font-family: 'Inter', sans-serif; max-height: 320px; overflow-y: auto;">${step.data.system_prompt || ''}</div>
+                                            <span class="kv-label" style="margin-bottom: 8px; color: var(--accent-pink);">Chi tiết các thành phần Prompt (Prompt Components)</span>
+                                            <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 4px;">
+                                            ${Object.entries(step.data.prompt_components).filter(([k,v]) => v != null).map(([k,v]) => `
+                                                <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-color); border-radius: 6px; padding: 10px;">
+                                                    <div style="font-size: 11px; color: var(--accent-red); font-weight: 600; text-transform: uppercase; margin-bottom: 6px;">[${k}]</div>
+                                                    <div style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #d4d4d4; max-height: 200px; overflow-y: auto; white-space: pre-wrap; word-break: break-all;">${v}</div>
+                                                </div>
+                                            `).join('')}
+                                            </div>
+                                        </div>` : ''}
+                                        <div class="kv-item" style="margin-top: 16px;">
+                                            <span class="kv-label" style="color: var(--neon-green);">FINAL SYSTEM PROMPT (Sẽ gửi lên LLM)</span>
+                                            <div class="json-block" style="margin-top: 4px; font-family: 'Inter', sans-serif; max-height: 400px; overflow-y: auto; white-space: pre-wrap; border-color: rgba(76,175,80,0.3);">${step.data.system_prompt || ''}</div>
                                         </div>
                                     </div>
                                 </div>
@@ -1675,7 +1687,7 @@
                 else if (step.name === 'llm_generation') {
                     icon = '🤖';
                     const purposeLabel = step.data.purpose_label || step.data.purpose || 'LLM call';
-                    title = llmPurposeTitle(step);
+                    title = `Lượt gửi lên LLM · ${purposeLabel}`;
                     const tokens = step.data.total_tokens || 0;
                     const callIdx = step.data.call_index != null ? `#${step.data.call_index}` : '';
                     meta = `API ${tokens} tok ${callIdx}`;
@@ -1685,7 +1697,7 @@
                             <div class="inspector-card">
                                 <div class="inspector-card-header">
                                     <span class="inspector-card-icon">🤖</span>
-                                    <h3 class="inspector-card-title">${llmPurposeTitle(step)}</h3>
+                                    <h3 class="inspector-card-title">${title}</h3>
                                 </div>
                                 <div class="inspector-card-body">
                                     <div class="key-value-list">
@@ -1720,9 +1732,23 @@
                                             <span class="kv-label">Finish Reason</span>
                                             <span class="kv-value font-mono">${step.data.finish_reason}</span>
                                         </div>
-                                        <div class="kv-item">
-                                            <span class="kv-label">Kết quả phân tích JSON (Parsed response)</span>
-                                            <pre class="json-block" style="margin-top: 4px;">${parsedJson}</pre>
+                                        ${step.data.system_prompt ? `
+                                        <div class="kv-item" style="margin-top: 8px;">
+                                            <span class="kv-label">System Prompt (Gửi lên LLM)</span>
+                                            <div class="json-block" style="margin-top: 4px; font-family: 'Inter', sans-serif; max-height: 250px; overflow-y: auto; white-space: pre-wrap;">${step.data.system_prompt}</div>
+                                        </div>` : ''}
+                                        ${step.data.user_message ? `
+                                        <div class="kv-item" style="margin-top: 8px;">
+                                            <span class="kv-label">User Message (Gửi lên LLM)</span>
+                                            <div class="json-block" style="margin-top: 4px; font-family: 'Inter', sans-serif; max-height: 150px; overflow-y: auto; white-space: pre-wrap; color: var(--accent-pink);">${step.data.user_message}</div>
+                                        </div>` : ''}
+                                        <div class="kv-item" style="margin-top: 8px;">
+                                            <span class="kv-label">Kết quả phân tích JSON (Phản hồi từ LLM)</span>
+                                            <pre class="json-block" style="margin-top: 4px; color: var(--neon-green); border-color: rgba(76,175,80,0.3);">${parsedJson}</pre>
+                                        </div>
+                                        <div class="kv-item" style="margin-top: 8px;">
+                                            <span class="kv-label">Raw Response (Chuỗi thô)</span>
+                                            <pre class="json-block" style="margin-top: 4px;">${step.data.raw_response || ''}</pre>
                                         </div>
                                     </div>
                                 </div>
@@ -1965,6 +1991,15 @@
                             md += `- **${k}:** ${v} tokens\n`;
                         });
                         md += `\n`;
+                        if (step.data.prompt_components) {
+                            md += `##### Chi tiết các thành phần Prompt:\n`;
+                            Object.entries(step.data.prompt_components).filter(([k,v]) => v != null).forEach(([k,v]) => {
+                                md += `**[${k}]**\n\`\`\`text\n${v}\n\`\`\`\n\n`;
+                            });
+                        }
+                        if (step.data.system_prompt) {
+                            md += `##### FINAL SYSTEM PROMPT (Sẽ gửi lên LLM):\n\`\`\`text\n${step.data.system_prompt}\n\`\`\`\n\n`;
+                        }
                     }
                     else if (step.name === 'llm_generation') {
                         md += `#### Lượt gọi LLM sinh văn bản:\n`;
@@ -1972,8 +2007,17 @@
                         md += `*   **Purpose:** \`${step.data.purpose_label || step.data.purpose || '—'}\`\n`;
                         md += `*   **Tokens:** Input: ${step.data.input_tokens || 0} | Output: ${step.data.output_tokens || 0} | Tổng: ${step.data.total_tokens || 0}\n`;
                         md += `*   **Finish Reason:** \`${step.data.finish_reason || '—'}\`\n`;
-                        md += `##### Phản hồi thô JSON:\n`;
+                        if (step.data.system_prompt) {
+                            md += `##### System Prompt (Gửi lên LLM):\n\`\`\`text\n${step.data.system_prompt}\n\`\`\`\n\n`;
+                        }
+                        if (step.data.user_message) {
+                            md += `##### User Message (Gửi lên LLM):\n\`\`\`text\n${step.data.user_message}\n\`\`\`\n\n`;
+                        }
+                        md += `##### Kết quả phân tích JSON (Phản hồi từ LLM):\n`;
                         md += `\`\`\`json\n${JSON.stringify(step.data.parsed_response, null, 2)}\n\`\`\`\n\n`;
+                        if (step.data.raw_response) {
+                            md += `##### Raw Response (Chuỗi thô):\n\`\`\`text\n${step.data.raw_response}\n\`\`\`\n\n`;
+                        }
                     }
                     else if (step.name === 'emotion_update') {
                         md += `#### Cập nhật Trạng thái Cảm xúc:\n`;

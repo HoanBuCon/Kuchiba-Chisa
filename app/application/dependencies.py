@@ -18,6 +18,9 @@ class LLMCircuitBreakerProxy(BaseLLMAdapter):
     def __init__(self, adapter: BaseLLMAdapter):
         self.adapter = adapter
     
+    def __getattr__(self, name):
+        return getattr(self.adapter, name)
+    
     async def generate(self, prompt: StructuredPrompt) -> LLMResponse:
         llm_circuit_breaker.check_state()
         try:

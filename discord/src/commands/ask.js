@@ -55,11 +55,16 @@ export async function execute(client, interaction, discordUser) {
 
     await replyWithChunks(interaction, result.response, result.emotions, client);
   } catch (error) {
-    logger.error({ err: error, userId: interaction.user.id, interactionId }, 'Discord /ask failed');
-    await repositories.interactions.pool.query('DELETE FROM discord_interactions WHERE id = $1', [interactionId]);
-
-    const message = 'Xin lỗi Senpai, Chisa không thể trả lời lúc này. Hãy thử lại sau ít phút.';
-    await interaction.editReply({ content: message });
+    if (error.status === 429 && error.payload && error.payload.detail) {
+      logger.warn({ userId: interaction.user.id, interactionId }, 'Discord /ask blocked by 429 user lock');
+      await repositories.interactions.pool.query('DELETE FROM discord_interactions WHERE id = $1', [interactionId]);
+      await interaction.editReply({ content: error.payload.detail });
+    } else {
+      logger.error({ err: error, userId: interaction.user.id, interactionId }, 'Discord /ask failed');
+      await repositories.interactions.pool.query('DELETE FROM discord_interactions WHERE id = $1', [interactionId]);
+      const message = 'Xin lỗi Senpai, Chisa không thể trả lời lúc này. Hãy thử lại sau ít phút.';
+      await interaction.editReply({ content: message });
+    }
   }
 }
 
@@ -106,9 +111,14 @@ export async function executePrefix(client, message, question, discordUser) {
 
     await replyWithChunks(message, result.response, result.emotions, client);
   } catch (error) {
-    logger.error({ err: error, userId: message.author.id, interactionId }, 'Discord prefix ask failed');
-    await repositories.interactions.pool.query('DELETE FROM discord_interactions WHERE id = $1', [interactionId]);
-
-    await message.reply('Xin lỗi Senpai, Chisa không thể trả lời lúc này. Hãy thử lại sau ít phút.');
+    if (error.status === 429 && error.payload && error.payload.detail) {
+      logger.warn({ userId: message.author.id, interactionId }, 'Discord prefix ask blocked by 429 user lock');
+      await repositories.interactions.pool.query('DELETE FROM discord_interactions WHERE id = $1', [interactionId]);
+      await message.reply(error.payload.detail);
+    } else {
+      logger.error({ err: error, userId: message.author.id, interactionId }, 'Discord prefix ask failed');
+      await repositories.interactions.pool.query('DELETE FROM discord_interactions WHERE id = $1', [interactionId]);
+      await message.reply('Xin lỗi Senpai, Chisa không thể trả lời lúc này. Hãy thử lại sau ít phút.');
+    }
   }
 }

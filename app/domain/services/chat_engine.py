@@ -259,6 +259,7 @@ class ChatEngine:
 
             pipeline_tracker.add_step("context_building", {
                 "system_prompt": prompt.system,
+                "prompt_components": build_result.components,
                 "history_count": len(prompt.history),
                 "budget_mode": budget_mode.value,
                 "budget_audit": budget_audit.to_dict(),

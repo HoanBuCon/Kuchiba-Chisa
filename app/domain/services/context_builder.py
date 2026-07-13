@@ -19,6 +19,7 @@ log = get_logger(__name__)
 class ContextBuildResult:
     prompt: StructuredPrompt
     audit: BudgetAudit
+    components: Dict[str, str | None] = None
 
 
 class ContextBuilder:
@@ -193,6 +194,7 @@ class ContextBuilder:
 
         system_parts = [system_skeleton]
 
+        summary_section = None
         if allocation.trimmed_summary:
             summary_section = (
                 "[CONVERSATION SUMMARY]\n"
@@ -200,10 +202,14 @@ class ContextBuilder:
                 f"{allocation.trimmed_summary}"
             )
             system_parts.extend(["", summary_section])
+
         if memories_text:
             system_parts.extend(["", memories_text])
+
         if lore_text:
             system_parts.extend(["", lore_text])
+
+        search_section = None
         if allocation.trimmed_search_body:
             search_section = (
                 "[SEARCH DATA]\n"
@@ -214,6 +220,14 @@ class ContextBuilder:
             system_parts.extend(["", search_section])
 
         system_prompt = "\n".join(system_parts)
+
+        components = {
+            "System Skeleton (Persona & Format)": system_skeleton,
+            "Conversation Summary": summary_section,
+            "Memories Context": memories_text if memories_text else None,
+            "Lore Context": lore_text if lore_text else None,
+            "Web Search Data": search_section,
+        }
 
         prompt = StructuredPrompt(
             system=system_prompt,
@@ -227,4 +241,4 @@ class ContextBuilder:
                 "use_memory": len(allocation.trimmed_memories) > 0,
             },
         )
-        return ContextBuildResult(prompt=prompt, audit=allocation.audit)
+        return ContextBuildResult(prompt=prompt, audit=allocation.audit, components=components)

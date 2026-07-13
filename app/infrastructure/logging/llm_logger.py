@@ -218,6 +218,8 @@ async def log_llm_transaction(prompt: StructuredPrompt, response: LLMResponse) -
                 "purpose_label": purpose_label(purpose),
                 "call_index": t_idx,
                 "token_source": "api",
+                "system_prompt": prompt.system,
+                "user_message": prompt.user_message,
             })
         except Exception:
             pass
