@@ -31,6 +31,7 @@ flowchart TD
     subgraph Backend [FastAPI Application]
         API --> Routes[interface/api/routes]
         Routes --> CE[ChatEngine]
+        Routes -.-> BG[BackgroundTasks Manager]
         
         subgraph Domain [Core Domain Layer]
             CE --> EE[EmotionEngine]
@@ -44,6 +45,7 @@ flowchart TD
         end
 
         subgraph Infra [Infrastructure Layer]
+            UOW[UnitOfWork & Repositories]
             LLM[LLM Adapters: Groq / Gemini / DeepSeek]
             Embed[Embedding Adapter: FastEmbed]
             LLMLog[llm_logger]
@@ -51,14 +53,16 @@ flowchart TD
     end
 
     subgraph Storage [Storage Layer]
-        CE <--> DB[(PostgreSQL)]
+        UOW <--> DB[(PostgreSQL)]
         DBot <--> DiscordDB[(PostgreSQL - Discord Bot Schema)]
         RAGP <--> Qdrant[(Qdrant Vector DB)]
         ME <--> Qdrant
-        API <--> Redis[(Redis Cache)]
+        API <--> Redis[(Redis Cache & Locks)]
     end
 
     Domain --> Infra
+    CE --> UOW
+    BG -.-> ME
 ```
 
 ---
@@ -68,37 +72,35 @@ flowchart TD
 ### 3.1. Backend (`app/`)
 *   `app/main.py`: Khởi tạo ứng dụng FastAPI, cấu hình CORS, thiết lập lifespan để kiểm tra kết nối và khởi tạo tài nguyên PostgreSQL, Redis, Qdrant khi startup.
 *   `app/config/settings.py`: Khai báo cấu hình hệ thống bằng `pydantic-settings`. Hỗ trợ chuyển đổi LLM Provider (`gemini` hoặc `groq`), thiết lập chế độ dev/production, các secret key, cấu hình token budget, v.v.
+*   `app/application/dependencies.py`: Dependency Injection Container cung cấp Repositories, UnitOfWork và các Adapter cho ChatEngine.
 *   `app/domain/`:
-    *   `services/chat_engine.py`: Bộ điều phối luồng chat chính của hệ thống (trước đây là ProductionChatEngine).
+    *   `entities/`: Các class Pydantic/Dataclass thuần túy định nghĩa dữ liệu (User, Message, EmotionState) độc lập với ORM.
+    *   `interfaces/`: Tập hợp các Abstract Base Classes (IUnitOfWork, IRepository, IContextAssessor, IVectorStore) giúp đảo ngược phụ thuộc (Dependency Inversion).
+    *   `services/chat_engine.py`: Bộ điều phối luồng chat chính của hệ thống.
     *   `services/context_builder.py`: Tạo prompt với các nhãn cảm xúc định tính thông qua `StateManager` và kiểm soát token budget phân mảnh.
     *   `services/context_budget_manager.py`: Kiểm soát kích thước prompt để không vượt quá giới hạn token.
     *   `services/emotion_engine.py`: Lõi tính toán cập nhật cảm xúc dựa trên phản ứng cảm xúc của Chisa và Senpai.
     *   `services/intent_classifier.py`: Phân loại ý định của người dùng bằng màng lọc Regex/Từ khóa kết hợp LLM API.
-    *   `services/semantic_router.py`: Tầng 1 - Định tuyến ngữ nghĩa (Semantic Routing) bằng NumPy để phân loại ý định người dùng (ChatIntent) nhanh chóng, tích hợp so sánh khoảng cách Cosine, tính toán độ lệch tự tin (Confidence Margin) và cộng điểm thưởng Explicit Anchor.
+    *   `services/semantic_router.py`: Tầng 1 - Định tuyến ngữ nghĩa bằng NumPy để phân loại ý định người dùng (ChatIntent) nhanh chóng.
     *   `services/tool_router.py`: Tầng 2 - Định tuyến và thực thi các Agent Tools có cấu trúc OOP.
     *   `services/memory_extractor.py`: Trích xuất thông tin thực tế (facts) và mối quan hệ ngầm chạy async.
     *   `services/state_manager.py`: Định nghĩa nhãn định tính (`Low`/`Medium`/`High`) và `Mood` cho prompt.
     *   `services/tools/`: Thư mục các Agent Tools:
         *   `base.py`: Lớp cơ sở `BaseAgentTool`.
-        *   `web_search.py`: Tìm kiếm thông tin cập nhật trên Internet qua DuckDuckGo và tối ưu hóa query với ngữ cảnh 3 lượt chat gần nhất.
+        *   `web_search.py`: Tìm kiếm thông tin cập nhật trên Internet qua DuckDuckGo và tối ưu hóa query.
         *   `summarize.py`: Tóm tắt phiên hội thoại đang hoạt động.
         *   `emotion_report.py`: Xuất báo cáo cảm xúc định lượng.
-    *   `services/rag/`: Package modular RAG bao gồm:
-        *   `base.py`: Định nghĩa Pydantic models `ScoredMemory` và `RAGContext`.
-        *   `reranker.py`: Đóng gói `KeywordOverlapReranker` và `HybridMemoryScorer`.
-        *   `retriever_memory.py` / `retriever_lore.py`: Truy xuất memories và lore từ Qdrant.
-        *   `assessor.py` / `thinking_loop.py`: Đánh giá alignment và thực thi Loop Thinking (Web Search).
-        *   `pipeline.py`: Bộ điều phối `RAGPipeline` E2E tích hợp alignment check và thinking loop.
+    *   `services/rag/`: Package modular RAG (pipeline, retriever, assessor, thinking loop, reranker).
 *   `app/infrastructure/`:
-    *   `database/`: Cấu hình SQLAlchemy Async, các model DB (`User`, `Conversation`, `Message`, `EmotionState`, `UserStats`, `MemoryMetadata`) và repositories.
-    *   `cache/redis/redis_service.py`: Quản lý cache và cơ chế lưu trữ session phụ trợ.
-    *   `embeddings/fastembed_adapter.py`: Vector hóa văn bản bằng model local `all-MiniLM-L6-v2`.
-    *   `llm/adapters/`: Chứa base adapter và hai adapter thực tế là `GroqAdapter` (llama-3.1-8b-instant) và `GeminiAdapter` (gemini-2.5-flash-lite).
-    *   `logging/`: Ghi log có cấu trúc thông qua `structlog` và module ghi log API `llm_logger.py` lưu vào file `llm_api_clean.txt`. Bao gồm `pipeline_tracker.py` — singleton theo dõi toàn bộ các bước xử lý của một request (steps, tokens, latency), tự động đặt flag `loop_thinking_activated = True` khi bước `thinking_loop_cycle_*` được ghi nhận.
-    *   `queue/`: Đã bị xóa bỏ. Thay thế bằng FastAPI Background Tasks (trong `shared/utils/background_tasks.py`).
+    *   `database/`: Cấu hình SQLAlchemy Async, các model DB ORM, các `repositories` chuyên biệt, và mẫu thiết kế `uow.py` (Unit Of Work).
+    *   `cache/redis/redis_service.py`: Quản lý cache và cơ chế Distributed Lock chống spam/race condition.
+    *   `embeddings/fastembed_adapter.py`: Vector hóa văn bản bằng model local đa ngôn ngữ.
+    *   `llm/adapters/`: Chứa base adapter và hai adapter thực tế là `GroqAdapter` và `GeminiAdapter`.
+    *   `logging/`: Ghi log có cấu trúc thông qua `structlog` và module ghi log API.
 *   `app/interface/`:
     *   `api/routes/`: Các REST API endpoints (`chat.py`, `health.py`) và WebSocket endpoint phục vụ dashboard.
-    *   `api/templates/visualizer_dashboard.html`: Trang giao diện HTML/CSS/JS của Bảng điều khiển trực quan thời gian thực (Visualizer Dashboard), kết nối trực tiếp với backend bằng WebSockets và có thiết kế responsive đầy đủ.
+    *   `api/templates/visualizer_dashboard.html`: Trang giao diện HTML/CSS/JS của Bảng điều khiển trực quan.
+*   `app/shared/utils/`: Chứa `background_tasks.py` để quản lý luồng ngầm thay thế hoàn toàn Celery, và `circuit_breaker.py` bảo vệ LLM.
 
 ### 3.2. Bot Discord (`discord/`)
 *   `discord/src/app.js` & `index.js`: Điểm khởi chạy của bot, đăng ký các module, lắng nghe tín hiệu tắt dịch vụ (`SIGINT`, `SIGTERM`) để đóng kết nối an toàn.

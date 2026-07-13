@@ -206,14 +206,18 @@ Toàn bộ quá trình từ lúc người dùng gửi tin nhắn đến khi nh�
 sequenceDiagram
     participant C as Client (React)
     participant API as FastAPI Route
+    participant Redis as Redis (Lock)
     participant CE as ChatEngine
     participant EE as EmotionEngine
     participant RAG as RAGPipeline
     participant DB as PostgreSQL
     participant QD as Qdrant (Vector DB)
     participant LLM as Groq/Gemini API
+    participant BG as BackgroundTasks
     
     C->>API: POST /api/v1/chat {user_id, message}
+    API->>Redis: acquire_lock(user_id)
+    Redis-->>API: OK
     API->>CE: chat(user_id, message)
     
     Note over CE,DB: 1. Initialization
@@ -240,7 +244,12 @@ sequenceDiagram
     Note over CE,DB: 5. Finalization
     CE->>DB: Save Assistant Message, Update Stats
     
+    Note over CE,BG: 6. Async Background Tasks
+    CE->>BG: spawn(MemoryExtractor)
+    CE->>BG: spawn(Summarizer)
+    
     CE-->>API: ChatResponse
+    API->>Redis: release_lock(user_id)
     API-->>C: JSON Response
 ```
 
@@ -271,32 +280,46 @@ kuchiba_chisa/
 ├── app/                          # Backend Python (FastAPI)
 │   ├── main.py                   # App factory, CORS, lifespan
 │   ├── config/settings.py        # Pydantic Settings (.env)
-│   ├── domain/
+│   ├── application/              # Application layer
+│   │   └── dependencies.py       # DI Container
+│   ├── domain/                   # Business logic
+│   │   ├── entities/             # Pydantic/Dataclass entities
+│   │   │   ├── user.py
+│   │   │   ├── message.py
+│   │   │   └── emotion.py
+│   │   ├── interfaces/           # Abstract ports (DI)
+│   │   │   ├── repository.py
+│   │   │   ├── llm_provider.py
+│   │   │   └── ...
 │   │   ├── services/
 │   │   │   ├── chat_engine.py    # ★ Core orchestrator
-│   │   │   ├── rag_retriever.py  # Hybrid scoring RAG
-│   │   │   └── memory_manager.py # LTM write logic
-│   │   └── interfaces/           # Abstract ports (DI)
-│   ├── infrastructure/
+│   │   │   ├── emotion_engine.py # Emotion DEHA algorithm
+│   │   │   ├── memory_extractor.py # LTM write logic
+│   │   │   ├── rag/              # Modular RAG Package
+│   │   │   │   ├── pipeline.py
+│   │   │   │   ├── retriever_memory.py
+│   │   │   │   └── ...
+│   │   │   └── tools/            # Modular Agent Tools
+│   ├── infrastructure/           # Concrete implementations
 │   │   ├── database/
 │   │   │   ├── engine.py         # AsyncSession factory
-│   │   │   └── models/           # SQLAlchemy ORM models
-│   │   │       ├── user.py
-│   │   │       ├── conversation.py
-│   │   │       ├── message.py
-│   │   │       ├── emotion_state.py
-│   │   │       ├── user_stats.py
-│   │   │       └── memory_metadata.py
-│   │   ├── llm/adapters/groq.py  # Groq API adapter
+│   │   │   ├── models/           # SQLAlchemy ORM models
+│   │   │   ├── repositories/     # DB access implementations
+│   │   │   └── uow.py            # UnitOfWork implementation
+│   │   ├── llm/adapters/         # Groq/Gemini adapters
 │   │   ├── embeddings/           # FastEmbed adapter
 │   │   ├── vector/qdrant/        # Qdrant service + collections
 │   │   └── logging/              # structlog config
-│   └── interface/
+│   └── interface/                # Input/Output layer
 │       └── api/
 │           ├── routes/
 │           │   ├── chat.py       # POST /chat, GET /history, DELETE /clear
 │           │   └── health.py
 │           └── schemas/chat.py   # ChatRequest / ChatResponse
+│   └── shared/                   # Shared Utilities
+│       └── utils/
+│           ├── background_tasks.py # Async Background Jobs Manager
+│           └── circuit_breaker.py  # LLM Failover
 │
 ├── frontend/                     # Web UI (React + Vite)
 │   ├── src/
@@ -307,9 +330,8 @@ kuchiba_chisa/
 │
 ├── alembic_migrations/           # DB schema migrations
 ├── scripts/
-│   ├── interactive_chat.py       # CLI tester (gọi API qua Terminal)
-│   └── clear_temp_user_memory.py # Wipe memory của temp user
-├── assets/                       # Ảnh/GIF gốc của Chisa
+│   ├── ingest_production_lore.py # Nạp vector dữ liệu
+│   └── visualize.py              # Tool debug
 ├── docker-compose.yml            # PostgreSQL + Qdrant + Redis
 ├── start.ps1                     # ★ One-click launcher (Windows)
 ├── .env                          # Environment variables

@@ -653,9 +653,9 @@ finally:
 ## Tóm tắt ưu tiên hành động
 
 ### Phase 1 — Critical Fixes (1-2 tuần)
-- [ ] **C-1:** Per-user distributed lock (Redis)
+- [x] **C-1:** Per-user distributed lock (Redis)
 - [x] **C-2:** Rate limiting middleware
-- [ ] **P0-1:** Fix embedding model mismatch + re-index
+- [x] **P0-1:** Fix embedding model mismatch + re-index
 - [x] **C-4:** Background task tracking + error handling
 - [x] **C-3:** Single-worker async mode
 
@@ -663,9 +663,9 @@ finally:
 - [x] **CC-1:** DI Container extraction
 - [x] **CC-2:** ChatEngine refactoring
 - [x] **P0-2:** Externalize reranker config
-- [ ] **P1-1:** Cross-collection dedup
+- [x] **P1-1:** Cross-collection dedup
 - [x] **P1-3:** Circuit breaker for LLM
-- [ ] **P1-4:** Memory extractor dedup + quality
+- [x] **P1-4:** Memory extractor dedup + quality
 
 ### Phase 3 — Production Hardening (3-4 tuần)
 - [x] **CC-4 + CC-5:** Interface extraction + layer correction
