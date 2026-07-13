@@ -16,34 +16,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from app.config.settings import settings
 from app.infrastructure.logging.logger import get_logger
-
-log = get_logger(__name__)
-
-
-import enum
-
-class MemoryTier(str, enum.Enum):
-    CASUAL = "casual"
-    PERSONAL = "personal"
-    CRITICAL = "critical"
-
-class MemoryPayload(BaseModel):
-    """
-    Strict typing for vector payload metadata stored in Qdrant.
-    Required by architecture for user_id filters and RAG scoring.
-    """
-    user_id: str
-    conversation_id: Optional[str] = None
-    memory_type: str
-    memory_tier: MemoryTier = MemoryTier.CASUAL
-    importance_score: float = Field(ge=0.0, le=1.0)
-    emotion: dict[str, float] = Field(default_factory=dict, description="Snapshot of user's emotional state when memory was formed")
-    created_at: int # timestamp for recency calculation
-    text_content: str # the actual text that was embedded
-    
-    model_config = ConfigDict(extra="allow")
-
-
+from app.domain.entities.memory import MemoryTier, MemoryPayload
 
 log = get_logger(__name__)
 
@@ -89,8 +62,9 @@ ALL_COLLECTIONS = [
 
 
 # ─── Qdrant Service ───────────────────────────────────────────────────────────
+from app.domain.interfaces.vector_store import IVectorStore
 
-class QdrantService:
+class QdrantService(IVectorStore):
     """
     Async Qdrant service for all vector operations.
     CRITICAL: All searches enforce user_id filtering for strict user isolation.

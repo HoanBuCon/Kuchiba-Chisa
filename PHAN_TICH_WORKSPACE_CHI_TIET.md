@@ -55,7 +55,7 @@ flowchart TD
         DBot <--> DiscordDB[(PostgreSQL - Discord Bot Schema)]
         RAGP <--> Qdrant[(Qdrant Vector DB)]
         ME <--> Qdrant
-        API <--> Redis[(Redis Cache/Queue)]
+        API <--> Redis[(Redis Cache)]
     end
 
     Domain --> Infra
@@ -95,7 +95,7 @@ flowchart TD
     *   `embeddings/fastembed_adapter.py`: Vector hóa văn bản bằng model local `all-MiniLM-L6-v2`.
     *   `llm/adapters/`: Chứa base adapter và hai adapter thực tế là `GroqAdapter` (llama-3.1-8b-instant) và `GeminiAdapter` (gemini-2.5-flash-lite).
     *   `logging/`: Ghi log có cấu trúc thông qua `structlog` và module ghi log API `llm_logger.py` lưu vào file `llm_api_clean.txt`. Bao gồm `pipeline_tracker.py` — singleton theo dõi toàn bộ các bước xử lý của một request (steps, tokens, latency), tự động đặt flag `loop_thinking_activated = True` khi bước `thinking_loop_cycle_*` được ghi nhận.
-    *   `queue/`: Cấu hình Celery App và các worker xử lý nền (affection, embedding, memory).
+    *   `queue/`: Đã bị xóa bỏ. Thay thế bằng FastAPI Background Tasks (trong `shared/utils/background_tasks.py`).
 *   `app/interface/`:
     *   `api/routes/`: Các REST API endpoints (`chat.py`, `health.py`) và WebSocket endpoint phục vụ dashboard.
     *   `api/templates/visualizer_dashboard.html`: Trang giao diện HTML/CSS/JS của Bảng điều khiển trực quan thời gian thực (Visualizer Dashboard), kết nối trực tiếp với backend bằng WebSockets và có thiết kế responsive đầy đủ.

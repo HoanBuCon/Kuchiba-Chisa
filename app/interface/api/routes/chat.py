@@ -8,42 +8,15 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.infrastructure.database.engine import get_db_session
 from app.interface.api.schemas.chat import ChatRequest, ChatResponse
-from app.domain.services.chat_engine import ChatEngine
-from app.infrastructure.embeddings.fastembed_adapter import FastEmbedAdapter
-from app.config.settings import settings
-from app.infrastructure.llm.adapters.groq import GroqAdapter
-from app.infrastructure.llm.adapters.gemini import GeminiAdapter
-from app.infrastructure.llm.adapters.base import LLMRateLimitError
+from app.domain.services.chat_engine import ChatEngine, ChatEngineBusyError
+from app.domain.interfaces.llm_provider import LLMRateLimitError
 from app.infrastructure.logging.logger import get_logger
-
-from app.domain.services.context_builder import ContextBuilder
-from app.infrastructure.vector.qdrant.qdrant_service import qdrant_service
-from app.domain.services.memory_extractor import MemoryExtractor
 from app.shared.utils.user_identity import normalize_user_id, normalize_user_id_str
+from app.application.dependencies import get_chat_engine, container
 
 log = get_logger(__name__)
 
 router = APIRouter()
-
-# Instantiate adapters once, since they are largely stateless or manage their own pools
-_embedder = FastEmbedAdapter()
-
-if settings.LLM_PROVIDER == "gemini":
-    _llm = GeminiAdapter()
-elif settings.LLM_PROVIDER == "deepseek":
-    from app.infrastructure.llm.adapters.deepseek import DeepSeekAdapter
-    _llm = DeepSeekAdapter()
-else:
-    _llm = GroqAdapter()
-
-_context_builder = ContextBuilder()
-_memory_extractor = MemoryExtractor(llm=_llm, embedder=_embedder, qdrant=qdrant_service)
-_chat_engine = ChatEngine(
-    embedder=_embedder,
-    llm=_llm,
-    context_builder=_context_builder,
-    memory_extractor=_memory_extractor
-)
 
 
 def _sse_event(event_type: str, data: dict) -> str:
@@ -64,11 +37,11 @@ def _start_chat_trace(request: ChatRequest, username: str | None) -> str:
     )
 
 
-async def _run_chat_request(session: AsyncSession, request: ChatRequest, on_token: Optional[Callable[[str], Any]] = None) -> tuple[str, dict, bool]:
+async def _run_chat_request(session: AsyncSession, request: ChatRequest, chat_engine: ChatEngine, on_token: Optional[Callable[[str], Any]] = None) -> tuple[str, dict, bool]:
     from app.infrastructure.logging.pipeline_tracker import pipeline_tracker
 
     try:
-        reply_text, emotions = await _chat_engine.chat(
+        reply_text, emotions = await chat_engine.chat(
             session=session,
             user_id=request.user_id,
             user_message=request.message,
@@ -103,7 +76,8 @@ async def _run_chat_request(session: AsyncSession, request: ChatRequest, on_toke
 async def chat_endpoint(
     request: ChatRequest,
     http_request: Request,
-    session: AsyncSession = Depends(get_db_session)
+    session: AsyncSession = Depends(get_db_session),
+    chat_engine: ChatEngine = Depends(get_chat_engine)
 ) -> ChatResponse:
     """
     Primary endpoint for User <-> AI interactions.
@@ -125,12 +99,21 @@ async def chat_endpoint(
     _start_chat_trace(request, username)
 
     try:
-        reply_text, emotions, loop_thinking_activated = await _run_chat_request(session=session, request=request)
+        reply_text, emotions, loop_thinking_activated = await _run_chat_request(
+            session=session, 
+            request=request, 
+            chat_engine=chat_engine
+        )
         return ChatResponse(
             response=reply_text,
             user_id=request.user_id,
             emotions=emotions,
             loop_thinking_activated=loop_thinking_activated
+        )
+    except ChatEngineBusyError:
+        raise HTTPException(
+            status_code=429,
+            detail="Chisa đang xử lý tin nhắn trước đó, Senpai chờ em thêm lát nữa nhé~"
         )
     except Exception as e:
         log.error("Chat orchestration failed", error=str(e), user_id=request.user_id)
@@ -141,6 +124,7 @@ async def chat_endpoint(
 async def chat_stream_endpoint(
     request: ChatRequest,
     http_request: Request,
+    chat_engine: ChatEngine = Depends(get_chat_engine)
 ):
     """SSE stream for realtime loop-thinking updates — web clients only."""
     from app.infrastructure.logging.llm_logger import enable_clean_log
@@ -188,6 +172,7 @@ async def chat_stream_endpoint(
                 reply_text, emotions, loop_thinking_activated = await _run_chat_request(
                     session=session,
                     request=request,
+                    chat_engine=chat_engine,
                     on_token=sse_on_token,
                 )
             queue.put_nowait({
@@ -244,11 +229,12 @@ async def chat_stream_endpoint(
 @router.get("/chat/emotions/{user_id}")
 async def get_emotions(
     user_id: str,
-    session: AsyncSession = Depends(get_db_session)
+    session: AsyncSession = Depends(get_db_session),
+    chat_engine: ChatEngine = Depends(get_chat_engine)
 ) -> dict:
     """Retrieves the current emotional state of Chisa for the frontend UI."""
     try:
-        emotion = await _chat_engine.get_emotion_state(session, normalize_user_id_str(user_id))
+        emotion = await chat_engine.get_emotion_state(session, normalize_user_id_str(user_id))
         return {
             "joy": emotion.joy,
             "sadness": emotion.sadness,
@@ -265,11 +251,12 @@ async def get_emotions(
 async def get_chat_history(
     user_id: str,
     limit: int = 50,
-    session: AsyncSession = Depends(get_db_session)
+    session: AsyncSession = Depends(get_db_session),
+    chat_engine: ChatEngine = Depends(get_chat_engine)
 ) -> dict:
     """Retrieves recent conversation history to prepopulate the frontend."""
     try:
-        history = await _chat_engine.get_history(session, normalize_user_id_str(user_id), limit)
+        history = await chat_engine.get_history(session, normalize_user_id_str(user_id), limit)
         return {"history": history}
     except Exception as e:
         log.error("Failed to fetch chat history", error=str(e), user_id=user_id)

@@ -1,11 +1,13 @@
 from typing import List, Tuple, Optional
-from app.infrastructure.vector.qdrant.qdrant_service import qdrant_service
+from app.domain.interfaces.vector_store import IVectorStore
 from app.domain.services.rag.reranker import KeywordOverlapReranker
 from app.infrastructure.logging.logger import get_logger
 
 log = get_logger(__name__)
 
-class LoreRetriever:
+from app.domain.interfaces.retriever import ILoreRetriever
+
+class LoreRetriever(ILoreRetriever):
     """
     Retrieves Chisa lore chunks from Qdrant using vector search,
     boosted by keyword overlap re-ranking.
@@ -15,14 +17,18 @@ class LoreRetriever:
 
     async def retrieve_lore_standard(
         self,
+        vector_store: IVectorStore,
         query_vector: List[float],
         query_text: str = "",
         top_k: int = 8,
         score_threshold: float = 0.3,
     ) -> List[Tuple[str, float]]:
         try:
-            candidates = await qdrant_service.search_lore(
-                collection="chisa_lore",
+            if not vector_store:
+                return []
+            
+            candidates = await vector_store.search_lore(
+                collection="persona_embeddings",
                 query_vector=query_vector,
                 limit=top_k,
                 score_threshold=score_threshold,
@@ -46,6 +52,7 @@ class LoreRetriever:
 
     async def retrieve_lore_parent_child(
         self,
+        vector_store: IVectorStore,
         collection: str,
         query_vector: List[float],
         query_text: str = "",
@@ -53,7 +60,10 @@ class LoreRetriever:
         score_threshold: float = 0.35,
     ) -> List[str]:
         try:
-            candidates = await qdrant_service.search_lore(
+            if not vector_store:
+                return []
+                
+            candidates = await vector_store.search_lore(
                 collection=collection,
                 query_vector=query_vector,
                 limit=15,

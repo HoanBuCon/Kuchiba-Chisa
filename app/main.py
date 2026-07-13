@@ -15,6 +15,8 @@ from app.infrastructure.database.engine import connect_database, disconnect_data
 from app.infrastructure.cache.redis.redis_service import redis_service
 from app.infrastructure.vector.qdrant.qdrant_service import qdrant_service
 from app.interface.api.routes import health, chat, visualizer
+from app.interface.middlewares.rate_limiter import RateLimitMiddleware
+from app.shared.utils.background_tasks import BackgroundTaskManager
 
 # Configure logging before anything else
 configure_logging()
@@ -70,20 +72,23 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
     # Pre-warm Semantic Router anchors
     try:
-        if chat._chat_engine.intent_classifier.semantic_router:
+        from app.application.dependencies import get_chat_engine
+        engine = get_chat_engine()
+        if engine.intent_classifier.semantic_router:
             log.info("Pre-warming Semantic Router anchors...")
-            await chat._chat_engine.intent_classifier.semantic_router.initialize()
+            await engine.intent_classifier.semantic_router.initialize()
     except Exception as e:
         log.warning("Failed to pre-warm semantic router anchors during startup", error=str(e))
 
     log.info("[Chisa] Chisa API ready", port=settings.APP_PORT)
     yield
 
-    # ── Shutdown ─────────────────────────────────────────────────
+    # ── Shutdown ─────────────────────────────────────────────────────────
     log.info("Shutting down Chisa API...")
+    await BackgroundTaskManager.shutdown(timeout=10.0)
     await disconnect_database()
     await redis_service.disconnect()
-    qdrant_service.disconnect()
+    await qdrant_service.disconnect()
     log.info("Chisa API shutdown complete")
 
 
@@ -100,7 +105,7 @@ def create_app() -> FastAPI:
         lifespan=lifespan,
     )
 
-    # ── CORS ─────────────────────────────────────────────────────
+    # ── CORS ─────────────────────────────────────────────────────────
     app.add_middleware(
         CORSMiddleware,
         allow_origins=["http://localhost:5173", "http://127.0.0.1:5173",
@@ -109,6 +114,9 @@ def create_app() -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
+
+    # ── Rate Limiting ────────────────────────────────────────────────
+    app.add_middleware(RateLimitMiddleware)
 
     # ── Routes ───────────────────────────────────────────────────
     app.include_router(health.router, tags=["System"])
@@ -139,7 +147,7 @@ def start() -> None:
         port=settings.APP_PORT,
         reload=settings.is_dev,
         log_level="debug" if settings.is_dev else "info",
-        workers=1 if settings.is_dev else 4,
+        workers=1,
     )
 
 

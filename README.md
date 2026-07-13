@@ -27,7 +27,7 @@
 - **Cơ sở dữ liệu (Quan hệ):** PostgreSQL 16 (Trí nhớ ngắn hạn, Thông tin người dùng, Trạng thái cảm xúc)
 - **Cơ sở dữ liệu Vector:** Qdrant (Trí nhớ ngữ nghĩa dài hạn, RAG)
 - **Bộ nhớ đệm & Message Broker:** Redis
-- **Background Jobs:** Celery (Tạo embedding bất đồng bộ, dọn dẹp bộ nhớ, cập nhật cảm xúc)
+- **Background Jobs:** FastAPI Background Tasks (Đã thay thế Celery để tối ưu tài nguyên)
 - **ORM:** SQLAlchemy 2.0 (Async) + Alembic hỗ trợ migrations
 - **Tích hợp LLM:** Groq (Llama-3.1-8B) & DeepSeek (deepseek-v4-flash)
 - **Hạ tầng triển khai:** Docker & Docker Compose
@@ -42,7 +42,7 @@
 - **Vòng đời Hội thoại:** Quản lý toàn diện Session Layer và liên tục lập chỉ mục các bản tóm tắt ẩn.
 - **Tối ưu hóa Định tuyến & Khởi chạy (Fast Cold-Start & Routing)**: Tích hợp định tuyến ý định đa lớp Hybrid Intent Routing, màng lọc từ khóa động (Dynamic Keyword Guards) tránh truy xuất RAG nhầm cho câu hỏi Fact phổ thông ngoài game, sinh vector anchors hàng loạt (Batch Embedding) và nạp sẵn vào RAM khi khởi động server (Lifespan Pre-warming) giúp triệt tiêu hoàn toàn độ trễ khởi động lạnh.
 - **Bảng điều khiển Trực quan thời gian thực (Visualizer Dashboard):** Trang giám sát thời gian thực (`http://localhost:8000/visualizer`) sử dụng WebSocket để hiển thị toàn bộ dấu vết thực thi (execution traces) của RAG pipeline, suy luận Loop Thinking, prompt budget và biểu đồ cảm xúc biến thiên (có thiết kế responsive).
-- **Hàng đợi Phân tán:** Các tác vụ NLP và vector hóa nặng nề được tách riêng cho các Celery worker xử lý, đảm bảo API chat luôn phản hồi tức thì (zero-lag).
+- **Quản lý tác vụ ngầm:** Các tác vụ nặng nề được chạy ngầm thông qua BackgroundTaskManager, đảm bảo API chat luôn phản hồi tức thì (zero-lag).
 
 ---
 

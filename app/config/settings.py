@@ -68,7 +68,7 @@ class Settings(BaseSettings):
 
     # ── Embeddings ─────────────────────────────────────────────
     OPENAI_API_KEY: Optional[str] = None
-    EMBEDDING_MODEL: str = "intfloat/multilingual-e5-large"
+    EMBEDDING_MODEL: str = "intfloat/multilingual-e5-small"
 
     # ── Search API Keys (Optional Free Tiers) ──────────────────
     TAVILY_API_KEY: Optional[str] = None

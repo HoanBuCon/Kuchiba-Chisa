@@ -3,9 +3,8 @@ import uuid
 from typing import Optional, List
 
 from app.domain.interfaces.embedding_provider import IEmbeddingProvider
-from app.infrastructure.database.models.message import Message
-from app.infrastructure.database.models.memory_metadata import MemoryType, MemoryMetadata
-from app.infrastructure.vector.qdrant.qdrant_service import QdrantService, MemoryPayload
+from app.domain.entities.memory import MemoryType, MemoryMetadata, MemoryPayload
+from app.domain.interfaces.vector_store import IVectorStore
 from app.infrastructure.logging.logger import get_logger
 
 log = get_logger(__name__)
@@ -18,9 +17,9 @@ class MemoryManager:
     using the injected Embedding Provider.
     """
 
-    def __init__(self, embedder: IEmbeddingProvider, qdrant: QdrantService):
+    def __init__(self, embedder: IEmbeddingProvider, vector_store: IVectorStore):
         self.embedder = embedder
-        self.qdrant = qdrant
+        self.vector_store = vector_store
 
     def calculate_importance(self, user_message: str, emotion_delta: any) -> float:
         """
@@ -66,7 +65,7 @@ class MemoryManager:
             text_content=message_content,
         )
 
-        await self.qdrant.upsert_memory(
+        await self.vector_store.upsert_memory(
             collection="emotional_memories",
             point_id=point_id,
             vector=vector,
@@ -96,7 +95,7 @@ class MemoryManager:
             text_content=summary_text,
         )
 
-        await self.qdrant.upsert_memory(
+        await self.vector_store.upsert_memory(
             collection="conversation_summaries",
             point_id=point_id,
             vector=vector,

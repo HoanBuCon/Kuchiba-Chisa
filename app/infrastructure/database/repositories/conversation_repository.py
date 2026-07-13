@@ -5,8 +5,8 @@ from typing import Optional, List
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
-from app.infrastructure.database.models.conversation import Conversation
-from app.infrastructure.database.models.message import Message, MessageRole
+from app.infrastructure.database.models.conversation import Conversation as ConversationModel
+from app.infrastructure.database.models.message import Message as MessageModel, MessageRole as MessageRoleModel
 from app.domain.interfaces.repositories import IConversationRepository
 
 
@@ -20,20 +20,20 @@ class SqlAlchemyConversationRepository(IConversationRepository):
 
     async def get_or_create_conversation(self, user_id: uuid.UUID) -> uuid.UUID:
         stmt = (
-            select(Conversation)
+            select(ConversationModel)
             .where(
-                Conversation.user_id == user_id,
-                Conversation.ended_at.is_(None)
+                ConversationModel.user_id == user_id,
+                ConversationModel.ended_at.is_(None)
             )
-            .order_by(Conversation.started_at.desc())
+            .order_by(ConversationModel.started_at.desc())
             .limit(1)
         )
         
         conv = (await self.session.execute(stmt)).scalar_one_or_none()
         if not conv:
-            conv = Conversation(id=uuid.uuid4(), user_id=user_id)
+            conv = ConversationModel(id=uuid.uuid4(), user_id=user_id)
             self.session.add(conv)
-            await self.session.commit()
+            await self.session.flush()
             await self.session.refresh(conv)
         return conv.id
 
@@ -46,8 +46,8 @@ class SqlAlchemyConversationRepository(IConversationRepository):
         token_count: Optional[int] = None,
         is_success: bool = True,
     ) -> None:
-        enum_role = MessageRole.USER if role == "user" else MessageRole.ASSISTANT
-        msg = Message(
+        enum_role = MessageRoleModel.USER if role == "user" else MessageRoleModel.ASSISTANT
+        msg = MessageModel(
             id=uuid.uuid4(),
             conversation_id=conversation_id,
             user_id=user_id,
@@ -57,19 +57,19 @@ class SqlAlchemyConversationRepository(IConversationRepository):
             is_success=is_success
         )
         self.session.add(msg)
-        await self.session.commit()
+        await self.session.flush()
 
     async def get_recent_history(
         self, user_id: uuid.UUID, conversation_id: uuid.UUID, limit: int = 15
     ) -> List[dict[str, str]]:
         stmt = (
-            select(Message)
+            select(MessageModel)
             .where(
-                Message.user_id == user_id,
-                Message.conversation_id == conversation_id,
-                Message.is_success == True
+                MessageModel.user_id == user_id,
+                MessageModel.conversation_id == conversation_id,
+                MessageModel.is_success == True
             )
-            .order_by(Message.created_at.desc())
+            .order_by(MessageModel.created_at.desc())
             .limit(limit)
         )
         result = await self.session.execute(stmt)

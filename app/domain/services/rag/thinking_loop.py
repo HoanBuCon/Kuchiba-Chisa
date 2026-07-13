@@ -1,13 +1,15 @@
 from typing import Any, List, Dict, Tuple
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.infrastructure.llm.adapters.base import BaseLLMAdapter, StructuredPrompt
+from app.domain.interfaces.llm_provider import BaseLLMAdapter, StructuredPrompt
 from app.domain.interfaces.embedding_provider import IEmbeddingProvider
 from app.infrastructure.logging.logger import get_logger
 from app.infrastructure.logging.pipeline_tracker import pipeline_tracker
 
 log = get_logger(__name__)
 
-class ThinkingLoopAgent:
+from app.domain.interfaces.thinking_agent import IThinkingAgent
+
+class ThinkingLoopAgent(IThinkingAgent):
     """
     Runs an iterative reasoning loop to search the web for missing information,
     acting as the Loop Thinking component of the RAG pipeline.

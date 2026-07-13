@@ -3,11 +3,10 @@ from __future__ import annotations
 import uuid
 from typing import Protocol, List, Optional
 
-from app.infrastructure.database.models.user import User
-from app.infrastructure.database.models.user_stats import UserStats
-from app.infrastructure.database.models.emotion_state import EmotionState
-from app.infrastructure.database.models.conversation import Conversation
-from app.infrastructure.database.models.message import Message
+from app.domain.entities.user import User, UserStats
+from app.domain.entities.emotion import EmotionState
+from app.domain.entities.conversation import Conversation
+from app.domain.entities.message import Message
 
 
 class IUserRepository(Protocol):

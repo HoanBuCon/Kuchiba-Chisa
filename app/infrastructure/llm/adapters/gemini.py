@@ -9,7 +9,7 @@ from google.genai import types
 
 from app.config.settings import settings
 from app.infrastructure.logging.logger import get_logger
-from app.infrastructure.llm.adapters.base import (
+from app.domain.interfaces.llm_provider import (
     BaseLLMAdapter,
     LLMError,
     LLMInvalidResponseError,

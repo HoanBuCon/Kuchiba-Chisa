@@ -2,7 +2,7 @@ import uuid
 from typing import Any, Dict, List
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.infrastructure.llm.adapters.base import BaseLLMAdapter
+from app.domain.interfaces.llm_provider import BaseLLMAdapter
 from app.domain.interfaces.embedding_provider import IEmbeddingProvider
 from app.domain.services.tools.base import BaseAgentTool
 from app.infrastructure.database.repositories.emotion_repository import SqlAlchemyEmotionRepository
@@ -55,16 +55,21 @@ class EmotionReportAgentTool(BaseAgentTool):
 
     async def execute(
         self,
-        session: AsyncSession,
         user_id: str,
         user_message: str,
         llm: BaseLLMAdapter,
         embedder: IEmbeddingProvider,
         **kwargs
     ) -> Dict[str, Any]:
+        emotion_repo = kwargs.get("emotion_repo")
+        if not emotion_repo:
+            return {
+                "status": "error",
+                "message": "Thiếu emotion_repo để đọc cảm xúc."
+            }
+
         try:
             user_uuid = uuid.UUID(user_id)
-            emotion_repo = SqlAlchemyEmotionRepository(session)
             emotion = await emotion_repo.get_emotion_state(user_uuid)
 
             report = (

@@ -1,7 +1,7 @@
 import enum
 import re
 from typing import List, Optional
-from app.infrastructure.llm.adapters.base import BaseLLMAdapter
+from app.domain.interfaces.llm_provider import BaseLLMAdapter
 from app.domain.interfaces.embedding_provider import IEmbeddingProvider
 from app.infrastructure.logging.logger import get_logger
 

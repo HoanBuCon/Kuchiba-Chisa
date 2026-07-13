@@ -4,7 +4,7 @@ import numpy as np
 from typing import Any, Dict, List, Optional, Tuple
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.infrastructure.llm.adapters.base import BaseLLMAdapter
+from app.domain.interfaces.llm_provider import BaseLLMAdapter
 from app.domain.interfaces.embedding_provider import IEmbeddingProvider
 from app.infrastructure.logging.logger import get_logger
 
@@ -168,7 +168,6 @@ class LLMToolRouter:
     async def execute(
         self,
         user_message: str,
-        session: AsyncSession,
         user_id: str,
         query_vector: Optional[List[float]] = None,
         **kwargs,
@@ -197,7 +196,6 @@ class LLMToolRouter:
         if tool:
             try:
                 res = await tool.execute(
-                    session=session,
                     user_id=user_id,
                     user_message=user_message,
                     llm=self.llm,

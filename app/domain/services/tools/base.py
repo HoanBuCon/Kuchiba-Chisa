@@ -3,7 +3,7 @@ from abc import ABC
 from typing import Any, Dict, List
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.infrastructure.llm.adapters.base import BaseLLMAdapter
+from app.domain.interfaces.llm_provider import BaseLLMAdapter
 from app.domain.interfaces.embedding_provider import IEmbeddingProvider
 
 
@@ -33,7 +33,6 @@ class BaseAgentTool(ABC):
     @abc.abstractmethod
     async def execute(
         self,
-        session: AsyncSession,
         user_id: str,
         user_message: str,
         llm: BaseLLMAdapter,

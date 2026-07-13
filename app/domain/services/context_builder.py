@@ -4,8 +4,8 @@ from dataclasses import dataclass
 from typing import List, Dict, Any
 import json
 
-from app.infrastructure.llm.adapters.base import StructuredPrompt
-from app.infrastructure.database.models.emotion_state import EmotionState
+from app.domain.interfaces.llm_provider import StructuredPrompt
+from app.domain.entities.emotion import EmotionState
 from app.domain.services.state_manager import StateManager
 from app.domain.services.context_budget_manager import ContextBudgetManager, BudgetAudit
 from app.domain.services.budget_mode import BudgetMode

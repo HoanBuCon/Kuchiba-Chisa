@@ -2,11 +2,9 @@ import uuid
 from typing import Any, Dict, List
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.infrastructure.llm.adapters.base import BaseLLMAdapter, StructuredPrompt
+from app.domain.interfaces.llm_provider import BaseLLMAdapter, StructuredPrompt
 from app.domain.interfaces.embedding_provider import IEmbeddingProvider
 from app.domain.services.tools.base import BaseAgentTool
-from app.infrastructure.database.models.conversation import Conversation
-from app.infrastructure.database.models.message import Message
 from app.infrastructure.logging.logger import get_logger
 
 log = get_logger(__name__)
@@ -53,44 +51,27 @@ class ConversationSummarizerAgentTool(BaseAgentTool):
 
     async def execute(
         self,
-        session: AsyncSession,
         user_id: str,
         user_message: str,
         llm: BaseLLMAdapter,
         embedder: IEmbeddingProvider,
         **kwargs
     ) -> Dict[str, Any]:
-        from sqlalchemy import select
-        
+        conv_repo = kwargs.get("conv_repo")
+        if not conv_repo:
+            return {
+                "status": "error",
+                "message": "Thiếu conv_repo để truy xuất lịch sử."
+            }
+
         user_uuid = uuid.UUID(user_id)
         
         # 1. Fetch active conversation
-        stmt = (
-            select(Conversation)
-            .where(
-                Conversation.user_id == user_uuid,
-                Conversation.ended_at.is_(None)
-            )
-            .order_by(Conversation.started_at.desc())
-            .limit(1)
-        )
-        conv = (await session.execute(stmt)).scalar_one_or_none()
-        if not conv:
-            return {
-                "status": "skipped",
-                "message": "Không tìm thấy phiên hội thoại hoạt động để tóm tắt."
-            }
+        conv_id = await conv_repo.get_or_create_conversation(user_uuid)
 
-        # 2. Fetch all messages in this conversation (ordered chronologically)
-        msg_stmt = (
-            select(Message)
-            .where(
-                Message.conversation_id == conv.id,
-                Message.is_success == True
-            )
-            .order_by(Message.created_at.asc())
-        )
-        msgs = (await session.execute(msg_stmt)).scalars().all()
+        # 2. Fetch recent history (using get_recent_history which is available on IConversationRepository)
+        msgs = await conv_repo.get_recent_history(user_uuid, conv_id, limit=100)
+        
         if not msgs:
             return {
                 "status": "skipped",
@@ -98,7 +79,7 @@ class ConversationSummarizerAgentTool(BaseAgentTool):
             }
 
         # 3. Build chat transcript for LLM
-        chat_transcript = "\n".join([f"{m.role.value.upper()}: {m.content}" for m in msgs])
+        chat_transcript = "\n".join([f"{m['role'].upper()}: {m['content']}" for m in msgs])
 
         system_prompt = (
             "You are a conversation summarizer for Kuchiba Chisa, a character from Wuthering Waves.\n"
@@ -131,9 +112,7 @@ class ConversationSummarizerAgentTool(BaseAgentTool):
                 summary_text = response.raw_content or ""
             
             if summary_text:
-                conv.summary = summary_text
-                await session.commit()
-                log.info("Conversation summary generated and updated successfully", conversation_id=conv.id)
+                log.info("Conversation summary generated successfully", conversation_id=str(conv_id))
                 return {
                     "status": "success",
                     "message": f"Dưới đây là tóm tắt cuộc trò chuyện của chúng ta nãy giờ:\n{summary_text}"

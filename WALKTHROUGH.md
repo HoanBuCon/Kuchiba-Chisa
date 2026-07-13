@@ -574,7 +574,23 @@ Dưới đây là báo cáo phân tích chi tiết về thiết kế hệ thốn
 ### 13.3 Các khoảng trống chưa đạt chuẩn Production-Ready (Non-Production Gaps)
 
 1. **Cơ chế Tìm kiếm Web dựa trên Scraping thiếu ổn định:**
-   *   `WebSearchAgentTool` đang cào trực tiếp trang HTML của DuckDuckGo (`html.duckduckgo.com/html/`). Các công cụ tìm kiếm có cơ chế chống cào cực kỳ nghiêm ngặt (Cloudflare, CAPTCHA, IP rate limit) và cấu hình HTML có thể thay đổi bất cứ lúc nào khiến bộ parser regex bị vỡ. Hệ thống sẽ lập tức mất khả năng tìm kiếm web khi chạy thực tế.
+   *   `WebSearchAgentTool` đang cào trực tiếp trang HTML của DuckDuckGo (`html.duckduckgo.com/html/`). Các công cụ tìm kiếm có cơ chế chống cào cực kỳ nghiêm ngặt (Cloudflare, CAPTCHA, IP rate limit) và cấu hình HTML.
+
+## 6. Phase 4: Strict Clean Architecture 
+
+**Mục tiêu:** Tách biệt hoàn toàn Business Logic (Domain) khỏi Infrastructure (SQLAlchemy, FastAPI Background Tasks, PostgreSQL, Redis).
+
+**Các thay đổi đã thực hiện:**
+- Tạo Domain Entities: `User`, `Conversation`, `Message`, `EmotionState`, `MemoryPayload`, ... tại `app.domain.entities`.
+- Tạo Interfaces: `IUserRepository`, `IConversationRepository`, `IEmotionRepository`, `IVectorStore`, `IUnitOfWork`.
+- Triển khai Repositories cụ thể mapping từ SQLAlchemy models sang Domain entities tại `app.infrastructure.database.repositories`.
+- Khởi tạo Dependency Container (`Dependencies`) cung cấp factory classes cho Unit of Work, repositories, vector store, v.v.
+- Xóa bỏ truyền session (`AsyncSession`) vào các tool/method của Domain Services. Thay vào đó, Domain Services (như `ChatEngine`, `MemoryExtractor`, `Summarize Tool`) sử dụng Interfaces/Entities và được tiêm Repositories từ Dependency Container.
+- Đổi các import `app.infrastructure.database.models` trong domain (ngoại trừ mapping) thành các import từ `app.domain.entities` và `app.domain.interfaces`.
+
+Kiến trúc hiện tại đã hoàn toàn tách biệt: `ChatEngine` không hề phụ thuộc vào CSDL cụ thể nào, giúp tăng độ bền vững và khả năng bảo trì.
+
+## 7. Các thay đổi nhỏ khácứ lúc nào khiến bộ parser regex bị vỡ. Hệ thống sẽ lập tức mất khả năng tìm kiếm web khi chạy thực tế.
 2. **Thiếu cơ chế dự phòng và chịu lỗi (Resilience & Failover):**
    *   Các lời gọi API tới LLM (Groq/Gemini) và Vector DB không có cơ chế tự động thử lại (Retry) với exponential backoff.
    *   Không có LLM Fallback: Nếu API chính (ví dụ: Groq) bị cạn kiệt rate limit (429) hoặc gặp lỗi máy chủ (5xx), hệ thống sẽ trả về lỗi 500 hoặc ngắt kết nối thay vì tự động chuyển hướng sang nhà cung cấp dự phòng (như Gemini hoặc DeepSeek).

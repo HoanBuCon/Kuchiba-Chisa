@@ -4,7 +4,7 @@ import httpx
 from typing import Any, Dict, List
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.infrastructure.llm.adapters.base import BaseLLMAdapter, StructuredPrompt
+from app.domain.interfaces.llm_provider import BaseLLMAdapter, StructuredPrompt
 from app.domain.interfaces.embedding_provider import IEmbeddingProvider
 from app.domain.services.tools.base import BaseAgentTool
 from app.config.settings import settings
@@ -84,7 +84,6 @@ class WebSearchAgentTool(BaseAgentTool):
 
     async def execute(
         self,
-        session: AsyncSession,
         user_id: str,
         user_message: str,
         llm: BaseLLMAdapter,

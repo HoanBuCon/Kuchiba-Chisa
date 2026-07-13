@@ -4,12 +4,11 @@ from typing import List, Dict, Any, Optional, Set
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domain.interfaces.embedding_provider import IEmbeddingProvider
-from app.infrastructure.llm.adapters.base import BaseLLMAdapter
+from app.domain.interfaces.llm_provider import BaseLLMAdapter
 from app.domain.services.rag.base import RAGContext
-from app.domain.services.rag.retriever_memory import MemoryRetriever
-from app.domain.services.rag.retriever_lore import LoreRetriever
-from app.domain.services.rag.assessor import ContextAssessor
-from app.domain.services.rag.thinking_loop import ThinkingLoopAgent
+from app.domain.interfaces.retriever import IMemoryRetriever, ILoreRetriever
+from app.domain.interfaces.assessor import IContextAssessor
+from app.domain.interfaces.thinking_agent import IThinkingAgent
 from app.infrastructure.logging.logger import get_logger
 from app.infrastructure.logging.pipeline_tracker import pipeline_tracker
 
@@ -22,15 +21,34 @@ class RAGPipeline:
     """
     def __init__(
         self,
-        memory_retriever: Optional[MemoryRetriever] = None,
-        lore_retriever: Optional[LoreRetriever] = None,
-        assessor: Optional[ContextAssessor] = None,
-        thinking_loop_agent: Optional[ThinkingLoopAgent] = None
+        memory_retriever: Optional[IMemoryRetriever] = None,
+        lore_retriever: Optional[ILoreRetriever] = None,
+        assessor: Optional[IContextAssessor] = None,
+        thinking_loop_agent: Optional[IThinkingAgent] = None
     ):
-        self.memory_retriever = memory_retriever or MemoryRetriever()
-        self.lore_retriever = lore_retriever or LoreRetriever()
-        self.assessor = assessor or ContextAssessor()
-        self.thinking_loop_agent = thinking_loop_agent or ThinkingLoopAgent()
+        if memory_retriever is None:
+            from app.domain.services.rag.retriever_memory import MemoryRetriever
+            self.memory_retriever = MemoryRetriever()
+        else:
+            self.memory_retriever = memory_retriever
+            
+        if lore_retriever is None:
+            from app.domain.services.rag.retriever_lore import LoreRetriever
+            self.lore_retriever = LoreRetriever()
+        else:
+            self.lore_retriever = lore_retriever
+            
+        if assessor is None:
+            from app.domain.services.rag.assessor import ContextAssessor
+            self.assessor = ContextAssessor()
+        else:
+            self.assessor = assessor
+            
+        if thinking_loop_agent is None:
+            from app.domain.services.rag.thinking_loop import ThinkingLoopAgent
+            self.thinking_loop_agent = ThinkingLoopAgent()
+        else:
+            self.thinking_loop_agent = thinking_loop_agent
 
     @staticmethod
     def _normalize_intents(intents: List[Any]) -> Set[str]:
@@ -56,6 +74,7 @@ class RAGPipeline:
         llm: BaseLLMAdapter,
         embedder: IEmbeddingProvider,
         web_search_tool: Any,
+        vector_store: Any,
         is_small_talk: bool = False,
         conversation_summary: str = None,
     ) -> RAGContext:
@@ -76,6 +95,7 @@ class RAGPipeline:
                 active_intents.append("CHARACTER_LORE")
                 retrieval_tasks.append(
                     self.lore_retriever.retrieve_lore_parent_child(
+                        vector_store=vector_store,
                         collection="character_lore",
                         query_vector=query_vector,
                         query_text=cleaned_query,
@@ -87,6 +107,7 @@ class RAGPipeline:
                 active_intents.append("WORLD_LORE")
                 retrieval_tasks.append(
                     self.lore_retriever.retrieve_lore_parent_child(
+                        vector_store=vector_store,
                         collection="world_lore",
                         query_vector=query_vector,
                         query_text=cleaned_query,
@@ -98,6 +119,7 @@ class RAGPipeline:
                 active_intents.append("STORY_LORE")
                 retrieval_tasks.append(
                     self.lore_retriever.retrieve_lore_parent_child(
+                        vector_store=vector_store,
                         collection="story_lore",
                         query_vector=query_vector,
                         query_text=cleaned_query,
@@ -109,6 +131,7 @@ class RAGPipeline:
                 active_intents.append("MEMORY")
                 retrieval_tasks.append(
                     self.memory_retriever.retrieve_memories(
+                        vector_store=vector_store,
                         collection="memories",
                         query_vector=query_vector,
                         user_id=user_id,
@@ -123,9 +146,15 @@ class RAGPipeline:
                     results = await asyncio.gather(*retrieval_tasks)
                     for intent_type, retrieved_data in zip(active_intents, results):
                         if intent_type == "MEMORY":
-                            memories.extend([m.text_content for m in retrieved_data if m.text_content])
+                            # Deduplicate memories by content
+                            for m in retrieved_data:
+                                if m.text_content and m.text_content not in memories:
+                                    memories.append(m.text_content)
                         else:
-                            lore_chunks.extend(retrieved_data)
+                            # Deduplicate lore parent chunks across collections
+                            for chunk in retrieved_data:
+                                if chunk not in lore_chunks:
+                                    lore_chunks.append(chunk)
                 except Exception as ex:
                     log.error("Failed to retrieve data from Qdrant vector database", error=str(ex))
 

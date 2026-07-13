@@ -1,43 +1,32 @@
 import re
 import math
 import time
+import yaml
+from pathlib import Path
 from typing import Any, List, Dict
+from app.infrastructure.logging.logger import get_logger
+
+log = get_logger(__name__)
 
 class KeywordOverlapReranker:
     """
     Reranks candidate chunks by matching overlapping keyword tokens with synonym expansion.
     """
     def __init__(self):
-        self.high_value_terms = {
-            "honami", "sumika", "tacet", "vòng", "cổ", "vòng cổ", "startorch",
-            "học viện", "broadblade", "kéo", "havoc", "overclock", "sonoro", "sphere",
-            "nhật ký", "ký ức", "trà", "pocky", "mèo", "socola", "đam mê", "sở thích", "yêu thích", 
-            "đặc biệt", "đáng nhớ", "trường học", "trường", "học sinh", "nữ sinh", "lahai-roi",
-            "solaris-3", "ashinohara", "mutant", "resonator", "tuổi", "18 tuổi", "38 tuổi", "tiền bối", "quê quán",
-            "linh hồn", "tần số", "cộng hưởng", "biến dị", "thiết bị", "vòng giới hạn", "giám sát",
-            "nguy hiểm", "sụp đổ", "không gian", "lực lượng", "chủng tộc", "remnant"
-        }
-        
-        self.synonyms = {
-            "trường": ["học viện", "startorch", "trung học", "nữ sinh", "academy", "school", "startorch academy"],
-            "học": ["theo học", "học viện", "học tập", "trường học"],
-            "tuổi": ["tuổi sinh học", "tuổi thực tế", "18 tuổi", "38 tuổi", "năm sinh"],
-            "quê": ["quê quán", "ashinohara", "nơi sinh", "sinh ra ở"],
-            "sức mạnh": ["forte", "thread perception", "năng lực", "sức mạnh", "chiến đấu", "sức mạnh cộng hưởng", "biến dị"],
-            "vũ khí": ["broadblade", "chiếc kéo", "kéo khổng lồ", "kiếm"],
-            "tiền bối": ["sumika", "chị sumika", "tiền bối sumika"],
-            "thích": ["sở thích", "đam mê", "yêu thích", "thích ăn", "thích ngắm", "thích mèo"],
-            "ăn": ["ẩm thực", "ăn vặt", "socola", "pocky", "bánh quy", "ớt cay"],
-            "chữa": ["trị liệu", "healer", "hỗ trợ", "phục hồi"],
-            "nhật ký": ["di thư", "cuốn sổ", "ghi chép"],
-            "năng lực": ["forte", "sức mạnh cộng hưởng", "cộng hưởng dị thường", "biến dị"],
-            "vòng cổ": ["thiết bị giới hạn", "vòng giới hạn", "cái vòng ở cổ", "vòng resonance"],
-            "sợ": ["nỗi sợ", "lo sợ", "lo ngại", "sợ hãi", "ám ảnh"],
-            "yếu": ["điểm yếu", "overclock", "quá tải", "phản ứng kém", "cay"],
-            "mèo": ["mèo con", "loài mèo", "chú mèo"],
-            "kỷ niệm": ["ký ức", "kỷ niệm", "quá khứ", "ngắm hoa anh đào", "đèn lồng"],
-            "anh đào": ["hoa anh đào", "anh đào rơi", "lễ hội"],
-        }
+        config_path = Path(__file__).parent / "reranker_config.yaml"
+        self.high_value_terms = set()
+        self.synonyms = {}
+        try:
+            if config_path.exists():
+                with open(config_path, "r", encoding="utf-8") as f:
+                    config = yaml.safe_load(f)
+                    if config:
+                        self.high_value_terms = set(config.get("high_value_terms", []))
+                        self.synonyms = config.get("synonyms", {})
+            else:
+                log.warning("reranker_config.yaml not found, using empty config", path=str(config_path))
+        except Exception as e:
+            log.error("Failed to load reranker config", error=str(e))
 
     def tokenize(self, text: str) -> List[str]:
         if not text:

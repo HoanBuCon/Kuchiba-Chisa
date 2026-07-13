@@ -86,8 +86,7 @@ services:
     environment:
       DATABASE_URL: postgresql+asyncpg://chisa:chisa_secret@postgres:5432/chisa_db
       REDIS_URL: redis://redis:6379/0
-      CELERY_BROKER_URL: redis://redis:6379/1
-      CELERY_RESULT_BACKEND: redis://redis:6379/2
+
       QDRANT_URL: http://qdrant:6333
     ports:
       - "${APP_PORT:-8000}:8000"
@@ -100,7 +99,7 @@ services:
         condition: service_healthy
       qdrant:
         condition: service_started
-    command: python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 4
+    command: python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 1
 
   # ── Discord Bot ──────────────────────────────────────────────────
   discord:
@@ -124,31 +123,4 @@ services:
         condition: service_started
     command: node src/index.js
 
-  # ── Celery Worker ───────────────────────────────────────────────
-  celery_worker:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      target: production
-    container_name: chisa_worker
-    restart: unless-stopped
-    env_file: .env
-    environment:
-      DATABASE_URL: postgresql+asyncpg://chisa:chisa_secret@postgres:5432/chisa_db
-      REDIS_URL: redis://redis:6379/0
-      CELERY_BROKER_URL: redis://redis:6379/1
-      CELERY_RESULT_BACKEND: redis://redis:6379/2
-      QDRANT_URL: http://qdrant:6333
-    networks:
-      - chisa_net
-    depends_on:
-      redis:
-        condition: service_healthy
-      postgres:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD", "celery", "-A", "app.infrastructure.queue.worker", "inspect", "ping"]
-      interval: 15s
-      timeout: 10s
-      retries: 3
-    command: celery -A app.infrastructure.queue.worker worker --loglevel=info -Q high,medium,low
+

@@ -1,5 +1,5 @@
 import logging
-from app.infrastructure.llm.adapters.base import BaseLLMAdapter, StructuredPrompt
+from app.domain.interfaces.llm_provider import BaseLLMAdapter, StructuredPrompt
 from app.domain.services.memory_manager import MemoryManager
 
 log = logging.getLogger(__name__)

@@ -1,13 +1,15 @@
 import time
 from typing import List, Dict, Optional
-from app.infrastructure.vector.qdrant.qdrant_service import qdrant_service
+from app.domain.interfaces.vector_store import IVectorStore
 from app.domain.services.rag.base import ScoredMemory
 from app.domain.services.rag.reranker import HybridMemoryScorer
 from app.infrastructure.logging.logger import get_logger
 
 log = get_logger(__name__)
 
-class MemoryRetriever:
+from app.domain.interfaces.retriever import IMemoryRetriever
+
+class MemoryRetriever(IMemoryRetriever):
     """
     Retrieves and ranks user memories from Qdrant using Hybrid Scoring.
     """
@@ -16,6 +18,7 @@ class MemoryRetriever:
 
     async def retrieve_memories(
         self,
+        vector_store: IVectorStore,
         collection: str,
         query_vector: List[float],
         user_id: str,
@@ -24,7 +27,7 @@ class MemoryRetriever:
         top_k: int = 5
     ) -> List[ScoredMemory]:
         try:
-            candidates = await qdrant_service.search_by_user(
+            candidates = await vector_store.search_by_user(
                 collection=collection,
                 query_vector=query_vector,
                 user_id=user_id,

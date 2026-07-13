@@ -1,10 +1,12 @@
 from typing import Tuple
-from app.infrastructure.llm.adapters.base import BaseLLMAdapter, StructuredPrompt
+from app.domain.interfaces.llm_provider import BaseLLMAdapter, StructuredPrompt
 from app.infrastructure.logging.logger import get_logger
 
 log = get_logger(__name__)
 
-class ContextAssessor:
+from app.domain.interfaces.assessor import IContextAssessor
+
+class ContextAssessor(IContextAssessor):
     """
     Evaluates whether the retrieved context contains enough factual information
     to fully and correctly answer the user's question without hallucinations.
@@ -46,16 +48,13 @@ class ContextAssessor:
             "Evaluate whether the retrieved context contains enough specific, factual, and relevant information to fully "
             "and accurately answer the user's question without any hallucination, given the conversation history.\n\n"
             "Decide whether to keep the retrieved local context under the key 'use_lore':\n"
-            "- Set 'use_lore' to true if the local context contains information that is useful, relevant, or can help "
-            "the model formulate a better response (even if it does not fully answer the question).\n"
-            "- Set 'use_lore' to false if the retrieved local context is completely irrelevant, unrelated, or fictitious "
-            "game lore when the user is asking about real-world factual information. This avoids polluting the final prompt with useless tokens.\n\n"
+            "- Set 'use_lore' to true if the local context contains information about the character's background, world, relationships, or anything relevant to the user's question.\n"
+            "- Set 'use_lore' to false ONLY IF the retrieved local context is completely irrelevant to the user's question, or if the user is asking a purely real-world factual question where game lore is useless.\n\n"
             "Determine alignment under the key 'is_aligned':\n"
-            "- If the user is asking about real-time, dynamic information (like current events, prices, live statistics, etc.) "
+            "- If the user is asking about real-time, dynamic real-world information (like current events, prices, live statistics, etc.) "
             "and the exact current numbers/details are not present in the context, set 'is_aligned' to false.\n"
-            "- If the user asks a factual question about real-world history, politics, geography, science, public figures, "
-            "or major world events, and the retrieved context is empty, says '(No context retrieved)', or only contains "
-            "irrelevant game/fiction lore, set 'is_aligned' to false.\n"
+            "- If the user asks a factual question about real-world history, politics, geography, science, or public figures, "
+            "and the retrieved context is empty or only contains irrelevant fictional lore, set 'is_aligned' to false.\n"
             "- If the user's message is simple casual conversation that doesn't require factual data lookup, set 'is_aligned' to true.\n\n"
             "If you set 'is_aligned' to false, you MUST generate a single, highly optimized search query under the key 'search_query' "
             "specifically designed for search engines (like DuckDuckGo) to retrieve the missing factual information.\n"

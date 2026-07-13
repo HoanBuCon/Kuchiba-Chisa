@@ -4,7 +4,7 @@ import re
 import datetime
 import contextvars
 from typing import Any, List
-from app.infrastructure.llm.adapters.base import StructuredPrompt, LLMResponse
+from app.domain.interfaces.llm_provider import StructuredPrompt, LLMResponse
 
 LOG_FILE_PATH = "llm_api_clean.txt"
 

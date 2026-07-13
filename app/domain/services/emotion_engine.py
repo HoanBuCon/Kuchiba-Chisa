@@ -18,7 +18,7 @@ from typing import TYPE_CHECKING
 from app.infrastructure.logging.logger import get_logger
 
 if TYPE_CHECKING:
-    from app.infrastructure.database.models.emotion_state import EmotionState
+    from app.domain.entities.emotion import EmotionState
 
 log = get_logger(__name__)
 

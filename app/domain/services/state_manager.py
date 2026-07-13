@@ -1,5 +1,5 @@
 from typing import Dict
-from app.infrastructure.database.models.emotion_state import EmotionState
+from app.domain.entities.emotion import EmotionState
 
 class StateManager:
     """
