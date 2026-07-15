@@ -47,3 +47,7 @@ Thumbs.db
 llm_api_clean.txt
 rag_out.txt
 test_output.txt
+
+# Generated Reports
+reports/
+scratch/
