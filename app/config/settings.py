@@ -21,6 +21,10 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
+    # ── SSE Streaming Lifecycle ────────────────────────────────
+    SSE_MAX_QUEUE_SIZE: int = 100
+    SSE_TIMEOUT: int = 120
+
     # ── Application ────────────────────────────────────────────
     APP_ENV: Literal["development", "production", "test"] = "development"
     APP_PORT: int = Field(default=8000, ge=1, le=65535)

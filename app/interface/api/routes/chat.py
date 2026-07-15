@@ -1,7 +1,7 @@
 import asyncio
 import json
-from typing import Callable, Optional, Any
-from fastapi import APIRouter, Depends, HTTPException, Request
+from typing import Callable, Optional, Any, Annotated
+from fastapi import APIRouter, Depends, HTTPException, Request, Path, Query
 from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.infrastructure.database.engine import get_db_session
@@ -10,6 +10,8 @@ from app.domain.services.chat_engine import ChatEngine, ChatEngineBusyError
 from app.domain.interfaces.llm_provider import LLMRateLimitError, LLMTimeoutError, LLMInvalidResponseError
 from app.infrastructure.logging.logger import get_logger
 from app.shared.utils.user_identity import normalize_user_id, normalize_user_id_str
+from sqlalchemy.exc import SQLAlchemyError, OperationalError
+from app.shared.utils.circuit_breaker import CircuitBreakerError
 from app.application.dependencies import get_chat_engine, get_clear_user_memory_use_case, container
 
 log = get_logger(__name__)
@@ -20,6 +22,20 @@ router = APIRouter()
 def _sse_event(event_type: str, data: dict) -> str:
     return f"event: {event_type}\ndata: {json.dumps(data, ensure_ascii=False)}\n\n"
 
+
+def _prepare_chat_context(request: ChatRequest, http_request: Request) -> tuple[str, str]:
+    """Sets up clean log flag, determines username, and normalizes user_id."""
+    from app.infrastructure.logging.llm_logger import enable_clean_log
+    
+    is_test = http_request.headers.get("X-Enable-Clean-Log") == "true"
+    enable_clean_log.set(is_test)
+
+    username = request.username or ("Web Guest" if request.source == "web" else "Unknown")
+    normalized_user_id = normalize_user_id_str(request.user_id)
+    return username, normalized_user_id
+
+
+UserIdPath = Annotated[str, Path(min_length=1, max_length=128, pattern=r"^[a-zA-Z0-9_\-\:]+$")]
 
 def _start_chat_trace(request: ChatRequest, username: str | None) -> str:
     from app.infrastructure.logging.pipeline_tracker import pipeline_tracker
@@ -35,14 +51,14 @@ def _start_chat_trace(request: ChatRequest, username: str | None) -> str:
     )
 
 
-async def _run_chat_request(session: AsyncSession, request: ChatRequest, chat_engine: ChatEngine, on_token: Optional[Callable[[str], Any]] = None) -> tuple[str, dict, bool]:
+async def _run_chat_request(session: AsyncSession, message: str, original_user_id: str, normalized_user_id: str, chat_engine: ChatEngine, on_token: Optional[Callable[[str], Any]] = None) -> tuple[str, dict, bool]:
     from app.infrastructure.logging.pipeline_tracker import pipeline_tracker
 
     try:
         reply_text, emotions = await chat_engine.chat(
             session=session,
-            user_id=request.user_id,
-            user_message=request.message,
+            user_id=normalized_user_id,
+            user_message=message,
             on_token=on_token,
         )
         loop_thinking_activated = pipeline_tracker.get_loop_thinking_activated()
@@ -63,10 +79,10 @@ async def _run_chat_request(session: AsyncSession, request: ChatRequest, chat_en
             error=None,
         )
         return fallback_text, fallback_emotions, False
-    except (LLMTimeoutError, LLMInvalidResponseError) as llm_err:
+    except (LLMTimeoutError, LLMInvalidResponseError, CircuitBreakerError) as llm_err:
         fallback_text = "Chisa hơi mệt một chút, Senpai nhắn lại sau nhé ~"
         fallback_emotions = None
-        log.warning("LLM error, returning fallback", error=str(llm_err), user_id=request.user_id)
+        log.warning("LLM error, returning fallback", error=str(llm_err), user_id=original_user_id, normalized_user_id=normalized_user_id)
         pipeline_tracker.end_trace(
             response_text=fallback_text,
             emotions=fallback_emotions,
@@ -92,25 +108,17 @@ async def chat_endpoint(
     Primary endpoint for User <-> AI interactions.
     Requires user_id to correctly scope STM, emotions, and RAG contexts.
     """
-    from app.infrastructure.logging.llm_logger import enable_clean_log
-    is_test = http_request.headers.get("X-Enable-Clean-Log") == "true"
-    enable_clean_log.set(is_test)
-
-    log.info("Received chat request", user_id=request.user_id)
-
-    # Determine default username if not supplied
-    username = request.username
-    if not username and request.source == "web":
-        username = "Web Guest"
-
-    request.user_id = normalize_user_id_str(request.user_id)
+    username, normalized_user_id = _prepare_chat_context(request, http_request)
+    log.info("Received chat request", user_id=request.user_id, normalized_user_id=normalized_user_id)
 
     _start_chat_trace(request, username)
 
     try:
         reply_text, emotions, loop_thinking_activated = await _run_chat_request(
             session=session, 
-            request=request, 
+            message=request.message,
+            original_user_id=request.user_id,
+            normalized_user_id=normalized_user_id,
             chat_engine=chat_engine
         )
         return ChatResponse(
@@ -124,9 +132,10 @@ async def chat_endpoint(
             status_code=429,
             detail="Chisa đang xử lý tin nhắn trước đó, Senpai chờ em thêm lát nữa nhé~"
         )
+    except SQLAlchemyError as db_err:
+        log.error("Database connection or operation failed", error=str(db_err), user_id=request.user_id)
+        raise HTTPException(status_code=503, detail="Service temporarily unavailable")
     except Exception as e:
-        import traceback
-        traceback.print_exc()
         log.error("Chat orchestration failed", error=str(e), error_type=type(e).__name__, user_id=request.user_id)
         raise HTTPException(status_code=500, detail="Internal server error")
 
@@ -141,6 +150,8 @@ async def chat_stream_endpoint(
     from app.infrastructure.logging.llm_logger import enable_clean_log
     from app.infrastructure.logging.pipeline_tracker import pipeline_tracker
     from app.infrastructure.database.engine import AsyncSessionFactory
+    from app.config.settings import settings
+    from app.shared.utils.background_tasks import BackgroundTaskManager
 
     if request.source and request.source != "web":
         raise HTTPException(
@@ -148,14 +159,11 @@ async def chat_stream_endpoint(
             detail="SSE chat stream is only available for web clients. Use POST /chat instead.",
         )
 
-    is_test = http_request.headers.get("X-Enable-Clean-Log") == "true"
-    enable_clean_log.set(is_test)
-
-    username = request.username or "Web Guest"
-    request.user_id = normalize_user_id_str(request.user_id)
+    username, normalized_user_id = _prepare_chat_context(request, http_request)
+    log.info("Received chat stream request", user_id=request.user_id, normalized_user_id=normalized_user_id)
 
     trace_id = _start_chat_trace(request, username)
-    queue: asyncio.Queue[dict] = asyncio.Queue()
+    queue: asyncio.Queue[dict] = asyncio.Queue(maxsize=settings.SSE_MAX_QUEUE_SIZE)
     loop_event_sent = False
 
     def listener(event: dict):
@@ -170,23 +178,31 @@ async def chat_stream_endpoint(
         step_name = step.get("name", "")
         if step_name.startswith("thinking_loop_cycle_") and not loop_event_sent:
             loop_event_sent = True
-            queue.put_nowait({"type": "loop_thinking_started", "trace_id": trace_id})
+            try:
+                queue.put_nowait({"type": "loop_thinking_started", "trace_id": trace_id})
+            except asyncio.QueueFull:
+                pass
 
     pipeline_tracker.register_listener(listener)
 
     async def runner():
         try:
             async def sse_on_token(token: str):
-                queue.put_nowait({"type": "token", "trace_id": trace_id, "data": {"token": token}})
+                try:
+                    queue.put_nowait({"type": "token", "trace_id": trace_id, "data": {"token": token}})
+                except asyncio.QueueFull:
+                    pass
 
             async with AsyncSessionFactory() as session:
                 reply_text, emotions, loop_thinking_activated = await _run_chat_request(
                     session=session,
-                    request=request,
+                    message=request.message,
+                    original_user_id=request.user_id,
+                    normalized_user_id=normalized_user_id,
                     chat_engine=chat_engine,
                     on_token=sse_on_token,
                 )
-            queue.put_nowait({
+            await queue.put({
                 "type": "complete",
                 "trace_id": trace_id,
                 "data": {
@@ -196,18 +212,55 @@ async def chat_stream_endpoint(
                     "loop_thinking_activated": loop_thinking_activated,
                 },
             })
+        except asyncio.CancelledError:
+            raise
+        except SQLAlchemyError as db_err:
+            log.error("SSE database connection or operation failed", error=str(db_err), user_id=request.user_id)
+            try:
+                queue.put_nowait({
+                    "type": "error",
+                    "trace_id": trace_id,
+                    "data": {
+                        "message": "Service temporarily unavailable",
+                        "error": "ServiceUnavailable"
+                    },
+                })
+            except asyncio.QueueFull:
+                pass
         except Exception as error:
             log.error("SSE chat orchestration failed", error=str(error), user_id=request.user_id)
-            queue.put_nowait({
-                "type": "error",
-                "trace_id": trace_id,
-                "data": {
-                    "message": "Internal server error during chat generation",
-                    "error": str(error),
-                },
-            })
+            try:
+                queue.put_nowait({
+                    "type": "error",
+                    "trace_id": trace_id,
+                    "data": {
+                        "message": "Internal server error during chat generation",
+                        "error": str(error),
+                    },
+                })
+            except asyncio.QueueFull:
+                pass
 
-    task = asyncio.create_task(runner())
+    async def run_with_timeout():
+        try:
+            await asyncio.wait_for(runner(), timeout=settings.SSE_TIMEOUT)
+        except asyncio.TimeoutError:
+            log.warning("SSE runner timed out", user_id=request.user_id)
+            try:
+                queue.put_nowait({
+                    "type": "error",
+                    "trace_id": trace_id,
+                    "data": {
+                        "message": "Request timed out",
+                        "error": "TimeoutError"
+                    }
+                })
+            except asyncio.QueueFull:
+                pass
+        except asyncio.CancelledError:
+            pass
+
+    task = BackgroundTaskManager.spawn(run_with_timeout(), name=f"sse_runner:{trace_id}")
 
     async def event_generator():
         try:
@@ -223,7 +276,7 @@ async def chat_stream_endpoint(
                 task.cancel()
                 try:
                     await task
-                except Exception:
+                except asyncio.CancelledError:
                     pass
 
     return StreamingResponse(
@@ -239,7 +292,7 @@ async def chat_stream_endpoint(
 
 @router.get("/chat/emotions/{user_id}")
 async def get_emotions(
-    user_id: str,
+    user_id: UserIdPath,
     session: AsyncSession = Depends(get_db_session),
     chat_engine: ChatEngine = Depends(get_chat_engine)
 ) -> dict:
@@ -260,8 +313,8 @@ async def get_emotions(
 
 @router.get("/chat/history/{user_id}")
 async def get_chat_history(
-    user_id: str,
-    limit: int = 50,
+    user_id: UserIdPath,
+    limit: int = Query(50, ge=1, le=100),
     session: AsyncSession = Depends(get_db_session),
     chat_engine: ChatEngine = Depends(get_chat_engine)
 ) -> dict:
@@ -276,7 +329,7 @@ async def get_chat_history(
 
 @router.delete("/chat/clear/{user_id}")
 async def clear_user_memory(
-    user_id: str,
+    user_id: UserIdPath,
     session: AsyncSession = Depends(get_db_session),
     clear_use_case = Depends(get_clear_user_memory_use_case)
 ) -> dict:

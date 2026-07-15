@@ -28,7 +28,8 @@ class DeepSeekAdapter(BaseLLMAdapter):
     _MAX_RETRIES = LLMTuning.ADAPTER_MAX_RETRIES
     _BASE_BACKOFF = LLMTuning.ADAPTER_BASE_BACKOFF_STANDARD  # seconds
 
-    def __init__(self) -> None:
+    def __init__(self, http_client: httpx.AsyncClient) -> None:
+        self._http_client = http_client
         self._api_key = settings.DEEPSEEK_API_KEY
         self._base_url = settings.DEEPSEEK_BASE_URL.rstrip('/')
         self._model = settings.DEEPSEEK_MODEL
@@ -93,19 +94,18 @@ class DeepSeekAdapter(BaseLLMAdapter):
         }
 
         try:
-            async with httpx.AsyncClient(timeout=float(self._timeout)) as client:
-                response = await client.post(url, headers=headers, json=payload)
+            response = await self._http_client.post(url, headers=headers, json=payload, timeout=float(self._timeout))
+            
+            if response.status_code == 429:
+                raise LLMRateLimitError()
+            elif response.status_code == 413:
+                raise LLMError("Payload too large", retryable=False, code="PAYLOAD_TOO_LARGE")
+            elif response.status_code >= 500:
+                raise LLMError(f"Server error: {response.status_code}", retryable=True)
+            elif response.status_code != 200:
+                raise LLMError(f"API error: {response.status_code} - {response.text}", retryable=False)
                 
-                if response.status_code == 429:
-                    raise LLMRateLimitError()
-                elif response.status_code == 413:
-                    raise LLMError("Payload too large", retryable=False, code="PAYLOAD_TOO_LARGE")
-                elif response.status_code >= 500:
-                    raise LLMError(f"Server error: {response.status_code}", retryable=True)
-                elif response.status_code != 200:
-                    raise LLMError(f"API error: {response.status_code} - {response.text}", retryable=False)
-                    
-                res_json = response.json()
+            res_json = response.json()
         except httpx.TimeoutException:
             raise LLMTimeoutError()
         except httpx.RequestError as e:
@@ -169,27 +169,35 @@ class DeepSeekAdapter(BaseLLMAdapter):
             "stream": True
         }
         try:
-            async with httpx.AsyncClient(timeout=float(self._timeout)) as client:
-                async with client.stream("POST", url, headers=headers, json=payload) as response:
-                    if response.status_code != 200:
-                        log.error("DeepSeek stream failed", status_code=response.status_code)
-                        yield ""
-                        return
-                    
-                    async for line in response.aiter_lines():
-                        if not line:
+            async with self._http_client.stream("POST", url, headers=headers, json=payload, timeout=float(self._timeout)) as response:
+                if response.status_code != 200:
+                    log.error("DeepSeek stream failed", status_code=response.status_code)
+                    yield ""
+                    return
+                
+                async for line in response.aiter_lines():
+                    if not line:
+                        continue
+                    if line.startswith("data: "):
+                        data_str = line[6:].strip()
+                        if not data_str:
                             continue
-                        if line.startswith("data: "):
-                            data_str = line[6:].strip()
-                            if data_str == "[DONE]":
-                                break
-                            try:
-                                chunk_json = json.loads(data_str)
-                                content = chunk_json["choices"][0]["delta"].get("content", "")
-                                if content:
-                                    yield content
-                            except Exception:
-                                continue
+                        if data_str == "[DONE]":
+                            break
+                        try:
+                            chunk_json = json.loads(data_str)
+                            content = chunk_json["choices"][0]["delta"].get("content", "")
+                            if content:
+                                yield content
+                        except (json.JSONDecodeError, KeyError, IndexError, TypeError) as parse_ex:
+                            log.warning(
+                                "Failed to parse DeepSeek stream chunk",
+                                chunk_preview=data_str[:200],
+                                chunk_size=len(data_str),
+                                error=str(parse_ex),
+                                error_type=type(parse_ex).__name__,
+                            )
+                            continue
         except Exception as e:
             log.error("DeepSeek streaming failed", error=str(e))
             yield ""

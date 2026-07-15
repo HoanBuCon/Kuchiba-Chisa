@@ -99,15 +99,14 @@ class ChatEngine:
 
     async def _chat_inner(self, session: IDbSession, user_id: str, user_message: str, on_token: Optional[Callable[[str], Any]] = None) -> Tuple[str, Dict[str, float]]:
         try:
-            async with self.uow_factory(session) as uow:
-                context = ChatContext(
-                    session=session,
-                    user_id=user_id,
-                    user_message=user_message,
-                    on_token=on_token
-                )
-                context = await self.pipeline.execute(context)
-                
+            context = ChatContext(
+                session=session,
+                user_id=user_id,
+                user_message=user_message,
+                on_token=on_token
+            )
+            context = await self.pipeline.execute(context)
+            
             return context.chisa_reply, context.updated_emotions
             
         except Exception as e:

@@ -16,7 +16,7 @@ if sys.stdout.encoding != 'utf-8':
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(PROJECT_ROOT)
 
-LOG_FILE_PATH = os.path.join(PROJECT_ROOT, "logs", "llm_api_clean.txt")
+LOG_FILE_PATH = os.path.join(PROJECT_ROOT, "logs", "llm_api.jsonl")
 OUTPUT_FILE_PATH = os.path.join(PROJECT_ROOT, "logs", "test_output.txt")
 
 # Define the 10 pairs of questions
@@ -47,29 +47,22 @@ set2_questions = [
 ]
 
 def parse_llm_transactions(new_content: str):
-    matches = list(re.finditer(r"=====\s*LƯỢT\s+(\d+)\s*=====", new_content))
+    import json
     transactions = []
-    
-    for i, match in enumerate(matches):
-        start = match.end()
-        end = matches[i+1].start() if i + 1 < len(matches) else len(new_content)
-        block = new_content[start:end]
-        
-        model_match = re.search(r"Model sử dụng:\s*(.+)", block)
-        input_tokens_match = re.search(r"Input Tokens:\s*(\d+)", block)
-        output_tokens_match = re.search(r"Output Tokens:\s*(\d+)", block)
-        
-        model = model_match.group(1).strip() if model_match else "Unknown"
-        input_tokens = int(input_tokens_match.group(1)) if input_tokens_match else 0
-        output_tokens = int(output_tokens_match.group(1)) if output_tokens_match else 0
-        total_tokens = input_tokens + output_tokens
-        
-        transactions.append({
-            "model": model,
-            "input_tokens": input_tokens,
-            "output_tokens": output_tokens,
-            "total_tokens": total_tokens
-        })
+    for line in new_content.strip().split("\n"):
+        if not line.strip():
+            continue
+        try:
+            data = json.loads(line)
+            if data.get("event_type") == "llm_generation":
+                transactions.append({
+                    "model": data.get("model", "Unknown"),
+                    "input_tokens": data.get("prompt_tokens", 0),
+                    "output_tokens": data.get("completion_tokens", 0),
+                    "total_tokens": data.get("total_tokens", 0)
+                })
+        except json.JSONDecodeError:
+            pass
     return transactions
 
 async def main():
@@ -120,9 +113,9 @@ async def main():
         try:
             with open(LOG_FILE_PATH, "w", encoding="utf-8") as f:
                 f.write("")
-            print("  [+] Đã dọn dẹp file log 'llm_api_clean.txt'")
+            print("  [+] Đã dọn dẹp file log 'llm_api.jsonl'")
         except Exception as e:
-            print(f"  [⚠️] Không thể dọn dẹp 'llm_api_clean.txt': {e}")
+            print(f"  [⚠️] Không thể dọn dẹp 'llm_api.jsonl': {e}")
             
         print("\n[*] Khởi động quá trình kiểm thử...")
         print(f"  - Pipeline: {pipeline.upper()}")

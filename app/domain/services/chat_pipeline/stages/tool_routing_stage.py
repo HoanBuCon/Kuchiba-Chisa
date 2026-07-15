@@ -48,7 +48,8 @@ class ToolRoutingStage(PipelineStage):
                 history=context.history,
                 conv_repo=conv_repo,
                 emotion_repo=emotion_repo,
-                cache=self.cache
+                cache=self.cache,
+                session=context.session
             )
             tool_output_msg = tool_res.get("message")
             tool_name = tool_res.get("tool", "none")

@@ -51,6 +51,11 @@ class AppContainer:
     """Dependency Injection Container for the application."""
 
     @cached_property
+    def http_client(self) -> httpx.AsyncClient:
+        import httpx
+        return httpx.AsyncClient(timeout=10.0, follow_redirects=True)
+
+    @cached_property
     def embedder(self) -> IEmbeddingProvider:
         return FastEmbedAdapter()
 
@@ -61,7 +66,7 @@ class AppContainer:
             raw_adapter = GeminiAdapter()
         elif settings.LLM_PROVIDER == "deepseek":
             from app.infrastructure.llm.adapters.deepseek import DeepSeekAdapter
-            raw_adapter = DeepSeekAdapter()
+            raw_adapter = DeepSeekAdapter(http_client=self.http_client)
         else:
             from app.infrastructure.llm.adapters.groq import GroqAdapter
             raw_adapter = GroqAdapter()
@@ -94,7 +99,6 @@ class AppContainer:
         from app.infrastructure.logging.pipeline_tracker import pipeline_tracker
         from app.infrastructure.logging.llm_logger import log_routing_transaction, log_llm_transaction
         from app.infrastructure.database.engine import AsyncSessionFactory
-        
         from app.domain.services.chat_pipeline.stages.initialization_stage import InitializationStage
         from app.domain.services.chat_pipeline.stages.intent_stage import IntentStage
         from app.domain.services.chat_pipeline.stages.tool_routing_stage import ToolRoutingStage
@@ -119,10 +123,10 @@ class AppContainer:
         )
         
         web_search_providers = [
-            TavilySearchProvider(),
-            SerperSearchProvider(),
+            TavilySearchProvider(http_client=self.http_client),
+            SerperSearchProvider(http_client=self.http_client),
             DuckDuckGoLibrarySearchProvider(),
-            DDGScraperSearchProvider(),
+            DDGScraperSearchProvider(http_client=self.http_client),
         ]
         
         import httpx
@@ -133,10 +137,14 @@ class AppContainer:
                 "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
                 "Accept-Language": "vi-VN,vi;q=0.9,en-US;q=0.8,en;q=0.7",
             }
-            async with httpx.AsyncClient(headers=headers, timeout=10.0, follow_redirects=True) as client:
-                resp = await client.get(url, timeout=2.0)
+            try:
+                resp = await self.http_client.get(url, timeout=2.0, headers=headers)
                 if resp.status_code == 200:
                     return resp.text
+            except Exception as e:
+                from app.infrastructure.logging.logger import get_logger
+                _dep_log = get_logger(__name__)
+                _dep_log.debug("Web search page fetch failed", url=url, error=str(e))
             return ""
 
         agent_tools = [

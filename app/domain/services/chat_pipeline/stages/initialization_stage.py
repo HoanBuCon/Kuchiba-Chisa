@@ -73,4 +73,9 @@ class InitializationStage(PipelineStage):
         context.attachment_bonus_raw = attachment_bonus_raw
         context.current_emotions = current_emotions
 
+        # PH-001: Explicitly commit to release the initial read connection back to the pool
+        # before the pipeline proceeds to external network LLM calls.
+        if hasattr(context.session, "commit"):
+            await context.session.commit()
+
         return context

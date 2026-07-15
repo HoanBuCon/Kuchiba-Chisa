@@ -112,6 +112,11 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     await disconnect_database()
     await redis_service.disconnect()
     await qdrant_service.disconnect()
+    
+    from app.application.dependencies import container
+    if "http_client" in container.__dict__:
+        await container.http_client.aclose()
+        
     log.info("Chisa API shutdown complete")
 
 

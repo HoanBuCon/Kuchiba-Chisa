@@ -70,6 +70,12 @@ class ConversationSummarizerAgentTool(BaseAgentTool):
         # 2. Fetch recent history (using get_recent_history which is available on IConversationRepository)
         msgs = await conv_repo.get_recent_history(user_uuid, conv_id, limit=100)
         
+        # Explicitly commit to release the connection checked out by get_recent_history
+        # before the 10+ second LLM generation call below.
+        session = kwargs.get("session")
+        if session and hasattr(session, "commit"):
+            await session.commit()
+            
         if not msgs:
             return {
                 "status": "skipped",

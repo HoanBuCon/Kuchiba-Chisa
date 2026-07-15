@@ -17,6 +17,9 @@ COMMON_HEADERS = {
 }
 
 class TavilySearchProvider(ISearchProvider):
+    def __init__(self, http_client: httpx.AsyncClient):
+        self._http_client = http_client
+
     @property
     def name(self) -> str:
         return "tavily"
@@ -27,25 +30,28 @@ class TavilySearchProvider(ISearchProvider):
         
         try:
             log.info("Trying Tavily Search API...")
-            async with httpx.AsyncClient(headers=COMMON_HEADERS, timeout=10.0, follow_redirects=True) as client:
-                res = await client.post(
-                    "https://api.tavily.com/search",
-                    json={"api_key": settings.TAVILY_API_KEY, "query": query, "max_results": 4},
-                    timeout=3.5
-                )
-                if res.status_code == 200:
-                    data = res.json()
-                    results = data.get("results", [])
-                    snippets = [r.get("content", "") for r in results if r.get("content")]
-                    urls = [r.get("url", "") for r in results if r.get("url")]
-                    if snippets:
-                        log.info("Tavily Search API succeeded")
-                        return SearchResult(snippets=snippets, urls=urls, provider=self.name)
+            res = await self._http_client.post(
+                "https://api.tavily.com/search",
+                json={"api_key": settings.TAVILY_API_KEY, "query": query, "max_results": 4},
+                timeout=3.5,
+                headers=COMMON_HEADERS
+            )
+            if res.status_code == 200:
+                data = res.json()
+                results = data.get("results", [])
+                snippets = [r.get("content", "") for r in results if r.get("content")]
+                urls = [r.get("url", "") for r in results if r.get("url")]
+                if snippets:
+                    log.info("Tavily Search API succeeded")
+                    return SearchResult(snippets=snippets, urls=urls, provider=self.name)
         except Exception as ex:
             log.warning("Tavily Search failed", error=str(ex))
         return None
 
 class SerperSearchProvider(ISearchProvider):
+    def __init__(self, http_client: httpx.AsyncClient):
+        self._http_client = http_client
+
     @property
     def name(self) -> str:
         return "serper"
@@ -56,21 +62,21 @@ class SerperSearchProvider(ISearchProvider):
             
         try:
             log.info("Trying Serper Search API...")
-            async with httpx.AsyncClient(headers=COMMON_HEADERS, timeout=10.0, follow_redirects=True) as client:
-                res = await client.post(
-                    "https://google.serper.dev/search",
-                    headers={"X-API-KEY": settings.SERPER_API_KEY, "Content-Type": "application/json"},
-                    json={"q": query, "num": 4},
-                    timeout=3.5
-                )
-                if res.status_code == 200:
-                    data = res.json()
-                    results = data.get("organic", [])
-                    snippets = [r.get("snippet", "") for r in results if r.get("snippet")]
-                    urls = [r.get("link", "") for r in results if r.get("link")]
-                    if snippets:
-                        log.info("Serper Search API succeeded")
-                        return SearchResult(snippets=snippets, urls=urls, provider=self.name)
+            headers = {**COMMON_HEADERS, "X-API-KEY": settings.SERPER_API_KEY, "Content-Type": "application/json"}
+            res = await self._http_client.post(
+                "https://google.serper.dev/search",
+                headers=headers,
+                json={"q": query, "num": 4},
+                timeout=3.5
+            )
+            if res.status_code == 200:
+                data = res.json()
+                results = data.get("organic", [])
+                snippets = [r.get("snippet", "") for r in results if r.get("snippet")]
+                urls = [r.get("link", "") for r in results if r.get("link")]
+                if snippets:
+                    log.info("Serper Search API succeeded")
+                    return SearchResult(snippets=snippets, urls=urls, provider=self.name)
         except Exception as ex:
             log.warning("Serper Search failed", error=str(ex))
         return None
@@ -99,6 +105,9 @@ class DuckDuckGoLibrarySearchProvider(ISearchProvider):
         return None
 
 class DDGScraperSearchProvider(ISearchProvider):
+    def __init__(self, http_client: httpx.AsyncClient):
+        self._http_client = http_client
+
     @property
     def name(self) -> str:
         return "html_scraper"
@@ -147,14 +156,13 @@ class DDGScraperSearchProvider(ISearchProvider):
         try:
             log.info("Running DDG HTML scraper fallback...")
             url = f"https://html.duckduckgo.com/html/?q={urllib.parse.quote(query)}"
-            async with httpx.AsyncClient(headers=COMMON_HEADERS, timeout=10.0, follow_redirects=True) as client:
-                response = await client.get(url, timeout=5.0)
-                if 200 <= response.status_code < 300:
-                    snippets = self._parse_snippets(response.text)
-                    urls = self._extract_urls(response.text)
-                    if snippets:
-                        log.info("DDG HTML scraper fallback succeeded")
-                        return SearchResult(snippets=snippets, urls=urls, provider=self.name)
+            response = await self._http_client.get(url, timeout=5.0, headers=COMMON_HEADERS)
+            if 200 <= response.status_code < 300:
+                snippets = self._parse_snippets(response.text)
+                urls = self._extract_urls(response.text)
+                if snippets:
+                    log.info("DDG HTML scraper fallback succeeded")
+                    return SearchResult(snippets=snippets, urls=urls, provider=self.name)
         except Exception as ex:
             log.error("DDG HTML scraper failed", error=str(ex))
         return None

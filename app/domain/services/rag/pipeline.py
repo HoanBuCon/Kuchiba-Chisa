@@ -83,8 +83,8 @@ class RAGPipeline:
         """
         Runs E2E RAG Pipeline: Retrieves memory & lore, checks alignment, and runs thinking loop if necessary.
         """
-        lore_chunks: List[str] = []
-        memories: List[str] = []
+        lore_scored = []
+        memories = []
         intent_strs = self._normalize_intents(intents)
         should_retrieve = bool(intent_strs - {"OTHER", "SYSTEM_ACTION"})
         
@@ -149,12 +149,21 @@ class RAGPipeline:
                                 if m.text_content and m.text_content not in memories:
                                     memories.append(m.text_content)
                         else:
-                            # Deduplicate lore parent chunks across collections
-                            for chunk in retrieved_data:
-                                if chunk not in lore_chunks:
-                                    lore_chunks.append(chunk)
+                            # Deduplicate and track scores across lore collections
+                            for text, score in retrieved_data:
+                                if not any(c[0] == text for c in lore_scored):
+                                    lore_scored.append((text, score))
+                    
+                    # Sort globally by score and enforce global TOP_K limit
+                    lore_scored.sort(key=lambda x: x[1], reverse=True)
+                    lore_chunks = [x[0] for x in lore_scored[:RAGTuning.TOP_K]]
+                    if len(memories) > RAGTuning.TOP_K:
+                        memories = memories[:RAGTuning.TOP_K]
+
                 except Exception as ex:
                     log.error("Failed to retrieve data from Qdrant vector database", error=str(ex))
+        else:
+            lore_chunks = []
 
         # 1.1 Track retrieval step in real-time
         self.pipeline_tracker.add_step("rag_retrieval", {
@@ -227,9 +236,12 @@ class RAGPipeline:
                 web_search_tool=web_search_tool,
                 initial_search_query=search_query
             )
-            did_search = any(step.get("search_query") for step in thinking_steps)
-            if did_search or retrieved_context_str.strip() not in ("", "(No context retrieved)"):
-                tool_output_msg = retrieved_context_str
+            search_parts = []
+            for step in thinking_steps:
+                if step.get("search_query") and step.get("search_result") and step["search_result"] != "No further search needed.":
+                    search_parts.append(f"[Thinking Cycle {step['cycle']} Search Results for '{step['search_query']}']:\n{step['search_result']}")
+            if search_parts:
+                tool_output_msg = "\n\n".join(search_parts)
 
         return RAGContext(
             lore_chunks=lore_chunks if use_lore else [],

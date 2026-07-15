@@ -1,12 +1,12 @@
 from __future__ import annotations
-import logging
 from dataclasses import dataclass, field
 from typing import Any
 from app.config.settings import get_settings
 from app.domain.services.budget_mode import BudgetMode
 from app.shared.utils.token_estimator import TokenEstimator
+from app.shared.utils.logger import get_logger
 
-log = logging.getLogger(__name__)
+log = get_logger(__name__)
 
 SectionCaps = tuple[int, int, int]  # (min, target, max)
 

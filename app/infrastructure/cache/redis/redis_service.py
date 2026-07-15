@@ -107,11 +107,18 @@ class RedisService(ICacheProvider):
 
     # ── Distributed Lock ──────────────────────────────────────────
     async def acquire_lock(self, lock_key: str, ttl: int = 5) -> bool:
-        result = await self._client.set(lock_key, "1", ex=ttl, nx=True)
-        return result is True
+        try:
+            result = await self._client.set(lock_key, "1", ex=ttl, nx=True)
+            return result is True
+        except Exception as e:
+            log.warning("Redis acquire_lock failed, proceeding without lock (fail-open)", lock_key=lock_key, error=str(e))
+            return True
 
     async def release_lock(self, lock_key: str) -> None:
-        await self._client.delete(lock_key)
+        try:
+            await self._client.delete(lock_key)
+        except Exception as e:
+            log.warning("Redis release_lock failed, ignoring", lock_key=lock_key, error=str(e))
 
     # ── Connection Management ────────────────────────────────────
     async def disconnect(self) -> None:

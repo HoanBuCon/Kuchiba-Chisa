@@ -57,7 +57,7 @@ class LoreRetriever:
         query_text: str = "",
         top_k: int = RAGTuning.TOP_K,
         score_threshold: float = RAGTuning.SCORE_THRESHOLD,
-    ) -> List[str]:
+    ) -> List[Tuple[str, float]]:
         try:
             if not self.vector_store:
                 return []
@@ -88,7 +88,7 @@ class LoreRetriever:
 
         seen_parents = set()
         lore_chunks = []
-        for cand, _ in scored_candidates:
+        for cand, score in scored_candidates:
             payload = cand.get("payload", {})
             parent_id = payload.get("parent_id")
             parent_text = payload.get("parent_full_text")
@@ -98,8 +98,8 @@ class LoreRetriever:
             if parent_id:
                 if parent_id not in seen_parents:
                     seen_parents.add(parent_id)
-                    lore_chunks.append(text)
+                    lore_chunks.append((text, score))
             else:
-                lore_chunks.append(text)
+                lore_chunks.append((text, score))
                 
         return lore_chunks[:top_k]
