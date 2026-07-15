@@ -93,7 +93,7 @@ class AppContainer:
         from app.domain.services.chat_engine import ChatPipeline
         from app.infrastructure.logging.pipeline_tracker import pipeline_tracker
         from app.infrastructure.logging.llm_logger import log_routing_transaction, log_llm_transaction
-        from app.infrastructure.database.session import AsyncSessionFactory
+        from app.infrastructure.database.engine import AsyncSessionFactory
         
         from app.domain.services.chat_pipeline.stages.initialization_stage import InitializationStage
         from app.domain.services.chat_pipeline.stages.intent_stage import IntentStage
@@ -109,7 +109,7 @@ class AppContainer:
         
         # Tools registration
         from app.domain.services.tools.web_search import WebSearchAgentTool
-        from app.domain.services.tools.conversation_summarizer import ConversationSummarizerAgentTool
+        from app.domain.services.tools.summarize import ConversationSummarizerAgentTool
         from app.domain.services.tools.emotion_report import EmotionReportAgentTool
         from app.infrastructure.search.providers import (
             TavilySearchProvider,

@@ -115,15 +115,16 @@ class ChatEngine:
             
         except Exception as e:
             log.warning("Production chat generation failed, saving user message as failed", user_id=user_id, error=str(e))
+            # Use a separate session to persist the failed message, because the outer
+            # get_db_session dependency will roll back the original session on exception.
             try:
                 from app.shared.utils.user_identity import normalize_user_id
                 user_uuid = normalize_user_id(user_id)
-                conv_repo = self.conv_repo_factory(session)
-                conv_id = await conv_repo.get_or_create_conversation(user_uuid)
-                
-                # Save the failed message. The previous savepoint was rolled back by UoW.
-                await conv_repo.save_message(conv_id, user_uuid, "user", user_message, is_success=False)
-                await session.flush()
+                async with self.db_session_factory() as fail_session:
+                    conv_repo = self.conv_repo_factory(fail_session)
+                    conv_id = await conv_repo.get_or_create_conversation(user_uuid)
+                    await conv_repo.save_message(conv_id, user_uuid, "user", user_message, is_success=False)
+                    await fail_session.commit()
             except Exception as db_err:
                 log.error("Failed to save failed message to database in production pipeline", error=str(db_err))
             raise e

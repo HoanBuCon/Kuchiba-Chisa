@@ -6,48 +6,94 @@
 
 $ROOT = $PSScriptRoot
 
-function Kill-ProcessOnPort {
-    param (
-        [int]$Port
-    )
-    Write-Host "[Chisa AI] Cleaning up port $Port..." -ForegroundColor Yellow
+# ── Cleanup Helpers ──────────────────────────────────────────────
+
+function Stop-ProcessTree {
+    param([int]$TargetProcessId)
+    taskkill.exe /F /T /PID $TargetProcessId 2>$null | Out-Null
+    Stop-Process -Id $TargetProcessId -Force -ErrorAction SilentlyContinue
+}
+
+function Stop-ProcessOnPort {
+    param([int]$Port)
+
+    Write-Host "  [cleanup] Checking port $Port ..." -ForegroundColor DarkGray
+    $killedPids = @()
+
+    # ── Method 1: Get-NetTCPConnection (preferred, fast) ──
     $connections = Get-NetTCPConnection -LocalPort $Port -State Listen -ErrorAction SilentlyContinue
     if ($connections) {
         foreach ($conn in $connections) {
-            $targetPid = $conn.OwningProcess
-            if ($targetPid) {
-                Write-Host "[Chisa AI] Terminating process $targetPid and its children listening on port $Port..." -ForegroundColor Red
-                taskkill.exe /F /T /PID $targetPid 2>$null
-                Stop-Process -Id $targetPid -Force -ErrorAction SilentlyContinue
+            $procId = $conn.OwningProcess
+            if ($procId -and $procId -notin $killedPids) {
+                Write-Host "  [cleanup] Killing PID $procId on port $Port" -ForegroundColor Red
+                Stop-ProcessTree $procId
+                $killedPids += $procId
             }
         }
-    } else {
-        # Fallback to netstat parsing if Get-NetTCPConnection doesn't return anything
-        $netstat = netstat -ano | Select-String "LISTENING" | Select-String ":$Port\s"
-        if ($netstat) {
-            $targetPids = @()
-            foreach ($line in $netstat) {
-                $parts = $line.ToString().Split(' ', [System.StringSplitOptions]::RemoveEmptyEntries)
-                if ($parts.Length -ge 5) {
-                    $targetPid = $parts[-1].Trim()
-                    if ($targetPid -ne "0" -and $targetPid -notin $targetPids) {
-                        $targetPids += $targetPid
-                    }
-                }
-            }
-            foreach ($targetPid in $targetPids) {
-                Write-Host "[Chisa AI] Terminating process $targetPid and its children listening on port $Port..." -ForegroundColor Red
-                taskkill.exe /F /T /PID $targetPid 2>$null
-                Stop-Process -Id $targetPid -Force -ErrorAction SilentlyContinue
+    }
+
+    # ── Method 2: netstat fallback (catches edge cases) ──
+    $netstatLines = cmd /c "netstat -ano 2>NUL" | Select-String "LISTENING" | Select-String ":$Port\b"
+    foreach ($line in $netstatLines) {
+        $parts = -split $line.ToString().Trim()
+        if ($parts.Count -ge 5) {
+            $procId = [int]$parts[-1]
+            if ($procId -ne 0 -and $procId -notin $killedPids) {
+                Write-Host "  [cleanup] Killing PID $procId on port $Port (netstat)" -ForegroundColor Red
+                Stop-ProcessTree $procId
+                $killedPids += $procId
             }
         }
     }
 }
 
-# Clean up ports 8000 (Backend), 5173 (Frontend default), and 5174 (Frontend secondary)
-Kill-ProcessOnPort 8000
-Kill-ProcessOnPort 5173
-Kill-ProcessOnPort 5174
+function Stop-AllLegacyProcesses {
+    Write-Host "[Chisa AI] Phase 0 - Don dep tien trinh cu..." -ForegroundColor Yellow
+
+    # ── 1. Kill ALL Python processes (backend) ──
+    $pythonProcesses = @(Get-Process -Name "python*" -ErrorAction SilentlyContinue)
+    if ($pythonProcesses.Count -gt 0) {
+        Write-Host "  [cleanup] Found $($pythonProcesses.Count) Python process(es) - terminating..." -ForegroundColor Red
+        foreach ($p in $pythonProcesses) {
+            Stop-ProcessTree $p.Id
+        }
+    }
+
+    # ── 2. Kill ALL Node.js processes (frontend + discord bot) ──
+    $nodeProcesses = @(Get-Process -Name "node*" -ErrorAction SilentlyContinue)
+    if ($nodeProcesses.Count -gt 0) {
+        Write-Host "  [cleanup] Found $($nodeProcesses.Count) Node.js process(es) - terminating..." -ForegroundColor Red
+        foreach ($p in $nodeProcesses) {
+            Stop-ProcessTree $p.Id
+        }
+    }
+
+    # ── 3. Kill processes on project ports (defense-in-depth) ──
+    Stop-ProcessOnPort 8000   # Backend (Uvicorn)
+    Stop-ProcessOnPort 5173   # Frontend (Vite primary)
+    Stop-ProcessOnPort 5174   # Frontend (Vite secondary)
+
+    # ── 4. Wait & verify ──
+    Start-Sleep -Seconds 2
+
+    $remaining = @(Get-NetTCPConnection -LocalPort 8000 -State Listen -ErrorAction SilentlyContinue)
+    $remaining += @(Get-NetTCPConnection -LocalPort 5173 -State Listen -ErrorAction SilentlyContinue)
+    $remaining += @(Get-NetTCPConnection -LocalPort 5174 -State Listen -ErrorAction SilentlyContinue)
+    if ($remaining.Count -gt 0) {
+        Write-Host "  [cleanup] WARNING: $($remaining.Count) process(es) still on target ports - forcing..." -ForegroundColor Red
+        foreach ($conn in $remaining) {
+            Stop-ProcessTree $conn.OwningProcess
+        }
+        Start-Sleep -Seconds 1
+    }
+
+    Write-Host "  [cleanup] Don dep hoan tat!" -ForegroundColor Green
+}
+
+# ── Execute Cleanup ───────────────────────────────────────────
+
+Stop-AllLegacyProcesses
 
 Write-Host ""
 Write-Host "  CHISA AI - Starting up..." -ForegroundColor Red
@@ -58,8 +104,17 @@ Write-Host ""
 # -- Docker Setup ---------------------------------------------
 Write-Host "[1/3] Resetting Docker Containers (Database, Redis, Qdrant)..." -ForegroundColor Yellow
 docker-compose down
-# Bắt buộc chỉ chạy các Database gầm, KHÔNG chạy container 'app' để tránh chiếm port 8000
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "  [!] docker-compose down failed (exit code $LASTEXITCODE). Is Docker Desktop running?" -ForegroundColor Red
+    exit 1
+}
+
+# Chi chay cac Database ngam, KHONG chay container 'app' de tranh chiem port 8000
 docker-compose up -d postgres redis qdrant
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "  [!] docker-compose up failed (exit code $LASTEXITCODE). Is Docker Desktop running?" -ForegroundColor Red
+    exit 1
+}
 
 Write-Host "[+] Docker is ready!" -ForegroundColor Green
 Write-Host ""

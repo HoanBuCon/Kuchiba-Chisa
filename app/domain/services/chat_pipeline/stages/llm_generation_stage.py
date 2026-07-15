@@ -88,8 +88,21 @@ class LLMGenerationStage(PipelineStage):
             )
 
         if not chisa_reply.strip():
-            log.warning("LLM returned empty response or failed to parse JSON in production pipeline", user_id=context.user_id)
-            raise ValueError("Empty response from LLM")
+            raw_preview = (response.raw_content or "")[:300]
+            parsed_keys = list(response.parsed.keys()) if response.parsed else []
+            log.error(
+                "LLM returned empty or unparseable response in production pipeline",
+                user_id=context.user_id,
+                raw_preview=raw_preview,
+                parsed_keys=parsed_keys,
+                model=getattr(self.llm, "_model", "unknown"),
+                finish_reason=response.finish_reason,
+            )
+            raise ValueError(
+                f"Empty response from LLM (model={getattr(self.llm, '_model', 'unknown')}, "
+                f"finish_reason={response.finish_reason}, parsed_keys={parsed_keys}, "
+                f"raw_preview={raw_preview[:100]})"
+            )
 
         # Parse sentiments and store in LLM response parsed object directly to be used by next stage
         context.chisa_reply = chisa_reply

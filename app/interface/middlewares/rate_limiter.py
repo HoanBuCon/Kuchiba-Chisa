@@ -7,7 +7,6 @@ request rate limits. Prevents LLM API quota exhaustion from spam.
 from __future__ import annotations
 
 import time
-from typing import Optional
 
 from fastapi import Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
@@ -29,6 +28,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
 
     # Paths that trigger rate limiting (prefix match)
     RATE_LIMITED_PREFIXES = ("/api/v1/chat",)
+    USER_ID_HEADER = "X-User-ID"
 
     async def dispatch(
         self, request: Request, call_next: RequestResponseEndpoint
@@ -38,10 +38,9 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         if not any(path.startswith(prefix) for prefix in self.RATE_LIMITED_PREFIXES):
             return await call_next(request)
 
-        # Extract user identifier: try request body user_id, then IP
-        user_key = await self._extract_user_key(request)
-        if not user_key:
-            return await call_next(request)
+        # Never consume request.body() here. BaseHTTPMiddleware forwards the
+        # request downstream, where FastAPI must still be able to parse it.
+        user_key = self._extract_user_key(request)
 
         # Check rate limit
         allowed, remaining, reset_at = await self._check_rate(user_key)
@@ -76,25 +75,21 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
 
         return response
 
-    async def _extract_user_key(self, request: Request) -> Optional[str]:
+    @classmethod
+    def _extract_user_key(cls, request: Request) -> str:
         """
-        Extract a rate limit key from the request.
-        Priority: user_id from JSON body > X-Forwarded-For > client IP.
-        """
-        # For POST requests, try to peek at user_id from body
-        if request.method == "POST":
-            try:
-                # Read body without consuming the stream (cache it)
-                body = await request.body()
-                import json
-                data = json.loads(body)
-                user_id = data.get("user_id")
-                if user_id:
-                    return f"uid:{user_id}"
-            except Exception:
-                pass
+        Return a stable rate-limit key without reading the request body.
 
-        # Fallback to IP address
+        Clients should send ``X-User-ID`` for a per-user quota. Requests from
+        legacy clients are safely limited by their forwarded/client IP until
+        they are updated. This intentionally avoids consuming the ASGI request
+        stream before FastAPI validates the payload.
+        """
+        user_id = request.headers.get(cls.USER_ID_HEADER)
+        if user_id:
+            return f"uid:{user_id}"
+
+        # Use the first address when a trusted proxy supplies X-Forwarded-For.
         forwarded = request.headers.get("X-Forwarded-For")
         if forwarded:
             ip = forwarded.split(",")[0].strip()

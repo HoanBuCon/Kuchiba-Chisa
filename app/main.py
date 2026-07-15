@@ -70,15 +70,42 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     elif startup_errors:
         log.warning("Non-fatal startup warnings (dev mode)", issues=startup_errors)
 
+    # ── Validate LLM API Key ──────────────────────────────────────
+    try:
+        provider = settings.LLM_PROVIDER
+        if provider == "gemini":
+            if not settings.GEMINI_API_KEY:
+                startup_errors.append(f"LLM ({provider}): GEMINI_API_KEY is not set")
+            else:
+                log.info("LLM API key (Gemini) verified ✓")
+        elif provider == "deepseek":
+            if not settings.DEEPSEEK_API_KEY:
+                startup_errors.append(f"LLM ({provider}): DEEPSEEK_API_KEY is not set")
+            else:
+                log.info("LLM API key (DeepSeek) verified ✓")
+        elif provider == "groq":
+            if not settings.GROQ_API_KEY:
+                startup_errors.append(f"LLM ({provider}): GROQ_API_KEY is not set")
+            else:
+                log.info("LLM API key (Groq) verified ✓")
+    except Exception as e:
+        startup_errors.append(f"LLM API key validation failed: {e}")
+
     # Pre-warm Semantic Router anchors
     try:
         from app.application.dependencies import get_chat_engine
+        from app.domain.services.intent_classifier import IntentClassifier
         engine = get_chat_engine()
-        if engine.intent_classifier.semantic_router:
-            log.info("Pre-warming Semantic Router anchors...")
-            await engine.intent_classifier.semantic_router.initialize()
+        # IntentClassifier lives inside IntentStage now — locate it via the pipeline
+        for stage in engine.pipeline.stages:
+            classifier = getattr(stage, "intent_classifier", None)
+            if classifier and getattr(classifier, "semantic_router", None):
+                log.info("Pre-warming Semantic Router anchors...")
+                await classifier.semantic_router.initialize()
+                break
     except Exception as e:
         log.warning("Failed to pre-warm semantic router anchors during startup", error=str(e))
+
 
     log.info("[Chisa] Chisa API ready", port=settings.APP_PORT)
     yield

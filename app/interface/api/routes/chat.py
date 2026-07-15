@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.infrastructure.database.engine import get_db_session
 from app.interface.api.schemas.chat import ChatRequest, ChatResponse
 from app.domain.services.chat_engine import ChatEngine, ChatEngineBusyError
-from app.domain.interfaces.llm_provider import LLMRateLimitError
+from app.domain.interfaces.llm_provider import LLMRateLimitError, LLMTimeoutError, LLMInvalidResponseError
 from app.infrastructure.logging.logger import get_logger
 from app.shared.utils.user_identity import normalize_user_id, normalize_user_id_str
 from app.application.dependencies import get_chat_engine, get_clear_user_memory_use_case, container
@@ -65,6 +65,17 @@ async def _run_chat_request(session: AsyncSession, request: ChatRequest, chat_en
             error=None,
         )
         return fallback_text, fallback_emotions, False
+    except (LLMTimeoutError, LLMInvalidResponseError) as llm_err:
+        fallback_text = "Chisa hơi mệt một chút, Senpai nhắn lại sau nhé ~"
+        fallback_emotions = None
+        log.warning("LLM error, returning fallback", error=str(llm_err), user_id=request.user_id)
+        pipeline_tracker.end_trace(
+            response_text=fallback_text,
+            emotions=fallback_emotions,
+            status="success",
+            error=str(llm_err),
+        )
+        return fallback_text, fallback_emotions, False
     except Exception as error:
         pipeline_tracker.end_trace(
             status="failed",
@@ -116,8 +127,10 @@ async def chat_endpoint(
             detail="Chisa đang xử lý tin nhắn trước đó, Senpai chờ em thêm lát nữa nhé~"
         )
     except Exception as e:
-        log.error("Chat orchestration failed", error=str(e), user_id=request.user_id)
-        raise HTTPException(status_code=500, detail="Internal server error during chat generation")
+        import traceback
+        traceback.print_exc()
+        log.error("Chat orchestration failed", error=str(e), error_type=type(e).__name__, user_id=request.user_id)
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.post("/chat/stream")
