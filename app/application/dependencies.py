@@ -1,7 +1,5 @@
 from __future__ import annotations
-
 from functools import cached_property
-
 from app.config.settings import settings
 from app.domain.interfaces.embedding_provider import IEmbeddingProvider
 from app.infrastructure.embeddings.fastembed_adapter import FastEmbedAdapter
@@ -90,6 +88,7 @@ class AppContainer:
         from app.infrastructure.database.repositories.user_repository import SqlAlchemyUserRepository
         from app.infrastructure.database.repositories.emotion_repository import SqlAlchemyEmotionRepository
         from app.infrastructure.database.repositories.conversation_repository import SqlAlchemyConversationRepository
+        from app.infrastructure.database.repositories.lore_parent import LoreParentRepository
         from app.infrastructure.database.uow import UnitOfWork
         from app.infrastructure.cache.redis.redis_service import redis_service
         from app.domain.services.intent_classifier import IntentClassifier
@@ -101,13 +100,19 @@ class AppContainer:
         from app.infrastructure.database.engine import AsyncSessionFactory
         from app.domain.services.chat_pipeline.stages.initialization_stage import InitializationStage
         from app.domain.services.chat_pipeline.stages.intent_stage import IntentStage
+        from app.domain.services.chat_pipeline.stages.cache_stage import CacheStage
         from app.domain.services.chat_pipeline.stages.tool_routing_stage import ToolRoutingStage
         from app.domain.services.chat_pipeline.stages.rag_stage import RAGStage
         from app.domain.services.chat_pipeline.stages.context_building_stage import ContextBuildingStage
         from app.domain.services.chat_pipeline.stages.llm_generation_stage import LLMGenerationStage
         from app.domain.services.chat_pipeline.stages.emotion_update_stage import EmotionUpdateStage
         from app.domain.services.chat_pipeline.stages.persistence_stage import PersistenceStage
+        from app.domain.services.chat_pipeline.stages.cache_update_stage import CacheUpdateStage
         from app.domain.services.chat_pipeline.stages.background_task_stage import BackgroundTaskStage
+        from app.domain.services.rag.entity_resolver import EntityResolver
+        
+        entity_resolver = EntityResolver()
+        entity_resolver.load()
         
         intent_classifier = IntentClassifier(llm=self.llm, embedder=self.embedder)
         
@@ -173,10 +178,14 @@ class AppContainer:
         
         rag_pipeline = RAGPipeline(
             memory_retriever=MemoryRetriever(vector_store=qdrant_service),
-            lore_retriever=LoreRetriever(vector_store=qdrant_service),
+            lore_retriever=LoreRetriever(
+                vector_store=qdrant_service,
+                lore_parent_repo_factory=LoreParentRepository
+            ),
             assessor=ContextAssessor(),
             thinking_loop_agent=ThinkingLoopAgent(pipeline_tracker=pipeline_tracker),
-            pipeline_tracker=pipeline_tracker
+            pipeline_tracker=pipeline_tracker,
+            entity_resolver=entity_resolver
         )
         
         # Let's instantiate ChatPipeline first, we can use a lambda to defer the callback.
@@ -193,6 +202,9 @@ class AppContainer:
                 intent_classifier=intent_classifier,
                 embedder=self.embedder,
                 pipeline_tracker=pipeline_tracker
+            ),
+            CacheStage(
+                cache=redis_service
             ),
             ToolRoutingStage(
                 tool_router=tool_router,
@@ -225,6 +237,9 @@ class AppContainer:
             PersistenceStage(
                 user_repo_factory=SqlAlchemyUserRepository,
                 conv_repo_factory=SqlAlchemyConversationRepository
+            ),
+            CacheUpdateStage(
+                cache=redis_service
             ),
             BackgroundTaskStage(
                 memory_extractor=self.memory_extractor,
@@ -277,3 +292,15 @@ def get_chat_engine() -> ChatEngine:
 def get_clear_user_memory_use_case():
     """FastAPI Dependency for injecting ClearUserMemoryUseCase."""
     return container.clear_user_memory_use_case
+
+async def get_vector_store():
+    return qdrant_service
+
+async def get_entity_resolver():
+    from app.domain.services.rag.entity_resolver import EntityResolver
+    resolver = EntityResolver()
+    resolver.load()
+    return resolver
+
+async def get_embedder():
+    return container.embedder

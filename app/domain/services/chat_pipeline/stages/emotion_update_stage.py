@@ -21,8 +21,9 @@ class EmotionUpdateStage(PipelineStage):
         self.pipeline_tracker = pipeline_tracker
 
     async def process(self, context: ChatContext) -> ChatContext:
-        user_sentiment = context.tool_res.get("user_sentiment", {})
-        chisa_sentiment = context.tool_res.get("chisa_sentiment", {})
+        tool_res = context.tool_res or {}
+        user_sentiment = tool_res.get("user_sentiment", {})
+        chisa_sentiment = tool_res.get("chisa_sentiment", {})
         
         is_positive = user_sentiment.get("is_positive", False)
         is_negative = user_sentiment.get("is_negative", False)

@@ -25,6 +25,9 @@ class RAGStage(PipelineStage):
         self.rag_pipeline = rag_pipeline
 
     async def process(self, context: ChatContext) -> ChatContext:
+        if context.is_cached_answer:
+            return context
+
         rag_context = await self.rag_pipeline.retrieve_and_align(
             session=context.session,
             user_id=context.user_id,

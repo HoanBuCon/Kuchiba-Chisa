@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import uuid
 from typing import Protocol, List, Optional
+from datetime import datetime
 
 from app.domain.entities.user import User, UserStats
 from app.domain.entities.emotion import EmotionState
@@ -100,4 +101,72 @@ class IConversationRepository(Protocol):
         """
         Deletes all conversations and messages for a user.
         """
+        ...
+
+from app.domain.entities.lore import LoreParent
+
+class ILoreParentRepository(Protocol):
+    """
+    Domain adapter port for storing and retrieving full parent lore documents.
+    """
+
+    async def get_parent(self, parent_id: uuid.UUID) -> Optional[LoreParent]:
+        """
+        Retrieves a single parent document by its UUID.
+        """
+        ...
+
+    async def get_parents_batch(self, parent_ids: List[uuid.UUID]) -> List[LoreParent]:
+        """
+        Retrieves multiple parent documents efficiently.
+        """
+        ...
+
+    async def save_parent(self, parent: LoreParent) -> None:
+        """
+        Persists a new parent document to storage.
+        """
+        ...
+
+class IWikiSyncRepository(Protocol):
+    """
+    Domain adapter port for tracking Wiki page synchronization state in Postgres.
+    """
+
+    async def get_latest_revision_id(self, page_id: int) -> Optional[int]:
+        """
+        Returns the last synced revision ID for a given page, or None if never synced.
+        """
+        ...
+
+    async def update_sync_state(self, page_id: int, title: str, revision_id: int, status: str) -> None:
+        """
+        Updates the sync status and revision ID for a page.
+        """
+        ...
+
+class IChunkStateRepository(Protocol):
+    async def get_chunk_state(self, chunk_id: uuid.UUID) -> Optional[dict]:
+        ...
+    async def check_hash_exists(self, chunk_hash: str) -> bool:
+        ...
+        
+class IEntityRepository(Protocol):
+    async def get_all_entities(self) -> List[dict]:
+        ...
+    async def get_latest_update_timestamp(self) -> Optional[datetime]:
+        ...
+
+class IAliasRepository(Protocol):
+    async def get_all_aliases(self) -> List[dict]:
+        ...
+
+class IPipelineJobRepository(Protocol):
+    async def create_job(self, stage: str, worker: str) -> uuid.UUID:
+        ...
+        
+    async def update_job_status(self, job_id: uuid.UUID, status: str, error: Optional[str] = None) -> None:
+        ...
+        
+    async def log_event(self, job_id: uuid.UUID, event_type: str, details: dict) -> None:
         ...

@@ -32,6 +32,9 @@ class ToolRoutingStage(PipelineStage):
         self.routing_logger_callback = routing_logger_callback
 
     async def process(self, context: ChatContext) -> ChatContext:
+        if context.is_cached_answer:
+            return context
+            
         tool_output_msg = None
         tool_name = "none"
         tool_score = 0.0

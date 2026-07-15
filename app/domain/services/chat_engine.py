@@ -99,6 +99,18 @@ class ChatEngine:
 
     async def _chat_inner(self, session: IDbSession, user_id: str, user_message: str, on_token: Optional[Callable[[str], Any]] = None) -> Tuple[str, Dict[str, float]]:
         try:
+            import hashlib
+            query_hash = hashlib.md5(user_message.encode('utf-8')).hexdigest()
+            cache_key = f"chisa:answer_cache:{user_id}:{query_hash}"
+            
+            # 1. Check Answer Cache
+            cached_answer = await self.cache.get(cache_key)
+            if cached_answer:
+                log.info("Redis Answer Cache HIT", user_id=user_id, query_hash=query_hash)
+                current_emotion = await self.get_emotion_state(session, user_id)
+                return cached_answer, current_emotion.to_dict()
+
+            # 2. Run Pipeline on Cache Miss
             context = ChatContext(
                 session=session,
                 user_id=user_id,
@@ -107,6 +119,10 @@ class ChatEngine:
             )
             context = await self.pipeline.execute(context)
             
+            # 3. Store in Answer Cache (TTL 12 hours)
+            if context.chisa_reply:
+                await self.cache.set(cache_key, context.chisa_reply, ttl=43200)
+                
             return context.chisa_reply, context.updated_emotions
             
         except Exception as e:

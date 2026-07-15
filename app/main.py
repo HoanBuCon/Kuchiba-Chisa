@@ -87,20 +87,6 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     except Exception as e:
         startup_errors.append(f"LLM API key validation failed: {e}")
 
-    # Pre-warm Semantic Router anchors
-    try:
-        from app.application.dependencies import get_chat_engine
-        from app.domain.services.intent_classifier import IntentClassifier
-        engine = get_chat_engine()
-        # IntentClassifier lives inside IntentStage now — locate it via the pipeline
-        for stage in engine.pipeline.stages:
-            classifier = getattr(stage, "intent_classifier", None)
-            if classifier and getattr(classifier, "semantic_router", None):
-                log.info("Pre-warming Semantic Router anchors...")
-                await classifier.semantic_router.initialize()
-                break
-    except Exception as e:
-        log.warning("Failed to pre-warm semantic router anchors during startup", error=str(e))
 
 
     log.info("[Chisa] Chisa API ready", port=settings.APP_PORT)
@@ -153,6 +139,9 @@ def create_app() -> FastAPI:
     app.include_router(chat.router, prefix="/api/v1", tags=["Chat"])
     app.include_router(visualizer.router, tags=["Visualizer"])
     # app.include_router(users.router, prefix="/api/v1", tags=["Users"])
+    
+    from app.api.routers import admin_ingestion
+    app.include_router(admin_ingestion.router, prefix="/api/v1")
 
     if ASSETS_DIR.is_dir():
         app.mount("/assets", StaticFiles(directory=str(ASSETS_DIR)), name="assets")

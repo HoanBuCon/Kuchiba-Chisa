@@ -122,6 +122,21 @@ class QdrantService(IVectorStore):
         )
         log.info("Qdrant collection created", collection=name, size=vector_size)
 
+        # Optimize payload indexes for Entity-Centric Retrieval
+        if name in ["lore", "character_lore", "world_lore", "story_lore"]:
+            try:
+                from qdrant_client.http.models import PayloadSchemaType
+                for field in ["entities", "region", "faction"]:
+                    await self._client.create_payload_index(
+                        collection_name=name,
+                        field_name=field,
+                        field_schema=PayloadSchemaType.KEYWORD,
+                        wait=True
+                    )
+                log.info("Qdrant payload indexes created", collection=name)
+            except Exception as e:
+                log.error("Failed to create payload indexes", collection=name, error=str(e))
+
     async def initialize_all_collections(self) -> None:
         """
         Placeholder: Creates all required collections on startup.
@@ -240,6 +255,17 @@ class QdrantService(IVectorStore):
             wait=True,
         )
 
+    async def delete_lore_by_page(self, collection: str, page_id: int) -> None:
+        from qdrant_client.http.models import FilterSelector
+        page_filter = Filter(
+            must=[FieldCondition(key="page_id", match=MatchValue(value=page_id))]
+        )
+        await self._client.delete(
+            collection_name=collection,
+            points_selector=FilterSelector(filter=page_filter),
+            wait=True,
+        )
+
     # ── Lore Search (global — no user isolation) ───────────────────
     async def search_lore(
         self,
@@ -247,14 +273,26 @@ class QdrantService(IVectorStore):
         query_vector: list[float],
         limit: int = 4,
         score_threshold: float = 0.3,
+        entities_filter: Optional[list[str]] = None,
     ) -> list[dict[str, Any]]:
         """
         Searches lore collection without user_id filter.
         Lore is global shared character knowledge.
+        Applies payload boosting if entities_filter is provided.
         """
+        from qdrant_client.http.models import MatchAny
+        query_filter = None
+        if entities_filter:
+            query_filter = Filter(
+                should=[
+                    FieldCondition(key="entities", match=MatchAny(any=entities_filter))
+                ]
+            )
+            
         results = await self._client.search(
             collection_name=collection,
             query_vector=query_vector,
+            query_filter=query_filter,
             limit=limit,
             score_threshold=score_threshold,
             with_payload=True,
@@ -269,18 +307,17 @@ class QdrantService(IVectorStore):
         collection: str,
         point_id: str,
         vector: list[float],
-        text_content: str,
-        section: str = "general",
-        payload: dict = None,
+        payload: Any,
     ) -> None:
-        """Upsert lore chunk — no user_id required."""
+        """Upsert lore chunk using LorePayload V2."""
         from qdrant_client.models import PointStruct as PS
-        upsert_payload = {
-            "text_content": text_content,
-            "section": section,
-        }
-        if payload:
-            upsert_payload.update(payload)
+        
+        # Assume payload is already a Pydantic model (LorePayload) or a dict
+        if hasattr(payload, "model_dump"):
+            upsert_payload = payload.model_dump()
+        else:
+            upsert_payload = payload
+            
         await self._client.upsert(
             collection_name=collection,
             points=[PS(id=point_id, vector=vector, payload=upsert_payload)],

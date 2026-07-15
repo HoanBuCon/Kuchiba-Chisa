@@ -1,7 +1,6 @@
 import uuid
 from typing import Callable
 from sqlalchemy.ext.asyncio import AsyncSession
-
 from app.domain.interfaces.uow import IUnitOfWork
 from app.domain.interfaces.repositories import IUserRepository, IEmotionRepository, IConversationRepository
 from app.domain.interfaces.vector_store import IVectorStore

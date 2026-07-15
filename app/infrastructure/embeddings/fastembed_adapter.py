@@ -23,9 +23,23 @@ class FastEmbedAdapter(IEmbeddingProvider):
     """
 
     def __init__(self) -> None:
-        self.model_name = settings.EMBEDDING_MODEL
+        self._model_name = settings.EMBEDDING_MODEL
         self._model: Optional[TextEmbedding] = None
-        log.info("FastEmbedAdapter initialized. Model parsing deferred until first use.", model=self.model_name)
+        log.info("FastEmbedAdapter initialized. Model parsing deferred until first use.", model=self._model_name)
+
+    @property
+    def model_name(self) -> str:
+        return self._model_name
+
+    @property
+    def dimension(self) -> int:
+        # Hardcoding based on known settings or we can look it up.
+        # fastembed intfloat/multilingual-e5-small is 384
+        return 384
+
+    @property
+    def version(self) -> str:
+        return "1.0"
 
     def _get_model(self) -> TextEmbedding:
         """

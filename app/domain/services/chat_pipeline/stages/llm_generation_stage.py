@@ -20,6 +20,10 @@ class LLMGenerationStage(PipelineStage):
         self.llm_logger_callback = llm_logger_callback
 
     async def process(self, context: ChatContext) -> ChatContext:
+        if context.is_cached_answer:
+            return context
+            
+        log.info("Generating response with structured LLM")
         llm_call_purpose.set("chat_response")
         
         if context.on_token:

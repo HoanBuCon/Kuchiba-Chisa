@@ -34,6 +34,7 @@ class IVectorStore(ABC):
         query_vector: List[float],
         limit: int = 4,
         score_threshold: float = 0.3,
+        entities_filter: Optional[List[str]] = None,
     ) -> List[Dict[str, Any]]:
         pass
 
@@ -43,19 +44,27 @@ class IVectorStore(ABC):
         collection: str,
         point_id: str,
         vector: List[float],
-        text_content: str,
-        section: str = "general",
-        payload: Optional[Dict[str, Any]] = None,
+        payload: Any,
     ) -> None:
         pass
 
     @abstractmethod
     async def delete_points(self, collection: str, ids: List[Union[str, int]]) -> None:
+        """
+        Deletes vectors by a list of point IDs.
+        """
         pass
 
     @abstractmethod
     async def delete_by_user(self, collection: str, user_id: str) -> None:
         """
         Deletes all vectors belonging to a specific user_id in the given collection.
+        """
+        pass
+
+    @abstractmethod
+    async def delete_lore_by_page(self, collection: str, page_id: int) -> None:
+        """
+        Deletes all lore vectors belonging to a specific page_id.
         """
         pass

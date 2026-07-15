@@ -9,9 +9,7 @@ log = get_logger(__name__)
 
 
 class ChatIntent(str, enum.Enum):
-    CHARACTER_LORE = "CHARACTER_LORE"
-    WORLD_LORE = "WORLD_LORE"
-    STORY_LORE = "STORY_LORE"
+    LORE = "LORE"
     MEMORY = "MEMORY"
     OTHER = "OTHER"
     SYSTEM_ACTION = "SYSTEM_ACTION"
@@ -39,11 +37,10 @@ def _pattern_match(patterns: List[str], text: str) -> bool:
 
 class IntentClassifier:
     """
-    Phân loại intent của tin nhắn người dùng qua 4 lớp lọc:
+    Phân loại intent của tin nhắn người dùng qua các lớp lọc:
       L1 — Small Talk Fast-Path (phrase set + độ dài)
-      L2 — High-Confidence Keyword Guard (word-boundary regex)
-      L3 — Semantic Router (Cosine Similarity + Anchor Bonus + Margin Guard)
-      L4 — Fallback (trả OTHER nếu không có gì khớp)
+      L2 — High-Confidence Keyword Guard (word-boundary regex) cho MEMORY và LORE
+      L3 — Fallback (trả OTHER nếu không có gì khớp)
     """
 
     SMALL_TALK_PHRASES = {
@@ -75,47 +72,20 @@ class IntentClassifier:
         "anh thích đọc sách gì", "gia đình của anh", "anh quen em thế nào"
     ]
 
-    # CHARACTER_LORE: Chỉ bắt khi đề cập rõ "của em" / "của chisa"
-    _CHARACTER_PHRASES = [
-        "vũ khí của em", "vũ khí của chisa",
-        "vòng ở cổ em", "vòng cổ của em",
-        "cái vòng ở cổ", "vòng cổ của chisa",
-        "em thích ăn gì", "sở thích của em",
-        "em thích ăn vặt", "món tủ của em",
-        "chisa thích", "cây kéo của em", "chiếc kéo của em",
-        "em bao nhiêu tuổi", "em học trường nào",
-        "em sinh ra ở đâu", "tính cách của em",
-        "resonance của em", "forte của chisa",
-        "em sợ điều gì", "điểm yếu của em",
-        "em bao tuổi rồi", "tiểu sử của em", "lý lịch của em", "năng lực của em",
-        "em ăn được ớt không", "món em ghét nhất", "sở thích lúc rảnh của em",
-        "em thích mèo không", "thiết bị ở cổ em", "vòng cổ của em",
-        "thuộc tính nguyên tố của em", "dấu ấn tacet mark của em"
-    ]
-
-    # WORLD_LORE: Thuật ngữ đặc thù thế giới game — bắt chính xác
-    _WORLD_PHRASES = [
+    # LORE: Các cụm từ liên quan đến cốt truyện, nhân vật, và thế giới game
+    _LORE_PHRASES = [
+        "vũ khí của em", "vũ khí của chisa", "vòng ở cổ em", "vòng cổ của em",
+        "em thích ăn gì", "sở thích của em", "món tủ của em", "chisa thích",
+        "em bao nhiêu tuổi", "em học trường nào", "em sinh ra ở đâu", "tính cách của em",
+        "resonance của em", "forte của chisa", "em sợ điều gì", "điểm yếu của em",
+        "tiểu sử của em", "lý lịch của em", "năng lực của em",
+        "thuộc tính nguyên tố của em", "dấu ấn tacet mark của em",
         "sonoro sphere", "tacet discord", "solaris-3", "solaris 3",
-        "lahai-roi", "lahai roi", "mutant resonator",
-        "resonator là gì", "tacet field là gì",
-        "echo là gì", "resonance liberation",
-        "fracidust", "black shores", "huanglong",
-        "tacet discord là cái gì", "mutant resonator là sao",
-        "lahai-roi ở vùng nào", "solaris 3 là hành tinh nào",
-        "jinzhou ở đâu", "huanglong là gì", "fracidust là thế nào",
-        "echo là cái gì", "thành phố jinzhou", "thế giới solaris"
-    ]
-
-    # STORY_LORE: Sự kiện / arc cốt truyện cụ thể
-    _STORY_PHRASES = [
-        "vòng lặp honami", "vòng lặp của honami",
-        "lễ hội startorch", "học viện startorch",
-        "companion quest", "chapter 3", "chương 3",
-        "cốt truyện chapter", "câu chuyện của sumika",
-        "nhật ký của sumika", "sự kiện startorch",
-        "di thư của sumika", "cuốn sổ của sumika",
-        "vòng lặp honami là sao", "chapter 3 cốt truyện",
-        "lễ hội startorch có gì", "startorch school festival"
+        "lahai-roi", "mutant resonator", "resonator là gì", "tacet field là gì",
+        "echo là gì", "resonance liberation", "fracidust", "black shores", "huanglong",
+        "jinzhou ở đâu", "thành phố jinzhou", "vòng lặp honami", "lễ hội startorch",
+        "học viện startorch", "companion quest", "chapter 3", "cốt truyện chapter",
+        "nhật ký của sumika", "startorch school festival"
     ]
 
     # SYSTEM_ACTION: Lệnh tường minh — bắt bằng regex pattern (linh hoạt hơn phrase match)
@@ -139,10 +109,6 @@ class IntentClassifier:
     def __init__(self, llm: BaseLLMAdapter, embedder: Optional[IEmbeddingProvider] = None):
         self.llm = llm
         self.embedder = embedder
-        self.semantic_router = None
-        if embedder:
-            from app.domain.services.semantic_router import SemanticRouter
-            self.semantic_router = SemanticRouter(embedder=embedder)
 
     @classmethod
     def is_small_talk(cls, message: str) -> bool:
@@ -167,14 +133,8 @@ class IntentClassifier:
         if _phrase_match(self._MEMORY_PHRASES, msg_lower):
             high_conf_intents.append(ChatIntent.MEMORY)
 
-        if _phrase_match(self._CHARACTER_PHRASES, msg_lower):
-            high_conf_intents.append(ChatIntent.CHARACTER_LORE)
-
-        if _phrase_match(self._WORLD_PHRASES, msg_lower):
-            high_conf_intents.append(ChatIntent.WORLD_LORE)
-
-        if _phrase_match(self._STORY_PHRASES, msg_lower):
-            high_conf_intents.append(ChatIntent.STORY_LORE)
+        if _phrase_match(self._LORE_PHRASES, msg_lower):
+            high_conf_intents.append(ChatIntent.LORE)
 
         # SYSTEM_ACTION dùng regex pattern (linh hoạt hơn)
         if _pattern_match(self._SYSTEM_PATTERNS, msg_lower):
@@ -188,26 +148,6 @@ class IntentClassifier:
             )
             return high_conf_intents, None
 
-        # ── L3: Semantic Router ──
-        if self.semantic_router:
-            try:
-                # Lazy embedding generation for semantic routing
-                if query_vector is None and self.embedder:
-                    from app.shared.utils.query_cleaner import clean_query_for_rag
-                    cleaned = clean_query_for_rag(user_message)
-                    query_vector = await self.embedder.embed_text(cleaned)
-
-                matched_intents = await self.semantic_router.classify(user_message, query_vector)
-                if matched_intents:
-                    log.info(
-                        "Semantic router matched intents",
-                        intents=[i.value for i in matched_intents],
-                        user_message=user_message,
-                    )
-                    return matched_intents, query_vector
-            except Exception as e:
-                log.warning("Semantic Router classification failed, falling back to OTHER", error=str(e))
-
-        # ── L4: Fallback ──
+        # ── L3: Fallback ──
         log.info("Intent fallback: no rule or semantic match, returning OTHER", user_message=user_message)
         return [ChatIntent.OTHER], query_vector

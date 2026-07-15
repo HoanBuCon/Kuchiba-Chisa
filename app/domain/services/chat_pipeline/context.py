@@ -48,6 +48,7 @@ class ChatContext:
     
     # LLM Generation
     chisa_reply: str = ""
+    is_cached_answer: bool = False
     estimated_input_tokens: int = 0
     estimated_output_tokens: int = 0
     

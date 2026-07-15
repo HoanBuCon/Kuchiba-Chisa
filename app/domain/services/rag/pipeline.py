@@ -10,6 +10,7 @@ from app.domain.services.rag.retriever_memory import MemoryRetriever
 from app.domain.services.rag.retriever_lore import LoreRetriever
 from app.domain.services.rag.assessor import ContextAssessor
 from app.domain.services.rag.thinking_loop import ThinkingLoopAgent
+from app.domain.services.rag.entity_resolver import EntityResolver
 from app.shared.utils.logger import get_logger
 from app.domain.interfaces.tracker import IPipelineTracker
 
@@ -26,7 +27,8 @@ class RAGPipeline:
         lore_retriever: Optional[LoreRetriever] = None,
         assessor: Optional[ContextAssessor] = None,
         thinking_loop_agent: Optional[ThinkingLoopAgent] = None,
-        pipeline_tracker: Optional[IPipelineTracker] = None
+        pipeline_tracker: Optional[IPipelineTracker] = None,
+        entity_resolver: Optional[EntityResolver] = None
     ):
         if memory_retriever is None:
             raise ValueError("memory_retriever is required")
@@ -52,6 +54,8 @@ class RAGPipeline:
             raise ValueError("pipeline_tracker is required")
         else:
             self.pipeline_tracker = pipeline_tracker
+            
+        self.entity_resolver = entity_resolver
 
     @staticmethod
     def _normalize_intents(intents: List[Any]) -> Set[str]:
@@ -93,37 +97,25 @@ class RAGPipeline:
             retrieval_tasks = []
             active_intents = []
 
-            if "CHARACTER_LORE" in intent_strs:
-                active_intents.append("CHARACTER_LORE")
+            if "LORE" in intent_strs:
+                active_intents.append("LORE")
+                
+                # Optional: Expand entities for payload boosting (if implemented in retriever)
+                extracted = set()
+                if self.entity_resolver:
+                    extracted = self.entity_resolver.extract_entities(cleaned_query)
+                    expanded = self.entity_resolver.expand_entities(extracted)
+                    log.info("Entity Resolver Output", extracted=list(extracted), expanded=list(expanded))
+                
                 retrieval_tasks.append(
                     self.lore_retriever.retrieve_lore_parent_child(
-                        collection="character_lore",
+                        collection="lore",
                         query_vector=query_vector,
+                        session=session,
                         query_text=cleaned_query,
                         top_k=RAGTuning.TOP_K,
-                        score_threshold=RAGTuning.SCORE_THRESHOLD
-                    )
-                )
-            if "WORLD_LORE" in intent_strs:
-                active_intents.append("WORLD_LORE")
-                retrieval_tasks.append(
-                    self.lore_retriever.retrieve_lore_parent_child(
-                        collection="world_lore",
-                        query_vector=query_vector,
-                        query_text=cleaned_query,
-                        top_k=RAGTuning.TOP_K,
-                        score_threshold=RAGTuning.SCORE_THRESHOLD
-                    )
-                )
-            if "STORY_LORE" in intent_strs:
-                active_intents.append("STORY_LORE")
-                retrieval_tasks.append(
-                    self.lore_retriever.retrieve_lore_parent_child(
-                        collection="story_lore",
-                        query_vector=query_vector,
-                        query_text=cleaned_query,
-                        top_k=RAGTuning.TOP_K,
-                        score_threshold=RAGTuning.SCORE_THRESHOLD
+                        score_threshold=RAGTuning.SCORE_THRESHOLD,
+                        entities_filter=list(expanded) if expanded else None
                     )
                 )
             if "MEMORY" in intent_strs:
@@ -167,13 +159,7 @@ class RAGPipeline:
 
         # 1.1 Track retrieval step in real-time
         self.pipeline_tracker.add_step("rag_retrieval", {
-            "lore_collections_queried": [
-                col for col, b in {
-                    "character_lore": "CHARACTER_LORE" in intent_strs,
-                    "world_lore": "WORLD_LORE" in intent_strs,
-                    "story_lore": "STORY_LORE" in intent_strs
-                }.items() if b
-            ],
+            "lore_collections_queried": ["lore"] if "LORE" in intent_strs else [],
             "retrieved_lore_chunks": lore_chunks,
             "retrieved_memories": memories
         })

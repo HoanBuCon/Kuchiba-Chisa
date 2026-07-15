@@ -13,6 +13,9 @@ class ContextBuildingStage(PipelineStage):
         self.pipeline_tracker = pipeline_tracker
 
     async def process(self, context: ChatContext) -> ChatContext:
+        if context.is_cached_answer:
+            return context
+
         context.final_user_message = context.user_message
 
         budget_mode = BudgetMode.resolve(
