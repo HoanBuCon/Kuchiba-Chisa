@@ -8,11 +8,12 @@ from app.domain.interfaces.llm_provider import StructuredPrompt, LLMResponse
 
 LOG_FILE_PATH = "logs/llm_api_clean.txt"
 
-# Context variables to track Question Index and Turn Index within each request context
-request_question_idx: contextvars.ContextVar[int] = contextvars.ContextVar("request_question_idx", default=1)
-request_turn_idx: contextvars.ContextVar[int] = contextvars.ContextVar("request_turn_idx", default=1)
-llm_call_purpose: contextvars.ContextVar[str] = contextvars.ContextVar("llm_call_purpose", default="unknown")
-enable_clean_log: contextvars.ContextVar[bool] = contextvars.ContextVar("enable_clean_log", default=False)
+from app.domain.context import (
+    request_question_idx,
+    request_turn_idx,
+    llm_call_purpose,
+    enable_clean_log
+)
 
 LLM_PURPOSE_LABELS: dict[str, str] = {
     "chat_response": "Trả lời Chisa (call chính)",

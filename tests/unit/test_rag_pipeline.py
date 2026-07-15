@@ -31,6 +31,11 @@ class DummyThinkingLoop:
         return "", []
 
 
+class DummyPipelineTracker:
+    def add_step(self, name, data):
+        pass
+
+
 @pytest.mark.asyncio
 async def test_no_retrieval_for_other_and_system_action_intents():
     memory_retriever = DummyMemoryRetriever()
@@ -40,6 +45,7 @@ async def test_no_retrieval_for_other_and_system_action_intents():
         lore_retriever=lore_retriever,
         assessor=DummyAssessor(),
         thinking_loop_agent=DummyThinkingLoop(),
+        pipeline_tracker=DummyPipelineTracker(),
     )
 
     context = await pipeline.retrieve_and_align(
@@ -72,6 +78,7 @@ async def test_retrieval_runs_when_memory_intent_present():
         lore_retriever=lore_retriever,
         assessor=DummyAssessor(),
         thinking_loop_agent=DummyThinkingLoop(),
+        pipeline_tracker=DummyPipelineTracker(),
     )
 
     await pipeline.retrieve_and_align(
@@ -110,6 +117,7 @@ async def test_lore_chunks_filtered_out_when_use_lore_false():
         lore_retriever=DummyLoreRetrieverWithData(),
         assessor=DummyFalseLoreAssessor(),
         thinking_loop_agent=DummyThinkingLoop(),
+        pipeline_tracker=DummyPipelineTracker(),
     )
 
     context = await pipeline.retrieve_and_align(
@@ -128,4 +136,3 @@ async def test_lore_chunks_filtered_out_when_use_lore_false():
     )
 
     assert context.lore_chunks == []
-

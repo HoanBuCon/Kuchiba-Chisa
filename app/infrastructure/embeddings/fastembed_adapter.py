@@ -89,15 +89,16 @@ class FastEmbedAdapter(IEmbeddingProvider):
         if not cleaned:
             return []
 
+        import hashlib
+        import json
+        from app.infrastructure.cache.redis.redis_service import redis_service
+
+        h = hashlib.md5(cleaned.encode("utf-8")).hexdigest()
+        model_slug = self.model_name.replace("/", "_").replace(".", "_")
+        cache_key = f"chisa:embedding_cache:{model_slug}:{h}"
+
         # Try cache lookup first
         try:
-            import hashlib
-            import json
-            from app.infrastructure.cache.redis.redis_service import redis_service
-
-            h = hashlib.md5(cleaned.encode("utf-8")).hexdigest()
-            model_slug = self.model_name.replace("/", "_").replace(".", "_")
-            cache_key = f"chisa:embedding_cache:{model_slug}:{h}"
             cached = await redis_service.get(cache_key)
             if cached:
                 log.debug("Embedding cache hit", text=cleaned[:30])
@@ -111,9 +112,6 @@ class FastEmbedAdapter(IEmbeddingProvider):
 
         # Cache the result for 10 minutes (600s)
         try:
-            # We must define cache_key here in case exception was caught before cache_key assignment (though unlikely)
-            model_slug = self.model_name.replace("/", "_").replace(".", "_")
-            cache_key = f"chisa:embedding_cache:{model_slug}:{h}"
             await redis_service.set(cache_key, json.dumps(results[0]), ttl=600)
         except Exception as e:
             log.warning("Embedding cache write failed", error=str(e))

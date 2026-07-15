@@ -12,7 +12,7 @@ from app.domain.services.chat_engine import ChatEngine, ChatEngineBusyError
 from app.domain.interfaces.llm_provider import LLMRateLimitError
 from app.infrastructure.logging.logger import get_logger
 from app.shared.utils.user_identity import normalize_user_id, normalize_user_id_str
-from app.application.dependencies import get_chat_engine, container
+from app.application.dependencies import get_chat_engine, get_clear_user_memory_use_case, container
 
 log = get_logger(__name__)
 
@@ -266,53 +266,15 @@ async def get_chat_history(
 @router.delete("/chat/clear/{user_id}")
 async def clear_user_memory(
     user_id: str,
-    session: AsyncSession = Depends(get_db_session)
+    session: AsyncSession = Depends(get_db_session),
+    clear_use_case = Depends(get_clear_user_memory_use_case)
 ) -> dict:
     """
     Wipes all conversation memory (STM + LTM) and resets emotion/stats for a user.
     Triggered by the /clear command in the frontend.
     """
-    from sqlalchemy import delete as sql_delete
-    from app.infrastructure.database.models.message import Message
-    from app.infrastructure.database.models.conversation import Conversation
-    from app.infrastructure.database.models.emotion_state import EmotionState
-    from app.infrastructure.database.models.user_stats import UserStats
-    from app.infrastructure.vector.qdrant.qdrant_service import get_qdrant_client
-    from qdrant_client.http import models as qdrant_models
-
-    user_uuid = normalize_user_id(user_id)
-    canonical_user_id = str(user_uuid)
-
     try:
-        # 1. Delete PostgreSQL STM messages and conversations
-        await session.execute(sql_delete(Message).where(Message.user_id == user_uuid).execution_options(synchronize_session=False))
-        await session.execute(sql_delete(Conversation).where(Conversation.user_id == user_uuid).execution_options(synchronize_session=False))
-
-        # 2. Reset Emotion and Stats
-        await session.execute(sql_delete(EmotionState).where(EmotionState.user_id == user_uuid).execution_options(synchronize_session=False))
-        await session.execute(sql_delete(UserStats).where(UserStats.user_id == user_uuid).execution_options(synchronize_session=False))
-        await session.commit()
-
-        # 3. Clear Qdrant LTM vectors (best-effort, ignore per-collection failures)
-        client = get_qdrant_client()
-        collections = ["emotional_memories", "conversation_summaries", "persona_embeddings", "user_facts", "memories"]
-        for col in collections:
-            try:
-                await client.delete(
-                    collection_name=col,
-                    points_selector=qdrant_models.FilterSelector(
-                        filter=qdrant_models.Filter(
-                            must=[qdrant_models.FieldCondition(
-                                key="user_id",
-                                match=qdrant_models.MatchValue(value=canonical_user_id)
-                            )]
-                        )
-                    )
-                )
-            except Exception as qe:
-                log.warning("Could not clear Qdrant collection", collection=col, error=str(qe))
-
-        log.info("User memory cleared via /clear command", user_id=user_id)
+        await clear_use_case.execute(session, user_id)
         return {"status": "ok", "message": "Tất cả ký ức đã được xóa. Chisa sẽ gặp lại Senpai như lần đầu tiên!"}
     except Exception as e:
         log.error("Failed to clear user memory", error=str(e), user_id=user_id)

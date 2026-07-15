@@ -4,7 +4,7 @@ import time
 import yaml
 from pathlib import Path
 from typing import Any, List, Dict
-from app.infrastructure.logging.logger import get_logger
+from app.shared.utils.logger import get_logger
 
 log = get_logger(__name__)
 

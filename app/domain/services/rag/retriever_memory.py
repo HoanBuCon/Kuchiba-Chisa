@@ -3,22 +3,21 @@ from typing import List, Dict, Optional
 from app.domain.interfaces.vector_store import IVectorStore
 from app.domain.services.rag.base import ScoredMemory
 from app.domain.services.rag.reranker import HybridMemoryScorer
-from app.infrastructure.logging.logger import get_logger
+from app.shared.utils.logger import get_logger
 
 log = get_logger(__name__)
 
-from app.domain.interfaces.retriever import IMemoryRetriever
 
-class MemoryRetriever(IMemoryRetriever):
+class MemoryRetriever:
     """
     Retrieves and ranks user memories from Qdrant using Hybrid Scoring.
     """
-    def __init__(self, scorer: Optional[HybridMemoryScorer] = None):
+    def __init__(self, vector_store: IVectorStore, scorer: Optional[HybridMemoryScorer] = None):
+        self.vector_store = vector_store
         self.scorer = scorer or HybridMemoryScorer()
 
     async def retrieve_memories(
         self,
-        vector_store: IVectorStore,
         collection: str,
         query_vector: List[float],
         user_id: str,
@@ -27,7 +26,7 @@ class MemoryRetriever(IMemoryRetriever):
         top_k: int = 5
     ) -> List[ScoredMemory]:
         try:
-            candidates = await vector_store.search_by_user(
+            candidates = await self.vector_store.search_by_user(
                 collection=collection,
                 query_vector=query_vector,
                 user_id=user_id,

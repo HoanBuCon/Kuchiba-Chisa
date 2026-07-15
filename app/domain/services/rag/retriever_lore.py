@@ -1,33 +1,32 @@
 from typing import List, Tuple, Optional
 from app.domain.interfaces.vector_store import IVectorStore
 from app.domain.services.rag.reranker import KeywordOverlapReranker
-from app.infrastructure.logging.logger import get_logger
+from app.shared.utils.logger import get_logger
 
 log = get_logger(__name__)
 
-from app.domain.interfaces.retriever import ILoreRetriever
 
-class LoreRetriever(ILoreRetriever):
+class LoreRetriever:
     """
     Retrieves Chisa lore chunks from Qdrant using vector search,
     boosted by keyword overlap re-ranking.
     """
-    def __init__(self, reranker: Optional[KeywordOverlapReranker] = None):
+    def __init__(self, vector_store: IVectorStore, reranker: Optional[KeywordOverlapReranker] = None):
+        self.vector_store = vector_store
         self.reranker = reranker or KeywordOverlapReranker()
 
     async def retrieve_lore_standard(
         self,
-        vector_store: IVectorStore,
         query_vector: List[float],
         query_text: str = "",
         top_k: int = 8,
         score_threshold: float = 0.3,
     ) -> List[Tuple[str, float]]:
         try:
-            if not vector_store:
+            if not self.vector_store:
                 return []
             
-            candidates = await vector_store.search_lore(
+            candidates = await self.vector_store.search_lore(
                 collection="persona_embeddings",
                 query_vector=query_vector,
                 limit=top_k,
@@ -52,7 +51,6 @@ class LoreRetriever(ILoreRetriever):
 
     async def retrieve_lore_parent_child(
         self,
-        vector_store: IVectorStore,
         collection: str,
         query_vector: List[float],
         query_text: str = "",
@@ -60,10 +58,10 @@ class LoreRetriever(ILoreRetriever):
         score_threshold: float = 0.35,
     ) -> List[str]:
         try:
-            if not vector_store:
+            if not self.vector_store:
                 return []
                 
-            candidates = await vector_store.search_lore(
+            candidates = await self.vector_store.search_lore(
                 collection=collection,
                 query_vector=query_vector,
                 limit=15,

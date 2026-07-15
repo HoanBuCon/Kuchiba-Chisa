@@ -5,7 +5,7 @@ from typing import Optional, List
 from app.domain.interfaces.embedding_provider import IEmbeddingProvider
 from app.domain.entities.memory import MemoryType, MemoryMetadata, MemoryPayload
 from app.domain.interfaces.vector_store import IVectorStore
-from app.infrastructure.logging.logger import get_logger
+from app.shared.utils.logger import get_logger
 
 log = get_logger(__name__)
 

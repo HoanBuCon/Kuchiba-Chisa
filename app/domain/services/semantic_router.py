@@ -3,7 +3,7 @@ import numpy as np
 from typing import List, Dict, Optional, Set
 from app.domain.services.intent_classifier import ChatIntent
 from app.domain.interfaces.embedding_provider import IEmbeddingProvider
-from app.infrastructure.logging.logger import get_logger
+from app.shared.utils.logger import get_logger
 
 log = get_logger(__name__)
 

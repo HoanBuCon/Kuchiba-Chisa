@@ -2,11 +2,11 @@ import asyncio
 import re
 import numpy as np
 from typing import Any, Dict, List, Optional, Tuple
-from sqlalchemy.ext.asyncio import AsyncSession
+
 
 from app.domain.interfaces.llm_provider import BaseLLMAdapter
 from app.domain.interfaces.embedding_provider import IEmbeddingProvider
-from app.infrastructure.logging.logger import get_logger
+from app.shared.utils.logger import get_logger
 
 # Import modular tools
 from app.domain.services.tools import (
@@ -152,16 +152,16 @@ class LLMToolRouter:
         "required": ["summary"]
     }
 
-    def __init__(self, llm: BaseLLMAdapter, embedder: IEmbeddingProvider):
+    def __init__(self, llm: BaseLLMAdapter, embedder: IEmbeddingProvider, tools: List[BaseAgentTool] = None):
         self.llm = llm
         self.embedder = embedder
         
         # Đăng ký danh sách các công cụ hệ thống (Agent Tools)
-        self.tools: List[BaseAgentTool] = [
-            WebSearchAgentTool(),
-            ConversationSummarizerAgentTool(),
-            EmotionReportAgentTool()
-        ]
+        if tools is None:
+            self.tools = []
+        else:
+            self.tools = tools
+            
         self.tool_map = {tool.name: tool for tool in self.tools}
         self.semantic_tool_router = SemanticToolRouter(embedder=embedder, tools=self.tools)
 

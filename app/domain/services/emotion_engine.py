@@ -15,7 +15,7 @@ import time
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
-from app.infrastructure.logging.logger import get_logger
+from app.shared.utils.logger import get_logger
 
 if TYPE_CHECKING:
     from app.domain.entities.emotion import EmotionState

@@ -1,12 +1,10 @@
 from typing import Tuple
 from app.domain.interfaces.llm_provider import BaseLLMAdapter, StructuredPrompt
-from app.infrastructure.logging.logger import get_logger
+from app.shared.utils.logger import get_logger
 
 log = get_logger(__name__)
 
-from app.domain.interfaces.assessor import IContextAssessor
-
-class ContextAssessor(IContextAssessor):
+class ContextAssessor:
     """
     Evaluates whether the retrieved context contains enough factual information
     to fully and correctly answer the user's question without hallucinations.
@@ -93,7 +91,7 @@ class ContextAssessor(IContextAssessor):
         )
 
         try:
-            from app.infrastructure.logging.llm_logger import llm_call_purpose
+            from app.domain.context import llm_call_purpose
             llm_call_purpose.set("alignment_assessor")
             response = await llm.generate(prompt)
             parsed = response.parsed or {}

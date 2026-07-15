@@ -76,3 +76,10 @@ class SqlAlchemyConversationRepository(IConversationRepository):
         msgs = result.scalars().all()
         # Return chronologically (oldest first)
         return [{"role": m.role.value, "content": m.content} for m in reversed(msgs)]
+
+    async def delete_all_for_user(self, user_id: uuid.UUID) -> None:
+        from sqlalchemy import delete
+        # Delete messages first to satisfy foreign keys if any, though cascade might handle it. We do both just like the original code.
+        await self.session.execute(delete(MessageModel).where(MessageModel.user_id == user_id).execution_options(synchronize_session=False))
+        await self.session.execute(delete(ConversationModel).where(ConversationModel.user_id == user_id).execution_options(synchronize_session=False))
+        await self.session.flush()

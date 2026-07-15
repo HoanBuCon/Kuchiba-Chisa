@@ -3,7 +3,7 @@ from unittest.mock import AsyncMock, patch
 import httpx
 from app.config.settings import settings
 from app.infrastructure.llm.adapters.deepseek import DeepSeekAdapter
-from app.infrastructure.llm.adapters.base import StructuredPrompt, LLMResponse
+from app.domain.interfaces.llm_provider import StructuredPrompt, LLMResponse
 
 @pytest.mark.asyncio
 @patch("httpx.AsyncClient.post")

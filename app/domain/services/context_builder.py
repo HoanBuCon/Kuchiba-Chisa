@@ -10,7 +10,7 @@ from app.domain.services.state_manager import StateManager
 from app.domain.services.context_budget_manager import ContextBudgetManager, BudgetAudit
 from app.domain.services.budget_mode import BudgetMode
 from app.shared.utils.token_estimator import TokenEstimator
-from app.infrastructure.logging.logger import get_logger
+from app.shared.utils.logger import get_logger
 
 log = get_logger(__name__)
 

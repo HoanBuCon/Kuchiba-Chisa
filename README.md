@@ -48,7 +48,7 @@
 
 ## 🛠️ Trải nghiệm nhanh (Môi trường Docker)
 
-Để thiết lập ứng dụng, khởi tạo cơ sở dữ liệu và bật các dịch vụ Docker/FastAPI, vui lòng tham khảo bản **[Hướng dẫn Khởi chạy & Triển khai (Startup & Deployment Guide)](STARTUP_GUIDE.md)** chi tiết.
+Để thiết lập ứng dụng, khởi tạo cơ sở dữ liệu và bật các dịch vụ Docker/FastAPI, vui lòng tham khảo bản **[Hướng dẫn Khởi chạy & Triển khai (Startup & Deployment Guide)](docs/STARTUP_GUIDE.md)** chi tiết.
 
 <div align="center">
   <img src="assets/chisa_cat_spin.gif" alt="Spin" width="200"/>
@@ -58,9 +58,9 @@
 
 ## 📜 Tài liệu Hệ thống
 
-- **[Phân Tích Cấu Trúc Hệ Thống (Detailed Architecture Analysis)](PHAN_TICH_WORKSPACE_CHI_TIET.md)**: Tài liệu phân tích sâu chi tiết cấu trúc mã nguồn dự án sau refactor, thiết kế cơ sở dữ liệu PostgreSQL/Qdrant, mô hình lớp dịch vụ phẳng và luồng đi của dữ liệu.
-- **[Hướng Dẫn Khởi Chạy & Triển Khai (Startup & Deployment Guide)](STARTUP_GUIDE.md)**: Hướng dẫn thiết lập môi trường, cấu hình `.env`, chạy database migration và khởi động máy chủ FastAPI/Discord bot.
-- **[Phiên dịch Luồng dữ liệu & Pipeline (Walkthrough)](WALKTHROUGH.md)**: Khám phá chi tiết kiến trúc RAG, pipeline sinh văn bản của LLM, và thuật toán Cảm xúc Hệ Động Lực (DEHA).
+- **[Phân Tích Cấu Trúc Hệ Thống (Detailed Architecture Analysis)](docs/PHAN_TICH_WORKSPACE_CHI_TIET.md)**: Tài liệu phân tích sâu chi tiết cấu trúc mã nguồn dự án sau refactor, thiết kế cơ sở dữ liệu PostgreSQL/Qdrant, mô hình lớp dịch vụ phẳng và luồng đi của dữ liệu.
+- **[Hướng Dẫn Khởi Chạy & Triển Khai (Startup & Deployment Guide)](docs/STARTUP_GUIDE.md)**: Hướng dẫn thiết lập môi trường, cấu hình `.env`, chạy database migration và khởi động máy chủ FastAPI/Discord bot.
+- **[Phiên dịch Luồng dữ liệu & Pipeline (Walkthrough)](docs/WALKTHROUGH.md)**: Khám phá chi tiết kiến trúc RAG, pipeline sinh văn bản của LLM, và thuật toán Cảm xúc Hệ Động Lực (DEHA).
 
 <br>
 

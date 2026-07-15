@@ -1,12 +1,12 @@
 import uuid
 from typing import Any, Dict, List
-from sqlalchemy.ext.asyncio import AsyncSession
+
 
 from app.domain.interfaces.llm_provider import BaseLLMAdapter
 from app.domain.interfaces.embedding_provider import IEmbeddingProvider
 from app.domain.services.tools.base import BaseAgentTool
-from app.infrastructure.database.repositories.emotion_repository import SqlAlchemyEmotionRepository
-from app.infrastructure.logging.logger import get_logger
+from app.domain.interfaces.repositories import IEmotionRepository
+from app.shared.utils.logger import get_logger
 
 log = get_logger(__name__)
 

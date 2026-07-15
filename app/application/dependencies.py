@@ -86,19 +86,177 @@ class AppContainer:
         from app.infrastructure.database.repositories.emotion_repository import SqlAlchemyEmotionRepository
         from app.infrastructure.database.repositories.conversation_repository import SqlAlchemyConversationRepository
         from app.infrastructure.database.uow import UnitOfWork
+        from app.infrastructure.cache.redis.redis_service import redis_service
+        from app.domain.services.intent_classifier import IntentClassifier
+        from app.domain.services.tool_router import LLMToolRouter
+        from app.domain.services.emotion_engine import EmotionEngine
+        from app.domain.services.chat_engine import ChatPipeline
+        from app.infrastructure.logging.pipeline_tracker import pipeline_tracker
+        from app.infrastructure.logging.llm_logger import log_routing_transaction, log_llm_transaction
+        from app.infrastructure.database.session import AsyncSessionFactory
         
-        return ChatEngine(
-            embedder=self.embedder,
+        from app.domain.services.chat_pipeline.stages.initialization_stage import InitializationStage
+        from app.domain.services.chat_pipeline.stages.intent_stage import IntentStage
+        from app.domain.services.chat_pipeline.stages.tool_routing_stage import ToolRoutingStage
+        from app.domain.services.chat_pipeline.stages.rag_stage import RAGStage
+        from app.domain.services.chat_pipeline.stages.context_building_stage import ContextBuildingStage
+        from app.domain.services.chat_pipeline.stages.llm_generation_stage import LLMGenerationStage
+        from app.domain.services.chat_pipeline.stages.emotion_update_stage import EmotionUpdateStage
+        from app.domain.services.chat_pipeline.stages.persistence_stage import PersistenceStage
+        from app.domain.services.chat_pipeline.stages.background_task_stage import BackgroundTaskStage
+        
+        intent_classifier = IntentClassifier(llm=self.llm, embedder=self.embedder)
+        
+        # Tools registration
+        from app.domain.services.tools.web_search import WebSearchAgentTool
+        from app.domain.services.tools.conversation_summarizer import ConversationSummarizerAgentTool
+        from app.domain.services.tools.emotion_report import EmotionReportAgentTool
+        from app.infrastructure.search.providers import (
+            TavilySearchProvider,
+            SerperSearchProvider,
+            DuckDuckGoLibrarySearchProvider,
+            DDGScraperSearchProvider
+        )
+        
+        web_search_providers = [
+            TavilySearchProvider(),
+            SerperSearchProvider(),
+            DuckDuckGoLibrarySearchProvider(),
+            DDGScraperSearchProvider(),
+        ]
+        
+        import httpx
+        import asyncio
+        async def fetch_page(url: str) -> str:
+            headers = {
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+                "Accept-Language": "vi-VN,vi;q=0.9,en-US;q=0.8,en;q=0.7",
+            }
+            async with httpx.AsyncClient(headers=headers, timeout=10.0, follow_redirects=True) as client:
+                resp = await client.get(url, timeout=2.0)
+                if resp.status_code == 200:
+                    return resp.text
+            return ""
+
+        agent_tools = [
+            WebSearchAgentTool(providers=web_search_providers, page_fetcher=fetch_page),
+            ConversationSummarizerAgentTool(),
+            EmotionReportAgentTool()
+        ]
+        
+        tool_router = LLMToolRouter(llm=self.llm, embedder=self.embedder, tools=agent_tools)
+        emotion_engine = EmotionEngine()
+
+        # Build stages
+        # To handle the _auto_summarize_conversation and _summarize_and_store_memories callbacks,
+        # we will create a partial ChatEngine and attach the callbacks to it.
+        # But wait, we can just instantiate ChatEngine and pass its methods to stages!
+        
+        # We need a two-step initialization for ChatEngine because stages need callbacks, 
+        # and ChatEngine needs pipeline.
+        
+        # Instantiate RAG dependencies
+        from app.domain.services.rag.pipeline import RAGPipeline
+        from app.domain.services.rag.retriever_memory import MemoryRetriever
+        from app.domain.services.rag.retriever_lore import LoreRetriever
+        from app.domain.services.rag.assessor import ContextAssessor
+        from app.domain.services.rag.thinking_loop import ThinkingLoopAgent
+        
+        rag_pipeline = RAGPipeline(
+            memory_retriever=MemoryRetriever(vector_store=qdrant_service),
+            lore_retriever=LoreRetriever(vector_store=qdrant_service),
+            assessor=ContextAssessor(),
+            thinking_loop_agent=ThinkingLoopAgent(pipeline_tracker=pipeline_tracker),
+            pipeline_tracker=pipeline_tracker
+        )
+        
+        # Let's instantiate ChatPipeline first, we can use a lambda to defer the callback.
+        engine_ref: list[ChatEngine] = []
+
+        stages = [
+            InitializationStage(
+                user_repo_factory=SqlAlchemyUserRepository,
+                emotion_repo_factory=SqlAlchemyEmotionRepository,
+                conv_repo_factory=SqlAlchemyConversationRepository,
+                auto_summarize_callback=lambda uid, cid: engine_ref[0]._auto_summarize_conversation(uid, cid)
+            ),
+            IntentStage(
+                intent_classifier=intent_classifier,
+                embedder=self.embedder,
+                pipeline_tracker=pipeline_tracker
+            ),
+            ToolRoutingStage(
+                tool_router=tool_router,
+                cache=redis_service,
+                conv_repo_factory=SqlAlchemyConversationRepository,
+                emotion_repo_factory=SqlAlchemyEmotionRepository,
+                pipeline_tracker=pipeline_tracker,
+                routing_logger_callback=log_routing_transaction
+            ),
+            RAGStage(
+                llm=self.llm,
+                embedder=self.embedder,
+                vector_store=qdrant_service,
+                tool_router=tool_router,
+                rag_pipeline=rag_pipeline
+            ),
+            ContextBuildingStage(
+                context_builder=self.context_builder,
+                pipeline_tracker=pipeline_tracker
+            ),
+            LLMGenerationStage(
+                llm=self.llm,
+                llm_logger_callback=log_llm_transaction
+            ),
+            EmotionUpdateStage(
+                emotion_engine=emotion_engine,
+                emotion_repo_factory=SqlAlchemyEmotionRepository,
+                pipeline_tracker=pipeline_tracker
+            ),
+            PersistenceStage(
+                user_repo_factory=SqlAlchemyUserRepository,
+                conv_repo_factory=SqlAlchemyConversationRepository
+            ),
+            BackgroundTaskStage(
+                memory_extractor=self.memory_extractor,
+                summarize_memories_callback=lambda uid, cid, hist: engine_ref[0]._summarize_and_store_memories(uid, cid, hist)
+            )
+        ]
+        
+        pipeline = ChatPipeline(stages=stages)
+        
+        engine = ChatEngine(
+            pipeline=pipeline,
+            uow_factory=UnitOfWork,
+            cache_provider=redis_service,
+            emotion_repo_factory=SqlAlchemyEmotionRepository,
+            conv_repo_factory=SqlAlchemyConversationRepository,
+            user_repo_factory=SqlAlchemyUserRepository,
+            db_session_factory=AsyncSessionFactory,
             llm=self.llm,
-            context_builder=self.context_builder,
-            memory_extractor=self.memory_extractor,
-            vector_store=qdrant_service,
+            embedder=self.embedder,
+            vector_store=qdrant_service
+        )
+        engine_ref.append(engine)
+        
+        return engine
+
+    @cached_property
+    def clear_user_memory_use_case(self):
+        from app.application.usecases.clear_user_memory import ClearUserMemoryUseCase
+        from app.infrastructure.database.repositories.user_repository import SqlAlchemyUserRepository
+        from app.infrastructure.database.repositories.emotion_repository import SqlAlchemyEmotionRepository
+        from app.infrastructure.database.repositories.conversation_repository import SqlAlchemyConversationRepository
+        from app.infrastructure.database.uow import UnitOfWork
+        
+        return ClearUserMemoryUseCase(
+            uow_factory=UnitOfWork,
             user_repo_factory=SqlAlchemyUserRepository,
             emotion_repo_factory=SqlAlchemyEmotionRepository,
             conv_repo_factory=SqlAlchemyConversationRepository,
-            uow_factory=UnitOfWork,
+            vector_store=qdrant_service
         )
-
 
 # Global container instance
 container = AppContainer()
@@ -107,3 +265,7 @@ container = AppContainer()
 def get_chat_engine() -> ChatEngine:
     """FastAPI Dependency for injecting ChatEngine."""
     return container.chat_engine
+
+def get_clear_user_memory_use_case():
+    """FastAPI Dependency for injecting ClearUserMemoryUseCase."""
+    return container.clear_user_memory_use_case

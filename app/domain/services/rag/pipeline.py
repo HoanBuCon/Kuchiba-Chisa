@@ -1,16 +1,17 @@
 import asyncio
 from enum import Enum
 from typing import List, Dict, Any, Optional, Set
-from sqlalchemy.ext.asyncio import AsyncSession
+from app.domain.interfaces.session import IDbSession
 
 from app.domain.interfaces.embedding_provider import IEmbeddingProvider
 from app.domain.interfaces.llm_provider import BaseLLMAdapter
 from app.domain.services.rag.base import RAGContext
-from app.domain.interfaces.retriever import IMemoryRetriever, ILoreRetriever
-from app.domain.interfaces.assessor import IContextAssessor
-from app.domain.interfaces.thinking_agent import IThinkingAgent
-from app.infrastructure.logging.logger import get_logger
-from app.infrastructure.logging.pipeline_tracker import pipeline_tracker
+from app.domain.services.rag.retriever_memory import MemoryRetriever
+from app.domain.services.rag.retriever_lore import LoreRetriever
+from app.domain.services.rag.assessor import ContextAssessor
+from app.domain.services.rag.thinking_loop import ThinkingLoopAgent
+from app.shared.utils.logger import get_logger
+from app.domain.interfaces.tracker import IPipelineTracker
 
 log = get_logger(__name__)
 
@@ -21,34 +22,36 @@ class RAGPipeline:
     """
     def __init__(
         self,
-        memory_retriever: Optional[IMemoryRetriever] = None,
-        lore_retriever: Optional[ILoreRetriever] = None,
-        assessor: Optional[IContextAssessor] = None,
-        thinking_loop_agent: Optional[IThinkingAgent] = None
+        memory_retriever: Optional[MemoryRetriever] = None,
+        lore_retriever: Optional[LoreRetriever] = None,
+        assessor: Optional[ContextAssessor] = None,
+        thinking_loop_agent: Optional[ThinkingLoopAgent] = None,
+        pipeline_tracker: Optional[IPipelineTracker] = None
     ):
         if memory_retriever is None:
-            from app.domain.services.rag.retriever_memory import MemoryRetriever
-            self.memory_retriever = MemoryRetriever()
+            raise ValueError("memory_retriever is required")
         else:
             self.memory_retriever = memory_retriever
             
         if lore_retriever is None:
-            from app.domain.services.rag.retriever_lore import LoreRetriever
-            self.lore_retriever = LoreRetriever()
+            raise ValueError("lore_retriever is required")
         else:
             self.lore_retriever = lore_retriever
             
         if assessor is None:
-            from app.domain.services.rag.assessor import ContextAssessor
             self.assessor = ContextAssessor()
         else:
             self.assessor = assessor
             
         if thinking_loop_agent is None:
-            from app.domain.services.rag.thinking_loop import ThinkingLoopAgent
-            self.thinking_loop_agent = ThinkingLoopAgent()
+            raise ValueError("thinking_loop_agent is required")
         else:
             self.thinking_loop_agent = thinking_loop_agent
+            
+        if pipeline_tracker is None:
+            raise ValueError("pipeline_tracker is required")
+        else:
+            self.pipeline_tracker = pipeline_tracker
 
     @staticmethod
     def _normalize_intents(intents: List[Any]) -> Set[str]:
@@ -63,7 +66,7 @@ class RAGPipeline:
 
     async def retrieve_and_align(
         self,
-        session: AsyncSession,
+        session: IDbSession,
         user_id: str,
         user_message: str,
         query_vector: Optional[List[float]],
@@ -74,7 +77,6 @@ class RAGPipeline:
         llm: BaseLLMAdapter,
         embedder: IEmbeddingProvider,
         web_search_tool: Any,
-        vector_store: Any,
         is_small_talk: bool = False,
         conversation_summary: str = None,
     ) -> RAGContext:
@@ -95,7 +97,6 @@ class RAGPipeline:
                 active_intents.append("CHARACTER_LORE")
                 retrieval_tasks.append(
                     self.lore_retriever.retrieve_lore_parent_child(
-                        vector_store=vector_store,
                         collection="character_lore",
                         query_vector=query_vector,
                         query_text=cleaned_query,
@@ -107,7 +108,6 @@ class RAGPipeline:
                 active_intents.append("WORLD_LORE")
                 retrieval_tasks.append(
                     self.lore_retriever.retrieve_lore_parent_child(
-                        vector_store=vector_store,
                         collection="world_lore",
                         query_vector=query_vector,
                         query_text=cleaned_query,
@@ -119,7 +119,6 @@ class RAGPipeline:
                 active_intents.append("STORY_LORE")
                 retrieval_tasks.append(
                     self.lore_retriever.retrieve_lore_parent_child(
-                        vector_store=vector_store,
                         collection="story_lore",
                         query_vector=query_vector,
                         query_text=cleaned_query,
@@ -131,7 +130,6 @@ class RAGPipeline:
                 active_intents.append("MEMORY")
                 retrieval_tasks.append(
                     self.memory_retriever.retrieve_memories(
-                        vector_store=vector_store,
                         collection="memories",
                         query_vector=query_vector,
                         user_id=user_id,
@@ -159,7 +157,7 @@ class RAGPipeline:
                     log.error("Failed to retrieve data from Qdrant vector database", error=str(ex))
 
         # 1.1 Track retrieval step in real-time
-        pipeline_tracker.add_step("rag_retrieval", {
+        self.pipeline_tracker.add_step("rag_retrieval", {
             "lore_collections_queried": [
                 col for col, b in {
                     "character_lore": "CHARACTER_LORE" in intent_strs,
@@ -196,7 +194,7 @@ class RAGPipeline:
             
             # Log assessment result in trace
             history_mode = "summary" if (conversation_summary and conversation_summary.strip()) else "raw"
-            pipeline_tracker.add_step(
+            self.pipeline_tracker.add_step(
                 name="information_alignment_check",
                 data={
                     "is_aligned": is_aligned,

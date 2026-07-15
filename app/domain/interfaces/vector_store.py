@@ -52,3 +52,10 @@ class IVectorStore(ABC):
     @abstractmethod
     async def delete_points(self, collection: str, ids: List[Union[str, int]]) -> None:
         pass
+
+    @abstractmethod
+    async def delete_by_user(self, collection: str, user_id: str) -> None:
+        """
+        Deletes all vectors belonging to a specific user_id in the given collection.
+        """
+        pass

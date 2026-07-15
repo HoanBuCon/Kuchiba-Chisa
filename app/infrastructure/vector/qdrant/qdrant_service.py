@@ -232,6 +232,17 @@ class QdrantService(IVectorStore):
             wait=True,
         )
 
+    async def delete_by_user(self, collection: str, user_id: str) -> None:
+        from qdrant_client.http.models import FilterSelector
+        user_filter = Filter(
+            must=[FieldCondition(key="user_id", match=MatchValue(value=user_id))]
+        )
+        await self._client.delete(
+            collection_name=collection,
+            points_selector=FilterSelector(filter=user_filter),
+            wait=True,
+        )
+
     # ── Lore Search (global — no user isolation) ───────────────────
     async def search_lore(
         self,

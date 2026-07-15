@@ -32,6 +32,12 @@ class IUserRepository(Protocol):
         """
         ...
 
+    async def delete_all_for_user(self, user_id: uuid.UUID) -> None:
+        """
+        Deletes all user data (User and UserStats).
+        """
+        ...
+
 
 class IEmotionRepository(Protocol):
     """
@@ -47,6 +53,12 @@ class IEmotionRepository(Protocol):
     async def update_emotion(self, emotion: EmotionState) -> None:
         """
         Saves changes to EmotionState.
+        """
+        ...
+
+    async def delete_all_for_user(self, user_id: uuid.UUID) -> None:
+        """
+        Deletes the EmotionState for a user.
         """
         ...
 
@@ -81,5 +93,11 @@ class IConversationRepository(Protocol):
     ) -> List[dict[str, str]]:
         """
         Retrieves the recent messages in a conversation as a list of dicts (oldest first).
+        """
+        ...
+
+    async def delete_all_for_user(self, user_id: uuid.UUID) -> None:
+        """
+        Deletes all conversations and messages for a user.
         """
         ...

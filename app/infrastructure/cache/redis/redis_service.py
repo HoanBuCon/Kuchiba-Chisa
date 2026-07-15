@@ -39,7 +39,9 @@ def get_redis_client() -> aioredis.Redis:
 
 # ─── Redis Service ─────────────────────────────────────────────────────────────
 
-class RedisService:
+from app.domain.interfaces.cache_provider import ICacheProvider
+
+class RedisService(ICacheProvider):
     """
     Async Redis service providing typed operations for all caching needs.
     All methods operate on the shared connection pool — no persistent connection held.

@@ -1,22 +1,23 @@
 from typing import Any, List, Dict, Tuple
-from sqlalchemy.ext.asyncio import AsyncSession
+from app.domain.interfaces.session import IDbSession
 from app.domain.interfaces.llm_provider import BaseLLMAdapter, StructuredPrompt
 from app.domain.interfaces.embedding_provider import IEmbeddingProvider
-from app.infrastructure.logging.logger import get_logger
-from app.infrastructure.logging.pipeline_tracker import pipeline_tracker
+from app.shared.utils.logger import get_logger
+from app.domain.interfaces.tracker import IPipelineTracker
 
 log = get_logger(__name__)
 
-from app.domain.interfaces.thinking_agent import IThinkingAgent
-
-class ThinkingLoopAgent(IThinkingAgent):
+class ThinkingLoopAgent:
     """
     Runs an iterative reasoning loop to search the web for missing information,
     acting as the Loop Thinking component of the RAG pipeline.
     """
+    def __init__(self, pipeline_tracker: IPipelineTracker):
+        self.pipeline_tracker = pipeline_tracker
+
     async def run(
         self,
-        session: AsyncSession,
+        session: IDbSession,
         user_id: str,
         user_message: str,
         history: List[Dict[str, str]],
@@ -119,7 +120,7 @@ class ThinkingLoopAgent(IThinkingAgent):
             try:
                 # Only execute LLM call if not bypassed
                 if not (i == 1 and initial_search_query and initial_search_query.strip()):
-                    from app.infrastructure.logging.llm_logger import llm_call_purpose
+                    from app.domain.context import llm_call_purpose
                     llm_call_purpose.set(f"thinking_loop_cycle_{i}")
                     response = await llm.generate(prompt)
                     parsed = response.parsed or {}
@@ -144,7 +145,7 @@ class ThinkingLoopAgent(IThinkingAgent):
                         "search_query": "",
                         "search_result": "No further search needed."
                     })
-                    pipeline_tracker.add_step(f"thinking_loop_cycle_{i}", {
+                    self.pipeline_tracker.add_step(f"thinking_loop_cycle_{i}", {
                         "thinking": thinking,
                         "has_enough_info": True,
                         "search_query": "",
@@ -177,7 +178,7 @@ class ThinkingLoopAgent(IThinkingAgent):
                 })
                 # Add steps to tracker in real-time
                 from app.domain.services.tools.web_search import web_search_trace_payload
-                pipeline_tracker.add_step(
+                self.pipeline_tracker.add_step(
                     "web_search",
                     web_search_trace_payload(
                         search_res,
@@ -185,7 +186,7 @@ class ThinkingLoopAgent(IThinkingAgent):
                         original_message=search_query,
                     ),
                 )
-                pipeline_tracker.add_step(f"thinking_loop_cycle_{i}", {
+                self.pipeline_tracker.add_step(f"thinking_loop_cycle_{i}", {
                     "thinking": thinking,
                     "has_enough_info": False,
                     "search_query": search_query,

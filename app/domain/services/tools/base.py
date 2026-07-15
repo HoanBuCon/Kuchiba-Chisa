@@ -1,7 +1,7 @@
 import abc
 from abc import ABC
 from typing import Any, Dict, List
-from sqlalchemy.ext.asyncio import AsyncSession
+
 
 from app.domain.interfaces.llm_provider import BaseLLMAdapter
 from app.domain.interfaces.embedding_provider import IEmbeddingProvider

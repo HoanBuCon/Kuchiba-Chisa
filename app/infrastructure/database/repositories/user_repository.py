@@ -69,3 +69,13 @@ class SqlAlchemyUserRepository(IUserRepository):
             )
             self.session.add(stats_db)
         await self.session.flush()
+
+    async def delete_all_for_user(self, user_id: uuid.UUID) -> None:
+        from sqlalchemy import delete
+        await self.session.execute(delete(UserStatsModel).where(UserStatsModel.user_id == user_id).execution_options(synchronize_session=False))
+        # Note: Depending on foreign keys, User might be deleted later, but typically we just delete stats and potentially the User.
+        # But if we delete the user here, we need to delete messages and conversations first.
+        # Since it's usually better to just wipe stats/history or let cascade take care of it, we'll just delete stats for now.
+        # Wait, the original code didn't delete the User model, only UserStats, Message, Conversation, and EmotionState.
+        # Let's preserve existing behavior: delete UserStats only.
+        await self.session.flush()

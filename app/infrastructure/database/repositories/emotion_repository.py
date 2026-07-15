@@ -68,3 +68,8 @@ class SqlAlchemyEmotionRepository(IEmotionRepository):
             )
             self.session.add(state_db)
         await self.session.flush()
+
+    async def delete_all_for_user(self, user_id: uuid.UUID) -> None:
+        from sqlalchemy import delete
+        await self.session.execute(delete(EmotionStateModel).where(EmotionStateModel.user_id == user_id).execution_options(synchronize_session=False))
+        await self.session.flush()
