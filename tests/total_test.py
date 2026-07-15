@@ -16,8 +16,8 @@ if sys.stdout.encoding != 'utf-8':
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(PROJECT_ROOT)
 
-LOG_FILE_PATH = os.path.join(PROJECT_ROOT, "llm_api_clean.txt")
-OUTPUT_FILE_PATH = os.path.join(PROJECT_ROOT, "test_output.txt")
+LOG_FILE_PATH = os.path.join(PROJECT_ROOT, "logs", "llm_api_clean.txt")
+OUTPUT_FILE_PATH = os.path.join(PROJECT_ROOT, "logs", "test_output.txt")
 
 # Define the 10 pairs of questions
 set1_questions = [

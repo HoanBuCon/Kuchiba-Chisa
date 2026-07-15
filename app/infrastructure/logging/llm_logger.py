@@ -6,7 +6,7 @@ import contextvars
 from typing import Any, List
 from app.domain.interfaces.llm_provider import StructuredPrompt, LLMResponse
 
-LOG_FILE_PATH = "llm_api_clean.txt"
+LOG_FILE_PATH = "logs/llm_api_clean.txt"
 
 # Context variables to track Question Index and Turn Index within each request context
 request_question_idx: contextvars.ContextVar[int] = contextvars.ContextVar("request_question_idx", default=1)
