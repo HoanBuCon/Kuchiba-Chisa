@@ -1,12 +1,10 @@
 from __future__ import annotations
-
 import asyncio
 import json
 from typing import Any, AsyncIterator
-
 from groq import AsyncGroq
-
 from app.config.settings import settings
+from app.config.tuning.llm import LLMTuning
 from app.infrastructure.logging.logger import get_logger
 from app.domain.interfaces.llm_provider import (
     BaseLLMAdapter,
@@ -33,8 +31,8 @@ class GroqAdapter(BaseLLMAdapter):
     in Phase 4 (Core Domain Implementation).
     """
 
-    _MAX_RETRIES = 5
-    _BASE_BACKOFF = 1.0  # seconds
+    _MAX_RETRIES = LLMTuning.ADAPTER_MAX_RETRIES
+    _BASE_BACKOFF = LLMTuning.ADAPTER_BASE_BACKOFF_STANDARD  # seconds
 
     def __init__(self) -> None:
         self._client = AsyncGroq(

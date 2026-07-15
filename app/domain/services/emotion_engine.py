@@ -9,12 +9,10 @@ Design principles:
 """
 
 from __future__ import annotations
-
 import math
 import time
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
-
 from app.shared.utils.logger import get_logger
 
 if TYPE_CHECKING:

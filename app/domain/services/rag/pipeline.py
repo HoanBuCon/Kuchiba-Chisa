@@ -1,8 +1,8 @@
 import asyncio
 from enum import Enum
 from typing import List, Dict, Any, Optional, Set
+from app.domain.tuning.rag import RAGTuning
 from app.domain.interfaces.session import IDbSession
-
 from app.domain.interfaces.embedding_provider import IEmbeddingProvider
 from app.domain.interfaces.llm_provider import BaseLLMAdapter
 from app.domain.services.rag.base import RAGContext
@@ -100,8 +100,8 @@ class RAGPipeline:
                         collection="character_lore",
                         query_vector=query_vector,
                         query_text=cleaned_query,
-                        top_k=5,
-                        score_threshold=0.35
+                        top_k=RAGTuning.TOP_K,
+                        score_threshold=RAGTuning.SCORE_THRESHOLD
                     )
                 )
             if "WORLD_LORE" in intent_strs:
@@ -111,8 +111,8 @@ class RAGPipeline:
                         collection="world_lore",
                         query_vector=query_vector,
                         query_text=cleaned_query,
-                        top_k=5,
-                        score_threshold=0.35
+                        top_k=RAGTuning.TOP_K,
+                        score_threshold=RAGTuning.SCORE_THRESHOLD
                     )
                 )
             if "STORY_LORE" in intent_strs:
@@ -122,8 +122,8 @@ class RAGPipeline:
                         collection="story_lore",
                         query_vector=query_vector,
                         query_text=cleaned_query,
-                        top_k=5,
-                        score_threshold=0.35
+                        top_k=RAGTuning.TOP_K,
+                        score_threshold=RAGTuning.SCORE_THRESHOLD
                     )
                 )
             if "MEMORY" in intent_strs:
@@ -135,7 +135,7 @@ class RAGPipeline:
                         user_id=user_id,
                         current_emotion=current_emotions,
                         limit=10,
-                        top_k=5
+                        top_k=RAGTuning.TOP_K
                     )
                 )
 

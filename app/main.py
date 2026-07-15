@@ -1,14 +1,10 @@
 from __future__ import annotations
-
 from contextlib import asynccontextmanager
 from typing import AsyncIterator
-
 from pathlib import Path
-
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-
 from app.config.settings import settings
 from app.infrastructure.logging.logger import configure_logging, get_logger
 from app.infrastructure.database.engine import connect_database, disconnect_database

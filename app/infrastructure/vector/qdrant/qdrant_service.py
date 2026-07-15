@@ -1,7 +1,5 @@
 from __future__ import annotations
-
 from typing import Any, Optional
-
 from qdrant_client import AsyncQdrantClient
 from qdrant_client.http.models import (
     Distance,
@@ -13,7 +11,6 @@ from qdrant_client.http.models import (
     VectorParams,
 )
 from pydantic import BaseModel, ConfigDict, Field
-
 from app.config.settings import settings
 from app.infrastructure.logging.logger import get_logger
 from app.domain.entities.memory import MemoryTier, MemoryPayload

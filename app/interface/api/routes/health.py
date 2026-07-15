@@ -1,8 +1,6 @@
 from __future__ import annotations
-
 from fastapi import APIRouter
 from pydantic import BaseModel
-
 from app.infrastructure.database.engine import check_database_health
 from app.infrastructure.cache.redis.redis_service import redis_service
 from app.infrastructure.vector.qdrant.qdrant_service import qdrant_service

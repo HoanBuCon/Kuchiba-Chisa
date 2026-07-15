@@ -1,7 +1,5 @@
 from __future__ import annotations
-
 from enum import Enum
-
 
 class BudgetMode(str, Enum):
     SMALL_TALK = "small_talk"

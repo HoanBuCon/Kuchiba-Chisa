@@ -1,14 +1,10 @@
 from __future__ import annotations
-
 import logging
 import sys
 from typing import Any
-
 import structlog
 from structlog.types import EventDict, WrappedLogger
-
 from app.config.settings import settings
-
 
 def _add_service_info(
     logger: WrappedLogger,

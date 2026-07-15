@@ -1,6 +1,5 @@
 import uuid
 
-
 _CHISA_USER_ID_NAMESPACE = uuid.UUID("7d5e3f19-9c4b-4d17-8ef6-2d9f6fdfcf6a")
 
 

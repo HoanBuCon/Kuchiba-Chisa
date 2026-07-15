@@ -3,6 +3,8 @@ from typing import List, Dict, Optional
 from app.domain.interfaces.vector_store import IVectorStore
 from app.domain.services.rag.base import ScoredMemory
 from app.domain.services.rag.reranker import HybridMemoryScorer
+from app.domain.tuning.memory import MemoryTuning
+from app.domain.tuning.rag import RAGTuning
 from app.shared.utils.logger import get_logger
 
 log = get_logger(__name__)
@@ -23,7 +25,7 @@ class MemoryRetriever:
         user_id: str,
         current_emotion: Dict[str, float] = None,
         limit: int = 15,
-        top_k: int = 5
+        top_k: int = RAGTuning.TOP_K
     ) -> List[ScoredMemory]:
         try:
             candidates = await self.vector_store.search_by_user(
@@ -52,12 +54,12 @@ class MemoryRetriever:
             recency_score = self.scorer.calculate_recency(created_at, now)
             
             # Importance boosting by tier
-            importance_score = payload.get("importance_score", 0.5)
+            importance_score = payload.get("importance_score", MemoryTuning.IMPORTANCE_SCORE)
             tier = payload.get("memory_tier", "casual")
             if tier == "critical":
-                importance_score = min(1.0, importance_score + 0.2)
+                importance_score = min(1.0, importance_score + MemoryTuning.TIER_BOOST_RELATIONSHIP)
             elif tier == "personal":
-                importance_score = min(1.0, importance_score + 0.1)
+                importance_score = min(1.0, importance_score + MemoryTuning.TIER_BOOST_CORE)
                 
             # Emotion alignment match
             emotion_match_score = 0.5

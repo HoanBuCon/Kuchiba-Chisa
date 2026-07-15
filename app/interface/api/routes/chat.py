@@ -1,11 +1,9 @@
 import asyncio
 import json
 from typing import Callable, Optional, Any
-
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
-
 from app.infrastructure.database.engine import get_db_session
 from app.interface.api.schemas.chat import ChatRequest, ChatResponse
 from app.domain.services.chat_engine import ChatEngine, ChatEngineBusyError

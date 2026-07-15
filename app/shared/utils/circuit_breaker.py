@@ -2,7 +2,6 @@ import time
 from enum import Enum
 from typing import Callable, Any, Coroutine
 from functools import wraps
-
 from app.infrastructure.logging.logger import get_logger
 
 log = get_logger(__name__)

@@ -1,10 +1,10 @@
 import time
 import uuid
 from typing import Optional, List
-
 from app.domain.interfaces.embedding_provider import IEmbeddingProvider
 from app.domain.entities.memory import MemoryType, MemoryMetadata, MemoryPayload
 from app.domain.interfaces.vector_store import IVectorStore
+from app.domain.tuning.memory import MemoryTuning
 from app.shared.utils.logger import get_logger
 
 log = get_logger(__name__)
@@ -31,10 +31,10 @@ class MemoryManager:
         # Assuming emotion_delta has .joy, .sadness, etc. If it's a dict, we'd use .get
         emotion_magnitude = abs(getattr(emotion_delta, "joy", 0)) + abs(getattr(emotion_delta, "sadness", 0)) + \
                             abs(getattr(emotion_delta, "irritation", 0)) + abs(getattr(emotion_delta, "trust", 0))
-        importance += (emotion_magnitude * 2.5)
+        importance += (emotion_magnitude * MemoryTuning.EMOTION_MAGNITUDE_MULTIPLIER)
         
         if any(w in user_message.lower() for w in ["thích", "ghét", "sợ", "buồn", "yêu", "muốn", "tên anh", "anh là"]):
-            importance += 0.2
+            importance += MemoryTuning.NEUTRAL_EMOTION_BOOST
             
         return min(1.0, importance)
 
@@ -78,7 +78,7 @@ class MemoryManager:
         user_id: str,
         conversation_id: str,
         summary_text: str,
-        importance_score: float = 0.5,
+        importance_score: float = MemoryTuning.IMPORTANCE_SCORE,
     ) -> None:
         """
         Embeds a compressed conversation summary and stores it in Qdrant.

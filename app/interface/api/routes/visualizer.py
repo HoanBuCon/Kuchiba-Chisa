@@ -3,7 +3,6 @@ import asyncio
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse
 from typing import List, Dict, Any
-
 from app.infrastructure.logging.pipeline_tracker import pipeline_tracker
 
 router = APIRouter()

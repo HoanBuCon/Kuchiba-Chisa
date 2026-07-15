@@ -38,6 +38,7 @@ alembic/versions/*.pyc
 # Logs
 *.log
 logs/
+logs_test_telemetry/
 
 # OS
 .DS_Store

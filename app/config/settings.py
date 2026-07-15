@@ -100,6 +100,11 @@ class Settings(BaseSettings):
     PROMPT_REALLOCATE_EMPTY: bool = True
     MAX_RESPONSE_TOKENS: int = 20000
 
+    # ── LLM Telemetry Logging ──────────────────────────────────
+    LLM_LOG_FILE: str = "logs/llm_api.jsonl"
+    LLM_LOG_MAX_BYTES: int = 10 * 1024 * 1024  # 10 MB default
+    LLM_LOG_BACKUP_COUNT: int = 5
+
     # ── Derived Properties ─────────────────────────────────────
     @property
     def is_dev(self) -> bool:

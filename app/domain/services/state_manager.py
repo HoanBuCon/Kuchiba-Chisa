@@ -1,5 +1,6 @@
 from typing import Dict
 from app.domain.entities.emotion import EmotionState
+from app.domain.tuning.memory import EmotionTuning
 
 class StateManager:
     """
@@ -7,9 +8,9 @@ class StateManager:
     """
     @staticmethod
     def get_qualitative_label(value: float) -> str:
-        if value < 0.35:
+        if value < EmotionTuning.LABEL_THRESHOLD_LOW:
             return "Low"
-        elif value <= 0.70:
+        elif value <= EmotionTuning.LABEL_THRESHOLD_MEDIUM:
             return "Medium"
         else:
             return "High"
@@ -17,11 +18,11 @@ class StateManager:
     @classmethod
     def get_mood(cls, emotion: EmotionState) -> str:
         # Determine mood based on highest negative/positive emotions or default to calm
-        if emotion.sadness > 0.5:
+        if emotion.sadness > EmotionTuning.MOOD_THRESHOLD:
             return "Sad"
-        elif emotion.irritation > 0.5:
+        elif emotion.irritation > EmotionTuning.MOOD_THRESHOLD:
             return "Annoyed"
-        elif emotion.joy > 0.5:
+        elif emotion.joy > EmotionTuning.MOOD_THRESHOLD:
             return "Happy"
         return "Calm"
 

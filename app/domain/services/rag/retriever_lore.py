@@ -1,6 +1,7 @@
 from typing import List, Tuple, Optional
 from app.domain.interfaces.vector_store import IVectorStore
 from app.domain.services.rag.reranker import KeywordOverlapReranker
+from app.domain.tuning.rag import RAGTuning
 from app.shared.utils.logger import get_logger
 
 log = get_logger(__name__)
@@ -54,8 +55,8 @@ class LoreRetriever:
         collection: str,
         query_vector: List[float],
         query_text: str = "",
-        top_k: int = 5,
-        score_threshold: float = 0.35,
+        top_k: int = RAGTuning.TOP_K,
+        score_threshold: float = RAGTuning.SCORE_THRESHOLD,
     ) -> List[str]:
         try:
             if not self.vector_store:

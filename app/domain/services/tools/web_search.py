@@ -1,11 +1,10 @@
 import urllib.parse
 import re
 from typing import Any, Dict, List, Callable, Awaitable
-
-
 from app.domain.interfaces.llm_provider import BaseLLMAdapter, StructuredPrompt
 from app.domain.interfaces.embedding_provider import IEmbeddingProvider
 from app.domain.services.tools.base import BaseAgentTool
+from app.domain.tuning.rag import RAGTuning
 from app.config.settings import settings
 from app.shared.utils.logger import get_logger
 
@@ -137,13 +136,13 @@ class WebSearchAgentTool(BaseAgentTool):
         return res
 
     def _sanitize_query(self, query: str) -> str:
-        """Sanitizes search query, removing noise and limiting to max 6 keywords."""
+        """Sanitizes search query, removing noise and limiting to max keywords."""
         cleaned = re.sub(r'[^\w\sÀ-ỹ\-\.]', ' ', query)
         cleaned = re.sub(r'\s+', ' ', cleaned).strip()
         words = cleaned.split()
-        if len(words) > 6:
-            return " ".join(words[:6])
-        return cleaned
+        if len(words) > RAGTuning.MAX_SANITIZED_KEYWORDS:
+            return " ".join(words[:RAGTuning.MAX_SANITIZED_KEYWORDS])
+        return " ".join(words)
 
     async def _extract_search_query(
         self,

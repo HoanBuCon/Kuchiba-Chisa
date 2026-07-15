@@ -2,8 +2,6 @@ import asyncio
 import re
 import numpy as np
 from typing import Any, Dict, List, Optional, Tuple
-
-
 from app.domain.interfaces.llm_provider import BaseLLMAdapter
 from app.domain.interfaces.embedding_provider import IEmbeddingProvider
 from app.shared.utils.logger import get_logger

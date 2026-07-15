@@ -1,6 +1,5 @@
 """Conservative token estimation for Vietnamese + JSON prompt budgeting."""
 
-
 class TokenEstimator:
     """
     Sync token estimator for prompt budget enforcement.

@@ -4,10 +4,8 @@ import uuid
 import asyncio
 from typing import Tuple, Dict, Any, List, Optional, Callable, AsyncContextManager
 from app.domain.interfaces.session import IDbSession
-
 from app.config.settings import settings
 from app.shared.utils.background_tasks import BackgroundTaskManager
-
 from app.domain.interfaces.embedding_provider import IEmbeddingProvider
 from app.domain.interfaces.llm_provider import BaseLLMAdapter, StructuredPrompt
 from app.domain.entities.emotion import EmotionState
@@ -16,7 +14,6 @@ from app.domain.interfaces.vector_store import IVectorStore
 from app.domain.interfaces.repositories import IUserRepository, IEmotionRepository, IConversationRepository
 from app.domain.interfaces.uow import IUnitOfWork
 from app.domain.interfaces.cache_provider import ICacheProvider
-
 from app.domain.services.chat_pipeline.context import ChatContext
 from app.domain.services.chat_pipeline.stage import PipelineStage
 from app.shared.utils.logger import get_logger

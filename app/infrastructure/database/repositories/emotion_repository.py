@@ -1,10 +1,8 @@
 from __future__ import annotations
-
 import time
 import uuid
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-
 from app.infrastructure.database.models.emotion_state import EmotionState as EmotionStateModel
 from app.domain.interfaces.repositories import IEmotionRepository
 from app.domain.entities.emotion import EmotionState as EmotionStateEntity

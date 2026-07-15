@@ -5,13 +5,10 @@ Uses a sliding window counter per user_id (or IP fallback) to enforce
 request rate limits. Prevents LLM API quota exhaustion from spam.
 """
 from __future__ import annotations
-
 import time
-
 from fastapi import Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 from starlette.responses import JSONResponse
-
 from app.config.settings import settings
 from app.infrastructure.cache.redis.redis_service import redis_service
 from app.infrastructure.logging.logger import get_logger

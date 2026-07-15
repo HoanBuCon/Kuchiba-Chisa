@@ -1,10 +1,8 @@
 from __future__ import annotations
-
 import uuid
 from typing import Optional, List
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-
 from app.infrastructure.database.models.conversation import Conversation as ConversationModel
 from app.infrastructure.database.models.message import Message as MessageModel, MessageRole as MessageRoleModel
 from app.domain.interfaces.repositories import IConversationRepository

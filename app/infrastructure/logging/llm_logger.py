@@ -1,19 +1,61 @@
 import asyncio
 import os
-import re
-import datetime
-import contextvars
+import json
+import logging
+from logging.handlers import RotatingFileHandler
+from datetime import datetime, timezone
 from typing import Any, List
 from app.domain.interfaces.llm_provider import StructuredPrompt, LLMResponse
-
-LOG_FILE_PATH = "logs/llm_api_clean.txt"
-
+from app.config.settings import settings
 from app.domain.context import (
     request_question_idx,
     request_turn_idx,
     llm_call_purpose,
     enable_clean_log
 )
+from app.infrastructure.logging.pipeline_tracker import current_trace_var
+
+# ─── JSON Formatter ───────────────────────────────────────────────────────────
+
+class LLMTelemetryFormatter(logging.Formatter):
+    """Formats log records as JSON lines with an ISO8601 UTC timestamp."""
+    def format(self, record: logging.LogRecord) -> str:
+        if isinstance(record.msg, dict):
+            data = record.msg.copy()
+        else:
+            data = {"message": str(record.msg)}
+            
+        # Ensure timestamp is ISO8601 UTC
+        data["timestamp"] = datetime.now(timezone.utc).isoformat()
+        return json.dumps(data, ensure_ascii=False)
+
+
+# ─── Logger Initialization ────────────────────────────────────────────────────
+
+llm_telemetry_logger = logging.getLogger("llm_telemetry")
+llm_telemetry_logger.setLevel(logging.INFO)
+llm_telemetry_logger.propagate = False  # Do not propagate to root logger
+
+def _init_logger():
+    if not llm_telemetry_logger.handlers:
+        log_dir = os.path.dirname(settings.LLM_LOG_FILE)
+        if log_dir:
+            os.makedirs(log_dir, exist_ok=True)
+            
+        handler = RotatingFileHandler(
+            settings.LLM_LOG_FILE,
+            maxBytes=settings.LLM_LOG_MAX_BYTES,
+            backupCount=settings.LLM_LOG_BACKUP_COUNT,
+            encoding="utf-8"
+        )
+        handler.setFormatter(LLMTelemetryFormatter())
+        llm_telemetry_logger.addHandler(handler)
+
+# Initialize on module load
+_init_logger()
+
+
+# ─── Purpose Labels ───────────────────────────────────────────────────────────
 
 LLM_PURPOSE_LABELS: dict[str, str] = {
     "chat_response": "Trả lời Chisa (call chính)",
@@ -21,7 +63,6 @@ LLM_PURPOSE_LABELS: dict[str, str] = {
     "web_search_query_extract": "Web Search · trích query",
     "unknown": "LLM call (không gắn nhãn)",
 }
-
 
 def purpose_label(purpose: str) -> str:
     if purpose in LLM_PURPOSE_LABELS:
@@ -32,6 +73,8 @@ def purpose_label(purpose: str) -> str:
     return purpose
 
 
+# ─── Routing Logger ───────────────────────────────────────────────────────────
+
 def _write_routing_log_sync(
     user_message: str,
     is_small_talk: bool,
@@ -41,26 +84,23 @@ def _write_routing_log_sync(
     tool_result: str,
     q_idx: int
 ) -> None:
-    now_str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    trace = current_trace_var.get()
     
-    log_content = f"""================================================================================
-LẦN HỎI {q_idx}
-================================================================================
-Thời gian: {now_str}
-Tin nhắn của User: "{user_message}"
-
-[SEMANTIC ROUTING & TOOL DECISION]
-- Phân loại kiểu tin nhắn: {"Small Talk (Bypass RAG)" if is_small_talk else "Lore Talk (Truy cập RAG)"}
-- Định tuyến intent (Semantic Router): {intents}
-- Định tuyến Tool (Semantic Tool Router): Tool = "{tool_name}" (Confidence: {tool_score:.4f})
-- Kết quả thực thi Tool: {tool_result if tool_result else "Không kích hoạt hoặc bỏ qua"}
-
-================================================================================
-
-"""
-    with open(LOG_FILE_PATH, "a", encoding="utf-8") as f:
-        f.write(log_content)
-
+    payload = {
+        "event_type": "semantic_routing",
+        "request_id": trace.get("id") if trace else None,
+        "user_id": trace.get("user_id") if trace else None,
+        "question_idx": q_idx,
+        "user_message": user_message,
+        "is_small_talk": is_small_talk,
+        "intents": intents,
+        "tool_routing": {
+            "tool_name": tool_name,
+            "confidence": tool_score,
+            "result_summary": tool_result if tool_result else None
+        }
+    }
+    llm_telemetry_logger.info(payload)
 
 async def log_routing_transaction(
     user_message: str,
@@ -70,10 +110,6 @@ async def log_routing_transaction(
     tool_score: float,
     tool_result: str
 ) -> None:
-    """
-    Asynchronously logs the Semantic Routing & Tool Decisions to the clean txt file.
-    Runs inside a thread pool to avoid blocking the event loop.
-    """
     try:
         if not enable_clean_log.get():
             return
@@ -89,118 +125,63 @@ async def log_routing_transaction(
             q_idx
         )
     except Exception as e:
-        import logging
-        logging.getLogger(__name__).warning(f"Failed to write clean Routing log: {e}")
+        import logging as py_logging
+        py_logging.getLogger(__name__).warning(f"Failed to write routing telemetry: {e}")
 
+
+# ─── LLM Transaction Logger ───────────────────────────────────────────────────
 
 def _write_log_sync(prompt: StructuredPrompt, response: LLMResponse, q_idx: int, t_idx: int) -> None:
-    now_str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    trace = current_trace_var.get()
+    purpose = llm_call_purpose.get()
     
-    # Format chat history
-    history_lines = []
-    if prompt.history:
-        for msg in prompt.history:
-            role = msg.get("role", "unknown")
-            content = msg.get("content", "")
-            history_lines.append(f"- {role}: {content}")
-    else:
-        history_lines.append("(Không có lịch sử trò chuyện)")
-    history_str = "\n".join(history_lines)
-    
-    # Format parsed response
-    parsed_lines = []
-    if response.parsed:
-        for k, v in response.parsed.items():
-            parsed_lines.append(f"{k}: {v}")
-    else:
-        parsed_lines.append("(Không thể phân tích dữ liệu)")
-    parsed_str = "\n".join(parsed_lines)
-    
-    # Format RAG information
+    # Extract retrieval metadata
     decisions = prompt.rag_decisions or {}
-    use_lore = decisions.get("use_lore", False)
-    use_memory = decisions.get("use_memory", False)
-    decisions_str = f"Lấy Lore (use_lore): {use_lore} | Lấy Ký ức (use_memory): {use_memory}"
+    retrieval_metadata = {
+        "use_lore": decisions.get("use_lore", False),
+        "use_memory": decisions.get("use_memory", False),
+        "lore_count": len(prompt.retrieved_lore) if prompt.retrieved_lore else 0,
+        "memory_count": len(prompt.retrieved_memories) if prompt.retrieved_memories else 0
+    }
     
-    lore_lines = []
-    if prompt.retrieved_lore:
-        for i, chunk in enumerate(prompt.retrieved_lore, 1):
-            chunk_snippet = chunk.replace("\n", " ").strip()
-            lore_lines.append(f"  + Mảnh {i}: {chunk_snippet}")
-    else:
-        lore_lines.append("  (Không có dữ liệu Lore được lấy)")
-    lore_str = "\n".join(lore_lines)
+    # Optional intent from trace
+    intent = None
+    if trace and "steps" in trace:
+        for step in trace["steps"]:
+            if step.get("name") == "intent_stage":
+                intent = step.get("data", {}).get("intents")
+                break
     
-    memory_lines = []
-    if prompt.retrieved_memories:
-        for i, mem in enumerate(prompt.retrieved_memories, 1):
-            text = getattr(mem, "text_content", str(mem))
-            tier = getattr(mem, "memory_tier", "N/A")
-            score = getattr(mem, "final_score", 0.0)
-            comps = getattr(mem, "components", {})
-            memory_lines.append(f"  + Ký ức {i}: {text} (Loại: {tier}, Score: {score:.4f}, Components: {comps})")
-    else:
-        memory_lines.append("  (Không có dữ liệu Ký ức được lấy)")
-    memories_str = "\n".join(memory_lines)
-    
-    log_content = f"""===== LƯỢT {t_idx} =====
-LẦN HỎI: {q_idx}
-Thời gian: {now_str}
-Model sử dụng: {response.model}
-
---------------------------------------------------------------------------------
-[1. REQUEST GỬI LÊN API LLM]
---------------------------------------------------------------------------------
-[RAG RETRIEVAL INFO]
-- Quyết định RAG Router: {decisions_str}
-- Kết quả truy xuất Lore:
-{lore_str}
-- Kết quả truy xuất Memory:
-{memories_str}
-
-[SYSTEM PROMPT]
-{prompt.system}
-
-[CHAT HISTORY]
-{history_str}
-
-[USER MESSAGE]
-{prompt.user_message}
-
---------------------------------------------------------------------------------
-[2. RESPONSE TRẢ VỀ TỪ API LLM]
---------------------------------------------------------------------------------
-[FINISH REASON]
-{response.finish_reason}
-
-[USAGE METADATA]
-Input Tokens: {response.input_tokens}
-Output Tokens: {response.output_tokens}
-Total Tokens: {response.input_tokens + response.output_tokens}
-
-[RAW CONTENT]
-{response.raw_content}
-
-[PARSED JSON]
-{parsed_str}
-
-================================================================================
-
-"""
-    # Open with 'a' mode for appending, encoding utf-8 to support Vietnamese
-    with open(LOG_FILE_PATH, "a", encoding="utf-8") as f:
-        f.write(log_content)
-
+    payload = {
+        "event_type": "llm_generation",
+        "request_id": trace.get("id") if trace else None,
+        "user_id": trace.get("user_id") if trace else None,
+        "provider": settings.LLM_PROVIDER,
+        "model": response.model,
+        "purpose": purpose,
+        "purpose_label": purpose_label(purpose),
+        "latency_ms": 0.0,  # Not tracked at this layer yet
+        "prompt_tokens": response.input_tokens,
+        "completion_tokens": response.output_tokens,
+        "total_tokens": response.input_tokens + response.output_tokens,
+        "intent": intent,
+        "retrieval_metadata": retrieval_metadata,
+        "status": "success",
+        
+        # Additional debug details
+        "details": {
+            "question_idx": q_idx,
+            "turn_idx": t_idx,
+            "finish_reason": response.finish_reason,
+            "parsed_response": response.parsed
+        }
+    }
+    llm_telemetry_logger.info(payload)
 
 async def log_llm_transaction(prompt: StructuredPrompt, response: LLMResponse) -> None:
-    """
-    Asynchronously logs a complete LLM transaction (Request & Response) to a clean txt file.
-    Runs inside a thread pool to avoid blocking the event loop.
-    """
     try:
         q_idx = request_question_idx.get()
         t_idx = request_turn_idx.get()
-        # Increment the turn counter in the request context (main thread)
         request_turn_idx.set(t_idx + 1)
         
         # Add LLM call step to the pipeline tracker
@@ -230,6 +211,5 @@ async def log_llm_transaction(prompt: StructuredPrompt, response: LLMResponse) -
 
         await asyncio.to_thread(_write_log_sync, prompt, response, q_idx, t_idx)
     except Exception as e:
-        # Prevent logging errors from crashing the main chat flow
-        import logging
-        logging.getLogger(__name__).warning(f"Failed to write clean LLM log: {e}")
+        import logging as py_logging
+        py_logging.getLogger(__name__).warning(f"Failed to write LLM telemetry: {e}")

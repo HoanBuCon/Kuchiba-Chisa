@@ -1,10 +1,8 @@
 from __future__ import annotations
-
 import time
 import uuid
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-
 from app.infrastructure.database.models.user import User as UserModel
 from app.infrastructure.database.models.user_stats import UserStats as UserStatsModel
 from app.domain.interfaces.repositories import IUserRepository

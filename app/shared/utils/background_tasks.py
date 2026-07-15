@@ -7,10 +7,9 @@ Replaces raw asyncio.create_task() calls scattered across the codebase to preven
 - No graceful shutdown for running tasks
 """
 from __future__ import annotations
-
 import asyncio
+import weakref
 from typing import Coroutine, Optional
-
 from app.infrastructure.logging.logger import get_logger
 
 log = get_logger(__name__)
@@ -23,7 +22,7 @@ class BackgroundTaskManager:
     exceptions are automatically logged instead of being silently swallowed.
     """
 
-    _tasks: set[asyncio.Task] = set()
+    _tasks_per_loop: weakref.WeakKeyDictionary[asyncio.AbstractEventLoop, set[asyncio.Task]] = weakref.WeakKeyDictionary()
 
     @classmethod
     def spawn(
@@ -42,16 +41,24 @@ class BackgroundTaskManager:
         Returns:
             The created asyncio.Task.
         """
-        task = asyncio.create_task(coro, name=name)
-        cls._tasks.add(task)
+        loop = asyncio.get_running_loop()
+        if loop not in cls._tasks_per_loop:
+            cls._tasks_per_loop[loop] = set()
+
+        task = loop.create_task(coro, name=name)
+        cls._tasks_per_loop[loop].add(task)
         task.add_done_callback(cls._on_task_done)
-        log.debug("Background task spawned", task_name=name or "unnamed", total_active=len(cls._tasks))
+        log.debug("Background task spawned", task_name=name or "unnamed", total_active=cls.active_count())
         return task
 
     @classmethod
     def _on_task_done(cls, task: asyncio.Task) -> None:
         """Callback fired when a tracked task completes or fails."""
-        cls._tasks.discard(task)
+        loop = task.get_loop()
+        tasks = cls._tasks_per_loop.get(loop)
+        if tasks is not None:
+            tasks.discard(task)
+        
         task_name = task.get_name() or "unnamed"
 
         if task.cancelled():
@@ -70,32 +77,38 @@ class BackgroundTaskManager:
     @classmethod
     async def shutdown(cls, timeout: float = 10.0) -> None:
         """
-        Cancel all running background tasks and wait for them to finish.
+        Cancel all running background tasks for the current event loop and wait for them to finish.
         Called during application shutdown.
         """
-        if not cls._tasks:
+        loop = asyncio.get_running_loop()
+        tasks = cls._tasks_per_loop.pop(loop, set())
+        
+        if not tasks:
             log.info("No background tasks to shut down")
             return
 
-        count = len(cls._tasks)
+        count = len(tasks)
         log.info("Shutting down background tasks", count=count, timeout=timeout)
 
-        # Cancel all tasks
-        for task in cls._tasks:
+        # Cancel all tasks for this loop
+        for task in tasks:
             task.cancel()
 
         # Wait for all tasks to finish (cancelled or not)
-        results = await asyncio.gather(*cls._tasks, return_exceptions=True)
+        results = await asyncio.gather(*tasks, return_exceptions=True)
 
         # Log any non-cancellation errors
         errors = [r for r in results if isinstance(r, Exception) and not isinstance(r, asyncio.CancelledError)]
         if errors:
             log.warning("Some background tasks failed during shutdown", error_count=len(errors))
 
-        cls._tasks.clear()
         log.info("Background task shutdown complete", original_count=count)
 
     @classmethod
     def active_count(cls) -> int:
-        """Returns the number of currently running background tasks."""
-        return len(cls._tasks)
+        """Returns the number of currently running background tasks for the current event loop."""
+        try:
+            loop = asyncio.get_running_loop()
+            return len(cls._tasks_per_loop.get(loop, set()))
+        except RuntimeError:
+            return 0

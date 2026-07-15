@@ -1,7 +1,5 @@
 from __future__ import annotations
-
 from typing import AsyncGenerator
-
 from sqlalchemy.ext.asyncio import (
     AsyncEngine,
     AsyncSession,
@@ -9,7 +7,7 @@ from sqlalchemy.ext.asyncio import (
     create_async_engine,
 )
 from sqlalchemy.orm import DeclarativeBase
-
+from sqlalchemy import text
 from app.config.settings import settings
 from app.infrastructure.logging.logger import get_logger
 
@@ -74,7 +72,7 @@ async def check_database_health() -> bool:
     """Returns True if the database is reachable."""
     try:
         async with AsyncSessionFactory() as session:
-            await session.execute(__import__("sqlalchemy").text("SELECT 1"))
+            await session.execute(text("SELECT 1"))
         return True
     except Exception as e:
         log.error("Database health check failed", error=str(e))

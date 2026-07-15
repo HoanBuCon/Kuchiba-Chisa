@@ -6,7 +6,6 @@ being streamed from an LLM.
 
 import re
 
-
 class IncrementalJsonParser:
     """
     Parses a JSON stream chunk by chunk, extracting only the value of the "response" key.

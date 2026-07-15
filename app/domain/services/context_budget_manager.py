@@ -1,9 +1,7 @@
 from __future__ import annotations
-
 import logging
 from dataclasses import dataclass, field
 from typing import Any
-
 from app.config.settings import get_settings
 from app.domain.services.budget_mode import BudgetMode
 from app.shared.utils.token_estimator import TokenEstimator
