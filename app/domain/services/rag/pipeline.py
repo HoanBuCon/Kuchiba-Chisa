@@ -89,35 +89,44 @@ class RAGPipeline:
         """
         lore_scored = []
         memories = []
+        lore_chunks = []
+        queried_lore_cols = []
         intent_strs = self._normalize_intents(intents)
-        should_retrieve = bool(intent_strs - {"OTHER", "SYSTEM_ACTION"})
+        should_retrieve = not is_small_talk
         
-        # 1. Standard retrieval from Qdrant (parallelized)
+        LORE_COLLECTIONS = ["character_lore", "world_lore", "story_lore"]
+
+        # 1. Standard retrieval from Qdrant (parallelized across all lore collections)
         if query_vector and not is_small_talk and should_retrieve:
             retrieval_tasks = []
             active_intents = []
 
-            if "LORE" in intent_strs:
-                active_intents.append("LORE")
-                
-                # Optional: Expand entities for payload boosting (if implemented in retriever)
+            # Perform lore retrieval if explicit LORE intent or fallback for OTHER
+            should_fetch_lore = "LORE" in intent_strs or "OTHER" in intent_strs
+
+            if should_fetch_lore:
                 extracted = set()
+                expanded = set()
                 if self.entity_resolver:
                     extracted = self.entity_resolver.extract_entities(cleaned_query)
                     expanded = self.entity_resolver.expand_entities(extracted)
                     log.info("Entity Resolver Output", extracted=list(extracted), expanded=list(expanded))
-                
-                retrieval_tasks.append(
-                    self.lore_retriever.retrieve_lore_parent_child(
-                        collection="lore",
-                        query_vector=query_vector,
-                        session=session,
-                        query_text=cleaned_query,
-                        top_k=RAGTuning.TOP_K,
-                        score_threshold=RAGTuning.SCORE_THRESHOLD,
-                        entities_filter=list(expanded) if expanded else None
+
+                for col_name in LORE_COLLECTIONS:
+                    active_intents.append("LORE")
+                    queried_lore_cols.append(col_name)
+                    retrieval_tasks.append(
+                        self.lore_retriever.retrieve_lore_parent_child(
+                            collection=col_name,
+                            query_vector=query_vector,
+                            session=session,
+                            query_text=cleaned_query,
+                            top_k=RAGTuning.TOP_K,
+                            score_threshold=RAGTuning.SCORE_THRESHOLD,
+                            entities_filter=list(expanded) if expanded else None
+                        )
                     )
-                )
+
             if "MEMORY" in intent_strs:
                 active_intents.append("MEMORY")
                 retrieval_tasks.append(
@@ -133,8 +142,18 @@ class RAGPipeline:
 
             if retrieval_tasks:
                 try:
-                    results = await asyncio.gather(*retrieval_tasks)
+                    results = []
+                    for task in retrieval_tasks:
+                        try:
+                            res = await task
+                        except Exception as e:
+                            res = e
+                        results.append(res)
+
                     for intent_type, retrieved_data in zip(active_intents, results):
+                        if isinstance(retrieved_data, Exception):
+                            log.warning("Retrieval sub-task failed", error=str(retrieved_data))
+                            continue
                         if intent_type == "MEMORY":
                             # Deduplicate memories by content
                             for m in retrieved_data:
@@ -154,12 +173,10 @@ class RAGPipeline:
 
                 except Exception as ex:
                     log.error("Failed to retrieve data from Qdrant vector database", error=str(ex))
-        else:
-            lore_chunks = []
 
         # 1.1 Track retrieval step in real-time
         self.pipeline_tracker.add_step("rag_retrieval", {
-            "lore_collections_queried": ["lore"] if "LORE" in intent_strs else [],
+            "lore_collections_queried": queried_lore_cols,
             "retrieved_lore_chunks": lore_chunks,
             "retrieved_memories": memories
         })
@@ -178,7 +195,7 @@ class RAGPipeline:
         alignment_reason = "Small talk or system bypass"
         search_query = ""
         use_lore = True
-        if not is_small_talk and query_vector:
+        if not is_small_talk:
             is_aligned, alignment_reason, search_query, use_lore = await self.assessor.assess_alignment(
                 user_message=user_message,
                 context_text=retrieved_context_str,

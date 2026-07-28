@@ -97,6 +97,22 @@ class IConversationRepository(Protocol):
         """
         ...
 
+    async def get_latest_summary(
+        self, user_id: uuid.UUID, conversation_id: uuid.UUID
+    ) -> Optional[str]:
+        """
+        Retrieves the latest summary string for a conversation if available.
+        """
+        ...
+
+    async def update_conversation_summary(
+        self, conversation_id: uuid.UUID, summary: str
+    ) -> None:
+        """
+        Updates the summary field for a conversation.
+        """
+        ...
+
     async def delete_all_for_user(self, user_id: uuid.UUID) -> None:
         """
         Deletes all conversations and messages for a user.

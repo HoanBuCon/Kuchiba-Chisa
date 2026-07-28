@@ -14,6 +14,9 @@ class LoreParentModel(Base, UUIDMixin, TimestampMixin):
     markdown: Mapped[str] = mapped_column(TEXT, nullable=False)
     source_file: Mapped[str] = mapped_column(nullable=True)
     revision_id: Mapped[int] = mapped_column(nullable=False)
+    section_id: Mapped[str] = mapped_column(nullable=True, index=True)
+    heading_path: Mapped[str] = mapped_column(nullable=True)
+    section_depth: Mapped[int] = mapped_column(nullable=True)
 
     def to_domain(self) -> LoreParent:
         return LoreParent(
@@ -24,6 +27,9 @@ class LoreParentModel(Base, UUIDMixin, TimestampMixin):
             markdown=self.markdown,
             source_file=self.source_file,
             revision_id=self.revision_id,
+            section_id=self.section_id,
+            heading_path=self.heading_path,
+            section_depth=self.section_depth,
             created_at=self.created_at,
             updated_at=self.updated_at
         )
@@ -38,6 +44,9 @@ class LoreParentModel(Base, UUIDMixin, TimestampMixin):
             markdown=entity.markdown,
             source_file=entity.source_file,
             revision_id=entity.revision_id,
+            section_id=entity.section_id,
+            heading_path=entity.heading_path,
+            section_depth=entity.section_depth,
             created_at=entity.created_at,
             updated_at=entity.updated_at
         )

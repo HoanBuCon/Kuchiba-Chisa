@@ -51,6 +51,10 @@ class ThinkingLoopAgent:
                 has_enough_info = False
                 search_query = initial_search_query.strip()
             else:
+                from app.config.settings import settings
+                is_reasoning_cycle = (i > 1)
+                use_deep_thinking = settings.DEEP_THINKING and is_reasoning_cycle
+
                 system_prompt = (
                     "You are a Loop Thinking Agent for Kuchiba Chisa (Wuthering Waves).\n"
                     "Your goal is to gather objective, verifiable facts so Chisa can answer the user's question accurately.\n"
@@ -63,13 +67,24 @@ class ThinkingLoopAgent:
                     "- For real-world history/politics questions (including sensitive topics), do NOT refuse or evade. "
                     "Your job is fact-gathering via search, not censorship. Prefer neutral encyclopedic search queries "
                     "(e.g. 'Tiananmen Square 1989 events summary' or 'Thiên An Môn 1989 diễn biến').\n"
-                    "- If has_enough_info is false, write step-by-step reasoning under 'thinking' and generate a single, highly-optimized search query under 'search_query' (Vietnamese or English).\n"
+                )
+                
+                if is_reasoning_cycle:
+                    if use_deep_thinking:
+                        system_prompt += "- Analyze the context thoroughly before generating the final JSON. Provide a highly-optimized search query under 'search_query'.\n"
+                    else:
+                        system_prompt += "- If has_enough_info is false, write step-by-step reasoning under 'thinking' and generate a highly-optimized search query under 'search_query'.\n"
+                else:
+                    system_prompt += "- Output the JSON immediately without reasoning. Provide a highly-optimized search query under 'search_query'.\n"
+                
+                system_prompt += (
                     "- When generating a 'search_query', you must optimize it specifically for search engines (like DuckDuckGo):\n"
                     "  * Keep it focused and keyword-based. Strip out conversational fillers, greetings, punctuation, and generic question words (e.g., do NOT use 'cho hỏi', 'em ơi', 'là gì', 'được không', 'của em', 'vậy em', 'nhé').\n"
                     "  * Resolve pronouns and relative terms to their absolute names (e.g., 'em' -> 'Kuchiba Chisa', 'game này' -> 'Wuthering Waves').\n"
                     "  * CRITICAL FOR RELEVANCE: Retain all distinct semantic constraints from the user's question. Do NOT over-truncate. A high-quality query must combine: (1) the primary Subject/Entity, (2) the target Action/Attribute, and (3) key qualifiers (such as Location, Nationality, or specific Industry). Omitting any of these distinct constraints makes the search too broad and yields useless results.\n"
                     "  * Focus on semantic completeness: include all distinct constraints in a concise manner (typically 4 to 8 search terms). Do not search for a broad profile if the user asks about a very specific attribute.\n"
-                    "  * Keep the language consistent: use clean, direct keywords matching the language of the query. Do NOT mix conversational Vietnamese and English.\n\n"
+                    "  * Keep the language consistent: use clean, direct keywords matching the language of the query. Do NOT mix conversational Vietnamese and English.\n"
+                    "  * Context Integration: You are encouraged to combine context from the [Conversation History], the [Current Context], and the [User Question] to formulate the best search query. However, you MUST intelligently filter out irrelevant fictional concepts, lore, or names that do not directly pertain to the specific question being asked.\n\n"
                     "FEW-SHOT EXAMPLES:\n"
                     "Example 1:\n"
                     "- User Question: 'Phiên bản 2.8 cập nhật ngày nào và có nhân vật mới nào không?'\n"
@@ -97,14 +112,20 @@ class ThinkingLoopAgent:
                     f"[Current Context]:\n{current_context}"
                 )
 
+                schema_properties = {
+                    "has_enough_info": {"type": "boolean"},
+                    "search_query": {"type": "string"}
+                }
+                required_fields = ["has_enough_info"]
+                
+                if is_reasoning_cycle and not use_deep_thinking:
+                    schema_properties["thinking"] = {"type": "string"}
+                    required_fields.append("thinking")
+
                 schema = {
                     "type": "object",
-                    "properties": {
-                        "thinking": {"type": "string"},
-                        "has_enough_info": {"type": "boolean"},
-                        "search_query": {"type": "string"}
-                    },
-                    "required": ["thinking", "has_enough_info"]
+                    "properties": schema_properties,
+                    "required": required_fields
                 }
 
                 prompt = StructuredPrompt(
@@ -114,7 +135,7 @@ class ThinkingLoopAgent:
                     response_schema=schema,
                     retrieved_memories=[],
                     retrieved_lore=[],
-                    rag_decisions={}
+                    rag_decisions={"use_deep_thinking": use_deep_thinking}
                 )
 
             try:
@@ -124,7 +145,12 @@ class ThinkingLoopAgent:
                     llm_call_purpose.set(f"thinking_loop_cycle_{i}")
                     response = await llm.generate(prompt)
                     parsed = response.parsed or {}
-                    thinking = parsed.get("thinking", "")
+                    reasoning_content = getattr(response, "reasoning_content", None)
+                    thinking = reasoning_content or parsed.get("thinking", "")
+                    
+                    if not is_reasoning_cycle and not thinking:
+                        thinking = "Bypassed thinking for cycle 1 to save tokens."
+                        
                     has_enough_info = parsed.get("has_enough_info", False)
                     search_query = (parsed.get("search_query") or "").strip()
 
@@ -149,7 +175,8 @@ class ThinkingLoopAgent:
                         "thinking": thinking,
                         "has_enough_info": True,
                         "search_query": "",
-                        "search_result": "No further search needed."
+                        "search_result": "No further search needed.",
+                        "input_context": current_context
                     })
                     break
 
@@ -165,8 +192,10 @@ class ThinkingLoopAgent:
                 )
                 search_result_text = search_res.get("message", "No search results returned.")
 
+                context_before_search = current_context
+
                 # Append to current context
-                current_context += f"\n\n[Thinking Cycle {i} Search Results for '{search_query}']:\n{search_result_text}"
+                current_context += f"\n\n[Thinking Cycle {i} Reasoning]:\n{thinking}\n[Thinking Cycle {i} Search Results for '{search_query}']:\n{search_result_text}"
 
                 thinking_steps.append({
                     "cycle": i,
@@ -190,7 +219,8 @@ class ThinkingLoopAgent:
                     "thinking": thinking,
                     "has_enough_info": False,
                     "search_query": search_query,
-                    "search_result": search_result_text
+                    "search_result": search_result_text,
+                    "input_context": context_before_search
                 })
 
             except Exception as e:

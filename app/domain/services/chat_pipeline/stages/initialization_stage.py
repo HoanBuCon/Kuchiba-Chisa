@@ -1,4 +1,5 @@
 import math
+import asyncio
 from typing import Callable
 from app.domain.interfaces.session import IDbSession
 
@@ -35,19 +36,24 @@ class InitializationStage(PipelineStage):
         emotion_repo = self.emotion_repo_factory(context.session)
         conv_repo = self.conv_repo_factory(context.session)
         
+        # 1. Ensure user exists first (FK constraint)
         await user_repo.get_or_create_user(user_uuid)
+
+        # 2. Sequentialize independent user stats, emotion state, and conversation ID reads (SQLAlchemy session is not thread-safe)
         stats = await user_repo.get_user_stats(user_uuid)
         emotion = await emotion_repo.get_emotion_state(user_uuid)
         conv_id = await conv_repo.get_or_create_conversation(user_uuid)
         
-        # Trigger auto-summarize based on interaction count
-        if stats.interaction_count >= 20 and stats.interaction_count % 10 == 0:
+        # Trigger incremental merge auto-summarize every 30 interactions (O(1) cost)
+        if stats.interaction_count >= 30 and stats.interaction_count % 30 == 0:
             BackgroundTaskManager.spawn(
                 self.auto_summarize_callback(context.user_id, conv_id),
                 name=f"auto_summarize:{context.user_id}",
             )
 
+        # 3. Sequentialize conversation history and summary reads
         history = await conv_repo.get_recent_history(user_uuid, conv_id, limit=40)
+        summary = await conv_repo.get_latest_summary(user_uuid, conv_id)
 
         # Initialize ContextVars for request-scoped logging
         question_idx = len([m for m in history if m.get("role") == "user"]) + 1
@@ -70,6 +76,7 @@ class InitializationStage(PipelineStage):
         context.stats = stats
         context.emotion = emotion
         context.history = history
+        context.conversation_summary = summary
         context.attachment_bonus_raw = attachment_bonus_raw
         context.current_emotions = current_emotions
 

@@ -108,7 +108,8 @@ class ChatEngine:
             if cached_answer:
                 log.info("Redis Answer Cache HIT", user_id=user_id, query_hash=query_hash)
                 current_emotion = await self.get_emotion_state(session, user_id)
-                return cached_answer, current_emotion.to_dict()
+                emotion_dict = current_emotion.model_dump() if hasattr(current_emotion, "model_dump") else current_emotion.dict()
+                return cached_answer, emotion_dict
 
             # 2. Run Pipeline on Cache Miss
             context = ChatContext(
@@ -181,7 +182,7 @@ class ChatEngine:
                     for point in points:
                         point = point.strip()
                         if len(point) > 5:
-                            vector = await self.embedder.embed_text(point)
+                            vector = await self.embedder.embed_text(point, prefix="passage: ")
                             point_id = str(uuid.uuid4())
                             payload = MemoryPayload(
                                 user_id=user_id,
@@ -203,7 +204,10 @@ class ChatEngine:
 
     async def _auto_summarize_conversation(self, user_id: str, conv_id: uuid.UUID) -> None:
         """
-        Background task to auto-summarize the conversation if message count >= 20.
+        Background incremental merge summarization — O(1) token cost per call.
+        Merges last 60 messages with previous summary (if exists),
+        then overwrites conversations.summary in PostgreSQL.
+        Full refresh every 500 interactions to prevent quality degradation.
         """
         log.info("Starting background conversation auto-summarization...", conv_id=str(conv_id))
         async with self.db_session_factory() as session:
@@ -211,31 +215,71 @@ class ChatEngine:
                 from app.shared.utils.user_identity import normalize_user_id
                 user_uuid = normalize_user_id(user_id)
                 conv_repo = self.conv_repo_factory(session)
-                msgs = await conv_repo.get_recent_history(user_uuid, conv_id, limit=1000)
+                user_repo = self.user_repo_factory(session)
+
+                # 1. Load previous summary & interaction count for full-refresh check
+                previous_summary = await conv_repo.get_latest_summary(user_uuid, conv_id)
+                stats = await user_repo.get_user_stats(user_uuid)
+                is_full_refresh = stats and stats.interaction_count > 0 and stats.interaction_count % 500 == 0
+
+                # 2. Load only last 60 messages (O(1) regardless of conversation length)
+                msgs = await conv_repo.get_recent_history(user_uuid, conv_id, limit=60)
                 if not msgs:
-                    log.info("No messages in conversation to auto-summarize", conv_id=str(conv_id))
+                    log.info("No messages to auto-summarize", conv_id=str(conv_id))
                     return
 
-                # Build chat transcript for LLM
-                chat_transcript = "\n".join([f"{m['role'].upper()}: {m['content']}" for m in msgs])
-
-                system_prompt = (
-                    "You are a conversation summarizer for Kuchiba Chisa, a character from Wuthering Waves.\n"
-                    "Analyze the conversation transcript provided and summarize the key discussion points, "
-                    "user's preferences, interests, emotional vibe, and current relationship context.\n"
-                    "Keep the summary concise, informative, in Vietnamese, and write it in a structured paragraph or bullet points.\n"
-                    "You MUST output the result as a valid JSON object matching the requested schema containing a 'summary' key."
+                new_transcript = "\n".join(
+                    f"{m['role'].upper()}: {m['content']}" for m in msgs
                 )
+
+                # 3. Build prompt: merge or fresh
+                MERGE_SYSTEM_PROMPT = (
+                    "You are UPDATING (not creating from scratch) a conversation summary "
+                    "for Kuchiba Chisa, a character from Wuthering Waves.\n\n"
+                    "CRITICAL RULES:\n"
+                    "- PRESERVE ALL important details from the previous summary "
+                    "(user preferences, personal facts, emotional events, relationship milestones).\n"
+                    "- INTEGRATE new information from the recent messages.\n"
+                    "- REMOVE duplicates and merge related points.\n"
+                    "- The output must be a STANDALONE, COMPLETE summary — "
+                    "do NOT reference the previous summary or raw messages.\n"
+                    "- Keep it concise, in Vietnamese, as structured bullet points or a short paragraph.\n"
+                    "You MUST output a valid JSON object matching the requested schema containing a 'summary' key."
+                )
+
+                FRESH_SYSTEM_PROMPT = (
+                    "You are a conversation summarizer for Kuchiba Chisa, a character from Wuthering Waves.\n"
+                    "Analyze the conversation transcript and summarize the key discussion points, "
+                    "user's preferences, interests, emotional vibe, and current relationship context.\n"
+                    "Keep the summary concise, informative, in Vietnamese, as structured bullet points or a short paragraph.\n"
+                    "You MUST output a valid JSON object matching the requested schema containing a 'summary' key."
+                )
+
+                if previous_summary and previous_summary.strip() and not is_full_refresh:
+                    user_message = (
+                        f"Previous summary:\n{previous_summary}\n\n"
+                        f"New messages to merge:\n{new_transcript}"
+                    )
+                    system_prompt = MERGE_SYSTEM_PROMPT
+                    log.info("Incremental merge mode", conv_id=str(conv_id))
+                else:
+                    user_message = f"Please summarize this conversation transcript:\n\n{new_transcript}"
+                    system_prompt = FRESH_SYSTEM_PROMPT
+                    if is_full_refresh:
+                        log.info("Full refresh mode (500-interaction milestone)", conv_id=str(conv_id))
+                    else:
+                        log.info("Fresh summarize mode (no previous summary)", conv_id=str(conv_id))
 
                 from app.domain.services.tool_router import LLMToolRouter
                 prompt = StructuredPrompt(
                     system=system_prompt,
                     history=[],
-                    user_message=f"Please summarize this conversation transcript:\n\n{chat_transcript}",
+                    user_message=user_message,
                     response_schema=LLMToolRouter.SUMMARIZE_CONVERSATION_SCHEMA,
+                    temperature=0.3,
                     retrieved_memories=[],
                     retrieved_lore=[],
-                    rag_decisions={}
+                    rag_decisions={},
                 )
 
                 response = await self.llm.generate(prompt)
@@ -243,7 +287,13 @@ class ChatEngine:
                 if not summary_text:
                     summary_text = response.raw_content or ""
 
-                log.info("Conversation auto-summarized successfully via background LLM", conv_id=str(conv_id))
+                if summary_text:
+                    await conv_repo.update_conversation_summary(conv_id, summary_text)
+                    await session.commit()
+                    log.info("Conversation summary saved to PostgreSQL", conv_id=str(conv_id))
+                else:
+                    log.warning("Summarizer produced empty output", conv_id=str(conv_id))
+
             except Exception as e:
                 log.error("Failed to run background auto-summarization", error=str(e), conv_id=str(conv_id))
 

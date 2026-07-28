@@ -202,6 +202,7 @@ async def chat_stream_endpoint(
                     chat_engine=chat_engine,
                     on_token=sse_on_token,
                 )
+                await session.commit()
             await queue.put({
                 "type": "complete",
                 "trace_id": trace_id,

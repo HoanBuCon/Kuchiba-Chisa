@@ -29,6 +29,7 @@ class Settings(BaseSettings):
     APP_ENV: Literal["development", "production", "test"] = "development"
     APP_PORT: int = Field(default=8000, ge=1, le=65535)
     APP_HOST: str = "0.0.0.0"
+    WEB_CONCURRENCY: int = Field(default=2, ge=1, le=16)
     APP_DEBUG: bool = False
     SECRET_KEY: str = Field(min_length=32)
 
@@ -69,6 +70,7 @@ class Settings(BaseSettings):
     DEEPSEEK_TEMPERATURE: float = Field(default=0.8, ge=0.0, le=2.0)
     DEEPSEEK_TIMEOUT: int = 60
     DEEPSEEK_BASE_URL: str = "https://api.deepseek.com"
+    DEEP_THINKING: bool = False
 
     # ── Embeddings ─────────────────────────────────────────────
     OPENAI_API_KEY: Optional[str] = None

@@ -29,6 +29,7 @@ class LLMResponse(BaseModel):
     output_tokens: int = 0
     model: str = ""
     finish_reason: str = ""
+    reasoning_content: str | None = None
 
 
 class LLMError(Exception):

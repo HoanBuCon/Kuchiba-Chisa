@@ -1,5 +1,6 @@
 import aiohttp
 import asyncio
+import time
 from typing import AsyncGenerator
 from datetime import datetime
 from app.domain.entities.wiki import WikiPage, WikiRevision
@@ -17,6 +18,9 @@ class MediaWikiClient(IWikiClient):
         self.base_url = base_url
         self.delay = 1.0 / req_per_second
         self._last_req_time = 0.0
+        self.headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+        }
 
     async def _throttle(self):
         now = time.time()
@@ -101,7 +105,7 @@ class MediaWikiClient(IWikiClient):
             "rvslots": "main"
         }
         
-        async with aiohttp.ClientSession() as session:
+        async with aiohttp.ClientSession(headers=self.headers) as session:
             async with session.get(self.base_url, params=params) as response:
                 response.raise_for_status()
                 data = await response.json()

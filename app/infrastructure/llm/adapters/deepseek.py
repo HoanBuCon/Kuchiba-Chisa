@@ -89,9 +89,12 @@ class DeepSeekAdapter(BaseLLMAdapter):
             "model": self._model,
             "messages": messages,
             "max_tokens": prompt.max_tokens or self._max_tokens,
-            "temperature": prompt.temperature or self._temperature,
-            "response_format": {"type": "json_object"}
+            "temperature": prompt.temperature if prompt.temperature is not None else self._temperature,
         }
+        
+        is_deep_thinking = prompt.rag_decisions.get("use_deep_thinking", False) if hasattr(prompt, "rag_decisions") else False
+        if not is_deep_thinking:
+            payload["response_format"] = {"type": "json_object"}
 
         try:
             response = await self._http_client.post(url, headers=headers, json=payload, timeout=float(self._timeout))
@@ -115,7 +118,8 @@ class DeepSeekAdapter(BaseLLMAdapter):
 
         try:
             choice = res_json["choices"][0]
-            raw = choice["message"]["content"] or ""
+            raw = choice["message"].get("content", "") or ""
+            reasoning_content = choice["message"].get("reasoning_content")
             finish_reason = choice.get("finish_reason", "")
             
             usage = res_json.get("usage", {})
@@ -124,10 +128,16 @@ class DeepSeekAdapter(BaseLLMAdapter):
         except (KeyError, IndexError) as e:
             raise LLMInvalidResponseError(f"Invalid response structure: {e}")
 
-        if finish_reason == "length":
-            raise LLMTokenOverflowError()
+        parsed = {}
+        error_to_raise = None
 
-        parsed = await self.validate_response(raw, prompt.response_schema)
+        if finish_reason == "length":
+            error_to_raise = LLMTokenOverflowError()
+        else:
+            try:
+                parsed = await self.validate_response(raw, prompt.response_schema)
+            except Exception as e:
+                error_to_raise = e
 
         llm_response = LLMResponse(
             raw_content=raw,
@@ -136,6 +146,7 @@ class DeepSeekAdapter(BaseLLMAdapter):
             output_tokens=output_tokens,
             model=self._model,
             finish_reason=finish_reason,
+            reasoning_content=reasoning_content,
         )
 
         try:
@@ -143,6 +154,9 @@ class DeepSeekAdapter(BaseLLMAdapter):
             await log_llm_transaction(prompt, llm_response)
         except Exception as e:
             log.warning("Failed to log transaction", error=str(e))
+
+        if error_to_raise:
+            raise error_to_raise
 
         return llm_response
 
@@ -164,10 +178,13 @@ class DeepSeekAdapter(BaseLLMAdapter):
             "model": self._model,
             "messages": messages,
             "max_tokens": prompt.max_tokens or self._max_tokens,
-            "temperature": prompt.temperature or self._temperature,
-            "response_format": {"type": "json_object"},
+            "temperature": prompt.temperature if prompt.temperature is not None else self._temperature,
             "stream": True
         }
+        
+        is_deep_thinking = prompt.rag_decisions.get("use_deep_thinking", False) if hasattr(prompt, "rag_decisions") else False
+        if not is_deep_thinking:
+            payload["response_format"] = {"type": "json_object"}
         try:
             async with self._http_client.stream("POST", url, headers=headers, json=payload, timeout=float(self._timeout)) as response:
                 if response.status_code != 200:
@@ -198,9 +215,12 @@ class DeepSeekAdapter(BaseLLMAdapter):
                                 error_type=type(parse_ex).__name__,
                             )
                             continue
+        except httpx.TimeoutException:
+            log.error("DeepSeek streaming timed out")
+            raise LLMTimeoutError()
         except Exception as e:
             log.error("DeepSeek streaming failed", error=str(e))
-            yield ""
+            raise LLMError(f"DeepSeek streaming failed: {e}", retryable=False)
 
     async def validate_response(self, raw: str, schema: dict[str, Any]) -> dict[str, Any]:
         raw_cleaned = raw.strip()
@@ -225,4 +245,6 @@ class DeepSeekAdapter(BaseLLMAdapter):
         return parsed
 
     async def estimate_tokens(self, text: str) -> int:
-        return len(text) // 4
+        """Precise token count via tiktoken cl100k_base (shared TokenEstimator)."""
+        from app.shared.utils.token_estimator import TokenEstimator
+        return TokenEstimator.estimate(text)

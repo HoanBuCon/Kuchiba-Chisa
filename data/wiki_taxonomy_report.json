@@ -1,0 +1,773 @@
+{
+  "Characters by Type": {
+    "category": "Characters by Type",
+    "direct_pages_count": 0,
+    "subcategories_count": 4,
+    "sample_pages": [],
+    "subcategories": {
+      "Deceased Characters": {
+        "category": "Deceased Characters",
+        "direct_pages_count": 28,
+        "subcategories_count": 0,
+        "sample_pages": [
+          "Aeschylus",
+          "Arkyria",
+          "Avidius",
+          "Betty",
+          "David Martinez",
+          "Encore's Mother",
+          "Fenrico",
+          "Galbrena (TD)"
+        ],
+        "subcategories": {}
+      },
+      "Mentioned Characters": {
+        "category": "Mentioned Characters",
+        "direct_pages_count": 18,
+        "subcategories_count": 0,
+        "sample_pages": [
+          "\"Eris\"",
+          "\"Hydra\"",
+          "\"Siren\"",
+          "Betty",
+          "Encore's Mother",
+          "Galbrena (TD)",
+          "Liang Dongyuan",
+          "Linglong"
+        ],
+        "subcategories": {}
+      },
+      "NPCs": {
+        "category": "NPCs",
+        "direct_pages_count": 806,
+        "subcategories_count": 4,
+        "sample_pages": [
+          "NPC",
+          "\"Eris\"",
+          "\"Hydra\"",
+          "\"Peach\"",
+          "\"Red Eagle\"",
+          "\"Siren\"",
+          "\"The Shaper\"",
+          "Abby"
+        ],
+        "subcategories": {}
+      },
+      "Resonators": {
+        "category": "Resonators",
+        "direct_pages_count": 58,
+        "subcategories_count": 11,
+        "sample_pages": [
+          "Resonator",
+          "Aalto",
+          "Aemeath",
+          "Augusta",
+          "Baizhi",
+          "Brant",
+          "Buling",
+          "Calcharo"
+        ],
+        "subcategories": {}
+      }
+    }
+  },
+  "Factions": {
+    "category": "Factions",
+    "direct_pages_count": 27,
+    "subcategories_count": 7,
+    "sample_pages": [
+      "Black Shores",
+      "Censorate",
+      "Court of Savantae",
+      "Ephor's Palace",
+      "Exiles",
+      "Fisalia Family",
+      "Fractsidus",
+      "Ghost Hounds"
+    ],
+    "subcategories": {
+      "Factions by Nation": {
+        "category": "Factions by Nation",
+        "direct_pages_count": 0,
+        "subcategories_count": 3,
+        "sample_pages": [],
+        "subcategories": {}
+      },
+      "Fractsidus": {
+        "category": "Fractsidus",
+        "direct_pages_count": 17,
+        "subcategories_count": 0,
+        "sample_pages": [
+          "Fractsidus",
+          "\"Eris\"",
+          "\"Hydra\"",
+          "\"Siren\"",
+          "Cristoforo",
+          "Denia",
+          "Lynae (Fractsidus)",
+          "Muyu"
+        ],
+        "subcategories": {}
+      },
+      "Order of the Deep": {
+        "category": "Order of the Deep",
+        "direct_pages_count": 19,
+        "subcategories_count": 0,
+        "sample_pages": [
+          "Order of the Deep",
+          "Agio",
+          "Alice",
+          "Calaris",
+          "Cartethyia",
+          "Clarisse",
+          "Dindo",
+          "Fenrico"
+        ],
+        "subcategories": {}
+      },
+      "Pioneer Association": {
+        "category": "Pioneer Association",
+        "direct_pages_count": 27,
+        "subcategories_count": 0,
+        "sample_pages": [
+          "Pioneer Association",
+          "Alannah",
+          "Bei Shi",
+          "Bowen",
+          "C-MOSS",
+          "Eri",
+          "Fuling",
+          "Fulmine"
+        ],
+        "subcategories": {}
+      },
+      "Spacetrek Collective": {
+        "category": "Spacetrek Collective",
+        "direct_pages_count": 11,
+        "subcategories_count": 0,
+        "sample_pages": [
+          "Spacetrek Collective",
+          "Arsenio",
+          "B.1.N.G.O.",
+          "Chase",
+          "Dhalifa",
+          "Hiyuki",
+          "I.R.I.S.",
+          "Lucilla"
+        ],
+        "subcategories": {}
+      },
+      "Startorch Academy": {
+        "category": "Startorch Academy",
+        "direct_pages_count": 32,
+        "subcategories_count": 0,
+        "sample_pages": [
+          "Startorch Academy",
+          "Aemeath",
+          "Agune",
+          "Aluna",
+          "B.1.N.G.O.",
+          "Boltzmann",
+          "Cassini",
+          "Cauchy"
+        ],
+        "subcategories": {}
+      },
+      "Troupe of Fools": {
+        "category": "Troupe of Fools",
+        "direct_pages_count": 24,
+        "subcategories_count": 0,
+        "sample_pages": [
+          "Troupe of Fools",
+          "Anastasia",
+          "Andreas",
+          "Barton",
+          "Brant",
+          "Cameron",
+          "Chalulu",
+          "Claudio"
+        ],
+        "subcategories": {}
+      }
+    }
+  },
+  "Lore": {
+    "category": "Lore",
+    "direct_pages_count": 73,
+    "subcategories_count": 4,
+    "sample_pages": [
+      "Lore",
+      "Aleph-1",
+      "Arbiter",
+      "Battle Beneath the Crescent",
+      "Black Shores",
+      "Blake Bloom",
+      "Common Echo",
+      "Dark Tide"
+    ],
+    "subcategories": {
+      "Story Mentions by Character": {
+        "category": "Story Mentions by Character",
+        "direct_pages_count": 0,
+        "subcategories_count": 42,
+        "sample_pages": [],
+        "subcategories": {}
+      },
+      "Voiceline Mentions by Character": {
+        "category": "Voiceline Mentions by Character",
+        "direct_pages_count": 0,
+        "subcategories_count": 50,
+        "sample_pages": [],
+        "subcategories": {}
+      },
+      "Notable Interactables": {
+        "category": "Notable Interactables",
+        "direct_pages_count": 70,
+        "subcategories_count": 0,
+        "sample_pages": [
+          "A Childish Sketch",
+          "A Message From Yinlin",
+          "A Segment of Davide's Voyage Log",
+          "A Short Note Left Behind",
+          "A Traveler's Guide to Septimont",
+          "Audio Lab Phonograph",
+          "Black and White",
+          "Bloom Bearer Field Report"
+        ],
+        "subcategories": {}
+      },
+      "Resonator Backstory": {
+        "category": "Resonator Backstory",
+        "direct_pages_count": 52,
+        "subcategories_count": 0,
+        "sample_pages": [
+          "Aalto/Backstory",
+          "Aemeath/Backstory",
+          "Augusta/Backstory",
+          "Baizhi/Backstory",
+          "Brant/Backstory",
+          "Buling/Backstory",
+          "Calcharo/Backstory",
+          "Camellya/Backstory"
+        ],
+        "subcategories": {}
+      }
+    }
+  },
+  "Solaris-3": {
+    "category": "Solaris-3",
+    "direct_pages_count": 0,
+    "subcategories_count": 0,
+    "sample_pages": [],
+    "subcategories": {}
+  },
+  "Quests": {
+    "category": "Quests",
+    "direct_pages_count": 509,
+    "subcategories_count": 6,
+    "sample_pages": [
+      "Quest",
+      "A Blaze in the Dark",
+      "A Brief Respite",
+      "A Chill Day Out",
+      "A Fleeting Night's Dream",
+      "A Free Meal?",
+      "A Miko's Preferences",
+      "A New Companion"
+    ],
+    "subcategories": {
+      "Meta Quests": {
+        "category": "Meta Quests",
+        "direct_pages_count": 0,
+        "subcategories_count": 7,
+        "sample_pages": [],
+        "subcategories": {}
+      },
+      "Quest Types": {
+        "category": "Quest Types",
+        "direct_pages_count": 6,
+        "subcategories_count": 0,
+        "sample_pages": [
+          "Companion Story",
+          "Daily Quest",
+          "Exploration Quest",
+          "Main Quest",
+          "Side Quest",
+          "Tutorial Quest"
+        ],
+        "subcategories": {}
+      },
+      "Quests by Event": {
+        "category": "Quests by Event",
+        "direct_pages_count": 0,
+        "subcategories_count": 4,
+        "sample_pages": [],
+        "subcategories": {}
+      },
+      "Quests by Location": {
+        "category": "Quests by Location",
+        "direct_pages_count": 0,
+        "subcategories_count": 1,
+        "sample_pages": [],
+        "subcategories": {}
+      },
+      "Quests by Rewards": {
+        "category": "Quests by Rewards",
+        "direct_pages_count": 0,
+        "subcategories_count": 45,
+        "sample_pages": [],
+        "subcategories": {}
+      },
+      "Quests by Type": {
+        "category": "Quests by Type",
+        "direct_pages_count": 0,
+        "subcategories_count": 10,
+        "sample_pages": [],
+        "subcategories": {}
+      }
+    }
+  },
+  "Weapons": {
+    "category": "Weapons",
+    "direct_pages_count": 128,
+    "subcategories_count": 10,
+    "sample_pages": [
+      "Weapon",
+      "Abyss Surges",
+      "Advanced Energy Core",
+      "Aether Strike",
+      "Ages of Harvest",
+      "Amity Accord",
+      "Augment",
+      "Aureate Zenith"
+    ],
+    "subcategories": {
+      "Weapon EXP Material": {
+        "category": "Weapon EXP Material",
+        "direct_pages_count": 4,
+        "subcategories_count": 0,
+        "sample_pages": [
+          "Advanced Energy Core",
+          "Basic Energy Core",
+          "Medium Energy Core",
+          "Premium Energy Core"
+        ],
+        "subcategories": {}
+      },
+      "Weapon Types": {
+        "category": "Weapon Types",
+        "direct_pages_count": 5,
+        "subcategories_count": 0,
+        "sample_pages": [
+          "Broadblade",
+          "Gauntlets",
+          "Pistols",
+          "Rectifier",
+          "Sword"
+        ],
+        "subcategories": {}
+      },
+      "Weapons by Ascends With": {
+        "category": "Weapons by Ascends With",
+        "direct_pages_count": 0,
+        "subcategories_count": 48,
+        "sample_pages": [],
+        "subcategories": {}
+      },
+      "Weapons by Obtainability": {
+        "category": "Weapons by Obtainability",
+        "direct_pages_count": 0,
+        "subcategories_count": 4,
+        "sample_pages": [],
+        "subcategories": {}
+      },
+      "Weapons by Passive Effect": {
+        "category": "Weapons by Passive Effect",
+        "direct_pages_count": 0,
+        "subcategories_count": 20,
+        "sample_pages": [],
+        "subcategories": {}
+      },
+      "Weapons by Rarity": {
+        "category": "Weapons by Rarity",
+        "direct_pages_count": 0,
+        "subcategories_count": 7,
+        "sample_pages": [],
+        "subcategories": {}
+      },
+      "Weapons by Release Date": {
+        "category": "Weapons by Release Date",
+        "direct_pages_count": 120,
+        "subcategories_count": 0,
+        "sample_pages": [
+          "Abyss Surges",
+          "Amity Accord",
+          "Augment",
+          "Autumntrace",
+          "Broadblade of Night",
+          "Broadblade of Voyager",
+          "Broadblade41",
+          "Cadenza"
+        ],
+        "subcategories": {}
+      },
+      "Weapons by Substat": {
+        "category": "Weapons by Substat",
+        "direct_pages_count": 0,
+        "subcategories_count": 6,
+        "sample_pages": [],
+        "subcategories": {}
+      },
+      "Weapons by Type": {
+        "category": "Weapons by Type",
+        "direct_pages_count": 120,
+        "subcategories_count": 5,
+        "sample_pages": [
+          "Ages of Harvest",
+          "Aureate Zenith",
+          "Autumntrace",
+          "Beguiling Melody",
+          "Broadblade of Night",
+          "Broadblade of Voyager",
+          "Broadblade41",
+          "Dauntless Evernight"
+        ],
+        "subcategories": {}
+      },
+      "Weapons by Type and Rarity": {
+        "category": "Weapons by Type and Rarity",
+        "direct_pages_count": 120,
+        "subcategories_count": 0,
+        "sample_pages": [
+          "Ages of Harvest",
+          "Kumokiri",
+          "Lustrous Razor",
+          "Radiance Cleaver",
+          "Starfield Calibrator",
+          "Thunderflare Dominion",
+          "Verdant Summit",
+          "Wildfire Mark"
+        ],
+        "subcategories": {}
+      }
+    }
+  },
+  "Echoes": {
+    "category": "Echoes",
+    "direct_pages_count": 207,
+    "subcategories_count": 5,
+    "sample_pages": [
+      "Abyssal Gladius/Echo",
+      "Abyssal Mercator/Echo",
+      "Abyssal Patricius/Echo",
+      "Aero Drake/Echo",
+      "Aero Predator/Echo",
+      "Aero Prism/Echo",
+      "Aureate Picket/Echo",
+      "Autopuppet Scout/Echo"
+    ],
+    "subcategories": {
+      "Echoes by Class": {
+        "category": "Echoes by Class",
+        "direct_pages_count": 180,
+        "subcategories_count": 4,
+        "sample_pages": [
+          "Aero Drake/Echo",
+          "Aero Predator/Echo",
+          "Aero Prism/Echo",
+          "Aureate Picket/Echo",
+          "Baby Roseshroom/Echo",
+          "Baby Viridblaze Saurian/Echo",
+          "Calcified Junrock/Echo",
+          "Chest Mimic/Echo"
+        ],
+        "subcategories": {}
+      },
+      "Echoes by Cooldown": {
+        "category": "Echoes by Cooldown",
+        "direct_pages_count": 0,
+        "subcategories_count": 4,
+        "sample_pages": [],
+        "subcategories": {}
+      },
+      "Echoes by COST": {
+        "category": "Echoes by COST",
+        "direct_pages_count": 0,
+        "subcategories_count": 3,
+        "sample_pages": [],
+        "subcategories": {}
+      },
+      "Echoes by Number": {
+        "category": "Echoes by Number",
+        "direct_pages_count": 180,
+        "subcategories_count": 0,
+        "sample_pages": [
+          "Whiff Whaff/Echo",
+          "Snip Snap/Echo",
+          "Zig Zag/Echo",
+          "Nightmare: Tick Tack/Echo",
+          "Tick Tack/Echo",
+          "Clang Bang/Echo",
+          "Gulpuff/Echo",
+          "Nightmare: Gulpuff/Echo"
+        ],
+        "subcategories": {}
+      },
+      "Echoes by Sonata Effect": {
+        "category": "Echoes by Sonata Effect",
+        "direct_pages_count": 0,
+        "subcategories_count": 17,
+        "sample_pages": [],
+        "subcategories": {}
+      }
+    }
+  },
+  "Items": {
+    "category": "Items",
+    "direct_pages_count": 1123,
+    "subcategories_count": 14,
+    "sample_pages": [
+      "\"Afterlife\"",
+      "\"All Eyes On You\"",
+      "\"Blazing Claw\"",
+      "\"Lighthouse and Blake Bloom\" Medal",
+      "\"Messenger of Deep Dreams\"",
+      "\"Module\"",
+      "\"Past\"",
+      "\"Present\""
+    ],
+    "subcategories": {
+      "Item Groups": {
+        "category": "Item Groups",
+        "direct_pages_count": 9,
+        "subcategories_count": 1,
+        "sample_pages": [
+          "Cooking Ingredient",
+          "Crafting Material",
+          "Material",
+          "Medicinal Material",
+          "Melody Box",
+          "Processed Item",
+          "Special Token",
+          "Torn Pages and Abandoned Data Chips"
+        ],
+        "subcategories": {}
+      },
+      "Item Types": {
+        "category": "Item Types",
+        "direct_pages_count": 12,
+        "subcategories_count": 4,
+        "sample_pages": [
+          "Ascension Material",
+          "Dishes",
+          "Echo",
+          "Echo Development Materials",
+          "Medicine",
+          "Quest Item",
+          "Resonator Ascension Material",
+          "Resonator EXP Material"
+        ],
+        "subcategories": {}
+      },
+      "Items by Ascends With": {
+        "category": "Items by Ascends With",
+        "direct_pages_count": 0,
+        "subcategories_count": 92,
+        "sample_pages": [],
+        "subcategories": {}
+      },
+      "Items by Backpack Category": {
+        "category": "Items by Backpack Category",
+        "direct_pages_count": 0,
+        "subcategories_count": 8,
+        "sample_pages": [],
+        "subcategories": {}
+      },
+      "Items by ID": {
+        "category": "Items by ID",
+        "direct_pages_count": 848,
+        "subcategories_count": 0,
+        "sample_pages": [
+          "Union EXP",
+          "Data Bank experience",
+          "Sanhua's Waveband",
+          "Baizhi's Waveband",
+          "Lingyang's Waveband",
+          "Zhezhi's Waveband",
+          "Youhu's Waveband",
+          "Carlotta's Waveband"
+        ],
+        "subcategories": {}
+      },
+      "Items by Rarity": {
+        "category": "Items by Rarity",
+        "direct_pages_count": 823,
+        "subcategories_count": 6,
+        "sample_pages": [
+          "Lunite Subscription",
+          "Recipe",
+          "\"Afterlife\"",
+          "Abyss Luminary",
+          "Amber Halite",
+          "Angelica",
+          "Animal Fat",
+          "Arithmetic Shell"
+        ],
+        "subcategories": {}
+      },
+      "Items by Rarity Descending": {
+        "category": "Items by Rarity Descending",
+        "direct_pages_count": 823,
+        "subcategories_count": 0,
+        "sample_pages": [
+          "\"Blazing Claw\"",
+          "\"Lighthouse and Blake Bloom\" Medal",
+          "\"Messenger of Deep Dreams\"",
+          "\"Script\"",
+          "\"Starlight\"",
+          "5-star Weapon Supply Chest",
+          "A Breeze from Faraway Shores",
+          "A Lithograph With the Sentinel's True Form"
+        ],
+        "subcategories": {}
+      },
+      "Items by Type": {
+        "category": "Items by Type",
+        "direct_pages_count": 0,
+        "subcategories_count": 20,
+        "sample_pages": [],
+        "subcategories": {}
+      },
+      "Items by Uses": {
+        "category": "Items by Uses",
+        "direct_pages_count": 0,
+        "subcategories_count": 50,
+        "sample_pages": [],
+        "subcategories": {}
+      },
+      "Tales of the Past and Present": {
+        "category": "Tales of the Past and Present",
+        "direct_pages_count": 16,
+        "subcategories_count": 0,
+        "sample_pages": [
+          "A Transgressor's Transcript",
+          "Aircraft Accident Report",
+          "As the Express Through the Rain",
+          "Averardo Vault Brochure",
+          "Dim Forest Survey Team Diary",
+          "Essays on the Ragunnesi Drama",
+          "Former Privy Councilor's Notes",
+          "Jinzhou Folklore Journal"
+        ],
+        "subcategories": {}
+      },
+      "Event Items": {
+        "category": "Event Items",
+        "direct_pages_count": 44,
+        "subcategories_count": 0,
+        "sample_pages": [
+          "Abyssal Coral",
+          "Abyssal Patricius/Peaks of Prestige",
+          "Adept Medal",
+          "Adventure Log",
+          "Aero Drake/Peaks of Prestige",
+          "Ancient Legacy Medal",
+          "Ballad Medal",
+          "Chasm Guardian/Peaks of Prestige"
+        ],
+        "subcategories": {}
+      },
+      "Melody Boxes": {
+        "category": "Melody Boxes",
+        "direct_pages_count": 31,
+        "subcategories_count": 0,
+        "sample_pages": [
+          "A Dream Soaked in Mist",
+          "As Night Sinks into Abyss",
+          "As the Divine Hath Spoken",
+          "Chains of Oath, Echoes of Promise",
+          "City Bathed in Sea Breeze",
+          "Cloudcasting Project",
+          "Curtains Up for Reveries",
+          "Dancing Through Fantasies"
+        ],
+        "subcategories": {}
+      },
+      "Quest Item": {
+        "category": "Quest Item",
+        "direct_pages_count": 162,
+        "subcategories_count": 0,
+        "sample_pages": [
+          "\"All Eyes On You\"",
+          "\"Blazing Claw\"",
+          "\"Messenger of Deep Dreams\"",
+          "\"Past\"",
+          "\"Present\"",
+          "\"Script\"",
+          "\"Starlight\"",
+          "\"Suppressor Tower I - Maintenance Log\""
+        ],
+        "subcategories": {}
+      },
+      "Weapons": {
+        "category": "Weapons",
+        "pages_count": 0,
+        "subcategories": {}
+      }
+    }
+  },
+  "Locations": {
+    "category": "Locations",
+    "direct_pages_count": 350,
+    "subcategories_count": 4,
+    "sample_pages": [
+      "A Hidden Place",
+      "Abandoned Tower",
+      "Academy Dormitory",
+      "Academy's Dark Side",
+      "Anima Cradle",
+      "Argentflare Drapes",
+      "Ashinohara",
+      "Asphodel Barrens"
+    ],
+    "subcategories": {
+      "Content by Location": {
+        "category": "Content by Location",
+        "direct_pages_count": 0,
+        "subcategories_count": 1,
+        "sample_pages": [],
+        "subcategories": {}
+      },
+      "Location Types": {
+        "category": "Location Types",
+        "direct_pages_count": 12,
+        "subcategories_count": 0,
+        "sample_pages": [
+          "Area",
+          "Grocery Stores",
+          "Nation",
+          "Pharmacies",
+          "Point of Interest",
+          "Province",
+          "Region",
+          "Restaurants"
+        ],
+        "subcategories": {}
+      },
+      "Locations by Type": {
+        "category": "Locations by Type",
+        "direct_pages_count": 0,
+        "subcategories_count": 5,
+        "sample_pages": [],
+        "subcategories": {}
+      },
+      "Location Images": {
+        "category": "Location Images",
+        "direct_pages_count": 0,
+        "subcategories_count": 0,
+        "sample_pages": [],
+        "subcategories": {}
+      }
+    }
+  }
+}

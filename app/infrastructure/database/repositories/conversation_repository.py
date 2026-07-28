@@ -1,5 +1,6 @@
 from __future__ import annotations
 import uuid
+from datetime import datetime, timezone
 from typing import Optional, List
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -52,7 +53,8 @@ class SqlAlchemyConversationRepository(IConversationRepository):
             role=enum_role,
             content=content,
             token_count=token_count,
-            is_success=is_success
+            is_success=is_success,
+            created_at=datetime.utcnow()
         )
         self.session.add(msg)
         await self.session.flush()
@@ -74,6 +76,31 @@ class SqlAlchemyConversationRepository(IConversationRepository):
         msgs = result.scalars().all()
         # Return chronologically (oldest first)
         return [{"role": m.role.value, "content": m.content} for m in reversed(msgs)]
+
+    async def get_latest_summary(
+        self, user_id: uuid.UUID, conversation_id: uuid.UUID
+    ) -> Optional[str]:
+        stmt = (
+            select(ConversationModel.summary)
+            .where(
+                ConversationModel.id == conversation_id,
+                ConversationModel.user_id == user_id
+            )
+        )
+        result = await self.session.execute(stmt)
+        return result.scalar_one_or_none()
+
+    async def update_conversation_summary(
+        self, conversation_id: uuid.UUID, summary: str
+    ) -> None:
+        stmt = (
+            select(ConversationModel)
+            .where(ConversationModel.id == conversation_id)
+        )
+        conv = (await self.session.execute(stmt)).scalar_one_or_none()
+        if conv:
+            conv.summary = summary
+            await self.session.flush()
 
     async def delete_all_for_user(self, user_id: uuid.UUID) -> None:
         from sqlalchemy import delete

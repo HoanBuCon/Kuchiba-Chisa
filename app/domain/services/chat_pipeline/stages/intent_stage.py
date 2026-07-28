@@ -28,11 +28,9 @@ class IntentStage(PipelineStage):
         intents, query_vector = await self.intent_classifier.classify(context.user_message, query_vector)
         intent_values = [i.value for i in intents]
 
-        # If RAG is triggered but we skipped semantic routing, generate query_vector now
+        # If query_vector is not generated yet and query is not small talk, embed now for RAG/fallback retrieval
         if not is_st and query_vector is None:
-            rag_intents = {ChatIntent.CHARACTER_LORE, ChatIntent.WORLD_LORE, ChatIntent.STORY_LORE, ChatIntent.MEMORY}
-            if any(intent in rag_intents for intent in intents):
-                query_vector = await self.embedder.embed_text(cleaned_query)
+            query_vector = await self.embedder.embed_text(cleaned_query)
                 
         log.info("Production query classified", intents=intent_values, user_id=context.user_id)
 

@@ -6,13 +6,15 @@ from app.domain.tuning.rag import RAGTuning
 from app.shared.utils.logger import get_logger
 import uuid
 
+from app.shared.utils.token_estimator import TokenEstimator
+
 log = get_logger(__name__)
 
 
 class LoreRetriever:
     """
     Retrieves Chisa lore chunks from Qdrant using vector search,
-    boosted by keyword overlap re-ranking.
+    boosted by keyword overlap re-ranking and Windowed Parent Resolution.
     """
     def __init__(
         self, 
@@ -67,6 +69,7 @@ class LoreRetriever:
         top_k: int = RAGTuning.TOP_K,
         score_threshold: float = RAGTuning.SCORE_THRESHOLD,
         entities_filter: Optional[List[str]] = None,
+        max_token_budget: Optional[int] = None,
     ) -> List[Tuple[str, float]]:
         try:
             if not self.vector_store:
@@ -99,8 +102,9 @@ class LoreRetriever:
 
         seen_parents = set()
         lore_chunks = []
+        accumulated_tokens = 0
         
-        # We need to collect parent IDs to fetch them from DB
+        # Collect parent IDs to fetch from DB
         parent_ids_to_fetch = set()
         for cand, score in scored_candidates:
             payload = cand.get("payload", {})
@@ -117,27 +121,40 @@ class LoreRetriever:
             repo = self.lore_parent_repo_factory(session)
             parents = await repo.get_parents_batch(list(parent_ids_to_fetch))
             for p in parents:
-                parent_docs[str(p.id)] = p.full_text
+                # Store full parent section markdown
+                parent_docs[str(p.id)] = p.markdown
 
         for cand, score in scored_candidates:
             payload = cand.get("payload", {})
             parent_id = payload.get("parent_id")
             
-            # 1. Try to get full text from DB
-            text = parent_docs.get(parent_id) if parent_id else None
+            # 1. Try to get section parent markdown from DB
+            parent_text = parent_docs.get(parent_id) if parent_id else None
             
             # 2. Fallback to child chunk text
-            if not text:
-                text = payload.get("text_content", "")
-                
-            if not text:
+            child_text = payload.get("text_content", "")
+            resolved_text = parent_text or child_text
+            
+            if not resolved_text:
                 continue
+                
+            chunk_tokens = TokenEstimator.estimate(resolved_text)
+            
+            # Check dynamic context token budget if provided
+            if max_token_budget is not None and accumulated_tokens + chunk_tokens > max_token_budget and lore_chunks:
+                log.info("Lore retrieval reached max token budget limit", current_tokens=accumulated_tokens, budget=max_token_budget)
+                break
                 
             if parent_id:
                 if parent_id not in seen_parents:
                     seen_parents.add(parent_id)
-                    lore_chunks.append((text, score))
+                    lore_chunks.append((resolved_text, score))
+                    accumulated_tokens += chunk_tokens
             else:
-                lore_chunks.append((text, score))
+                lore_chunks.append((resolved_text, score))
+                accumulated_tokens += chunk_tokens
                 
-        return lore_chunks[:top_k]
+            if len(lore_chunks) >= top_k:
+                break
+                
+        return lore_chunks

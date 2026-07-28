@@ -22,14 +22,14 @@ class IEmbeddingProvider(Protocol):
         """The current version of this embedding implementation."""
         ...
 
-    async def embed_text(self, text: str) -> List[float]:
+    async def embed_text(self, text: str, prefix: str = "query: ") -> List[float]:
         """
-        Embed a single string text into a vector of floats.
+        Embed a single string text into a vector of floats with optional E5 prefix ('query: ' or 'passage: ').
         """
         ...
 
-    async def embed_batch(self, texts: List[str]) -> List[List[float]]:
+    async def embed_batch(self, texts: List[str], prefix: str = "query: ") -> List[List[float]]:
         """
-        Embed a batch of strings into a list of vectors.
+        Embed a batch of strings into a list of vectors with optional E5 prefix ('query: ' or 'passage: ').
         """
         ...

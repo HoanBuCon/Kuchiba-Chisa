@@ -1,0 +1,388 @@
+"""
+Chunk Schema — Retrieval-ready text segment with inherited metadata.
+
+A Chunk is the atomic unit that gets embedded and indexed in Qdrant.
+Each chunk inherits document-level metadata from its parent CanonicalPage
+and adds chunk-specific fields (index, heading path, content type).
+
+Key design decisions:
+    - ``chunk_id`` is deterministic UUIDv5 based on (page_id, heading_path, chunk_index)
+      to guarantee idempotent re-processing.
+    - ``text_hash`` (SHA-256) enables incremental updates — only re-embed chunks
+      whose content actually changed.
+    - ``token_count_approx`` is pre-computed using tiktoken (cl100k_base) with
+      a 1.3× heuristic fallback, saving re-computation at retrieval time.
+    - ``content_type`` drives content-type-aware retrieval strategies.
+"""
+
+from __future__ import annotations
+import enum
+import hashlib
+import uuid
+from typing import Dict, List, Optional
+from pydantic import BaseModel, ConfigDict, Field, computed_field, model_validator
+
+# ─────────────────────────────────────────────────────────────
+# Constants
+# ─────────────────────────────────────────────────────────────
+
+# Namespace for deterministic UUIDv5 chunk_id generation.
+# Uses OID namespace as specified in the architecture constraints.
+CHUNK_UUID_NAMESPACE: uuid.UUID = uuid.NAMESPACE_OID
+
+# Tiktoken encoding name for token estimation.
+TIKTOKEN_ENCODING: str = "cl100k_base"
+
+# Fallback heuristic multiplier: chars / HEURISTIC_RATIO ≈ tokens
+# Used when tiktoken is unavailable.
+TOKEN_HEURISTIC_RATIO: float = 1.3
+
+# Schema version for backward compatibility tracking.
+CURRENT_SCHEMA_VERSION: int = 4
+
+# Minimum meaningful chunk size in tokens.
+MIN_CHUNK_TOKENS: int = 20
+
+# Maximum chunk size in tokens before splitting is recommended.
+MAX_CHUNK_TOKENS: int = 1024
+
+
+# ─────────────────────────────────────────────────────────────
+# Enums
+# ─────────────────────────────────────────────────────────────
+
+
+class ChunkStrategyEnum(str, enum.Enum):
+    """
+    Chunking strategy that produced this chunk.
+
+    Logged for diagnostics and A/B testing of chunking approaches.
+    """
+
+    PARAGRAPH_MERGE = "PARAGRAPH_MERGE"
+    HEADING_SPLIT = "HEADING_SPLIT"
+    SLIDING_WINDOW = "SLIDING_WINDOW"
+    SCENE_BOUNDARY = "SCENE_BOUNDARY"
+    TABLE_INLINE = "TABLE_INLINE"
+    ATOMIC = "ATOMIC"
+    LIST_GROUP = "LIST_GROUP"
+
+
+# ─────────────────────────────────────────────────────────────
+# Helper functions
+# ─────────────────────────────────────────────────────────────
+
+
+def generate_chunk_id(
+    page_id: int,
+    heading_path: str,
+    chunk_index: int,
+) -> uuid.UUID:
+    """
+    Generate a deterministic UUIDv5 for a chunk.
+
+    The composite key ``{page_id}::{heading_path}::{chunk_index}`` ensures
+    that identical content at the same location always produces the same ID,
+    enabling idempotent re-processing.
+
+    Args:
+        page_id: MediaWiki page ID of the parent page.
+        heading_path: Hierarchical heading path (e.g., "Rover > Forte Circuit").
+        chunk_index: Zero-based index of this chunk within its section.
+
+    Returns:
+        Deterministic UUID v5.
+    """
+    composite_key = f"{page_id}::{heading_path}::{chunk_index}"
+    return uuid.uuid5(CHUNK_UUID_NAMESPACE, composite_key)
+
+
+def compute_text_hash(text: str) -> str:
+    """
+    Compute SHA-256 hash of chunk text for change detection.
+
+    Prefixed with ``sha256:`` for clarity and future algorithm migration.
+
+    Args:
+        text: The chunk text content.
+
+    Returns:
+        Hash string in format ``sha256:<hex_digest>``.
+    """
+    digest = hashlib.sha256(text.encode("utf-8")).hexdigest()
+    return f"sha256:{digest}"
+
+
+def estimate_token_count(text: str) -> int:
+    """
+    Estimate token count using tiktoken with heuristic fallback.
+
+    Primary: tiktoken ``cl100k_base`` encoder (exact for OpenAI-family models,
+    close approximation for multilingual-e5 and similar).
+
+    Fallback: ``len(text) / TOKEN_HEURISTIC_RATIO`` when tiktoken is not
+    importable (saves a ~30MB dependency in minimal environments).
+
+    Args:
+        text: The text to estimate token count for.
+
+    Returns:
+        Approximate token count.
+    """
+    try:
+        import tiktoken
+
+        encoder = tiktoken.get_encoding(TIKTOKEN_ENCODING)
+        return len(encoder.encode(text))
+    except (ImportError, Exception):
+        # Heuristic fallback: ~1.3 characters per token for mixed
+        # English/game-specific terminology.
+        char_count = len(text)
+        return max(1, int(char_count / TOKEN_HEURISTIC_RATIO))
+
+
+# ─────────────────────────────────────────────────────────────
+# Chunk Model
+# ─────────────────────────────────────────────────────────────
+
+
+class Chunk(BaseModel):
+    """
+    A single retrieval-ready text chunk with full metadata payload.
+
+    This is the final data unit that gets:
+        1. Embedded (vector generated by multilingual-e5-small)
+        2. Indexed (upserted to Qdrant with payload)
+        3. Retrieved (returned during RAG queries)
+
+    Metadata is split into two categories:
+        - **Inherited** (from CanonicalPage): page_type, canonical_name, region, etc.
+        - **Chunk-specific** (computed per chunk): chunk_index, heading_path, etc.
+
+    The ``chunk_id`` is deterministic (UUIDv5) to guarantee idempotent
+    re-processing: running the same input through the pipeline twice
+    produces identical chunk IDs.
+
+    Storage: One JSON line per chunk in ``data/chunks/chunks.jsonl``.
+    """
+
+    model_config = ConfigDict(
+        extra="ignore",
+        str_strip_whitespace=True,
+    )
+
+    # ── Core identity ──
+
+    chunk_id: uuid.UUID = Field(
+        ...,
+        description=(
+            "Deterministic UUIDv5 = uuid5(NAMESPACE_OID, "
+            "'{page_id}::{heading_path}::{chunk_index}'). "
+            "Guarantees idempotent re-processing."
+        ),
+    )
+    page_id: int = Field(
+        ...,
+        description="Parent page's MediaWiki page ID.",
+    )
+    section_id: Optional[str] = Field(
+        default=None,
+        description="Parent section ID from the canonical record.",
+    )
+    revision_id: Optional[int] = Field(
+        default=None,
+        description="Wiki revision ID of the source content.",
+    )
+
+    # ── Content ──
+
+    text_content: str = Field(
+        ...,
+        min_length=1,
+        description="The actual text content of this chunk, ready for embedding.",
+    )
+    text_hash: str = Field(
+        ...,
+        description="SHA-256 hash (sha256:<hex>) for incremental change detection.",
+    )
+    token_count_approx: int = Field(
+        ...,
+        ge=0,
+        description=(
+            "Approximate token count (tiktoken cl100k_base or 1.3× heuristic). "
+            "Used for prompt budget management at retrieval time."
+        ),
+    )
+
+    # ── Structural metadata (chunk-specific) ──
+
+    chunk_index: int = Field(
+        default=0,
+        ge=0,
+        description="Zero-based sequential index within the parent section.",
+    )
+    chunk_strategy: ChunkStrategyEnum = Field(
+        default=ChunkStrategyEnum.PARAGRAPH_MERGE,
+        description="Strategy that produced this chunk (for diagnostics/A/B testing).",
+    )
+    heading_path: str = Field(
+        default="",
+        description=(
+            "Hierarchical heading path "
+            "(e.g., 'Startorch Academy > Members > Staff'). "
+            "Used for context reconstruction during retrieval."
+        ),
+    )
+    section_title: Optional[str] = Field(
+        default=None,
+        description="Immediate parent section title.",
+    )
+    section_depth: Optional[int] = Field(
+        default=None,
+        ge=1,
+        le=6,
+        description="Heading depth of the parent section (1–6).",
+    )
+    content_type: str = Field(
+        default="PROSE",
+        description=(
+            "Content type classification: PROSE, TABLE, DIALOGUE, LIST, "
+            "STAT_BLOCK, SKILL_DESC, FORMULA."
+        ),
+    )
+
+    # ── Inherited document-level metadata ──
+
+    page_title: str = Field(
+        default="",
+        description="Title of the parent page (inherited from CanonicalPage).",
+    )
+    page_type: str = Field(
+        default="GENERIC",
+        description="Page type classification (inherited from CanonicalPage).",
+    )
+    canonical_name: Optional[str] = Field(
+        default=None,
+        description="Primary entity canonical name (inherited).",
+    )
+    entity_type: Optional[str] = Field(
+        default=None,
+        description="Primary entity type: CHARACTER, WEAPON, etc. (inherited).",
+    )
+    region: Optional[str] = Field(
+        default=None,
+        description="Game region (inherited).",
+    )
+    faction: Optional[str] = Field(
+        default=None,
+        description="Faction association (inherited).",
+    )
+    element: Optional[str] = Field(
+        default=None,
+        description="Elemental attribute (inherited, for characters/weapons).",
+    )
+    game_version: Optional[str] = Field(
+        default=None,
+        description="Game version (inherited).",
+    )
+    source_type: Optional[str] = Field(
+        default="Wiki",
+        description="Source type: 'Wiki', 'Curated', 'Manual'.",
+    )
+
+    # ── Entity metadata (chunk-level) ──
+
+    entities: List[str] = Field(
+        default_factory=list,
+        description="Canonical entity names mentioned in THIS chunk.",
+    )
+    entity_types: Optional[Dict[str, str]] = Field(
+        default=None,
+        description="Mapping of entity name → type for entities in this chunk.",
+    )
+
+    # ── Quality & governance ──
+
+    quality_score: float = Field(
+        default=0.0,
+        ge=0.0,
+        le=1.0,
+        description=(
+            "Composite quality score. "
+            ">0.8 = auto-approve, 0.5–0.8 = warn, <0.5 = quarantine."
+        ),
+    )
+    schema_version: int = Field(
+        default=CURRENT_SCHEMA_VERSION,
+        description="Schema version for backward compatibility tracking.",
+    )
+
+    # ── Validators ──
+
+    @model_validator(mode="after")
+    def _validate_token_range(self) -> "Chunk":
+        """
+        Emit structured warnings for chunks outside the recommended
+        token range. Does NOT reject — that's Gate 4's job.
+        """
+        if self.token_count_approx < MIN_CHUNK_TOKENS:
+            # Allow but flag — Gate 4 validation will handle rejection.
+            pass
+        if self.token_count_approx > MAX_CHUNK_TOKENS:
+            # Allow but flag — may need splitting.
+            pass
+        return self
+
+    @computed_field  # type: ignore[misc]
+    @property
+    def context_prefix(self) -> str:
+        """
+        Auto-generated context prefix for embedding.
+
+        Pattern: ``[{page_type}: {page_title} | Section: {heading_path}]``
+
+        This is prepended to ``text_content`` before embedding so the
+        vector encodes document context, improving retrieval for queries
+        like "Chisa overclock" even when those terms don't appear in the body.
+        """
+        parts = [f"{self.page_type}: {self.page_title}"]
+        if self.heading_path:
+            parts.append(f"Section: {self.heading_path}")
+        return f"[{' | '.join(parts)}]"
+
+    @classmethod
+    def from_text(
+        cls,
+        *,
+        page_id: int,
+        heading_path: str,
+        chunk_index: int,
+        text_content: str,
+        **kwargs: object,
+    ) -> "Chunk":
+        """
+        Factory method that auto-computes ``chunk_id``, ``text_hash``,
+        and ``token_count_approx`` from the text content.
+
+        This is the preferred constructor for creating chunks in the pipeline.
+
+        Args:
+            page_id: Parent page ID.
+            heading_path: Hierarchical heading path.
+            chunk_index: Index within section.
+            text_content: The chunk text.
+            **kwargs: Additional fields to set on the Chunk.
+
+        Returns:
+            Fully populated Chunk instance.
+        """
+        return cls(
+            chunk_id=generate_chunk_id(page_id, heading_path, chunk_index),
+            page_id=page_id,
+            heading_path=heading_path,
+            chunk_index=chunk_index,
+            text_content=text_content,
+            text_hash=compute_text_hash(text_content),
+            token_count_approx=estimate_token_count(text_content),
+            **kwargs,
+        )

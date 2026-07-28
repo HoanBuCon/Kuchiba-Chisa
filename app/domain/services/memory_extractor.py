@@ -36,6 +36,78 @@ class MemoryExtractor:
             "required": ["type"]
         }
 
+    async def reconcile_memory_conflict(
+        self,
+        new_fact: str,
+        candidates: list[dict[str, Any]],
+    ) -> tuple[str, Optional[str]]:
+        """
+        Uses LLM to evaluate logic relationship between a new fact and candidate existing memories.
+        Returns (action, conflicting_id) where action is 'CONTRADICT', 'DUPLICATE', or 'KEEP_BOTH'.
+        """
+        if not candidates:
+            return "KEEP_BOTH", None
+
+        # Format candidates for LLM prompt
+        candidates_formatted = []
+        for c in candidates:
+            c_id = c.get("id")
+            c_text = c.get("payload", {}).get("text_content") or c.get("text_content") or ""
+            candidates_formatted.append(f"- ID: {c_id} | Content: \"{c_text}\"")
+
+        candidates_str = "\n".join(candidates_formatted)
+
+        schema = {
+            "type": "object",
+            "properties": {
+                "action": {
+                    "type": "string",
+                    "enum": ["CONTRADICT", "DUPLICATE", "KEEP_BOTH"]
+                },
+                "conflicting_id": {"type": "string"},
+                "reasoning": {"type": "string"}
+            },
+            "required": ["action"]
+        }
+
+        system_prompt = (
+            "You are a Memory Reconciliation AI.\n"
+            "Your job is to compare a NEW extracted fact about the user against EXISTING stored memories.\n\n"
+            "Determine the logical relationship:\n"
+            "1. 'CONTRADICT': The NEW fact directly contradicts, updates, or supersedes an existing memory "
+            "(e.g. user changed preference, job, location, opinion, or status). Set 'conflicting_id' to the ID of the old memory to delete.\n"
+            "2. 'DUPLICATE': The NEW fact is exact same or semantically identical to an existing memory. No need to store again.\n"
+            "3. 'KEEP_BOTH': Both facts are true, distinct, and complementary (they do NOT contradict each other).\n\n"
+            "Output JSON format:\n"
+            "{\"action\": \"CONTRADICT\" | \"DUPLICATE\" | \"KEEP_BOTH\", \"conflicting_id\": \"...\", \"reasoning\": \"...\"}"
+        )
+
+        user_prompt = (
+            f"NEW FACT: \"{new_fact}\"\n\n"
+            f"EXISTING CANDIDATE MEMORIES:\n{candidates_str}"
+        )
+
+        prompt = StructuredPrompt(
+            system=system_prompt,
+            history=[],
+            user_message=user_prompt,
+            response_schema=schema,
+        )
+
+        try:
+            response = await self.llm.generate(prompt)
+            parsed = response.parsed or {}
+            action = str(parsed.get("action", "KEEP_BOTH")).upper()
+            conflicting_id = parsed.get("conflicting_id")
+            
+            if action not in ["CONTRADICT", "DUPLICATE", "KEEP_BOTH"]:
+                action = "KEEP_BOTH"
+
+            return action, conflicting_id
+        except Exception as e:
+            log.warning("Memory conflict reconciliation LLM call failed, falling back to safe KEEP_BOTH", error=str(e))
+            return "KEEP_BOTH", None
+
     async def extract_and_store(self, user_id: str, conversation_id: str, user_message: str) -> None:
         system_prompt = (
             "You are an information extraction assistant.\n"
@@ -69,26 +141,34 @@ class MemoryExtractor:
             fact_type = parsed.get("type", "none")
             content = parsed.get("content", "").strip()
             importance = float(parsed.get("importance_score", 0.5))
-            
 
             if fact_type != "none" and content:
                 log.info("Extracted memory fact from user message", type=fact_type, content=content, importance=importance, user_id=user_id)
                 
-                # Embed and save
-                vector = await self.embedder.embed_text(content)
+                # Embed and search candidate memories (Tier 1: Fast Vector Search @ threshold 0.70)
+                vector = await self.embedder.embed_text(content, prefix="passage: ")
                 
-                # Semantic deduplication
                 existing = await self.vector_store.search_by_user(
                     collection="memories",
                     query_vector=vector,
                     user_id=user_id,
-                    limit=1,
-                    score_threshold=MemoryTuning.SEMANTIC_DEDUP_THRESHOLD
+                    limit=3,
+                    score_threshold=0.70
                 )
                 
                 if existing:
-                    log.info("Skipped memory insertion due to semantic duplicate", new_content=content, existing_content=existing[0].get("text_content"))
-                    return
+                    # Tier 2: Precise LLM Reconciliation
+                    action, conflicting_id = await self.reconcile_memory_conflict(content, existing)
+                    
+                    if action == "DUPLICATE":
+                        log.info("Skipped memory insertion — duplicate fact detected", content=content)
+                        return
+                    elif action == "CONTRADICT" and conflicting_id:
+                        log.info("Memory conflict resolved — deleting superseded memory", old_id=conflicting_id, new_content=content)
+                        try:
+                            await self.vector_store.delete_points(collection="memories", ids=[conflicting_id])
+                        except Exception as del_err:
+                            log.warning("Failed to delete conflicting memory point", id=conflicting_id, error=str(del_err))
 
                 point_id = str(uuid.uuid4())
                 

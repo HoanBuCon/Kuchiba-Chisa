@@ -23,6 +23,7 @@ class ChatContext:
     stats: Optional[Any] = None
     emotion: Optional[EmotionState] = None
     history: List[Dict[str, str]] = field(default_factory=list)
+    conversation_summary: Optional[str] = None
     attachment_bonus_raw: float = 0.0
     current_emotions: Dict[str, float] = field(default_factory=dict)
     

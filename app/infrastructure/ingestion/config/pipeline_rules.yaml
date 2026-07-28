@@ -1,0 +1,151 @@
+# RAG ETL Pipeline Rules & Quality Gate Configuration
+# Phase 2 Future-Proof Architecture
+
+version: "2.0.0"
+
+templates:
+  # Templates to completely strip from wikitext / AST
+  strip:
+    - stub
+    - stubs
+    - notice
+    - wip
+    - needs image
+    - cleanup
+    - expand
+    - disclaimer
+    - spoiler
+    - warning
+    - note
+    - archive
+    - about
+    - reflist
+    - other languages
+    - resonator navbox
+    - skill navbox
+    - nodes navbox
+    - quests and events
+    - featured
+    - character ascensions and stats
+    - change history
+    - trophies
+    - tabber
+    - transclude
+    - infobox gallery
+    - trials by character
+    - character mentions
+    - character archives
+    - quest by category list
+    - resonators by category table
+    - dicon
+
+  # Templates to unroll into clean Markdown formatting
+  unroll:
+    quote:
+      type: "quote"
+      format: "> {text}\n> — {author}"
+    description:
+      type: "block"
+      format: "{text}"
+    character:
+      type: "inline"
+      param: 1
+    mc:
+      type: "inline_gender"
+    w:
+      type: "inline"
+      param: 1
+    lang:
+      type: "inline"
+      param: 2
+    rubi:
+      type: "inline"
+      param: 1
+
+quality_gate:
+  min_tokens: 15
+  min_text_len: 20
+  max_boilerplate_ratio: 0.3
+  borderline_score_min: 0.5
+  borderline_score_max: 0.7
+  boilerplate_patterns:
+    - "is a note found during .* and is added to (?:its )?archives"
+    - "for the complete properties and abilities of .*, see"
+    - "description from the official website"
+
+entities:
+  stopwords:
+    - "when"
+    - "whenever"
+    - "under"
+    - "through"
+    - "even"
+    - "dear"
+    - "the"
+    - "a"
+    - "an"
+    - "on"
+    - "in"
+    - "at"
+    - "from"
+    - "to"
+    - "with"
+    - "by"
+    - "for"
+    - "about"
+    - "after"
+    - "icon:"
+  blacklist:
+    - "dear guest"
+    - "free service"
+    - "bad deal"
+    - "overview"
+    - "description"
+    - "trivia"
+    - "lead"
+    - "main"
+    - "page"
+    - "section"
+    - "icon: !status"
+    - "official website"
+    - "his resonance liberation"
+    - "sometimes aalto"
+    - "evaluation basis"
+    - "resonance assessment"
+    - "resonance power"
+    - "resonance spectrum pattern"
+    - "strong harmonic responses"
+    - "tacet mark"
+    - "time domain"
+    - "overclock diagnostic report"
+    - "forte examination report"
+    - "character stories"
+    - "cherished items"
+    - "archives"
+
+categories:
+  junk_patterns:
+    - "^Ascends with"
+    - "^Fortes Leveled with"
+    - "^Weapons by"
+    - "^Items by"
+    - "^Pages using"
+    - "Transcript Missing$"
+    - "Transcripts for Other Languages$"
+    - "in Version \\d+\\.\\d+"
+    - "^Resonators by"
+    - "Damage Resonators$"
+    - "Mode Resonators$"
+    - "Burst Resonators$"
+    - "Amplification Resonators$"
+    - "Main Damage Dealer"
+    - "^[0-9]-Star"
+    - "^(Female|Male) Resonators$"
+    - "^Version$"
+  blacklist:
+    - "Article Stubs"
+    - "Article Stubs with Reason"
+
+observability:
+  log_unknown_templates: true
+  unknown_template_alert_threshold: 5

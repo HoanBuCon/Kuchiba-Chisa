@@ -1,0 +1,80 @@
+# Taxonomy-as-Code Configuration (Pipeline v2.2.0)
+elements:
+  - name: "Aero"
+    aliases: ["aero", "aero resonators"]
+  - name: "Fusion"
+    aliases: ["fusion", "fusion resonators"]
+  - name: "Glacio"
+    aliases: ["glacio", "glacio resonators"]
+  - name: "Electro"
+    aliases: ["electro", "electro resonators"]
+  - name: "Spectro"
+    aliases: ["spectro", "spectro resonators"]
+  - name: "Havoc"
+    aliases: ["havoc", "havoc resonators"]
+
+weapon_types:
+  - name: "Pistol"
+    aliases: ["pistol", "pistol resonators", "pistol users"]
+  - name: "Sword"
+    aliases: ["sword", "sword resonators", "sword users"]
+  - name: "Broadblade"
+    aliases: ["broadblade", "broadblade resonators", "broadblade users"]
+  - name: "Gauntlets"
+    aliases: ["gauntlets", "gauntlets resonators", "gauntlets users"]
+  - name: "Rectifier"
+    aliases: ["rectifier", "rectifier resonators", "rectifier users"]
+
+regions:
+  - name: "Lahai-Roi"
+    aliases: ["lahai-roi", "lahai roi", "lahai-roi resonators", "roya frostlands"]
+  - name: "Huanglong"
+    aliases: ["huanglong", "huanglong resonators", "jinzhou"]
+  - name: "New Federation"
+    aliases: ["new federation", "new federation resonators"]
+  - name: "Black Shores"
+    aliases: ["black shores", "black shores resonators"]
+  - name: "Rinascita"
+    aliases: ["rinascita", "rinascita resonators"]
+  - name: "Ashinohara"
+    aliases: ["ashinohara", "ashinohara resonators"]
+  - name: "Septimont"
+    aliases: ["septimont", "septimont resonators"]
+  - name: "Other"
+    aliases: ["other", "other resonators"]
+  - name: "Ashinohara"
+    aliases: ["ashinohara", "ashinohara resonators"]
+
+factions:
+  - name: "Black Shores"
+    aliases: ["black shores", "the black shores", "black shores resonators", "the black shores resonators"]
+  - name: "Startorch Academy"
+    aliases: ["startorch academy", "startorch", "academy of lahai-roi"]
+  - name: "Court of Savantae"
+    aliases: ["court of savantae", "savantae"]
+  - name: "Spacetrek Collective"
+    aliases: ["spacetrek collective", "spacetrek"]
+  - name: "Roya Tribe"
+    aliases: ["roya tribe", "roya"]
+  - name: "Fractsidus"
+    aliases: ["fractsidus", "order of fractsidus"]
+  - name: "Midnight Rangers"
+    aliases: ["midnight rangers"]
+  - name: "Ministry of War"
+    aliases: ["ministry of war"]
+  - name: "Ministry of Development"
+    aliases: ["ministry of development"]
+  - name: "Pioneer Association"
+    aliases: ["pioneer association"]
+  - name: "Huaxu Academy"
+    aliases: ["huaxu academy"]
+  - name: "Rabelle College"
+    aliases: ["rabelle college"]
+  - name: "Zhuojun Atelier"
+    aliases: ["zhuojun atelier"]
+  - name: "Threnodians"
+    aliases: ["threnodians", "threnodian", "fractsidus threnodian"]
+
+match_rules:
+  priority: ["infobox", "categories", "content_regex"]
+  confidence_threshold: 0.85

@@ -88,26 +88,31 @@ class FastEmbedAdapter(IEmbeddingProvider):
             log.error("Error during embedding generation.", error=str(e))
             raise EmbeddingGenerationError(f"Failed to generate embeddings: {e}") from e
 
-    async def embed_batch(self, texts: List[str]) -> List[List[float]]:
+    async def embed_batch(self, texts: List[str], prefix: str = "query: ") -> List[List[float]]:
         """
-        Async wrapper to compute embeddings in a separate thread.
+        Async wrapper to compute embeddings in a separate thread, prepending E5 model prefix if absent.
         """
-        # Run the CPU-heavy blocking operation in the default ThreadPoolExecutor
-        return await asyncio.to_thread(self._sync_embed_batch, texts)
+        prefixed = [
+            t if t.startswith(("query: ", "passage: ")) else f"{prefix}{t}"
+            for t in texts
+        ]
+        return await asyncio.to_thread(self._sync_embed_batch, prefixed)
 
-    async def embed_text(self, text: str) -> List[float]:
+    async def embed_text(self, text: str, prefix: str = "query: ") -> List[float]:
         """
-        Embed a single string text into a vector of floats, cached in Redis.
+        Embed a single string text into a vector of floats, cached in Redis with prefix awareness.
         """
-        cleaned = text.strip().lower()
+        cleaned = text.strip()
         if not cleaned:
             return []
+
+        prefixed_text = cleaned if cleaned.startswith(("query: ", "passage: ")) else f"{prefix}{cleaned}"
 
         import hashlib
         import json
         from app.infrastructure.cache.redis.redis_service import redis_service
 
-        h = hashlib.md5(cleaned.encode("utf-8")).hexdigest()
+        h = hashlib.md5(prefixed_text.lower().encode("utf-8")).hexdigest()
         model_slug = self.model_name.replace("/", "_").replace(".", "_")
         cache_key = f"chisa:embedding_cache:{model_slug}:{h}"
 
@@ -120,7 +125,7 @@ class FastEmbedAdapter(IEmbeddingProvider):
         except Exception as e:
             log.warning("Embedding cache read failed, falling back to generation", error=str(e))
 
-        results = await self.embed_batch([text])
+        results = await self.embed_batch([cleaned], prefix=prefix)
         if not results:
             raise EmbeddingGenerationError("No embedding was returned for the text.")
 

@@ -63,6 +63,8 @@ mmh3==5.2.1
 mpmath==1.3.0
 multidict==6.7.1
 mwparserfromhell==0.7.2
+pypandoc==1.17
+instructor==1.15.4
 mypy==1.13.0
 mypy_extensions==1.1.0
 numpy==2.4.2

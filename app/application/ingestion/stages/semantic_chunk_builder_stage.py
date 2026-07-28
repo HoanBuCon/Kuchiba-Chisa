@@ -80,6 +80,12 @@ class SemanticChunkBuilderStage(IPipelineStage[SemanticChunkBuilderInput, List[P
         # Create a stable hash of the content for incremental routing
         chunk_hash = hashlib.sha256(content.encode("utf-8")).hexdigest()
         
+        metadata = {
+            "section_id": parent.section_id,
+            "heading_path": parent.heading_path,
+            "section_depth": parent.section_depth,
+        }
+        
         return ProcessingChunk(
             parent_id=parent.id,
             page_id=parent.page_id,
@@ -87,5 +93,6 @@ class SemanticChunkBuilderStage(IPipelineStage[SemanticChunkBuilderInput, List[P
             page_title=parent.page_title,
             chunk_index=chunk_index,
             text_content=content,
-            chunk_hash=chunk_hash
+            chunk_hash=chunk_hash,
+            metadata=metadata
         )

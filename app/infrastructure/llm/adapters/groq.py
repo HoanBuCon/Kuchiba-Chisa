@@ -98,7 +98,7 @@ class GroqAdapter(BaseLLMAdapter):
                 model=self._model,
                 messages=messages,  # type: ignore[arg-type]
                 max_tokens=prompt.max_tokens or self._max_tokens,
-                temperature=prompt.temperature or self._temperature,
+                temperature=prompt.temperature if prompt.temperature is not None else self._temperature,
                 response_format={"type": "json_object"},
             )
         except Exception as e:
@@ -117,10 +117,16 @@ class GroqAdapter(BaseLLMAdapter):
         raw = response.choices[0].message.content or ""
         finish_reason = response.choices[0].finish_reason or ""
 
-        if finish_reason == "length":
-            raise LLMTokenOverflowError()
+        parsed = {}
+        error_to_raise = None
 
-        parsed = await self.validate_response(raw, prompt.response_schema)
+        if finish_reason == "length":
+            error_to_raise = LLMTokenOverflowError()
+        else:
+            try:
+                parsed = await self.validate_response(raw, prompt.response_schema)
+            except Exception as e:
+                error_to_raise = e
 
         llm_response = LLMResponse(
             raw_content=raw,
@@ -136,6 +142,9 @@ class GroqAdapter(BaseLLMAdapter):
             await log_llm_transaction(prompt, llm_response)
         except Exception as e:
             log.warning("Failed to log transaction", error=str(e))
+
+        if error_to_raise:
+            raise error_to_raise
 
         return llm_response
 
@@ -154,7 +163,7 @@ class GroqAdapter(BaseLLMAdapter):
                 model=self._model,
                 messages=messages,  # type: ignore[arg-type]
                 max_tokens=prompt.max_tokens or self._max_tokens,
-                temperature=prompt.temperature or self._temperature,
+                temperature=prompt.temperature if prompt.temperature is not None else self._temperature,
                 response_format={"type": "json_object"},
                 stream=True
             )
@@ -164,7 +173,7 @@ class GroqAdapter(BaseLLMAdapter):
                     yield content
         except Exception as e:
             log.error("Groq streaming failed", error=str(e))
-            yield ""
+            raise LLMError(f"Groq streaming failed: {e}", retryable=False)
 
     # ── Validate Response ──────────────────────────────────────────
     async def validate_response(self, raw: str, schema: dict[str, Any]) -> dict[str, Any]:
@@ -195,8 +204,6 @@ class GroqAdapter(BaseLLMAdapter):
 
     # ── Token Estimation ───────────────────────────────────────────
     async def estimate_tokens(self, text: str) -> int:
-        """
-        Rough token estimation: ~4 chars per token.
-        TODO (Phase 4): Use tiktoken for accurate counting.
-        """
-        return len(text) // 4
+        """Precise token count via tiktoken cl100k_base (shared TokenEstimator)."""
+        from app.shared.utils.token_estimator import TokenEstimator
+        return TokenEstimator.estimate(text)

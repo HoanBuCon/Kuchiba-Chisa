@@ -59,7 +59,8 @@ class ContextAssessor:
             "- Keep it focused and keyword-based. Strip out conversational fillers, greetings, punctuation, and generic question words (e.g., 'cho hỏi', 'vậy em', 'nhé', 'ở đâu').\n"
             "- Resolve pronouns (e.g., 'em' -> 'Chisa').\n"
             "- CRITICAL FOR RELEVANCE: Retain all distinct semantic constraints from the user's question. Do NOT over-truncate. A high-quality query must combine: (1) the primary Subject/Entity, (2) the target Action/Attribute, and (3) key qualifiers (such as Location, Nationality, or specific Industry). Omitting any of these distinct constraints makes the search too broad and yields useless results.\n"
-            "- Focus on semantic completeness: include all distinct constraints in a concise manner (typically 4 to 8 search terms). Do not search for a broad profile if the user asks about a very specific attribute.\n\n"
+            "- Focus on semantic completeness: include all distinct constraints in a concise manner (typically 4 to 8 search terms). Do not search for a broad profile if the user asks about a very specific attribute.\n"
+            "- Context Integration: You are encouraged to combine context from the [Recent Conversation History], the [Retrieved Context], and the [Latest User Question] to formulate the best search query. However, you MUST intelligently filter out irrelevant fictional concepts, lore, or names that do not directly pertain to the specific question being asked.\n\n"
             "You MUST output the result as a valid JSON object matching the requested schema."
         )
 

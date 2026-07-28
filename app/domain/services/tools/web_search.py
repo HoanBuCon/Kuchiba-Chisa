@@ -92,21 +92,13 @@ class WebSearchAgentTool(BaseAgentTool):
         import json
         import asyncio
 
-        history = kwargs.get("history")
         cache = kwargs.get("cache")
-        bypass_optimize = kwargs.get("bypass_optimize", False)
         
-        if bypass_optimize:
-            search_query = user_message
-        else:
-            # Level 2b: Optimize query using LLM with context
-            search_query = await self._extract_search_query(user_message, llm, history)
-            
-        search_query = self._sanitize_query(search_query)
-        log.info("Sanitized search query", query=search_query)
+        search_query = user_message.strip()
+        log.info("Executing search query", query=search_query)
 
         # ── Redis Cache Lookup ──
-        h = hashlib.md5(search_query.strip().lower().encode("utf-8")).hexdigest()
+        h = hashlib.md5(search_query.encode("utf-8")).hexdigest()
         cache_key = f"chisa:search_cache:{h}"
         try:
             cached = None
@@ -135,90 +127,6 @@ class WebSearchAgentTool(BaseAgentTool):
 
         return res
 
-    def _sanitize_query(self, query: str) -> str:
-        """Sanitizes search query, removing noise and limiting to max keywords."""
-        cleaned = re.sub(r'[^\w\sÀ-ỹ\-\.]', ' ', query)
-        cleaned = re.sub(r'\s+', ' ', cleaned).strip()
-        words = cleaned.split()
-        if len(words) > RAGTuning.MAX_SANITIZED_KEYWORDS:
-            return " ".join(words[:RAGTuning.MAX_SANITIZED_KEYWORDS])
-        return " ".join(words)
-
-    async def _extract_search_query(
-        self,
-        user_message: str,
-        llm: BaseLLMAdapter,
-        history: List[Dict[str, str]] = None
-    ) -> str:
-        """
-        Extract and clean search query from natural language query using recent conversation context.
-        """
-        import json
-        
-        # 1. Rút gọn history: lấy tối đa 3 lượt hội thoại gần nhất (tương ứng tối đa 6 messages)
-        recent_history = history[-6:] if history else []
-        history_lines = []
-        for msg in recent_history:
-            role = msg.get("role", "unknown")
-            content = msg.get("content", "")
-            
-            # Trích xuất phần response thô nếu assistant dùng JSON mode
-            if role == "assistant" and content.strip().startswith("{"):
-                try:
-                    parsed = json.loads(content)
-                    content = parsed.get("response", content)
-                except Exception:
-                    pass
-            history_lines.append(f"{role.upper()}: {content}")
-        
-        history_str = "\n".join(history_lines) if history_lines else "(Không có lịch sử)"
-
-        # 2. Compact system prompt tối ưu hóa token
-        system_prompt = (
-            "You are a search query optimizer for a chatbot named Kuchiba Chisa (Wuthering Waves).\n"
-            "Given the recent conversation history and the latest user message, generate a single, highly optimized English or Vietnamese search query "
-            "specifically designed for search engines (like DuckDuckGo):\n"
-            "- Keep it focused and keyword-based. Strip out conversational fillers, greetings, punctuation, and generic question words (e.g., 'cho hỏi', 'em ơi', 'là gì', 'được không', 'của em', 'vậy em', 'nhé').\n"
-            "- Resolve pronouns and relative terms to their absolute names (e.g., 'em' -> 'Kuchiba Chisa', 'game này' -> 'Wuthering Waves').\n"
-            "- CRITICAL FOR RELEVANCE: Retain all distinct semantic constraints from the user's question. Do NOT over-truncate. A high-quality query must combine: (1) the primary Subject/Entity, (2) the target Action/Attribute, and (3) key qualifiers (such as Location, Nationality, or specific Industry). Omitting any of these distinct constraints makes the search too broad and yields useless results.\n"
-            "- Focus on semantic completeness: include all distinct constraints in a concise manner (typically 4 to 8 search terms). Do not search for a broad profile if the user asks about a very specific attribute.\n"
-            "- Keep the language consistent: use clean, direct keywords matching the language of the query. Do NOT mix conversational Vietnamese and English.\n"
-            "You MUST output the result as a valid JSON object with key 'search_query'."
-        )
-
-        user_prompt = (
-            f"[Recent Conversation History]:\n{history_str}\n\n"
-            f"[Latest User Message]: \"{user_message}\""
-        )
-
-        prompt = StructuredPrompt(
-            system=system_prompt,
-            history=[],
-            user_message=user_prompt,
-            response_schema={
-                "type": "object",
-                "properties": {
-                    "search_query": {"type": "string"}
-                },
-                "required": ["search_query"]
-            },
-            retrieved_memories=[],
-            retrieved_lore=[],
-            rag_decisions={}
-        )
-
-        try:
-            from app.domain.context import llm_call_purpose
-            llm_call_purpose.set("web_search_query_extract")
-            response = await llm.generate(prompt)
-            parsed = response.parsed or {}
-            query = (parsed.get("search_query") or parsed.get("query") or "").strip()
-            if query:
-                log.info("LLM optimized search query with context", original=user_message, extracted=query)
-                return query
-        except Exception as e:
-            log.warning("LLM query extraction failed, falling back to raw message", error=str(e))
-        return user_message
 
     def __init__(
         self,

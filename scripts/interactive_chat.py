@@ -42,7 +42,7 @@ async def main():
     print("[*] Type 'quit' or 'exit' to stop chatting.\n")
     print("-" * 40)
     
-    async with httpx.AsyncClient(timeout=60.0) as client:
+    async with httpx.AsyncClient(timeout=120.0) as client:
         while True:
             try:
                 user_input = input("👤 You: ")

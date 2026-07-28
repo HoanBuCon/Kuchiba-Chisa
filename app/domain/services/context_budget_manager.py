@@ -73,7 +73,7 @@ class ContextBudgetManager:
                 "search": (0, 0, 0),
                 "lore": (0, 0, 0),
                 "memory": (0, 0, 0),
-                "history": (800, 3200, 4200),
+                "history": (400, 1200, 2000),
             },
         },
         BudgetMode.RAG.value: {
@@ -82,7 +82,7 @@ class ContextBudgetManager:
                 "search": (0, 800, 1600),
                 "lore": (0, 2500, 3500),
                 "memory": (0, 600, 1000),
-                "history": (600, 2400, 4000),
+                "history": (400, 1500, 2500),
             },
         },
         BudgetMode.LOOP.value: {
@@ -91,18 +91,18 @@ class ContextBudgetManager:
                 "search": (400, 1800, 3200),
                 "lore": (0, 2000, 3000),
                 "memory": (0, 600, 1000),
-                "history": (800, 3500, 6000),
+                "history": (500, 2000, 3500),
             },
         },
     }
 
     PRIORITY_WEIGHTS: dict[str, dict[str, float]] = {
-        "default": {"search": 1.2, "history": 1.0, "lore": 0.9, "memory": 0.8, "summary": 0.6},
+        "default": {"search": 1.2, "lore": 1.0, "history": 0.8, "memory": 0.8, "summary": 0.6},
         "factual_other": {"search": 1.8, "history": 1.1, "lore": 0.4, "memory": 0.7, "summary": 0.5},
-        "lore_query": {"lore": 1.6, "memory": 1.0, "history": 0.9, "search": 0.5, "summary": 0.5},
+        "lore_query": {"lore": 1.6, "memory": 1.0, "history": 0.7, "search": 0.5, "summary": 0.5},
     }
 
-    TRIM_PRIORITY = ["summary", "lore", "memory", "history", "search"]
+    TRIM_PRIORITY = ["summary", "history", "memory", "lore", "search"]
 
     @classmethod
     def _settings(cls):
@@ -280,6 +280,18 @@ class ContextBudgetManager:
                     if target > 0:
                         flex_pool += target
                         reallocated_from.append(section)
+
+        # When summary exists, reduce history budget, freed tokens go to flex pool
+        # (lore/memory/search get more budget since history has been compressed into summary)
+        if conversation_summary and conversation_summary.strip():
+            h_min, h_target, h_max = caps["history"]
+            reduction = int(h_target * 0.35)
+            caps["history"] = (
+                max(h_min, h_target - reduction),
+                h_target - reduction,
+                h_max - reduction,
+            )
+            flex_pool += reduction
 
         flex_pool_initial = flex_pool
         grants: dict[str, int] = {s: 0 for s in caps}

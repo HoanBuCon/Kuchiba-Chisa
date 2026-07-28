@@ -49,6 +49,15 @@ llm_api_clean.txt
 rag_out.txt
 test_output.txt
 
+# Databases & Generated State
+data/*.sqlite
+data/*.db
+
 # Generated Reports
 reports/
 scratch/
+
+# Ingestion Data
+data/raw_wiki/
+data/chunks/
+data/canonical/

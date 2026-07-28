@@ -41,7 +41,7 @@ class RAGStage(PipelineStage):
             embedder=self.embedder,
             web_search_tool=self.tool_router.tool_map.get("web_search"),
             is_small_talk=context.is_small_talk,
-            conversation_summary=None,
+            conversation_summary=context.conversation_summary,
         )
         
         context.rag_context = rag_context

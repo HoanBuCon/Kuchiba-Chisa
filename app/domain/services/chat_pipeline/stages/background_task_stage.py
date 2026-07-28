@@ -20,15 +20,18 @@ class BackgroundTaskStage(PipelineStage):
         self.summarize_memories_callback = summarize_memories_callback
 
     async def process(self, context: ChatContext) -> ChatContext:
-        # Trigger background fact extraction (tracked task)
-        BackgroundTaskManager.spawn(
-            self.memory_extractor.extract_and_store(
-                user_id=context.user_id,
-                conversation_id=str(context.conv_id),
-                user_message=context.user_message
-            ),
-            name=f"memory_extract:{context.user_id}",
-        )
+        # Trigger background fact extraction (tracked task) for non-small-talk messages
+        if not context.is_small_talk:
+            BackgroundTaskManager.spawn(
+                self.memory_extractor.extract_and_store(
+                    user_id=context.user_id,
+                    conversation_id=str(context.conv_id),
+                    user_message=context.user_message
+                ),
+                name=f"memory_extract:{context.user_id}",
+            )
+        else:
+            log.debug("Skipping memory extraction for small talk message", user_id=context.user_id)
         
         # Periodically trigger background summarization (every 50 interactions)
         if context.stats.interaction_count > 0 and context.stats.interaction_count % 50 == 0:

@@ -15,7 +15,8 @@ class ParentBuilderInput(BaseModel):
 
 class ParentBuilderStage(IPipelineStage[ParentBuilderInput, List[LoreParent]]):
     """
-    Transforms a ParsedPage into multiple LoreParent documents by splitting at H2 (Level 2) boundaries.
+    Transforms a ParsedPage into multiple LoreParent documents by splitting at H2 (Level 2) and H3 (Level 3) boundaries.
+    Generates section_id and full hierarchical heading_path (e.g., 'Page Title > H2 Heading > H3 Heading').
     """
     
     def __init__(self, job_repo: IPipelineJobRepository):
@@ -27,39 +28,70 @@ class ParentBuilderStage(IPipelineStage[ParentBuilderInput, List[LoreParent]]):
         start_time = time.perf_counter()
         parents: List[LoreParent] = []
         
-        current_h2_title: Optional[str] = "Lead"
-        current_h2_content_blocks: List[str] = []
+        page = input_data.parsed_page
+        h2_idx = 0
+        h3_idx = 0
         
-        # Iterate through sections and group by H2 (Level 2 or Level 1)
-        # Any Level > 2 belongs to the most recent Level <= 2
-        for section in input_data.parsed_page.document.sections:
-            if section.level <= 2:
-                # Flush current group if it has content
-                if current_h2_content_blocks:
-                    parents.append(
-                        self._create_parent(
-                            input_data.parsed_page, 
-                            current_h2_title, 
-                            "\n\n".join(current_h2_content_blocks)
-                        )
-                    )
-                # Start new group
-                current_h2_title = section.title
-                current_h2_content_blocks = [f"## {section.title}\n{section.content}"] if section.title != "Lead" else [section.content]
-            else:
-                # Add to current group
-                prefix = "#" * section.level
-                current_h2_content_blocks.append(f"{prefix} {section.title}\n{section.content}")
+        current_h2_title: Optional[str] = None
+        current_h3_title: Optional[str] = None
+        current_heading: Optional[str] = "Lead"
+        current_depth: int = 1
+        current_blocks: List[str] = []
+        
+        def flush_current():
+            nonlocal current_blocks, current_heading, current_depth
+            if current_blocks:
+                # Build heading_path
+                parts = [page.title]
+                if current_h2_title and current_h2_title != "Lead":
+                    parts.append(current_h2_title)
+                if current_h3_title:
+                    parts.append(current_h3_title)
                 
-        # Flush the last group
-        if current_h2_content_blocks:
-             parents.append(
-                self._create_parent(
-                    input_data.parsed_page, 
-                    current_h2_title, 
-                    "\n\n".join(current_h2_content_blocks)
+                heading_path = " > ".join(parts)
+                
+                # Generate section_id
+                sec_id = f"{page.page_id}-H2-{h2_idx:02d}"
+                if h3_idx > 0:
+                    sec_id += f"-H3-{h3_idx:02d}"
+                    
+                parents.append(
+                    self._create_parent(
+                        page=page,
+                        heading=current_heading,
+                        markdown="\n\n".join(current_blocks),
+                        section_id=sec_id,
+                        heading_path=heading_path,
+                        section_depth=current_depth
+                    )
                 )
-            )
+                current_blocks = []
+
+        for section in page.document.sections:
+            if section.level <= 2:
+                flush_current()
+                h2_idx += 1
+                h3_idx = 0
+                current_h2_title = section.title
+                current_h3_title = None
+                current_heading = section.title
+                current_depth = 2
+                
+                prefix = "## " if section.title != "Lead" else ""
+                current_blocks.append(f"{prefix}{section.title}\n{section.content}".strip() if prefix else section.content.strip())
+            elif section.level == 3:
+                flush_current()
+                h3_idx += 1
+                current_h3_title = section.title
+                current_heading = section.title
+                current_depth = 3
+                
+                current_blocks.append(f"### {section.title}\n{section.content}".strip())
+            else:
+                prefix = "#" * section.level
+                current_blocks.append(f"{prefix} {section.title}\n{section.content}".strip())
+
+        flush_current()
 
         metrics = PipelineMetrics(
             duration_seconds=time.perf_counter() - start_time,
@@ -71,13 +103,24 @@ class ParentBuilderStage(IPipelineStage[ParentBuilderInput, List[LoreParent]]):
         await self.job_repo.log_event(job_id, "ParentBuilderComplete", metrics.model_dump())
         return PipelineResult(output=parents, metrics=metrics)
 
-    def _create_parent(self, page: ParsedPage, heading: Optional[str], markdown: str) -> LoreParent:
+    def _create_parent(
+        self,
+        page: ParsedPage,
+        heading: Optional[str],
+        markdown: str,
+        section_id: str,
+        heading_path: str,
+        section_depth: int
+    ) -> LoreParent:
         return LoreParent(
             id=uuid.uuid4(),
             page_id=page.page_id,
             page_title=page.title,
             heading=heading,
             markdown=markdown.strip(),
-            source_file=None, # TBD if needed
-            revision_id=page.revision_id
+            source_file=None,
+            revision_id=page.revision_id,
+            section_id=section_id,
+            heading_path=heading_path,
+            section_depth=section_depth
         )

@@ -71,6 +71,22 @@ class MemorySummarizer:
             summary_text = summary_text.strip()
                 
             if summary_text and len(summary_text) > 20:
+                # Dedup: skip if a near-identical summary already exists in Qdrant
+                try:
+                    dup_vector = await self.memory_manager.embedder.embed_text(summary_text)
+                    existing = await self.memory_manager.vector_store.search_by_user(
+                        collection="conversation_summaries",
+                        query_vector=dup_vector,
+                        user_id=user_id,
+                        limit=1,
+                        score_threshold=0.88,
+                    )
+                    if existing:
+                        log.info("Skipping duplicate conversation summary (similarity > 0.88)", user_id=user_id)
+                        return
+                except Exception as dedup_err:
+                    log.debug("Dedup check failed, proceeding with save", error=str(dedup_err))
+
                 await self.memory_manager.save_conversation_summary(
                     user_id=user_id,
                     conversation_id=conv_id,

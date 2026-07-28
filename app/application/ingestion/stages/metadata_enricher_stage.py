@@ -31,6 +31,12 @@ class MetadataEnricherStage(IPipelineStage[MetadataEnricherInput, List[Processin
             # or we extract basic defaults from the page_title.
             
             # TODO: Extract real region, faction from DB or infobox
+            section_id = chunk.metadata.get("section_id")
+            heading_path = chunk.metadata.get("heading_path")
+            section_depth = chunk.metadata.get("section_depth")
+            canonical_name = chunk.metadata.get("canonical_name")
+            entity_id = chunk.metadata.get("entity_id")
+            entity_type = chunk.metadata.get("entity_type")
             region = chunk.metadata.get("region")
             faction = chunk.metadata.get("faction")
             quest = chunk.metadata.get("quest")
@@ -40,10 +46,16 @@ class MetadataEnricherStage(IPipelineStage[MetadataEnricherInput, List[Processin
             
             chunk.payload = LorePayload(
                 parent_id=str(chunk.parent_id),
+                section_id=section_id,
                 page_id=chunk.page_id,
                 source_file=f"{chunk.page_title.replace(' ', '_').lower()}.md",
                 chunk_index=chunk.chunk_index,
                 text_content=chunk.text_content,
+                heading_path=heading_path,
+                section_depth=section_depth,
+                canonical_name=canonical_name,
+                entity_id=entity_id,
+                entity_type=entity_type,
                 entities=chunk.resolved_entities,
                 region=region,
                 faction=faction,
@@ -51,7 +63,7 @@ class MetadataEnricherStage(IPipelineStage[MetadataEnricherInput, List[Processin
                 source_type=source_type,
                 game_version=game_version,
                 page_type=page_type,
-                schema_version=2
+                schema_version=3
             )
             
         metrics = PipelineMetrics(

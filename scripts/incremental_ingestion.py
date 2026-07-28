@@ -6,7 +6,7 @@ import asyncio
 import uuid
 import re
 from datetime import datetime
-from typing import List, Dict, Set
+from typing import List, Dict, Set, Optional
 
 # Ensure correct path resolution
 sys.path.append(os.getcwd())
@@ -24,10 +24,14 @@ VECTOR_SIZE = settings.QDRANT_EMBEDDING_DIM
 DB_PATH = "data/ingestion.sqlite"
 
 COLLECTION_DIRS = {
-    "lore": [
-        "data/lore/character_lore", 
-        "data/lore/relationship_lore",
-        "data/lore/world_lore",
+    "character_lore": [
+        "data/lore/character_lore",
+        "data/lore/relationship_lore"
+    ],
+    "world_lore": [
+        "data/lore/world_lore"
+    ],
+    "story_lore": [
         "data/lore/story_lore"
     ]
 }
@@ -61,9 +65,10 @@ def extract_infobox(text: str) -> (Dict[str, str], str):
     # Just returning raw text for now, could be upgraded with Regex for YAML or wiki infoboxes
     return {}, text
 
-def parse_markdown_to_parent_sections(filepath: str) -> List[Dict]:
+def parse_markdown_to_parent_sections(filepath: str, page_id: int) -> List[Dict]:
     """
-    Splits document by H2 headers (##)
+    Splits document by H2 (##) and H3 (###) headers to build precise parent sections.
+    Generates section_id and full hierarchical heading_path.
     """
     with open(filepath, "r", encoding="utf-8") as f:
         raw_content = f.read().strip()
@@ -72,51 +77,165 @@ def parse_markdown_to_parent_sections(filepath: str) -> List[Dict]:
     default_title = " ".join([w.capitalize() for w in basename.split("_")])
 
     _, clean_content = extract_infobox(raw_content)
+    lines = clean_content.split("\n")
 
-    if "\n## " in ("\n" + clean_content):
-        raw_sections = re.split(r'\n## ', '\n' + clean_content)
-        sections = []
-        for sec in raw_sections:
-            sec = sec.strip()
-            if not sec or sec.startswith("#"):  
-                continue
-            parts = sec.split("\n", 1)
-            title = parts[0].strip()
-            body = parts[1].strip() if len(parts) > 1 else ""
+    sections = []
+    current_h2_title = None
+    current_h3_title = None
+    current_heading = "Lead"
+    current_depth = 1
+    current_lines = []
+    
+    h2_idx = 0
+    h3_idx = 0
+
+    def flush_section():
+        nonlocal current_lines, current_heading, current_depth
+        if current_lines:
+            body = "\n".join(current_lines).strip()
+            parts = [default_title]
+            if current_h2_title and current_h2_title != "Lead":
+                parts.append(current_h2_title)
+            if current_h3_title:
+                parts.append(current_h3_title)
+                
+            heading_path = " > ".join(parts)
+            sec_id = f"{page_id}-H2-{h2_idx:02d}"
+            if h3_idx > 0:
+                sec_id += f"-H3-{h3_idx:02d}"
+
             sections.append({
-                "title": title,
-                "parent_full_text": f"## {title}\n\n{body}",
-                "body_content": body
+                "title": current_heading or default_title,
+                "parent_full_text": body,
+                "body_content": body,
+                "section_id": sec_id,
+                "heading_path": heading_path,
+                "section_depth": current_depth
             })
-        return sections
-    else:
-        body = re.sub(r'^#[^\n]*\n', '', clean_content).strip()
-        return [{
-            "title": default_title,
-            "parent_full_text": clean_content,
-            "body_content": body
-        }]
+            current_lines = []
 
-def extract_child_chunks(body_text: str) -> List[str]:
-    child_chunks = []
-    lines = body_text.split("\n")
     for line in lines:
-        line = line.strip()
-        if not line or line.startswith("##"):
-            continue
-        if line.startswith("-"):
-            line = line[1:].strip()
-            
-        if len(line) > 250:
-            sentences = re.split(r'(?<=[.!?]) +', line)
-            for sentence in sentences:
-                sentence = sentence.strip()
-                if sentence:
-                    child_chunks.append(sentence)
+        if line.startswith("## "):
+            flush_section()
+            h2_idx += 1
+            h3_idx = 0
+            current_h2_title = line[3:].strip()
+            current_h3_title = None
+            current_heading = current_h2_title
+            current_depth = 2
+            current_lines.append(line)
+        elif line.startswith("### "):
+            flush_section()
+            h3_idx += 1
+            current_h3_title = line[4:].strip()
+            current_heading = current_h3_title
+            current_depth = 3
+            current_lines.append(line)
         else:
-            if line:
-                child_chunks.append(line)
-    return child_chunks
+            current_lines.append(line)
+
+    flush_section()
+    return sections
+
+def extract_child_chunks(
+    body_text: str,
+    min_chunk_chars: int = 100,
+    max_chunk_chars: int = 800,
+    overlap_chars: int = 100,
+) -> List[str]:
+    """
+    Semantic-aware chunking for lore documents:
+    1. Splits body text by paragraphs (double newlines).
+    2. Merges consecutive small paragraphs up to max_chunk_chars.
+    3. Splits oversized paragraphs by sentence boundaries if they exceed max_chunk_chars.
+    4. Adds overlap between adjacent chunks to maintain context across boundaries.
+    """
+    if not body_text or not body_text.strip():
+        return []
+
+    # Step 1: Split by paragraph (double newline)
+    raw_paragraphs = re.split(r'\n\s*\n', body_text)
+    paragraphs = []
+    for p in raw_paragraphs:
+        cleaned_p = p.strip()
+        if cleaned_p and not cleaned_p.startswith("##"):
+            paragraphs.append(cleaned_p)
+
+    if not paragraphs:
+        return []
+
+    # Step 2: Merge small paragraphs until reaching max_chunk_chars
+    merged_blocks = []
+    current_block = ""
+
+    for para in paragraphs:
+        para_text = re.sub(r'^\s*[-*]\s+', '', para, flags=re.MULTILINE)
+        if len(current_block) + len(para_text) + 1 <= max_chunk_chars:
+            current_block = f"{current_block}\n{para_text}".strip() if current_block else para_text
+        else:
+            if current_block:
+                merged_blocks.append(current_block)
+            current_block = para_text
+
+    if current_block:
+        merged_blocks.append(current_block)
+
+    # Step 3: Split oversized blocks by sentence boundaries
+    final_chunks = []
+    for block in merged_blocks:
+        if len(block) <= max_chunk_chars:
+            if len(block) >= min_chunk_chars or not final_chunks:
+                final_chunks.append(block)
+            else:
+                if len(final_chunks[-1]) + len(block) + 1 <= max_chunk_chars + 200:
+                    final_chunks[-1] = f"{final_chunks[-1]}\n{block}"
+                else:
+                    final_chunks.append(block)
+        else:
+            sentences = re.split(r'(?<=[.!?。])\s+', block)
+            current_sent_chunk = ""
+            for sent in sentences:
+                sent = sent.strip()
+                if not sent:
+                    continue
+                if len(current_sent_chunk) + len(sent) + 1 <= max_chunk_chars:
+                    current_sent_chunk = f"{current_sent_chunk} {sent}".strip()
+                else:
+                    if current_sent_chunk:
+                        final_chunks.append(current_sent_chunk)
+                    current_sent_chunk = sent
+            if current_sent_chunk:
+                final_chunks.append(current_sent_chunk)
+
+    # Step 4: Apply overlap between adjacent chunks
+    if overlap_chars > 0 and len(final_chunks) > 1:
+        overlapped_chunks = [final_chunks[0]]
+        for i in range(1, len(final_chunks)):
+            prev_tail = final_chunks[i - 1][-overlap_chars:]
+            overlapped_chunks.append(f"{prev_tail}\n{final_chunks[i]}")
+        final_chunks = overlapped_chunks
+
+    return [c for c in final_chunks if len(c) >= 20]
+
+def derive_metadata_from_path(filepath: str) -> Dict[str, Optional[str]]:
+    """
+    Derive metadata attributes (page_type, source_type) from directory structure and filename.
+    """
+    normalized = filepath.replace("\\", "/").lower()
+    page_type = None
+    if "character_lore" in normalized:
+        page_type = "Character"
+    elif "world_lore" in normalized:
+        page_type = "World"
+    elif "story_lore" in normalized:
+        page_type = "Story"
+    elif "relationship_lore" in normalized:
+        page_type = "Relationship"
+    
+    return {
+        "page_type": page_type,
+        "source_type": "Lore Document",
+    }
 
 async def process_file(
     filepath: str, 
@@ -125,8 +244,15 @@ async def process_file(
     entity_resolver: EntityResolver,
     db_session
 ):
-    parent_sections = parse_markdown_to_parent_sections(filepath)
+    page_id = int(hashlib.md5(filepath.encode("utf-8")).hexdigest()[:7], 16)
+    parent_sections = parse_markdown_to_parent_sections(filepath, page_id)
     parent_repo = LoreParentRepository(db_session)
+    
+    meta = derive_metadata_from_path(filepath)
+    page_type = meta.get("page_type")
+    source_type = meta.get("source_type")
+
+    source_file_clean = filepath.replace("\\", "/")
     
     success_count = 0
     for parent_sec in parent_sections:
@@ -134,25 +260,65 @@ async def process_file(
         parent_full_text = parent_sec["parent_full_text"]
         
         # Save Parent Document
-        parent_doc = LoreParent(id=parent_id, full_text=parent_full_text)
+        parent_doc = LoreParent(
+            id=parent_id,
+            page_id=page_id,
+            page_title=parent_sec["title"],
+            heading=parent_sec["title"],
+            markdown=parent_full_text,
+            source_file=source_file_clean,
+            revision_id=1,
+            section_id=parent_sec.get("section_id"),
+            heading_path=parent_sec.get("heading_path"),
+            section_depth=parent_sec.get("section_depth")
+        )
         await parent_repo.save_parent(parent_doc)
         
         child_texts = extract_child_chunks(parent_sec["body_content"])
         
         for idx, child_text in enumerate(child_texts):
             try:
-                vector = await embedder.embed_text(child_text)
+                vector = await embedder.embed_text(child_text, prefix="passage: ")
                 point_id = str(uuid.uuid4())
                 
                 entities_found = list(entity_resolver.extract_entities(child_text))
                 
+                # Derive region and faction from entity resolver if available
+                region = None
+                faction = None
+                canonical_name = None
+                entity_id = None
+                entity_type = page_type.upper() if page_type else "LORE"
+                
+                for ent in entities_found:
+                    node = entity_resolver.get_node(ent) if hasattr(entity_resolver, "get_node") else None
+                    if node:
+                        if not canonical_name:
+                            canonical_name = getattr(node, "canonical_name", ent)
+                            entity_id = getattr(node, "id", None)
+                        if getattr(node, "region", None) and not region:
+                            region = node.region
+                        if getattr(node, "faction", None) and not faction:
+                            faction = node.faction
+                
                 payload = LorePayload(
                     parent_id=str(parent_id),
-                    source_file=filepath.replace("\\", "/"),
+                    section_id=parent_sec.get("section_id"),
+                    page_id=page_id,
+                    source_file=source_file_clean,
                     chunk_index=idx,
                     text_content=child_text,
+                    heading_path=parent_sec.get("heading_path"),
+                    section_depth=parent_sec.get("section_depth"),
+                    canonical_name=canonical_name,
+                    entity_id=entity_id,
+                    entity_type=entity_type,
                     entities=entities_found,
-                    schema_version=2
+                    region=region,
+                    faction=faction,
+                    source_type=source_type,
+                    page_type=page_type,
+                    schema_version=3
                 )
                 
                 await qdrant_service.upsert_lore(

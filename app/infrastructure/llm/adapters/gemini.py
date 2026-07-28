@@ -90,7 +90,7 @@ class GeminiAdapter(BaseLLMAdapter):
 
         try:
             config = types.GenerateContentConfig(
-                temperature=prompt.temperature or self._temperature,
+                temperature=prompt.temperature if prompt.temperature is not None else self._temperature,
                 max_output_tokens=prompt.max_tokens or self._max_tokens,
                 response_mime_type="application/json",
                 system_instruction=prompt.system
@@ -114,11 +114,17 @@ class GeminiAdapter(BaseLLMAdapter):
         raw = response.text or ""
         finish_reason = str(response.candidates[0].finish_reason) if response.candidates else ""
 
-        if "MAX_TOKENS" in finish_reason:
-            raise LLMTokenOverflowError()
+        parsed = {}
+        error_to_raise = None
 
-        parsed = await self.validate_response(raw, prompt.response_schema)
-        
+        if "MAX_TOKENS" in finish_reason:
+            error_to_raise = LLMTokenOverflowError()
+        else:
+            try:
+                parsed = await self.validate_response(raw, prompt.response_schema)
+            except Exception as e:
+                error_to_raise = e
+
         input_tokens = response.usage_metadata.prompt_token_count if response.usage_metadata else 0
         output_tokens = response.usage_metadata.candidates_token_count if response.usage_metadata else 0
 
@@ -137,6 +143,9 @@ class GeminiAdapter(BaseLLMAdapter):
         except Exception as e:
             log.warning("Failed to log transaction", error=str(e))
 
+        if error_to_raise:
+            raise error_to_raise
+
         return llm_response
 
     # ── Stream ─────────────────────────────────────────────────────
@@ -153,7 +162,7 @@ class GeminiAdapter(BaseLLMAdapter):
 
         try:
             config = types.GenerateContentConfig(
-                temperature=prompt.temperature or self._temperature,
+                temperature=prompt.temperature if prompt.temperature is not None else self._temperature,
                 max_output_tokens=prompt.max_tokens or self._max_tokens,
                 response_mime_type="application/json",
                 system_instruction=prompt.system
@@ -169,7 +178,7 @@ class GeminiAdapter(BaseLLMAdapter):
                     yield chunk.text
         except Exception as e:
             log.error("Gemini streaming failed", error=str(e))
-            yield ""
+            raise LLMError(f"Gemini streaming failed: {e}", retryable=False)
 
     # ── Validate Response ──────────────────────────────────────────
     async def validate_response(self, raw: str, schema: dict[str, Any]) -> dict[str, Any]:
@@ -199,7 +208,6 @@ class GeminiAdapter(BaseLLMAdapter):
 
     # ── Token Estimation ───────────────────────────────────────────
     async def estimate_tokens(self, text: str) -> int:
-        """
-        Rough token estimation: ~4 chars per token.
-        """
-        return len(text) // 4
+        """Precise token count via tiktoken cl100k_base (shared TokenEstimator)."""
+        from app.shared.utils.token_estimator import TokenEstimator
+        return TokenEstimator.estimate(text)

@@ -1,4 +1,5 @@
 from __future__ import annotations
+import asyncio
 from contextlib import asynccontextmanager
 from typing import AsyncIterator
 from pathlib import Path
@@ -47,6 +48,8 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     redis_ok = await redis_service.health_check()
     if redis_ok:
         log.info("Redis connection verified ✓")
+        from app.infrastructure.logging.pipeline_tracker import pipeline_tracker
+        asyncio.create_task(pipeline_tracker.start_redis_subscriber())
     else:
         startup_errors.append("Redis: health check failed")
         log.error("Redis startup health check failed")

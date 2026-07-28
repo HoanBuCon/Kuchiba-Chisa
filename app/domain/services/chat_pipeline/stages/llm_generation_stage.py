@@ -29,17 +29,24 @@ class LLMGenerationStage(PipelineStage):
         if context.on_token:
             parser = IncrementalJsonParser()
             raw_chunks = []
-            async for chunk in self.llm.stream(context.prompt):
-                raw_chunks.append(chunk)
-                parsed_token = parser.feed(chunk)
-                if parsed_token:
-                    if asyncio.iscoroutinefunction(context.on_token):
-                        await context.on_token(parsed_token)
-                    else:
-                        context.on_token(parsed_token)
+            raw_response = ""
+            parsed = {}
+            error_to_raise = None
             
-            raw_response = "".join(raw_chunks)
-            parsed = await self.llm.validate_response(raw_response, context.prompt.response_schema)
+            try:
+                async for chunk in self.llm.stream(context.prompt):
+                    raw_chunks.append(chunk)
+                    parsed_token = parser.feed(chunk)
+                    if parsed_token:
+                        if asyncio.iscoroutinefunction(context.on_token):
+                            await context.on_token(parsed_token)
+                        else:
+                            context.on_token(parsed_token)
+                
+                raw_response = "".join(raw_chunks)
+                parsed = await self.llm.validate_response(raw_response, context.prompt.response_schema)
+            except Exception as e:
+                error_to_raise = e
             
             est_input = (
                 TokenEstimator.estimate(context.prompt.system)
@@ -62,6 +69,9 @@ class LLMGenerationStage(PipelineStage):
                     await self.llm_logger_callback(context.prompt, response)
             except Exception as log_ex:
                 log.warning("Failed to log streaming transaction", error=str(log_ex))
+                
+            if error_to_raise:
+                raise error_to_raise
         else:
             response = await self.llm.generate(context.prompt)
 
