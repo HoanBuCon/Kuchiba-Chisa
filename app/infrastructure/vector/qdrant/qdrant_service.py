@@ -117,7 +117,7 @@ class QdrantService(IVectorStore):
         if name in ["lore", "character_lore", "world_lore", "story_lore"]:
             try:
                 from qdrant_client.http.models import PayloadSchemaType
-                for field in ["entities", "region", "faction"]:
+                for field in ["entities", "region", "faction", "canonical_name"]:
                     await self._client.create_payload_index(
                         collection_name=name,
                         field_name=field,
@@ -128,6 +128,25 @@ class QdrantService(IVectorStore):
             except Exception as e:
                 log.error("Failed to create payload indexes", collection=name, error=str(e))
 
+    async def ensure_payload_indexes(self) -> None:
+        """Ensures all lore collections have keyword indexes for fast entity/metadata filtering."""
+        from qdrant_client.http.models import PayloadSchemaType
+        lore_cols = [COLLECTION_CHARACTER_LORE, COLLECTION_WORLD_LORE, COLLECTION_STORY_LORE]
+        fields = ["entities", "region", "faction", "canonical_name"]
+        for col in lore_cols:
+            if await self.collection_exists(col):
+                for f in fields:
+                    try:
+                        await self._client.create_payload_index(
+                            collection_name=col,
+                            field_name=f,
+                            field_schema=PayloadSchemaType.KEYWORD,
+                            wait=False
+                        )
+                    except Exception:
+                        pass
+        log.info("Qdrant payload indexes ensured across all lore collections ✓")
+
     async def initialize_all_collections(self) -> None:
         """
         Placeholder: Creates all required collections on startup.
@@ -136,6 +155,7 @@ class QdrantService(IVectorStore):
         dim = settings.QDRANT_EMBEDDING_DIM
         for collection in ALL_COLLECTIONS:
             await self.create_collection(collection, vector_size=dim)
+        await self.ensure_payload_indexes()
         log.info("All Qdrant collections initialized", count=len(ALL_COLLECTIONS))
 
     # ── Vector Upsert & Prune ──────────────────────────────────────────────

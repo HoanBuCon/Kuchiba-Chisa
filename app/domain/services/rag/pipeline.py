@@ -97,17 +97,18 @@ class RAGPipeline:
         
         LORE_COLLECTIONS = ["character_lore", "world_lore", "story_lore"]
 
+        extracted = set()
+        expanded = set()
+
         # 1. Standard retrieval from Qdrant (parallelized across all lore collections)
         if query_vector and should_retrieve:
             retrieval_tasks = []
             active_intents = []
 
-            # Perform lore retrieval if explicit LORE intent or fallback for OTHER (unless SYSTEM_ACTION is present)
-            should_fetch_lore = ("LORE" in intent_strs or "OTHER" in intent_strs) and "SYSTEM_ACTION" not in intent_strs
+            # Perform lore retrieval if explicit LORE intent or fallback for OTHER
+            should_fetch_lore = ("LORE" in intent_strs or "OTHER" in intent_strs)
 
             if should_fetch_lore:
-                extracted = set()
-                expanded = set()
                 if self.entity_resolver:
                     extracted = self.entity_resolver.extract_entities(cleaned_query)
                     expanded = self.entity_resolver.expand_entities(extracted)
@@ -162,9 +163,14 @@ class RAGPipeline:
                                     memories.append(m.text_content)
                         else:
                             # Deduplicate and track scores across lore collections
-                            for text, score in retrieved_data:
+                            for item in retrieved_data:
+                                if len(item) == 3:
+                                    text, score, meta = item
+                                else:
+                                    text, score = item
+                                    meta = {}
                                 if not any(c[0] == text for c in lore_scored):
-                                    lore_scored.append((text, score))
+                                    lore_scored.append((text, score, meta))
                     
                     # Sort globally by score and enforce global TOP_K limit
                     lore_scored.sort(key=lambda x: x[1], reverse=True)
@@ -175,11 +181,32 @@ class RAGPipeline:
                 except Exception as ex:
                     log.error("Failed to retrieve data from Qdrant vector database", error=str(ex))
 
-        # 1.1 Track retrieval step in real-time
+        # 1.1 Track retrieval step in real-time with rich scoring breakdown
+        scoring_details = [x[2] for x in lore_scored[:RAGTuning.TOP_K] if len(x) > 2 and x[2]]
+        skip_reason = None
+        if not should_retrieve:
+            if is_small_talk:
+                skip_reason = "Small Talk detected (L1 Intent bypass)"
+            elif "SMALL_TALK" in intent_strs:
+                skip_reason = "Intent classified as SMALL_TALK"
+            elif not has_knowledge_intent:
+                skip_reason = f"Intent '{', '.join(intent_strs)}' does not require Lore or Memory retrieval"
+
         self.pipeline_tracker.add_step("rag_retrieval", {
-            "lore_collections_queried": queried_lore_cols,
+            "should_retrieve": should_retrieve,
+            "skip_reason": skip_reason,
+            "intents": intent_strs,
+            "lore_collections_queried": queried_lore_cols if should_retrieve else [],
+            "extracted_entities": list(extracted),
+            "expanded_entities": list(expanded),
             "retrieved_lore_chunks": lore_chunks,
-            "retrieved_memories": memories
+            "lore_scoring_details": scoring_details,
+            "retrieved_memories": memories,
+            "weights": {
+                "vector": RAGTuning.WEIGHT_VECTOR,
+                "keyword": RAGTuning.WEIGHT_KEYWORD,
+                "metadata": RAGTuning.WEIGHT_METADATA
+            }
         })
 
         # 2. Assemble retrieved context pieces

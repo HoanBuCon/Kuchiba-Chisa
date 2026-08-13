@@ -29,6 +29,15 @@ def process_page_task(page_data: dict):
     log.info("Starting ProcessPageTask", page_id=page.page_id, title=page.title)
     asyncio.run(_async_process_page(page))
 
+@celery_app.task(name="sync_entities_dictionary_task")
+def sync_entities_dictionary_task():
+    """
+    Celery task to rebuild and synchronize the Entity Knowledge Graph dictionary from lore/chunks.
+    """
+    from app.domain.services.rag.entity_sync import sync_entities_dictionary
+    log.info("Starting sync_entities_dictionary_task...")
+    return sync_entities_dictionary()
+
 async def _async_process_page(page: DownloadedPage):
     from app.infrastructure.database.engine import AsyncSessionFactory
     from app.infrastructure.storage.filesystem_storage import FilesystemStorage

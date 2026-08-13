@@ -82,6 +82,8 @@ class LoreRetriever:
                 )
                 
                 scoring_meta = {
+                    "collection": collection,
+                    "source_type": payload.get("source_type", "wiki"),
                     "vector_score": round(score, 4),
                     "keyword_score": round(keyword_score, 4),
                     "metadata_score": round(metadata_score, 4),
@@ -114,11 +116,14 @@ class LoreRetriever:
         # Fetch parents if repo factory and session are provided
         parent_docs = {}
         if self.lore_parent_repo_factory and session and parent_ids_to_fetch:
-            repo = self.lore_parent_repo_factory(session)
-            parents = await repo.get_parents_batch(list(parent_ids_to_fetch))
-            for p in parents:
-                # Store full parent section markdown
-                parent_docs[str(p.id)] = p.markdown
+            try:
+                repo = self.lore_parent_repo_factory(session)
+                parents = await repo.get_parents_batch(list(parent_ids_to_fetch))
+                for p in parents:
+                    # Store full parent section markdown
+                    parent_docs[str(p.id)] = p.markdown
+            except Exception as pe:
+                log.warning("Failed to fetch parent markdown from database, using chunk fallback", error=str(pe))
 
         for cand, score in scored_candidates:
             payload = cand.get("payload", {})
@@ -141,13 +146,14 @@ class LoreRetriever:
                 log.info("Lore retrieval reached max token budget limit", current_tokens=accumulated_tokens, budget=max_token_budget)
                 break
                 
+            scoring_meta = cand.get("scoring_meta", {})
             if parent_id:
                 if parent_id not in seen_parents:
                     seen_parents.add(parent_id)
-                    lore_chunks.append((resolved_text, score))
+                    lore_chunks.append((resolved_text, score, scoring_meta))
                     accumulated_tokens += chunk_tokens
             else:
-                lore_chunks.append((resolved_text, score))
+                lore_chunks.append((resolved_text, score, scoring_meta))
                 accumulated_tokens += chunk_tokens
                 
             if len(lore_chunks) >= top_k:

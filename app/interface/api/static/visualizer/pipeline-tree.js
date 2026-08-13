@@ -54,14 +54,26 @@ window.PipelineTreeEngine = {
             title: 'Tool Router',
             subtitle: (step) => step.data?.selected_tool ? `Selected: ${step.data.selected_tool}` : 'No tool triggered'
         },
-        'rag_retrieval': {
+        'rag_stage': {
             type: 'rag',
             icon: '🧠',
-            title: 'RAG Vector Retrieval',
+            title: 'Metadata-Hybrid RAG Retrieval',
             subtitle: (step) => {
                 const lore = step.data?.retrieved_lore_chunks?.length || 0;
                 const mem = step.data?.retrieved_memories?.length || 0;
-                return `${lore} lore chunks, ${mem} memories`;
+                const ents = step.data?.extracted_entities?.length || 0;
+                return `${lore} lore chunks, ${mem} memories${ents ? ` · ${ents} entities` : ''}`;
+            }
+        },
+        'rag_retrieval': {
+            type: 'rag',
+            icon: '🧠',
+            title: 'Metadata-Hybrid RAG Retrieval',
+            subtitle: (step) => {
+                const lore = step.data?.retrieved_lore_chunks?.length || 0;
+                const mem = step.data?.retrieved_memories?.length || 0;
+                const ents = step.data?.extracted_entities?.length || 0;
+                return `${lore} lore chunks, ${mem} memories${ents ? ` · ${ents} entities` : ''}`;
             }
         },
         'information_alignment_check': {

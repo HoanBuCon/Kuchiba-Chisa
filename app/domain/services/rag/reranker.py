@@ -42,6 +42,13 @@ class KeywordOverlapReranker:
         all_tokens = tokens + bigrams + trigrams
         return [t for t in all_tokens if len(t) >= 2]
 
+    VI_STOP_WORDS = {
+        "là", "gì", "trong", "và", "của", "nó", "như", "thế", "nào", "có",
+        "được", "ra", "sao", "với", "cho", "em", "anh", "senpai", "vậy",
+        "chisa", "hãy", "biết", "về", "các", "những", "một", "này", "đó",
+        "ở", "tại", "tạo", "đến", "khi", "đang", "đã", "sẽ", "để", "thì"
+    }
+
     def calculate_score(self, query_tokens: List[str], candidate_text: str) -> float:
         if not query_tokens or not candidate_text:
             return 0.0
@@ -51,8 +58,9 @@ class KeywordOverlapReranker:
         hits = 0
         weighted_hits = 0.0
 
-        # Separate unigrams (single words) to use as the denominator base
-        unigrams = [t for t in query_tokens if " " not in t]
+        # Separate content unigrams to use as a fair denominator base (filtering out stop words)
+        content_unigrams = [t for t in query_tokens if " " not in t and t not in self.VI_STOP_WORDS]
+        denom = max(3.0, float(len(content_unigrams)))
 
         for token in query_tokens:
             matched = False
@@ -76,23 +84,28 @@ class KeywordOverlapReranker:
             
             if matched:
                 hits += 1
-                # Check if token or any of its matched synonyms is a high value term
-                is_high_value = token in self.high_value_terms
-                if not is_high_value and token in self.synonyms:
-                    for syn in self.synonyms[token]:
-                        if syn in self.high_value_terms and syn in candidate_lower:
-                            # Verify whole word for synonym if it's short
-                            if " " in syn or len(syn) > 3 or syn in candidate_words:
-                                is_high_value = True
-                                break
-                
-                weighted_hits += 2.0 if is_high_value else 1.0
+                is_stop = token in self.VI_STOP_WORDS
+                if not is_stop:
+                    # Check if token or any of its matched synonyms is a high value term
+                    is_high_value = token in self.high_value_terms
+                    if not is_high_value and token in self.synonyms:
+                        for syn in self.synonyms[token]:
+                            if syn in self.high_value_terms and syn in candidate_lower:
+                                if " " in syn or len(syn) > 3 or syn in candidate_words:
+                                    is_high_value = True
+                                    break
+                    
+                    if is_high_value:
+                        weighted_hits += 2.0
+                    elif " " in token:
+                        weighted_hits += 1.5
+                    else:
+                        weighted_hits += 1.0
 
-        if not hits:
+        if not hits or weighted_hits <= 0.0:
             return 0.0
 
-        # Prevent denominator inflation from bigrams/trigrams by using unigrams count
-        return min(1.0, weighted_hits / max(4.0, len(unigrams)))
+        return min(1.0, weighted_hits / denom)
 
 
 class HybridMemoryScorer:

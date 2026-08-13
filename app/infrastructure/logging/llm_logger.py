@@ -188,6 +188,7 @@ async def log_llm_transaction(prompt: StructuredPrompt, response: LLMResponse) -
         try:
             from app.infrastructure.logging.pipeline_tracker import pipeline_tracker
             purpose = llm_call_purpose.get()
+            is_deep_thinking = prompt.rag_decisions.get("use_deep_thinking", False) if hasattr(prompt, "rag_decisions") and prompt.rag_decisions else False
             pipeline_tracker.add_step("llm_generation", {
                 "model": response.model,
                 "input_tokens": response.input_tokens,
@@ -202,6 +203,7 @@ async def log_llm_transaction(prompt: StructuredPrompt, response: LLMResponse) -
                 "token_source": "api",
                 "system_prompt": prompt.system,
                 "user_message": prompt.user_message,
+                "use_deep_thinking": is_deep_thinking,
                 "reasoning_content": response.reasoning_content,
                 "history": prompt.history,
             })

@@ -84,6 +84,13 @@ class AppContainer:
         )
 
     @cached_property
+    def entity_resolver(self) -> Any:
+        from app.domain.services.rag.entity_resolver import EntityResolver
+        res = EntityResolver()
+        res.load()
+        return res
+
+    @cached_property
     def chat_engine(self) -> ChatEngine:
         from app.infrastructure.database.repositories.user_repository import SqlAlchemyUserRepository
         from app.infrastructure.database.repositories.emotion_repository import SqlAlchemyEmotionRepository
@@ -109,11 +116,8 @@ class AppContainer:
         from app.domain.services.chat_pipeline.stages.persistence_stage import PersistenceStage
         from app.domain.services.chat_pipeline.stages.cache_update_stage import CacheUpdateStage
         from app.domain.services.chat_pipeline.stages.background_task_stage import BackgroundTaskStage
-        from app.domain.services.rag.entity_resolver import EntityResolver
         
-        entity_resolver = EntityResolver()
-        entity_resolver.load()
-        
+        entity_resolver = self.entity_resolver
         intent_classifier = IntentClassifier(llm=self.llm, embedder=self.embedder)
         
         # Tools registration

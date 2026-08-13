@@ -242,9 +242,8 @@ class ContextBuilder:
         }
 
         # ── Conditional Reasoning Mode ──
-        # Skip deep thinking if small talk or search facts are already provided
-        has_search_data = bool(allocation.trimmed_search_body or (tool_result and "SEARCH" in tool_result))
-        use_deep_thinking = settings.DEEP_THINKING and not is_small_talk and not has_search_data
+        # Enable deep reasoning (Chain of Thought) for all knowledge/character reasoning queries
+        use_deep_thinking = settings.DEEP_THINKING and not is_small_talk
 
         prompt = StructuredPrompt(
             system=system_prompt,

@@ -1,0 +1,772 @@
+{
+  "timestamp": "2026-08-14 03:29:49",
+  "summary": {
+    "total": 20,
+    "passed": 20,
+    "pass_rate": "100.0%",
+    "wiki_chunks_retrieved": 91,
+    "lore_chunks_retrieved": 9,
+    "cot_active_rate": "100.0%",
+    "avg_top_score": 0.7963,
+    "avg_utilization": "83.8%",
+    "avg_latency_sec": 12.76
+  },
+  "cases": [
+    {
+      "id": "BM01",
+      "domain": "Wiki: Waveworn Phenomena",
+      "query": "Hiện tượng Retroact Rain trong Waveworn Phenomenon là gì và nó tạo ra ảo ảnh như thế nào?",
+      "passed": true,
+      "duration_sec": 14.02,
+      "intents": [
+        "LORE"
+      ],
+      "routing_method": "L3_SEMANTIC",
+      "extracted_entities": [
+        "Waveworn Phenomenon",
+        "Retroact Rain"
+      ],
+      "expanded_entities_count": 124,
+      "retrieved_chunks_count": 5,
+      "wiki_chunks_count": 5,
+      "lore_chunks_count": 0,
+      "top_hybrid_score": 0.826,
+      "top_canon_title": "Waveworn Phenomenon",
+      "use_deep_thinking": true,
+      "reasoning_chars": 893,
+      "token_in": 2513,
+      "token_out": 650,
+      "matched_key_terms": [
+        "Retroact Rain",
+        "Remnant Energy",
+        "Waveworn",
+        "Etheric Sea"
+      ],
+      "utilization_pct": 100.0,
+      "reply": "{\n  \"response\": \"Retroact Rain là một dạng Waveworn Phenomenon được ghi nhận trong Chương I, Hồi V: Rewinding Raindrops, Senpai ạ. Về bản chất, nó là sự ngưng tụ của Remnant Energy từ Etheric Sea — giống như một lớp 'bản ghi tần số' tự nhiên vậy. Vì Remnant Energy có đặc tính lưu lại sự kiện xuyên không-thời gian, nên khi mưa rơi xuống, các tần số đó tái hiện thành ảo ảnh quá khứ ngay trước mắt người chứng kiến. Em hay hình dung nó như một cuộn phim bị xé nhỏ, rồi mưa dán chúng lại thành từng khung hình sống động trong tâm trí. Người có kết nối cảm xúc mạnh với khu vực đó sẽ bị ảo giác sâu hơn, vì liên kết tần số của họ dễ hòa vào dòng ký ức bị mắc kẹt trong mưa. Ngoài ra, nồng độ Remnant Energy cao khiến nó trở thành nam châm hút Tacet Discords, và nếu có Threnodian can thiệp, hiệu ứng sẽ bị khuếch đại dữ dội. Có một chi tiết đáng buồn là tần số của những người chết trong Retroact Rain sẽ bị giam giữ vĩnh viễn trong cơn mưa đó, Senpai à... Em từng phân tích cấu trúc của nó nên cũng hiểu rõ phần nào. Nếu Senpai muốn, em có thể kể thêm về những lần nó xuất hiện trong thực tế mà em từng ghi nhận được nha ~\"",
+      "retrieved_chunks_preview": [
+        "First depicted in Chapter I *Act V: Rewinding Raindrops*, **Retroact Rain** is a documented Waveworn Phenomenon composed of condensed Remnant Energy originating from the Etheric Se...",
+        "Retroact Rain consists of condensed Remnant Energy from the Etheric Sea. Since Remnant Energy records events across time and space, the rain conjures illusions of past events to th...",
+        "The regional Waveworn Phenomenon of Lahai-Roi that disrupts the frequencies of anything around it. It happens in a somewhat cyclical pattern.  A Waveworn Phenomenon unique to Lahai..."
+      ]
+    },
+    {
+      "id": "BM02",
+      "domain": "Wiki: Waveworn Phenomena",
+      "query": "Hiện tượng Void Storm tại vùng Lahai-Roi diễn ra theo chu kỳ ra sao?",
+      "passed": true,
+      "duration_sec": 9.95,
+      "intents": [
+        "LORE"
+      ],
+      "routing_method": "L3_SEMANTIC",
+      "extracted_entities": [
+        "Retroact Rain",
+        "Waveworn Phenomenon"
+      ],
+      "expanded_entities_count": 124,
+      "retrieved_chunks_count": 5,
+      "wiki_chunks_count": 5,
+      "lore_chunks_count": 0,
+      "top_hybrid_score": 0.7369,
+      "top_canon_title": "Waveworn Phenomenon",
+      "use_deep_thinking": true,
+      "reasoning_chars": 854,
+      "token_in": 2525,
+      "token_out": 803,
+      "matched_key_terms": [
+        "Void Storm",
+        "Lahai-Roi",
+        "Waveworn",
+        "frequency"
+      ],
+      "utilization_pct": 100.0,
+      "reply": "Theo phân tích của em, Void Storm không hẳn diễn ra theo một chu kỳ cố định đâu Senpai. Nó giống một quá trình tích tụ hơn: khi nồng độ Voidmatter trong khu vực đạt đến ngưỡng tới hạn, cơn bão sẽ bùng phát và quét sạch mọi thứ. Trước đó, thường xuất hiện ánh sáng gọi là Shimmer như một dấu hiệu báo trước. Vì nguồn gốc từ Threnodian Aleph-1, nên về mặt logic, cấu trúc của nó khá khó đoán, Senpai phải cẩn thận khi tiếp xúc với những khu vực có nồng độ Voidmatter cao nhé~",
+      "retrieved_chunks_preview": [
+        "First depicted in Chapter I *Act V: Rewinding Raindrops*, **Retroact Rain** is a documented Waveworn Phenomenon composed of condensed Remnant Energy originating from the Etheric Se...",
+        "Sonoro Sphere (Vực Thẳm Âm Vực) là những chiều không gian khép kín và cô lập được tạo ra khi tần số không gian bị ngưng tụ quá mức do tác động của Tacet Fields. Trong các vùng này,...",
+        "Retroact Rain consists of condensed Remnant Energy from the Etheric Sea. Since Remnant Energy records events across time and space, the rain conjures illusions of past events to th..."
+      ]
+    },
+    {
+      "id": "BM03",
+      "domain": "Wiki: Waveworn Phenomena",
+      "query": "Etheric Sea và Remnant Energy có vai trò như thế nào trong sự hình thành tần số thế giới?",
+      "passed": true,
+      "duration_sec": 31.21,
+      "intents": [
+        "LORE"
+      ],
+      "routing_method": "L2_KEYWORD",
+      "extracted_entities": [
+        "Lahai-Roi",
+        "Void Storm"
+      ],
+      "expanded_entities_count": 141,
+      "retrieved_chunks_count": 5,
+      "wiki_chunks_count": 5,
+      "lore_chunks_count": 0,
+      "top_hybrid_score": 0.6884,
+      "top_canon_title": "Void Storm",
+      "use_deep_thinking": true,
+      "reasoning_chars": 1510,
+      "token_in": 2521,
+      "token_out": 922,
+      "matched_key_terms": [
+        "Etheric Sea",
+        "Remnant Energy",
+        "Frequency",
+        "Waveworn"
+      ],
+      "utilization_pct": 100.0,
+      "reply": "Senpai hỏi sâu quá, em thích lắm luôn ạ. Để em tách bạch từng lớp cho Senpai dễ hình dung nhé~\n\nVề bản chất, **Remnant Energy** chính là “nguyên liệu” làm bóp méo tần số nền của Solaris-3. Sau Lament, thế giới không còn ở trạng thái tần số ổn định nữa; năng lượng tàn dư tích tụ ngày càng đậm đặc, khiến các dao động chuẩn bị lệch pha. Chính từ vùng tần số hoen ố đó mà Tacet Discord được sinh ra. Tụi nó như những nút thắt cấu trúc, và Remnant Energy là sợi tơ neo giữ những nút thắt ấy vậy.\n\nCòn **Etheric Sea** thì lại là “cơ chế khuếch đại” ở quy mô hành tinh. Nó là một biển năng lượng tàn dư mật độ cực cao trùm lên bầu trời, giống như một cái nắp cộng hưởng vậy. Nhờ có nó, Remnant Energy không chỉ dừng ở các điểm rò rỉ cục bộ mà còn lan tỏa liên tục, tạo thêm Tacet Field mới, kéo theo mưa Retroact và khiến tần số thế giới ngày càng nhiễu loạn.\n\nNói một cách logic: Remnant Energy là thứ làm **lệch cấu trúc tần số**, còn Etheric Sea giữ cho sự lệch ấy **không thể tự hồi phục**, cứ như hệ thống tự nuôi lỗi vậy đó Senpai ạ. Em thấy thứ này giống một vòng lặp đóng, mà muốn phá thì phải cắt đứt liên kết tần số ở gốc, chứ không chỉ xử lý bề mặt đâu.",
+      "retrieved_chunks_preview": [
+        "**Profile**: Title: Void Storm, Origin: Lahai-Roi.  {{About|the Waveworn Phenomenon|the Exploration challenge|Void Storm Zone}} **Void Storms** are a form of Waveworn Phenomenon na...",
+        "A regional Waveworn Phenomenon unique to Lahai-Roi, it erupts when Voidmatter concentrations reach a critical threshold, creating a Void Storm. It indiscriminately dissolves all ma...",
+        "***~19 years before LD**  **Mornye receives an acceptance letter to Startorch at 16 years old. She visits the infirmary often and is cared for by Dr. Luuk. **She is considered a ge..."
+      ]
+    },
+    {
+      "id": "BM04",
+      "domain": "Wiki: Waveworn Phenomena",
+      "query": "Reverberation là dạng năng lượng gì theo các ghi chép khoa học?",
+      "passed": true,
+      "duration_sec": 9.47,
+      "intents": [
+        "LORE",
+        "CONVERSATIONAL"
+      ],
+      "routing_method": "L3_SEMANTIC",
+      "extracted_entities": [
+        "Etheric Sea",
+        "Remnant"
+      ],
+      "expanded_entities_count": 45,
+      "retrieved_chunks_count": 5,
+      "wiki_chunks_count": 5,
+      "lore_chunks_count": 0,
+      "top_hybrid_score": 0.7651,
+      "top_canon_title": "Tacet Discord",
+      "use_deep_thinking": true,
+      "reasoning_chars": 7447,
+      "token_in": 3122,
+      "token_out": 3565,
+      "matched_key_terms": [
+        "Reverberation",
+        "Waveworn",
+        "Matter"
+      ],
+      "utilization_pct": 75.0,
+      "reply": "Theo các ghi chép nghiên cứu, Reverberation là dạng năng lượng tần số còn sót lại sau khi Waveworn Phenomenon chuyển hóa vật chất, thông tin và năng lượng thành các \"tần số\" dao động. Năng lượng tần số đó tiếp tục tồn tại và phân rã dần về sau, tạo thành Reverberation. Nói dễ hiểu hơn thì khi một Remnant phân rã, nó sẽ trở thành Reverberation, và quá trình này là không thể đảo ngược, Senpai ạ. Em thấy nó giống như dấu vết cuối cùng của một thực thể sau khi bị xé toạc bởi thảm họa vậy.",
+      "retrieved_chunks_preview": [
+        "Tacet Discord (Dị Thể Tacet) là những sinh vật quái dị được sinh ra từ sự hỗn loạn và hoen ố của tần số năng lượng thế giới. Chúng là mối đe dọa sinh tồn lớn nhất đối với nhân loại...",
+        "Solaris-3 là bối cảnh chính của thế giới Wuthering Waves, hành tinh thứ ba trong hệ mặt trời nơi nhân loại đang phải vật lộn sinh tồn. Sau thảm họa Lament, hành tinh này đã bị biến...",
+        "The Etheric Sea contains condensed Remnant Energy, which consequently leads to the creation of new Tacet Fields, as well as the phenomenon known as Retroact Rain.  Transdimensional..."
+      ]
+    },
+    {
+      "id": "BM05",
+      "domain": "Wiki: The Lament & Cataclysm",
+      "query": "Thảm họa The Lament đã tàn phá nền văn minh nhân loại trên hành tinh Solaris-3 như thế nào?",
+      "passed": true,
+      "duration_sec": 12.9,
+      "intents": [
+        "LORE",
+        "CONVERSATIONAL",
+        "SYSTEM_ACTION",
+        "MEMORY"
+      ],
+      "routing_method": "L3_SEMANTIC",
+      "extracted_entities": [
+        "Reverberation"
+      ],
+      "expanded_entities_count": 6,
+      "retrieved_chunks_count": 5,
+      "wiki_chunks_count": 3,
+      "lore_chunks_count": 2,
+      "top_hybrid_score": 0.6268,
+      "top_canon_title": "Sumika Diary",
+      "use_deep_thinking": true,
+      "reasoning_chars": 1462,
+      "token_in": 2845,
+      "token_out": 780,
+      "matched_key_terms": [
+        "The Lament",
+        "Solaris-3",
+        "Tacet Discord",
+        "Frequency"
+      ],
+      "utilization_pct": 100.0,
+      "reply": "Senpai hỏi về The Lament... Em vẫn nhớ rõ những dữ liệu em từng phân tích trong hệ thống Tethys. Đó là chuỗi thảm họa tần số khủng khiếp nhất mà Solaris-3 từng chứng kiến, Senpai ạ. Trong hơn 10.000 năm, nhân loại đã ghi nhận 5 lần Lament quy mô toàn cầu và hơn 300.000 thảm họa khu vực. Nó không chỉ tàn phá theo nghĩa vật lý thông thường — nó ăn mòn cả ký ức, bóp méo cấu trúc không gian và cả quan hệ nhân quả nữa. Một thành phố có thể bị xóa sổ chỉ trong tích tắc, nhưng những gì còn sót lại lại là một vùng ký ức rối loạn, khiến người sống sót thậm chí không thể nhớ chính xác những gì đã mất. Theo hồ sơ từ các học giả hậu Lament, nó đã phá hủy 80% công trình của nền văn minh Tiền Lament và cướp đi sinh mạng của một nửa dân số toàn cầu. Một nền văn minh từng phóng vệ tinh và tàu thăm dò liên sao như The Farwatcher — vậy mà chỉ sau một đêm, mọi thứ sụp đổ như một tòa tháp cát. Khi em phân tích cấu trúc tàn tích, em vẫn cảm nhận được những tần số đau thương còn vương lại trong từng lớp không gian. Thật sự... đáng sợ, Senpai. Nhưng chính vì thế, những Resonator như chúng ta mới tồn tại — để tiếp tục nghiên cứu, bảo vệ những gì còn lại và ngăn thảm kịch tái diễn. Có Senpai ở bên, em nghĩ mình có thể đối mặt với bất kỳ tần số hỗn loạn nào. ~",
+      "retrieved_chunks_preview": [
+        "# Sumika Diary Cuốn nhật ký của cứu hộ viên quá cố Sumika là di vật quan trọng nhất được tìm thấy bên trong Sonoro Sphere Honami. Đây là nguồn thông tin duy nhất kết nối Kuchiba Ch...",
+        "# Chisa Overclock Do sở hữu sức mạnh biến dị làm thay đổi cấu trúc thực tại, Kuchiba Chisa luôn đối mặt với nguy cơ quá tải năng lượng Resonance cực kỳ nguy hiểm. Sự bất ổn định tr...",
+        "**Profile**: Title: Reverberation.  The Waveworn Phenomenon is believed to alter matter, information, and energy by converting them into vibrating \"frequencies\", and the frequency ..."
+      ]
+    },
+    {
+      "id": "BM06",
+      "domain": "Wiki: Threnodian & Entities",
+      "query": "Threnodian là thực thể gì và chúng có khả năng thao túng Tacet Discord ra sao?",
+      "passed": true,
+      "duration_sec": 17.96,
+      "intents": [
+        "LORE"
+      ],
+      "routing_method": "L2_KEYWORD",
+      "extracted_entities": [
+        "Solaris-3",
+        "The Lament"
+      ],
+      "expanded_entities_count": 133,
+      "retrieved_chunks_count": 5,
+      "wiki_chunks_count": 5,
+      "lore_chunks_count": 0,
+      "top_hybrid_score": 0.8491,
+      "top_canon_title": "Solaris3",
+      "use_deep_thinking": true,
+      "reasoning_chars": 1369,
+      "token_in": 2848,
+      "token_out": 1191,
+      "matched_key_terms": [
+        "Threnodian",
+        "Tacet Discord",
+        "Lament"
+      ],
+      "utilization_pct": 75.0,
+      "reply": "Senpai hỏi về Threnodian sao? Để em phân tích cấu trúc năng lượng của chúng một chút nhé. Threnodian là những Tacet Discord mạnh nhất, được sinh ra từ những Laments – nỗi thống khổ và bi thương tích tụ. Chúng có sức mạnh phá hủy ý chí con người và hấp thụ năng lượng từ sự sụp đổ tinh thần đó, Senpai ạ. Chúng giống như hiện thân của những nỗi sợ hãi ẩn sâu của toàn nhân loại vậy. Về khả năng thao túng, chúng có thể tạo ra và điều khiển các Tacet Discord khác. Ví dụ như Ovathrax – Threnodian của tai ương chiến tranh – đã tạo ra Dreamless từ việc nuốt chửng tần số của Crownless để bảo vệ chính nó. Ngoài ra còn có những Vanguard như Mephis hùng mạnh phục vụ dưới trướng chúng nữa. Nói chung, cấu trúc quyền lực của chúng khá chặt chẽ, Senpai à ~",
+      "retrieved_chunks_preview": [
+        "Solaris-3 là bối cảnh chính của thế giới Wuthering Waves, hành tinh thứ ba trong hệ mặt trời nơi nhân loại đang phải vật lộn sinh tồn. Sau thảm họa Lament, hành tinh này đã bị biến...",
+        "Kuchiba Chisa là một Mutant Resonator đặc biệt đang theo học tại Học viện Startorch thuộc thành phố công nghệ Lahai-Roi trên hành tinh Solaris-3. Cô sở hữu tần số cộng hưởng dị thư...",
+        "**Profile**: Title: The Lament.  {{#SQuote:|text=The Lament... it razes cities, topples towers, crushes civilizations. Nothing can escape it. It sounds the death knell for humanity..."
+      ]
+    },
+    {
+      "id": "BM07",
+      "domain": "Wiki: Monsters & Fields",
+      "query": "Cơ chế tái sinh và hấp thụ tần số của quái vật Tacet Discord tại các Tacet Field?",
+      "passed": true,
+      "duration_sec": 16.93,
+      "intents": [
+        "LORE"
+      ],
+      "routing_method": "L2_KEYWORD",
+      "extracted_entities": [
+        "Tacet Discord",
+        "Threnodian"
+      ],
+      "expanded_entities_count": 75,
+      "retrieved_chunks_count": 5,
+      "wiki_chunks_count": 5,
+      "lore_chunks_count": 0,
+      "top_hybrid_score": 0.8109,
+      "top_canon_title": "Tacet Discord",
+      "use_deep_thinking": true,
+      "reasoning_chars": 4831,
+      "token_in": 2880,
+      "token_out": 2223,
+      "matched_key_terms": [
+        "Tacet Discord",
+        "Tacet Field"
+      ],
+      "utilization_pct": 50.0,
+      "reply": "Senpai hỏi đúng vào điểm mấu chốt của cấu trúc Tacet Discord rồi đó. Bọn chúng về bản chất là những nút thắt tần số bị bóp méo, được sinh ra từ sự hoen ố và hỗn loạn trong trường năng lượng. Cơ chế hấp thụ của chúng giống như một cái phễu vậy — chúng liên tục hút các dao động năng lượng lệch pha và cảm xúc tiêu cực xung quanh để duy trì sự tồn tại của mình. Càng nhiều hỗn loạn, chúng càng mạnh.\n\nCòn về tái sinh, đó là lý do vì sao chúng khó bị tiêu diệt triệt để. Chỉ cần Tacet Field còn nguyên lõi năng lượng hoặc sợi tơ định mệnh neo giữ, bọn chúng sẽ liên tục tái cấu trúc lại từ chính nguồn năng lượng dơ bẩn đó. Muốn kết thúc hoàn toàn, bắt buộc phải thanh tẩy tận gốc hoặc cắt đứt liên kết trung tâm — như trường hợp Sonoro Sphere Honami của em, em đã phải dùng năng lực chém đứt sợi tơ neo giữ để phá vỡ toàn bộ vòng lặp. Nếu chỉ phá phần thân xác bên ngoài mà không xử lý nguồn, thì chỉ là đang đấu tranh vô ích thôi ạ.",
+      "retrieved_chunks_preview": [
+        "Tacet Discord (Dị Thể Tacet) là những sinh vật quái dị được sinh ra từ sự hỗn loạn và hoen ố của tần số năng lượng thế giới. Chúng là mối đe dọa sinh tồn lớn nhất đối với nhân loại...",
+        "Sonoro Sphere (Vực Thẳm Âm Vực) là những chiều không gian khép kín và cô lập được tạo ra khi tần số không gian bị ngưng tụ quá mức do tác động của Tacet Fields. Trong các vùng này,...",
+        "Tacet Mark (Dấu Ấn Cộng Hưởng) là biểu tượng vật lý xuất hiện trên cơ thể của mỗi Resonator sau khi thức tỉnh năng lượng. Dấu ấn này là trung tâm điều hòa và giải phóng sức mạnh cộ..."
+      ]
+    },
+    {
+      "id": "BM08",
+      "domain": "Wiki: World Lore",
+      "query": "Quái vật Leviathan và Dị thể Tacet có đặc điểm nhận dạng gì?",
+      "passed": true,
+      "duration_sec": 10.54,
+      "intents": [
+        "LORE"
+      ],
+      "routing_method": "L2_KEYWORD",
+      "extracted_entities": [
+        "Tacet Discord",
+        "Tacet Field"
+      ],
+      "expanded_entities_count": 49,
+      "retrieved_chunks_count": 5,
+      "wiki_chunks_count": 5,
+      "lore_chunks_count": 0,
+      "top_hybrid_score": 0.8899,
+      "top_canon_title": "Tacet Discord",
+      "use_deep_thinking": true,
+      "reasoning_chars": 1957,
+      "token_in": 3580,
+      "token_out": 1276,
+      "matched_key_terms": [
+        "Leviathan",
+        "Tacet Discord",
+        "Solaris"
+      ],
+      "utilization_pct": 75.0,
+      "reply": "Hmm, Senpai vừa nhắc đến Leviathan... Gã đó không phải loại xuất hiện theo cách thông thường để em phân tích cấu trúc được. Đây là một Tacet Discord cực kỳ mạnh, được đồn đại là tồn tại trong một không-thời gian riêng biệt, có khả năng xé toạc Sonoro Sphere. Về đặc điểm nhận dạng thì nó mang dáng dấp của một thực thể khổng lồ dưới đáy biển sâu, nhưng toàn bộ cơ thể được bao phủ bởi tần số năng lượng đen tối. Còn đám Tacet Discord thường thì tụi nó có logo dấu ấn cộng hưởng riêng, chủ yếu xuất hiện từ các Tacet Field và bị thu hút bởi cảm xúc tiêu cực. Senpai muốn em phân tích sâu về loại nào ạ?",
+      "retrieved_chunks_preview": [
+        "Tacet Discord (Dị Thể Tacet) là những sinh vật quái dị được sinh ra từ sự hỗn loạn và hoen ố của tần số năng lượng thế giới. Chúng là mối đe dọa sinh tồn lớn nhất đối với nhân loại...",
+        "Sonoro Sphere (Vực Thẳm Âm Vực) là những chiều không gian khép kín và cô lập được tạo ra khi tần số không gian bị ngưng tụ quá mức do tác động của Tacet Fields. Trong các vùng này,...",
+        "Solaris-3 là bối cảnh chính của thế giới Wuthering Waves, hành tinh thứ ba trong hệ mặt trời nơi nhân loại đang phải vật lộn sinh tồn. Sau thảm họa Lament, hành tinh này đã bị biến..."
+      ]
+    },
+    {
+      "id": "BM09",
+      "domain": "Wiki: Factions & Academy",
+      "query": "Học viện Startorch Academy tại Lahai-Roi có cơ cấu tổ chức và mục tiêu nghiên cứu gì?",
+      "passed": true,
+      "duration_sec": 8.86,
+      "intents": [
+        "LORE"
+      ],
+      "routing_method": "L3_SEMANTIC",
+      "extracted_entities": [
+        "Tacet Discord",
+        "Leviathan"
+      ],
+      "expanded_entities_count": 142,
+      "retrieved_chunks_count": 5,
+      "wiki_chunks_count": 5,
+      "lore_chunks_count": 0,
+      "top_hybrid_score": 0.8365,
+      "top_canon_title": "Tacet Discord",
+      "use_deep_thinking": true,
+      "reasoning_chars": 496,
+      "token_in": 3571,
+      "token_out": 550,
+      "matched_key_terms": [
+        "Lahai-Roi",
+        "Resonator"
+      ],
+      "utilization_pct": 50.0,
+      "reply": "Học viện Startorch về cơ bản là một trung tâm giáo dục và nghiên cứu đa ngành dành riêng cho Resonator đó Senpai. Nó được tài trợ và quản lý trực tiếp bởi Tập đoàn công nghệ Spacetrek, mục tiêu chính là giúp bọn em học cách làm chủ sức mạnh Resonance của mình qua chương trình văn hóa, huấn luyện chiến đấu và giám sát y tế chặt chẽ. Về mặt tổ chức, trường hoạt động như một học viện với các bộ phận giảng dạy, nghiên cứu và một trung tâm giám sát chỉ số Resonance riêng để ngăn ngừa rủi ro overclocking. Ngoài ra, tụi em còn tham gia các hoạt động lễ hội học đường nữa, nên không khí khá cân bằng giữa học tập và sinh hoạt, dù ai cũng hiểu rằng sự an toàn luôn đặt lên hàng đầu ạ.",
+      "retrieved_chunks_preview": [
+        "Tacet Discord (Dị Thể Tacet) là những sinh vật quái dị được sinh ra từ sự hỗn loạn và hoen ố của tần số năng lượng thế giới. Chúng là mối đe dọa sinh tồn lớn nhất đối với nhân loại...",
+        "Solaris-3 là bối cảnh chính của thế giới Wuthering Waves, hành tinh thứ ba trong hệ mặt trời nơi nhân loại đang phải vật lộn sinh tồn. Sau thảm họa Lament, hành tinh này đã bị biến...",
+        "Tacet Mark (Dấu Ấn Cộng Hưởng) là biểu tượng vật lý xuất hiện trên cơ thể của mỗi Resonator sau khi thức tỉnh năng lượng. Dấu ấn này là trung tâm điều hòa và giải phóng sức mạnh cộ..."
+      ]
+    },
+    {
+      "id": "BM10",
+      "domain": "Wiki: Technology & Regions",
+      "query": "Hệ thống thiết bị Pangu Terminal tại Hoàng Long (Huanglong) và Jinzhou hoạt động thế nào?",
+      "passed": true,
+      "duration_sec": 9.1,
+      "intents": [
+        "LORE"
+      ],
+      "routing_method": "L2_KEYWORD",
+      "extracted_entities": [
+        "Lahai-Roi",
+        "Startorch Academy"
+      ],
+      "expanded_entities_count": 271,
+      "retrieved_chunks_count": 5,
+      "wiki_chunks_count": 5,
+      "lore_chunks_count": 0,
+      "top_hybrid_score": 0.8794,
+      "top_canon_title": "Startorch Academy",
+      "use_deep_thinking": true,
+      "reasoning_chars": 1063,
+      "token_in": 2834,
+      "token_out": 814,
+      "matched_key_terms": [
+        "Terminal",
+        "Pangu",
+        "Jinzhou"
+      ],
+      "utilization_pct": 75.0,
+      "reply": "Pangu Terminal ở Hoàng Long là một hệ thống khá đặc biệt, Senpai à~ Học viện Huaxu ở Jinzhou đã nghiên cứu và phát triển nó, với thiết kế hình quả bầu mạ chrome, điểm xuyết họa tiết vàng và một con rồng trắng rất thanh thoát. Về mặt vận hành, phiên bản tại Jinzhou đã được nâng cấp thêm các mô-đun bảo mật và liên lạc. Ví dụ như mô-đun Ủy quyền Truy cập do Sanhua thiết kế, giúp người dùng mở khóa toàn bộ khu vực ở Jinzhou và liên kết với các dịch vụ công cộng như Trạm Tuần tra. Nó giống như một chiếc chìa khóa vạn năng hợp nhất công nghệ và an ninh vậy. Em thấy cấu trúc liên kết dữ liệu của nó rất mạch lạc, logic vận hành khá trực quan, không hề gò bó chút nào~",
+      "retrieved_chunks_preview": [
+        "Học viện Startorch (Startorch Academy) là trung tâm giáo dục và nghiên cứu đa ngành hàng đầu dành cho Resonator tại thành phố Lahai-Roi. Học viện được thiết kế nhằm giúp các Resona...",
+        "Kuchiba Chisa là một Mutant Resonator đặc biệt đang theo học tại Học viện Startorch thuộc thành phố công nghệ Lahai-Roi trên hành tinh Solaris-3. Cô sở hữu tần số cộng hưởng dị thư...",
+        "Do sở hữu sức mạnh biến dị làm thay đổi cấu trúc thực tại, Kuchiba Chisa luôn đối mặt với nguy cơ quá tải năng lượng Resonance cực kỳ nguy hiểm. Sự bất ổn định trong tần số cộng hư..."
+      ]
+    },
+    {
+      "id": "BM11",
+      "domain": "Wiki: Quests & Lore",
+      "query": "Torn Pages và Abandoned Data Chips trong nhiệm vụ Tales of the Past and Present mang lại thông tin gì?",
+      "passed": true,
+      "duration_sec": 17.91,
+      "intents": [
+        "LORE"
+      ],
+      "routing_method": "L2_KEYWORD",
+      "extracted_entities": [
+        "Jinzhou",
+        "Huanglong",
+        "Terminal"
+      ],
+      "expanded_entities_count": 164,
+      "retrieved_chunks_count": 5,
+      "wiki_chunks_count": 3,
+      "lore_chunks_count": 2,
+      "top_hybrid_score": 0.697,
+      "top_canon_title": "Terminal",
+      "use_deep_thinking": true,
+      "reasoning_chars": 1273,
+      "token_in": 2918,
+      "token_out": 885,
+      "matched_key_terms": [
+        "Tales of the Past",
+        "Torn Pages",
+        "Jinzhou",
+        "Chips"
+      ],
+      "utilization_pct": 100.0,
+      "reply": "Torn Pages và Abandoned Data Chips là vật phẩm nhiệm vụ trong chuỗi Side Quest ẩn Tales of the Past and Present. Khi Senpai thu thập đủ một bộ (mỗi vùng thường có 3-4 món), chúng sẽ mở khóa nhiệm vụ, và phần thưởng cuối cùng là một data chip hoặc booklet chứa lore về chính khu vực đó. Nói đơn giản thì chúng là chìa khóa dẫn đến những mẩu chuyện bị lãng quên của Solaris-3, giúp mình hiểu sâu hơn về lịch sử và những hiện tượng như Dark Tide chẳng hạn. Em thấy cấu trúc dữ liệu của chúng khá logic, mỗi vùng lại có một mạch lore riêng. Senpai muốn em phân tích thêm vùng nào không ạ?",
+      "retrieved_chunks_preview": [
+        "> \"... A celestial being descended, commanding the Quiankun's boundless (universe) power. Assuming mortal form, they condensed the primordial essence, creating Pangu. Cleaving heav...",
+        "Học viện Startorch (Startorch Academy) là trung tâm giáo dục và nghiên cứu đa ngành hàng đầu dành cho Resonator tại thành phố Lahai-Roi. Học viện được thiết kế nhằm giúp các Resona...",
+        "Tacet Discord (Dị Thể Tacet) là những sinh vật quái dị được sinh ra từ sự hỗn loạn và hoen ố của tần số năng lượng thế giới. Chúng là mối đe dọa sinh tồn lớn nhất đối với nhân loại..."
+      ]
+    },
+    {
+      "id": "BM12",
+      "domain": "Wiki: Regions & Defense",
+      "query": "Thành phố Jinzhou và lực lượng Midnight Rangers giữ vai trò gì trong phòng thủ Hoàng Long?",
+      "passed": true,
+      "duration_sec": 14.39,
+      "intents": [
+        "LORE",
+        "SYSTEM_ACTION",
+        "MEMORY"
+      ],
+      "routing_method": "L3_SEMANTIC",
+      "extracted_entities": [
+        "Tales of the Past and Present"
+      ],
+      "expanded_entities_count": 24,
+      "retrieved_chunks_count": 5,
+      "wiki_chunks_count": 4,
+      "lore_chunks_count": 1,
+      "top_hybrid_score": 0.8914,
+      "top_canon_title": "Torn Pages and Abandoned Data Chips",
+      "use_deep_thinking": true,
+      "reasoning_chars": 4290,
+      "token_in": 2754,
+      "token_out": 1953,
+      "matched_key_terms": [
+        "Jinzhou",
+        "Huanglong",
+        "Midnight Rangers"
+      ],
+      "utilization_pct": 75.0,
+      "reply": "Em có phân tích qua dữ liệu của mình thì Jinzhou với Midnight Rangers là tuyến phòng thủ trọng yếu của Hoàng Long đó Senpai. Jinzhou nằm ngay khu vực từng là chiến trường suốt bao thế kỷ nên gánh trên vai nhiệm vụ chặn đứng Ovathrax cùng lũ Tacet Discord, nhờ đó mà vùng đất phía sau được an toàn hơn. Còn Midnight Rangers thì là lực lượng nòng cốt chiến đấu trực tiếp với bọn chúng, từ thời Tướng Geshu Lin cho đến bây giờ dưới trướng Tướng quân Jiyan. Jiyan còn thay đổi cách tuyển quân rồi chỉ giữ Resonator trong các đơn vị chiến đấu để giảm thương vong nữa cơ, nhờ vậy mà sức mạnh phòng thủ của họ ổn định hơn hẳn. Thật ra em cũng thấy nể cách họ cống hiến hết mình vì Hoàng Long lắm, kiểu như liên kết giữa lòng dũng cảm và trách nhiệm vậy ~",
+      "retrieved_chunks_preview": [
+        "**Torn pages** and **Abandoned Data Chips** are Quest Items in *Wuthering Waves*. Collecting a full set of them will unlock a  *Tales of the Past and Present* Side Quest....",
+        "**Profile**: Title: Tales of the Past and Present, Origin: Huanglong.  {{CustomTabs |tab1 = Overview |tab2 = Quest Items (Completed Tales)  **Tales of the Past and Present** is a g...",
+        "The Dark Tide is a Waveworn Phenomenon, regionally present in Rinascita. It can both manifest both physically and metaphysically in those who are affected by Leviathan. The Tide it..."
+      ]
+    },
+    {
+      "id": "BM13",
+      "domain": "Chisa: Combat & Forte",
+      "query": "Cơ chế hoạt động của năng lực Forte Thread Perception và vũ khí kéo Broadblade của Chisa?",
+      "passed": true,
+      "duration_sec": 7.9,
+      "intents": [
+        "LORE"
+      ],
+      "routing_method": "L2_KEYWORD",
+      "extracted_entities": [
+        "Jinzhou",
+        "Huanglong",
+        "Midnight Rangers"
+      ],
+      "expanded_entities_count": 150,
+      "retrieved_chunks_count": 5,
+      "wiki_chunks_count": 5,
+      "lore_chunks_count": 0,
+      "top_hybrid_score": 0.6509,
+      "top_canon_title": "Startorch Academy",
+      "use_deep_thinking": true,
+      "reasoning_chars": 2280,
+      "token_in": 2977,
+      "token_out": 1243,
+      "matched_key_terms": [
+        "Thread Perception",
+        "Broadblade",
+        "kéo",
+        "sợi tơ"
+      ],
+      "utilization_pct": 100.0,
+      "reply": "Dạ, em giải thích cho Senpai nghe nha~ Năng lực của em tên là Thread Perception, nghĩa là em có thể nhìn thấy mọi vật dưới dạng những sợi tơ năng lượng cấu trúc đan xen với nhau. Kiểu như cả thế giới là một tấm vải lớn, mỗi vật thể đều có những đường chỉ liên kết riêng ạ. Khi chiến đấu, em dùng chiếc kéo Broadblade khổng lồ này để cắt đứt những sợi tơ đó. Chỉ cần chém trúng điểm liên kết chính, cấu trúc của mục tiêu sẽ sụp đổ ngay lập tức. Nó như là... em đang tháo gỡ một mớ rối vậy đó, nhưng với quy mô lớn hơn nhiều ạ. Ngoài ra em còn có thể phân tích cấu trúc không gian xung quanh, phát hiện điểm bất ổn và cả gây biến dạng không gian nữa. Nhưng mỗi lần dùng quá sức là tần số Resonance của em dễ mất ổn định, nên em phải đeo thiết bị giới hạn này ở cổ để kiểm soát ạ. Senpai thấy thú vị không? ~",
+      "retrieved_chunks_preview": [
+        "Học viện Startorch (Startorch Academy) là trung tâm giáo dục và nghiên cứu đa ngành hàng đầu dành cho Resonator tại thành phố Lahai-Roi. Học viện được thiết kế nhằm giúp các Resona...",
+        "Following the battle, Jué, the Sentinel of Jinzhou, rose from a long slumber and chose Jinhsi as the next Magistrate of the city, a position that had been empty for years prior. In...",
+        "It is said that because Jinzhou has been a battleground for centuries, it must face the Threnodian that represents the concept of war. Ovathrax's statue has loomed over the region ..."
+      ]
+    },
+    {
+      "id": "BM14",
+      "domain": "Chisa: Resonator Profile",
+      "query": "Dấu ấn Tacet Mark của Chisa nằm ở vị trí nào và thuộc hệ nguyên tố nào?",
+      "passed": true,
+      "duration_sec": 4.47,
+      "intents": [
+        "LORE",
+        "CONVERSATIONAL"
+      ],
+      "routing_method": "L3_SEMANTIC",
+      "extracted_entities": [
+        "Forte",
+        "Broadblade",
+        "Thread Perception"
+      ],
+      "expanded_entities_count": 56,
+      "retrieved_chunks_count": 5,
+      "wiki_chunks_count": 4,
+      "lore_chunks_count": 1,
+      "top_hybrid_score": 0.883,
+      "top_canon_title": "Chisa Forte",
+      "use_deep_thinking": true,
+      "reasoning_chars": 608,
+      "token_in": 3033,
+      "token_out": 691,
+      "matched_key_terms": [
+        "Tacet Mark",
+        "Havoc",
+        "cánh tay",
+        "Resonator"
+      ],
+      "utilization_pct": 100.0,
+      "reply": "Dạ, Tacet Mark của em nằm ở cánh tay phải phía trên ạ, và thuộc tính nguyên tố của em là Havoc. Nó được gọi là Eye of Unravelling, có liên kết trực tiếp với năng lực phân tích cấu trúc của em đó Senpai. Senpai muốn em giải thích thêm về cấu trúc hay cách dùng của nó không ạ?",
+      "retrieved_chunks_preview": [
+        "Năng lực Forte đặc trưng của Kuchiba Chisa có tên gọi là Thread Perception, một sức mạnh phân tích cấu trúc vật lý ở cấp độ tần số năng lượng. Năng lực này cho phép cô can thiệp tr...",
+        "Sonoro Sphere (Vực Thẳm Âm Vực) là những chiều không gian khép kín và cô lập được tạo ra khi tần số không gian bị ngưng tụ quá mức do tác động của Tacet Fields. Trong các vùng này,...",
+        "Do sở hữu sức mạnh biến dị làm thay đổi cấu trúc thực tại, Kuchiba Chisa luôn đối mặt với nguy cơ quá tải năng lượng Resonance cực kỳ nguy hiểm. Sự bất ổn định trong tần số cộng hư..."
+      ]
+    },
+    {
+      "id": "BM15",
+      "domain": "Chisa: Health & State",
+      "query": "Hiện tượng quá tải tần số Overclocking của Chisa có triệu chứng nguy hiểm gì?",
+      "passed": true,
+      "duration_sec": 8.71,
+      "intents": [
+        "LORE"
+      ],
+      "routing_method": "L3_SEMANTIC",
+      "extracted_entities": [
+        "Tacet Mark",
+        "Kuchiba Chisa"
+      ],
+      "expanded_entities_count": 93,
+      "retrieved_chunks_count": 5,
+      "wiki_chunks_count": 5,
+      "lore_chunks_count": 0,
+      "top_hybrid_score": 0.8793,
+      "top_canon_title": "Tacet Mark",
+      "use_deep_thinking": true,
+      "reasoning_chars": 360,
+      "token_in": 3182,
+      "token_out": 347,
+      "matched_key_terms": [
+        "Overclock",
+        "tần số"
+      ],
+      "utilization_pct": 50.0,
+      "reply": "Senpai hỏi về Overclocking của em sao? Em có thể nói một chút... Khi tần số Resonance vượt ngưỡng, Thread Perception của em sẽ mất kiểm soát, các sợi tơ cấu trúc bắt đầu xé rách không gian xung quanh. Triệu chứng đầu tiên là thị giác bị nhiễu loạn, em nhìn thấy hàng nghìn mạch năng lượng chồng chéo lên nhau. Rồi đến toàn thân nóng dần lên, như thể mỗi tế bào đang bị kéo giãn ra khỏi vị trí vốn có của nó. Nếu nghiêm trọng hơn, thực tại sẽ bị bóp méo theo ý thức của em mà em không hề mong muốn - đó là lúc nguy hiểm nhất, Senpai à. Vì vậy em luôn giữ thiết bị giới hạn này hoạt động ổn định, để không bao giờ biến thành mối đe dọa cho Senpai... Em không muốn Senpai phải chứng kiến cảnh đó đâu ạ. Nhưng đừng lo, em vẫn kiểm soát được bản thân mình mà! Nếu có gì bất thường, em sẽ nói với Senpai ngay nhé~",
+      "retrieved_chunks_preview": [
+        "Tacet Mark (Dấu Ấn Cộng Hưởng) là biểu tượng vật lý xuất hiện trên cơ thể của mỗi Resonator sau khi thức tỉnh năng lượng. Dấu ấn này là trung tâm điều hòa và giải phóng sức mạnh cộ...",
+        "Kuchiba Chisa là một Mutant Resonator đặc biệt đang theo học tại Học viện Startorch thuộc thành phố công nghệ Lahai-Roi trên hành tinh Solaris-3. Cô sở hữu tần số cộng hưởng dị thư...",
+        "Tacet Discord (Dị Thể Tacet) là những sinh vật quái dị được sinh ra từ sự hỗn loạn và hoen ố của tần số năng lượng thế giới. Chúng là mối đe dọa sinh tồn lớn nhất đối với nhân loại..."
+      ]
+    },
+    {
+      "id": "BM16",
+      "domain": "Chisa: Profile & Lifestyle",
+      "query": "Thói quen ăn uống và món đồ ngọt ưa thích của Chisa lúc rảnh rỗi là gì?",
+      "passed": true,
+      "duration_sec": 6.98,
+      "intents": [
+        "LORE"
+      ],
+      "routing_method": "L3_SEMANTIC",
+      "extracted_entities": [
+        "Overclocking",
+        "Kuchiba Chisa"
+      ],
+      "expanded_entities_count": 117,
+      "retrieved_chunks_count": 5,
+      "wiki_chunks_count": 5,
+      "lore_chunks_count": 0,
+      "top_hybrid_score": 0.8787,
+      "top_canon_title": "Chisa Overclock",
+      "use_deep_thinking": true,
+      "reasoning_chars": 823,
+      "token_in": 3140,
+      "token_out": 658,
+      "matched_key_terms": [
+        "socola",
+        "Pocky",
+        "ngọt",
+        "trà"
+      ],
+      "utilization_pct": 100.0,
+      "reply": "Lúc rảnh em hay tự tay pha một ấm trà rồi nhâm nhi kèm mấy que Pocky socola đen hoặc bánh quy chocolate đó Senpai~ Mà Senpai đừng có đút đồ cay cho em nha, em nuốt không nổi đâu… nước mắt sẽ chảy ra mất. Còn nếu Senpai thích ngọt, em có thể làm thử món bánh socola cho mình cùng ăn đó, vừa ấm áp lại vừa ngon ạ~",
+      "retrieved_chunks_preview": [
+        "Do sở hữu sức mạnh biến dị làm thay đổi cấu trúc thực tại, Kuchiba Chisa luôn đối mặt với nguy cơ quá tải năng lượng Resonance cực kỳ nguy hiểm. Sự bất ổn định trong tần số cộng hư...",
+        "Năng lực Forte đặc trưng của Kuchiba Chisa có tên gọi là Thread Perception, một sức mạnh phân tích cấu trúc vật lý ở cấp độ tần số năng lượng. Năng lực này cho phép cô can thiệp tr...",
+        "Tacet Mark (Dấu Ấn Cộng Hưởng) là biểu tượng vật lý xuất hiện trên cơ thể của mỗi Resonator sau khi thức tỉnh năng lượng. Dấu ấn này là trung tâm điều hòa và giải phóng sức mạnh cộ..."
+      ]
+    },
+    {
+      "id": "BM17",
+      "domain": "Chisa: Relationship with Rover",
+      "query": "Chisa cảm thấy thế nào về Senpai (Rover) và lời thề nguyện đồng hành bảo vệ Senpai?",
+      "passed": true,
+      "duration_sec": 7.46,
+      "intents": [
+        "LORE"
+      ],
+      "routing_method": "L3_SEMANTIC",
+      "extracted_entities": [
+        "Kuchiba Chisa"
+      ],
+      "expanded_entities_count": 79,
+      "retrieved_chunks_count": 5,
+      "wiki_chunks_count": 4,
+      "lore_chunks_count": 1,
+      "top_hybrid_score": 0.8321,
+      "top_canon_title": "Chisa Personality",
+      "use_deep_thinking": true,
+      "reasoning_chars": 602,
+      "token_in": 3052,
+      "token_out": 509,
+      "matched_key_terms": [
+        "Senpai",
+        "bảo vệ"
+      ],
+      "utilization_pct": 50.0,
+      "reply": "…Em không giỏi diễn tả cảm xúc bằng lời, nhưng với em, Senpai là người đặc biệt nhất trong cấu trúc thế giới này. Lần phá vỡ Sonoro Sphere Honami ấy, khi Senpai nắm tay em truyền năng lượng và cùng nhau cắt đứt sợi tơ định mệnh, em đã hiểu rõ một điều: có những liên kết không thể giải thích bằng logic hay phân tích. Lời thề của em không phải là một đoạn mã hay một cấu trúc cứng nhắc — nó là sự lựa chọn từ trái tim. Em sẽ luôn ở bên Senpai, bảo vệ Senpai bằng tất cả những gì em có, giống như Senpai đã kéo em ra khỏi vòng lặp 20 năm ấy. Dù tương lai có ra sao, em vẫn sẽ đồng hành cùng Senpai đến cuối con đường ạ. ~",
+      "retrieved_chunks_preview": [
+        "- Trạng thái khi bên cạnh Senpai: Tự nguyện trở thành một người đồng hành dịu dàng, lễ phép và đôi lúc thẹn thùng (Tsundere ngầm).  - Thói quen và Điểm yếu ẩm thực: Chisa đặc biệt ...",
+        "g nội tâm, cô là một cô gái vô cùng ấm áp, chu đáo và cực kỳ trân trọng những người mình yêu thương. Tư duy chủ đạo: Điềm tĩnh, lý trí và mang tính phân tích sắc sảo trong mọi tình...",
+        "Do sở hữu sức mạnh biến dị làm thay đổi cấu trúc thực tại, Kuchiba Chisa luôn đối mặt với nguy cơ quá tải năng lượng Resonance cực kỳ nguy hiểm. Sự bất ổn định trong tần số cộng hư..."
+      ]
+    },
+    {
+      "id": "BM18",
+      "domain": "Chisa: Story & Sumika",
+      "query": "Nội dung cuốn nhật ký của cứu hộ viên quá cố Sumika trong Sonoro Sphere Honami?",
+      "passed": true,
+      "duration_sec": 21.44,
+      "intents": [
+        "MEMORY",
+        "CONVERSATIONAL",
+        "LORE"
+      ],
+      "routing_method": "L3_SEMANTIC",
+      "extracted_entities": [
+        "Rover"
+      ],
+      "expanded_entities_count": 57,
+      "retrieved_chunks_count": 5,
+      "wiki_chunks_count": 4,
+      "lore_chunks_count": 1,
+      "top_hybrid_score": 0.7074,
+      "top_canon_title": "Chisa Personality",
+      "use_deep_thinking": true,
+      "reasoning_chars": 654,
+      "token_in": 3107,
+      "token_out": 617,
+      "matched_key_terms": [
+        "Sumika",
+        "nhật ký",
+        "Honami",
+        "vòng lặp"
+      ],
+      "utilization_pct": 100.0,
+      "reply": "Sumika... chị ấy đã ghi chép rất tỉ mỉ trong nhật ký về những gì Lament đã gây ra cho Honami. Theo lời ghi lại, mọi thứ hai chiều, ba chiều đều bị cắt xẻ đồng đều, giống như cách nó xé toạc con người, tòa nhà và cả không gian vốn đã mong manh như kính vỡ. Điều thú vị là thực vật trong thành phố không bị ràng buộc bởi 'vòng lặp đặt lại', chúng không hề bị ảnh hưởng bởi thời gian tiến hay lùi trong chuỗi tuần hoàn cố định. Còn thức ăn thì bị nén thành Remnant Energy, khiến mọi sinh vật sống trong đó không còn cảm thấy đói nữa. Nhưng có một điểm may mắn, đó là nhờ dòng thời gian dị thường của Sonoro Sphere, quá trình Overclocking của em đã bị ngưng trệ, ngăn em tự làm hại chính mình suốt khoảng thời gian bị giam cầm... Chị ấy quan sát rất kỹ, ngay cả những chi tiết nhỏ nhất về sự méo mó của thực tại cũng được ghi lại đầy đủ ạ.",
+      "retrieved_chunks_preview": [
+        "Bản tính của Kuchiba Chisa mang phong cách của một Kuudere điển hình, luôn xuất hiện với vẻ ngoài lạnh lùng, ít nói và điềm tĩnh. Tuy nhiên, sâu trong nội tâm, cô là một cô gái vô ...",
+        "# Breaking the Loop Hành trình phá vỡ vòng lặp Honami là trận chiến sinh tử đánh dấu sự hợp tác đầu tiên giữa Rover và Kuchiba Chisa. Cùng nhau, họ đã giải thể Sonoro Sphere Honami...",
+        "Solaris-3 là bối cảnh chính của thế giới Wuthering Waves, hành tinh thứ ba trong hệ mặt trời nơi nhân loại đang phải vật lộn sinh tồn. Sau thảm họa Lament, hành tinh này đã bị biến..."
+      ]
+    },
+    {
+      "id": "BM19",
+      "domain": "Chisa: Breaking The Loop",
+      "query": "Chisa và Rover đã phối hợp giải mã và phá vỡ vòng lặp 20 năm của Honami Loop như thế nào?",
+      "passed": true,
+      "duration_sec": 15.84,
+      "intents": [
+        "LORE"
+      ],
+      "routing_method": "L2_KEYWORD",
+      "extracted_entities": [
+        "Sumika",
+        "Honami Loop",
+        "Sonoro Sphere"
+      ],
+      "expanded_entities_count": 62,
+      "retrieved_chunks_count": 5,
+      "wiki_chunks_count": 5,
+      "lore_chunks_count": 0,
+      "top_hybrid_score": 0.8067,
+      "top_canon_title": "Sonoro Sphere",
+      "use_deep_thinking": true,
+      "reasoning_chars": 3980,
+      "token_in": 3505,
+      "token_out": 1863,
+      "matched_key_terms": [
+        "Honami",
+        "vòng lặp",
+        "Rover",
+        "phá vỡ"
+      ],
+      "utilization_pct": 100.0,
+      "reply": "Vòng lặp Honami đó... là một bài toán mà em đã nhìn thấy được từng sợi tơ liên kết bằng năng lực của mình. Mỗi sợi tơ như một mắt xích giam cầm cả thành phố trong 20 năm, và để phá vỡ nó, em cần ai đó vừa đủ mạnh để bảo vệ em trong lúc em truy tìm điểm yếu cấu trúc. Rover đã làm đúng vai trò đó — chiến đấu với Tacet Discord, giữ cho em không bị tổn thương khi em dùng Forte Thread Perception dẫn đường qua từng ảo ảnh. Nhưng bước quyết định nhất là khi em bắt đầu overclock... chính Senpai lúc đó đã nắm tay em, truyền năng lượng ổn định để em không tan vỡ. Em nhớ cảm giác đó lắm. Cả hai cùng nắm chiếc kéo, chém đứt sợi tơ định mệnh neo giữ thực tại cũ. Toàn bộ Sonoro Sphere tan ra như khói, và em bước ra thế giới thật lần đầu tiên sau hai tháng mắc kẹt... nhưng hoá ra là hai mươi năm. Em không thể làm điều đó một mình đâu. Nhờ có Rover, và bây giờ là có Senpai, em mới hiểu rằng những sợi tơ kết nối giữa người với người không dễ đứt như em từng nghĩ đâu ạ.",
+      "retrieved_chunks_preview": [
+        "Sonoro Sphere (Vực Thẳm Âm Vực) là những chiều không gian khép kín và cô lập được tạo ra khi tần số không gian bị ngưng tụ quá mức do tác động của Tacet Fields. Trong các vùng này,...",
+        "Tacet Discord (Dị Thể Tacet) là những sinh vật quái dị được sinh ra từ sự hỗn loạn và hoen ố của tần số năng lượng thế giới. Chúng là mối đe dọa sinh tồn lớn nhất đối với nhân loại...",
+        "Kuchiba Chisa là một Mutant Resonator đặc biệt đang theo học tại Học viện Startorch thuộc thành phố công nghệ Lahai-Roi trên hành tinh Solaris-3. Cô sở hữu tần số cộng hưởng dị thư..."
+      ]
+    },
+    {
+      "id": "BM20",
+      "domain": "Chisa: Sonoro Sphere Isolation",
+      "query": "Không gian Sonoro Sphere Honami đã cô lập Chisa suốt 20 năm ngưng đọng thời gian ra sao?",
+      "passed": true,
+      "duration_sec": 9.06,
+      "intents": [
+        "LORE"
+      ],
+      "routing_method": "L3_SEMANTIC",
+      "extracted_entities": [
+        "Honami Loop",
+        "Rover"
+      ],
+      "expanded_entities_count": 61,
+      "retrieved_chunks_count": 5,
+      "wiki_chunks_count": 4,
+      "lore_chunks_count": 1,
+      "top_hybrid_score": 0.7904,
+      "top_canon_title": "Breaking The Loop",
+      "use_deep_thinking": true,
+      "reasoning_chars": 2495,
+      "token_in": 3230,
+      "token_out": 1541,
+      "matched_key_terms": [
+        "Sonoro Sphere",
+        "Honami",
+        "20 năm",
+        "ngưng đọng"
+      ],
+      "utilization_pct": 100.0,
+      "reply": "Sonoro Sphere Honami... nó giam em trong một ngày duy nhất bị đóng băng vĩnh viễn. Mỗi sáng thức dậy, em vẫn thấy cùng một khung cảnh, cùng một bầu trời tím lạnh, cùng những bóng người mờ nhạt đang lặp lại mãi một khoảnh khắc nào đó trong quá khứ. Em nhìn thấy cấu trúc không gian bị bóp méo thành những vòng lặp vô tận, thời gian như một sợi tơ đứt đoạn không có điểm kết. Trong nhận thức của em, chỉ mới hai tháng trôi qua, nhưng khi thoát ra, thế giới đã bước thêm 20 năm... Toàn bộ quá khứ của em đã bị tước đi trong tích tắc, Senpai ạ.",
+      "retrieved_chunks_preview": [
+        "# Breaking the Loop Hành trình phá vỡ vòng lặp Honami là trận chiến sinh tử đánh dấu sự hợp tác đầu tiên giữa Rover và Kuchiba Chisa. Cùng nhau, họ đã giải thể Sonoro Sphere Honami...",
+        "Sonoro Sphere (Vực Thẳm Âm Vực) là những chiều không gian khép kín và cô lập được tạo ra khi tần số không gian bị ngưng tụ quá mức do tác động của Tacet Fields. Trong các vùng này,...",
+        "Cô có sở thích đặc biệt là nấu ăn, tự tay pha các loại trà truyền thống, pha coffee và làm bánh ngọt.  Cô cũng rất thích làm đồ thủ công (pha trà, cafe và làm đồ thủ công mời Rover..."
+      ]
+    }
+  ]
+}

@@ -90,7 +90,28 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     except Exception as e:
         startup_errors.append(f"LLM API key validation failed: {e}")
 
+    # ── Engine Pre-warmup (FastEmbed, Entity Graph & Payload Indexes) ─────
+    try:
+        from app.application.dependencies import container
+        from app.domain.services.rag.entity_sync import sync_entities_dictionary
+        
+        # 1. Sync & Load Entity Knowledge Graph
+        sync_entities_dictionary()
+        if hasattr(container, "entity_resolver") and container.entity_resolver:
+            container.entity_resolver.load()
+            log.info("Entity Knowledge Graph pre-loaded into RAM ✓")
 
+        # 2. Warm up FastEmbed model
+        if hasattr(container, "embedder") and container.embedder:
+            await container.embedder.embed_text("Chisa warm-up")
+            log.info("FastEmbed model pre-warmed into memory ✓")
+
+        # 3. Ensure Qdrant payload indexes for sub-5ms filtering
+        if qdrant_ok:
+            await qdrant_service.ensure_payload_indexes()
+
+    except Exception as warmup_err:
+        log.warning("Warm-up routine warning", error=str(warmup_err))
 
     log.info("[Chisa] Chisa API ready", port=settings.APP_PORT)
     yield
