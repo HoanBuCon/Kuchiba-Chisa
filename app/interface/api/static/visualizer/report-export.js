@@ -22,7 +22,7 @@ window.ReportExportEngine = {
         md += `*   **Nguồn gửi:** ${trace.source || 'Web/Discord'}\n`;
         md += `*   **Thời gian:** ${new Date(trace.timestamp || Date.now()).toLocaleString('vi-VN')}\n`;
         md += `*   **Độ trễ (Latency):** ${trace.latency_ms || 0}ms\n`;
-        md += `*   **Tổng Tokens:** ${trace.total_tokens || 0} tokens\n\n`;
+        md += `*   **Tổng Tokens:** ${trace.total_tokens || 0} tokens (Input: ${trace.total_input_tokens || 0} | Output: ${trace.total_output_tokens || 0}${trace.total_reasoning_tokens ? ` | Reasoning: ${trace.total_reasoning_tokens}` : ''})\n\n`;
         md += `---\n\n`;
 
         md += `## 1. Tin nhắn của User (User Input)\n`;
@@ -42,7 +42,7 @@ window.ReportExportEngine = {
                 if (step.name === 'llm_generation') {
                     md += `*   **Model:** \`${step.data?.model || '—'}\`\n`;
                     md += `*   **Purpose:** \`${step.data?.purpose_label || step.data?.purpose || '—'}\`\n`;
-                    md += `*   **Tokens:** In: ${step.data?.input_tokens || 0} | Out: ${step.data?.output_tokens || 0} | Tổng: ${step.data?.total_tokens || 0}\n\n`;
+                    md += `*   **Tokens:** In: ${step.data?.input_tokens || 0} | Out: ${step.data?.output_tokens || 0}${step.data?.reasoning_tokens ? ` | Reasoning: ${step.data.reasoning_tokens}` : ''} | Tổng: ${step.data?.total_tokens || 0}\n\n`;
                     
                     if (step.data?.reasoning_content) {
                         md += `#### 🧠 Suy luận Reasoning Content:\n\`\`\`text\n${step.data.reasoning_content}\n\`\`\`\n\n`;

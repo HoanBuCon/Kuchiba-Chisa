@@ -93,6 +93,9 @@ class PipelineTracker:
             "status": "processing",
             "steps": [],
             "total_tokens": 0,
+            "total_input_tokens": 0,
+            "total_output_tokens": 0,
+            "total_reasoning_tokens": 0,
             "response": "",
             "latency_ms": 0.0,
             "error": None,
@@ -117,10 +120,16 @@ class PipelineTracker:
             }
             trace["steps"].append(step)
             
-            # Auto-aggregate tokens if this is an LLM step
+            # Auto-aggregate tokens across all LLM steps from all sources
             if name == "llm_generation" and "data" in step:
-                tokens = step["data"].get("input_tokens", 0) + step["data"].get("output_tokens", 0)
-                trace["total_tokens"] += tokens
+                in_tok = step["data"].get("input_tokens", 0)
+                out_tok = step["data"].get("output_tokens", 0)
+                reason_tok = step["data"].get("reasoning_tokens", 0)
+                
+                trace["total_input_tokens"] = trace.get("total_input_tokens", 0) + in_tok
+                trace["total_output_tokens"] = trace.get("total_output_tokens", 0) + out_tok
+                trace["total_reasoning_tokens"] = trace.get("total_reasoning_tokens", 0) + reason_tok
+                trace["total_tokens"] = trace.get("total_tokens", 0) + (in_tok + out_tok)
 
             # Auto-flag loop thinking activation
             if name.startswith("thinking_loop_cycle_"):

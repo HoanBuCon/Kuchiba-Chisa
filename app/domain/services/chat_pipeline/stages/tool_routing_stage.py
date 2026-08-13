@@ -72,10 +72,21 @@ class ToolRoutingStage(PipelineStage):
                 tool_result=tool_output_msg or ""
             )
 
+        reason_text = (
+            f"Đã kích hoạt công cụ '{tool_name}' với độ tin cậy {round(tool_score * 100)}%."
+            if tool_name != "none"
+            else "Không có công cụ hệ thống nào vượt ngưỡng tin cậy để thực thi."
+        )
+
         self.pipeline_tracker.add_step("tool_routing", {
             "tool_name": tool_name,
+            "selected_tool": tool_name,
             "tool_score": tool_score,
-            "tool_result": tool_output_msg or ""
+            "confidence": tool_score,
+            "tool_result": tool_output_msg or "",
+            "tool_output": tool_output_msg or "",
+            "reason": reason_text,
+            "status": "success" if tool_name != "none" else "skipped"
         })
 
         if tool_name == "web_search" and tool_res:

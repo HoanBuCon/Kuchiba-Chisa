@@ -145,19 +145,39 @@ ${window.VisualizerApp.escapeHtml(data.reasoning_content)}
             `;
         }
 
+        const inTok = data.input_tokens || 0;
+        const outTok = data.output_tokens || 0;
+        const reasonTok = data.reasoning_tokens || 0;
+        const totTok = data.total_tokens || (inTok + outTok);
+
         // Header info card
         let headerHtml = `
             <div class="inspector-card">
                 <div class="inspector-card-title">
                     <span>🤖 LLM Call: ${window.VisualizerApp.escapeHtml(data.purpose_label || data.purpose || 'LLM Generation')}</span>
                 </div>
-                <div style="display: flex; gap: 12px; font-size: 12.5px; color: var(--text-secondary); margin-bottom: 8px; flex-wrap: wrap;">
-                    <span><b>Model:</b> <code>${window.VisualizerApp.escapeHtml(data.model || 'Unknown')}</code></span>
-                    <span><b>Tokens:</b> In: ${data.input_tokens || 0} | Out: ${data.output_tokens || 0} | Tổng: ${data.total_tokens || 0}</span>
+                <div style="display: flex; gap: 8px; font-size: 12px; margin-bottom: 10px; flex-wrap: wrap; align-items: center;">
+                    <span class="pill" style="background: rgba(255, 255, 255, 0.06); color: var(--text-primary); border: 1px solid var(--border-color);">
+                        <b>Model:</b> <code>${window.VisualizerApp.escapeHtml(data.model || 'Unknown')}</code>
+                    </span>
+                    <span class="pill" style="background: rgba(41, 182, 246, 0.15); color: #29b6f6; border: 1px solid rgba(41, 182, 246, 0.3);">
+                        📥 <b>Input:</b> ${inTok.toLocaleString()} tok
+                    </span>
+                    <span class="pill" style="background: rgba(76, 175, 80, 0.15); color: #4caf50; border: 1px solid rgba(76, 175, 80, 0.3);">
+                        📤 <b>Output:</b> ${outTok.toLocaleString()} tok
+                    </span>
+                    ${reasonTok > 0 ? `
+                        <span class="pill badge-reasoning-enabled" style="border: 1px solid rgba(171, 71, 188, 0.4); padding: 4px 10px;">
+                            🧠 <b>Reasoning:</b> ${reasonTok.toLocaleString()} tok
+                        </span>
+                    ` : ''}
+                    <span class="pill" style="background: rgba(255, 152, 0, 0.15); color: #ffa726; border: 1px solid rgba(255, 152, 0, 0.3); font-weight: 600;">
+                        📊 <b>Tổng:</b> ${totTok.toLocaleString()} tok
+                    </span>
                 </div>
                 <div style="font-size: 12px; color: var(--text-muted); display: flex; gap: 10px; align-items: center;">
                     <span>Finish Reason: <code>${data.finish_reason || 'stop'}</code></span>
-                    ${hasReasoning ? `<span class="pill badge-reasoning-enabled" style="font-size: 11px; padding: 2px 8px;">🧠 CoT Captured</span>` : ''}
+                    ${hasReasoning ? `<span class="pill badge-reasoning-enabled" style="font-size: 11px; padding: 2px 8px;">🧠 CoT Captured (${charCount} ký tự)</span>` : ''}
                 </div>
             </div>
         `;
@@ -319,7 +339,17 @@ ${window.VisualizerApp.escapeHtml(data.reasoning_content)}
 
     renderToolRoutingInspector(step) {
         const data = step.data || {};
-        const confidencePct = Math.round((data.confidence || 0) * 100);
+        const toolName = data.selected_tool || data.tool_name || 'none';
+        const score = data.confidence !== undefined ? data.confidence : (data.tool_score !== undefined ? data.tool_score : 0);
+        const confidencePct = Math.round(score * 100);
+        const hasTool = toolName && toolName !== 'none';
+        const statusText = hasTool ? '🟢 Đã thực thi' : '⚪ Bỏ qua';
+        const statusColor = hasTool ? '#4caf50' : 'var(--text-muted)';
+        const statusBg = hasTool ? 'rgba(76, 175, 80, 0.15)' : 'rgba(255, 255, 255, 0.05)';
+        const statusBorder = hasTool ? 'rgba(76, 175, 80, 0.3)' : 'var(--border-color)';
+        const toolResult = data.tool_output || data.tool_result || '';
+        const reasonText = data.reason || (hasTool ? `Khớp lệnh gọi công cụ ${toolName}` : 'Không có công cụ nào phù hợp.');
+
         return `
             <div class="inspector-panel">
                 <div class="inspector-card">
@@ -328,16 +358,25 @@ ${window.VisualizerApp.escapeHtml(data.reasoning_content)}
                     </div>
                     <div style="display: flex; gap: 10px; margin-bottom: 12px; flex-wrap: wrap; align-items: center;">
                         <span class="pill" style="background: rgba(41, 182, 246, 0.15); color: #29b6f6; border: 1px solid rgba(41, 182, 246, 0.3); font-size: 12px; padding: 4px 10px;">
-                            <b>Selected Tool:</b> <code>${data.selected_tool || 'none'}</code>
+                            <b>Selected Tool:</b> <code>${window.VisualizerApp.escapeHtml(toolName)}</code>
+                        </span>
+                        <span class="pill" style="background: ${statusBg}; color: ${statusColor}; border: 1px solid ${statusBorder}; font-size: 12px; padding: 4px 10px;">
+                            <b>Trạng thái:</b> <b>${statusText}</b>
                         </span>
                         <span class="pill" style="background: rgba(255, 255, 255, 0.05); color: var(--text-secondary); font-size: 12px; padding: 4px 10px;">
-                            <b>Confidence Score:</b> <code>${confidencePct}%</code>
+                            <b>Confidence:</b> <code>${confidencePct}%</code>
                         </span>
                     </div>
-                    <div style="margin-bottom: 8px;">
+                    <div style="margin-bottom: 12px;">
                         <b style="font-size: 13px;">Lý do chọn Tool (Routing Reason):</b>
-                        <div class="json-block" style="margin-top: 4px; color: #64b5f6;">${window.VisualizerApp.escapeHtml(data.reason || '(Không có thông tin lý do)')}</div>
+                        <div class="json-block" style="margin-top: 4px; color: #ffe082;">${window.VisualizerApp.escapeHtml(reasonText)}</div>
                     </div>
+                    ${toolResult ? `
+                        <div style="margin-bottom: 12px;">
+                            <b style="font-size: 13px;">Kết quả trả về từ Tool (Tool Output):</b>
+                            <div class="json-block" style="margin-top: 4px; color: #81c784; max-height: 250px;">${window.VisualizerApp.escapeHtml(toolResult)}</div>
+                        </div>
+                    ` : ''}
                 </div>
             </div>
         `;
@@ -683,17 +722,45 @@ ${window.VisualizerApp.escapeHtml(reasonText)}
         const data = step.data || {};
         const snippets = data.snippets || [];
         const query = data.original_message || data.search_query || '';
+        const provider = data.provider || 'DuckDuckGo Scraper';
+        const source = data.source || 'thinking_loop';
+        const sourceUrls = data.source_urls || [];
+        const hasSnippets = snippets.length > 0;
 
-        const snippetsHtml = snippets.length > 0 
+        const statusBg = hasSnippets ? 'rgba(76, 175, 80, 0.15)' : 'rgba(255, 152, 0, 0.15)';
+        const statusColor = hasSnippets ? '#4caf50' : '#ffa726';
+        const statusBorder = hasSnippets ? 'rgba(76, 175, 80, 0.3)' : 'rgba(255, 152, 0, 0.3)';
+        const statusText = hasSnippets ? '🟢 Thành công' : '⚠️ Không có kết quả';
+
+        const snippetsHtml = hasSnippets 
             ? snippets.map((snip, i) => `
                 <div style="background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px 12px; margin-top: 8px;">
-                    <div style="font-size: 11.5px; color: #26c6da; font-weight: 600; margin-bottom: 6px;">
+                    <div style="font-size: 11.5px; color: #26c6da; font-weight: 600; margin-bottom: 6px; display: flex; justify-content: space-between;">
                         <span>🌐 Result #${i + 1}</span>
+                        ${sourceUrls[i] ? `<a href="${sourceUrls[i]}" target="_blank" style="color: #81d4fa; text-decoration: none; font-size: 11px;">🔗 Mở nguồn ↗</a>` : ''}
                     </div>
                     <div style="font-size: 12.5px; line-height: 1.5; color: #e0e0e0; white-space: pre-wrap; word-break: break-word;">${window.VisualizerApp.escapeHtml(snip)}</div>
                 </div>
             `).join('')
-            : `<div class="json-block" style="margin-top: 4px; color: var(--text-muted);">(Không có kết quả web search)</div>`;
+            : `
+                <div style="background: rgba(255, 152, 0, 0.08); border: 1px dashed rgba(255, 152, 0, 0.3); border-radius: 8px; padding: 12px 14px; margin-top: 8px; font-size: 12.5px; color: #ffe082; line-height: 1.5;">
+                    <div style="font-weight: 600; margin-bottom: 4px;">⚠️ Không tìm thấy snippet nào trên Internet</div>
+                    <div>Công cụ tìm kiếm (${window.VisualizerApp.escapeHtml(provider)}) không trả về đoạn trích phù hợp cho câu query này. Trong kiến trúc Thinking Loop, hệ thống sẽ tự động tinh chỉnh câu truy vấn và tiếp tục tìm kiếm ở Cycle tiếp theo nếu ngữ cảnh chưa đủ.</div>
+                </div>
+            `;
+
+        const urlsHtml = sourceUrls.length > 0 ? `
+            <div style="margin-top: 14px;">
+                <b style="font-size: 13px;">🔗 Nguồn bài viết (Source URLs):</b>
+                <div style="margin-top: 6px; display: flex; flex-direction: column; gap: 4px;">
+                    ${sourceUrls.map(u => `
+                        <a href="${u}" target="_blank" style="font-size: 12px; color: #4fc3f7; text-decoration: none; background: rgba(0,0,0,0.2); padding: 5px 8px; border-radius: 4px; border: 1px solid var(--border-color); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                            ↗ ${window.VisualizerApp.escapeHtml(u)}
+                        </a>
+                    `).join('')}
+                </div>
+            </div>
+        ` : '';
 
         return `
             <div class="inspector-panel">
@@ -705,18 +772,25 @@ ${window.VisualizerApp.escapeHtml(reasonText)}
                         <b style="font-size: 13px;">Search Query:</b>
                         <div class="json-block" style="margin-top: 4px; color: #26c6da; font-weight: 500;">🔍 ${window.VisualizerApp.escapeHtml(query)}</div>
                     </div>
-                    <div style="margin-bottom: 12px; display: flex; gap: 8px;">
+                    <div style="margin-bottom: 12px; display: flex; gap: 8px; flex-wrap: wrap;">
                         <span class="pill" style="background: rgba(38, 198, 218, 0.15); color: #26c6da; border: 1px solid rgba(38, 198, 218, 0.3); font-size: 12px; padding: 4px 10px;">
                             <b>Snippets:</b> ${snippets.length}
                         </span>
-                        <span class="pill" style="background: rgba(76, 175, 80, 0.15); color: #4caf50; font-size: 12px; padding: 4px 10px;">
-                            <b>Status:</b> ${data.status || 'Success'}
+                        <span class="pill" style="background: ${statusBg}; color: ${statusColor}; border: 1px solid ${statusBorder}; font-size: 12px; padding: 4px 10px; font-weight: 500;">
+                            <b>Status:</b> ${statusText}
+                        </span>
+                        <span class="pill" style="background: rgba(255, 255, 255, 0.06); color: var(--text-secondary); font-size: 12px; padding: 4px 10px;">
+                            <b>Provider:</b> ${window.VisualizerApp.escapeHtml(provider)}
+                        </span>
+                        <span class="pill" style="background: rgba(171, 71, 188, 0.15); color: #ce93d8; font-size: 12px; padding: 4px 10px;">
+                            <b>Source:</b> ${window.VisualizerApp.escapeHtml(source)}
                         </span>
                     </div>
                     <div>
                         <b style="font-size: 13px;">Search Snippets (${snippets.length}):</b>
                         ${snippetsHtml}
                     </div>
+                    ${urlsHtml}
                 </div>
             </div>
         `;
@@ -895,22 +969,22 @@ ${window.VisualizerApp.escapeHtml(reasonText)}
         const searchQuery = data.search_query || '';
         const charCount = thinkingText ? thinkingText.length : 0;
 
-        let reasoningBox = '';
+        let decisionBox = '';
         if (thinkingText) {
-            reasoningBox = `
-                <div class="inspector-reasoning-box">
-                    <div class="reasoning-box-header">
-                        <div class="reasoning-box-title">
-                            <span class="reasoning-icon">🧠</span>
-                            <span class="reasoning-title-text">Loop Cycle Reasoning & Decision Rationale</span>
-                            <span class="reasoning-badge">${charCount} ký tự</span>
+            decisionBox = `
+                <div class="inspector-reasoning-box standard-mode">
+                    <div class="reasoning-box-header" style="background: rgba(255, 152, 0, 0.12); border-bottom: 1px solid rgba(255, 152, 0, 0.25);">
+                        <div class="reasoning-box-title" style="color: #ffe082;">
+                            <span class="reasoning-icon">⚡</span>
+                            <span class="reasoning-title-text">Logic Quyết Định Chu Kỳ (Decision & Loop Logic)</span>
+                            <span class="reasoning-badge" style="background: rgba(255, 152, 0, 0.2); color: #ffb74d; border-color: rgba(255, 152, 0, 0.35);">${charCount} ký tự</span>
                         </div>
                         <div class="reasoning-actions">
-                            <button class="reasoning-btn-action" onclick="NodeInspectorEngine.copyReasoning(this)" title="Sao chép nội dung Reasoning">📋 Sao chép</button>
+                            <button class="reasoning-btn-action" onclick="NodeInspectorEngine.copyReasoning(this)" title="Sao chép nội dung">📋 Sao chép</button>
                             <button class="reasoning-btn-action" onclick="NodeInspectorEngine.toggleReasoning(this)" title="Thu gọn / Mở rộng">🔼 Thu gọn</button>
                         </div>
                     </div>
-                    <div class="reasoning-box-content">
+                    <div class="reasoning-box-content" style="color: #ffe082;">
 ${window.VisualizerApp.escapeHtml(thinkingText)}
                     </div>
                 </div>
@@ -942,7 +1016,7 @@ ${window.VisualizerApp.escapeHtml(thinkingText)}
                     ` : ''}
                 </div>
 
-                ${reasoningBox}
+                ${decisionBox}
 
                 <div class="inspector-card">
                     <div class="inspector-card-title">📦 Raw Step Payload</div>

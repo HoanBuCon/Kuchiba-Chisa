@@ -61,6 +61,9 @@ LLM_PURPOSE_LABELS: dict[str, str] = {
     "chat_response": "Trả lời Chisa (call chính)",
     "alignment_assessor": "Alignment Assessor",
     "web_search_query_extract": "Web Search · trích query",
+    "summarize_conversation": "Tóm tắt hội thoại (Tool Summarize)",
+    "unified_auto_summarize": "Tự động tóm tắt ngầm (Auto-Summarize)",
+    "memory_extraction": "Trích xuất ký ức (Memory Extractor)",
     "unknown": "LLM call (không gắn nhãn)",
 }
 
@@ -163,6 +166,7 @@ def _write_log_sync(prompt: StructuredPrompt, response: LLMResponse, q_idx: int,
         "latency_ms": 0.0,  # Not tracked at this layer yet
         "prompt_tokens": response.input_tokens,
         "completion_tokens": response.output_tokens,
+        "reasoning_tokens": getattr(response, "reasoning_tokens", 0),
         "total_tokens": response.input_tokens + response.output_tokens,
         "intent": intent,
         "retrieval_metadata": retrieval_metadata,
@@ -193,6 +197,7 @@ async def log_llm_transaction(prompt: StructuredPrompt, response: LLMResponse) -
                 "model": response.model,
                 "input_tokens": response.input_tokens,
                 "output_tokens": response.output_tokens,
+                "reasoning_tokens": getattr(response, "reasoning_tokens", 0),
                 "total_tokens": response.input_tokens + response.output_tokens,
                 "finish_reason": response.finish_reason,
                 "raw_response": response.raw_content,

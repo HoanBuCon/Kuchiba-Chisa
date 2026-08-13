@@ -33,8 +33,8 @@ class BackgroundTaskStage(PipelineStage):
         else:
             log.debug("Skipping memory extraction for small talk message", user_id=context.user_id)
         
-        # Periodically trigger unified background auto-summarization (every 50 interactions)
-        if context.stats.interaction_count > 0 and context.stats.interaction_count % 50 == 0:
+        # Periodically trigger unified background auto-summarization (every 10 interactions)
+        if context.stats.interaction_count > 0 and context.stats.interaction_count % 10 == 0:
             BackgroundTaskManager.spawn(
                 self.unified_auto_summarize_callback(
                     context.user_id,

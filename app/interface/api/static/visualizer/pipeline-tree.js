@@ -46,13 +46,19 @@ window.PipelineTreeEngine = {
             type: 'tool',
             icon: '🧰',
             title: 'Tool Router',
-            subtitle: (step) => step.data?.selected_tool ? `Selected: ${step.data.selected_tool}` : 'No tool triggered'
+            subtitle: (step) => {
+                const tool = step.data?.selected_tool || step.data?.tool_name;
+                return (tool && tool !== 'none') ? `Tool: ${tool}` : 'Không kích hoạt Tool';
+            }
         },
         'tool_routing_stage': {
             type: 'tool',
             icon: '🧰',
             title: 'Tool Router',
-            subtitle: (step) => step.data?.selected_tool ? `Selected: ${step.data.selected_tool}` : 'No tool triggered'
+            subtitle: (step) => {
+                const tool = step.data?.selected_tool || step.data?.tool_name;
+                return (tool && tool !== 'none') ? `Tool: ${tool}` : 'Không kích hoạt Tool';
+            }
         },
         'rag_stage': {
             type: 'rag',

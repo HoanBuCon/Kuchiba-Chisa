@@ -22,6 +22,7 @@ def web_search_trace_payload(
         "original_message": original_message,
         "optimized_query": res.get("optimized_query") or res.get("search_query") or "",
         "status": res.get("status", "unknown"),
+        "provider": res.get("provider", "unknown"),
         "snippets": res.get("snippets") or [],
         "source_urls": res.get("source_urls") or [],
         "deep_page_url": res.get("deep_page_url"),
@@ -171,11 +172,12 @@ class WebSearchAgentTool(BaseAgentTool):
 
         if not snippets:
             return {
-                "status": "success",
+                "status": "no_results",
                 "message": "Không tìm thấy kết quả tìm kiếm nào phù hợp trên internet.",
                 "search_query": query,
                 "snippets": [],
                 "source_urls": [],
+                "provider": provider_name,
             }
 
         results = snippets[:4]
@@ -224,13 +226,14 @@ class WebSearchAgentTool(BaseAgentTool):
             if fetched_content:
                 results_str += "\n\nDEEP PAGE CONTENT:\n" + "\n\n".join(fetched_content)
 
-            log.info("Resilient web search completed", provider=provider, count=len(results), got_deep_content=bool(fetched_content))
-            return {
-                "status": "success",
-                "message": results_str,
-                "search_query": query,
-                "snippets": results,
-                "source_urls": urls[:4],
-                "deep_page_url": deep_page_url,
-                "deep_page_preview": deep_page_preview,
-            }
+        log.info("Resilient web search completed", provider=provider_name, count=len(results), got_deep_content=bool(fetched_content))
+        return {
+            "status": "success",
+            "message": results_str,
+            "search_query": query,
+            "snippets": results,
+            "source_urls": urls[:4],
+            "deep_page_url": deep_page_url,
+            "deep_page_preview": deep_page_preview,
+            "provider": provider_name,
+        }

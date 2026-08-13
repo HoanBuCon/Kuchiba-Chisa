@@ -154,8 +154,11 @@ window.VisualizerApp = {
         container.innerHTML = filtered.map(t => {
             const isSelected = t.id === this.selectedTraceId;
             const timeStr = t.timestamp ? new Date(t.timestamp).toLocaleTimeString('vi-VN') : '—';
-            const latency = t.latency_ms ? `${t.latency_ms}ms` : '—';
-            const tokens = t.total_tokens ? `${t.total_tokens} tok` : '0 tok';
+            const totalTok = t.total_tokens || 0;
+            const inTok = t.total_input_tokens !== undefined ? t.total_input_tokens : 0;
+            const outTok = t.total_output_tokens !== undefined ? t.total_output_tokens : 0;
+            const reasonTok = t.total_reasoning_tokens || 0;
+            const tokenTooltip = `Tổng: ${totalTok} tok (Input: ${inTok} | Output: ${outTok}${reasonTok ? ` | Reasoning: ${reasonTok}` : ''})`;
 
             return `
                 <div class="trace-item ${isSelected ? 'active' : ''}" onclick="VisualizerApp.selectTrace('${t.id}')">
@@ -169,7 +172,7 @@ window.VisualizerApp = {
                     <div class="trace-message">${this.escapeHtml(t.message || '(Chưa có câu hỏi)')}</div>
                     <div class="trace-meta">
                         <span class="pill pill-latency">⚡ ${latency}</span>
-                        <span class="pill pill-tokens">🎟️ ${tokens}</span>
+                        <span class="pill pill-tokens" title="${tokenTooltip}">🎟️ ${totalTok} tok</span>
                     </div>
                 </div>
             `;

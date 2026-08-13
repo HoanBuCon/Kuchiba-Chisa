@@ -27,6 +27,7 @@ class LLMResponse(BaseModel):
     parsed: dict[str, Any]          # Parsed and validated JSON
     input_tokens: int = 0
     output_tokens: int = 0
+    reasoning_tokens: int = 0
     model: str = ""
     finish_reason: str = ""
     reasoning_content: str | None = None

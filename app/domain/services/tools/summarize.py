@@ -111,6 +111,8 @@ class ConversationSummarizerAgentTool(BaseAgentTool):
         )
 
         try:
+            from app.domain.context import llm_call_purpose
+            llm_call_purpose.set("summarize_conversation")
             response = await llm.generate(prompt)
             summary_text = (response.parsed or {}).get("summary", "").strip()
             if not summary_text:

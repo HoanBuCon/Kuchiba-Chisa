@@ -136,6 +136,10 @@ class DeepSeekAdapter(BaseLLMAdapter):
             usage = res_json.get("usage", {})
             input_tokens = usage.get("prompt_tokens", 0)
             output_tokens = usage.get("completion_tokens", 0)
+            reasoning_tokens = usage.get("completion_tokens_details", {}).get("reasoning_tokens", 0)
+            if not reasoning_tokens and reasoning_content:
+                from app.shared.utils.token_estimator import TokenEstimator
+                reasoning_tokens = TokenEstimator.estimate_tokens(reasoning_content)
         except (KeyError, IndexError) as e:
             raise LLMInvalidResponseError(f"Invalid response structure: {e}")
 
@@ -155,6 +159,7 @@ class DeepSeekAdapter(BaseLLMAdapter):
             parsed=parsed,
             input_tokens=input_tokens,
             output_tokens=output_tokens,
+            reasoning_tokens=reasoning_tokens,
             model=self._model,
             finish_reason=finish_reason,
             reasoning_content=reasoning_content,

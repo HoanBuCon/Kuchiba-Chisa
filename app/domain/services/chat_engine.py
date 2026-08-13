@@ -174,10 +174,10 @@ class ChatEngine:
                 # 1. Load previous summary & stats
                 previous_summary = await conv_repo.get_latest_summary(user_uuid, conv_uuid)
                 stats = await user_repo.get_user_stats(user_uuid)
-                is_full_refresh = stats and stats.interaction_count > 0 and stats.interaction_count % 500 == 0
+                is_full_refresh = stats and stats.interaction_count > 0 and stats.interaction_count % 100 == 0
 
-                # 2. Load recent 50 messages
-                msgs = await conv_repo.get_recent_history(user_uuid, conv_uuid, limit=50)
+                # 2. Load recent 10 pairs of messages (20 messages = 10 user + 10 assistant)
+                msgs = await conv_repo.get_recent_history(user_uuid, conv_uuid, limit=20)
                 if not msgs:
                     log.info("No messages to auto-summarize", conv_id=str(conv_uuid))
                     return
@@ -251,6 +251,8 @@ class ChatEngine:
                     rag_decisions={"use_deep_thinking": False},
                 )
 
+                from app.domain.context import llm_call_purpose
+                llm_call_purpose.set("unified_auto_summarize")
                 response = await self.llm.generate(prompt)
                 parsed = response.parsed or {}
                 summary_text = str(parsed.get("summary", "")).strip()
