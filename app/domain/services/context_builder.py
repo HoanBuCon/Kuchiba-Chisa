@@ -8,6 +8,7 @@ from app.domain.services.state_manager import StateManager
 from app.domain.services.context_budget_manager import ContextBudgetManager, BudgetAudit
 from app.domain.services.budget_mode import BudgetMode
 from app.shared.utils.token_estimator import TokenEstimator
+from app.config.settings import settings
 from app.shared.utils.logger import get_logger
 
 log = get_logger(__name__)
@@ -160,6 +161,7 @@ class ContextBuilder:
         tool_result: str = "",
         conversation_summary: str | None = None,
         budget_mode: BudgetMode = BudgetMode.RAG,
+        is_small_talk: bool = False,
     ) -> ContextBuildResult:
         """
         Builds production context: measure skeleton first, flex-allocate, then assemble system prompt.
@@ -239,6 +241,11 @@ class ContextBuilder:
             "Web Search Data": search_section,
         }
 
+        # ── Conditional Reasoning Mode ──
+        # Skip deep thinking if small talk or search facts are already provided
+        has_search_data = bool(allocation.trimmed_search_body or (tool_result and "SEARCH" in tool_result))
+        use_deep_thinking = settings.DEEP_THINKING and not is_small_talk and not has_search_data
+
         prompt = StructuredPrompt(
             system=system_prompt,
             history=allocation.trimmed_history,
@@ -249,6 +256,7 @@ class ContextBuilder:
             rag_decisions={
                 "use_lore": len(allocation.trimmed_lore) > 0,
                 "use_memory": len(allocation.trimmed_memories) > 0,
+                "use_deep_thinking": use_deep_thinking,
             },
         )
         return ContextBuildResult(prompt=prompt, audit=allocation.audit, components=components)

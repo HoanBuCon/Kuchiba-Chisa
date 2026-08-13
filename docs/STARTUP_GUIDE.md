@@ -79,14 +79,15 @@ Nếu thành công, cơ sở dữ liệu của bạn đã có đủ bảng lõi 
 
 ## 5. Khởi chạy Ứng dụng & Dịch vụ Nền
 
-### 5.1 Sử dụng Script tự động hóa (PowerShell)
-Nếu bạn lười gõ lệnh, dự án đã có sẵn file `start.ps1` ở thư mục gốc. Script này sẽ tự động:
-- Khởi động Docker Containers.
-- Reset lại các Terminal con.
-- Kích hoạt mội trường ảo và nổ máy Backend.
-- Bật Frontend lên ở localhost.
+### 5.1 Sử dụng CLI Control Center (Interactive Menu & 1-Click Launcher)
+Dự án cung cấp công cụ CLI thông minh `chisa_cli.py` (có sẵn launcher `chisa.bat` / `chisa_cli.ps1`) hỗ trợ menu điều hướng bằng phím mũi tên hoặc phím số. CLI này giúp:
+- Khởi động toàn bộ các dịch vụ (Docker, Backend, Frontend, Bot Discord, Visualizer) trên cửa sổ riêng.
+- Khởi động lẻ từng dịch vụ theo nhu cầu.
+- Quản lý dừng/kill tiến trình và tự động dọn dẹp sạch sẽ khi thoát.
 ```powershell
-.\start.ps1
+python chisa_cli.py
+# Hoặc chạy launcher:
+.\chisa.bat
 ```
 
 ### 5.2 Khởi chạy thủ công (Để tiện gỡ lỗi/debug)

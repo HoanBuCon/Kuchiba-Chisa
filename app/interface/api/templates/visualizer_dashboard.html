@@ -200,7 +200,8 @@
         .pipeline-tree-side,
         .node-inspector-side,
         .inspector-card-body,
-        .message-bubble-inspect {
+        .message-bubble-inspect,
+        .detail-title {
             scrollbar-width: thin;
             scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
         }
@@ -401,13 +402,21 @@
         .detail-title-row {
             display: flex;
             justify-content: space-between;
-            align-items: center;
+            align-items: flex-start;
             margin-bottom: 12px;
+            gap: 16px;
         }
 
         .detail-title {
-            font-size: 18px;
+            font-size: 16px;
             font-weight: 600;
+            line-height: 1.5;
+            max-height: 120px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-break: break-word;
+            flex: 1;
+            padding-right: 6px;
         }
 
         .detail-meta-grid {
@@ -624,7 +633,10 @@
             line-height: 1.6;
             color: var(--text-main);
             margin-top: 6px;
-            white-space: pre-line;
+            white-space: pre-wrap;
+            word-break: break-word;
+            max-height: 250px;
+            overflow-y: auto;
         }
 
         .key-value-list {
@@ -1389,6 +1401,9 @@
                                             <span class="kv-label" style="color: #ff8a80;">Nguồn kích hoạt</span>
                                             <span class="kv-value" style="font-size: 12px; margin-top: 4px; display: block;">${escapeHtml(webSearchSourceLabel(step.data.source))}</span>
                                         </div>
+                                        <div class="kv-item" style="padding: 8px 10px; background: rgba(255,255,255,0.03); border-radius: 6px; font-size: 11.5px; color: var(--text-muted); border-left: 2px solid var(--text-muted);">
+                                            <span>💡 <b>Tối ưu hóa:</b> Tìm kiếm trực tiếp qua DDG HTML Scraper (loại bỏ 0.4-2s chờ DDG Library bị rate-limit). Tải trang chi tiết tối đa 1 URL top với timeout 3.0s.</span>
+                                        </div>
                                         <div class="kv-item">
                                             <span class="kv-label">Trạng thái</span>
                                             <span class="kv-value" style="font-weight: 600; color: ${statusColor}">${escapeHtml(step.data.status || 'unknown')}</span>
@@ -1659,6 +1674,33 @@
                         `;
                     };
                 }
+                else if (step.name === 'thinking_loop_auto_satisfy') {
+                    icon = '⚡';
+                    title = 'Auto-Satisfy (Skip Cycle 2)';
+                    meta = 'tự động hoàn thành';
+                    renderDetails = () => `
+                        <div class="inspector-card">
+                            <div class="inspector-card-header">
+                                <span class="inspector-card-icon">⚡</span>
+                                <h3 class="inspector-card-title">Auto-Satisfy · Tối ưu hóa Latency</h3>
+                            </div>
+                            <div class="inspector-card-body">
+                                <div class="key-value-list">
+                                    <div class="kv-item" style="padding: 14px; background: rgba(76, 175, 80, 0.12); border-radius: 8px; border-left: 4px solid var(--neon-green);">
+                                        <span class="kv-label" style="color: var(--neon-green); font-size: 12px; font-weight: 700;">✓ TỰ ĐỘNG HOÀN THÀNH (BỎ QUA LLM CYCLE 2)</span>
+                                        <span class="kv-value" style="font-size: 13.5px; line-height: 1.6; margin-top: 6px; display: block; color: var(--text-main);">
+                                            ${escapeHtml(step.data.reason || 'Kết quả tìm kiếm Cycle 1 đã trả về đủ dữ kiện. Bỏ qua lượt gọi LLM Cycle 2 để giảm 4-7 giây latency.')}
+                                        </span>
+                                    </div>
+                                    <div class="kv-item">
+                                        <span class="kv-label">Số Snippet đạt chuẩn</span>
+                                        <span class="kv-value font-mono"><b>${step.data.snippet_count || 2}</b> snippets</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
                 else if (step.name === 'context_building') {
                     icon = '🧱';
                     title = 'Prompt Build (budget)';
@@ -1667,6 +1709,7 @@
                     const ceiling = step.data.effective_ceiling ?? audit.effective_ceiling ?? 0;
                     const withinBudget = step.data.within_budget ?? audit.within_budget;
                     const modeLabel = step.data.budget_mode || audit.mode || 'unknown';
+                    const useDeepThinking = step.data.use_deep_thinking ?? false;
                     meta = `ước lượng ${totalUsed} tok`;
                     renderDetails = () => {
                         const used = audit.used || {};
@@ -1725,6 +1768,12 @@
                                 </div>
                                 <div class="inspector-card-body">
                                     <div class="key-value-list">
+                                        <div class="kv-item" style="padding: 10px; background: ${useDeepThinking ? 'rgba(255, 82, 82, 0.12)' : 'rgba(76, 175, 80, 0.12)'}; border-radius: 6px; border-left: 3px solid ${useDeepThinking ? 'var(--accent-pink)' : 'var(--neon-green)'};">
+                                            <span class="kv-label" style="color: ${useDeepThinking ? 'var(--accent-pink)' : 'var(--neon-green)'};">Reasoning Mode (Deep Thinking)</span>
+                                            <span class="kv-value" style="font-size: 12.5px; font-weight: 600; margin-top: 4px; display: block;">
+                                                ${useDeepThinking ? '🧠 BẬT — Đang bật suy luận Deep Thinking cho câu hỏi phức tạp' : '⚡ TẮT — Đã tự động tắt Reasoning Mode (câu hỏi Smalltalk hoặc đã có Search Data) để tối ưu latency (~5-15s)'}
+                                            </span>
+                                        </div>
                                         <div class="kv-item" style="padding: 10px; background: rgba(255, 112, 67, 0.08); border-radius: 6px; border-left: 3px solid #ff7043;">
                                             <span class="kv-label" style="color: #ff7043;">⚠ Không phải số token API</span>
                                             <span class="kv-value" style="font-size: 12px; line-height: 1.5; margin-top: 4px; display: block;">
@@ -1786,15 +1835,8 @@
                                         </div>` : ''}
                                         ${step.data.history && step.data.history.length > 0 ? `
                                         <div class="kv-item" style="margin-top: 16px;">
-                                            <span class="kv-label" style="margin-bottom: 8px; color: #64b5f6;">📜 Short-term Memory / Lịch sử hội thoại (${step.data.history.length} tin nhắn — đã gửi lên LLM)</span>
-                                            <div style="display: flex; flex-direction: column; gap: 6px; margin-top: 4px; max-height: 350px; overflow-y: auto;">
-                                            ${step.data.history.map(msg => `
-                                                <div style="background: rgba(255,255,255,0.03); border-left: 3px solid ${msg.role === 'user' ? '#42a5f5' : '#ec407a'}; border-radius: 4px; padding: 8px 10px;">
-                                                    <div style="font-size: 10px; color: ${msg.role === 'user' ? '#42a5f5' : '#ec407a'}; font-weight: 700; text-transform: uppercase; margin-bottom: 4px;">${msg.role === 'user' ? '👤 Senpai' : '🌸 Chisa'}</div>
-                                                    <div style="font-family: 'Inter', sans-serif; font-size: 12px; color: #d4d4d4; white-space: pre-wrap; word-break: break-word;">${escapeHtml(msg.content)}</div>
-                                                </div>
-                                            `).join('')}
-                                            </div>
+                                            <span class="kv-label" style="margin-bottom: 8px; color: #64b5f6;">[HISTORY] (Lịch sử hội thoại gửi lên LLM — ${step.data.history.length} tin nhắn)</span>
+                                            <div class="json-block" style="margin-top: 4px; font-family: 'Inter', sans-serif; max-height: 350px; overflow-y: auto; white-space: pre-wrap; border-color: rgba(100,181,246,0.3); color: #d4d4d4; line-height: 1.5; font-size: 12.5px;">${escapeHtml(step.data.history.map(msg => `${msg.role.toUpperCase()}: ${msg.content}`).join('\n\n'))}</div>
                                         </div>` : ''}
                                         <div class="kv-item" style="margin-top: 16px;">
                                             <span class="kv-label" style="color: var(--neon-green);">FINAL SYSTEM PROMPT (Sẽ gửi lên LLM)</span>
@@ -1843,6 +1885,11 @@
                                             <div class="kv-item" style="margin-top: 8px;">
                                                 <span class="kv-label">System Prompt (Gửi lên LLM)</span>
                                                 <div class="json-block" style="margin-top: 4px; font-family: 'Inter', sans-serif; max-height: 400px; overflow-y: auto; white-space: pre-wrap;">${escapeHtml(step.data.system_prompt)}</div>
+                                            </div>` : ''}
+                                            ${step.data.history && step.data.history.length > 0 ? `
+                                            <div class="kv-item" style="margin-top: 8px;">
+                                                <span class="kv-label" style="color: #64b5f6;">[HISTORY] (Lịch sử hội thoại gửi lên LLM)</span>
+                                                <div class="json-block" style="margin-top: 4px; font-family: 'Inter', sans-serif; max-height: 300px; overflow-y: auto; white-space: pre-wrap; border-color: rgba(100,181,246,0.3); color: #d4d4d4; line-height: 1.5; font-size: 12px;">${escapeHtml(step.data.history.map(msg => `${msg.role.toUpperCase()}: ${msg.content}`).join('\n\n'))}</div>
                                             </div>` : ''}
                                             ${step.data.user_message ? `
                                             <div class="kv-item" style="margin-top: 8px;">
@@ -2012,22 +2059,44 @@
                 icon: '💬',
                 title: 'Chisa Response',
                 meta: 'OUTPUT',
-                render: () => `
-                    <div class="inspector-card">
-                        <div class="inspector-card-header">
-                            <span class="inspector-card-icon">💬</span>
-                            <h3 class="inspector-card-title">Chisa Response</h3>
-                        </div>
-                        <div class="inspector-card-body">
-                            <div class="key-value-list">
-                                <div class="kv-item">
-                                    <span class="kv-label">Lời thoại của Chisa (Response text)</span>
-                                    <div class="message-bubble-inspect" style="background: rgba(229, 57, 53, 0.08); font-size: 14.5px; border-left: 3px solid var(--accent-red);">${trace.response ? trace.response.replace(/\n/g, '<br>') : 'Không có phản hồi đầu ra'}</div>
+                render: () => {
+                    // Try to find reasoning_content from llm_generation steps in trace
+                    let reasoningHtml = '';
+                    if (trace.steps) {
+                        let genStep = trace.steps.find(s => s.name === 'llm_generation' && s.data && s.data.purpose === 'chat_response' && s.data.reasoning_content);
+                        if (!genStep) {
+                            const reversedSteps = [...trace.steps].reverse();
+                            genStep = reversedSteps.find(s => s.name === 'llm_generation' && s.data && s.data.reasoning_content);
+                        }
+                        if (genStep && genStep.data.reasoning_content) {
+                            reasoningHtml = `
+                                <div class="kv-item" style="margin-top: 16px; background: rgba(236, 64, 122, 0.06); border-radius: 6px; border-left: 3px solid var(--accent-pink); padding: 12px;">
+                                    <span class="kv-label" style="color: var(--accent-pink); font-weight: 700; font-size: 13px; display: flex; align-items: center; gap: 6px; margin-bottom: 6px;">
+                                        🧠 Quá trình suy luận (Context Thinking - CoT)
+                                    </span>
+                                    <div class="json-block" style="font-family: 'Inter', sans-serif; white-space: pre-wrap; color: #e0e0e0; border-color: rgba(236,64,122,0.3); line-height: 1.6; font-size: 13px; max-height: 400px; overflow-y: auto;">${escapeHtml(genStep.data.reasoning_content)}</div>
+                                </div>
+                            `;
+                        }
+                    }
+                    return `
+                        <div class="inspector-card">
+                            <div class="inspector-card-header">
+                                <span class="inspector-card-icon">💬</span>
+                                <h3 class="inspector-card-title">Chisa Response</h3>
+                            </div>
+                            <div class="inspector-card-body">
+                                <div class="key-value-list">
+                                    <div class="kv-item">
+                                        <span class="kv-label">Lời thoại của Chisa (Response text)</span>
+                                        <div class="message-bubble-inspect" style="background: rgba(229, 57, 53, 0.08); font-size: 14.5px; border-left: 3px solid var(--accent-red);">${trace.response ? trace.response.replace(/\n/g, '<br>') : 'Không có phản hồi đầu ra'}</div>
+                                    </div>
+                                    ${reasoningHtml}
                                 </div>
                             </div>
                         </div>
-                    </div>
-                `
+                    `;
+                }
             });
             
             // Build tree elements

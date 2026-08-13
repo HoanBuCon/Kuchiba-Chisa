@@ -130,7 +130,7 @@ class AppContainer:
         web_search_providers = [
             TavilySearchProvider(http_client=self.http_client),
             SerperSearchProvider(http_client=self.http_client),
-            DuckDuckGoLibrarySearchProvider(),
+            # DuckDuckGoLibrarySearchProvider(),  # Disabled: 75% silent fail rate adds 0.4-2.0s delay
             DDGScraperSearchProvider(http_client=self.http_client),
         ]
         

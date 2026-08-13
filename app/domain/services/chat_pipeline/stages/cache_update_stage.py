@@ -19,7 +19,8 @@ class CacheUpdateStage(PipelineStage):
             return context
             
         if len(context.intents) == 1 and context.intents[0] == ChatIntent.LORE and not context.is_small_talk:
-            if context.chisa_reply:
+            from app.shared.utils.fallback_detector import is_fallback_reply
+            if context.chisa_reply and not is_fallback_reply(context.chisa_reply):
                 query_hash = hashlib.md5(context.cleaned_query.encode()).hexdigest()
                 cache_key = f"chisa:answer_cache:lore:{query_hash}"
                 # Cache for 24 hours

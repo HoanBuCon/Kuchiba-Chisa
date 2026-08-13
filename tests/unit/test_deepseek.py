@@ -28,8 +28,8 @@ async def test_deepseek_adapter_generate_success(mock_post):
     )
     mock_post.return_value = mock_response
     
-    # Khởi tạo adapter
-    adapter = DeepSeekAdapter()
+    # Khởi tạo adapter với AsyncClient
+    adapter = DeepSeekAdapter(http_client=httpx.AsyncClient())
     
     prompt = StructuredPrompt(
         system="Test system",

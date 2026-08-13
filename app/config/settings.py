@@ -24,6 +24,7 @@ class Settings(BaseSettings):
     # ── SSE Streaming Lifecycle ────────────────────────────────
     SSE_MAX_QUEUE_SIZE: int = 100
     SSE_TIMEOUT: int = 120
+    THINKING_LOOP_TIMEOUT: int = 25
 
     # ── Application ────────────────────────────────────────────
     APP_ENV: Literal["development", "production", "test"] = "development"
@@ -70,7 +71,7 @@ class Settings(BaseSettings):
     DEEPSEEK_TEMPERATURE: float = Field(default=0.8, ge=0.0, le=2.0)
     DEEPSEEK_TIMEOUT: int = 60
     DEEPSEEK_BASE_URL: str = "https://api.deepseek.com"
-    DEEP_THINKING: bool = False
+    DEEP_THINKING: bool = True
 
     # ── Embeddings ─────────────────────────────────────────────
     OPENAI_API_KEY: Optional[str] = None

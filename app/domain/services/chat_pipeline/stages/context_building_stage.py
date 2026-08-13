@@ -38,6 +38,7 @@ class ContextBuildingStage(PipelineStage):
             tool_result=context.tool_output_msg or "",
             conversation_summary=context.conversation_summary,
             budget_mode=budget_mode,
+            is_small_talk=context.is_small_talk,
         )
         
         context.prompt = build_result.prompt
@@ -65,6 +66,7 @@ class ContextBuildingStage(PipelineStage):
                 "total_estimated_tokens": context.budget_audit.total_used,
                 "effective_ceiling": context.budget_audit.effective_ceiling,
                 "within_budget": context.budget_audit.within_budget,
+                "use_deep_thinking": context.prompt.rag_decisions.get("use_deep_thinking", False),
                 "token_source": "tiktoken_cl100k_base",
                 "token_source_note": "Ước lượng nội bộ",
             })

@@ -86,9 +86,9 @@ class ChatEngine:
     async def chat(self, session: IDbSession, user_id: str, user_message: str, on_token: Optional[Callable[[str], Any]] = None) -> Tuple[str, Dict[str, float]]:
         log.info("Starting ChatEngine cycle", user_id=user_id)
 
-        # ── Per-user distributed lock to prevent race conditions ──
+        # ── Per-user distributed lock to prevent race conditions (TTL 120s) ──
         lock_key = f"chisa:chat_lock:{user_id}"
-        acquired = await self.cache.acquire_lock(lock_key, ttl=60)
+        acquired = await self.cache.acquire_lock(lock_key, ttl=120)
         if not acquired:
             log.warning("Chat lock not acquired — concurrent request for same user", user_id=user_id)
             raise ChatEngineBusyError(user_id)
@@ -98,18 +98,23 @@ class ChatEngine:
             await self.cache.release_lock(lock_key)
 
     async def _chat_inner(self, session: IDbSession, user_id: str, user_message: str, on_token: Optional[Callable[[str], Any]] = None) -> Tuple[str, Dict[str, float]]:
+        from app.shared.utils.fallback_detector import is_fallback_reply
         try:
             import hashlib
             query_hash = hashlib.md5(user_message.encode('utf-8')).hexdigest()
             cache_key = f"chisa:answer_cache:{user_id}:{query_hash}"
             
-            # 1. Check Answer Cache
+            # 1. Check Answer Cache (invalidate if fallback/error reply)
             cached_answer = await self.cache.get(cache_key)
             if cached_answer:
-                log.info("Redis Answer Cache HIT", user_id=user_id, query_hash=query_hash)
-                current_emotion = await self.get_emotion_state(session, user_id)
-                emotion_dict = current_emotion.model_dump() if hasattr(current_emotion, "model_dump") else current_emotion.dict()
-                return cached_answer, emotion_dict
+                if is_fallback_reply(cached_answer):
+                    log.warning("Redis Answer Cache contains fallback/error reply. Invalidating key", user_id=user_id, cache_key=cache_key)
+                    await self.cache.delete(cache_key)
+                else:
+                    log.info("Redis Answer Cache HIT", user_id=user_id, query_hash=query_hash)
+                    current_emotion = await self.get_emotion_state(session, user_id)
+                    emotion_dict = current_emotion.model_dump() if hasattr(current_emotion, "model_dump") else current_emotion.dict()
+                    return cached_answer, emotion_dict
 
             # 2. Run Pipeline on Cache Miss
             context = ChatContext(
@@ -120,8 +125,8 @@ class ChatEngine:
             )
             context = await self.pipeline.execute(context)
             
-            # 3. Store in Answer Cache (TTL 12 hours)
-            if context.chisa_reply:
+            # 3. Store in Answer Cache (TTL 12 hours) — only valid responses!
+            if context.chisa_reply and not is_fallback_reply(context.chisa_reply):
                 await self.cache.set(cache_key, context.chisa_reply, ttl=43200)
                 
             return context.chisa_reply, context.updated_emotions

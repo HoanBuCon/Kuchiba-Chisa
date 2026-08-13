@@ -55,7 +55,7 @@ class CircuitBreaker:
 
 
 # Global instance for LLM calls
-llm_circuit_breaker = CircuitBreaker(failure_threshold=3, recovery_timeout=45.0)
+llm_circuit_breaker = CircuitBreaker(failure_threshold=5, recovery_timeout=15.0)
 
 def with_circuit_breaker(breaker: CircuitBreaker):
     """Decorator to apply circuit breaker to an async function."""

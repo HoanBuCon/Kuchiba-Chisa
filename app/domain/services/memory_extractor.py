@@ -92,6 +92,9 @@ class MemoryExtractor:
             history=[],
             user_message=user_prompt,
             response_schema=schema,
+            retrieved_memories=[],
+            retrieved_lore=[],
+            rag_decisions={"use_deep_thinking": False}
         )
 
         try:
@@ -132,7 +135,7 @@ class MemoryExtractor:
             response_schema=self.RESPONSE_SCHEMA,
             retrieved_memories=[],
             retrieved_lore=[],
-            rag_decisions={}
+            rag_decisions={"use_deep_thinking": False}
         )
         
         try:

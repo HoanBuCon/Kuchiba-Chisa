@@ -27,6 +27,40 @@ class ThinkingLoopAgent:
         web_search_tool: Any,
         initial_search_query: str = None
     ) -> Tuple[str, List[Dict[str, Any]]]:
+        import asyncio
+        from app.config.settings import settings
+
+        try:
+            return await asyncio.wait_for(
+                self._run_inner(
+                    session=session,
+                    user_id=user_id,
+                    user_message=user_message,
+                    history=history,
+                    initial_context=initial_context,
+                    llm=llm,
+                    embedder=embedder,
+                    web_search_tool=web_search_tool,
+                    initial_search_query=initial_search_query,
+                ),
+                timeout=float(settings.THINKING_LOOP_TIMEOUT)
+            )
+        except asyncio.TimeoutError:
+            log.warning("Thinking loop global timeout reached, returning accumulated context", user_message=user_message)
+            return initial_context, []
+
+    async def _run_inner(
+        self,
+        session: IDbSession,
+        user_id: str,
+        user_message: str,
+        history: List[Dict[str, str]],
+        initial_context: str,
+        llm: BaseLLMAdapter,
+        embedder: IEmbeddingProvider,
+        web_search_tool: Any,
+        initial_search_query: str = None
+    ) -> Tuple[str, List[Dict[str, Any]]]:
         log.info("Activating Loop Thinking Agent for user query", user_message=user_message)
         
         # Format history for the model
@@ -51,9 +85,8 @@ class ThinkingLoopAgent:
                 has_enough_info = False
                 search_query = initial_search_query.strip()
             else:
-                from app.config.settings import settings
-                is_reasoning_cycle = (i > 1)
-                use_deep_thinking = settings.DEEP_THINKING and is_reasoning_cycle
+                is_reasoning_cycle = False
+                use_deep_thinking = False  # Always False for fast search query extraction
 
                 system_prompt = (
                     "You are a Loop Thinking Agent for Kuchiba Chisa (Wuthering Waves).\n"
@@ -70,10 +103,7 @@ class ThinkingLoopAgent:
                 )
                 
                 if is_reasoning_cycle:
-                    if use_deep_thinking:
-                        system_prompt += "- Analyze the context thoroughly before generating the final JSON. Provide a highly-optimized search query under 'search_query'.\n"
-                    else:
-                        system_prompt += "- If has_enough_info is false, write step-by-step reasoning under 'thinking' and generate a highly-optimized search query under 'search_query'.\n"
+                    system_prompt += "- If has_enough_info is false, write step-by-step reasoning under 'thinking' and generate a highly-optimized search query under 'search_query'.\n"
                 else:
                     system_prompt += "- Output the JSON immediately without reasoning. Provide a highly-optimized search query under 'search_query'.\n"
                 
@@ -118,7 +148,7 @@ class ThinkingLoopAgent:
                 }
                 required_fields = ["has_enough_info"]
                 
-                if is_reasoning_cycle and not use_deep_thinking:
+                if is_reasoning_cycle:
                     schema_properties["thinking"] = {"type": "string"}
                     required_fields.append("thinking")
 
@@ -135,7 +165,7 @@ class ThinkingLoopAgent:
                     response_schema=schema,
                     retrieved_memories=[],
                     retrieved_lore=[],
-                    rag_decisions={"use_deep_thinking": use_deep_thinking}
+                    rag_decisions={"use_deep_thinking": False}
                 )
 
             try:
@@ -149,7 +179,7 @@ class ThinkingLoopAgent:
                     thinking = reasoning_content or parsed.get("thinking", "")
                     
                     if not is_reasoning_cycle and not thinking:
-                        thinking = "Bypassed thinking for cycle 1 to save tokens."
+                        thinking = f"Bypassed thinking for cycle {i} to save tokens."
                         
                     has_enough_info = parsed.get("has_enough_info", False)
                     search_query = (parsed.get("search_query") or "").strip()
@@ -222,6 +252,22 @@ class ThinkingLoopAgent:
                     "search_result": search_result_text,
                     "input_context": context_before_search
                 })
+
+                # ── AUTO-SATISFY: Skip Cycle 2 LLM if Cycle 1 search returned valid results ──
+                search_success = search_res.get("status") == "success"
+                snippets = search_res.get("snippets") or []
+                if i == 1 and initial_search_query and search_success and len(snippets) >= 2:
+                    log.info(
+                        "Auto-satisfying after Cycle 1 search: sufficient snippets returned, skipping Cycle 2 LLM",
+                        snippet_count=len(snippets)
+                    )
+                    self.pipeline_tracker.add_step("thinking_loop_auto_satisfy", {
+                        "cycle": 1,
+                        "auto_satisfied": True,
+                        "snippet_count": len(snippets),
+                        "reason": f"Tìm kiếm Cycle 1 đã trả về {len(snippets)} snippets phù hợp. Tự động chuyển sang Prompt Build và bỏ qua lượt gọi LLM Cycle 2 để tối ưu latency."
+                    })
+                    break
 
             except Exception as e:
                 log.error("Error in thinking loop cycle", cycle=i, error=str(e))

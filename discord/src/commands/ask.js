@@ -85,6 +85,9 @@ export async function executePrefix(client, message, question, discordUser) {
   }
 
   await message.channel.sendTyping().catch(() => {});
+  const typingInterval = setInterval(() => {
+    message.channel.sendTyping().catch(() => {});
+  }, 8000);
 
   const interactionId = await repositories.interactions.createFromContext(message, {
     coreUserId: discordUser.core_user_id,
@@ -120,5 +123,7 @@ export async function executePrefix(client, message, question, discordUser) {
       await repositories.interactions.pool.query('DELETE FROM discord_interactions WHERE id = $1', [interactionId]);
       await message.reply('Xin lỗi Senpai, Chisa không thể trả lời lúc này. Hãy thử lại sau ít phút.');
     }
+  } finally {
+    clearInterval(typingInterval);
   }
 }

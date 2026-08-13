@@ -116,6 +116,14 @@ class GroqAdapter(BaseLLMAdapter):
 
         raw = response.choices[0].message.content or ""
         finish_reason = response.choices[0].finish_reason or ""
+        reasoning_content = getattr(response.choices[0].message, "reasoning_content", None)
+
+        if not reasoning_content and raw:
+            if "<think>" in raw and "</think>" in raw:
+                s_idx = raw.find("<think>") + 7
+                e_idx = raw.find("</think>")
+                if e_idx > s_idx:
+                    reasoning_content = raw[s_idx:e_idx].strip()
 
         parsed = {}
         error_to_raise = None
@@ -135,6 +143,7 @@ class GroqAdapter(BaseLLMAdapter):
             output_tokens=response.usage.completion_tokens if response.usage else 0,
             model=self._model,
             finish_reason=finish_reason,
+            reasoning_content=reasoning_content,
         )
 
         try:
@@ -177,29 +186,10 @@ class GroqAdapter(BaseLLMAdapter):
 
     # ── Validate Response ──────────────────────────────────────────
     async def validate_response(self, raw: str, schema: dict[str, Any]) -> dict[str, Any]:
-        """
-        Parse LLM JSON response and do basic structural validation.
-        TODO (Phase 4): Add full Pydantic schema validation against schema arg.
-        """
-        raw_cleaned = raw.strip()
-        try:
-            parsed = json.loads(raw_cleaned)
-        except json.JSONDecodeError:
-            try:
-                start = raw_cleaned.find('{')
-                end = raw_cleaned.rfind('}')
-                if start != -1 and end != -1 and end > start:
-                    candidate = raw_cleaned[start:end+1]
-                    parsed = json.loads(candidate)
-                else:
-                    raise LLMInvalidResponseError("No JSON object found in response")
-            except json.JSONDecodeError as e:
-                log.error("LLM JSON parse failed", error=str(e), raw=raw[:200])
-                raise LLMInvalidResponseError(f"JSON parse error: {e}")
-
-        if not isinstance(parsed, dict):
-            raise LLMInvalidResponseError("LLM response is not a JSON object")
-
+        from app.shared.utils.json_parser import robust_parse_json
+        parsed = robust_parse_json(raw)
+        if not parsed or not isinstance(parsed, dict):
+            raise LLMInvalidResponseError("LLM response is not a valid JSON object")
         return parsed
 
     # ── Token Estimation ───────────────────────────────────────────

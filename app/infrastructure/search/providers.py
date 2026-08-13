@@ -93,13 +93,21 @@ class DuckDuckGoLibrarySearchProvider(ISearchProvider):
             def _ddg_sync(q):
                 with DDGS() as ddgs:
                     return list(ddgs.text(q, max_results=4))
-            ddg_res = await asyncio.to_thread(_ddg_sync, query)
+            
+            ddg_res = await asyncio.wait_for(
+                asyncio.to_thread(_ddg_sync, query),
+                timeout=3.0
+            )
             if ddg_res:
                 snippets = [r.get("body", "") for r in ddg_res if r.get("body")]
                 urls = [r.get("href", "") for r in ddg_res if r.get("href")]
                 if snippets:
                     log.info("duckduckgo_search library succeeded")
                     return SearchResult(snippets=snippets, urls=urls, provider=self.name)
+            
+            log.info("duckduckgo_search library returned empty results (likely rate-limited)", query=query)
+        except asyncio.TimeoutError:
+            log.warning("duckduckgo_search library timed out after 3.0s", query=query)
         except Exception as ex:
             log.warning("duckduckgo_search library failed", error=str(ex))
         return None

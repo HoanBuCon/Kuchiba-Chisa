@@ -55,6 +55,13 @@ class LLMGenerationStage(PipelineStage):
             )
             est_output = TokenEstimator.estimate(raw_response)
 
+            reasoning_content = None
+            if "<think>" in raw_response and "</think>" in raw_response:
+                start_idx = raw_response.find("<think>") + 7
+                end_idx = raw_response.find("</think>")
+                if end_idx > start_idx:
+                    reasoning_content = raw_response[start_idx:end_idx].strip()
+
             response = LLMResponse(
                 raw_content=raw_response,
                 parsed=parsed,
@@ -62,6 +69,7 @@ class LLMGenerationStage(PipelineStage):
                 output_tokens=est_output,
                 model=self.llm._model,
                 finish_reason="stop",
+                reasoning_content=reasoning_content,
             )
 
             try:

@@ -18,12 +18,17 @@ class CacheStage(PipelineStage):
     async def process(self, context: ChatContext) -> ChatContext:
         # Only cache if intent is exclusively LORE (no SYSTEM_ACTION or MEMORY)
         if len(context.intents) == 1 and context.intents[0] == ChatIntent.LORE and not context.is_small_talk:
+            from app.shared.utils.fallback_detector import is_fallback_reply
             query_hash = hashlib.md5(context.cleaned_query.encode()).hexdigest()
             cache_key = f"chisa:answer_cache:lore:{query_hash}"
             cached_answer = await self.cache.get(cache_key)
             if cached_answer:
-                log.info("Answer cache hit", cache_key=cache_key)
-                context.is_cached_answer = True
-                context.chisa_reply = cached_answer
+                if is_fallback_reply(cached_answer):
+                    log.warning("Lore cache contains fallback/error reply. Invalidating key", cache_key=cache_key)
+                    await self.cache.delete(cache_key)
+                else:
+                    log.info("Answer cache hit", cache_key=cache_key)
+                    context.is_cached_answer = True
+                    context.chisa_reply = cached_answer
                 
         return context

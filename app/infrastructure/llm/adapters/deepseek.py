@@ -120,6 +120,14 @@ class DeepSeekAdapter(BaseLLMAdapter):
             choice = res_json["choices"][0]
             raw = choice["message"].get("content", "") or ""
             reasoning_content = choice["message"].get("reasoning_content")
+
+            if not reasoning_content and raw:
+                if "<think>" in raw and "</think>" in raw:
+                    s_idx = raw.find("<think>") + 7
+                    e_idx = raw.find("</think>")
+                    if e_idx > s_idx:
+                        reasoning_content = raw[s_idx:e_idx].strip()
+
             finish_reason = choice.get("finish_reason", "")
             
             usage = res_json.get("usage", {})
@@ -185,6 +193,7 @@ class DeepSeekAdapter(BaseLLMAdapter):
         is_deep_thinking = prompt.rag_decisions.get("use_deep_thinking", False) if hasattr(prompt, "rag_decisions") else False
         if not is_deep_thinking:
             payload["response_format"] = {"type": "json_object"}
+        in_thinking = False
         try:
             async with self._http_client.stream("POST", url, headers=headers, json=payload, timeout=float(self._timeout)) as response:
                 if response.status_code != 200:
@@ -203,8 +212,21 @@ class DeepSeekAdapter(BaseLLMAdapter):
                             break
                         try:
                             chunk_json = json.loads(data_str)
-                            content = chunk_json["choices"][0]["delta"].get("content", "")
+                            delta = chunk_json["choices"][0]["delta"]
+                            
+                            reasoning = delta.get("reasoning_content", "")
+                            content = delta.get("content", "")
+                            
+                            if reasoning:
+                                if not in_thinking:
+                                    in_thinking = True
+                                    yield "<think>\n"
+                                yield reasoning
+                            
                             if content:
+                                if in_thinking:
+                                    in_thinking = False
+                                    yield "\n</think>\n"
                                 yield content
                         except (json.JSONDecodeError, KeyError, IndexError, TypeError) as parse_ex:
                             log.warning(
@@ -215,6 +237,8 @@ class DeepSeekAdapter(BaseLLMAdapter):
                                 error_type=type(parse_ex).__name__,
                             )
                             continue
+                if in_thinking:
+                    yield "\n</think>\n"
         except httpx.TimeoutException:
             log.error("DeepSeek streaming timed out")
             raise LLMTimeoutError()
@@ -223,25 +247,10 @@ class DeepSeekAdapter(BaseLLMAdapter):
             raise LLMError(f"DeepSeek streaming failed: {e}", retryable=False)
 
     async def validate_response(self, raw: str, schema: dict[str, Any]) -> dict[str, Any]:
-        raw_cleaned = raw.strip()
-        try:
-            parsed = json.loads(raw_cleaned)
-        except json.JSONDecodeError:
-            try:
-                start = raw_cleaned.find('{')
-                end = raw_cleaned.rfind('}')
-                if start != -1 and end != -1 and end > start:
-                    candidate = raw_cleaned[start:end+1]
-                    parsed = json.loads(candidate)
-                else:
-                    raise LLMInvalidResponseError("No JSON object found in response")
-            except json.JSONDecodeError as e:
-                log.error("LLM JSON parse failed", error=str(e), raw=raw[:200])
-                raise LLMInvalidResponseError(f"JSON parse error: {e}")
-
-        if not isinstance(parsed, dict):
-            raise LLMInvalidResponseError("LLM response is not a JSON object")
-
+        from app.shared.utils.json_parser import robust_parse_json
+        parsed = robust_parse_json(raw)
+        if not parsed or not isinstance(parsed, dict):
+            raise LLMInvalidResponseError("LLM response is not a valid JSON object")
         return parsed
 
     async def estimate_tokens(self, text: str) -> int:

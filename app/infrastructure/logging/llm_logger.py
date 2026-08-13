@@ -203,6 +203,7 @@ async def log_llm_transaction(prompt: StructuredPrompt, response: LLMResponse) -
                 "system_prompt": prompt.system,
                 "user_message": prompt.user_message,
                 "reasoning_content": response.reasoning_content,
+                "history": prompt.history,
             })
         except Exception:
             pass

@@ -51,7 +51,10 @@ class MemorySummarizer:
             system=system_instructions,
             history=[],
             user_message=user_prompt,
-            response_schema=RESPONSE_SCHEMA
+            response_schema=RESPONSE_SCHEMA,
+            retrieved_memories=[],
+            retrieved_lore=[],
+            rag_decisions={"use_deep_thinking": False}
         )
         
         try:

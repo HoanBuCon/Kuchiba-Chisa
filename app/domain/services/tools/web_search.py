@@ -128,6 +128,20 @@ class WebSearchAgentTool(BaseAgentTool):
         return res
 
 
+    @staticmethod
+    def _clean_html_to_text(html: str) -> str:
+        if not html:
+            return ""
+        import html as html_module
+        # Remove script and style elements
+        text = re.sub(r"<(script|style)[^>]*>.*?</\1>", " ", html, flags=re.DOTALL | re.IGNORECASE)
+        # Strip HTML tags
+        text = re.sub(r"<[^>]+>", " ", text)
+        # Unescape HTML entities and normalize whitespace
+        text = html_module.unescape(text)
+        text = re.sub(r"\s+", " ", text).strip()
+        return text
+
     def __init__(
         self,
         providers: List['ISearchProvider'] = None,
@@ -168,11 +182,11 @@ class WebSearchAgentTool(BaseAgentTool):
         results = snippets[:4]
         results_str = f"SEARCH SNIPPETS ({provider_name}):\n" + "\n".join([f"- {r}" for r in results])
 
-        # Parallel Deep Page Crawling (Load tolerant and fast)
+        # Parallel Deep Page Crawling (Load tolerant and fast, max 1 top URL with 3s timeout)
         filtered_urls = [
             u for u in urls[:3]
             if not any(domain in u for domain in ["youtube.com", "facebook.com", "twitter.com", "instagram.com", "tiktok.com"])
-        ][:2]
+        ][:1]
 
         fetched_content = []
         deep_page_url = None
@@ -183,11 +197,13 @@ class WebSearchAgentTool(BaseAgentTool):
                 async def fetch_page(target_url: str):
                     try:
                         log.info("Fetching deep page in parallel", url=target_url)
-                        html = await self.page_fetcher(target_url)
+                        html = await asyncio.wait_for(self.page_fetcher(target_url), timeout=3.0)
                         if html:
                             cleaned_text = self._clean_html_to_text(html)
                             if len(cleaned_text) > 100:
                                 return target_url, cleaned_text[:1000]
+                    except asyncio.TimeoutError:
+                        log.warning("Deep page fetch timed out after 3.0s", url=target_url)
                     except Exception as pe:
                         log.warning("Failed parallel deep page fetch", url=target_url, error=str(pe))
                     return None

@@ -171,9 +171,10 @@ Hệ thống sử dụng một pipeline duy nhất được tối ưu hóa toàn
                ┌──────────────────┴──────────────────┐
                ▼ (Đồng bộ)                           ▼ (Async Tasks - Chạy ngầm)
         Save Postgres Messages,               ├──► [LLM Call 3: MemoryExtractor] (Fact saving)
-        Commit EmotionState,                  └──► [LLM Call 4: Summarizer] (Every 50 turns)
+        Commit EmotionState,                  └──► [LLM Call 4: Summarizer] (Every 30 turns)
         Respond to Senpai
 ```
+
 
 Hệ thống định tuyến hành động hệ thống được chia làm 2 Tầng:
 - **Tầng 1 (SemanticRouter)**: Định tuyến các tin nhắn Senpai vào 5 intents. Khi intent `SYSTEM_ACTION` được kích hoạt thông qua cơ chế Margin check và Keyword guard nghiêm ngặt để tránh false positive, luồng sẽ được rẽ sang Tầng 2.
