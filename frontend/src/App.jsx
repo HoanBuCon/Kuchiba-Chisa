@@ -1,9 +1,9 @@
 import { useState, useRef, useEffect } from 'react';
 import axios from 'axios';
-import { Send, MessageSquare, Trash2, Zap, Heart, Smile, Frown, Shield } from 'lucide-react';
+import { Send, MessageSquare, Trash2, Zap, Heart, Smile, Frown, Shield, Plus, X } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 
-// ── Persistent User ID (UUIDv4) ──────────────────────────────────────────
+// ── Persistent Device UUID ──────────────────────────────────────────
 const getDeviceId = () => {
   let id = localStorage.getItem('chisa_device_uuid_v4');
   if (!id) {
@@ -16,9 +16,35 @@ const getDeviceId = () => {
   return id;
 };
 
+// ── Local Storage Conversation Threads Helper ────────────────────────────
+const getStoredConversations = () => {
+  try {
+    const stored = localStorage.getItem('chisa_conversations');
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+    }
+  } catch (e) {
+    console.error("Failed to read conversations from localStorage:", e);
+  }
+  const defaultId = getDeviceId();
+  const initial = [{ id: defaultId, title: 'Cuộc trò chuyện 1', createdAt: Date.now() }];
+  localStorage.setItem('chisa_conversations', JSON.stringify(initial));
+  return initial;
+};
+
+const saveConversations = (convs) => {
+  try {
+    localStorage.setItem('chisa_conversations', JSON.stringify(convs));
+  } catch (e) {
+    console.error("Failed to save conversations to localStorage:", e);
+  }
+};
+
 const BASE = 'http://localhost:8000/api/v1';
 const GREETING = { role: 'chisa', content: 'Chào Senpai~ Em là Chisa đây ♡  Hôm nay Senpai có gì muốn tâm sự với em không?' };
 
+// ── SSE Chat Streaming Handler ───────────────────────────────────────────
 async function streamChatResponse(payload, { onLoopThinkingStart, onToken } = {}) {
   const response = await fetch(`${BASE}/chat/stream`, {
     method: 'POST',
@@ -59,9 +85,7 @@ async function streamChatResponse(payload, { onLoopThinkingStart, onToken } = {}
 
   while (true) {
     const { value, done } = await reader.read();
-    if (done) {
-      break;
-    }
+    if (done) break;
 
     buffer += decoder.decode(value, { stream: true });
 
@@ -71,9 +95,7 @@ async function streamChatResponse(payload, { onLoopThinkingStart, onToken } = {}
       buffer = buffer.slice(boundaryIndex + 2);
       boundaryIndex = buffer.indexOf('\n\n');
 
-      if (!rawChunk) {
-        continue;
-      }
+      if (!rawChunk) continue;
 
       const { eventName, data } = parseChunk(rawChunk);
       if (eventName === 'loop_thinking_started' && typeof onLoopThinkingStart === 'function') {
@@ -98,10 +120,9 @@ async function streamChatResponse(payload, { onLoopThinkingStart, onToken } = {}
   return finalPayload;
 }
 
-// ── Message Renderer ─────────────────────────────────────────────────────
+// ── Message Component ───────────────────────────────────────────────────
 function Message({ msg }) {
   if (msg.role === 'user') {
-    // Render /clear as a system badge, not a normal bubble
     if (msg.content === '/clear') {
       return (
         <div className="msg-row">
@@ -133,7 +154,7 @@ function Message({ msg }) {
   );
 }
 
-// ── Emotion Panel ──────────────────────────────────────────────────────────
+// ── Emotion Panel Component ──────────────────────────────────────────────
 function EmotionPanel({ emotions }) {
   const bars = [
     { label: 'Vui vẻ', key: 'joy', icon: <Smile size={12} />, color: '#4caf50' },
@@ -145,7 +166,7 @@ function EmotionPanel({ emotions }) {
 
   return (
     <div className="emotion-panel">
-      <div className="sidebar-section-label" style={{ padding: 0 }}>Cảm xúc</div>
+      <div className="sidebar-section-label" style={{ padding: 0 }}>Chỉ số cảm xúc</div>
       <div className="emotion-list">
         {bars.map(b => {
           const val = emotions?.[b.key] || 0;
@@ -177,8 +198,15 @@ function EmotionPanel({ emotions }) {
   );
 }
 
-// ── Sidebar ──────────────────────────────────────────────────────────────
-function Sidebar({ onClear, emotions }) {
+// ── Sidebar Component (Conversation Management: Add & Delete Threads) ───
+function Sidebar({ 
+  conversations, 
+  activeSessionId, 
+  onSelectSession, 
+  onCreateSession, 
+  onDeleteSession, 
+  onClearMemory 
+}) {
   return (
     <aside className="sidebar">
       <div className="sidebar-logo">
@@ -188,30 +216,49 @@ function Sidebar({ onClear, emotions }) {
         <span className="logo-text">CHISA<span className="logo-dot">.</span>AI</span>
       </div>
 
-      <div className="sidebar-chisa-art">
-        <img src="/chisa_drink.gif" alt="Chisa" className="sidebar-chisa-img" />
-      </div>
-
-      <EmotionPanel emotions={emotions} />
-
-      <span className="sidebar-section-label">Điều hướng</span>
-
-      <button className="sidebar-item active">
-        <MessageSquare size={15} />
-        Cuộc trò chuyện
+      <button className="new-chat-btn" onClick={onCreateSession} title="Tạo cuộc trò chuyện mới">
+        <Plus size={16} />
+        <span>Cuộc trò chuyện mới</span>
       </button>
+
+      <span className="sidebar-section-label">Đoạn hội thoại ({conversations.length})</span>
+
+      <div className="conv-list">
+        {conversations.map(conv => {
+          const isActive = conv.id === activeSessionId;
+          return (
+            <div 
+              key={conv.id} 
+              className={`conv-item ${isActive ? 'active' : ''}`}
+              onClick={() => onSelectSession(conv.id)}
+            >
+              <div className="conv-item-left">
+                <MessageSquare size={14} className="conv-icon" />
+                <span className="conv-title">{conv.title}</span>
+              </div>
+              <button 
+                className="conv-delete-btn" 
+                onClick={(e) => onDeleteSession(e, conv.id)}
+                title="Xóa đoạn hội thoại"
+              >
+                <Trash2 size={13} />
+              </button>
+            </div>
+          );
+        })}
+      </div>
 
       <div className="sidebar-spacer" />
 
       <div className="sidebar-footer">
         <button
           className="sidebar-item"
-          onClick={onClear}
-          title="Xóa toàn bộ ký ức"
+          onClick={onClearMemory}
+          title="Xóa toàn bộ ký ức của hội thoại hiện tại"
           style={{ color: '#c62828' }}
         >
           <Trash2 size={14} />
-          Xóa ký ức
+          Xóa ký ức hội thoại
         </button>
         <div className="status-badge">
           <div className="status-dot" />
@@ -224,6 +271,8 @@ function Sidebar({ onClear, emotions }) {
 
 // ── Main App ─────────────────────────────────────────────────────────────
 export default function App() {
+  const [conversations, setConversations]   = useState(getStoredConversations);
+  const [activeSessionId, setActiveSessionId] = useState(() => conversations[0]?.id || getDeviceId());
   const [messages, setMessages]             = useState([]);
   const [input, setInput]                   = useState('');
   const [isLoading, setIsLoading]           = useState(false);
@@ -231,15 +280,20 @@ export default function App() {
   const [streamedText, setStreamedText]     = useState('');
   const [emotions, setEmotions]             = useState({ joy: 0.5, sadness: 0.0, trust: 0.5, irritation: 0.0, attachment: 0.0 });
   const [isHistoryLoading, setIsHistoryLoading] = useState(true);
+  const [isEmotionOpen, setIsEmotionOpen]   = useState(false);
+
   const messagesEndRef = useRef(null);
   const textareaRef    = useRef(null);
 
   const scrollToBottom = () =>
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
 
-  // Fetch history on mount
+  // Fetch history & emotions whenever activeSessionId changes
   useEffect(() => {
-    axios.get(`${BASE}/chat/history/${getDeviceId()}?limit=50`)
+    setIsHistoryLoading(true);
+    
+    // Fetch History
+    axios.get(`${BASE}/chat/history/${activeSessionId}?limit=50`)
       .then(res => {
         const hist = res.data?.history || [];
         setMessages(hist.length
@@ -250,12 +304,13 @@ export default function App() {
       .catch(() => setMessages([GREETING]))
       .finally(() => setIsHistoryLoading(false));
 
-    axios.get(`${BASE}/chat/emotions/${getDeviceId()}`)
+    // Fetch Emotions
+    axios.get(`${BASE}/chat/emotions/${activeSessionId}`)
       .then(res => {
         if (res.data) setEmotions(res.data);
       })
       .catch(console.error);
-  }, []);
+  }, [activeSessionId]);
 
   useEffect(() => { scrollToBottom(); }, [messages, isLoading]);
 
@@ -268,17 +323,65 @@ export default function App() {
     }
   };
 
-  // Clear memory
-  const handleClear = async () => {
-    if (!window.confirm("Senpai có chắc chắn muốn xóa đi mọi kỷ niệm với em không? (Hành động này không thể hoàn tác đâu nhé!)")) {
+  // Create a new conversation thread
+  const handleCreateNewChat = () => {
+    const newId = `chisa-conv-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
+    const newTitle = `Cuộc trò chuyện ${conversations.length + 1}`;
+    const newConv = { id: newId, title: newTitle, createdAt: Date.now() };
+
+    const updated = [newConv, ...conversations];
+    setConversations(updated);
+    saveConversations(updated);
+    setActiveSessionId(newId);
+    setEmotions({ joy: 0.5, sadness: 0.0, trust: 0.5, irritation: 0.0, attachment: 0.0 });
+  };
+
+  // Select a conversation thread
+  const handleSelectSession = (id) => {
+    if (id === activeSessionId) return;
+    setActiveSessionId(id);
+  };
+
+  // Delete a conversation thread (Wipes backend memory + removes from local session list)
+  const handleDeleteSession = async (e, id) => {
+    e.stopPropagation();
+    if (!window.confirm("Senpai có chắc chắn muốn xóa đoạn hội thoại này không?")) {
+      return;
+    }
+
+    try {
+      await axios.delete(`${BASE}/chat/clear/${id}`).catch(console.error);
+    } catch {
+      // Ignore backend delete errors if network issue
+    }
+
+    const filtered = conversations.filter(c => c.id !== id);
+    if (filtered.length === 0) {
+      // If deleted the last conversation, generate a fresh new one
+      const freshId = `chisa-conv-${Date.now()}`;
+      const freshConv = [{ id: freshId, title: 'Cuộc trò chuyện 1', createdAt: Date.now() }];
+      setConversations(freshConv);
+      saveConversations(freshConv);
+      setActiveSessionId(freshId);
+    } else {
+      setConversations(filtered);
+      saveConversations(filtered);
+      if (id === activeSessionId) {
+        setActiveSessionId(filtered[0].id);
+      }
+    }
+  };
+
+  // Clear memory for current session
+  const handleClearMemory = async () => {
+    if (!window.confirm("Senpai có chắc chắn muốn xóa đi mọi kỷ niệm của đoạn hội thoại này không?")) {
       return;
     }
     setMessages(prev => [...prev, { role: 'user', content: '/clear' }]);
     setIsLoading(true);
     try {
-      const res = await axios.delete(`${BASE}/chat/clear/${getDeviceId()}`);
+      const res = await axios.delete(`${BASE}/chat/clear/${activeSessionId}`);
       setMessages([{ role: 'chisa', content: `🌸 ${res.data?.message || 'Ký ức đã được xóa!'}` }]);
-      // Reset UI emotions to default baseline values
       setEmotions({ joy: 0.1, sadness: 0.0, trust: 0.5, irritation: 0.0, attachment: 0.0 });
     } catch {
       setMessages(prev => [...prev, { role: 'chisa', content: '*(Lỗi)* Em không thể xóa ký ức lúc này, hãy thử lại nhé!' }]);
@@ -294,7 +397,18 @@ export default function App() {
     setInput('');
     if (textareaRef.current) textareaRef.current.style.height = 'auto';
 
-    if (userText.toLowerCase() === '/clear') return handleClear();
+    if (userText.toLowerCase() === '/clear') return handleClearMemory();
+
+    // Auto-update conversation title if it's generic ("Cuộc trò chuyện X")
+    const currentConv = conversations.find(c => c.id === activeSessionId);
+    if (currentConv && currentConv.title.startsWith('Cuộc trò chuyện')) {
+      const truncatedTitle = userText.length > 22 ? `${userText.slice(0, 22)}...` : userText;
+      const updatedConvs = conversations.map(c => 
+        c.id === activeSessionId ? { ...c, title: truncatedTitle } : c
+      );
+      setConversations(updatedConvs);
+      saveConversations(updatedConvs);
+    }
 
     setMessages(prev => [...prev, { role: 'user', content: userText }]);
     setIsLoading(true);
@@ -303,7 +417,7 @@ export default function App() {
 
     try {
       const res = await streamChatResponse(
-        { user_id: getDeviceId(), message: userText, source: 'web' },
+        { user_id: activeSessionId, message: userText, source: 'web' },
         {
           onLoopThinkingStart: () => {
             setIsThinkingMode(true);
@@ -336,21 +450,43 @@ export default function App() {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); }
   };
 
+  const currentConv = conversations.find(c => c.id === activeSessionId);
+
   return (
     <div className="app-shell">
-      <Sidebar onClear={handleClear} emotions={emotions} />
+      {/* ── Left Sidebar: Conversation Threads ── */}
+      <Sidebar 
+        conversations={conversations}
+        activeSessionId={activeSessionId}
+        onSelectSession={handleSelectSession}
+        onCreateSession={handleCreateNewChat}
+        onDeleteSession={handleDeleteSession}
+        onClearMemory={handleClearMemory}
+      />
 
+      {/* ── Main Chat Panel ── */}
       <div className="chat-panel">
-        {/* Header */}
+        {/* Header with Right Side Emotion Toggle */}
         <header className="chat-header">
-          <span className="chat-header-title">Cuộc trò chuyện</span>
-          <div className="chat-header-badge">
-            <Zap size={11} />
-            Chisa AI
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span className="chat-header-title">{currentConv?.title || 'Cuộc trò chuyện'}</span>
+            <div className="chat-header-badge">
+              <Zap size={11} />
+              Chisa AI
+            </div>
           </div>
+
+          <button 
+            className={`emotion-toggle-btn ${isEmotionOpen ? 'active' : ''}`}
+            onClick={() => setIsEmotionOpen(prev => !prev)}
+            title="Trạng thái cảm xúc của Chisa"
+          >
+            <Heart size={14} />
+            <span>Cảm xúc Chisa</span>
+          </button>
         </header>
 
-        {/* Messages */}
+        {/* Messages Feed */}
         <div className="messages-feed">
           {isHistoryLoading ? (
             <div className="history-loading">
@@ -398,7 +534,7 @@ export default function App() {
           <div ref={messagesEndRef} />
         </div>
 
-        {/* Input */}
+        {/* Input Area */}
         <div className="input-area">
           <div className="input-wrapper">
             <textarea
@@ -420,6 +556,29 @@ export default function App() {
             </button>
           </div>
           <div className="input-hint">Gõ <code>/clear</code> để xóa ký ức • Shift+Enter để xuống dòng</div>
+        </div>
+
+        {/* ── Right Side Emotion Drawer Panel ── */}
+        <div 
+          className={`emotion-drawer-backdrop ${isEmotionOpen ? 'open' : ''}`}
+          onClick={() => setIsEmotionOpen(false)}
+        />
+        <div className={`emotion-drawer ${isEmotionOpen ? 'open' : ''}`}>
+          <div className="drawer-header">
+            <div className="drawer-title">
+              <Heart size={16} className="drawer-title-icon" />
+              <span>Trạng thái cảm xúc</span>
+            </div>
+            <button className="drawer-close-btn" onClick={() => setIsEmotionOpen(false)}>
+              <X size={16} />
+            </button>
+          </div>
+          <div className="drawer-body">
+            <div className="sidebar-chisa-art">
+              <img src="/chisa_drink.gif" alt="Chisa" className="sidebar-chisa-img" />
+            </div>
+            <EmotionPanel emotions={emotions} />
+          </div>
         </div>
       </div>
     </div>

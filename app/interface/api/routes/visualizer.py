@@ -1,4 +1,5 @@
 import os
+import json
 import asyncio
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse
@@ -35,7 +36,8 @@ async def websocket_endpoint(websocket: WebSocket):
     try:
         while True:
             trace = await queue.get()
-            await websocket.send_json(trace)
+            text = json.dumps(trace, default=str, ensure_ascii=False)
+            await websocket.send_text(text)
     except WebSocketDisconnect:
         pass
     finally:

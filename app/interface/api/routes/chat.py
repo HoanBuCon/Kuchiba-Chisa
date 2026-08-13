@@ -10,9 +10,9 @@ from app.domain.services.chat_engine import ChatEngine, ChatEngineBusyError
 from app.domain.interfaces.llm_provider import LLMRateLimitError, LLMTimeoutError, LLMInvalidResponseError
 from app.infrastructure.logging.logger import get_logger
 from app.shared.utils.user_identity import normalize_user_id, normalize_user_id_str
-from sqlalchemy.exc import SQLAlchemyError, OperationalError
+from sqlalchemy.exc import SQLAlchemyError
 from app.shared.utils.circuit_breaker import CircuitBreakerError
-from app.application.dependencies import get_chat_engine, get_clear_user_memory_use_case, container
+from app.application.dependencies import get_chat_engine, get_clear_user_memory_use_case
 
 log = get_logger(__name__)
 
@@ -20,7 +20,7 @@ router = APIRouter()
 
 
 def _sse_event(event_type: str, data: dict) -> str:
-    return f"event: {event_type}\ndata: {json.dumps(data, ensure_ascii=False)}\n\n"
+    return f"event: {event_type}\ndata: {json.dumps(data, ensure_ascii=False, default=str)}\n\n"
 
 
 def _prepare_chat_context(request: ChatRequest, http_request: Request) -> tuple[str, str]:

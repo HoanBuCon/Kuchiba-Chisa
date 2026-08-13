@@ -23,6 +23,7 @@ class PipelineTracker:
         self.history: List[Dict[str, Any]] = []
         self.listeners: Set[Callable[[Dict[str, Any]], Any]] = set()
         self._subscriber_task: Any = None
+        self.instance_id: str = str(uuid.uuid4())
 
     def _notify_listeners(self, event: Dict[str, Any], broadcast_redis: bool = True):
         # 1. Notify local in-process listeners
@@ -35,6 +36,7 @@ class PipelineTracker:
         # 2. Broadcast to Redis Pub/Sub across multi-worker processes
         if broadcast_redis:
             try:
+                event["_publisher_id"] = self.instance_id
                 loop = asyncio.get_running_loop()
                 loop.create_task(self._publish_redis_event(event))
             except RuntimeError:
@@ -65,6 +67,9 @@ class PipelineTracker:
                 if message.get("type") == "message":
                     try:
                         event = json.loads(message["data"])
+                        # Filter out self-published messages to prevent duplicate notifications
+                        if event.get("_publisher_id") == self.instance_id:
+                            continue
                         # Notify local listeners without re-publishing to Redis
                         self._notify_listeners(event, broadcast_redis=False)
                     except Exception:

@@ -98,7 +98,7 @@ class ContextAssessor:
             parsed = response.parsed or {}
             is_aligned = parsed.get("is_aligned", True)
             reason = parsed.get("reason", "No reason provided")
-            search_query = parsed.get("search_query", "").strip()
+            search_query = (parsed.get("search_query") or "").strip()
             use_lore = parsed.get("use_lore", True)
             log.info("Information alignment check complete", is_aligned=is_aligned, reason=reason, search_query=search_query, use_lore=use_lore)
             return is_aligned, reason, search_query, use_lore

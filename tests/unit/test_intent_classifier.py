@@ -47,7 +47,7 @@ async def test_character_false_positive_prevented_by_boundary_regex():
 
     intents, _ = await classifier.classify("game có vũ khí không", query_vector=[0.0, 0.0, 0.0])
 
-    assert ChatIntent.CHARACTER_LORE not in intents
+    assert ChatIntent.LORE not in intents
 
 
 @pytest.mark.asyncio

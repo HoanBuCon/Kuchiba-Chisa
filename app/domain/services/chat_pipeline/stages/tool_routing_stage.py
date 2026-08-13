@@ -5,7 +5,7 @@ from app.domain.services.intent_classifier import ChatIntent
 from app.domain.interfaces.cache_provider import ICacheProvider
 from app.domain.interfaces.repositories import IConversationRepository, IEmotionRepository
 from app.domain.interfaces.session import IDbSession
-from typing import Callable, Awaitable, Any
+from typing import Callable, Awaitable
 from app.shared.utils.logger import get_logger
 from app.domain.interfaces.tracker import IPipelineTracker
 

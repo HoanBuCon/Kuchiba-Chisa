@@ -60,7 +60,7 @@ def test_empty_lore_reallocates_to_history():
 
 def test_factual_other_prioritizes_search_over_lore():
     lore = [_make_long("Lore", 2000)]
-    search = _make_long("SearchResult", 3000)
+    search = _make_long("SearchResult ", 10000)
     allocation = ContextBudgetManager.allocate(
         mode=BudgetMode.LOOP,
         system_fixed_tokens=1815,

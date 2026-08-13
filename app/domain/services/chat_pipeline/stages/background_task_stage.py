@@ -14,10 +14,10 @@ class BackgroundTaskStage(PipelineStage):
     def __init__(
         self,
         memory_extractor: MemoryExtractor,
-        summarize_memories_callback: Callable[[str, str, list], Coroutine[Any, Any, None]]
+        unified_auto_summarize_callback: Callable[[str, str], Coroutine[Any, Any, None]]
     ):
         self.memory_extractor = memory_extractor
-        self.summarize_memories_callback = summarize_memories_callback
+        self.unified_auto_summarize_callback = unified_auto_summarize_callback
 
     async def process(self, context: ChatContext) -> ChatContext:
         # Trigger background fact extraction (tracked task) for non-small-talk messages
@@ -33,15 +33,14 @@ class BackgroundTaskStage(PipelineStage):
         else:
             log.debug("Skipping memory extraction for small talk message", user_id=context.user_id)
         
-        # Periodically trigger background summarization (every 50 interactions)
+        # Periodically trigger unified background auto-summarization (every 50 interactions)
         if context.stats.interaction_count > 0 and context.stats.interaction_count % 50 == 0:
             BackgroundTaskManager.spawn(
-                self.summarize_memories_callback(
+                self.unified_auto_summarize_callback(
                     context.user_id,
-                    str(context.conv_id),
-                    context.history[-40:]
+                    str(context.conv_id)
                 ),
-                name=f"summarize_memories:{context.user_id}",
+                name=f"unified_auto_summarize:{context.user_id}",
             )
             
         log.info("ChatPipeline cycle complete", user_id=context.user_id)

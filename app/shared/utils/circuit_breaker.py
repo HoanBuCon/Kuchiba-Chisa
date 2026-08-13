@@ -56,19 +56,3 @@ class CircuitBreaker:
 
 # Global instance for LLM calls
 llm_circuit_breaker = CircuitBreaker(failure_threshold=5, recovery_timeout=15.0)
-
-def with_circuit_breaker(breaker: CircuitBreaker):
-    """Decorator to apply circuit breaker to an async function."""
-    def decorator(func: Callable[..., Coroutine[Any, Any, Any]]):
-        @wraps(func)
-        async def wrapper(*args, **kwargs):
-            breaker.check_state()
-            try:
-                result = await func(*args, **kwargs)
-                breaker.record_success()
-                return result
-            except Exception as e:
-                breaker.record_failure(e)
-                raise
-        return wrapper
-    return decorator

@@ -95,6 +95,9 @@ class DeepSeekAdapter(BaseLLMAdapter):
         is_deep_thinking = prompt.rag_decisions.get("use_deep_thinking", False) if hasattr(prompt, "rag_decisions") else False
         if not is_deep_thinking:
             payload["response_format"] = {"type": "json_object"}
+            payload["thinking"] = {"type": "disabled"}
+        else:
+            payload["thinking"] = {"type": "enabled"}
 
         try:
             response = await self._http_client.post(url, headers=headers, json=payload, timeout=float(self._timeout))
@@ -193,6 +196,9 @@ class DeepSeekAdapter(BaseLLMAdapter):
         is_deep_thinking = prompt.rag_decisions.get("use_deep_thinking", False) if hasattr(prompt, "rag_decisions") else False
         if not is_deep_thinking:
             payload["response_format"] = {"type": "json_object"}
+            payload["thinking"] = {"type": "disabled"}
+        else:
+            payload["thinking"] = {"type": "enabled"}
         in_thinking = False
         try:
             async with self._http_client.stream("POST", url, headers=headers, json=payload, timeout=float(self._timeout)) as response:

@@ -89,3 +89,21 @@ def clean_query_for_rag(text: str) -> str:
         return original
     return text
 
+
+PRONOUNS_STOPWORDS = {
+    "em", "anh", "chisa", "chía", "chía chía", "senpai", "tớ", "cậu", "bạn", 
+    "ơi", "à", "nhé", "nha", "nè", "hả", "đấy", "đó", "thế", "vậy", "đi", "ạ"
+}
+
+
+def is_meaningful_query(query: str) -> bool:
+    """
+    Kiểm tra xem query sau khi làm sạch có chứa từ vựng mang ngữ nghĩa tìm kiếm RAG hay không.
+    Nếu chỉ còn lại đại từ nhân xưng ("em", "chisa", "anh") thì trả về False.
+    """
+    if not query:
+        return False
+    words = [w for w in re.findall(r'\w+', query.lower()) if w not in PRONOUNS_STOPWORDS]
+    total_chars = sum(len(w) for w in words)
+    return len(words) > 0 and total_chars >= 3
+

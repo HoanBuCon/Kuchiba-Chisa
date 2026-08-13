@@ -126,7 +126,7 @@ async def test_lore_chunks_filtered_out_when_use_lore_false():
         user_message="Tập đoàn nào thuộc quân đội nhân dân Việt Nam sản xuất phần mềm?",
         query_vector=[0.1, 0.2],
         cleaned_query="quan doi san xuat phan mem",
-        intents=["CHARACTER_LORE"],
+        intents=["LORE"],
         current_emotions={},
         history=[],
         llm=None,

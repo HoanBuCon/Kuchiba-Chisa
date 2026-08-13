@@ -3,7 +3,6 @@ from app.domain.services.chat_pipeline.context import ChatContext
 from app.domain.services.rag.pipeline import RAGPipeline
 from app.domain.interfaces.llm_provider import BaseLLMAdapter
 from app.domain.interfaces.embedding_provider import IEmbeddingProvider
-from app.domain.interfaces.vector_store import IVectorStore
 from app.domain.services.tool_router import LLMToolRouter
 
 class RAGStage(PipelineStage):
@@ -14,13 +13,11 @@ class RAGStage(PipelineStage):
         self,
         llm: BaseLLMAdapter,
         embedder: IEmbeddingProvider,
-        vector_store: IVectorStore,
         tool_router: LLMToolRouter,
         rag_pipeline: RAGPipeline
     ):
         self.llm = llm
         self.embedder = embedder
-        self.vector_store = vector_store
         self.tool_router = tool_router
         self.rag_pipeline = rag_pipeline
 

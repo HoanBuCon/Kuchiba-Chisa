@@ -62,7 +62,8 @@ class ConversationSummarizerAgentTool(BaseAgentTool):
                 "message": "Thiếu conv_repo để truy xuất lịch sử."
             }
 
-        user_uuid = uuid.UUID(user_id)
+        from app.shared.utils.user_identity import normalize_user_id
+        user_uuid = normalize_user_id(user_id)
         
         # 1. Fetch active conversation
         conv_id = await conv_repo.get_or_create_conversation(user_uuid)

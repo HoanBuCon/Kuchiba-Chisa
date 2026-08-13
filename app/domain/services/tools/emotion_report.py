@@ -67,7 +67,8 @@ class EmotionReportAgentTool(BaseAgentTool):
             }
 
         try:
-            user_uuid = uuid.UUID(user_id)
+            from app.shared.utils.user_identity import normalize_user_id
+            user_uuid = normalize_user_id(user_id)
             emotion = await emotion_repo.get_emotion_state(user_uuid)
 
             report = (

@@ -151,6 +151,10 @@ def create_app() -> FastAPI:
     else:
         log.warning("Assets directory not found; /assets static route disabled", path=str(ASSETS_DIR))
 
+    visualizer_static_dir = PROJECT_ROOT / "app" / "interface" / "api" / "static" / "visualizer"
+    if visualizer_static_dir.is_dir():
+        app.mount("/static/visualizer", StaticFiles(directory=str(visualizer_static_dir)), name="visualizer_static")
+
     return app
 
 

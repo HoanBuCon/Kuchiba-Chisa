@@ -41,7 +41,8 @@ class ClearUserMemoryUseCase:
             await self.user_repo_factory(session).delete_all_for_user(user_uuid)
             
         # 2. Qdrant deletes via vector store
-        collections = ["emotional_memories", "conversation_summaries", "persona_embeddings", "user_facts", "memories"]
+        from app.infrastructure.vector.qdrant.qdrant_service import COLLECTION_MEMORIES
+        collections = [COLLECTION_MEMORIES]
         for col in collections:
             try:
                 await self.vector_store.delete_by_user(col, canonical_user_id)

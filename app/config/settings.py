@@ -73,9 +73,11 @@ class Settings(BaseSettings):
     DEEPSEEK_BASE_URL: str = "https://api.deepseek.com"
     DEEP_THINKING: bool = True
 
-    # ── Embeddings ─────────────────────────────────────────────
+    # ── Embeddings & Semantic Router ───────────────────────────
     OPENAI_API_KEY: Optional[str] = None
     EMBEDDING_MODEL: str = "intfloat/multilingual-e5-small"
+    INTENT_SEMANTIC_THRESHOLD: float = 0.65
+    INTENT_ENABLE_L3_SEMANTIC: bool = True
 
     # ── Search API Keys (Optional Free Tiers) ──────────────────
     TAVILY_API_KEY: Optional[str] = None

@@ -81,37 +81,6 @@ class SerperSearchProvider(ISearchProvider):
             log.warning("Serper Search failed", error=str(ex))
         return None
 
-class DuckDuckGoLibrarySearchProvider(ISearchProvider):
-    @property
-    def name(self) -> str:
-        return "duckduckgo_lib"
-
-    async def search(self, query: str) -> Optional[SearchResult]:
-        try:
-            log.info("Trying duckduckgo_search library...")
-            from duckduckgo_search import DDGS
-            def _ddg_sync(q):
-                with DDGS() as ddgs:
-                    return list(ddgs.text(q, max_results=4))
-            
-            ddg_res = await asyncio.wait_for(
-                asyncio.to_thread(_ddg_sync, query),
-                timeout=3.0
-            )
-            if ddg_res:
-                snippets = [r.get("body", "") for r in ddg_res if r.get("body")]
-                urls = [r.get("href", "") for r in ddg_res if r.get("href")]
-                if snippets:
-                    log.info("duckduckgo_search library succeeded")
-                    return SearchResult(snippets=snippets, urls=urls, provider=self.name)
-            
-            log.info("duckduckgo_search library returned empty results (likely rate-limited)", query=query)
-        except asyncio.TimeoutError:
-            log.warning("duckduckgo_search library timed out after 3.0s", query=query)
-        except Exception as ex:
-            log.warning("duckduckgo_search library failed", error=str(ex))
-        return None
-
 class DDGScraperSearchProvider(ISearchProvider):
     def __init__(self, http_client: httpx.AsyncClient):
         self._http_client = http_client

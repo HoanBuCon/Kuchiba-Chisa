@@ -18,14 +18,3 @@ class QuestLoreSummary(BaseModel):
     lore_significance: Optional[str] = Field(None, description="Worldbuilding or lore significance in Wuthering Waves.")
 
     model_config = ConfigDict(extra="ignore")
-
-
-class EntityRelationshipExtract(BaseModel):
-    """Structured entity relationship extracted from lore text."""
-
-    source_entity: str = Field(..., description="Name of the primary entity (e.g. Sanhua).")
-    target_entity: str = Field(..., description="Name of the target entity (e.g. Jinzhou City Hall).")
-    relationship_type: str = Field(..., description="Type of relation: Affiliation, Ally, Relative, Enemy, Master, Pupil.")
-    description: str = Field(..., description="Short contextual summary of their relationship.")
-
-    model_config = ConfigDict(extra="ignore")

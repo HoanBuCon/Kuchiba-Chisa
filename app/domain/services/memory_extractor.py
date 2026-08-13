@@ -1,4 +1,3 @@
-import json
 import uuid
 import time
 from typing import Any, Optional
@@ -6,7 +5,6 @@ from app.domain.interfaces.llm_provider import BaseLLMAdapter, StructuredPrompt
 from app.domain.interfaces.embedding_provider import IEmbeddingProvider
 from app.domain.entities.memory import MemoryPayload
 from app.domain.interfaces.vector_store import IVectorStore
-from app.domain.tuning.memory import MemoryTuning
 from app.shared.utils.logger import get_logger
 
 log = get_logger(__name__)

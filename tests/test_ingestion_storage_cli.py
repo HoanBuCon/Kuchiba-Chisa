@@ -123,6 +123,15 @@ def test_cli_end_to_end():
     print("=== Test 4: CLI End-to-End Execution ===")
     runner = CliRunner()
 
+    raw_test_dir = Path("scratch/test_cli/raw")
+    raw_test_dir.mkdir(parents=True, exist_ok=True)
+    sample_file = raw_test_dir / "test_page.wikitext"
+    sample_file.write_text(
+        "== Startorch Academy ==\nStartorch Academy is a comprehensive research facility and educational institution "
+        "built by the Spacetrek Collective for Resonators in Lahai-Roi. It trains Synchronists and conducts advanced research.",
+        encoding="utf-8"
+    )
+
     # 1. status command
     res_status = runner.invoke(cli, ["status"])
     assert res_status.exit_code == 0
@@ -134,7 +143,7 @@ def test_cli_end_to_end():
         [
             "build-canonical",
             "--raw-dir",
-            "data/lore",
+            str(raw_test_dir),
             "--output",
             "scratch/test_cli/canonical.jsonl",
         ],

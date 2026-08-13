@@ -1,7 +1,7 @@
 import time
-import math
 import uuid
 import asyncio
+import dataclasses
 from typing import Tuple, Dict, Any, List, Optional, Callable, AsyncContextManager
 from app.domain.interfaces.session import IDbSession
 from app.config.settings import settings
@@ -113,7 +113,14 @@ class ChatEngine:
                 else:
                     log.info("Redis Answer Cache HIT", user_id=user_id, query_hash=query_hash)
                     current_emotion = await self.get_emotion_state(session, user_id)
-                    emotion_dict = current_emotion.model_dump() if hasattr(current_emotion, "model_dump") else current_emotion.dict()
+                    if hasattr(current_emotion, "model_dump"):
+                        emotion_dict = current_emotion.model_dump()
+                    elif dataclasses.is_dataclass(current_emotion):
+                        emotion_dict = dataclasses.asdict(current_emotion)
+                    elif hasattr(current_emotion, "dict"):
+                        emotion_dict = current_emotion.dict()
+                    else:
+                        emotion_dict = vars(current_emotion)
                     return cached_answer, emotion_dict
 
             # 2. Run Pipeline on Cache Miss
@@ -147,117 +154,78 @@ class ChatEngine:
                 log.error("Failed to save failed message to database in production pipeline", error=str(db_err))
             raise e
 
-    async def _summarize_and_store_memories(self, user_id: str, conv_id: str, history: list[dict[str, str]]) -> None:
+    async def _unified_auto_summarize(self, user_id: str, conv_id: Any) -> None:
         """
-        Background task summarizing chat and saving summary points to the memories collection.
+        Unified background auto-summarization workflow triggered every 50 interactions.
+        1. Loads previous summary (from PostgreSQL) + last 50 messages.
+        2. Performs Incremental Merge LLM call producing:
+           - "summary": Narrative standalone summary -> saved to PostgreSQL conversations.summary (Task 1).
+           - "extracted_facts": Array of key memory items -> vector embedded, conflict-reconciled, and upserted/deleted in Qdrant memories collection (Task 2).
         """
-        log.info("Starting background summarization for memories collection", user_id=user_id)
-        chat_transcript = "\n".join([f"{msg['role'].upper()}: {msg['content']}" for msg in history])
-        
-        RESPONSE_SCHEMA = {
-            "type": "object",
-            "properties": {
-                "summary_points": {
-                    "type": "array",
-                    "items": {"type": "string"}
-                }
-            },
-            "required": ["summary_points"]
-        }
-        
-        system_instructions = (
-            "You are an AI Memory Summarizer. Extract important facts about the user and their relationship with the AI.\n"
-            "Focus on: personal facts, preferences, emotional events, and relationship progress.\n"
-            "You must output a JSON object containing a 'summary_points' array of concise bullet points in Vietnamese."
-        )
-        
-        user_prompt = f"Summarize this conversation transcript:\n\n{chat_transcript}"
-        prompt = StructuredPrompt(
-            system=system_instructions,
-            history=[],
-            user_message=user_prompt,
-            response_schema=RESPONSE_SCHEMA
-        )
-        
-        try:
-            response = await self.llm.generate(prompt)
-            if response.parsed and "summary_points" in response.parsed:
-                points = response.parsed["summary_points"]
-                if isinstance(points, list):
-                    for point in points:
-                        point = point.strip()
-                        if len(point) > 5:
-                            vector = await self.embedder.embed_text(point, prefix="passage: ")
-                            point_id = str(uuid.uuid4())
-                            payload = MemoryPayload(
-                                user_id=user_id,
-                                conversation_id=conv_id,
-                                memory_type="shared_memories",
-                                importance_score=0.7,
-                                created_at=int(time.time()),
-                                text_content=point,
-                            )
-                            await self.vector_store.upsert_memory(
-                                collection="memories",
-                                point_id=point_id,
-                                vector=vector,
-                                payload=payload
-                            )
-                    log.info("Successfully summarized conversation and saved points to memories collection", user_id=user_id)
-        except Exception as e:
-            log.error("Failed to run background summarization for memories collection", error=str(e), user_id=user_id)
-
-    async def _auto_summarize_conversation(self, user_id: str, conv_id: uuid.UUID) -> None:
-        """
-        Background incremental merge summarization — O(1) token cost per call.
-        Merges last 60 messages with previous summary (if exists),
-        then overwrites conversations.summary in PostgreSQL.
-        Full refresh every 500 interactions to prevent quality degradation.
-        """
-        log.info("Starting background conversation auto-summarization...", conv_id=str(conv_id))
+        log.info("Starting unified background auto-summarization...", user_id=user_id, conv_id=str(conv_id))
         async with self.db_session_factory() as session:
             try:
                 from app.shared.utils.user_identity import normalize_user_id
                 user_uuid = normalize_user_id(user_id)
+                conv_uuid = uuid.UUID(str(conv_id)) if isinstance(conv_id, (str, uuid.UUID)) else conv_id
                 conv_repo = self.conv_repo_factory(session)
                 user_repo = self.user_repo_factory(session)
 
-                # 1. Load previous summary & interaction count for full-refresh check
-                previous_summary = await conv_repo.get_latest_summary(user_uuid, conv_id)
+                # 1. Load previous summary & stats
+                previous_summary = await conv_repo.get_latest_summary(user_uuid, conv_uuid)
                 stats = await user_repo.get_user_stats(user_uuid)
                 is_full_refresh = stats and stats.interaction_count > 0 and stats.interaction_count % 500 == 0
 
-                # 2. Load only last 60 messages (O(1) regardless of conversation length)
-                msgs = await conv_repo.get_recent_history(user_uuid, conv_id, limit=60)
+                # 2. Load recent 50 messages
+                msgs = await conv_repo.get_recent_history(user_uuid, conv_uuid, limit=50)
                 if not msgs:
-                    log.info("No messages to auto-summarize", conv_id=str(conv_id))
+                    log.info("No messages to auto-summarize", conv_id=str(conv_uuid))
                     return
 
                 new_transcript = "\n".join(
                     f"{m['role'].upper()}: {m['content']}" for m in msgs
                 )
 
-                # 3. Build prompt: merge or fresh
+                # 3. Combined Output JSON Schema
+                UNIFIED_SUMMARIZE_SCHEMA = {
+                    "type": "object",
+                    "properties": {
+                        "summary": {"type": "string"},
+                        "extracted_facts": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "type": {
+                                        "type": "string",
+                                        "enum": ["preferences", "shared_memories", "relationship", "important_facts"]
+                                    },
+                                    "content": {"type": "string"},
+                                    "importance_score": {"type": "number", "minimum": 0.1, "maximum": 1.0}
+                                },
+                                "required": ["type", "content"]
+                            }
+                        }
+                    },
+                    "required": ["summary"]
+                }
+
                 MERGE_SYSTEM_PROMPT = (
-                    "You are UPDATING (not creating from scratch) a conversation summary "
+                    "You are UPDATING a conversation summary and extracting key memory facts "
                     "for Kuchiba Chisa, a character from Wuthering Waves.\n\n"
                     "CRITICAL RULES:\n"
-                    "- PRESERVE ALL important details from the previous summary "
-                    "(user preferences, personal facts, emotional events, relationship milestones).\n"
-                    "- INTEGRATE new information from the recent messages.\n"
-                    "- REMOVE duplicates and merge related points.\n"
-                    "- The output must be a STANDALONE, COMPLETE summary — "
-                    "do NOT reference the previous summary or raw messages.\n"
-                    "- Keep it concise, in Vietnamese, as structured bullet points or a short paragraph.\n"
-                    "You MUST output a valid JSON object matching the requested schema containing a 'summary' key."
+                    "1. 'summary': PRESERVE important details from previous summary and merge new info from recent messages. "
+                    "Must be a STANDALONE, COMPLETE, concise narrative summary in Vietnamese.\n"
+                    "2. 'extracted_facts': Extract discrete, persistent memory facts (user preferences, relationship milestones, important events) "
+                    "to store long-term in memory DB. Output in Vietnamese with types 'preferences', 'shared_memories', 'relationship', or 'important_facts'.\n"
+                    "You MUST output a valid JSON object matching the requested schema."
                 )
 
                 FRESH_SYSTEM_PROMPT = (
-                    "You are a conversation summarizer for Kuchiba Chisa, a character from Wuthering Waves.\n"
-                    "Analyze the conversation transcript and summarize the key discussion points, "
-                    "user's preferences, interests, emotional vibe, and current relationship context.\n"
-                    "Keep the summary concise, informative, in Vietnamese, as structured bullet points or a short paragraph.\n"
-                    "You MUST output a valid JSON object matching the requested schema containing a 'summary' key."
+                    "You are a conversation summarizer and memory extractor for Kuchiba Chisa.\n"
+                    "1. 'summary': Analyze transcript and provide a concise standalone summary in Vietnamese.\n"
+                    "2. 'extracted_facts': Extract discrete persistent memory facts to store long-term in memory DB.\n"
+                    "You MUST output a valid JSON object matching the requested schema."
                 )
 
                 if previous_summary and previous_summary.strip() and not is_full_refresh:
@@ -266,39 +234,91 @@ class ChatEngine:
                         f"New messages to merge:\n{new_transcript}"
                     )
                     system_prompt = MERGE_SYSTEM_PROMPT
-                    log.info("Incremental merge mode", conv_id=str(conv_id))
+                    log.info("Unified auto-summarize: Incremental merge mode", conv_id=str(conv_uuid))
                 else:
                     user_message = f"Please summarize this conversation transcript:\n\n{new_transcript}"
                     system_prompt = FRESH_SYSTEM_PROMPT
-                    if is_full_refresh:
-                        log.info("Full refresh mode (500-interaction milestone)", conv_id=str(conv_id))
-                    else:
-                        log.info("Fresh summarize mode (no previous summary)", conv_id=str(conv_id))
+                    log.info("Unified auto-summarize: Fresh mode", conv_id=str(conv_uuid))
 
-                from app.domain.services.tool_router import LLMToolRouter
                 prompt = StructuredPrompt(
                     system=system_prompt,
                     history=[],
                     user_message=user_message,
-                    response_schema=LLMToolRouter.SUMMARIZE_CONVERSATION_SCHEMA,
+                    response_schema=UNIFIED_SUMMARIZE_SCHEMA,
                     temperature=0.3,
                     retrieved_memories=[],
                     retrieved_lore=[],
-                    rag_decisions={},
+                    rag_decisions={"use_deep_thinking": False},
                 )
 
                 response = await self.llm.generate(prompt)
-                summary_text = (response.parsed or {}).get("summary", "").strip()
-                if not summary_text:
-                    summary_text = response.raw_content or ""
+                parsed = response.parsed or {}
+                summary_text = str(parsed.get("summary", "")).strip()
+                extracted_facts = parsed.get("extracted_facts", [])
 
+                # ── TASK 1: Save summary to PostgreSQL ──
                 if summary_text:
-                    await conv_repo.update_conversation_summary(conv_id, summary_text)
+                    await conv_repo.update_conversation_summary(conv_uuid, summary_text)
                     await session.commit()
-                    log.info("Conversation summary saved to PostgreSQL", conv_id=str(conv_id))
+                    log.info("Task 1: Conversation summary saved to PostgreSQL", conv_id=str(conv_uuid))
                 else:
-                    log.warning("Summarizer produced empty output", conv_id=str(conv_id))
+                    log.warning("Unified auto-summarize produced empty summary_text", conv_id=str(conv_uuid))
+
+                # ── TASK 2: Extract & Conflict-Check Memory Points for Qdrant Vector DB ──
+                if isinstance(extracted_facts, list) and extracted_facts:
+                    from app.domain.services.memory_extractor import MemoryExtractor
+                    memory_extractor = MemoryExtractor(self.llm, self.embedder, self.vector_store)
+                    
+                    for item in extracted_facts:
+                        if not isinstance(item, dict):
+                            continue
+                        content = str(item.get("content", "")).strip()
+                        fact_type = item.get("type", "shared_memories")
+                        importance = float(item.get("importance_score", 0.7))
+
+                        if len(content) < 5:
+                            continue
+
+                        # Vector Search @ threshold 0.70 to find existing candidate memories
+                        vector = await self.embedder.embed_text(content, prefix="passage: ")
+                        existing = await self.vector_store.search_by_user(
+                            collection="memories",
+                            query_vector=vector,
+                            user_id=user_id,
+                            limit=3,
+                            score_threshold=0.70
+                        )
+
+                        if existing:
+                            # Conflict / Duplicate Reconciliation
+                            action, conflicting_id = await memory_extractor.reconcile_memory_conflict(content, existing)
+                            if action == "DUPLICATE":
+                                log.info("Task 2: Skipped memory insertion — duplicate fact detected", content=content)
+                                continue
+                            elif action == "CONTRADICT" and conflicting_id:
+                                log.info("Task 2: Deleting superseded memory point", old_id=conflicting_id, new_content=content)
+                                try:
+                                    await self.vector_store.delete_points(collection="memories", ids=[conflicting_id])
+                                except Exception as del_err:
+                                    log.warning("Task 2: Failed to delete conflicting memory point", id=conflicting_id, error=str(del_err))
+
+                        point_id = str(uuid.uuid4())
+                        payload = MemoryPayload(
+                            user_id=user_id,
+                            conversation_id=str(conv_uuid),
+                            memory_type=fact_type,
+                            importance_score=importance,
+                            created_at=int(time.time()),
+                            text_content=content,
+                        )
+                        await self.vector_store.upsert_memory(
+                            collection="memories",
+                            point_id=point_id,
+                            vector=vector,
+                            payload=payload
+                        )
+                        log.info("Task 2: Upserted memory fact to Qdrant Vector DB", content=content)
 
             except Exception as e:
-                log.error("Failed to run background auto-summarization", error=str(e), conv_id=str(conv_id))
+                log.error("Failed to run unified background auto-summarization", error=str(e), user_id=user_id)
 

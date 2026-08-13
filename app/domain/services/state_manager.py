@@ -1,4 +1,3 @@
-from typing import Dict
 from app.domain.entities.emotion import EmotionState
 from app.domain.tuning.memory import EmotionTuning
 

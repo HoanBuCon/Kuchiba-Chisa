@@ -1,5 +1,4 @@
 import math
-import asyncio
 from typing import Callable
 from app.domain.interfaces.session import IDbSession
 
@@ -8,14 +7,13 @@ from app.domain.services.chat_pipeline.context import ChatContext
 from app.domain.interfaces.repositories import IUserRepository, IEmotionRepository, IConversationRepository
 from app.shared.utils.user_identity import normalize_user_id
 from app.shared.utils.logger import get_logger
-from app.shared.utils.background_tasks import BackgroundTaskManager
 from app.domain.context import request_question_idx, request_turn_idx
 
 log = get_logger(__name__)
 
 class InitializationStage(PipelineStage):
     """
-    Stage 1: Initialize repositories, load context, trigger auto-summarize,
+    Stage 1: Initialize repositories, load context,
     and compute initial emotion/attachment baseline.
     """
     def __init__(
@@ -23,12 +21,10 @@ class InitializationStage(PipelineStage):
         user_repo_factory: Callable[[IDbSession], IUserRepository],
         emotion_repo_factory: Callable[[IDbSession], IEmotionRepository],
         conv_repo_factory: Callable[[IDbSession], IConversationRepository],
-        auto_summarize_callback: Callable[[str, str], None]
     ):
         self.user_repo_factory = user_repo_factory
         self.emotion_repo_factory = emotion_repo_factory
         self.conv_repo_factory = conv_repo_factory
-        self.auto_summarize_callback = auto_summarize_callback
 
     async def process(self, context: ChatContext) -> ChatContext:
         user_uuid = normalize_user_id(context.user_id)
@@ -43,13 +39,6 @@ class InitializationStage(PipelineStage):
         stats = await user_repo.get_user_stats(user_uuid)
         emotion = await emotion_repo.get_emotion_state(user_uuid)
         conv_id = await conv_repo.get_or_create_conversation(user_uuid)
-        
-        # Trigger incremental merge auto-summarize every 30 interactions (O(1) cost)
-        if stats.interaction_count >= 30 and stats.interaction_count % 30 == 0:
-            BackgroundTaskManager.spawn(
-                self.auto_summarize_callback(context.user_id, conv_id),
-                name=f"auto_summarize:{context.user_id}",
-            )
 
         # 3. Sequentialize conversation history and summary reads
         history = await conv_repo.get_recent_history(user_uuid, conv_id, limit=40)

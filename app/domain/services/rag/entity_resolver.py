@@ -94,7 +94,3 @@ class EntityResolver:
                 expanded.add(related)
                 
         return expanded
-
-    def get_node(self, canonical_name: str) -> LoreEntityNode | None:
-        """Retrieves a LoreEntityNode by canonical name if present."""
-        return self.dictionary.entities.get(canonical_name)

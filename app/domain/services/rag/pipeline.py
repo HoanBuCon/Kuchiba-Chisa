@@ -92,17 +92,18 @@ class RAGPipeline:
         lore_chunks = []
         queried_lore_cols = []
         intent_strs = self._normalize_intents(intents)
-        should_retrieve = not is_small_talk
+        has_knowledge_intent = ("LORE" in intent_strs or "MEMORY" in intent_strs or "OTHER" in intent_strs)
+        should_retrieve = not is_small_talk and "SMALL_TALK" not in intent_strs and has_knowledge_intent
         
         LORE_COLLECTIONS = ["character_lore", "world_lore", "story_lore"]
 
         # 1. Standard retrieval from Qdrant (parallelized across all lore collections)
-        if query_vector and not is_small_talk and should_retrieve:
+        if query_vector and should_retrieve:
             retrieval_tasks = []
             active_intents = []
 
-            # Perform lore retrieval if explicit LORE intent or fallback for OTHER
-            should_fetch_lore = "LORE" in intent_strs or "OTHER" in intent_strs
+            # Perform lore retrieval if explicit LORE intent or fallback for OTHER (unless SYSTEM_ACTION is present)
+            should_fetch_lore = ("LORE" in intent_strs or "OTHER" in intent_strs) and "SYSTEM_ACTION" not in intent_strs
 
             if should_fetch_lore:
                 extracted = set()
@@ -206,6 +207,18 @@ class RAGPipeline:
             
             # Log assessment result in trace
             history_mode = "summary" if (conversation_summary and conversation_summary.strip()) else "raw"
+            if history_mode == "summary":
+                history_display = conversation_summary.strip()
+            elif history and len(history) > 0:
+                history_lines = []
+                for m in history[-4:]:
+                    r = m.get("role", "user").upper()
+                    c = m.get("content", "")
+                    history_lines.append(f"{r}: {c}")
+                history_display = "\n".join(history_lines)
+            else:
+                history_display = "(Không có lịch sử trò chuyện)"
+
             self.pipeline_tracker.add_step(
                 name="information_alignment_check",
                 data={
@@ -218,7 +231,7 @@ class RAGPipeline:
                     "has_rag_context": len(lore_chunks) > 0 or len(memories) > 0,
                     "generated_search_query": search_query,
                     "history_mode": history_mode,
-                    "history": conversation_summary.strip() if history_mode == "summary" else "(raw - last 4 msgs)",
+                    "history": history_display,
                     "latest_query": user_message,
                     "retrieved_context": retrieved_context_str
                 }

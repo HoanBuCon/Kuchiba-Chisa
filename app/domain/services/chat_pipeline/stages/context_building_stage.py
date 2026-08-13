@@ -61,6 +61,7 @@ class ContextBuildingStage(PipelineStage):
                 "prompt_components": build_result.components,
                 "history": context.prompt.history,
                 "history_count": len(context.prompt.history),
+                "conversation_summary": context.conversation_summary,
                 "budget_mode": budget_mode.value,
                 "budget_audit": context.budget_audit.to_dict(),
                 "total_estimated_tokens": context.budget_audit.total_used,

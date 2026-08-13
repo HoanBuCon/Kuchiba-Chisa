@@ -26,40 +26,6 @@ class LoreRetriever:
         self.reranker = reranker or KeywordOverlapReranker()
         self.lore_parent_repo_factory = lore_parent_repo_factory
 
-    async def retrieve_lore_standard(
-        self,
-        query_vector: List[float],
-        query_text: str = "",
-        top_k: int = 8,
-        score_threshold: float = 0.3,
-    ) -> List[Tuple[str, float]]:
-        try:
-            if not self.vector_store:
-                return []
-            
-            candidates = await self.vector_store.search_lore(
-                collection="persona_embeddings",
-                query_vector=query_vector,
-                limit=top_k,
-                score_threshold=score_threshold,
-            )
-        except Exception as e:
-            log.warning("Standard lore retrieval failed, skipping", error=str(e))
-            return []
-
-        query_tokens = self.reranker.tokenize(query_text)
-        results = []
-        for cand in candidates:
-            text = cand.get("payload", {}).get("text_content", "")
-            score = cand.get("score", 0.0)
-            if text:
-                keyword_score = self.reranker.calculate_score(query_tokens, text)
-                hybrid_score = (score * 0.75) + (keyword_score * 0.25)
-                results.append((text, hybrid_score))
-
-        results.sort(key=lambda item: item[1], reverse=True)
-        return results
-
     async def retrieve_lore_parent_child(
         self,
         collection: str,
@@ -87,6 +53,7 @@ class LoreRetriever:
             return []
 
         query_tokens = self.reranker.tokenize(query_text)
+        filter_set = set(entities_filter) if entities_filter else set()
         scored_candidates = []
         
         for cand in candidates:
@@ -94,8 +61,37 @@ class LoreRetriever:
             child_text = payload.get("text_content", "")
             score = cand.get("score", 0.0)
             if child_text:
+                # 1. Text Keyword Overlap Score
                 keyword_score = self.reranker.calculate_score(query_tokens, child_text)
-                hybrid_score = (score * 0.75) + (keyword_score * 0.25)
+                
+                # 2. Metadata Overlap & Entity Alignment Score
+                canon_name = payload.get("canonical_name") or ""
+                heading = payload.get("heading_path") or ""
+                meta_text = f"{canon_name} {heading}".strip()
+                heading_score = self.reranker.calculate_score(query_tokens, meta_text) if meta_text else 0.0
+                
+                chunk_entities = payload.get("entities") or []
+                entity_hit = 1.0 if (filter_set and (any(e in filter_set for e in chunk_entities) or canon_name in filter_set)) else 0.0
+                metadata_score = (heading_score * 0.5) + (entity_hit * 0.5)
+                
+                # 3. Unified Multi-Signal Hybrid Score
+                hybrid_score = (
+                    (score * RAGTuning.WEIGHT_VECTOR) +
+                    (keyword_score * RAGTuning.WEIGHT_KEYWORD) +
+                    (metadata_score * RAGTuning.WEIGHT_METADATA)
+                )
+                
+                scoring_meta = {
+                    "vector_score": round(score, 4),
+                    "keyword_score": round(keyword_score, 4),
+                    "metadata_score": round(metadata_score, 4),
+                    "hybrid_score": round(hybrid_score, 4),
+                    "canonical_name": canon_name,
+                    "heading_path": heading,
+                    "entities": chunk_entities,
+                    "entity_hit": bool(entity_hit)
+                }
+                cand["scoring_meta"] = scoring_meta
                 scored_candidates.append((cand, hybrid_score))
 
         scored_candidates.sort(key=lambda x: x[1], reverse=True)

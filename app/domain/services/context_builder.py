@@ -1,6 +1,6 @@
 from __future__ import annotations
 from dataclasses import dataclass
-from typing import List, Dict, Any
+from typing import List, Dict
 import json
 from app.domain.interfaces.llm_provider import StructuredPrompt
 from app.domain.entities.emotion import EmotionState

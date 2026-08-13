@@ -123,14 +123,12 @@ class AppContainer:
         from app.infrastructure.search.providers import (
             TavilySearchProvider,
             SerperSearchProvider,
-            DuckDuckGoLibrarySearchProvider,
             DDGScraperSearchProvider
         )
         
         web_search_providers = [
             TavilySearchProvider(http_client=self.http_client),
             SerperSearchProvider(http_client=self.http_client),
-            # DuckDuckGoLibrarySearchProvider(),  # Disabled: 75% silent fail rate adds 0.4-2.0s delay
             DDGScraperSearchProvider(http_client=self.http_client),
         ]
         
@@ -196,7 +194,6 @@ class AppContainer:
                 user_repo_factory=SqlAlchemyUserRepository,
                 emotion_repo_factory=SqlAlchemyEmotionRepository,
                 conv_repo_factory=SqlAlchemyConversationRepository,
-                auto_summarize_callback=lambda uid, cid: engine_ref[0]._auto_summarize_conversation(uid, cid)
             ),
             IntentStage(
                 intent_classifier=intent_classifier,
@@ -217,7 +214,6 @@ class AppContainer:
             RAGStage(
                 llm=self.llm,
                 embedder=self.embedder,
-                vector_store=qdrant_service,
                 tool_router=tool_router,
                 rag_pipeline=rag_pipeline
             ),
@@ -243,7 +239,7 @@ class AppContainer:
             ),
             BackgroundTaskStage(
                 memory_extractor=self.memory_extractor,
-                summarize_memories_callback=lambda uid, cid, hist: engine_ref[0]._summarize_and_store_memories(uid, cid, hist)
+                unified_auto_summarize_callback=lambda uid, cid: engine_ref[0]._unified_auto_summarize(uid, cid)
             )
         ]
         

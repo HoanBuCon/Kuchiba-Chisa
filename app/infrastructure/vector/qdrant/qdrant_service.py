@@ -35,11 +35,6 @@ def get_qdrant_client() -> AsyncQdrantClient:
 
 # ─── Collection Name Constants ────────────────────────────────────────────────
 
-COLLECTION_EMOTIONAL_MEMORIES = "emotional_memories"
-COLLECTION_CONVERSATION_SUMMARIES = "conversation_summaries"
-COLLECTION_PERSONA_EMBEDDINGS = "persona_embeddings"
-COLLECTION_USER_FACTS = "user_facts"
-
 # Production Pipeline collections
 COLLECTION_CHARACTER_LORE = "character_lore"
 COLLECTION_WORLD_LORE = "world_lore"
@@ -47,10 +42,6 @@ COLLECTION_STORY_LORE = "story_lore"
 COLLECTION_MEMORIES = "memories"
 
 ALL_COLLECTIONS = [
-    COLLECTION_EMOTIONAL_MEMORIES,
-    COLLECTION_CONVERSATION_SUMMARIES,
-    COLLECTION_PERSONA_EMBEDDINGS,
-    COLLECTION_USER_FACTS,
     COLLECTION_CHARACTER_LORE,
     COLLECTION_WORLD_LORE,
     COLLECTION_STORY_LORE,
@@ -297,6 +288,18 @@ class QdrantService(IVectorStore):
             score_threshold=score_threshold,
             with_payload=True,
         )
+        
+        # Fallback to global vector search if entity filter eliminated results
+        if not results and query_filter is not None:
+            results = await self._client.search(
+                collection_name=collection,
+                query_vector=query_vector,
+                query_filter=None,
+                limit=limit,
+                score_threshold=score_threshold,
+                with_payload=True,
+            )
+            
         return [
             {"id": r.id, "score": r.score, "payload": r.payload or {}}
             for r in results

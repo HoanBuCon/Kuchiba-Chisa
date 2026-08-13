@@ -3,11 +3,12 @@ from typing import Optional, List, Dict, Any, Callable
 from dataclasses import dataclass, field
 from app.domain.interfaces.session import IDbSession
 
-from app.domain.interfaces.uow import IUnitOfWork
 from app.domain.entities.emotion import EmotionState
 from app.domain.services.rag import RAGContext
 from app.domain.services.context_budget_manager import BudgetAudit
 from app.domain.interfaces.llm_provider import StructuredPrompt
+
+from app.domain.models.intent_result import IntentResult, ChatIntent
 
 @dataclass
 class ChatContext:
@@ -28,10 +29,31 @@ class ChatContext:
     current_emotions: Dict[str, float] = field(default_factory=dict)
     
     # Intent and Routing
-    is_small_talk: bool = False
     cleaned_query: str = ""
     query_vector: Optional[List[float]] = None
-    intents: List[Any] = field(default_factory=list)
+    intent_result: Optional[IntentResult] = None
+    _is_small_talk: bool = False
+    _intents: List[Any] = field(default_factory=list)
+
+    @property
+    def is_small_talk(self) -> bool:
+        if self.intent_result is not None:
+            return ChatIntent.SMALL_TALK in self.intent_result.intents
+        return self._is_small_talk
+
+    @is_small_talk.setter
+    def is_small_talk(self, value: bool) -> None:
+        self._is_small_talk = value
+
+    @property
+    def intents(self) -> List[Any]:
+        if self.intent_result is not None:
+            return self.intent_result.intents
+        return self._intents
+
+    @intents.setter
+    def intents(self, value: List[Any]) -> None:
+        self._intents = value
     
     # Tool Routing
     tool_output_msg: Optional[str] = None

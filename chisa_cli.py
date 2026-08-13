@@ -456,10 +456,10 @@ def render_kill_menu(selected_idx: int):
 
     options = [
         ("a", "1", "💥 Kill toàn bộ (Backend, Frontend, Bot Discord, Ports 8000, 5173, 5174)"),
-        ("b", "2", "⚙️  Kill Backend và Frontend Core"),
+        ("b", "2", "⚙️ Kill Backend và Frontend Core"),
         ("c", "3", "🤖 Kill Bot Discord"),
         ("d", "4", "📊 Kill Visualizer (Dừng Backend 8000)"),
-        ("e", "5", "↩️  Quay lại Menu chính")
+        ("e", "5", "↩️ Quay lại Menu chính")
     ]
 
     for idx, (key, num, label) in enumerate(options):

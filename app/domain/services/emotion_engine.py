@@ -49,14 +49,6 @@ class EmotionEngine:
         "attachment": 0.00
     }
     
-    DECAY_RATES = {
-        "joy": 0.10,
-        "sadness": 0.15,
-        "trust": 0.02,
-        "irritation": 0.20,
-        "attachment": 0.00
-    }
-    
     MAX_GAIN = {
         "joy": 0.15,
         "sadness": 0.20,
@@ -71,46 +63,6 @@ class EmotionEngine:
     @staticmethod
     def _clamp(value: float) -> float:
         return max(EmotionEngine.FLOOR, min(EmotionEngine.CAP, value))
-
-    @classmethod
-    def get_emotional_dyad(cls, joy: float, sadness: float, trust: float, irritation: float, attachment: float) -> str:
-        """
-        Calculates Plutchik emotional dyads and returns a descriptive Vietnamese string
-        representing Chisa's current complex psychological state.
-        """
-        complexes = []
-        
-        # 1. Love / Yêu mến (Joy + Trust)
-        if joy > 0.5 and trust > 0.6:
-            complexes.append("Yêu mến và tin tưởng tuyệt đối (Love)")
-        elif joy > 0.3 and trust > 0.5:
-            complexes.append("Ấm áp và dễ chịu (Warmth)")
-            
-        # 2. Guarded / Đề phòng (Irritation + Low Trust)
-        if irritation > 0.4 and trust < 0.4:
-            complexes.append("Đang giận dữ và vô cùng đề phòng, hoài nghi (Guarded / Hostile)")
-        elif irritation > 0.3:
-            complexes.append("Bực dọc, dỗi hờn nhẹ (Annoyed / Tsundere spikes)")
-            
-        # 3. Frustration / Bất lực, uất ức (Sadness + Irritation)
-        if sadness > 0.4 and irritation > 0.3:
-            complexes.append("Uất ức, bất lực và dỗi hờn (Frustrated / Bitter)")
-        elif sadness > 0.4:
-            complexes.append("U sầu, cảm thấy cô độc, tủi thân (Melancholy / Lonely)")
-            
-        # 4. Attachment & Shyness / Ngượng ngùng (Joy + Attachment)
-        if attachment > 0.4 and joy > 0.4:
-            complexes.append("Ngượng ngùng tột độ nhưng vô cùng hạnh phúc (Highly affectionate & Flustered)")
-        elif attachment > 0.3:
-            complexes.append("Gắn bó sâu sắc, thầm lặng hướng về Senpai (Deeply attached)")
-            
-        # Default fallback
-        if not complexes:
-            if trust > 0.7:
-                return "Bình yên, tin cậy và sẵn sàng lắng nghe (Tranquil & Trusting)"
-            return "Bình thường, điềm tĩnh và lý trí (Neutral & Analytical)"
-            
-        return ", ".join(complexes)
 
     # ── Intensity Damping Constants ────────────────────────────────
     # When is_neutral=True, emotion gains are multiplied by these factors.

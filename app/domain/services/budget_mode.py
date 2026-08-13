@@ -13,11 +13,3 @@ class BudgetMode(str, Enum):
         if has_thinking_steps:
             return cls.LOOP
         return cls.RAG
-
-    @property
-    def history_fetch_limit(self) -> int:
-        return {
-            BudgetMode.SMALL_TALK: 15,
-            BudgetMode.RAG: 25,
-            BudgetMode.LOOP: 40,
-        }[self]

@@ -1,0 +1,7854 @@
+{
+  "Kuchiba Chisa": {
+    "aliases": [
+      "Chisa",
+      "Kuchiba",
+      "Chía",
+      "Chía Chía",
+      "Bé Chisa",
+      "Chisa Forte",
+      "Mutant Resonator"
+    ],
+    "type": "CHARACTER",
+    "region": "Huanglong",
+    "faction": "Startorch Academy",
+    "parent": null,
+    "related": [
+      "Rover",
+      "Sumika",
+      "Thread Perception",
+      "Honami",
+      "Broadblade"
+    ]
+  },
+  "Rover": {
+    "aliases": [
+      "Rover",
+      "Senpai",
+      "Nhà Khai Phá",
+      "Người đồng hành"
+    ],
+    "type": "CHARACTER",
+    "region": "Solaris-3",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Kuchiba Chisa",
+      "Yangyang",
+      "Chixia",
+      "Baizhi"
+    ]
+  },
+  "Sumika": {
+    "aliases": [
+      "Sumika",
+      "Nhật ký Sumika",
+      "Sumika's Diary"
+    ],
+    "type": "CHARACTER",
+    "region": "Huanglong",
+    "faction": "Startorch Academy",
+    "parent": null,
+    "related": [
+      "Kuchiba Chisa",
+      "Honami Loop"
+    ]
+  },
+  "Thread Perception": {
+    "aliases": [
+      "Thread Perception",
+      "Sợi Tơ Cấu Trúc",
+      "Sợi Tơ Năng Lượng",
+      "Forte của Chisa",
+      "Năng lực của Chisa"
+    ],
+    "type": "FORTE",
+    "region": null,
+    "faction": null,
+    "parent": "Kuchiba Chisa",
+    "related": [
+      "Kuchiba Chisa",
+      "Broadblade",
+      "Sonoro Sphere"
+    ]
+  },
+  "Broadblade": {
+    "aliases": [
+      "Broadblade",
+      "Chiếc kéo khổng lồ",
+      "Kéo khổng lồ",
+      "Vũ khí của Chisa",
+      "Kéo Chisa"
+    ],
+    "type": "WEAPON",
+    "region": null,
+    "faction": null,
+    "parent": "Kuchiba Chisa",
+    "related": [
+      "Kuchiba Chisa",
+      "Thread Perception"
+    ]
+  },
+  "Honami Loop": {
+    "aliases": [
+      "Honami",
+      "Vòng lặp Honami",
+      "Vòng lặp",
+      "Breaking the Loop",
+      "Honami Loop"
+    ],
+    "type": "STORY",
+    "region": "Lahai-Roi",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Kuchiba Chisa",
+      "Sumika",
+      "Sonoro Sphere",
+      "Rover"
+    ]
+  },
+  "Sonoro Sphere": {
+    "aliases": [
+      "Sonoro Sphere",
+      "Vùng Sonoro",
+      "Sonoro",
+      "Cầu Tần Số"
+    ],
+    "type": "WORLD",
+    "region": "Solaris-3",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Tacet Field",
+      "Honami Loop",
+      "Tacet Discord"
+    ]
+  },
+  "Tacet Discord": {
+    "aliases": [
+      "Tacet Discord",
+      "Dị Thể Tacet",
+      "TD",
+      "Quái Tacet"
+    ],
+    "type": "MONSTER",
+    "region": "Solaris-3",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Tacet Field",
+      "Tacet Mark",
+      "Lament",
+      "Sonoro Sphere"
+    ]
+  },
+  "Tacet Field": {
+    "aliases": [
+      "Tacet Field",
+      "Vùng Tacet",
+      "Trường Tacet"
+    ],
+    "type": "WORLD",
+    "region": "Solaris-3",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Tacet Discord",
+      "Waveworn Phenomenon"
+    ]
+  },
+  "Tacet Mark": {
+    "aliases": [
+      "Tacet Mark",
+      "Dấu ấn Tacet",
+      "Dấu ấn cộng hưởng"
+    ],
+    "type": "WORLD",
+    "region": "Solaris-3",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Resonator",
+      "Overclocking"
+    ]
+  },
+  "Resonator": {
+    "aliases": [
+      "Resonator",
+      "Người cộng hưởng",
+      "Mutant Resonator"
+    ],
+    "type": "WORLD",
+    "region": "Solaris-3",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Tacet Mark",
+      "Forte",
+      "Resonance Liberation",
+      "Overclocking"
+    ]
+  },
+  "Solaris-3": {
+    "aliases": [
+      "Solaris-3",
+      "Solaris 3",
+      "Hành tinh Solaris-3",
+      "Thế giới Solaris"
+    ],
+    "type": "WORLD",
+    "region": "Solaris-3",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Huanglong",
+      "Black Shores",
+      "Jinzhou",
+      "Lament"
+    ]
+  },
+  "Huanglong": {
+    "aliases": [
+      "Huanglong",
+      "Hoàng Long"
+    ],
+    "type": "REGION",
+    "region": "Huanglong",
+    "faction": null,
+    "parent": "Solaris-3",
+    "related": [
+      "Jinzhou",
+      "Startorch Academy"
+    ]
+  },
+  "Jinzhou": {
+    "aliases": [
+      "Jinzhou",
+      "Kim Châu",
+      "Thành phố Jinzhou"
+    ],
+    "type": "CITY",
+    "region": "Huanglong",
+    "faction": null,
+    "parent": "Huanglong",
+    "related": [
+      "Huanglong",
+      "Startorch Academy"
+    ]
+  },
+  "Black Shores": {
+    "aliases": [
+      "Black Shores",
+      "Bờ Biển Đen"
+    ],
+    "type": "FACTION",
+    "region": "Solaris-3",
+    "faction": "Black Shores",
+    "parent": "Solaris-3",
+    "related": [
+      "Aalto",
+      "Encore",
+      "Camellya",
+      "Rover"
+    ]
+  },
+  "Startorch Academy": {
+    "aliases": [
+      "Startorch Academy",
+      "Học viện Startorch",
+      "Lễ hội Startorch",
+      "Startorch School Festival"
+    ],
+    "type": "ORGANIZATION",
+    "region": "Huanglong",
+    "faction": "Startorch Academy",
+    "parent": "Huanglong",
+    "related": [
+      "Kuchiba Chisa",
+      "Sumika"
+    ]
+  },
+  "Lahai-Roi": {
+    "aliases": [
+      "Lahai-Roi",
+      "Lahai Roi",
+      "Lahai"
+    ],
+    "type": "REGION",
+    "region": "Lahai-Roi",
+    "faction": null,
+    "parent": "Solaris-3",
+    "related": [
+      "Honami Loop",
+      "Sonoro Sphere"
+    ]
+  },
+  "Lament": {
+    "aliases": [
+      "Lament",
+      "Thảm họa Lament",
+      "The Lament"
+    ],
+    "type": "EVENT",
+    "region": "Solaris-3",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Waveworn Phenomenon",
+      "Tacet Discord",
+      "Solaris-3"
+    ]
+  },
+  "Overclocking": {
+    "aliases": [
+      "Overclocking",
+      "Bộc phát tần số",
+      "Quá tải tần số",
+      "Overclock"
+    ],
+    "type": "PHENOMENON",
+    "region": null,
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Resonator",
+      "Tacet Mark"
+    ]
+  },
+  "Aalto": {
+    "aliases": [
+      "Aalto"
+    ],
+    "type": "CHARACTER",
+    "region": "New Federation",
+    "faction": "Black Shores",
+    "parent": null,
+    "related": [
+      "Black Shores",
+      "New Federation",
+      "Consultant"
+    ]
+  },
+  "Aemeath": {
+    "aliases": [
+      "Aemeath"
+    ],
+    "type": "CHARACTER",
+    "region": "Lahai-Roi",
+    "faction": "Startorch Academy",
+    "parent": null,
+    "related": [
+      "Roya Tribe",
+      "Startorch Academy",
+      "Did",
+      "She",
+      "Frostlands",
+      "Synchronist",
+      "Exostrider",
+      "Resonator",
+      "Lahai",
+      "Roi"
+    ]
+  },
+  "Augusta": {
+    "aliases": [
+      "Augusta"
+    ],
+    "type": "CHARACTER",
+    "region": "Rinascita",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Glory",
+      "Ephor",
+      "Septimont",
+      "Gladiator",
+      "Though",
+      "Forte"
+    ]
+  },
+  "Baizhi": {
+    "aliases": [
+      "Baizhi"
+    ],
+    "type": "CHARACTER",
+    "region": "Huanglong",
+    "faction": "Huaxu Academy",
+    "parent": null,
+    "related": [
+      "Huaxu Academy",
+      "Remnant Energy",
+      "She"
+    ]
+  },
+  "Brant": {
+    "aliases": [
+      "Brant"
+    ],
+    "type": "CHARACTER",
+    "region": "Rinascita",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Troupe",
+      "Fools"
+    ]
+  },
+  "Buling": {
+    "aliases": [
+      "Buling"
+    ],
+    "type": "CHARACTER",
+    "region": "Huanglong",
+    "faction": "Black Shores",
+    "parent": null,
+    "related": [
+      "Black Shores Consultant",
+      "Spiritchaser Taoist",
+      "Exorcism",
+      "She"
+    ]
+  },
+  "Calcharo": {
+    "aliases": [
+      "Calcharo"
+    ],
+    "type": "CHARACTER",
+    "region": "Huanglong",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Ghost Hounds",
+      "Leader",
+      "Ruthless"
+    ]
+  },
+  "Camellya": {
+    "aliases": [
+      "Camellya"
+    ],
+    "type": "CHARACTER",
+    "region": "Black Shores",
+    "faction": "Black Shores",
+    "parent": null,
+    "related": [
+      "Artificial Resonator",
+      "Curve Surpasses",
+      "Once Rabelle",
+      "Reasonance Spectrum Pattern",
+      "Resonator Camellya",
+      "Sanguine Blossom",
+      "Awakening",
+      "She",
+      "Forte",
+      "Following"
+    ]
+  },
+  "Cantarella": {
+    "aliases": [
+      "Cantarella"
+    ],
+    "type": "CHARACTER",
+    "region": "Rinascita",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Blessed Maiden",
+      "She",
+      "Fisalia",
+      "Imperator"
+    ]
+  },
+  "Carlotta": {
+    "aliases": [
+      "Carlotta"
+    ],
+    "type": "CHARACTER",
+    "region": "Rinascita",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Montelli Family",
+      "Ragunna City",
+      "Fate",
+      "You",
+      "She",
+      "Rinascita"
+    ]
+  },
+  "Cartethyia": {
+    "aliases": [
+      "Cartethyia"
+    ],
+    "type": "CHARACTER",
+    "region": "Rinascita",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Blessed Maiden",
+      "Dark Tide",
+      "Martyred Maiden",
+      "Sentinel Imperator",
+      "Threnodian Leviathan",
+      "Throughout Rinascita",
+      "Weekly Boss",
+      "Resonator",
+      "Fleurdelys",
+      "Tell"
+    ]
+  },
+  "Changli": {
+    "aliases": [
+      "Changli"
+    ],
+    "type": "CHARACTER",
+    "region": "Huanglong",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Jinzhou Magistrate",
+      "Counselor",
+      "Being",
+      "Jinhsi",
+      "She"
+    ]
+  },
+  "Chixia": {
+    "aliases": [
+      "Chixia"
+    ],
+    "type": "CHARACTER",
+    "region": "Other",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Gallant Blaze",
+      "Mutant Resonator",
+      "Resonator Chixia",
+      "Awakening",
+      "Post",
+      "She",
+      "Test",
+      "Syntony",
+      "Analysis",
+      "Rabelle"
+    ]
+  },
+  "Ciaccona": {
+    "aliases": [
+      "Ciaccona"
+    ],
+    "type": "CHARACTER",
+    "region": "Rinascita",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Hear",
+      "She",
+      "Rinascita",
+      "Divinity"
+    ]
+  },
+  "Danjin": {
+    "aliases": [
+      "Danjin"
+    ],
+    "type": "CHARACTER",
+    "region": "Huanglong",
+    "faction": "Midnight Rangers",
+    "parent": null,
+    "related": [
+      "Mutant Resonator",
+      "Resonator Danjin",
+      "Scarlet Shade",
+      "Syntony Responses",
+      "Awakening",
+      "Notably",
+      "Observations",
+      "Forte",
+      "Empirical",
+      "Resonator"
+    ]
+  },
+  "Denia": {
+    "aliases": [
+      "Denia"
+    ],
+    "type": "CHARACTER",
+    "region": "Lahai-Roi",
+    "faction": "Startorch Academy",
+    "parent": null,
+    "related": [
+      "Startorch Academy",
+      "Threnodian Resonator",
+      "She",
+      "Department",
+      "Voidmatters",
+      "Fractsidus",
+      "Created",
+      "Schwarzloch"
+    ]
+  },
+  "Encore": {
+    "aliases": [
+      "Encore"
+    ],
+    "type": "CHARACTER",
+    "region": "Other",
+    "faction": "Black Shores",
+    "parent": null,
+    "related": [
+      "Black Shores",
+      "Blake Bloom",
+      "Little Encore",
+      "She",
+      "Woolies",
+      "Apologies",
+      "Cosmos",
+      "But",
+      "Visitors",
+      "Though"
+    ]
+  },
+  "Galbrena": {
+    "aliases": [
+      "Galbrena"
+    ],
+    "type": "CHARACTER",
+    "region": "Black Shores",
+    "faction": "Black Shores",
+    "parent": null,
+    "related": [
+      "Black Shores",
+      "Burning Flame",
+      "Dark Tide",
+      "Discord Slayer",
+      "Tacet Discords",
+      "Who",
+      "Septimontian",
+      "Angel",
+      "Solaris-3",
+      "Chimera"
+    ]
+  },
+  "Hiyuki": {
+    "aliases": [
+      "Hiyuki"
+    ],
+    "type": "CHARACTER",
+    "region": "Lahai-Roi",
+    "faction": "Startorch Academy",
+    "parent": null,
+    "related": [
+      "Collective",
+      "Legacy Talismans",
+      "Special Response Force",
+      "She",
+      "Threnodian",
+      "Having",
+      "Suzu",
+      "Sentinels",
+      "The Collective"
+    ]
+  },
+  "Hsin": {
+    "aliases": [
+      "Hsin"
+    ],
+    "type": "CHARACTER",
+    "region": "Huanglong",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Chasing Festival",
+      "Fox",
+      "Moon Fox",
+      "Upcoming",
+      "She",
+      "Heart",
+      "Huanglong",
+      "Sentinels",
+      "Mengzhou",
+      "Moon"
+    ]
+  },
+  "Iuno": {
+    "aliases": [
+      "Iuno"
+    ],
+    "type": "CHARACTER",
+    "region": "Rinascita",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Tetragon Temple",
+      "Beyond",
+      "Till",
+      "She",
+      "Priestess",
+      "Septimont"
+    ]
+  },
+  "Jianxin": {
+    "aliases": [
+      "Jianxin"
+    ],
+    "type": "CHARACTER",
+    "region": "Huanglong",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Awakening",
+      "Cleansing Reflections",
+      "Natural Awakening",
+      "Natural Resonator",
+      "Resonator Jianxin",
+      "Post",
+      "Forte",
+      "Details",
+      "Overall",
+      "Analysis"
+    ]
+  },
+  "Jinhsi": {
+    "aliases": [
+      "Jinhsi"
+    ],
+    "type": "CHARACTER",
+    "region": "Huanglong",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Congenital Resonator",
+      "Resonance Ability",
+      "Resonator Jinhsi",
+      "Thawborn Renewal",
+      "Awakening",
+      "Signs",
+      "Sentinel",
+      "Positioned",
+      "Loong",
+      "Observational"
+    ]
+  },
+  "Jiyan": {
+    "aliases": [
+      "Jiyan"
+    ],
+    "type": "CHARACTER",
+    "region": "Huanglong",
+    "faction": "Midnight Rangers",
+    "parent": null,
+    "related": [
+      "Midnight Rangers",
+      "Tacet Discords",
+      "General",
+      "Jinzhou",
+      "Born",
+      "Later"
+    ]
+  },
+  "Lingyang": {
+    "aliases": [
+      "Lingyang"
+    ],
+    "type": "CHARACTER",
+    "region": "Huanglong",
+    "faction": null,
+    "parent": null,
+    "related": []
+  },
+  "Lucilla": {
+    "aliases": [
+      "Lucilla"
+    ],
+    "type": "CHARACTER",
+    "region": "Lahai-Roi",
+    "faction": "Startorch Academy",
+    "parent": null,
+    "related": [
+      "New Federation",
+      "Startorch Academy",
+      "She",
+      "Mortefi"
+    ]
+  },
+  "Lucy": {
+    "aliases": [
+      "Lucy"
+    ],
+    "type": "CHARACTER",
+    "region": "Lahai-Roi",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Don",
+      "She",
+      "Cyberpunk",
+      "Edgerunners"
+    ]
+  },
+  "Lumi": {
+    "aliases": [
+      "Lumi"
+    ],
+    "type": "CHARACTER",
+    "region": "Huanglong",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Lollo Logistics",
+      "Don",
+      "She"
+    ]
+  },
+  "Lupa": {
+    "aliases": [
+      "Lupa"
+    ],
+    "type": "CHARACTER",
+    "region": "Rinascita",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "She",
+      "Septimont"
+    ]
+  },
+  "Luuk Herssen": {
+    "aliases": [
+      "Luuk Herssen"
+    ],
+    "type": "CHARACTER",
+    "region": "Lahai-Roi",
+    "faction": "Startorch Academy",
+    "parent": null,
+    "related": [
+      "Startorch Academy",
+      "May",
+      "Resonator Nursing Unit"
+    ]
+  },
+  "Lynae": {
+    "aliases": [
+      "Lynae"
+    ],
+    "type": "CHARACTER",
+    "region": "Lahai-Roi",
+    "faction": "Startorch Academy",
+    "parent": null,
+    "related": [
+      "Acid Green",
+      "Apollo Orange",
+      "Hazard Yellow",
+      "Lawless Zone",
+      "New Federation",
+      "Outlaw Blue",
+      "Preparatory Program",
+      "Startorch Academy",
+      "Wanna",
+      "She"
+    ]
+  },
+  "Mornye": {
+    "aliases": [
+      "Mornye"
+    ],
+    "type": "CHARACTER",
+    "region": "Lahai-Roi",
+    "faction": "Startorch Academy",
+    "parent": null,
+    "related": [
+      "Exostrider Engineering",
+      "Spacetrek Collective",
+      "Startorch Academy",
+      "Void Storm",
+      "She",
+      "Startorch",
+      "Lahai",
+      "Roi"
+    ]
+  },
+  "Mortefi": {
+    "aliases": [
+      "Mortefi"
+    ],
+    "type": "CHARACTER",
+    "region": "Huanglong",
+    "faction": "Huaxu Academy",
+    "parent": null,
+    "related": [
+      "Mutant Resonator",
+      "Resonator Mortefi",
+      "Dragon",
+      "Breath",
+      "According",
+      "Awakening",
+      "Forte",
+      "Extensive",
+      "Dragonkin",
+      "Due"
+    ]
+  },
+  "Phoebe": {
+    "aliases": [
+      "Phoebe"
+    ],
+    "type": "CHARACTER",
+    "region": "Rinascita",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "May They",
+      "Sentinel Imperator",
+      "Praise",
+      "Sentinel",
+      "She",
+      "Acolyte",
+      "Order",
+      "Deep",
+      "Raised"
+    ]
+  },
+  "Phrolova": {
+    "aliases": [
+      "Phrolova"
+    ],
+    "type": "CHARACTER",
+    "region": null,
+    "faction": "Fractsidus",
+    "parent": null,
+    "related": [
+      "Dark Tides",
+      "Dawn Breaks",
+      "Grand Architect",
+      "Lost Beyond",
+      "Secret Gardens",
+      "Tacet Discords",
+      "Come",
+      "Together",
+      "She",
+      "Resonator"
+    ]
+  },
+  "Qingxiao": {
+    "aliases": [
+      "Qingxiao"
+    ],
+    "type": "CHARACTER",
+    "region": "Huanglong",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Xuanfang Hold",
+      "Upcoming",
+      "She",
+      "Paragon",
+      "Mengzhou",
+      "Buling",
+      "Jianxin"
+    ]
+  },
+  "Qiuyuan": {
+    "aliases": [
+      "Qiuyuan"
+    ],
+    "type": "CHARACTER",
+    "region": "Huanglong",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Grand Architect",
+      "Internal Security Agency",
+      "Name",
+      "Former",
+      "Mingting",
+      "Huanglong"
+    ]
+  },
+  "Rebecca": {
+    "aliases": [
+      "Rebecca"
+    ],
+    "type": "CHARACTER",
+    "region": null,
+    "faction": null,
+    "parent": null,
+    "related": [
+      "She",
+      "Cyberpunk",
+      "Edgerunners"
+    ]
+  },
+  "Roccia": {
+    "aliases": [
+      "Roccia"
+    ],
+    "type": "CHARACTER",
+    "region": "Rinascita",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "First Mate",
+      "She",
+      "Troupe",
+      "Fools",
+      "Pero"
+    ]
+  },
+  "Sanhua": {
+    "aliases": [
+      "Sanhua"
+    ],
+    "type": "CHARACTER",
+    "region": "Huanglong",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Please",
+      "Jinhsi",
+      "Overclocking",
+      "Forte"
+    ]
+  },
+  "Shorekeeper": {
+    "aliases": [
+      "Shorekeeper"
+    ],
+    "type": "CHARACTER",
+    "region": "Black Shores",
+    "faction": "Black Shores",
+    "parent": null,
+    "related": [
+      "Black Shores",
+      "Remnant Energy",
+      "Second Instance",
+      "She",
+      "Sonoro Spheres",
+      "Tethys System",
+      "Guardian",
+      "The Shorekeeper",
+      "The  She"
+    ]
+  },
+  "Sigrika": {
+    "aliases": [
+      "Sigrika"
+    ],
+    "type": "CHARACTER",
+    "region": "Lahai-Roi",
+    "faction": "Startorch Academy",
+    "parent": null,
+    "related": [
+      "Birding Fan Club",
+      "Extra Effect",
+      "Heliodic Six",
+      "Preparatory Program",
+      "Roya Tribe",
+      "Startorch Academy",
+      "Three",
+      "Say",
+      "She",
+      "Solsworn"
+    ]
+  },
+  "Suisui": {
+    "aliases": [
+      "Suisui"
+    ],
+    "type": "CHARACTER",
+    "region": "Huanglong",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Zhaoming Commerce Guild",
+      "Upcoming",
+      "May",
+      "Born",
+      "Mingting"
+    ]
+  },
+  "Taoqi": {
+    "aliases": [
+      "Taoqi"
+    ],
+    "type": "CHARACTER",
+    "region": "Huanglong",
+    "faction": "Ministry of Development",
+    "parent": null,
+    "related": [
+      "Resonator",
+      "She",
+      "Though"
+    ]
+  },
+  "Verina": {
+    "aliases": [
+      "Verina"
+    ],
+    "type": "CHARACTER",
+    "region": "New Federation",
+    "faction": "Jinzhou",
+    "parent": null,
+    "related": [
+      "Congenital Resonator",
+      "Nature Calling",
+      "Resonator Verina",
+      "According",
+      "Awakening",
+      "Forte",
+      "Following",
+      "Spectro",
+      "Additionally",
+      "Analysis"
+    ]
+  },
+  "Xiangli Yao": {
+    "aliases": [
+      "Xiangli Yao"
+    ],
+    "type": "CHARACTER",
+    "region": "Huanglong",
+    "faction": "Huaxu Academy",
+    "parent": null,
+    "related": []
+  },
+  "Yangyang": {
+    "aliases": [
+      "Yangyang"
+    ],
+    "type": "CHARACTER",
+    "region": "Huanglong",
+    "faction": "Midnight Rangers",
+    "parent": null,
+    "related": [
+      "Outrider",
+      "Jinzhou",
+      "Instead"
+    ]
+  },
+  "Yangyang: Xuanling": {
+    "aliases": [
+      "Yangyang: Xuanling"
+    ],
+    "type": "CHARACTER",
+    "region": "Huanglong",
+    "faction": "Midnight Rangers",
+    "parent": null,
+    "related": [
+      "Extra Effect",
+      "Midnight Rangers",
+      "Xuan Triad",
+      "Xuan Watcher",
+      "Xuan Watchers",
+      "Xuanfang Hold",
+      "Yangyang",
+      "Long",
+      "Rover",
+      "Xuanling"
+    ]
+  },
+  "Yinlin": {
+    "aliases": [
+      "Yinlin"
+    ],
+    "type": "CHARACTER",
+    "region": "Huanglong",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Congenital Resonator",
+      "Resonator Yinlin",
+      "Spectrum Pattern",
+      "Lightning",
+      "Execution",
+      "Awakening",
+      "Tests",
+      "Syntony",
+      "Analysis",
+      "Rabelle"
+    ]
+  },
+  "Youhu": {
+    "aliases": [
+      "Youhu"
+    ],
+    "type": "CHARACTER",
+    "region": "Huanglong",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Woah",
+      "Hehe",
+      "Wanna",
+      "She",
+      "Huanglong"
+    ]
+  },
+  "Yuanwu": {
+    "aliases": [
+      "Yuanwu"
+    ],
+    "type": "CHARACTER",
+    "region": "Huanglong",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Whether"
+    ]
+  },
+  "Zani": {
+    "aliases": [
+      "Zani"
+    ],
+    "type": "CHARACTER",
+    "region": "Rinascita",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Averardo Bank",
+      "Montelli Family",
+      "Alright",
+      "She",
+      "Ragunna",
+      "Montelli"
+    ]
+  },
+  "Zhezhi": {
+    "aliases": [
+      "Zhezhi"
+    ],
+    "type": "CHARACTER",
+    "region": "Huanglong",
+    "faction": null,
+    "parent": null,
+    "related": []
+  },
+  "Censorate": {
+    "aliases": [
+      "Censorate"
+    ],
+    "type": "FACTION",
+    "region": "Huanglong",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Faction Profile",
+      "Investigating Censors",
+      "Base",
+      "Mingting",
+      "Huanglong",
+      "Censors"
+    ]
+  },
+  "Court of Savantae": {
+    "aliases": [
+      "Court of Savantae"
+    ],
+    "type": "FACTION",
+    "region": "Lahai-Roi",
+    "faction": "Court of Savantae",
+    "parent": null,
+    "related": [
+      "Committee",
+      "Faction Profile",
+      "Savantae Ruins",
+      "Whining Aix",
+      "Leader",
+      "Base",
+      "Court",
+      "Formerly",
+      "Savantae",
+      "Solaris"
+    ]
+  },
+  "Ephor's Palace": {
+    "aliases": [
+      "Ephor's Palace"
+    ],
+    "type": "FACTION",
+    "region": "Rinascita",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Black Shores",
+      "Faction Profile",
+      "Great Agon",
+      "Tetragon Temple",
+      "Leader",
+      "Augusta",
+      "Base",
+      "Ephor",
+      "Palace",
+      "Location"
+    ]
+  },
+  "Exiles": {
+    "aliases": [
+      "Exiles"
+    ],
+    "type": "FACTION",
+    "region": null,
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Faction Profile",
+      "Public Security Bureau",
+      "Enemies",
+      "Shunned"
+    ]
+  },
+  "Fisalia Family": {
+    "aliases": [
+      "Fisalia Family"
+    ],
+    "type": "FACTION",
+    "region": "Rinascita",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Faction Profile",
+      "Ragunnesi Sentinel",
+      "Veno Castle",
+      "Leader",
+      "Cantarella",
+      "Base",
+      "Porto",
+      "Rinascita",
+      "Ragunna",
+      "Order"
+    ]
+  },
+  "Fractsidus": {
+    "aliases": [
+      "Fractsidus"
+    ],
+    "type": "FACTION",
+    "region": null,
+    "faction": "Fractsidus",
+    "parent": null,
+    "related": [
+      "Black Shores",
+      "Faction Profile",
+      "Montelli Family",
+      "Resonance Equality",
+      "True Lament",
+      "Wuthering Waves",
+      "Leader",
+      "Schwarzloch",
+      "Enemies",
+      "Jinzhou"
+    ]
+  },
+  "Ghost Hounds": {
+    "aliases": [
+      "Ghost Hounds"
+    ],
+    "type": "FACTION",
+    "region": "New Federation",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Faction Profile",
+      "Lawless Zone",
+      "New Federation",
+      "Leader",
+      "Calcharo",
+      "Founder",
+      "Underdogs"
+    ]
+  },
+  "House Silva": {
+    "aliases": [
+      "House Silva"
+    ],
+    "type": "FACTION",
+    "region": "Rinascita",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Ephor Augusta",
+      "Faction Profile",
+      "Great Agon",
+      "Julia Silva",
+      "Priestess Iuno",
+      "Leader",
+      "Base",
+      "Septimont",
+      "Ephor",
+      "Lupa"
+    ]
+  },
+  "Internal Security Agency": {
+    "aliases": [
+      "Internal Security Agency"
+    ],
+    "type": "FACTION",
+    "region": "Huanglong",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Chief Commander",
+      "Faction Profile",
+      "Leader",
+      "Base",
+      "Mingting",
+      "ISA",
+      "Huanglong",
+      "Reporting",
+      "Emperor",
+      "Tasked"
+    ]
+  },
+  "Lollo Logistics": {
+    "aliases": [
+      "Lollo Logistics"
+    ],
+    "type": "FACTION",
+    "region": null,
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Whether",
+      "Guided"
+    ]
+  },
+  "Midnight Rangers": {
+    "aliases": [
+      "Midnight Rangers"
+    ],
+    "type": "FACTION",
+    "region": "Huanglong",
+    "faction": "Midnight Rangers",
+    "parent": null,
+    "related": [
+      "Faction Profile",
+      "General Jiyan",
+      "Leader",
+      "Jiyan",
+      "Jinzhou",
+      "Huanglong",
+      "Ministry",
+      "War"
+    ]
+  },
+  "Ministry of Development": {
+    "aliases": [
+      "Ministry of Development"
+    ],
+    "type": "FACTION",
+    "region": "Huanglong",
+    "faction": "Ministry of Development",
+    "parent": null,
+    "related": [
+      "Ministry",
+      "Development",
+      "Huanglong",
+      "The Ministry"
+    ]
+  },
+  "Ministry of Sentinel Affairs": {
+    "aliases": [
+      "Ministry of Sentinel Affairs"
+    ],
+    "type": "FACTION",
+    "region": "Huanglong",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Sentinel Affairs",
+      "Ministry",
+      "Huanglong",
+      "Sentinels",
+      "Led",
+      "Minister",
+      "Mingting",
+      "Supervisor",
+      "Sentinel"
+    ]
+  },
+  "Ministry of War": {
+    "aliases": [
+      "Ministry of War"
+    ],
+    "type": "FACTION",
+    "region": "Huanglong",
+    "faction": "Ministry of War",
+    "parent": null,
+    "related": [
+      "Grand Marshal",
+      "Ministry",
+      "War",
+      "Huanglong",
+      "Minister",
+      "Scar",
+      "The Ministry"
+    ]
+  },
+  "Montelli Family": {
+    "aliases": [
+      "Montelli Family"
+    ],
+    "type": "FACTION",
+    "region": "Rinascita",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Averardo Vault",
+      "Black Shores",
+      "Faction Profile",
+      "Fisalia Family",
+      "Montelli Quarter",
+      "Ragunna City",
+      "Sea Thou Break",
+      "Leader",
+      "Carlotta",
+      "Base"
+    ]
+  },
+  "Order of the Deep": {
+    "aliases": [
+      "Order of the Deep"
+    ],
+    "type": "FACTION",
+    "region": "Rinascita",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Common Echoes",
+      "Faction Profile",
+      "Order",
+      "Leader",
+      "Vacant",
+      "Founder",
+      "Napoli II",
+      "Base",
+      "Cathedral",
+      "Mercury"
+    ]
+  },
+  "Pioneer Association": {
+    "aliases": [
+      "Pioneer Association"
+    ],
+    "type": "FACTION",
+    "region": null,
+    "faction": "Pioneer Association",
+    "parent": null,
+    "related": [
+      "Exploration Progress",
+      "Faction Profile",
+      "Base",
+      "Multiple",
+      "Maqi"
+    ]
+  },
+  "Public Security Bureau": {
+    "aliases": [
+      "Public Security Bureau"
+    ],
+    "type": "FACTION",
+    "region": "Huanglong",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Patrollers",
+      "Jinzhou",
+      "Huanglong"
+    ]
+  },
+  "Roya Tribe": {
+    "aliases": [
+      "Roya Tribe"
+    ],
+    "type": "FACTION",
+    "region": "Lahai-Roi",
+    "faction": "Roya Tribe",
+    "parent": null,
+    "related": [
+      "Bjartr Woods",
+      "Faction Profile",
+      "Heliodic Six",
+      "Reactor Drive",
+      "Leader",
+      "Base",
+      "Lahai",
+      "Roi",
+      "Solisylum",
+      "Exoswarm"
+    ]
+  },
+  "Spacetrek Collective": {
+    "aliases": [
+      "Spacetrek Collective"
+    ],
+    "type": "FACTION",
+    "region": "Lahai-Roi",
+    "faction": "Spacetrek Collective",
+    "parent": null,
+    "related": [
+      "Faction Profile",
+      "Research Institute",
+      "Roya Tribe",
+      "Startorch Academy",
+      "Starward Riseway",
+      "Base",
+      "Area",
+      "Allies",
+      "Solaris-3",
+      "Lahai"
+    ]
+  },
+  "Special Response Force": {
+    "aliases": [
+      "Special Response Force"
+    ],
+    "type": "FACTION",
+    "region": "Lahai-Roi",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Spacetrek Collective"
+    ]
+  },
+  "Tetragon Temple": {
+    "aliases": [
+      "Tetragon Temple"
+    ],
+    "type": "FACTION",
+    "region": "Rinascita",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Faction Profile",
+      "Head Priestess Lillibet",
+      "Temple",
+      "Tetragon",
+      "Leader",
+      "Lillibet",
+      "Base",
+      "Area",
+      "Allies",
+      "Ephor"
+    ]
+  },
+  "Troupe of Fools": {
+    "aliases": [
+      "Troupe of Fools"
+    ],
+    "type": "FACTION",
+    "region": "Rinascita",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Faction Profile",
+      "Rinascita Archipelago",
+      "Leader",
+      "Brant",
+      "Troupe",
+      "Fools",
+      "Fool",
+      "Rinascita",
+      "Lario",
+      "Penitent"
+    ]
+  },
+  "Unknown": {
+    "aliases": [
+      "Unknown"
+    ],
+    "type": "FACTION",
+    "region": null,
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Rover",
+      "Due",
+      "Resonators",
+      "Lucy",
+      "Rebecca",
+      "Solaris"
+    ]
+  },
+  "Xuanfang Wardens": {
+    "aliases": [
+      "Xuanfang Wardens"
+    ],
+    "type": "FACTION",
+    "region": "Huanglong",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Faction Profile",
+      "Mengzhou City Hall",
+      "Tacet Discords",
+      "Warden Commander Qiuhong",
+      "Wardens",
+      "Xuan Paragon Qingxiao",
+      "Xuan Triad",
+      "Xuan Watchers",
+      "Leader",
+      "Qiuhong"
+    ]
+  },
+  "Abandoned Tower": {
+    "aliases": [
+      "Abandoned Tower"
+    ],
+    "type": "REGION",
+    "region": "Rinascita",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Vault Underground",
+      "Rinascita",
+      "Intro",
+      "Location"
+    ]
+  },
+  "Academy's Dark Side": {
+    "aliases": [
+      "Academy's Dark Side"
+    ],
+    "type": "GENERIC",
+    "region": "Roya Frostlands",
+    "faction": "Startorch Academy",
+    "parent": null,
+    "related": [
+      "Dark Side",
+      "Roya Frostlands",
+      "Sonoro Sphere",
+      "Startorch Academy",
+      "Academy",
+      "Sonoro",
+      "Lahai",
+      "Roi",
+      "Influenced",
+      "Resonators"
+    ]
+  },
+  "Academy Dormitory": {
+    "aliases": [
+      "Academy Dormitory"
+    ],
+    "type": "GENERIC",
+    "region": "Roya Frostlands",
+    "faction": "Startorch Academy",
+    "parent": null,
+    "related": [
+      "Roya Frostlands",
+      "Startorch Academy",
+      "Soundproofed",
+      "Point",
+      "Interest"
+    ]
+  },
+  "Anima Cradle": {
+    "aliases": [
+      "Anima Cradle"
+    ],
+    "type": "REGION",
+    "region": "Rinascita",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Rinascita",
+      "Fabricatorium",
+      "Deep"
+    ]
+  },
+  "Argentflare Drapes": {
+    "aliases": [
+      "Argentflare Drapes"
+    ],
+    "type": "REGION",
+    "region": "Roya Frostlands",
+    "faction": "Roya Tribe",
+    "parent": null,
+    "related": [
+      "Roya Frostlands",
+      "Stagnant Run"
+    ]
+  },
+  "Ashinohara": {
+    "aliases": [
+      "Ashinohara"
+    ],
+    "type": "REGION",
+    "region": null,
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Flaming Sakura",
+      "Fractsidus Overseer",
+      "Honami City",
+      "Legacy Talismans",
+      "Neo Honami City",
+      "Startorch Academy",
+      "Tacet Field",
+      "Waveworn Phenomena",
+      "Lang",
+      "Solaris-3"
+    ]
+  },
+  "Asphodel Barrens": {
+    "aliases": [
+      "Asphodel Barrens"
+    ],
+    "type": "REGION",
+    "region": "Rinascita",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Sanguis Plateaus",
+      "Rinascita"
+    ]
+  },
+  "Atilius Canyon": {
+    "aliases": [
+      "Atilius Canyon"
+    ],
+    "type": "REGION",
+    "region": "Rinascita",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Sanguis Plateaus",
+      "Rinascita"
+    ]
+  },
+  "Atrium of Reflections": {
+    "aliases": [
+      "Atrium of Reflections"
+    ],
+    "type": "REGION",
+    "region": "Rinascita",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Nimbus Sanctum",
+      "Atrium",
+      "Reflections",
+      "Rinascita"
+    ]
+  },
+  "Atuja Camp": {
+    "aliases": [
+      "Atuja Camp"
+    ],
+    "type": "REGION",
+    "region": "Roya Frostlands",
+    "faction": "Roya Tribe",
+    "parent": null,
+    "related": [
+      "Roya Frostlands",
+      "Stagnant Run"
+    ]
+  },
+  "Auditorium": {
+    "aliases": [
+      "Auditorium"
+    ],
+    "type": "DIALOGUE",
+    "region": "Roya Frostlands",
+    "faction": "Startorch Academy",
+    "parent": null,
+    "related": [
+      "Gold Suspended",
+      "Roya Frostlands",
+      "Startorch Academy",
+      "Student Council",
+      "Point",
+      "Interest",
+      "You",
+      "Quest",
+      "Shadows"
+    ]
+  },
+  "Averardo Bank": {
+    "aliases": [
+      "Averardo Bank"
+    ],
+    "type": "GENERIC",
+    "region": "Rinascita",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Ragunna",
+      "Shell Credits",
+      "Monnaies",
+      "Mercurio",
+      "In Ragunna",
+      "At Averardo Bank"
+    ]
+  },
+  "Averardo Vault": {
+    "aliases": [
+      "Averardo Vault"
+    ],
+    "type": "REGION",
+    "region": "Rinascita",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Montelli Family",
+      "Rinascita",
+      "Intro",
+      "Location",
+      "Built",
+      "Within",
+      "Echoes"
+    ]
+  },
+  "Averardo Vault (Instance)": {
+    "aliases": [
+      "Averardo Vault (Instance)"
+    ],
+    "type": "GENERIC",
+    "region": "Rinascita",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Averardo Vault",
+      "Montelli Family",
+      "Veils Off",
+      "Rinascita",
+      "Point",
+      "Interest",
+      "Instance",
+      "Challenge",
+      "Area",
+      "Echoes"
+    ]
+  },
+  "Avinoleum": {
+    "aliases": [
+      "Avinoleum"
+    ],
+    "type": "REGION",
+    "region": "Rinascita",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Blessed Maiden",
+      "Rinascita",
+      "Intro",
+      "Location",
+      "Suspended"
+    ]
+  },
+  "Avinoleum: Ground Remains": {
+    "aliases": [
+      "Avinoleum: Ground Remains"
+    ],
+    "type": "REGION",
+    "region": "Rinascita",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Beohr Waters",
+      "Ground Remains",
+      "Avinoleum",
+      "Rinascita"
+    ]
+  },
+  "Avinoleum: Inverted Seminary": {
+    "aliases": [
+      "Avinoleum: Inverted Seminary"
+    ],
+    "type": "GENERIC",
+    "region": "Rinascita",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Blessed Maiden",
+      "Inverted Seminary",
+      "Avinoleum",
+      "Rinascita",
+      "Suspended"
+    ]
+  },
+  "A Hidden Place": {
+    "aliases": [
+      "A Hidden Place"
+    ],
+    "type": "REGION",
+    "region": "Rinascita",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Averardo Vault",
+      "Hidden Place",
+      "Rinascita"
+    ]
+  },
+  "Bank of Life": {
+    "aliases": [
+      "Bank of Life"
+    ],
+    "type": "REGION",
+    "region": "The Black Shores",
+    "faction": "Black Shores",
+    "parent": null,
+    "related": [
+      "Black Shores",
+      "Bloom Bearers",
+      "Bank",
+      "Life",
+      "Tethys",
+      "Deep",
+      "Consultants",
+      "Solaris",
+      "The Black Shores"
+    ]
+  },
+  "Bank Street": {
+    "aliases": [
+      "Bank Street"
+    ],
+    "type": "REGION",
+    "region": "Rinascita",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Ragunna City",
+      "Rinascita"
+    ]
+  },
+  "Base Camp": {
+    "aliases": [
+      "Base Camp"
+    ],
+    "type": "REGION",
+    "region": "Roya Frostlands",
+    "faction": "Roya Tribe",
+    "parent": null,
+    "related": [
+      "Roya Frostlands",
+      "Solisia Landing",
+      "Land",
+      "Paradox"
+    ]
+  },
+  "Beohr Trench": {
+    "aliases": [
+      "Beohr Trench"
+    ],
+    "type": "REGION",
+    "region": "Rinascita",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Beohr Waters",
+      "Rinascita"
+    ]
+  },
+  "Beohr Waters": {
+    "aliases": [
+      "Beohr Waters"
+    ],
+    "type": "REGION",
+    "region": "Rinascita",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Beohr Trench",
+      "Ground Remains",
+      "Areas",
+      "Name",
+      "Image",
+      "Avinoleum"
+    ]
+  },
+  "Bird-Return Garden": {
+    "aliases": [
+      "Bird-Return Garden"
+    ],
+    "type": "REGION",
+    "region": "Huanglong",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Return Garden",
+      "Southern Yuan Hills",
+      "Bird",
+      "Huanglong"
+    ]
+  },
+  "Bjartr Woods": {
+    "aliases": [
+      "Bjartr Woods"
+    ],
+    "type": "REGION",
+    "region": "Roya Frostlands",
+    "faction": "Roya Tribe",
+    "parent": null,
+    "related": [
+      "Roya Frostlands",
+      "Roya Tribe",
+      "Intro",
+      "Location",
+      "Soliskin"
+    ]
+  },
+  "Black Shores Archipelago": {
+    "aliases": [
+      "Black Shores Archipelago"
+    ],
+    "type": "REGION",
+    "region": "The Black Shores",
+    "faction": "Black Shores",
+    "parent": null,
+    "related": [
+      "Black Shores",
+      "Hidden Between",
+      "Location Tabs",
+      "Remnant Energy",
+      "Stormy Sea",
+      "Map",
+      "Solaris",
+      "Formed",
+      "Tacetites",
+      "Intro"
+    ]
+  },
+  "Border Mountains": {
+    "aliases": [
+      "Border Mountains"
+    ],
+    "type": "REGION",
+    "region": "Rinascita",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Dark Tide",
+      "Tidal Blight",
+      "Rinascita",
+      "Septimont"
+    ]
+  },
+  "Boughrest Ridge": {
+    "aliases": [
+      "Boughrest Ridge"
+    ],
+    "type": "REGION",
+    "region": "Huanglong",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Eastern Xuan Peaks",
+      "Huanglong"
+    ]
+  },
+  "Burrata Bakery": {
+    "aliases": [
+      "Burrata Bakery"
+    ],
+    "type": "GENERIC",
+    "region": "Rinascita",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Egla Town",
+      "Ragunna",
+      "Loyal"
+    ]
+  },
+  "Camp Overwatch": {
+    "aliases": [
+      "Camp Overwatch"
+    ],
+    "type": "REGION",
+    "region": "Huanglong",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Norfall Barrens",
+      "Jinzhou"
+    ]
+  },
+  "Capitoline Hill": {
+    "aliases": [
+      "Capitoline Hill"
+    ],
+    "type": "REGION",
+    "region": "Rinascita",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Borderline Fort",
+      "Rinascita",
+      "Herds",
+      "Yet",
+      "Location",
+      "Septimont"
+    ]
+  },
+  "Capitoline Hill City": {
+    "aliases": [
+      "Capitoline Hill City"
+    ],
+    "type": "GENERIC",
+    "region": "Rinascita",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Capitoline Hill",
+      "Dark Tide",
+      "Rinascita",
+      "Septimont",
+      "Perched",
+      "Gryphon",
+      "Fortress",
+      "Septimontians",
+      "City",
+      "Glory"
+    ]
+  },
+  "Cathedral of Mercury": {
+    "aliases": [
+      "Cathedral of Mercury"
+    ],
+    "type": "GENERIC",
+    "region": "Rinascita",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Ragunna City",
+      "Tidal Sanctuary",
+      "Cathedral",
+      "Mercury",
+      "Rinascita",
+      "Sentinel",
+      "Order",
+      "Deep",
+      "Thus",
+      "Intro"
+    ]
+  },
+  "Ceased Court": {
+    "aliases": [
+      "Ceased Court"
+    ],
+    "type": "REGION",
+    "region": "Roya Frostlands",
+    "faction": "Roya Tribe",
+    "parent": null,
+    "related": [
+      "Roya Frostlands",
+      "Sealed Fissure"
+    ]
+  },
+  "Central Plains": {
+    "aliases": [
+      "Central Plains"
+    ],
+    "type": "REGION",
+    "region": "Huanglong",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Fireflies Sea",
+      "Gaze Suburbs",
+      "Gubei Pass",
+      "Qichi Village",
+      "Stone Pile Plain",
+      "Taoyuan Vale",
+      "Tiderise Cliff",
+      "Xiehua Village",
+      "Areas",
+      "Name"
+    ]
+  },
+  "Changzhuang": {
+    "aliases": [
+      "Changzhuang"
+    ],
+    "type": "GENERIC",
+    "region": "Huanglong",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Huanglong",
+      "Yuezhou",
+      "Lumi"
+    ]
+  },
+  "Chongzhou": {
+    "aliases": [
+      "Chongzhou"
+    ],
+    "type": "GENERIC",
+    "region": "Huanglong",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Huanglong",
+      "Threnodian"
+    ]
+  },
+  "Chronorift Metropolis": {
+    "aliases": [
+      "Chronorift Metropolis"
+    ],
+    "type": "REGION",
+    "region": "The Black Shores",
+    "faction": "Black Shores",
+    "parent": null,
+    "related": [
+      "Black Shores",
+      "Lament",
+      "Location Tabs",
+      "Sonoro",
+      "Intro",
+      "Location",
+      "The Black Shores",
+      "The Lament"
+    ]
+  },
+  "City Square": {
+    "aliases": [
+      "City Square"
+    ],
+    "type": "REGION",
+    "region": "Rinascita",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Ragunna City",
+      "Rinascita"
+    ]
+  },
+  "Coast of Anticipation": {
+    "aliases": [
+      "Coast of Anticipation"
+    ],
+    "type": "REGION",
+    "region": "Rinascita",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Fagaceae Peninsula",
+      "Coast",
+      "Anticipation",
+      "Rinascita"
+    ]
+  },
+  "Collapsed Arcbend Ravine": {
+    "aliases": [
+      "Collapsed Arcbend Ravine"
+    ],
+    "type": "REGION",
+    "region": "Roya Frostlands",
+    "faction": "Roya Tribe",
+    "parent": null,
+    "related": [
+      "Etching Plains",
+      "Roya Frostlands"
+    ]
+  },
+  "Collective Factory": {
+    "aliases": [
+      "Collective Factory"
+    ],
+    "type": "GENERIC",
+    "region": "Roya Frostlands",
+    "faction": "Roya Tribe",
+    "parent": null,
+    "related": [
+      "Roya Frostlands",
+      "Spacetrek Collective Research Institute",
+      "Mechascouts",
+      "Collective"
+    ]
+  },
+  "Court of Savantae Ruins": {
+    "aliases": [
+      "Court of Savantae Ruins"
+    ],
+    "type": "REGION",
+    "region": "Huanglong",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Savantae Ruins",
+      "Whining Aix",
+      "Huanglong",
+      "Court",
+      "Mire"
+    ]
+  },
+  "Culinary Station": {
+    "aliases": [
+      "Culinary Station"
+    ],
+    "type": "GENERIC",
+    "region": "Lahai-Roi",
+    "faction": "Startorch Academy",
+    "parent": null,
+    "related": [
+      "Bun Recipe",
+      "Complete Nutrition Squeezy Jelly",
+      "Instant Wakeup Energy Gel",
+      "Midnight Wonder Cup Noodles",
+      "Sachet Recipe",
+      "Shell Credit",
+      "Shop",
+      "Wrapper",
+      "Munchie",
+      "Bun"
+    ]
+  },
+  "Data Torrent": {
+    "aliases": [
+      "Data Torrent"
+    ],
+    "type": "REGION",
+    "region": "The Black Shores",
+    "faction": "Black Shores",
+    "parent": null,
+    "related": [
+      "Black Shores",
+      "Stellar Matrix",
+      "Tethys",
+      "Deep",
+      "Nexus",
+      "Lament",
+      "Waveworn",
+      "The Black Shores",
+      "The Data Torrent",
+      "The Stellar Matrix"
+    ]
+  },
+  "Dawnsip Fjord": {
+    "aliases": [
+      "Dawnsip Fjord"
+    ],
+    "type": "REGION",
+    "region": "Roya Frostlands",
+    "faction": "Roya Tribe",
+    "parent": null,
+    "related": [
+      "Fangspire Chasm",
+      "Roya Frostlands"
+    ]
+  },
+  "Desorock Highland": {
+    "aliases": [
+      "Desorock Highland"
+    ],
+    "type": "REGION",
+    "region": "Huanglong",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Central Plains",
+      "Location Tabs",
+      "Norfall Barrens",
+      "Tacet Fields",
+      "Waveworn Phenomenon",
+      "Huanglong",
+      "Map",
+      "TDs",
+      "Jinzhou"
+    ]
+  },
+  "Dimmr Deep": {
+    "aliases": [
+      "Dimmr Deep"
+    ],
+    "type": "REGION",
+    "region": "Roya Frostlands",
+    "faction": "Roya Tribe",
+    "parent": null,
+    "related": [
+      "Endreach Barrens",
+      "Frostseize Isle",
+      "Solvein Heartwood",
+      "Areas",
+      "Name",
+      "Image",
+      "Tomorrow",
+      "Horizon",
+      "Keystone"
+    ]
+  },
+  "Dimmr Plains": {
+    "aliases": [
+      "Dimmr Plains"
+    ],
+    "type": "GENERIC",
+    "region": "Roya Frostlands",
+    "faction": "Roya Tribe",
+    "parent": null,
+    "related": [
+      "Roya Frostlands",
+      "Solvein Heartwood",
+      "Spacetrek Collective",
+      "Threnodian Aleph",
+      "Lahai",
+      "Roi",
+      "Stridergate",
+      "Voidspace",
+      "Keystone",
+      "Solaris-3"
+    ]
+  },
+  "Dimmr Plains Shaft": {
+    "aliases": [
+      "Dimmr Plains Shaft"
+    ],
+    "type": "REGION",
+    "region": "Roya Frostlands",
+    "faction": "Roya Tribe",
+    "parent": null,
+    "related": [
+      "Roya Frostlands",
+      "Solisia Landing"
+    ]
+  },
+  "Dim Forest": {
+    "aliases": [
+      "Dim Forest"
+    ],
+    "type": "REGION",
+    "region": "Huanglong",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Forbidden Forest",
+      "Giant Banyan",
+      "Violet Banyan",
+      "Huanglong",
+      "Jinzhou",
+      "Hoochiefs"
+    ]
+  },
+  "Donglu Research Station": {
+    "aliases": [
+      "Donglu Research Station"
+    ],
+    "type": "REGION",
+    "region": "Huanglong",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Port City",
+      "Huanglong",
+      "Guixu"
+    ]
+  },
+  "Drake's Island": {
+    "aliases": [
+      "Drake's Island"
+    ],
+    "type": "REGION",
+    "region": "Rinascita",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Riccioli Islands",
+      "Drake",
+      "Island",
+      "Rinascita"
+    ]
+  },
+  "Dreaming Cavern": {
+    "aliases": [
+      "Dreaming Cavern"
+    ],
+    "type": "REGION",
+    "region": "Huanglong",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Huanglong",
+      "Location",
+      "Gorges",
+      "Spirits",
+      "Jinzhou",
+      "Mengzhou"
+    ]
+  },
+  "Earthrend Wedge": {
+    "aliases": [
+      "Earthrend Wedge"
+    ],
+    "type": "REGION",
+    "region": "Rinascita",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Sanguis Plateaus",
+      "Rinascita"
+    ]
+  },
+  "Eastern Fogveil Pass": {
+    "aliases": [
+      "Eastern Fogveil Pass"
+    ],
+    "type": "REGION",
+    "region": "Huanglong",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Xuanfang Hold",
+      "Huanglong"
+    ]
+  },
+  "Eastern Xuan Peaks": {
+    "aliases": [
+      "Eastern Xuan Peaks"
+    ],
+    "type": "REGION",
+    "region": "Huanglong",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Boughrest Ridge",
+      "Fogveil Pagoda",
+      "Tranquil Ruins",
+      "Xianling Village",
+      "Areas",
+      "Name",
+      "File"
+    ]
+  },
+  "Echo Depository": {
+    "aliases": [
+      "Echo Depository"
+    ],
+    "type": "REGION",
+    "region": "Rinascita",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Vault Underground",
+      "Rinascita",
+      "Intro",
+      "Location",
+      "Echoes"
+    ]
+  },
+  "Echo Station": {
+    "aliases": [
+      "Echo Station"
+    ],
+    "type": "REGION",
+    "region": "Rinascita",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Vault Underground",
+      "Rinascita"
+    ]
+  },
+  "Egla Town": {
+    "aliases": [
+      "Egla Town"
+    ],
+    "type": "REGION",
+    "region": "Rinascita",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Whisperwind Haven",
+      "Rinascita"
+    ]
+  },
+  "Eidoscope": {
+    "aliases": [
+      "Eidoscope"
+    ],
+    "type": "REGION",
+    "region": "The Black Shores",
+    "faction": "Black Shores",
+    "parent": null,
+    "related": [
+      "Black Shores",
+      "Tethys",
+      "Deep",
+      "The Black Shores"
+    ]
+  },
+  "Endreach Barrens": {
+    "aliases": [
+      "Endreach Barrens"
+    ],
+    "type": "REGION",
+    "region": "Roya Frostlands",
+    "faction": "Roya Tribe",
+    "parent": null,
+    "related": [
+      "Dimmr Deep",
+      "Roya Frostlands"
+    ]
+  },
+  "End of Wandering": {
+    "aliases": [
+      "End of Wandering"
+    ],
+    "type": "GENERIC",
+    "region": "The Black Shores",
+    "faction": "Black Shores",
+    "parent": null,
+    "related": [
+      "Black Shores",
+      "End",
+      "Wandering",
+      "Point",
+      "Interest",
+      "Location",
+      "Tethys",
+      "Deep",
+      "The Black Shores"
+    ]
+  },
+  "Energy Hub": {
+    "aliases": [
+      "Energy Hub"
+    ],
+    "type": "REGION",
+    "region": "The Black Shores",
+    "faction": "Black Shores",
+    "parent": null,
+    "related": [
+      "Black Shores",
+      "Tethys Terminals",
+      "Tethys",
+      "Deep",
+      "Roro",
+      "Roros",
+      "The Black Shores"
+    ]
+  },
+  "Energy Hub (Rinascita)": {
+    "aliases": [
+      "Energy Hub (Rinascita)"
+    ],
+    "type": "REGION",
+    "region": "Rinascita",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Energy Hub",
+      "Rinascita",
+      "DISPLAYTITLE",
+      "Fabricatorium",
+      "Deep"
+    ]
+  },
+  "Ephor's Palace (Location)": {
+    "aliases": [
+      "Ephor's Palace (Location)"
+    ],
+    "type": "GENERIC",
+    "region": "Rinascita",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Ephor",
+      "Palace",
+      "Rinascita",
+      "Septimont",
+      "Intro",
+      "Location"
+    ]
+  },
+  "Erosion Cavern": {
+    "aliases": [
+      "Erosion Cavern"
+    ],
+    "type": "REGION",
+    "region": "Rinascita",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Sanguis Plateaus",
+      "Rinascita"
+    ]
+  },
+  "Error Cell": {
+    "aliases": [
+      "Error Cell"
+    ],
+    "type": "REGION",
+    "region": "The Black Shores",
+    "faction": "Black Shores",
+    "parent": null,
+    "related": [
+      "Black Shores",
+      "Stellar Matrices",
+      "Tethys",
+      "Deep",
+      "Occasionally",
+      "Tacetite",
+      "The Black Shores",
+      "The Stellar Matrices",
+      "The Error Cell"
+    ]
+  },
+  "Etching Plains": {
+    "aliases": [
+      "Etching Plains"
+    ],
+    "type": "REGION",
+    "region": "Roya Frostlands",
+    "faction": "Roya Tribe",
+    "parent": null,
+    "related": [
+      "Collapsed Arcbend Ravine",
+      "Areas",
+      "Name",
+      "Image"
+    ]
+  },
+  "Everfrost Cavern": {
+    "aliases": [
+      "Everfrost Cavern"
+    ],
+    "type": "REGION",
+    "region": "Roya Frostlands",
+    "faction": "Roya Tribe",
+    "parent": null,
+    "related": [
+      "Roya Frostlands",
+      "Tidelost Forest"
+    ]
+  },
+  "Exospine Barrows": {
+    "aliases": [
+      "Exospine Barrows"
+    ],
+    "type": "REGION",
+    "region": "Roya Frostlands",
+    "faction": "Roya Tribe",
+    "parent": null,
+    "related": [
+      "Emberfall Barrows",
+      "Fangspire Chasm",
+      "Roya Frostlands",
+      "Helios"
+    ]
+  },
+  "Exostrider Observation Station": {
+    "aliases": [
+      "Exostrider Observation Station"
+    ],
+    "type": "REGION",
+    "region": "Roya Frostlands",
+    "faction": "Roya Tribe",
+    "parent": null,
+    "related": [
+      "Roya Frostlands",
+      "Tidelost Forest"
+    ]
+  },
+  "Exostrider Slumber Site": {
+    "aliases": [
+      "Exostrider Slumber Site"
+    ],
+    "type": "REGION",
+    "region": "Roya Frostlands",
+    "faction": "Roya Tribe",
+    "parent": null,
+    "related": [
+      "Roya Frostlands",
+      "Tidelost Forest"
+    ]
+  },
+  "Eye of Asteria": {
+    "aliases": [
+      "Eye of Asteria"
+    ],
+    "type": "GENERIC",
+    "region": "The Black Shores",
+    "faction": "Black Shores",
+    "parent": null,
+    "related": [
+      "Black Shores",
+      "Black Shores Archipelago",
+      "Eye",
+      "Asteria",
+      "Point",
+      "Interest",
+      "Location",
+      "The Black Shores"
+    ]
+  },
+  "Fabricatorium of the Deep": {
+    "aliases": [
+      "Fabricatorium of the Deep"
+    ],
+    "type": "REGION",
+    "region": "Rinascita",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Common Echoes",
+      "Fabricatorium",
+      "Lumen Tower",
+      "Deep",
+      "Rinascita",
+      "Intro",
+      "Location",
+      "The Fabricatorium"
+    ]
+  },
+  "Fagaceae Peninsula": {
+    "aliases": [
+      "Fagaceae Peninsula"
+    ],
+    "type": "REGION",
+    "region": "Rinascita",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Oracles",
+      "Rinascita",
+      "Intro",
+      "Location",
+      "The Oracles"
+    ]
+  },
+  "Fallen Grave": {
+    "aliases": [
+      "Fallen Grave"
+    ],
+    "type": "REGION",
+    "region": "Rinascita",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Rinascita",
+      "Fabricatorium",
+      "Deep"
+    ]
+  },
+  "Fangspire Chasm": {
+    "aliases": [
+      "Fangspire Chasm"
+    ],
+    "type": "REGION",
+    "region": "Roya Frostlands",
+    "faction": "Roya Tribe",
+    "parent": null,
+    "related": [
+      "Dawnsip Fjord",
+      "Exospine Barrows",
+      "Sundermere Corridor",
+      "Areas",
+      "Name",
+      "Image",
+      "Riseway"
+    ]
+  },
+  "Fangzhou": {
+    "aliases": [
+      "Fangzhou"
+    ],
+    "type": "GENERIC",
+    "region": "Huanglong",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Master Appraiser",
+      "Youhu",
+      "Huanglong",
+      "Take",
+      "Aside",
+      "Rongzhou",
+      "Shuzhou",
+      "About Youhu"
+    ]
+  },
+  "Fan Drawing Stall": {
+    "aliases": [
+      "Fan Drawing Stall"
+    ],
+    "type": "DIALOGUE",
+    "region": "Huanglong",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Central Plains",
+      "Moon",
+      "Taoyuan Vale",
+      "Huanglong",
+      "New",
+      "Did",
+      "Zhezhi",
+      "Grace",
+      "By Moon"
+    ]
+  },
+  "Figurehead's Shrine": {
+    "aliases": [
+      "Figurehead's Shrine"
+    ],
+    "type": "REGION",
+    "region": "Rinascita",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Figurehead",
+      "Shrine",
+      "Rinascita",
+      "Penitent",
+      "End"
+    ]
+  },
+  "Fireflies Sea": {
+    "aliases": [
+      "Fireflies Sea"
+    ],
+    "type": "REGION",
+    "region": "Huanglong",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Central Plains",
+      "Huanglong"
+    ]
+  },
+  "Fireworks Shop": {
+    "aliases": [
+      "Fireworks Shop"
+    ],
+    "type": "DIALOGUE",
+    "region": "Huanglong",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Central Plains",
+      "Moon",
+      "Taoyuan Vale",
+      "Huanglong",
+      "Wait",
+      "Woolies",
+      "Wow",
+      "Encore",
+      "Grace",
+      "By Moon"
+    ]
+  },
+  "First Solistree": {
+    "aliases": [
+      "First Solistree"
+    ],
+    "type": "REGION",
+    "region": "Roya Frostlands",
+    "faction": "Roya Tribe",
+    "parent": null,
+    "related": [
+      "Bjartr Woods",
+      "Roya Frostlands"
+    ]
+  },
+  "Fogveil Pagoda": {
+    "aliases": [
+      "Fogveil Pagoda"
+    ],
+    "type": "REGION",
+    "region": "Huanglong",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Eastern Xuan Peaks",
+      "Huanglong"
+    ]
+  },
+  "Fool's Elysium": {
+    "aliases": [
+      "Fool's Elysium"
+    ],
+    "type": "REGION",
+    "region": "Rinascita",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Fool",
+      "Elysium",
+      "Rinascita",
+      "Troupe",
+      "Penitent",
+      "End",
+      "The Fool"
+    ]
+  },
+  "Fourth Solistree": {
+    "aliases": [
+      "Fourth Solistree"
+    ],
+    "type": "REGION",
+    "region": "Roya Frostlands",
+    "faction": "Roya Tribe",
+    "parent": null,
+    "related": [
+      "Bjartr Woods",
+      "Roya Frostlands"
+    ]
+  },
+  "Freight Zone": {
+    "aliases": [
+      "Freight Zone"
+    ],
+    "type": "REGION",
+    "region": "Roya Frostlands",
+    "faction": "Startorch Academy",
+    "parent": null,
+    "related": [
+      "Roya Frostlands",
+      "Startorch Academy"
+    ]
+  },
+  "Frostlands Surface": {
+    "aliases": [
+      "Frostlands Surface"
+    ],
+    "type": "GENERIC",
+    "region": "Roya Frostlands",
+    "faction": "Roya Tribe",
+    "parent": null,
+    "related": [
+      "Polar Collective",
+      "Research Institute",
+      "Roya Frostlands",
+      "Star That Voyages",
+      "Roya",
+      "Lament",
+      "Lahai",
+      "Roi",
+      "Exostrider",
+      "Star That Voyages Far"
+    ]
+  },
+  "Frostlands Transit Port": {
+    "aliases": [
+      "Frostlands Transit Port"
+    ],
+    "type": "REGION",
+    "region": "Roya Frostlands",
+    "faction": "Roya Tribe",
+    "parent": null,
+    "related": [
+      "Offshore Void Storm Monitoring",
+      "Polar Research Outpost",
+      "Roya Icebreak Port",
+      "Areas",
+      "Name",
+      "Image",
+      "Offshore Void Storm Monitoring Zone"
+    ]
+  },
+  "Frostseize Isle": {
+    "aliases": [
+      "Frostseize Isle"
+    ],
+    "type": "REGION",
+    "region": "Roya Frostlands",
+    "faction": "Roya Tribe",
+    "parent": null,
+    "related": [
+      "Dimmr Deep",
+      "Perfect Day",
+      "Roya Frostlands",
+      "Quest",
+      "Flying"
+    ]
+  },
+  "Garden of the Lost": {
+    "aliases": [
+      "Garden of the Lost"
+    ],
+    "type": "REGION",
+    "region": "Rinascita",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Thessaleo Fells",
+      "Garden",
+      "Lost",
+      "Rinascita"
+    ]
+  },
+  "Gate of Xuanfang": {
+    "aliases": [
+      "Gate of Xuanfang"
+    ],
+    "type": "REGION",
+    "region": "Huanglong",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Southern Yuan Hills",
+      "Gate",
+      "Xuanfang",
+      "Huanglong"
+    ]
+  },
+  "Giant's Gaze": {
+    "aliases": [
+      "Giant's Gaze"
+    ],
+    "type": "REGION",
+    "region": "Roya Frostlands",
+    "faction": "Roya Tribe",
+    "parent": null,
+    "related": [
+      "Orbit Valley Pass",
+      "Spacetrek Observatory",
+      "Giant",
+      "Gaze",
+      "Areas",
+      "Name",
+      "Image"
+    ]
+  },
+  "Giant Banyan": {
+    "aliases": [
+      "Giant Banyan"
+    ],
+    "type": "REGION",
+    "region": "Huanglong",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Although Resonators",
+      "Dim Forest",
+      "Dim Forest Data",
+      "No Longer Dim",
+      "Resonance Beacon",
+      "Huanglong",
+      "Location",
+      "Due",
+      "Forest",
+      "One"
+    ]
+  },
+  "Ginnungamere": {
+    "aliases": [
+      "Ginnungamere"
+    ],
+    "type": "REGION",
+    "region": "Roya Frostlands",
+    "faction": "Roya Tribe",
+    "parent": null,
+    "related": [
+      "Mount Gjallar",
+      "Roya Frostlands"
+    ]
+  },
+  "Ginnungamere Void Storm Monitoring Zone": {
+    "aliases": [
+      "Ginnungamere Void Storm Monitoring Zone"
+    ],
+    "type": "REGION",
+    "region": "Roya Frostlands",
+    "faction": "Roya Tribe",
+    "parent": null,
+    "related": [
+      "Ginnungamere Void Storm Monitoring",
+      "Mount Gjallar",
+      "Roya Frostlands"
+    ]
+  },
+  "Golden Spiral": {
+    "aliases": [
+      "Golden Spiral"
+    ],
+    "type": "REGION",
+    "region": "Roya Frostlands",
+    "faction": "Roya Tribe",
+    "parent": null,
+    "related": [
+      "Rebirth Uplands",
+      "Roya Frostlands"
+    ]
+  },
+  "Goldsong Woods": {
+    "aliases": [
+      "Goldsong Woods"
+    ],
+    "type": "REGION",
+    "region": "Huanglong",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Southern Yuan Hills",
+      "Huanglong"
+    ]
+  },
+  "Gold's Landing": {
+    "aliases": [
+      "Gold's Landing"
+    ],
+    "type": "REGION",
+    "region": "Rinascita",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Nimbus Sanctum",
+      "Gold",
+      "Landing",
+      "Rinascita"
+    ]
+  },
+  "Gorges of Spirits": {
+    "aliases": [
+      "Gorges of Spirits"
+    ],
+    "type": "REGION",
+    "region": "Huanglong",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Gorges",
+      "Spirits",
+      "Huanglong",
+      "Jinzhou"
+    ]
+  },
+  "Greenhouse": {
+    "aliases": [
+      "Greenhouse"
+    ],
+    "type": "GENERIC",
+    "region": "The Black Shores",
+    "faction": "Black Shores",
+    "parent": null,
+    "related": [
+      "Black Shores",
+      "Tethys Hub",
+      "Location",
+      "The Black Shores"
+    ]
+  },
+  "Gubei Pass": {
+    "aliases": [
+      "Gubei Pass"
+    ],
+    "type": "REGION",
+    "region": "Huanglong",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Central Plains",
+      "Huanglong",
+      "Location",
+      "Exiles"
+    ]
+  },
+  "Haldarheim": {
+    "aliases": [
+      "Haldarheim"
+    ],
+    "type": "REGION",
+    "region": "Roya Frostlands",
+    "faction": "Roya Tribe",
+    "parent": null,
+    "related": [
+      "Bjartr Woods",
+      "Roya Frostlands"
+    ]
+  },
+  "Hallowed Reach": {
+    "aliases": [
+      "Hallowed Reach"
+    ],
+    "type": "REGION",
+    "region": "Rinascita",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Requiem Ravine",
+      "Areas",
+      "Name",
+      "Image",
+      "Underground"
+    ]
+  },
+  "Hallowed Reach: Underground": {
+    "aliases": [
+      "Hallowed Reach: Underground"
+    ],
+    "type": "REGION",
+    "region": "Rinascita",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Hallowed Reach",
+      "Thessaleo Fells",
+      "Underground",
+      "Rinascita"
+    ]
+  },
+  "Hall of Swordsmanship: Ruins": {
+    "aliases": [
+      "Hall of Swordsmanship: Ruins"
+    ],
+    "type": "REGION",
+    "region": "Rinascita",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Hall",
+      "Swordsmanship",
+      "Ruins",
+      "Rinascita",
+      "Avinoleum"
+    ]
+  },
+  "Hanakage Underground Street": {
+    "aliases": [
+      "Hanakage Underground Street"
+    ],
+    "type": "REGION",
+    "region": "The Black Shores",
+    "faction": "Black Shores",
+    "parent": null,
+    "related": [
+      "Black Shores",
+      "Chronorift Metropolis",
+      "Stranger Things",
+      "Area",
+      "Honami",
+      "The Black Shores"
+    ]
+  },
+  "Harukaze Stadium": {
+    "aliases": [
+      "Harukaze Stadium"
+    ],
+    "type": "REGION",
+    "region": "The Black Shores",
+    "faction": "Black Shores",
+    "parent": null,
+    "related": [
+      "Black Shores",
+      "Chronorift Metropolis",
+      "Stranger Things",
+      "Area",
+      "Honami",
+      "The Black Shores"
+    ]
+  },
+  "Haven of Sprouts": {
+    "aliases": [
+      "Haven of Sprouts"
+    ],
+    "type": "REGION",
+    "region": "The Black Shores",
+    "faction": "Black Shores",
+    "parent": null,
+    "related": [
+      "Black Shores",
+      "Black Shores Archipelago",
+      "Haven",
+      "Sprouts",
+      "The Black Shores"
+    ]
+  },
+  "Helm Village": {
+    "aliases": [
+      "Helm Village"
+    ],
+    "type": "REGION",
+    "region": "Rinascita",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Riccioli Islands",
+      "Rinascita"
+    ]
+  },
+  "Hermit Settlement": {
+    "aliases": [
+      "Hermit Settlement"
+    ],
+    "type": "REGION",
+    "region": "Huanglong",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Wuming Bay",
+      "Huanglong"
+    ]
+  },
+  "Heron Wetland": {
+    "aliases": [
+      "Heron Wetland"
+    ],
+    "type": "REGION",
+    "region": "Huanglong",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Whining Aix",
+      "Huanglong",
+      "Mire"
+    ]
+  },
+  "Hidden Entrance": {
+    "aliases": [
+      "Hidden Entrance"
+    ],
+    "type": "REGION",
+    "region": "Huanglong",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Xuanfang Hold",
+      "Huanglong"
+    ]
+  },
+  "Holy Spire of Confluence": {
+    "aliases": [
+      "Holy Spire of Confluence"
+    ],
+    "type": "REGION",
+    "region": "Rinascita",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Holy Spire",
+      "Confluence",
+      "Rinascita",
+      "Avinoleum"
+    ]
+  },
+  "Honami Central Park": {
+    "aliases": [
+      "Honami Central Park"
+    ],
+    "type": "REGION",
+    "region": "The Black Shores",
+    "faction": "Black Shores",
+    "parent": null,
+    "related": [
+      "Black Shores",
+      "Chronorift Metropolis",
+      "Stranger Things",
+      "Area",
+      "Honami",
+      "The Black Shores"
+    ]
+  },
+  "Honami Convention Center": {
+    "aliases": [
+      "Honami Convention Center"
+    ],
+    "type": "REGION",
+    "region": "The Black Shores",
+    "faction": "Black Shores",
+    "parent": null,
+    "related": [
+      "Black Shores",
+      "Chronorift Metropolis",
+      "Stranger Things",
+      "Area",
+      "Honami",
+      "The Black Shores"
+    ]
+  },
+  "Hongzhen": {
+    "aliases": [
+      "Hongzhen"
+    ],
+    "type": "REGION",
+    "region": "Huanglong",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Huanglong",
+      "Buildings",
+      "Location",
+      "Firmament"
+    ]
+  },
+  "Howlfang Lair": {
+    "aliases": [
+      "Howlfang Lair"
+    ],
+    "type": "REGION",
+    "region": "Rinascita",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Sanguis Plateaus",
+      "Rinascita"
+    ]
+  },
+  "Hsin's Fortuity": {
+    "aliases": [
+      "Hsin's Fortuity"
+    ],
+    "type": "DIALOGUE",
+    "region": "Huanglong",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Central Plains",
+      "Moon",
+      "Taoyuan Vale",
+      "Huanglong",
+      "Surprises",
+      "Guaranteed",
+      "Changli",
+      "Hsin",
+      "Fortuity",
+      "Grace"
+    ]
+  },
+  "Huaxu Academy": {
+    "aliases": [
+      "Huaxu Academy"
+    ],
+    "type": "FACTION",
+    "region": "Huanglong",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Huanglong"
+    ]
+  },
+  "Huizhen Plaza": {
+    "aliases": [
+      "Huizhen Plaza"
+    ],
+    "type": "REGION",
+    "region": "Huanglong",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Xuanfang Hold",
+      "Huanglong"
+    ]
+  },
+  "Hundred-Span Corridor": {
+    "aliases": [
+      "Hundred-Span Corridor"
+    ],
+    "type": "REGION",
+    "region": "Huanglong",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Southern Yuan Hills",
+      "Span Corridor",
+      "Hundred",
+      "Huanglong"
+    ]
+  },
+  "Hunter's Den": {
+    "aliases": [
+      "Hunter's Den"
+    ],
+    "type": "REGION",
+    "region": "Rinascita",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Sanguis Plateaus",
+      "Hunter",
+      "Den",
+      "Rinascita"
+    ]
+  },
+  "Jetray Marsh": {
+    "aliases": [
+      "Jetray Marsh"
+    ],
+    "type": "REGION",
+    "region": "Roya Frostlands",
+    "faction": "Roya Tribe",
+    "parent": null,
+    "related": [
+      "Roya Frostlands",
+      "Stagnant Run"
+    ]
+  },
+  "Jetrified Ridge": {
+    "aliases": [
+      "Jetrified Ridge"
+    ],
+    "type": "REGION",
+    "region": "Roya Frostlands",
+    "faction": "Roya Tribe",
+    "parent": null,
+    "related": [
+      "Roya Frostlands",
+      "Stagnant Run"
+    ]
+  },
+  "Jinzhou (Area)": {
+    "aliases": [
+      "Jinzhou (Area)"
+    ],
+    "type": "REGION",
+    "region": "Huanglong",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Interactive Map",
+      "Location Tabs",
+      "Huanglong",
+      "Map",
+      "Jinzhou",
+      "Area",
+      "Region"
+    ]
+  },
+  "Jinzhou City Hall": {
+    "aliases": [
+      "Jinzhou City Hall"
+    ],
+    "type": "GENERIC",
+    "region": "Huanglong",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "City Hall",
+      "Grand Library",
+      "Jinzhou Magistrate",
+      "Huanglong",
+      "Located",
+      "Jinzhou",
+      "Since",
+      "Magistrate",
+      "Jinhsi"
+    ]
+  },
+  "Jinzhou (Province)": {
+    "aliases": [
+      "Jinzhou (Province)"
+    ],
+    "type": "GENERIC",
+    "region": "Huanglong",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Inner Huanglong",
+      "Magistrate Jinhsi",
+      "Tacet Discord",
+      "Tacet Discords",
+      "Threnodian Ovathrax",
+      "Jinzhou",
+      "Huanglong",
+      "DISPLAYTITLE",
+      "RegionTabs",
+      "Culture"
+    ]
+  },
+  "Keystone": {
+    "aliases": [
+      "Keystone"
+    ],
+    "type": "REGION",
+    "region": "Roya Frostlands",
+    "faction": "Roya Tribe",
+    "parent": null,
+    "related": [
+      "Dimmr Deep",
+      "Roya Frostlands"
+    ]
+  },
+  "Laststanding Squarefield": {
+    "aliases": [
+      "Laststanding Squarefield"
+    ],
+    "type": "REGION",
+    "region": "Huanglong",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Southern Yuan Hills",
+      "Huanglong"
+    ]
+  },
+  "Lawless Zone": {
+    "aliases": [
+      "Lawless Zone"
+    ],
+    "type": "FACTION",
+    "region": "New Federation",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Ghost Hounds",
+      "New Federation",
+      "Due",
+      "Exiles",
+      "Calcharo",
+      "Fractsidus"
+    ]
+  },
+  "Lightfall Tunnel": {
+    "aliases": [
+      "Lightfall Tunnel"
+    ],
+    "type": "REGION",
+    "region": "Roya Frostlands",
+    "faction": "Roya Tribe",
+    "parent": null,
+    "related": [
+      "Rebirth Uplands",
+      "Roya Frostlands"
+    ]
+  },
+  "Lilyland": {
+    "aliases": [
+      "Lilyland"
+    ],
+    "type": "REGION",
+    "region": "Rinascita",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Dr Scott Rabelle",
+      "Happy Family Dessert Shop",
+      "Like Ragunna",
+      "Lilyland Fashion Week",
+      "Lilyland Incident",
+      "New Federation",
+      "Pioneer Podcast",
+      "Sentinel Imperator",
+      "Startorch Academy",
+      "Stormy Sea"
+    ]
+  },
+  "Ljos Isle": {
+    "aliases": [
+      "Ljos Isle"
+    ],
+    "type": "REGION",
+    "region": "Roya Frostlands",
+    "faction": "Roya Tribe",
+    "parent": null,
+    "related": [
+      "Roya Frostlands",
+      "Silent Crag"
+    ]
+  },
+  "Loong's Ridge": {
+    "aliases": [
+      "Loong's Ridge"
+    ],
+    "type": "REGION",
+    "region": "Huanglong",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Huanglong",
+      "South",
+      "Firmament",
+      "Though",
+      "Loong",
+      "Ridge"
+    ]
+  },
+  "Lumen Tower": {
+    "aliases": [
+      "Lumen Tower"
+    ],
+    "type": "REGION",
+    "region": "Rinascita",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Rinascita",
+      "Fabricatorium",
+      "Deep"
+    ]
+  },
+  "Luminous Shore": {
+    "aliases": [
+      "Luminous Shore"
+    ],
+    "type": "REGION",
+    "region": "Huanglong",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Huanglong",
+      "Firmament"
+    ]
+  },
+  "Masked Reverie": {
+    "aliases": [
+      "Masked Reverie"
+    ],
+    "type": "GENERIC",
+    "region": "Rinascita",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Remember",
+      "Beneath"
+    ]
+  },
+  "Mawburrow Desert": {
+    "aliases": [
+      "Mawburrow Desert"
+    ],
+    "type": "REGION",
+    "region": "Roya Frostlands",
+    "faction": "Roya Tribe",
+    "parent": null,
+    "related": [
+      "Roya Frostlands",
+      "Voidspawn Control Complex Sectors",
+      "What Burns Beneath Frostlands",
+      "Intro",
+      "Location",
+      "Lahai",
+      "Roi",
+      "Voidworms"
+    ]
+  },
+  "Meishin Passageway": {
+    "aliases": [
+      "Meishin Passageway"
+    ],
+    "type": "REGION",
+    "region": "The Black Shores",
+    "faction": "Black Shores",
+    "parent": null,
+    "related": [
+      "Black Shores",
+      "Chronorift Metropolis",
+      "Stranger Things",
+      "Area",
+      "Honami",
+      "The Black Shores"
+    ]
+  },
+  "Memento Square": {
+    "aliases": [
+      "Memento Square"
+    ],
+    "type": "REGION",
+    "region": "Huanglong",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Huanglong",
+      "Location",
+      "Gorges",
+      "Spirits",
+      "Sentinel",
+      "Jinzhou"
+    ]
+  },
+  "Mengzhou": {
+    "aliases": [
+      "Mengzhou"
+    ],
+    "type": "GENERIC",
+    "region": "Huanglong",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Sentinel Hsin",
+      "Tacet Discord",
+      "Huanglong",
+      "Province",
+      "Taoism",
+      "Xuanfang",
+      "Jinzhou"
+    ]
+  },
+  "Mianloong Chamber": {
+    "aliases": [
+      "Mianloong Chamber"
+    ],
+    "type": "REGION",
+    "region": "Huanglong",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Huanglong",
+      "Sentinel",
+      "Firmament",
+      "Loong",
+      "Rest",
+      "Jinzhou"
+    ]
+  },
+  "Mingting": {
+    "aliases": [
+      "Mingting"
+    ],
+    "type": "FACTION",
+    "region": "Huanglong",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Internal Security Agency",
+      "Location Tabs",
+      "Resonator Showcase",
+      "Sentinel Affairs",
+      "Huanglong",
+      "Qiuyuan",
+      "Chongzhou",
+      "Ministry",
+      "War",
+      "Censorate"
+    ]
+  },
+  "Mistveil Bay": {
+    "aliases": [
+      "Mistveil Bay"
+    ],
+    "type": "REGION",
+    "region": "Rinascita",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Nimbus Sanctum",
+      "Rinascita"
+    ]
+  },
+  "Modulation Hall": {
+    "aliases": [
+      "Modulation Hall"
+    ],
+    "type": "REGION",
+    "region": "The Black Shores",
+    "faction": "Black Shores",
+    "parent": null,
+    "related": [
+      "Black Shores",
+      "Stellar Matrices",
+      "Tethys System",
+      "Tethys",
+      "Deep",
+      "Modulator",
+      "The Black Shores"
+    ]
+  },
+  "Montelli Quarter": {
+    "aliases": [
+      "Montelli Quarter"
+    ],
+    "type": "REGION",
+    "region": "Rinascita",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Ragunna City",
+      "Rinascita"
+    ]
+  },
+  "Moon Shooter": {
+    "aliases": [
+      "Moon Shooter"
+    ],
+    "type": "DIALOGUE",
+    "region": "Huanglong",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Central Plains",
+      "Moon",
+      "Taoyuan Vale",
+      "Huanglong",
+      "Chixia",
+      "Grace",
+      "By Moon"
+    ]
+  },
+  "Mount Gjallar": {
+    "aliases": [
+      "Mount Gjallar"
+    ],
+    "type": "REGION",
+    "region": "Roya Frostlands",
+    "faction": "Roya Tribe",
+    "parent": null,
+    "related": [
+      "Ginnungamere Void Storm Monitoring",
+      "Areas",
+      "Name",
+      "Image",
+      "Ginnungamere",
+      "Ginnungamere Void Storm Monitoring Zone"
+    ]
+  },
+  "Mournfell Canyon": {
+    "aliases": [
+      "Mournfell Canyon"
+    ],
+    "type": "REGION",
+    "region": "Rinascita",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Dark Tide",
+      "Ragunnesi Acolytes",
+      "Tacet Discords",
+      "Rinascita",
+      "Temples",
+      "Septimont"
+    ]
+  },
+  "Mt. Firmament": {
+    "aliases": [
+      "Mt. Firmament"
+    ],
+    "type": "REGION",
+    "region": "Huanglong",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Location Tabs",
+      "Sentinel Resonator",
+      "Tacet Discords",
+      "Temporal Mandate",
+      "Firmament",
+      "Huanglong",
+      "Map",
+      "Intro",
+      "Location",
+      "Jinzhou"
+    ]
+  },
+  "Murmurstown": {
+    "aliases": [
+      "Murmurstown"
+    ],
+    "type": "REGION",
+    "region": "Rinascita",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Dark Tide",
+      "Hollow Figures",
+      "Sanguis Plateaus",
+      "Threnodian Leviathan",
+      "Rinascita",
+      "People",
+      "Location",
+      "Fabianum",
+      "Augusta",
+      "Angel"
+    ]
+  },
+  "Nevermore Halls": {
+    "aliases": [
+      "Nevermore Halls"
+    ],
+    "type": "REGION",
+    "region": "Roya Frostlands",
+    "faction": "Roya Tribe",
+    "parent": null,
+    "related": [
+      "Roya Frostlands",
+      "Sealed Fissure"
+    ]
+  },
+  "New Federation": {
+    "aliases": [
+      "New Federation"
+    ],
+    "type": "GENERIC",
+    "region": null,
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Air Before",
+      "Last Jar",
+      "Luuk Herssen",
+      "New Federations",
+      "Novialle Regenerative Group",
+      "Reserved Terminal",
+      "Second Coming",
+      "Startorch Academy",
+      "Triumph Avionics",
+      "Solaris-3"
+    ]
+  },
+  "Nimbus Sanctum": {
+    "aliases": [
+      "Nimbus Sanctum"
+    ],
+    "type": "REGION",
+    "region": "Rinascita",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Remnant Energy",
+      "Rinascita",
+      "Intro",
+      "Location",
+      "Local",
+      "Ragunna"
+    ]
+  },
+  "Norfall Barrens": {
+    "aliases": [
+      "Norfall Barrens"
+    ],
+    "type": "REGION",
+    "region": "Huanglong",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Desorock Highland",
+      "Tacet Discords",
+      "Huanglong",
+      "Ovathrax"
+    ]
+  },
+  "Norfall Valley": {
+    "aliases": [
+      "Norfall Valley"
+    ],
+    "type": "REGION",
+    "region": "Huanglong",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Norfall Barrens",
+      "Huanglong"
+    ]
+  },
+  "Oakheart Highcourt": {
+    "aliases": [
+      "Oakheart Highcourt"
+    ],
+    "type": "REGION",
+    "region": "Rinascita",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Fagaceae Peninsula",
+      "Lifer",
+      "Rinascita",
+      "The Lifer"
+    ]
+  },
+  "Oakheart Highcourt: Lower Tier": {
+    "aliases": [
+      "Oakheart Highcourt: Lower Tier"
+    ],
+    "type": "REGION",
+    "region": "Rinascita",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Fagaceae Peninsula",
+      "Lower Tier",
+      "Oakheart Highcourt",
+      "Oakheart Highcourt Lower Tier",
+      "Rinascita"
+    ]
+  },
+  "Observation Passage": {
+    "aliases": [
+      "Observation Passage"
+    ],
+    "type": "REGION",
+    "region": "Roya Frostlands",
+    "faction": "Roya Tribe",
+    "parent": null,
+    "related": [
+      "Roya Frostlands",
+      "Starblind Crashsite"
+    ]
+  },
+  "Offshore Void Storm Monitoring Zone": {
+    "aliases": [
+      "Offshore Void Storm Monitoring Zone"
+    ],
+    "type": "REGION",
+    "region": "Roya Frostlands",
+    "faction": "Roya Tribe",
+    "parent": null,
+    "related": [
+      "Frostlands Transit Port",
+      "Offshore Void Storm Monitoring",
+      "Roya Frostlands"
+    ]
+  },
+  "Oldfrost Harbor": {
+    "aliases": [
+      "Oldfrost Harbor"
+    ],
+    "type": "REGION",
+    "region": "Roya Frostlands",
+    "faction": "Roya Tribe",
+    "parent": null,
+    "related": [
+      "Roya Frostlands",
+      "Starblind Crashsite"
+    ]
+  },
+  "Orbit Valley Pass": {
+    "aliases": [
+      "Orbit Valley Pass"
+    ],
+    "type": "REGION",
+    "region": "Roya Frostlands",
+    "faction": "Roya Tribe",
+    "parent": null,
+    "related": [
+      "Roya Frostlands",
+      "Giant",
+      "Gaze"
+    ]
+  },
+  "Order of the Deep (Area)": {
+    "aliases": [
+      "Order of the Deep (Area)"
+    ],
+    "type": "REGION",
+    "region": "Rinascita",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Ragunna City",
+      "Order",
+      "Deep",
+      "Rinascita"
+    ]
+  },
+  "Ostina": {
+    "aliases": [
+      "Ostina"
+    ],
+    "type": "GENERIC",
+    "region": null,
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Lost Beyond",
+      "Sonoro Sphere",
+      "Phrolova"
+    ]
+  },
+  "Panhua's Restaurant": {
+    "aliases": [
+      "Panhua's Restaurant"
+    ],
+    "type": "GENERIC",
+    "region": "Huanglong",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Jinzhou",
+      "Panhua",
+      "Huanglong",
+      "Foodies"
+    ]
+  },
+  "Path of Bestowal": {
+    "aliases": [
+      "Path of Bestowal"
+    ],
+    "type": "REGION",
+    "region": "Rinascita",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Blessed Maiden",
+      "Path",
+      "Bestowal",
+      "Rinascita",
+      "Majestic",
+      "Avinoleum"
+    ]
+  },
+  "Penitent's End": {
+    "aliases": [
+      "Penitent's End"
+    ],
+    "type": "REGION",
+    "region": "Rinascita",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Interactive Map",
+      "Location Tabs",
+      "Penitent",
+      "End",
+      "Rinascita",
+      "Intro",
+      "Location",
+      "Ships",
+      "Pilgrim",
+      "Sail"
+    ]
+  },
+  "Petalfold Recess": {
+    "aliases": [
+      "Petalfold Recess"
+    ],
+    "type": "REGION",
+    "region": "Roya Frostlands",
+    "faction": "Roya Tribe",
+    "parent": null,
+    "related": [
+      "Roya Frostlands",
+      "Sealed Fissure"
+    ]
+  },
+  "Plum Blossom Pole": {
+    "aliases": [
+      "Plum Blossom Pole"
+    ],
+    "type": "DIALOGUE",
+    "region": "Huanglong",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Central Plains",
+      "Moon",
+      "Taoyuan Vale",
+      "Huanglong",
+      "Lions",
+      "Let",
+      "Troupe",
+      "Liondances",
+      "May",
+      "Lingyang"
+    ]
+  },
+  "Polar Research Outpost": {
+    "aliases": [
+      "Polar Research Outpost"
+    ],
+    "type": "REGION",
+    "region": "Roya Frostlands",
+    "faction": "Roya Tribe",
+    "parent": null,
+    "related": [
+      "Frostlands Transit Port",
+      "Roya Frostlands"
+    ]
+  },
+  "Polyphemos Windmills": {
+    "aliases": [
+      "Polyphemos Windmills"
+    ],
+    "type": "REGION",
+    "region": "Rinascita",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Whisperwind Haven",
+      "Rinascita"
+    ]
+  },
+  "Porto-Veno Castle": {
+    "aliases": [
+      "Porto-Veno Castle"
+    ],
+    "type": "REGION",
+    "region": "Rinascita",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Loading Tip",
+      "Thessaleo Fells",
+      "Veno Castle",
+      "Porto",
+      "Rinascita",
+      "Surrounded",
+      "Enticing",
+      "Location"
+    ]
+  },
+  "Port City of Guixu": {
+    "aliases": [
+      "Port City of Guixu"
+    ],
+    "type": "REGION",
+    "region": "Huanglong",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Incinero Petal Toxin",
+      "Location Tabs",
+      "Nostalgia Isle",
+      "Outer Huanglong",
+      "Port City",
+      "Guixu",
+      "Huanglong",
+      "Map",
+      "Hundreds",
+      "Sea"
+    ]
+  },
+  "Port of Riccioli": {
+    "aliases": [
+      "Port of Riccioli"
+    ],
+    "type": "REGION",
+    "region": "Rinascita",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Riccioli Islands",
+      "Port",
+      "Riccioli",
+      "Rinascita"
+    ]
+  },
+  "Precious Metals and Artworks Depository": {
+    "aliases": [
+      "Precious Metals and Artworks Depository"
+    ],
+    "type": "REGION",
+    "region": "Rinascita",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Artworks Depository",
+      "Echo Depository",
+      "Precious Metals",
+      "Vault Underground",
+      "Rinascita",
+      "Intro",
+      "Location",
+      "Echoes"
+    ]
+  },
+  "Preening Pool": {
+    "aliases": [
+      "Preening Pool"
+    ],
+    "type": "REGION",
+    "region": "Huanglong",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Southern Yuan Hills",
+      "Huanglong"
+    ]
+  },
+  "Provenance Enclave": {
+    "aliases": [
+      "Provenance Enclave"
+    ],
+    "type": "REGION",
+    "region": "Roya Frostlands",
+    "faction": "Roya Tribe",
+    "parent": null,
+    "related": [
+      "Roya Frostlands",
+      "Upphaf Forest Ruins"
+    ]
+  },
+  "Puppet Theater": {
+    "aliases": [
+      "Puppet Theater"
+    ],
+    "type": "GENERIC",
+    "region": "Huanglong",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Central Plains",
+      "Moon",
+      "Taoyuan Vale",
+      "Huanglong",
+      "Puppet",
+      "Zapstring",
+      "Need",
+      "Don",
+      "Yinlin",
+      "Grace"
+    ]
+  },
+  "Qichi Village": {
+    "aliases": [
+      "Qichi Village"
+    ],
+    "type": "REGION",
+    "region": "Huanglong",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Central Plains",
+      "Shepherd",
+      "Tacet Discords",
+      "Tacet Field",
+      "Huanglong",
+      "Location",
+      "Scar",
+      "Ever",
+      "The Shepherd"
+    ]
+  },
+  "Rabelle College": {
+    "aliases": [
+      "Rabelle College"
+    ],
+    "type": "GENERIC",
+    "region": "Roya Frostlands",
+    "faction": "Startorch Academy",
+    "parent": null,
+    "related": [
+      "Gold Suspended",
+      "Resonance Curve Theory",
+      "Roya Frostlands",
+      "Scott Rabelle",
+      "Startorch Academy",
+      "Synchronist Department",
+      "Named",
+      "Rabelle",
+      "Curve",
+      "Synchronists"
+    ]
+  },
+  "Ragunna": {
+    "aliases": [
+      "Ragunna"
+    ],
+    "type": "GENERIC",
+    "region": "Rinascita",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Common Echoes",
+      "Ragunna City",
+      "Sea Thou Break",
+      "Sentinel Imperator",
+      "Rinascita",
+      "Order",
+      "Deep",
+      "Ragunessi",
+      "Them",
+      "Sentinel"
+    ]
+  },
+  "Ragunna City": {
+    "aliases": [
+      "Ragunna City"
+    ],
+    "type": "REGION",
+    "region": "Rinascita",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Common Echoes",
+      "Location Tabs",
+      "Rinascita",
+      "Ragunna",
+      "Intro",
+      "Location",
+      "Sentinel",
+      "Ragunnesi",
+      "Imperator"
+    ]
+  },
+  "Rearguard Base": {
+    "aliases": [
+      "Rearguard Base"
+    ],
+    "type": "REGION",
+    "region": "Huanglong",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Midnight Rangers",
+      "TDs",
+      "Exile",
+      "The Rearguard Base"
+    ]
+  },
+  "Rebirth Uplands": {
+    "aliases": [
+      "Rebirth Uplands"
+    ],
+    "type": "REGION",
+    "region": "Roya Frostlands",
+    "faction": "Roya Tribe",
+    "parent": null,
+    "related": [
+      "Golden Spiral",
+      "Lightfall Tunnel",
+      "Ribcage Bends",
+      "Areas",
+      "Name",
+      "Image"
+    ]
+  },
+  "Requiem Ravine": {
+    "aliases": [
+      "Requiem Ravine"
+    ],
+    "type": "REGION",
+    "region": "Rinascita",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Hallowed Reach",
+      "Rinascita"
+    ]
+  },
+  "Resonator Nursing Unit": {
+    "aliases": [
+      "Resonator Nursing Unit"
+    ],
+    "type": "GENERIC",
+    "region": "Roya Frostlands",
+    "faction": "Startorch Academy",
+    "parent": null,
+    "related": [
+      "Luuk Herssen",
+      "Roya Frostlands",
+      "Startorch Academy",
+      "ReNU"
+    ]
+  },
+  "Reyes Ruins": {
+    "aliases": [
+      "Reyes Ruins"
+    ],
+    "type": "REGION",
+    "region": "Rinascita",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Riccioli Islands",
+      "Rinascita"
+    ]
+  },
+  "Ribcage Bends": {
+    "aliases": [
+      "Ribcage Bends"
+    ],
+    "type": "REGION",
+    "region": "Roya Frostlands",
+    "faction": "Roya Tribe",
+    "parent": null,
+    "related": [
+      "Rebirth Uplands",
+      "Roya Frostlands"
+    ]
+  },
+  "Riccioli Islands": {
+    "aliases": [
+      "Riccioli Islands"
+    ],
+    "type": "REGION",
+    "region": "Rinascita",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Thousand Islands",
+      "Rinascita",
+      "Intro",
+      "Location",
+      "Ragunna",
+      "Falling",
+      "Order",
+      "Deep",
+      "Age"
+    ]
+  },
+  "Riddle Twiddle": {
+    "aliases": [
+      "Riddle Twiddle"
+    ],
+    "type": "DIALOGUE",
+    "region": "Huanglong",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Central Plains",
+      "Moon",
+      "Taoyuan Vale",
+      "Huanglong",
+      "Riddles",
+      "Riddle",
+      "Yangyang",
+      "Grace",
+      "Players",
+      "By Moon"
+    ]
+  },
+  "Rinascita": {
+    "aliases": [
+      "Rinascita"
+    ],
+    "type": "REGION",
+    "region": null,
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Sentinel Imperator",
+      "Stormy Sea",
+      "RegionTabs",
+      "Solaris-3",
+      "Rover",
+      "Although"
+    ]
+  },
+  "Riseway-Sundermere Corridor": {
+    "aliases": [
+      "Riseway-Sundermere Corridor"
+    ],
+    "type": "REGION",
+    "region": "Roya Frostlands",
+    "faction": "Roya Tribe",
+    "parent": null,
+    "related": [
+      "Fangspire Chasm",
+      "Roya Frostlands",
+      "Sundermere Corridor",
+      "Riseway"
+    ]
+  },
+  "Rongzhou": {
+    "aliases": [
+      "Rongzhou"
+    ],
+    "type": "GENERIC",
+    "region": "Huanglong",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Lollo Logistics",
+      "Shuzhou",
+      "English"
+    ]
+  },
+  "Rosemary's Apothecary": {
+    "aliases": [
+      "Rosemary's Apothecary"
+    ],
+    "type": "GENERIC",
+    "region": "Rinascita",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Rosemary",
+      "Apothecary",
+      "Fisalia",
+      "Ragunnesi"
+    ]
+  },
+  "Royan Market": {
+    "aliases": [
+      "Royan Market"
+    ],
+    "type": "GENERIC",
+    "region": "Roya Frostlands",
+    "faction": "Startorch Academy",
+    "parent": null,
+    "related": [
+      "Grocery Store",
+      "Roya Frostlands",
+      "Startorch Academy",
+      "Royan",
+      "Within",
+      "Zahira"
+    ]
+  },
+  "Roya Icebreak Port": {
+    "aliases": [
+      "Roya Icebreak Port"
+    ],
+    "type": "REGION",
+    "region": "Roya Frostlands",
+    "faction": "Roya Tribe",
+    "parent": null,
+    "related": [
+      "Frostlands Transit Port",
+      "Roya Frostlands"
+    ]
+  },
+  "Rustblood Pass": {
+    "aliases": [
+      "Rustblood Pass"
+    ],
+    "type": "REGION",
+    "region": "Rinascita",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Sanguis Plateaus",
+      "Rinascita"
+    ]
+  },
+  "Rustbound Hillside": {
+    "aliases": [
+      "Rustbound Hillside"
+    ],
+    "type": "REGION",
+    "region": "Roya Frostlands",
+    "faction": "Roya Tribe",
+    "parent": null,
+    "related": [
+      "Roya Frostlands",
+      "Solisia Landing"
+    ]
+  },
+  "Sakura Pedway": {
+    "aliases": [
+      "Sakura Pedway"
+    ],
+    "type": "REGION",
+    "region": "The Black Shores",
+    "faction": "Black Shores",
+    "parent": null,
+    "related": [
+      "Black Shores",
+      "Chronorift Metropolis",
+      "Stranger Things",
+      "Area",
+      "Honami",
+      "The Black Shores"
+    ]
+  },
+  "Sakura Quarter": {
+    "aliases": [
+      "Sakura Quarter"
+    ],
+    "type": "REGION",
+    "region": "The Black Shores",
+    "faction": "Black Shores",
+    "parent": null,
+    "related": [
+      "Black Shores",
+      "Chronorift Metropolis",
+      "Stranger Things",
+      "Honami",
+      "Though",
+      "Area",
+      "The Black Shores"
+    ]
+  },
+  "Sanctuary of Faith": {
+    "aliases": [
+      "Sanctuary of Faith"
+    ],
+    "type": "REGION",
+    "region": "Rinascita",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Sanctuary",
+      "Faith",
+      "Rinascita",
+      "Fabricatorium",
+      "Deep"
+    ]
+  },
+  "Sanguis Plateaus": {
+    "aliases": [
+      "Sanguis Plateaus"
+    ],
+    "type": "REGION",
+    "region": "Rinascita",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Asphodel Barrens",
+      "Atilius Canyon",
+      "Erosion Cavern",
+      "Howlfang Lair",
+      "Rustblood Pass",
+      "Tetragon Temple",
+      "Tideline Verge",
+      "Wastelands",
+      "Areas",
+      "Name"
+    ]
+  },
+  "Sealed Fissure": {
+    "aliases": [
+      "Sealed Fissure"
+    ],
+    "type": "REGION",
+    "region": "Roya Frostlands",
+    "faction": "Roya Tribe",
+    "parent": null,
+    "related": [
+      "Ceased Court",
+      "Nevermore Halls",
+      "Petalfold Recess",
+      "Areas",
+      "Name",
+      "Image"
+    ]
+  },
+  "Sea of Flames": {
+    "aliases": [
+      "Sea of Flames"
+    ],
+    "type": "REGION",
+    "region": "Huanglong",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Exploration Quest We Promise",
+      "Incinero Petal",
+      "Port City",
+      "Resonators",
+      "We Deliver",
+      "Huanglong",
+      "Sea",
+      "Flames",
+      "Guixu",
+      "Completing"
+    ]
+  },
+  "Second Solistree": {
+    "aliases": [
+      "Second Solistree"
+    ],
+    "type": "REGION",
+    "region": "Roya Frostlands",
+    "faction": "Roya Tribe",
+    "parent": null,
+    "related": [
+      "Bjartr Woods",
+      "Roya Frostlands"
+    ]
+  },
+  "Septimont": {
+    "aliases": [
+      "Septimont"
+    ],
+    "type": "REGION",
+    "region": "Rinascita",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Border Mountains",
+      "Capitoline Hill",
+      "Minos Sewers",
+      "Mournfell Canyon",
+      "Titanbone Expanse",
+      "Areas",
+      "Name",
+      "Image",
+      "Vale",
+      "Glory"
+    ]
+  },
+  "Serene Bay": {
+    "aliases": [
+      "Serene Bay"
+    ],
+    "type": "REGION",
+    "region": "Rinascita",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Riccioli Islands",
+      "Rinascita"
+    ]
+  },
+  "Shade Ridge": {
+    "aliases": [
+      "Shade Ridge"
+    ],
+    "type": "REGION",
+    "region": "Huanglong",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Huanglong",
+      "Jinzhou",
+      "Situated"
+    ]
+  },
+  "Shaftpost Yard": {
+    "aliases": [
+      "Shaftpost Yard"
+    ],
+    "type": "REGION",
+    "region": "Huanglong",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Southern Yuan Hills",
+      "Huanglong"
+    ]
+  },
+  "Shards of the Beyond": {
+    "aliases": [
+      "Shards of the Beyond"
+    ],
+    "type": "DIALOGUE",
+    "region": "Rinascita",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Beyond",
+      "Lost Beyond",
+      "Sonoro Sphere",
+      "Rinascita",
+      "Yet",
+      "Point",
+      "Interest",
+      "Location",
+      "Fabricatorium",
+      "Deep"
+    ]
+  },
+  "Shiawase Fountain Square": {
+    "aliases": [
+      "Shiawase Fountain Square"
+    ],
+    "type": "REGION",
+    "region": "The Black Shores",
+    "faction": "Black Shores",
+    "parent": null,
+    "related": [
+      "Black Shores",
+      "Chronorift Metropolis",
+      "Area",
+      "The Black Shores"
+    ]
+  },
+  "Shifang Pharmacy": {
+    "aliases": [
+      "Shifang Pharmacy"
+    ],
+    "type": "GENERIC",
+    "region": "Huanglong",
+    "faction": null,
+    "parent": null,
+    "related": []
+  },
+  "Shores of Last Breath": {
+    "aliases": [
+      "Shores of Last Breath"
+    ],
+    "type": "REGION",
+    "region": "Rinascita",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Fagaceae Peninsula",
+      "Last Breath",
+      "Shores",
+      "Rinascita"
+    ]
+  },
+  "Silent Crag": {
+    "aliases": [
+      "Silent Crag"
+    ],
+    "type": "REGION",
+    "region": "Roya Frostlands",
+    "faction": "Roya Tribe",
+    "parent": null,
+    "related": [
+      "Ljos Isle",
+      "Skyrelic Cascade",
+      "Voidthirst Cradle",
+      "Areas",
+      "Name",
+      "Image"
+    ]
+  },
+  "Silver Moon Grove": {
+    "aliases": [
+      "Silver Moon Grove"
+    ],
+    "type": "REGION",
+    "region": "Rinascita",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Whisperwind Haven",
+      "Rinascita"
+    ]
+  },
+  "SkyArk Space Station": {
+    "aliases": [
+      "SkyArk Space Station"
+    ],
+    "type": "REGION",
+    "region": "Roya Frostlands",
+    "faction": "Roya Tribe",
+    "parent": null,
+    "related": [
+      "Roya Frostlands",
+      "Space Station",
+      "Starblind Crashsite"
+    ]
+  },
+  "SkyArk Space Station: Blocked Sector": {
+    "aliases": [
+      "SkyArk Space Station: Blocked Sector"
+    ],
+    "type": "REGION",
+    "region": "Roya Frostlands",
+    "faction": "Roya Tribe",
+    "parent": null,
+    "related": [
+      "Blocked Sector",
+      "Roya Frostlands",
+      "Space Station",
+      "Starblind Crashsite",
+      "SkyArk Space Station"
+    ]
+  },
+  "SkyArk Space Station: Central Sector": {
+    "aliases": [
+      "SkyArk Space Station: Central Sector"
+    ],
+    "type": "REGION",
+    "region": "Roya Frostlands",
+    "faction": "Roya Tribe",
+    "parent": null,
+    "related": [
+      "Central Sector",
+      "Roya Frostlands",
+      "Space Station",
+      "Starblind Crashsite",
+      "SkyArk Space Station"
+    ]
+  },
+  "Skyrelic Cascade": {
+    "aliases": [
+      "Skyrelic Cascade"
+    ],
+    "type": "REGION",
+    "region": "Roya Frostlands",
+    "faction": "Roya Tribe",
+    "parent": null,
+    "related": [
+      "Roya Frostlands",
+      "Silent Crag"
+    ]
+  },
+  "Snare Platform": {
+    "aliases": [
+      "Snare Platform"
+    ],
+    "type": "REGION",
+    "region": "Huanglong",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Western Fang Peaks",
+      "Huanglong"
+    ]
+  },
+  "Soliseed Plains": {
+    "aliases": [
+      "Soliseed Plains"
+    ],
+    "type": "REGION",
+    "region": "Roya Frostlands",
+    "faction": "Roya Tribe",
+    "parent": null,
+    "related": [
+      "Bjartr Woods",
+      "Roya Frostlands"
+    ]
+  },
+  "Solisia Landing": {
+    "aliases": [
+      "Solisia Landing"
+    ],
+    "type": "REGION",
+    "region": "Roya Frostlands",
+    "faction": "Roya Tribe",
+    "parent": null,
+    "related": [
+      "Roya Frostlands",
+      "Solvein Heartwood",
+      "Intro",
+      "Location",
+      "Soliskin",
+      "Solistrees",
+      "Voidmatter"
+    ]
+  },
+  "Solisylum": {
+    "aliases": [
+      "Solisylum"
+    ],
+    "type": "REGION",
+    "region": "Roya Frostlands",
+    "faction": "Roya Tribe",
+    "parent": null,
+    "related": [
+      "Bjartr Woods",
+      "Roya Frostlands"
+    ]
+  },
+  "Solisylum (Instance)": {
+    "aliases": [
+      "Solisylum (Instance)"
+    ],
+    "type": "GENERIC",
+    "region": "Roya Frostlands",
+    "faction": "Roya Tribe",
+    "parent": null,
+    "related": [
+      "Bjartr Woods",
+      "Heliodic Six",
+      "Reactor Drive",
+      "Roya Frostlands",
+      "Roya",
+      "Exostrider",
+      "Royan",
+      "Solisylum",
+      "Exoswarm",
+      "Point"
+    ]
+  },
+  "Solis Tavern": {
+    "aliases": [
+      "Solis Tavern"
+    ],
+    "type": "GENERIC",
+    "region": "Rinascita",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Rinascita",
+      "Solis",
+      "Fulvia"
+    ]
+  },
+  "Solvein Heartwood": {
+    "aliases": [
+      "Solvein Heartwood"
+    ],
+    "type": "REGION",
+    "region": "Roya Frostlands",
+    "faction": "Roya Tribe",
+    "parent": null,
+    "related": [
+      "Dimmr Deep",
+      "Dimmr Plains",
+      "Roya Frostlands"
+    ]
+  },
+  "Somnoire: Night City": {
+    "aliases": [
+      "Somnoire: Night City"
+    ],
+    "type": "GENERIC",
+    "region": null,
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Del Coronado Bay",
+      "Night City",
+      "South California",
+      "Startorch Academy",
+      "United States",
+      "Born",
+      "Somnoire",
+      "Lucy",
+      "Lahai",
+      "Roi"
+    ]
+  },
+  "Southern Yuan Hills": {
+    "aliases": [
+      "Southern Yuan Hills"
+    ],
+    "type": "REGION",
+    "region": "Huanglong",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Goldsong Woods",
+      "Laststanding Squarefield",
+      "Preening Pool",
+      "Return Garden",
+      "Shaftpost Yard",
+      "Span Corridor",
+      "Sweetbeak Orchard",
+      "Areas",
+      "Name",
+      "File"
+    ]
+  },
+  "Spacetrek Archive": {
+    "aliases": [
+      "Spacetrek Archive"
+    ],
+    "type": "GENERIC",
+    "region": "Roya Frostlands",
+    "faction": "Startorch Academy",
+    "parent": null,
+    "related": [
+      "Indexing System",
+      "Intelligent Retrieval",
+      "Roya Frostlands",
+      "Spacetreck Archive",
+      "Spacetreck Collective",
+      "Startorch Academy",
+      "Startorch Academy Square",
+      "One",
+      "Solaris",
+      "Archive"
+    ]
+  },
+  "Spacetrek Archive - Recreational Zone": {
+    "aliases": [
+      "Spacetrek Archive - Recreational Zone"
+    ],
+    "type": "REGION",
+    "region": "Roya Frostlands",
+    "faction": "Startorch Academy",
+    "parent": null,
+    "related": [
+      "Recreational Zone",
+      "Roya Frostlands",
+      "Spacetrek Archive",
+      "Startorch Academy"
+    ]
+  },
+  "Spacetrek Collective (Area)": {
+    "aliases": [
+      "Spacetrek Collective (Area)"
+    ],
+    "type": "REGION",
+    "region": "Roya Frostlands",
+    "faction": "Roya Tribe",
+    "parent": null,
+    "related": [
+      "Roya Frostlands",
+      "Spacetrek Collective",
+      "Starward Riseway"
+    ]
+  },
+  "Spacetrek Collective Research Institute": {
+    "aliases": [
+      "Spacetrek Collective Research Institute"
+    ],
+    "type": "GENERIC",
+    "region": "Roya Frostlands",
+    "faction": "Roya Tribe",
+    "parent": null,
+    "related": [
+      "Roya Frostlands",
+      "Spacetrek Collective Research",
+      "Starward Riseway",
+      "Exostrider",
+      "Stridergate",
+      "Helios",
+      "Standing",
+      "Lahai",
+      "Roi",
+      "Institute"
+    ]
+  },
+  "Spacetrek Observatory": {
+    "aliases": [
+      "Spacetrek Observatory"
+    ],
+    "type": "REGION",
+    "region": "Roya Frostlands",
+    "faction": "Roya Tribe",
+    "parent": null,
+    "related": [
+      "Frontier Renewal",
+      "Roya Frostlands",
+      "Giant",
+      "Gaze",
+      "Observatory",
+      "Operation"
+    ]
+  },
+  "Square": {
+    "aliases": [
+      "Square"
+    ],
+    "type": "REGION",
+    "region": "Roya Frostlands",
+    "faction": "Startorch Academy",
+    "parent": null,
+    "related": [
+      "Roya Frostlands",
+      "Startorch Academy"
+    ]
+  },
+  "Stagnant Run": {
+    "aliases": [
+      "Stagnant Run"
+    ],
+    "type": "REGION",
+    "region": "Roya Frostlands",
+    "faction": "Roya Tribe",
+    "parent": null,
+    "related": [
+      "Argentflare Drapes",
+      "Atuja Camp",
+      "Jetray Marsh",
+      "Jetrified Ridge",
+      "Areas",
+      "Name",
+      "Image"
+    ]
+  },
+  "Stalaglow Cavern": {
+    "aliases": [
+      "Stalaglow Cavern"
+    ],
+    "type": "REGION",
+    "region": "Roya Frostlands",
+    "faction": "Roya Tribe",
+    "parent": null,
+    "related": [
+      "Broken Dimmr Heart",
+      "Roya Frostlands",
+      "Solisia Landing",
+      "Quest"
+    ]
+  },
+  "Starblind Crashsite": {
+    "aliases": [
+      "Starblind Crashsite"
+    ],
+    "type": "REGION",
+    "region": "Roya Frostlands",
+    "faction": "Roya Tribe",
+    "parent": null,
+    "related": [
+      "Blocked Sector",
+      "Central Sector",
+      "Observation Passage",
+      "Oldfrost Harbor",
+      "Space Station",
+      "Areas",
+      "Name",
+      "Image",
+      "SkyArk Space Station"
+    ]
+  },
+  "Stargate": {
+    "aliases": [
+      "Stargate"
+    ],
+    "type": "GENERIC",
+    "region": "The Black Shores",
+    "faction": "Black Shores",
+    "parent": null,
+    "related": [
+      "Black Shores",
+      "Black Shores Archipelago",
+      "Point",
+      "Interest",
+      "Location",
+      "The Black Shores"
+    ]
+  },
+  "Startorch Academy (Region)": {
+    "aliases": [
+      "Startorch Academy (Region)"
+    ],
+    "type": "REGION",
+    "region": "Roya Frostlands",
+    "faction": "Roya Tribe",
+    "parent": null,
+    "related": [
+      "Roya Frostlands",
+      "Startorch Academy",
+      "Region",
+      "Lahai",
+      "Roi"
+    ]
+  },
+  "Starward Riseway": {
+    "aliases": [
+      "Starward Riseway"
+    ],
+    "type": "REGION",
+    "region": "Roya Frostlands",
+    "faction": "Roya Tribe",
+    "parent": null,
+    "related": [
+      "Roya Frostlands",
+      "Intro",
+      "Location",
+      "Lahai",
+      "Roi",
+      "Powered"
+    ]
+  },
+  "Stillwind Sundries": {
+    "aliases": [
+      "Stillwind Sundries"
+    ],
+    "type": "GENERIC",
+    "region": "Rinascita",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Souvenir Shop",
+      "Rinascita",
+      "Vida"
+    ]
+  },
+  "Submerged Tunnel": {
+    "aliases": [
+      "Submerged Tunnel"
+    ],
+    "type": "REGION",
+    "region": "Roya Frostlands",
+    "faction": "Roya Tribe",
+    "parent": null,
+    "related": [
+      "Frontier Renewal",
+      "Roya Frostlands",
+      "Starward Riseway",
+      "Operation"
+    ]
+  },
+  "Sundermere": {
+    "aliases": [
+      "Sundermere"
+    ],
+    "type": "REGION",
+    "region": "Roya Frostlands",
+    "faction": "Roya Tribe",
+    "parent": null,
+    "related": [
+      "Roya Frostlands",
+      "Starward Riseway"
+    ]
+  },
+  "Sweetbeak Orchard": {
+    "aliases": [
+      "Sweetbeak Orchard"
+    ],
+    "type": "REGION",
+    "region": "Huanglong",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Southern Yuan Hills",
+      "Huanglong"
+    ]
+  },
+  "Swim, Gulpuff, Swim": {
+    "aliases": [
+      "Swim, Gulpuff, Swim"
+    ],
+    "type": "DIALOGUE",
+    "region": "Huanglong",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Central Plains",
+      "Moon",
+      "Taoyuan Vale",
+      "Huanglong",
+      "Fun",
+      "Smart",
+      "Jiyan",
+      "Swim",
+      "Gulpuff",
+      "Grace"
+    ]
+  },
+  "Taoyuan Vale": {
+    "aliases": [
+      "Taoyuan Vale"
+    ],
+    "type": "REGION",
+    "region": "Huanglong",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Central Plains",
+      "Chasing Festival",
+      "Riverside Games",
+      "Huanglong",
+      "Moon"
+    ]
+  },
+  "TD Observatory": {
+    "aliases": [
+      "TD Observatory"
+    ],
+    "type": "REGION",
+    "region": "The Black Shores",
+    "faction": "Black Shores",
+    "parent": null,
+    "related": [
+      "Black Shores",
+      "Black Shores Archipelago",
+      "Infinite Reality Sandbox",
+      "Tacet Discord",
+      "Tethys System",
+      "Reverberations",
+      "The Black Shores",
+      "The TD Observatory"
+    ]
+  },
+  "Teaching Zone": {
+    "aliases": [
+      "Teaching Zone"
+    ],
+    "type": "REGION",
+    "region": "Roya Frostlands",
+    "faction": "Startorch Academy",
+    "parent": null,
+    "related": [
+      "Roya Frostlands",
+      "Startorch Academy"
+    ]
+  },
+  "Tethys' Deep": {
+    "aliases": [
+      "Tethys' Deep"
+    ],
+    "type": "REGION",
+    "region": "The Black Shores",
+    "faction": "Black Shores",
+    "parent": null,
+    "related": [
+      "Black Shores",
+      "Lasting Night",
+      "Location Tabs",
+      "Stellar Matrices",
+      "Tethys System",
+      "Tethys",
+      "Deep",
+      "Map",
+      "Lament",
+      "Intro"
+    ]
+  },
+  "Tethys Hub": {
+    "aliases": [
+      "Tethys Hub"
+    ],
+    "type": "REGION",
+    "region": "The Black Shores",
+    "faction": "Black Shores",
+    "parent": null,
+    "related": [
+      "Black Shores",
+      "Black Shores Archipelago",
+      "Remnant Energy",
+      "Stormy Sea",
+      "Solaris",
+      "Formed",
+      "Tacetites",
+      "The Black Shores"
+    ]
+  },
+  "Tetragon Temple (Area)": {
+    "aliases": [
+      "Tetragon Temple (Area)"
+    ],
+    "type": "REGION",
+    "region": "Rinascita",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Sanguis Plateaus",
+      "Tetragon Temple",
+      "Rinascita"
+    ]
+  },
+  "Thessaleo Fells": {
+    "aliases": [
+      "Thessaleo Fells"
+    ],
+    "type": "REGION",
+    "region": "Rinascita",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Fisalia Family",
+      "Rinascita",
+      "Intro",
+      "Location",
+      "Ragunna"
+    ]
+  },
+  "The Black Shores": {
+    "aliases": [
+      "The Black Shores"
+    ],
+    "type": "GENERIC",
+    "region": null,
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Black Shores",
+      "Stormy Sea",
+      "Solaris-3",
+      "Hidden"
+    ]
+  },
+  "The Grand Library": {
+    "aliases": [
+      "The Grand Library"
+    ],
+    "type": "GENERIC",
+    "region": "Huanglong",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "City Hall",
+      "Grand Library",
+      "Huanglong",
+      "Jinzhou"
+    ]
+  },
+  "The Solistree's Core": {
+    "aliases": [
+      "The Solistree's Core"
+    ],
+    "type": "REGION",
+    "region": "Roya Frostlands",
+    "faction": "Roya Tribe",
+    "parent": null,
+    "related": [
+      "Bjartr Woods",
+      "Roya Frostlands",
+      "Solistree",
+      "Core",
+      "The Solistree"
+    ]
+  },
+  "The Strand": {
+    "aliases": [
+      "The Strand"
+    ],
+    "type": "REGION",
+    "region": "Rinascita",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Strand",
+      "Rinascita",
+      "Penitent",
+      "End"
+    ]
+  },
+  "The Wastelands": {
+    "aliases": [
+      "The Wastelands"
+    ],
+    "type": "REGION",
+    "region": "Rinascita",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Sanguis Plateaus",
+      "Wastelands",
+      "Rinascita"
+    ]
+  },
+  "Third Solistree": {
+    "aliases": [
+      "Third Solistree"
+    ],
+    "type": "REGION",
+    "region": "Roya Frostlands",
+    "faction": "Roya Tribe",
+    "parent": null,
+    "related": [
+      "Bjartr Woods",
+      "Roya Frostlands"
+    ]
+  },
+  "Thorncrown Rises": {
+    "aliases": [
+      "Thorncrown Rises"
+    ],
+    "type": "REGION",
+    "region": "Rinascita",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Thessaleo Fells",
+      "Rinascita"
+    ]
+  },
+  "Thousandfold Foundry: Assembly Bay": {
+    "aliases": [
+      "Thousandfold Foundry: Assembly Bay"
+    ],
+    "type": "REGION",
+    "region": "Huanglong",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Assembly Bay",
+      "Thousandfold Foundry",
+      "Western Fang Peaks",
+      "Huanglong"
+    ]
+  },
+  "Thousandfold Foundry: Ruination Grounds": {
+    "aliases": [
+      "Thousandfold Foundry: Ruination Grounds"
+    ],
+    "type": "REGION",
+    "region": "Huanglong",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Ruination Grounds",
+      "Thousandfold Foundry",
+      "Western Fang Peaks",
+      "Huanglong"
+    ]
+  },
+  "Thousandfold Foundry: Skyflow Lines": {
+    "aliases": [
+      "Thousandfold Foundry: Skyflow Lines"
+    ],
+    "type": "REGION",
+    "region": "Huanglong",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Skyflow Lines",
+      "Thousandfold Foundry",
+      "Western Fang Peaks",
+      "Huanglong"
+    ]
+  },
+  "Three Heroes' Crest": {
+    "aliases": [
+      "Three Heroes' Crest"
+    ],
+    "type": "REGION",
+    "region": "Rinascita",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Sanguis Plateaus",
+      "Three Heroes",
+      "Crest",
+      "Rinascita"
+    ]
+  },
+  "Thus Says the Moon": {
+    "aliases": [
+      "Thus Says the Moon"
+    ],
+    "type": "DIALOGUE",
+    "region": "Huanglong",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Central Plains",
+      "Great Fortune Upon Us",
+      "Moon",
+      "Taoyuan Vale",
+      "Thus Says",
+      "Huanglong",
+      "Reading",
+      "Heh",
+      "Jianxin",
+      "Grace"
+    ]
+  },
+  "Tianqu Tree": {
+    "aliases": [
+      "Tianqu Tree"
+    ],
+    "type": "REGION",
+    "region": "Huanglong",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Huanglong",
+      "Legend",
+      "Location",
+      "Firmament"
+    ]
+  },
+  "Tideline Verge": {
+    "aliases": [
+      "Tideline Verge"
+    ],
+    "type": "REGION",
+    "region": "Rinascita",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Sanguis Plateaus",
+      "Rinascita"
+    ]
+  },
+  "Tidelost Forest": {
+    "aliases": [
+      "Tidelost Forest"
+    ],
+    "type": "REGION",
+    "region": "Roya Frostlands",
+    "faction": "Roya Tribe",
+    "parent": null,
+    "related": [
+      "Everfrost Cavern",
+      "Exostrider Observation Station",
+      "Exostrider Slumber Site",
+      "Wavecleave Cape",
+      "Areas",
+      "Name",
+      "Image"
+    ]
+  },
+  "Tiger's Maw": {
+    "aliases": [
+      "Tiger's Maw"
+    ],
+    "type": "REGION",
+    "region": "Huanglong",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Maw Mine",
+      "Tiger",
+      "Maw",
+      "Huanglong",
+      "Lampylumen",
+      "Tacetite",
+      "Jinzhou",
+      "The Tiger"
+    ]
+  },
+  "Titanbone Expanse": {
+    "aliases": [
+      "Titanbone Expanse"
+    ],
+    "type": "REGION",
+    "region": "Rinascita",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Rinascita",
+      "Named",
+      "Septimontian",
+      "Septimont"
+    ]
+  },
+  "Titular Repository: Ruins": {
+    "aliases": [
+      "Titular Repository: Ruins"
+    ],
+    "type": "REGION",
+    "region": "Rinascita",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Titular Repository",
+      "Ruins",
+      "Rinascita",
+      "Avinoleum"
+    ]
+  },
+  "Tomorrow's Horizon": {
+    "aliases": [
+      "Tomorrow's Horizon"
+    ],
+    "type": "REGION",
+    "region": "Roya Frostlands",
+    "faction": "Roya Tribe",
+    "parent": null,
+    "related": [
+      "Dimmr Deep",
+      "Roya Frostlands",
+      "Tomorrow",
+      "Horizon"
+    ]
+  },
+  "Tower of Adversity (Area)": {
+    "aliases": [
+      "Tower of Adversity (Area)"
+    ],
+    "type": "REGION",
+    "region": "Huanglong",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Central Plains",
+      "Huanglong",
+      "Tower",
+      "Adversity"
+    ]
+  },
+  "Tower of Ascension": {
+    "aliases": [
+      "Tower of Ascension"
+    ],
+    "type": "REGION",
+    "region": "Rinascita",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Tower",
+      "Ascension",
+      "Rinascita",
+      "Avinoleum"
+    ]
+  },
+  "Tower of Salvation": {
+    "aliases": [
+      "Tower of Salvation"
+    ],
+    "type": "REGION",
+    "region": "Rinascita",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Tower",
+      "Salvation",
+      "Rinascita",
+      "Avinoleum"
+    ]
+  },
+  "Tower of Unity": {
+    "aliases": [
+      "Tower of Unity"
+    ],
+    "type": "REGION",
+    "region": "Rinascita",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Tower",
+      "Unity",
+      "Rinascita",
+      "Avinoleum"
+    ]
+  },
+  "Tranquil Ruins": {
+    "aliases": [
+      "Tranquil Ruins"
+    ],
+    "type": "REGION",
+    "region": "Huanglong",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Eastern Xuan Peaks",
+      "Huanglong"
+    ]
+  },
+  "Trattoria Margherita": {
+    "aliases": [
+      "Trattoria Margherita"
+    ],
+    "type": "GENERIC",
+    "region": "Rinascita",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Rinascita",
+      "Margherita",
+      "Bakie"
+    ]
+  },
+  "Truthseeker's Pass": {
+    "aliases": [
+      "Truthseeker's Pass"
+    ],
+    "type": "REGION",
+    "region": "Huanglong",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Main Quest",
+      "Savantae Ruins",
+      "Huanglong",
+      "Truthseeker",
+      "Pass",
+      "Quest",
+      "Court",
+      "Firmament",
+      "Years",
+      "Today"
+    ]
+  },
+  "Twilight Woodlands": {
+    "aliases": [
+      "Twilight Woodlands"
+    ],
+    "type": "REGION",
+    "region": "Roya Frostlands",
+    "faction": "Roya Tribe",
+    "parent": null,
+    "related": [
+      "Roya Frostlands",
+      "Solisia Landing"
+    ]
+  },
+  "Twin Peaks": {
+    "aliases": [
+      "Twin Peaks"
+    ],
+    "type": "REGION",
+    "region": "Rinascita",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Thessaleo Fells",
+      "Rinascita"
+    ]
+  },
+  "Unknown Vault Area": {
+    "aliases": [
+      "Unknown Vault Area"
+    ],
+    "type": "REGION",
+    "region": "Rinascita",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Vault Underground",
+      "Rinascita",
+      "Intro",
+      "Location"
+    ]
+  },
+  "Upphaf Forest Excavation Site": {
+    "aliases": [
+      "Upphaf Forest Excavation Site"
+    ],
+    "type": "REGION",
+    "region": "Roya Frostlands",
+    "faction": "Roya Tribe",
+    "parent": null,
+    "related": [
+      "Roya Frostlands",
+      "Upphaf Forest Ruins"
+    ]
+  },
+  "Upphaf Forest Ruins": {
+    "aliases": [
+      "Upphaf Forest Ruins"
+    ],
+    "type": "REGION",
+    "region": "Roya Frostlands",
+    "faction": "Roya Tribe",
+    "parent": null,
+    "related": [
+      "Provenance Enclave",
+      "Upphaf Forest Excavation Site",
+      "Upphaf Life Chamber",
+      "Areas",
+      "Name",
+      "Image"
+    ]
+  },
+  "Upphaf Life Chamber": {
+    "aliases": [
+      "Upphaf Life Chamber"
+    ],
+    "type": "REGION",
+    "region": "Roya Frostlands",
+    "faction": "Roya Tribe",
+    "parent": null,
+    "related": [
+      "Roya Frostlands",
+      "Upphaf Forest Ruins"
+    ]
+  },
+  "Vault Underground": {
+    "aliases": [
+      "Vault Underground"
+    ],
+    "type": "REGION",
+    "region": "Rinascita",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Averardo Vault",
+      "Rinascita",
+      "Intro",
+      "Location",
+      "Tucked",
+      "Sea",
+      "Clouds",
+      "Vault"
+    ]
+  },
+  "Verdant Court": {
+    "aliases": [
+      "Verdant Court"
+    ],
+    "type": "REGION",
+    "region": "Huanglong",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Xuanfang Hold",
+      "Huanglong"
+    ]
+  },
+  "Violet Banyan": {
+    "aliases": [
+      "Violet Banyan"
+    ],
+    "type": "REGION",
+    "region": "Huanglong",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Dim Forest",
+      "Giant Banyan",
+      "Jingle Beast",
+      "Huanglong",
+      "The Jingle Beast"
+    ]
+  },
+  "Voidthirst Cradle": {
+    "aliases": [
+      "Voidthirst Cradle"
+    ],
+    "type": "REGION",
+    "region": "Roya Frostlands",
+    "faction": "Roya Tribe",
+    "parent": null,
+    "related": [
+      "Melting Night Sky",
+      "Roya Frostlands",
+      "Silent Crag",
+      "Quest",
+      "Beneath"
+    ]
+  },
+  "Wailing Ascent": {
+    "aliases": [
+      "Wailing Ascent"
+    ],
+    "type": "REGION",
+    "region": "Rinascita",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Rinascita",
+      "Penitent",
+      "End"
+    ]
+  },
+  "Wavecleave Cape": {
+    "aliases": [
+      "Wavecleave Cape"
+    ],
+    "type": "REGION",
+    "region": "Roya Frostlands",
+    "faction": "Roya Tribe",
+    "parent": null,
+    "related": [
+      "Roya Frostlands",
+      "Tidelost Forest"
+    ]
+  },
+  "Well of the Threnodian": {
+    "aliases": [
+      "Well of the Threnodian"
+    ],
+    "type": "GENERIC",
+    "region": "Roya Frostlands",
+    "faction": "Roya Tribe",
+    "parent": null,
+    "related": [
+      "Research Institute",
+      "Roya Frostlands",
+      "Threnodian",
+      "Exostrider",
+      "Access",
+      "Lahai",
+      "Roi"
+    ]
+  },
+  "Western Fang Peaks": {
+    "aliases": [
+      "Western Fang Peaks"
+    ],
+    "type": "REGION",
+    "region": "Huanglong",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Assembly Bay",
+      "Ruination Grounds",
+      "Skyflow Lines",
+      "Snare Platform",
+      "Thousandfold Foundry",
+      "Areas",
+      "Name",
+      "File",
+      "Thousandfold Foundry Skyflow Lines",
+      "Thousandfold Foundry Ruination Grounds"
+    ]
+  },
+  "Western Skyreach Range": {
+    "aliases": [
+      "Western Skyreach Range"
+    ],
+    "type": "REGION",
+    "region": "Huanglong",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Xuanfang Hold",
+      "Huanglong"
+    ]
+  },
+  "Whining Aix's Mire": {
+    "aliases": [
+      "Whining Aix's Mire"
+    ],
+    "type": "REGION",
+    "region": "Huanglong",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Stygian Lacrimosa",
+      "Whining Aix",
+      "Mire",
+      "Huanglong"
+    ]
+  },
+  "Whisperwind Haven": {
+    "aliases": [
+      "Whisperwind Haven"
+    ],
+    "type": "REGION",
+    "region": "Rinascita",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Ragunna City",
+      "Rinascita",
+      "Intro",
+      "Location",
+      "Together"
+    ]
+  },
+  "Withering Frontline": {
+    "aliases": [
+      "Withering Frontline"
+    ],
+    "type": "REGION",
+    "region": "Huanglong",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Desorock Highland",
+      "Huanglong",
+      "Gentle"
+    ]
+  },
+  "Woodveil Hall": {
+    "aliases": [
+      "Woodveil Hall"
+    ],
+    "type": "REGION",
+    "region": "Huanglong",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Huanglong",
+      "Firmament"
+    ]
+  },
+  "Wuming Bay": {
+    "aliases": [
+      "Wuming Bay"
+    ],
+    "type": "REGION",
+    "region": "Huanglong",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Huanglong",
+      "Jinzhou"
+    ]
+  },
+  "Xianling Village": {
+    "aliases": [
+      "Xianling Village"
+    ],
+    "type": "REGION",
+    "region": "Huanglong",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Eastern Xuan Peaks",
+      "Huanglong"
+    ]
+  },
+  "Xuanfang": {
+    "aliases": [
+      "Xuanfang"
+    ],
+    "type": "REGION",
+    "region": "Huanglong",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Clouded Cliffs",
+      "Gorges War",
+      "Mengzhou Province",
+      "Norfall Barrens",
+      "Sentinel Hsin",
+      "Tacet Discord",
+      "Xuanfang Hold",
+      "Yuan Fortress",
+      "Huanglong",
+      "Mengzhou"
+    ]
+  },
+  "Xuanfang Huaxu Academy": {
+    "aliases": [
+      "Xuanfang Huaxu Academy"
+    ],
+    "type": "REGION",
+    "region": "Huanglong",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Xuanfang Hold",
+      "Huanglong"
+    ]
+  },
+  "Xuanfang Ministry of Development": {
+    "aliases": [
+      "Xuanfang Ministry of Development"
+    ],
+    "type": "REGION",
+    "region": "Huanglong",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Xuanfang Hold",
+      "Xuanfang Ministry",
+      "Development",
+      "Huanglong"
+    ]
+  },
+  "Xuanfang Ministry of War": {
+    "aliases": [
+      "Xuanfang Ministry of War"
+    ],
+    "type": "REGION",
+    "region": "Huanglong",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Xuanfang Hold",
+      "Xuanfang Ministry",
+      "War",
+      "Huanglong"
+    ]
+  },
+  "Xuanfang Square": {
+    "aliases": [
+      "Xuanfang Square"
+    ],
+    "type": "REGION",
+    "region": "Huanglong",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Xuanfang Hold",
+      "Huanglong"
+    ]
+  },
+  "Xuanji Ridges": {
+    "aliases": [
+      "Xuanji Ridges"
+    ],
+    "type": "REGION",
+    "region": "Huanglong",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Huanglong",
+      "Firmament",
+      "Location"
+    ]
+  },
+  "Yuezhou": {
+    "aliases": [
+      "Yuezhou"
+    ],
+    "type": "GENERIC",
+    "region": "Huanglong",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Yuezhou Spicy Meat Noodles",
+      "Lumi",
+      "Changzhuang",
+      "Youhu"
+    ]
+  },
+  "Yumyum Haven": {
+    "aliases": [
+      "Yumyum Haven"
+    ],
+    "type": "DIALOGUE",
+    "region": "Huanglong",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Central Plains",
+      "Chasing Festival",
+      "Moon",
+      "Taoyuan Vale",
+      "Huanglong",
+      "Festival",
+      "Care",
+      "Taste",
+      "Sanhua",
+      "Grace"
+    ]
+  },
+  "Zargon Garden: Ruins": {
+    "aliases": [
+      "Zargon Garden: Ruins"
+    ],
+    "type": "REGION",
+    "region": "Rinascita",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Zargon Garden",
+      "Ruins",
+      "Rinascita",
+      "Avinoleum"
+    ]
+  },
+  "Zhaozhou": {
+    "aliases": [
+      "Zhaozhou"
+    ],
+    "type": "GENERIC",
+    "region": "Huanglong",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Lollo Logistics",
+      "New Companion",
+      "Sonoro Sphere",
+      "Baizhi",
+      "Shaozhou",
+      "English"
+    ]
+  },
+  "Aleph-1": {
+    "aliases": [
+      "Aleph-1"
+    ],
+    "type": "GENERIC",
+    "region": "Lahai-Roi",
+    "faction": "Threnodians",
+    "parent": null,
+    "related": [
+      "Star That Voyages",
+      "Stars Yet",
+      "Tacet Discords",
+      "Void Storm",
+      "Lahai",
+      "Roi",
+      "Threnodians",
+      "Hvedrungr",
+      "Threnodian",
+      "Chapter III"
+    ]
+  },
+  "Arbiter": {
+    "aliases": [
+      "Arbiter"
+    ],
+    "type": "GENERIC",
+    "region": null,
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Mianloong Chamber",
+      "Sentinels",
+      "Rover",
+      "Sentinel",
+      "Quest"
+    ]
+  },
+  "Battle Beneath the Crescent": {
+    "aliases": [
+      "Battle Beneath the Crescent"
+    ],
+    "type": "GENERIC",
+    "region": "Huanglong",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Battle Beneath",
+      "Midnight Ranger",
+      "Midnight Rangers",
+      "Norfall Barrens",
+      "Those Phantoms",
+      "Crescent",
+      "Huanglong",
+      "Illusions",
+      "But",
+      "Our"
+    ]
+  },
+  "Blake Bloom": {
+    "aliases": [
+      "Blake Bloom"
+    ],
+    "type": "GENERIC",
+    "region": null,
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Black Shores",
+      "Bloom Bearers"
+    ]
+  },
+  "Common Echo": {
+    "aliases": [
+      "Common Echo"
+    ],
+    "type": "GENERIC",
+    "region": "Rinascita",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Common Echoes",
+      "Data Bank",
+      "Divine Envoys",
+      "Genesis Nexus",
+      "Most Ragunnesi",
+      "Pangu Terminals",
+      "Reserved Echoes",
+      "Reserved Terminals",
+      "Sentinel Imperator",
+      "Tacet Discords"
+    ]
+  },
+  "Dark Tide": {
+    "aliases": [
+      "Dark Tide"
+    ],
+    "type": "GENERIC",
+    "region": "Rinascita",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Deep Tower",
+      "Sentinel Imperator",
+      "Threnodian Leviathan",
+      "Veils Off",
+      "Waveworn Phenomenon",
+      "Rinascita",
+      "Paradise",
+      "Cartethyia",
+      "Chapter II",
+      "Act II"
+    ]
+  },
+  "Dhalifa's Cherished Item": {
+    "aliases": [
+      "Dhalifa's Cherished Item"
+    ],
+    "type": "GENERIC",
+    "region": "Lahai-Roi",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Spacetrek Collective",
+      "Dhalifa",
+      "But"
+    ]
+  },
+  "Dhalifa's Forte Evaluation Report": {
+    "aliases": [
+      "Dhalifa's Forte Evaluation Report"
+    ],
+    "type": "GENERIC",
+    "region": "Lahai-Roi",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Resonant Criticality",
+      "Startorch Academy",
+      "Void Storm",
+      "Bridge",
+      "Static",
+      "Dhalifa",
+      "Awakening",
+      "Forte",
+      "Send",
+      "Conclusion"
+    ]
+  },
+  "Duskveil": {
+    "aliases": [
+      "Duskveil"
+    ],
+    "type": "GENERIC",
+    "region": null,
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Once Duskveil",
+      "Chase"
+    ]
+  },
+  "Echo": {
+    "aliases": [
+      "Echo"
+    ],
+    "type": "GENERIC",
+    "region": null,
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Data Bank",
+      "Echo Skill",
+      "Pangu Terminal",
+      "Tacet Discord",
+      "This Reverberation",
+      "CustomTabs",
+      "List",
+      "Stats",
+      "Leveling",
+      "Reverberation"
+    ]
+  },
+  "Etheric Sea": {
+    "aliases": [
+      "Etheric Sea"
+    ],
+    "type": "GENERIC",
+    "region": null,
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Etheric Sea Droplets",
+      "Etheric Sea Initiative",
+      "Lament Anthropocene",
+      "Mass Relay Device",
+      "Remnant Energy",
+      "Retroact Rain",
+      "Space Station",
+      "Tacet Discords",
+      "Tacet Fields",
+      "Theric Sea Droplets"
+    ]
+  },
+  "Exoswarm": {
+    "aliases": [
+      "Exoswarm"
+    ],
+    "type": "GENERIC",
+    "region": "Lahai-Roi",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Lahai",
+      "Roi",
+      "Exostrider"
+    ]
+  },
+  "Exploration Report": {
+    "aliases": [
+      "Exploration Report"
+    ],
+    "type": "GENERIC",
+    "region": null,
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Exploration Progress",
+      "Exploration Reports",
+      "Region"
+    ]
+  },
+  "Fleet Snowfluff": {
+    "aliases": [
+      "Fleet Snowfluff"
+    ],
+    "type": "GENERIC",
+    "region": "Lahai-Roi",
+    "faction": "Startorch Academy",
+    "parent": null,
+    "related": [
+      "Meet Fleet Snowfluff",
+      "Startorch Academy",
+      "Startorch Top Pick",
+      "Lahai",
+      "Roi",
+      "Academy"
+    ]
+  },
+  "Fluffguin": {
+    "aliases": [
+      "Fluffguin"
+    ],
+    "type": "DIALOGUE",
+    "region": "Lahai-Roi",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Fluffguin Stone",
+      "Roya Frostlands",
+      "Lahai",
+      "Roi",
+      "Goo",
+      "Unclaimed"
+    ]
+  },
+  "Forte": {
+    "aliases": [
+      "Forte"
+    ],
+    "type": "CHARACTER",
+    "region": null,
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Combat Skills",
+      "Combat System",
+      "Lorewise",
+      "Resonance Abilities",
+      "Wuthering Waves",
+      "Resonator",
+      "Resonators",
+      "Fortes",
+      "While Lorewise",
+      "The Resonance Abilities"
+    ]
+  },
+  "Fortress and Gorges War": {
+    "aliases": [
+      "Fortress and Gorges War"
+    ],
+    "type": "GENERIC",
+    "region": "Huanglong",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Gorges War",
+      "Norfall Barrens",
+      "Tacet Discord",
+      "Tacet Discord Outbreak",
+      "Xuanfang Hold",
+      "Yuan Fortress",
+      "Fortress",
+      "Huanglong",
+      "Gorges",
+      "Spirits"
+    ]
+  },
+  "Harbinger": {
+    "aliases": [
+      "Harbinger"
+    ],
+    "type": "GENERIC",
+    "region": "Rinascita",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Dark Tide",
+      "Tacet Discords",
+      "Rinascita",
+      "Harbingers",
+      "Leviathan"
+    ]
+  },
+  "Heliodic Six": {
+    "aliases": [
+      "Heliodic Six"
+    ],
+    "type": "FACTION",
+    "region": "Lahai-Roi",
+    "faction": "Roya Tribe",
+    "parent": null,
+    "related": [
+      "Roya Tribe",
+      "Shaper",
+      "Lahai",
+      "Roi",
+      "Heliogyre",
+      "Solisylum",
+      "People",
+      "Rover",
+      "Six",
+      "The Shaper"
+    ]
+  },
+  "Heliogyre": {
+    "aliases": [
+      "Heliogyre"
+    ],
+    "type": "GENERIC",
+    "region": "Lahai-Roi",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Heliodic Six",
+      "New Solar Project",
+      "Roya",
+      "Second Sunrise",
+      "Spacetreck Collective",
+      "Void Storm",
+      "Lahai",
+      "Roi",
+      "Exostrider",
+      "Drive"
+    ]
+  },
+  "Homeland Civilization": {
+    "aliases": [
+      "Homeland Civilization"
+    ],
+    "type": "GENERIC",
+    "region": null,
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Black Shores",
+      "Savantae Ruins",
+      "Tethys Institute",
+      "Whining Aix",
+      "Rover",
+      "Civilization",
+      "Exostriders",
+      "Sentinels",
+      "Solaris",
+      "Threnodians"
+    ]
+  },
+  "Kronapuff": {
+    "aliases": [
+      "Kronapuff"
+    ],
+    "type": "GENERIC",
+    "region": "Lahai-Roi",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Few Kronaclaw",
+      "First Epoch",
+      "Roya Frostlands",
+      "Lahai",
+      "Roi",
+      "And",
+      "Kronaclaw",
+      "Exoswarms",
+      "Due",
+      "Royan"
+    ]
+  },
+  "KU-Roro": {
+    "aliases": [
+      "KU-Roro"
+    ],
+    "type": "GENERIC",
+    "region": "Black Shores",
+    "faction": "Black Shores",
+    "parent": null,
+    "related": [
+      "Black Shores",
+      "Black Shores Archipelago",
+      "Tethys Terminals",
+      "Roro"
+    ]
+  },
+  "Left Behind": {
+    "aliases": [
+      "Left Behind"
+    ],
+    "type": "GENERIC",
+    "region": "Chronorift Metropolis",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Chronorift Metropolis",
+      "Honami City",
+      "Human Reverberation",
+      "Human Reverberations",
+      "Lament",
+      "Sonoro Sphere",
+      "Citizens",
+      "Faint",
+      "The Lament"
+    ]
+  },
+  "Legacy Talismans": {
+    "aliases": [
+      "Legacy Talismans"
+    ],
+    "type": "GENERIC",
+    "region": "Ashinohara",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Ashinohara",
+      "Sentinels"
+    ]
+  },
+  "Leviathan": {
+    "aliases": [
+      "Leviathan"
+    ],
+    "type": "GENERIC",
+    "region": "Rinascita",
+    "faction": "Threnodians",
+    "parent": null,
+    "related": [
+      "Dark Tide",
+      "Fractsidus",
+      "Overseer Cristoforo",
+      "Sentinel Imperator",
+      "Waveworn Phenomenon",
+      "Weekly Boss",
+      "Divinity Remains",
+      "Rinascita",
+      "Threnodians",
+      "NPC"
+    ]
+  },
+  "Lore": {
+    "aliases": [
+      "Lore"
+    ],
+    "type": "GENERIC",
+    "region": null,
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Wuthering Waves"
+    ]
+  },
+  "Ovathrax": {
+    "aliases": [
+      "Ovathrax"
+    ],
+    "type": "GENERIC",
+    "region": "Huanglong",
+    "faction": "Threnodians",
+    "parent": null,
+    "related": [
+      "Grand Warstorm",
+      "Huanglong",
+      "Threnodians",
+      "Jinzhou",
+      "Jiyan",
+      "Threnodian",
+      "War",
+      "Heart",
+      "Crownless",
+      "Quest"
+    ]
+  },
+  "Pilgrim's Sail": {
+    "aliases": [
+      "Pilgrim's Sail"
+    ],
+    "type": "GENERIC",
+    "region": null,
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Pilgrim",
+      "Sail",
+      "Ragunna",
+      "Order",
+      "Deep"
+    ]
+  },
+  "Pre-Lament Civilization": {
+    "aliases": [
+      "Pre-Lament Civilization"
+    ],
+    "type": "GENERIC",
+    "region": null,
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Black Shores",
+      "Farwatcher",
+      "Lament",
+      "Lament Civilization",
+      "Spacetrek Collective",
+      "Tethys Institute",
+      "Whining Aix",
+      "Pre",
+      "PLC",
+      "Solaris"
+    ]
+  },
+  "Rabelle's Curve": {
+    "aliases": [
+      "Rabelle's Curve"
+    ],
+    "type": "GENERIC",
+    "region": null,
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Resonance Evaluation Reports",
+      "Rabelle",
+      "Curve",
+      "Resonators"
+    ]
+  },
+  "Ragunna Terminal": {
+    "aliases": [
+      "Ragunna Terminal"
+    ],
+    "type": "GENERIC",
+    "region": null,
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Common Terminals",
+      "Order",
+      "Ragunna",
+      "Reserved Terminals",
+      "Terminal",
+      "Ragunnesi",
+      "Owning",
+      "In Ragunna",
+      "The Order"
+    ]
+  },
+  "Rakosan's Speech (Excerpt)": {
+    "aliases": [
+      "Rakosan's Speech (Excerpt)"
+    ],
+    "type": "GENERIC",
+    "region": "Lahai-Roi",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Spacetrek Collective",
+      "Spacetrek Observatory",
+      "Void Storm",
+      "Void Storms",
+      "Roya",
+      "Lahai",
+      "Roi",
+      "Unlike",
+      "Casettes",
+      "Observatory"
+    ]
+  },
+  "Relay Station Rental Service Notice": {
+    "aliases": [
+      "Relay Station Rental Service Notice"
+    ],
+    "type": "GENERIC",
+    "region": "Lahai-Roi",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Relay Station",
+      "Spacetrek Observatory",
+      "One",
+      "Hauler",
+      "Pathfinder",
+      "Sprinter",
+      "Due",
+      "Lately",
+      "Haulers",
+      "Lahai"
+    ]
+  },
+  "Remnant": {
+    "aliases": [
+      "Remnant"
+    ],
+    "type": "GENERIC",
+    "region": null,
+    "faction": null,
+    "parent": null,
+    "related": []
+  },
+  "Remnant Creature": {
+    "aliases": [
+      "Remnant Creature"
+    ],
+    "type": "GENERIC",
+    "region": null,
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Remnant Creatures",
+      "Remnant Energy",
+      "Sonoro Sphere",
+      "Sonoro Spheres",
+      "Tacet Discord",
+      "She",
+      "Remnant"
+    ]
+  },
+  "Retroact Rain": {
+    "aliases": [
+      "Retroact Rain"
+    ],
+    "type": "GENERIC",
+    "region": null,
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Etheric Sea",
+      "Remnant Energy",
+      "Tacet Discords",
+      "Since Remnant Energy",
+      "Threnodian"
+    ]
+  },
+  "Reverberation": {
+    "aliases": [
+      "Reverberation"
+    ],
+    "type": "GENERIC",
+    "region": null,
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Waveworn Phenomenon",
+      "Reverberations",
+      "According",
+      "Remnant",
+      "The Waveworn Phenomenon"
+    ]
+  },
+  "Route Constructor Operation Manual": {
+    "aliases": [
+      "Route Constructor Operation Manual"
+    ],
+    "type": "GENERIC",
+    "region": "Lahai-Roi",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Collective",
+      "Compressed Bedrock",
+      "Constructor Cores",
+      "Route Constructor",
+      "Route Constructors",
+      "Solis Lens Array",
+      "Spacetrek Collective",
+      "Operators",
+      "Step",
+      "Put"
+    ]
+  },
+  "Sentinel": {
+    "aliases": [
+      "Sentinel"
+    ],
+    "type": "GENERIC",
+    "region": null,
+    "faction": null,
+    "parent": null,
+    "related": [
+      "As Rover",
+      "Homeland Civilization",
+      "Oracle Engines",
+      "Sentinels",
+      "Lament",
+      "Exostriders",
+      "Solaris-3",
+      "Resonator"
+    ]
+  },
+  "Shimmer": {
+    "aliases": [
+      "Shimmer"
+    ],
+    "type": "GENERIC",
+    "region": "Lahai-Roi",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Roald Scientific Expedition",
+      "See Also",
+      "Void Storm",
+      "Lahai",
+      "Roi",
+      "Wherever"
+    ]
+  },
+  "Silk with Names": {
+    "aliases": [
+      "Silk with Names"
+    ],
+    "type": "GENERIC",
+    "region": "Lahai-Roi",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Spacetrek Observatory",
+      "Void Storm",
+      "Roya",
+      "Dhalifa"
+    ]
+  },
+  "Soliskin": {
+    "aliases": [
+      "Soliskin"
+    ],
+    "type": "GENERIC",
+    "region": "Lahai-Roi",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Bjartr Woods",
+      "Dimmr Plains",
+      "Shepherds",
+      "Solvein Canopy",
+      "Solvein Heartwood",
+      "Lahai",
+      "Roi",
+      "Chuuu",
+      "Exoswarm",
+      "Exostrider"
+    ]
+  },
+  "Somnoire": {
+    "aliases": [
+      "Somnoire"
+    ],
+    "type": "GENERIC",
+    "region": null,
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Ebony Gatekeeper",
+      "Ivory Gatekeeper",
+      "Solaris-3",
+      "Ebony",
+      "According",
+      "Rover"
+    ]
+  },
+  "Special Enemies": {
+    "aliases": [
+      "Special Enemies"
+    ],
+    "type": "GENERIC",
+    "region": null,
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Dodge Attacks",
+      "Intro Skills",
+      "Utilize Counterattacks",
+      "Solaris-3",
+      "SOL Phase"
+    ]
+  },
+  "Starstack": {
+    "aliases": [
+      "Starstack"
+    ],
+    "type": "GENERIC",
+    "region": null,
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Spacetrek Collective",
+      "Startorch Academy"
+    ]
+  },
+  "Stellar Matrices": {
+    "aliases": [
+      "Stellar Matrices"
+    ],
+    "type": "GENERIC",
+    "region": "The Black Shores",
+    "faction": "Black Shores",
+    "parent": null,
+    "related": [
+      "Black Shores",
+      "Tethys System",
+      "Lament",
+      "The Black Shores"
+    ]
+  },
+  "Stridergate": {
+    "aliases": [
+      "Stridergate"
+    ],
+    "type": "GENERIC",
+    "region": "Lahai-Roi",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Augmented Resonance",
+      "Bjartr Woods",
+      "Grand Architect",
+      "Spacetrek Collective",
+      "Threnodian Aleph",
+      "Lahai",
+      "Roi",
+      "Exostrider",
+      "Solaris-3",
+      "Researchers"
+    ]
+  },
+  "Suan'ni": {
+    "aliases": [
+      "Suan'ni"
+    ],
+    "type": "GENERIC",
+    "region": null,
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Jingle Beast",
+      "Resonance Abilities",
+      "Suan",
+      "Resonators",
+      "Having",
+      "Lingyang"
+    ]
+  },
+  "Suzu": {
+    "aliases": [
+      "Suzu"
+    ],
+    "type": "GENERIC",
+    "region": "Ashinohara",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Flaming Sakura",
+      "Legacy Talisman",
+      "Ashinohara",
+      "Miko",
+      "Hiyuki",
+      "Like",
+      "Talismans",
+      "Sentinels"
+    ]
+  },
+  "Tacetite": {
+    "aliases": [
+      "Tacetite"
+    ],
+    "type": "GENERIC",
+    "region": null,
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Remnant Energy",
+      "Waveworn Phenomenon"
+    ]
+  },
+  "Tales of the Past and Present": {
+    "aliases": [
+      "Tales of the Past and Present"
+    ],
+    "type": "QUEST",
+    "region": "Huanglong",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Abandoned Data Chips",
+      "Completed Tales",
+      "Quest Items",
+      "Side Quests",
+      "Torn Pages",
+      "Tales",
+      "Past",
+      "Present",
+      "Huanglong",
+      "CustomTabs"
+    ]
+  },
+  "Terminal": {
+    "aliases": [
+      "Terminal"
+    ],
+    "type": "GENERIC",
+    "region": null,
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Black Shores",
+      "Each Terminal",
+      "Rover",
+      "Resonators",
+      "Solaris-3",
+      "Terminals",
+      "Huanglong",
+      "Rinascita",
+      "Fractsidus",
+      "The Black Shores"
+    ]
+  },
+  "Tethys System": {
+    "aliases": [
+      "Tethys System"
+    ],
+    "type": "GENERIC",
+    "region": "Black Shores",
+    "faction": "Black Shores",
+    "parent": null,
+    "related": [
+      "Black Shores",
+      "Civilization Sand Table",
+      "Rewinding Raindrops",
+      "Sonoro Spheres",
+      "Lament",
+      "Necrostar",
+      "The Black Shores"
+    ]
+  },
+  "The Farwatcher": {
+    "aliases": [
+      "The Farwatcher"
+    ],
+    "type": "GENERIC",
+    "region": null,
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Etheric Sea",
+      "Exostrider",
+      "Farwatcher",
+      "Lament Civilization",
+      "Spacetrek Collective",
+      "Pre",
+      "Solaris",
+      "Lament",
+      "Although",
+      "Rover"
+    ]
+  },
+  "The Genesis of the Spacetrek Explorer Project: A Developmental Retrospective (Excerpt)": {
+    "aliases": [
+      "The Genesis of the Spacetrek Explorer Project: A Developmental Retrospective (Excerpt)"
+    ],
+    "type": "GENERIC",
+    "region": "Lahai-Roi",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Explorer",
+      "Spacetrek Collective",
+      "Spacetrek Explorer",
+      "Startorch Academy",
+      "Waveworn Phenomenon",
+      "Lahai",
+      "Roi",
+      "Collective",
+      "Exoswarm",
+      "Outcasts"
+    ]
+  },
+  "The Genesis of the Twin Nova Project: A Developmental Retrospective (Excerpt)": {
+    "aliases": [
+      "The Genesis of the Twin Nova Project: A Developmental Retrospective (Excerpt)"
+    ],
+    "type": "GENERIC",
+    "region": "Lahai-Roi",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Aleph",
+      "Collapsar Blade",
+      "Collective",
+      "Nebulous Cannon",
+      "Spacetrek Collective",
+      "Startorch Academy",
+      "Threnodian",
+      "Twin Nova",
+      "Void",
+      "Aleph-1"
+    ]
+  },
+  "The Lament": {
+    "aliases": [
+      "The Lament"
+    ],
+    "type": "GENERIC",
+    "region": null,
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Lament",
+      "Shorekeeper",
+      "Tethys System",
+      "Waveworn Phenomena",
+      "Wuthering Waves",
+      "SQuote",
+      "Nothing",
+      "Despair",
+      "T67B-D69M",
+      "F6UF"
+    ]
+  },
+  "The Moon": {
+    "aliases": [
+      "The Moon"
+    ],
+    "type": "GENERIC",
+    "region": null,
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Dream",
+      "Dreaming Deep",
+      "Etheric Sea",
+      "Moon",
+      "Retroact Rain",
+      "Roya Frostlands",
+      "Sanguis Plateaus",
+      "Space Station",
+      "Waveworn Phenomenon",
+      "Solaris-3"
+    ]
+  },
+  "The White Tower": {
+    "aliases": [
+      "The White Tower"
+    ],
+    "type": "GENERIC",
+    "region": null,
+    "faction": null,
+    "parent": null,
+    "related": [
+      "White Tower",
+      "Threnodian",
+      "Somnoire"
+    ]
+  },
+  "Threnodian": {
+    "aliases": [
+      "Threnodian"
+    ],
+    "type": "GENERIC",
+    "region": null,
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Battle",
+      "Tacet Discord",
+      "Yangyang",
+      "Threnodians",
+      "Laments",
+      "The Battle"
+    ]
+  },
+  "Timeline": {
+    "aliases": [
+      "Timeline"
+    ],
+    "type": "GENERIC",
+    "region": null,
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Landing Date",
+      "Wuthering Waves",
+      "Rover",
+      "Solaris-3",
+      "References"
+    ]
+  },
+  "Torn Pages and Abandoned Data Chips": {
+    "aliases": [
+      "Torn Pages and Abandoned Data Chips"
+    ],
+    "type": "GENERIC",
+    "region": null,
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Abandoned Data Chips",
+      "Data Chips",
+      "Torn Pages",
+      "Rarity",
+      "Torn",
+      "Solaris-3"
+    ]
+  },
+  "Voidspace": {
+    "aliases": [
+      "Voidspace"
+    ],
+    "type": "GENERIC",
+    "region": "Lahai-Roi",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Lahai",
+      "Roi",
+      "Aleph-1",
+      "Aemeath"
+    ]
+  },
+  "Void Storm": {
+    "aliases": [
+      "Void Storm"
+    ],
+    "type": "GENERIC",
+    "region": "Lahai-Roi",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Void Storm Zone",
+      "Void Storms",
+      "Voidmatter Levels",
+      "Waveworn Phenomenon",
+      "Lahai",
+      "Roi",
+      "Exploration",
+      "Threnodian",
+      "Aleph-1"
+    ]
+  },
+  "Waveworn Phenomenon": {
+    "aliases": [
+      "Waveworn Phenomenon"
+    ],
+    "type": "GENERIC",
+    "region": null,
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Coastal Erosion Phenomenon",
+      "Etheric Sea",
+      "Lament",
+      "Retroact Rain",
+      "Tacet Discords",
+      "Tacet Fields",
+      "Waveworn Phenomena",
+      "Yangyang",
+      "Chinese",
+      "Solaris-3"
+    ]
+  },
+  "Who Are the \"Outcasts\" (Excerpt)": {
+    "aliases": [
+      "Who Are the \"Outcasts\" (Excerpt)"
+    ],
+    "type": "GENERIC",
+    "region": "Lahai-Roi",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Alienated",
+      "Roya",
+      "Exostrider",
+      "Exoswarm",
+      "Outcasts",
+      "But",
+      "Lahai",
+      "Roi",
+      "Shepherd",
+      "Staffs"
+    ]
+  }
+}

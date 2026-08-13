@@ -1,63 +1,77 @@
-"""
-Utility for parsing streamed JSON responses incrementally.
-Specially designed for extracting the "response" field from a JSON object
-being streamed from an LLM.
-"""
-
 import re
+from typing import Optional
 
 class IncrementalJsonParser:
     """
-    Parses a JSON stream chunk by chunk, extracting only the value of the "response" key.
-    Handles basic string escaping (newlines, tabs, quotes).
+    Parser that extracts incremental text tokens from a streaming JSON response
+    where the target field is 'response': "...".
     """
-
-    def __init__(self):
+    def __init__(self, target_key: str = "response"):
+        self.target_key = target_key
         self.buffer = ""
-        self.found_key = False
-        self.in_string = False
+        self.inside_target = False
         self.escaped = False
-        self.finished = False
-        self._key_regex = re.compile(r'"response"\s*:\s*"')
+        self.matched_index = 0
+        self.key_pattern = f'"{target_key}"'
 
     def feed(self, chunk: str) -> str:
         """
-        Feeds a chunk of text into the parser and returns the parsed characters for the "response" field.
+        Feed a raw chunk from LLM streaming and return newly emitted target text characters.
         """
-        if self.finished:
+        if not chunk:
             return ""
 
-        output = []
-        if not self.found_key:
-            self.buffer += chunk
-            match = self._key_regex.search(self.buffer)
-            if match:
-                self.found_key = True
-                self.in_string = True
-                remaining = self.buffer[match.end():]
-                self.buffer = ""
-                self._process_chars(remaining, output)
-        else:
-            if self.in_string:
-                self._process_chars(chunk, output)
+        self.buffer += chunk
+        emitted = []
 
-        return "".join(output)
+        while self.matched_index < len(self.buffer):
+            char = self.buffer[self.matched_index]
 
-    def _process_chars(self, chars: str, output: list[str]) -> None:
-        for char in chars:
-            if self.escaped:
-                if char == 'n':
-                    output.append('\n')
-                elif char == 't':
-                    output.append('\t')
-                else:
-                    output.append(char)
-                self.escaped = False
-            elif char == '\\':
-                self.escaped = True
-            elif char == '"':
-                self.in_string = False
-                self.finished = True
+            if not self.inside_target:
+                # Look for target_key and colon then opening quote
+                idx = self.buffer.find(self.key_pattern, self.matched_index)
+                if idx != -1:
+                    colon_idx = self.buffer.find(":", idx + len(self.key_pattern))
+                    if colon_idx != -1:
+                        # Find opening quote
+                        quote_idx = -1
+                        for i in range(colon_idx + 1, len(self.buffer)):
+                            if self.buffer[i].isspace():
+                                continue
+                            if self.buffer[i] == '"':
+                                quote_idx = i
+                                break
+                            else:
+                                break
+                        if quote_idx != -1:
+                            self.inside_target = True
+                            self.matched_index = quote_idx + 1
+                            continue
                 break
             else:
-                output.append(char)
+                if self.escaped:
+                    if char == 'n':
+                        emitted.append('\n')
+                    elif char == 't':
+                        emitted.append('\t')
+                    elif char == 'r':
+                        emitted.append('\r')
+                    elif char == '"':
+                        emitted.append('"')
+                    elif char == '\\':
+                        emitted.append('\\')
+                    else:
+                        emitted.append(char)
+                    self.escaped = False
+                elif char == '\\':
+                    self.escaped = True
+                elif char == '"':
+                    self.inside_target = False
+                    self.matched_index += 1
+                    break
+                else:
+                    emitted.append(char)
+
+                self.matched_index += 1
+
+        return "".join(emitted)

@@ -40,8 +40,8 @@ class WikiSyncService:
             if limit is not None and dispatched_count >= limit:
                 break
                 
-            needs_update = await self.sync_repo.requires_update(wiki_page.page_id, wiki_page.latest_revision_id)
-            if not needs_update:
+            latest_rev = await self.sync_repo.get_latest_revision_id(wiki_page.page_id)
+            if latest_rev is not None and latest_rev >= wiki_page.latest_revision_id:
                 log.debug("Page is up to date, skipping", page_id=wiki_page.page_id, title=wiki_page.title)
                 continue
 
@@ -57,11 +57,11 @@ class WikiSyncService:
                 )
                 
                 # 3. Update Sync State in DB to "QUEUED"
-                await self.sync_repo.upsert_sync_state(
+                await self.sync_repo.update_sync_state(
                     page_id=revision.page_id,
                     title=revision.title,
                     revision_id=revision.revision_id,
-                    sync_status="QUEUED"
+                    status="QUEUED"
                 )
                 
                 # 4. Dispatch Celery Task

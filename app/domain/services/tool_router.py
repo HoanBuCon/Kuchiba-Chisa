@@ -7,12 +7,7 @@ from app.domain.interfaces.embedding_provider import IEmbeddingProvider
 from app.shared.utils.logger import get_logger
 
 # Import modular tools
-from app.domain.services.tools import (
-    BaseAgentTool,
-    WebSearchAgentTool,
-    ConversationSummarizerAgentTool,
-    EmotionReportAgentTool
-)
+from app.domain.services.tools import BaseAgentTool
 
 log = get_logger(__name__)
 
@@ -92,29 +87,17 @@ class SemanticToolRouter:
         return best_tool, best_score
 
 
+from app.config.system_patterns import SYSTEM_PATTERNS
+
+
 class KeywordToolRouter:
     """
     Fast-path regex guard cho định tuyến tool.
     Nếu khớp cứng theo mẫu tường minh thì bỏ qua embedding routing.
+    Sử dụng chung tập SYSTEM_PATTERNS chuẩn với IntentClassifier.
     """
 
-    PATTERNS: Dict[str, List[str]] = {
-        "web_search": [
-            r"(tra mạng|lên mạng|search google|tra cứu trên internet)",
-            r"(em tìm kiếm|em tra|em tìm).{0,10}(trên internet|trên mạng|giúp anh)",
-            r"(lên web|kiểm tra xem|tìm hiểu xem|tra giúp|tìm giúp).{0,20}",
-        ],
-        # Map về tên tool thực tế trong codebase để giữ backward compatibility.
-        "summarize_conversation_memory": [
-            r"tóm tắt.{0,15}(cuộc trò chuyện|hội thoại|nãy giờ|buổi chat|session)",
-            r"(tổng hợp|tổng kết).{0,15}(cuộc trò chuyện|những gì|điểm chính|nãy giờ)",
-            r"(ghi lại|nhắc lại|liệt kê lại).{0,15}(điểm chính|cuộc trò chuyện|hội thoại)",
-        ],
-        "get_emotion_report": [
-            r"(cho anh xem|xuất|hiển thị|xem).{0,15}(cảm xúc|chỉ số|bảng đo|báo cáo)",
-            r"(báo cáo cảm xúc|tâm trạng theo số liệu|chỉ số cảm xúc)",
-        ],
-    }
+    PATTERNS: Dict[str, List[str]] = SYSTEM_PATTERNS
 
     @classmethod
     def match(cls, msg_lower: str) -> Optional[str]:
@@ -133,23 +116,6 @@ class LLMToolRouter:
     Tầng 2 – Hybrid Tool Router.
     Điều phối định tuyến và thực thi các Agent Tools đã đăng ký.
     """
-    # Exposing schemas for backward compatibility
-    QUERY_EXTRACT_SCHEMA = {
-        "type": "object",
-        "properties": {
-            "search_query": {"type": "string"}
-        },
-        "required": ["search_query"]
-    }
-
-    SUMMARIZE_CONVERSATION_SCHEMA = {
-        "type": "object",
-        "properties": {
-            "summary": {"type": "string"}
-        },
-        "required": ["summary"]
-    }
-
     def __init__(self, llm: BaseLLMAdapter, embedder: IEmbeddingProvider, tools: List[BaseAgentTool] = None):
         self.llm = llm
         self.embedder = embedder

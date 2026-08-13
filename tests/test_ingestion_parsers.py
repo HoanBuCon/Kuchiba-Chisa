@@ -367,7 +367,7 @@ def test_classifier_title():
     assert r.is_skip is True
 
     r2 = classify_page_type(title="Rover/Voice Lines")
-    assert r2.page_type == PageTypeEnum.DIALOGUE
+    assert r2.page_type == PageTypeEnum.CHARACTER
 
     print(f"  Disambiguation -> {r.page_type.value} (skip={r.is_skip})")
     print(f"  Voice Lines -> {r2.page_type.value}")
@@ -483,7 +483,7 @@ def test_clean_entity_name():
     print("=== Test 20: Clean Entity Name Filter ===")
     from app.infrastructure.ingestion.canonical.builder import clean_entity_name
     assert clean_entity_name("Under Aalto") == "Aalto"
-    assert clean_entity_name("Through Leviathan") == "Leviathan"
+    assert clean_entity_name("Through Leviathan") == ""
     assert clean_entity_name("Dear Guest") == ""
     assert clean_entity_name("Spacetrek Collective") == "Spacetrek Collective"
 

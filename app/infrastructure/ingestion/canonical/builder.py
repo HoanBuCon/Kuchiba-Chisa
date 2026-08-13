@@ -138,6 +138,8 @@ def clean_entity_name(entity: str) -> str:
     if not entity:
         return ""
     clean = entity.strip()
+    if clean.lower() in _ENTITY_BLACKLIST:
+        return ""
     words = clean.split()
     if words and words[0].lower() in _ENTITY_PREFIX_STOPWORDS and len(words) > 1:
         clean = " ".join(words[1:])

@@ -28,24 +28,29 @@ class MockSyncStrategy:
     async def enumerate_pages_to_sync(self, client, repo):
         yield WikiPage(page_id=1, title="TestPage", latest_revision_id=10, last_updated=datetime.utcnow())
 
+class MockRawStorage:
+    async def save_raw_page(self, title: str, page_id: int, content: str) -> str:
+        return f"{title}_{page_id}.wiki"
+
+class MockJobRepo:
+    async def log_event(self, job_id, event_type, payload):
+        pass
+
 @pytest.mark.asyncio
 async def test_downloader_stage(tmp_path):
     client = MockWikiClient()
     repo = MockSyncRepo()
     strategy = MockSyncStrategy()
+    raw_storage = MockRawStorage()
+    job_repo = MockJobRepo()
     
-    stage = DownloaderStage(client, repo, strategy)
+    stage = DownloaderStage(client, repo, strategy, raw_storage, job_repo)
     
-    input_data = DownloaderInput(output_directory=str(tmp_path))
-    result = await stage.execute(input_data)
+    import uuid
+    input_data = DownloaderInput(limit=10)
+    job_id = uuid.uuid4()
+    result = await stage.execute(job_id, input_data)
     
     assert len(result.output) == 1
     assert result.output[0].title == "TestPage"
     assert result.output[0].revision_id == 10
-    
-    # Check if file was written
-    file_path = os.path.join(str(tmp_path), "TestPage_1.wiki")
-    assert os.path.exists(file_path)
-    with open(file_path, "r", encoding="utf-8") as f:
-        content = f.read()
-    assert content == "== Heading ==\nContent"
