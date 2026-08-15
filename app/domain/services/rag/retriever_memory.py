@@ -23,6 +23,7 @@ class MemoryRetriever:
         collection: str,
         query_vector: List[float],
         user_id: str,
+        conversation_id: Optional[str] = None,
         current_emotion: Dict[str, float] = None,
         limit: int = 15,
         top_k: int = RAGTuning.TOP_K
@@ -32,11 +33,12 @@ class MemoryRetriever:
                 collection=collection,
                 query_vector=query_vector,
                 user_id=user_id,
+                conversation_id=conversation_id,
                 limit=limit,
                 score_threshold=0.4
             )
         except Exception as e:
-            log.error("Failed to query user memories from Qdrant", user_id=user_id, error=str(e))
+            log.error("Failed to query user memories from Qdrant", user_id=user_id, conversation_id=conversation_id, error=str(e))
             return []
 
         if not candidates:

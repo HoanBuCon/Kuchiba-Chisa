@@ -200,7 +200,8 @@ _RE_DISPLAY_TEMPLATES = re.compile(
     r"Character Ascensions and Stats|Main|Change History|Other Languages|"
     r"Trophies|Resonator Instructions|Forte Table|Chain Table|Tabber|"
     r"Transclude|Trials by Character|Character Mentions|Character Archives|"
-    r"Stub|Stubs|Notice|WIP|Needs Image|Cleanup|Expand|Disclaimer|Spoiler|Warning|Note|Archive)[^}]*\}\}",
+    r"Stub|Stubs|Notice|WIP|Needs Image|Cleanup|Expand|Disclaimer|Spoiler|Warning|Note|Archive|"
+    r"Dialogue Start|Dialogue End|DIcon|sic|tx|color|Reward|Exit|Play|Sound|Prompt|Option|Choice)[^}]*\}\}",
     re.IGNORECASE,
 )
 
@@ -261,6 +262,21 @@ DEFAULT_BOILERPLATE_SECTIONS: FrozenSet[str] = frozenset({
     "character trials",
     "character mentions",
     "trials by character",
+    "dialogue",
+    "dialogues",
+    "transcript",
+    "transcripts",
+    "minigame",
+    "minigames",
+    "riddle",
+    "riddles",
+    "event rules",
+    "booth",
+    "stall",
+    "audio",
+    "voicelines",
+    "outfit",
+    "outfits",
 })
 
 # Sections to keep even if they seem like boilerplate (per page type)
@@ -941,7 +957,12 @@ def clean_entities(
         "in", "out", "on", "off", "over", "under", "again", "further", "then", "once",
         "here", "there", "when", "where", "why", "how", "all", "any", "both", "each",
         "few", "more", "most", "other", "some", "such", "no", "nor", "not", "only", "own",
-        "same", "so", "than", "too", "very", "can", "will", "just", "should", "now"
+        "same", "so", "than", "too", "very", "can", "will", "just", "should", "now",
+        "hahaha", "huh", "dicon", "reward", "correct", "unfortunately", "talk", "please", "chat",
+        "something", "yes", "sure", "come", "don", "eyeing", "set", "humans", "loans", "memories",
+        "the moon", "ahem", "sic", "tx", "color", "exit", "leave", "thanks", "sorry", "wait",
+        "hey", "hello", "hi", "okay", "fine", "cool", "well", "nice", "good", "bad", "riddle",
+        "riddles", "stall", "booth", "dialogue", "dialogue start", "dialogue end", "prof", "professor"
     }
 
     cleaned: List[str] = []

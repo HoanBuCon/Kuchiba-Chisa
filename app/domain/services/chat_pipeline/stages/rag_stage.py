@@ -39,6 +39,7 @@ class RAGStage(PipelineStage):
             web_search_tool=self.tool_router.tool_map.get("web_search"),
             is_small_talk=context.is_small_talk,
             conversation_summary=context.conversation_summary,
+            conversation_id=str(context.conv_id) if context.conv_id else None,
         )
         
         context.rag_context = rag_context

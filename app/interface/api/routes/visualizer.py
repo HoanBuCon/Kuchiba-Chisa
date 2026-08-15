@@ -17,7 +17,18 @@ DASHBOARD_FILE = os.path.join(TEMPLATES_DIR, "visualizer_dashboard.html")
 @router.get("/api/v1/visualizer/traces", response_model=List[Dict[str, Any]])
 async def get_traces():
     """Get the history of chat pipeline traces."""
-    return pipeline_tracker.get_traces()
+    traces = pipeline_tracker.get_traces()
+    if not traces:
+        try:
+            from app.infrastructure.cache.redis.redis_service import get_redis_client
+            from app.infrastructure.logging.pipeline_tracker import REDIS_HISTORY_KEY
+            redis = get_redis_client()
+            items = await redis.lrange(REDIS_HISTORY_KEY, 0, 99)
+            if items:
+                traces = [json.loads(item) for item in items]
+        except Exception:
+            pass
+    return traces
 
 @router.websocket("/api/v1/visualizer/ws")
 async def websocket_endpoint(websocket: WebSocket):

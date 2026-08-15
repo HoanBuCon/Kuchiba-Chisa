@@ -84,6 +84,10 @@ class AppContainer:
         )
 
     @cached_property
+    def vector_store(self):
+        return qdrant_service
+
+    @cached_property
     def entity_resolver(self) -> Any:
         from app.domain.services.rag.entity_resolver import EntityResolver
         res = EntityResolver()

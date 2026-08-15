@@ -514,6 +514,8 @@ header {
 }
 
 /* Node category accents */
+.tree-node[data-type="init"] { border-left: 3.5px solid #42a5f5; }
+.tree-node[data-type="cache"] { border-left: 3.5px solid #ffca28; }
 .tree-node[data-type="intent"] { border-left: 3.5px solid var(--node-intent); }
 .tree-node[data-type="tool"] { border-left: 3.5px solid var(--node-tool); }
 .tree-node[data-type="rag"] { border-left: 3.5px solid var(--node-rag); }
@@ -523,6 +525,42 @@ header {
 .tree-node[data-type="search"] { border-left: 3.5px solid var(--node-search); }
 .tree-node[data-type="prompt"] { border-left: 3.5px solid var(--node-prompt); }
 .tree-node[data-type="emotion"] { border-left: 3.5px solid var(--node-emotion); }
+.tree-node[data-type="memory"] { border-left: 3.5px solid #00e676; }
+.tree-node[data-type="persistence"] { border-left: 3.5px solid #78909c; }
+.tree-node[data-type="background"] { border-left: 3.5px solid #8d6e63; }
+
+.tree-node-badges-group {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+}
+
+.badge-latency {
+    background: rgba(41, 182, 246, 0.12);
+    color: #64b5f6;
+    border: 1px solid rgba(41, 182, 246, 0.25);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9.5px;
+}
+
+.badge-cache-hit {
+    background: rgba(255, 202, 40, 0.15);
+    color: #ffca28;
+    border: 1px solid rgba(255, 202, 40, 0.35);
+}
+
+.badge-memory {
+    background: rgba(0, 230, 118, 0.15);
+    color: #00e676;
+    border: 1px solid rgba(0, 230, 118, 0.35);
+}
+
+.badge-reconciled {
+    background: rgba(244, 67, 54, 0.15);
+    color: #ef5350;
+    border: 1px solid rgba(244, 67, 54, 0.35);
+}
 
 /* ── User Message Card (Right Section Top) ── */
 .user-message-card {

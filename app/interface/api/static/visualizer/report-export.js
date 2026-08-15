@@ -76,6 +76,24 @@ window.ReportExportEngine = {
                         md += `#### 📜 Final System Prompt:\n\`\`\`text\n${step.data.system_prompt}\n\`\`\`\n\n`;
                     }
                 }
+                else if (step.name === 'memory_extraction') {
+                    const facts = step.data?.facts || [];
+                    md += `*   **Trạng thái:** \`${step.data?.status || 'N/A'}\`\n`;
+                    md += `*   **Số ký ức trích xuất:** \`${facts.length}\`\n\n`;
+                    if (facts.length > 0) {
+                        md += `#### ✨ Danh sách Ký ức được trích xuất:\n`;
+                        facts.forEach((f, i) => {
+                            const imp = f.importance_score !== undefined ? `${Math.round(f.importance_score * 100)}%` : '70%';
+                            const recon = f.reconciliation_action || 'NONE';
+                            const confStr = f.conflicting_id ? ` (Override ID: ${f.conflicting_id})` : '';
+                            md += `${i + 1}. **[${f.type || 'fact'}]** "${f.content}"\n   * Độ quan trọng: ⭐ ${imp} | Lưu: \`${f.status || 'extracted'}\` | Đối soát: \`${recon}\`${confStr}\n`;
+                        });
+                        md += `\n`;
+                    }
+                    if (step.data?.extracted_input_context) {
+                        md += `#### 💬 Ngữ cảnh 3 cặp hội thoại đưa vào trích xuất:\n\`\`\`text\n${step.data.extracted_input_context}\n\`\`\`\n\n`;
+                    }
+                }
                 else {
                     md += `\`\`\`json\n${JSON.stringify(step.data, null, 2)}\n\`\`\`\n\n`;
                 }

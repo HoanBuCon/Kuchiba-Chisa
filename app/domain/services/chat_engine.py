@@ -271,55 +271,88 @@ class ChatEngine:
                     from app.domain.services.memory_extractor import MemoryExtractor
                     memory_extractor = MemoryExtractor(self.llm, self.embedder, self.vector_store)
                     
+                    valid_facts = []
                     for item in extracted_facts:
                         if not isinstance(item, dict):
                             continue
                         content = str(item.get("content", "")).strip()
                         fact_type = item.get("type", "shared_memories")
                         importance = float(item.get("importance_score", 0.7))
-
                         if len(content) < 5:
                             continue
+                        valid_facts.append({
+                            "type": fact_type,
+                            "content": content,
+                            "importance_score": importance
+                        })
 
-                        # Vector Search @ threshold 0.70 to find existing candidate memories
-                        vector = await self.embedder.embed_text(content, prefix="passage: ")
-                        existing = await self.vector_store.search_by_user(
-                            collection="memories",
-                            query_vector=vector,
-                            user_id=user_id,
-                            limit=3,
-                            score_threshold=0.70
-                        )
+                    if valid_facts:
+                        fact_candidate_pairs = []
+                        reconcile_items = []
 
-                        if existing:
-                            # Conflict / Duplicate Reconciliation
-                            action, conflicting_id = await memory_extractor.reconcile_memory_conflict(content, existing)
-                            if action == "DUPLICATE":
-                                log.info("Task 2: Skipped memory insertion — duplicate fact detected", content=content)
-                                continue
-                            elif action == "CONTRADICT" and conflicting_id:
-                                log.info("Task 2: Deleting superseded memory point", old_id=conflicting_id, new_content=content)
-                                try:
-                                    await self.vector_store.delete_points(collection="memories", ids=[conflicting_id])
-                                except Exception as del_err:
-                                    log.warning("Task 2: Failed to delete conflicting memory point", id=conflicting_id, error=str(del_err))
+                        for idx, fact in enumerate(valid_facts):
+                            vector = await self.embedder.embed_text(fact["content"], prefix="passage: ")
+                            existing = await self.vector_store.search_by_user(
+                                collection="memories",
+                                query_vector=vector,
+                                user_id=user_id,
+                                conversation_id=str(conv_uuid),
+                                limit=3,
+                                score_threshold=0.70
+                            )
+                            fact_candidate_pairs.append({
+                                "fact": fact,
+                                "vector": vector,
+                                "existing": existing
+                            })
+                            if existing:
+                                reconcile_items.append({
+                                    "index": idx,
+                                    "content": fact["content"],
+                                    "candidates": existing
+                                })
 
-                        point_id = str(uuid.uuid4())
-                        payload = MemoryPayload(
-                            user_id=user_id,
-                            conversation_id=str(conv_uuid),
-                            memory_type=fact_type,
-                            importance_score=importance,
-                            created_at=int(time.time()),
-                            text_content=content,
-                        )
-                        await self.vector_store.upsert_memory(
-                            collection="memories",
-                            point_id=point_id,
-                            vector=vector,
-                            payload=payload
-                        )
-                        log.info("Task 2: Upserted memory fact to Qdrant Vector DB", content=content)
+                        reconcile_results = {}
+                        if reconcile_items:
+                            log.info("Task 2: Triggering single batched memory reconciliation LLM call", items_count=len(reconcile_items))
+                            reconcile_results = await memory_extractor.reconcile_memory_conflicts_batch(reconcile_items)
+
+                        for idx, pair in enumerate(fact_candidate_pairs):
+                            fact = pair["fact"]
+                            vector = pair["vector"]
+                            existing = pair["existing"]
+                            content = fact["content"]
+                            fact_type = fact["type"]
+                            importance = fact["importance_score"]
+
+                            if existing and idx in reconcile_results:
+                                action, conflicting_id = reconcile_results[idx]
+                                if action == "DUPLICATE":
+                                    log.info("Task 2: Skipped memory insertion — duplicate fact detected", content=content)
+                                    continue
+                                elif action == "CONTRADICT" and conflicting_id:
+                                    log.info("Task 2: Deleting superseded memory point", old_id=conflicting_id, new_content=content)
+                                    try:
+                                        await self.vector_store.delete_points(collection="memories", ids=[conflicting_id])
+                                    except Exception as del_err:
+                                        log.warning("Task 2: Failed to delete conflicting memory point", id=conflicting_id, error=str(del_err))
+
+                            point_id = str(uuid.uuid4())
+                            payload = MemoryPayload(
+                                user_id=user_id,
+                                conversation_id=str(conv_uuid),
+                                memory_type=fact_type,
+                                importance_score=importance,
+                                created_at=int(time.time()),
+                                text_content=content,
+                            )
+                            await self.vector_store.upsert_memory(
+                                collection="memories",
+                                point_id=point_id,
+                                vector=vector,
+                                payload=payload
+                            )
+                            log.info("Task 2: Upserted memory fact to Qdrant Vector DB", content=content)
 
             except Exception as e:
                 log.error("Failed to run unified background auto-summarization", error=str(e), user_id=user_id)

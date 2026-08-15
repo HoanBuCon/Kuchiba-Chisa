@@ -64,6 +64,7 @@ LLM_PURPOSE_LABELS: dict[str, str] = {
     "summarize_conversation": "Tóm tắt hội thoại (Tool Summarize)",
     "unified_auto_summarize": "Tự động tóm tắt ngầm (Auto-Summarize)",
     "memory_extraction": "Trích xuất ký ức (Memory Extractor)",
+    "memory_reconciliation": "Giải quyết mâu thuẫn ký ức (Memory Reconciliation)",
     "unknown": "LLM call (không gắn nhãn)",
 }
 

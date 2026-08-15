@@ -22,6 +22,7 @@ class IVectorStore(ABC):
         collection: str,
         query_vector: List[float],
         user_id: str,
+        conversation_id: Optional[str] = None,
         limit: int = 10,
         score_threshold: float = 0.65,
     ) -> List[Dict[str, Any]]:

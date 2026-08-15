@@ -93,6 +93,9 @@ ${window.VisualizerApp.escapeHtml(userMessage)}
                     case 'emotion_update':
                         contentHtml = this.renderEmotionInspector(step);
                         break;
+                    case 'memory_extraction':
+                        contentHtml = this.renderMemoryExtractionInspector(step);
+                        break;
                     default:
                         contentHtml = this.renderGenericInspector(step);
                         break;
@@ -1045,7 +1048,7 @@ ${window.VisualizerApp.escapeHtml(thinkingText)}
     },
 
     copyReasoning(btn) {
-        const box = btn.closest('.inspector-reasoning-box') || btn.closest('.inspector-card');
+        const box = btn.closest('.inspector-reasoning-box') || btn.closest('.inspector-card') || btn.closest('.tab-content');
         if (!box) return;
         const contentEl = box.querySelector('.reasoning-box-content') || box.querySelector('.json-block');
         if (!contentEl) return;
@@ -1071,6 +1074,269 @@ ${window.VisualizerApp.escapeHtml(thinkingText)}
         
         const isCollapsed = contentEl.classList.toggle('collapsed');
         btn.innerText = isCollapsed ? '🔽 Mở rộng' : '🔼 Thu gọn';
+    },
+
+    renderGenericInspector(step) {
+        const data = step?.data || {};
+        const name = step?.name || 'Step';
+        const formattedTitle = name.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+
+        return `
+            <div class="inspector-panel">
+                <div class="inspector-card">
+                    <div class="inspector-card-title">
+                        <span>⚙️ ${this.escapeHtml(formattedTitle)}</span>
+                    </div>
+                    <div style="margin-bottom: 8px;">
+                        <b style="font-size: 13px;">Step Data Payload:</b>
+                        <div class="json-block" style="margin-top: 6px;">${this.escapeHtml(JSON.stringify(data, null, 2))}</div>
+                    </div>
+                </div>
+            </div>
+        `;
+    },
+
+    escapeHtml(str) {
+        if (!str) return '';
+        return String(str)
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+    },
+
+    renderMemoryExtractionInspector(step) {
+        const data = step?.data || {};
+        let facts = [];
+        
+        if (Array.isArray(data.facts)) {
+            facts = data.facts.filter(f => f && typeof f === 'object');
+        } else if (data.content || data.fact_type) {
+            // Support legacy single-fact format
+            facts = [{
+                type: data.fact_type || data.type || 'important_facts',
+                content: data.content || '',
+                importance_score: data.importance_score !== undefined ? data.importance_score : 0.7,
+                status: data.status || 'extracted',
+                reconciliation_action: data.reconciliation_action || 'NONE',
+                conflicting_id: data.conflicting_id || null
+            }];
+        }
+
+        const isExtracted = (data.status === 'extracted' && facts.length > 0) || facts.length > 0;
+        
+        let storedCount = 0;
+        let dupCount = 0;
+        let contradictCount = 0;
+
+        facts.forEach(f => {
+            if (f.status === 'duplicate' || f.reconciliation_action === 'DUPLICATE') {
+                dupCount++;
+            } else {
+                storedCount++;
+            }
+            if (f.reconciliation_action === 'CONTRADICT') {
+                contradictCount++;
+            }
+        });
+
+        // Header info card
+        const statusBadgeBg = isExtracted ? 'rgba(76, 175, 80, 0.15)' : 'rgba(255, 255, 255, 0.05)';
+        const statusBadgeColor = isExtracted ? '#4caf50' : 'var(--text-muted)';
+        const statusBadgeBorder = isExtracted ? 'rgba(76, 175, 80, 0.3)' : 'var(--border-color)';
+        const statusText = isExtracted 
+            ? `🟢 Đã trích xuất & lưu ${facts.length} ký ức`
+            : '⚪ Bỏ qua (Không có sự kiện mới)';
+
+        const headerHtml = `
+            <div class="inspector-card">
+                <div class="inspector-card-title">
+                    <span>💾 Trích xuất & Đối soát Ký ức (Memory Extractor · Batch 3 Lượt)</span>
+                </div>
+                <div style="display: flex; gap: 8px; font-size: 12px; margin-bottom: 12px; flex-wrap: wrap; align-items: center;">
+                    <span class="pill" style="background: ${statusBadgeBg}; color: ${statusBadgeColor}; border: 1px solid ${statusBadgeBorder}; font-size: 12px; padding: 4px 10px; font-weight: 600;">
+                        ${statusText}
+                    </span>
+                    <span class="pill" style="background: rgba(255, 255, 255, 0.06); color: var(--text-primary); border: 1px solid var(--border-color); font-size: 12px; padding: 4px 10px;">
+                        ⏰ <b>Chu kỳ:</b> Mỗi 3 lượt chat
+                    </span>
+                    <span class="pill" style="background: rgba(41, 182, 246, 0.15); color: #29b6f6; border: 1px solid rgba(41, 182, 246, 0.3); font-size: 12px; padding: 4px 10px;">
+                        📊 <b>Tổng facts:</b> ${facts.length}
+                    </span>
+                    <span class="pill" style="background: rgba(76, 175, 80, 0.15); color: #4caf50; border: 1px solid rgba(76, 175, 80, 0.3); font-size: 12px; padding: 4px 10px;">
+                        🟢 <b>Đã lưu Qdrant:</b> ${storedCount}
+                    </span>
+                    ${dupCount > 0 ? `
+                        <span class="pill" style="background: rgba(255, 152, 0, 0.15); color: #ffa726; border: 1px solid rgba(255, 152, 0, 0.3); font-size: 12px; padding: 4px 10px;">
+                            🟡 <b>Trùng lặp:</b> ${dupCount}
+                        </span>
+                    ` : ''}
+                    ${contradictCount > 0 ? `
+                        <span class="pill" style="background: rgba(239, 83, 80, 0.15); color: #ef5350; border: 1px solid rgba(239, 83, 80, 0.3); font-size: 12px; padding: 4px 10px; font-weight: 600;">
+                            🚨 <b>Xung đột / Ghi đè:</b> ${contradictCount}
+                        </span>
+                    ` : ''}
+                </div>
+            </div>
+        `;
+
+        // Tab Buttons
+        const tabButtons = `
+            <button class="tab-btn active" data-tab="tab-memory-facts">✨ Danh sách Ký ức (${facts.length})</button>
+            <button class="tab-btn" data-tab="tab-memory-transcript">💬 Bối cảnh 3 Cặp Hội Thoại</button>
+            <button class="tab-btn" data-tab="tab-memory-raw">📦 Raw Step Payload</button>
+        `;
+
+        // Tab 1: Facts List
+        let factsContent = '';
+        if (isExtracted) {
+            factsContent = `
+                <div style="display: flex; flex-direction: column; gap: 12px;">
+                    ${facts.map((f, idx) => {
+                        let typeBadgeLabel = f.type || 'fact';
+                        let typeColor = '#90caf9';
+                        let typeBg = 'rgba(41, 182, 246, 0.12)';
+                        let typeBorder = 'rgba(41, 182, 246, 0.3)';
+
+                        if (f.type === 'preferences') {
+                            typeBadgeLabel = '🍨 Sở thích / Thói quen (preferences)';
+                            typeColor = '#29b6f6';
+                            typeBg = 'rgba(41, 182, 246, 0.15)';
+                            typeBorder = 'rgba(41, 182, 246, 0.3)';
+                        } else if (f.type === 'important_facts') {
+                            typeBadgeLabel = '📌 Sự kiện đời thực (important_facts)';
+                            typeColor = '#ffa726';
+                            typeBg = 'rgba(255, 152, 0, 0.15)';
+                            typeBorder = 'rgba(255, 152, 0, 0.3)';
+                        } else if (f.type === 'relationship') {
+                            typeBadgeLabel = '💖 Quan hệ & Xưng hô (relationship)';
+                            typeColor = '#f06292';
+                            typeBg = 'rgba(240, 98, 146, 0.15)';
+                            typeBorder = 'rgba(240, 98, 146, 0.3)';
+                        } else if (f.type === 'shared_memories') {
+                            typeBadgeLabel = '🌟 Kỷ niệm & Lời hứa (shared_memories)';
+                            typeColor = '#66bb6a';
+                            typeBg = 'rgba(102, 187, 106, 0.15)';
+                            typeBorder = 'rgba(102, 187, 106, 0.3)';
+                        }
+
+                        const impStr = f.importance_score !== undefined ? `${Math.round(f.importance_score * 100)}%` : '70%';
+                        const isDup = f.status === 'duplicate' || f.reconciliation_action === 'DUPLICATE';
+                        const isContradict = f.reconciliation_action === 'CONTRADICT';
+
+                        let borderLeftColor = '#81c784';
+                        if (isContradict) borderLeftColor = '#ef5350';
+                        else if (isDup) borderLeftColor = '#ffb74d';
+
+                        let reconBanner = '';
+                        if (f.reconciliation_action === 'CONTRADICT') {
+                            reconBanner = `
+                                <div style="margin-top: 8px; padding: 8px 12px; background: rgba(239, 83, 80, 0.1); border: 1px solid rgba(239, 83, 80, 0.3); border-radius: 6px; font-size: 12px; color: #ef9a9a;">
+                                    ⚖️ <b>Đối soát mâu thuẫn (CONTRADICT):</b> Ký ức mới mâu thuẫn / ghi đè thông tin cũ. Đã xóa ký ức cũ <code>${this.escapeHtml(f.conflicting_id || 'superseded_id')}</code> và lưu ký ức mới vào Vector DB.
+                                </div>
+                            `;
+                        } else if (f.reconciliation_action === 'DUPLICATE') {
+                            reconBanner = `
+                                <div style="margin-top: 8px; padding: 8px 12px; background: rgba(255, 152, 0, 0.1); border: 1px solid rgba(255, 152, 0, 0.3); border-radius: 6px; font-size: 12px; color: #ffe082;">
+                                    ⚖️ <b>Đối soát trùng lặp (DUPLICATE):</b> Ký ức này đã tồn tại trong Qdrant Vector DB, bỏ qua không lưu lặp lại.
+                                </div>
+                            `;
+                        } else if (f.reconciliation_action === 'KEEP_BOTH') {
+                            reconBanner = `
+                                <div style="margin-top: 8px; padding: 8px 12px; background: rgba(76, 175, 80, 0.1); border: 1px solid rgba(76, 175, 80, 0.3); border-radius: 6px; font-size: 12px; color: #a5d6a7;">
+                                    ⚖️ <b>Đối soát logic (KEEP_BOTH):</b> Cả 2 ký ức đều đúng và bổ trợ cho nhau, lưu song song trong Vector DB.
+                                </div>
+                            `;
+                        } else {
+                            reconBanner = `
+                                <div style="margin-top: 6px; font-size: 11.5px; color: var(--text-muted);">
+                                    ⚖️ Đối soát: Không có ký ức cũ tương đồng trong Vector DB (Similarity &lt; 0.70)
+                                </div>
+                            `;
+                        }
+
+                        return `
+                            <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); border-left: 4px solid ${borderLeftColor}; padding: 14px; border-radius: 8px;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap; gap: 6px;">
+                                    <div style="display: flex; align-items: center; gap: 8px;">
+                                        <span style="font-size: 13px; font-weight: 700; color: var(--text-muted);">#${idx + 1}</span>
+                                        <span class="pill" style="background: ${typeBg}; color: ${typeColor}; border: 1px solid ${typeBorder}; font-weight: 600;">
+                                            ${typeBadgeLabel}
+                                        </span>
+                                    </div>
+                                    <div style="display: flex; align-items: center; gap: 6px;">
+                                        <span class="pill" style="background: rgba(255, 215, 0, 0.12); color: #ffd54f; border: 1px solid rgba(255, 215, 0, 0.3);">⭐ Quan trọng: ${impStr}</span>
+                                        ${isDup 
+                                            ? '<span class="pill" style="background: rgba(255, 152, 0, 0.15); color: #ffa726; border: 1px solid rgba(255, 152, 0, 0.3); font-weight: 600;">🟡 Bỏ qua (Trùng lặp)</span>' 
+                                            : '<span class="pill" style="background: rgba(76, 175, 80, 0.15); color: #81c784; border: 1px solid rgba(76, 175, 80, 0.3); font-weight: 600;">🟢 Lưu Qdrant Vector DB</span>'}
+                                    </div>
+                                </div>
+                                <div style="font-size: 14px; color: #ffffff; line-height: 1.5; font-weight: 500; padding: 6px 0;">
+                                    "${this.escapeHtml(f.content || '')}"
+                                </div>
+                                ${reconBanner}
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+            `;
+        } else {
+            factsContent = `
+                <div style="padding: 24px; text-align: center; color: var(--text-muted); background: rgba(255,255,255,0.02); border-radius: 8px; border: 1px solid var(--border-color);">
+                    <div style="font-size: 28px; margin-bottom: 8px;">⚪</div>
+                    <b style="font-size: 14px; color: var(--text-secondary);">Không phát hiện dữ kiện dài hạn mới</b>
+                    <div style="font-size: 12.5px; margin-top: 6px; line-height: 1.5; max-width: 500px; margin-left: auto; margin-right: auto;">
+                        Trong 3 lượt hội thoại vừa qua, cuộc trò chuyện mang tính chất giao tiếp thông thường (small-talk / roleplay) và không xuất hiện sự kiện đời thực, công việc, nơi ở, hay sở thích mới cần ghi nhớ.
+                    </div>
+                </div>
+            `;
+        }
+
+        const tabFactsHtml = `
+            <div class="tab-content active" id="tab-memory-facts">
+                <div style="margin-bottom: 8px;">
+                    <b style="font-size: 13px;">Dữ kiện trích xuất từ 3 lượt hội thoại (${facts.length} facts):</b>
+                    <div style="margin-top: 10px;">${factsContent}</div>
+                </div>
+            </div>
+        `;
+
+        // Tab 2: Transcript
+        const transcript = data.extracted_input_context || '';
+        const tabTranscriptHtml = `
+            <div class="tab-content" id="tab-memory-transcript">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <b style="font-size: 13px;">Cửa sổ 3 cặp hội thoại & bối cảnh nạp vào LLM Extractor:</b>
+                    ${transcript ? '<button class="reasoning-btn-action" onclick="NodeInspectorEngine.copyReasoning(this)" title="Sao chép toàn bộ Transcript">📋 Sao chép</button>' : ''}
+                </div>
+                <div class="json-block" style="margin-top: 4px; max-height: 450px; white-space: pre-wrap; font-size: 12.5px; color: #cfd8dc; line-height: 1.6;">
+${this.escapeHtml(transcript || '(Không có transcript)')}
+                </div>
+            </div>
+        `;
+
+        // Tab 3: Raw Payload
+        const tabRawHtml = `
+            <div class="tab-content" id="tab-memory-raw">
+                <div style="margin-bottom: 8px;">
+                    <b style="font-size: 13px;">Toàn bộ Payload của Step (JSON):</b>
+                    <div class="json-block" style="margin-top: 4px;">${this.escapeHtml(JSON.stringify(data, null, 2))}</div>
+                </div>
+            </div>
+        `;
+
+        return `
+            <div class="inspector-panel">
+                ${headerHtml}
+                <div class="tab-container">
+                    <div class="tab-header">${tabButtons}</div>
+                    ${tabFactsHtml}
+                    ${tabTranscriptHtml}
+                    ${tabRawHtml}
+                </div>
+            </div>
+        `;
     },
 
     copyUserMessage(btn) {

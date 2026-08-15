@@ -38,6 +38,18 @@ templates:
     - quest by category list
     - resonators by category table
     - dicon
+    - dialogue start
+    - dialogue end
+    - sic
+    - tx
+    - color
+    - reward
+    - exit
+    - play
+    - sound
+    - prompt
+    - option
+    - choice
 
   # Templates to unroll into clean Markdown formatting
   unroll:
@@ -120,8 +132,35 @@ entities:
     - "overclock diagnostic report"
     - "forte examination report"
     - "character stories"
-    - "cherished items"
     - "archives"
+    - "hahaha"
+    - "huh"
+    - "ahem"
+    - "dicon"
+    - "reward"
+    - "correct"
+    - "unfortunately"
+    - "talk"
+    - "please"
+    - "chat"
+    - "something"
+    - "yes"
+    - "sure"
+    - "come"
+    - "don"
+    - "eyeing"
+    - "set"
+    - "humans"
+    - "loans"
+    - "the moon"
+    - "convene feature"
+    - "professor bosong"
+    - "xieyang"
+    - "abby"
+    - "exit"
+    - "leave"
+    - "thanks"
+    - "sorry"
 
 categories:
   junk_patterns:

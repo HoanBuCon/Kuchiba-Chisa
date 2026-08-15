@@ -154,6 +154,7 @@ window.VisualizerApp = {
         container.innerHTML = filtered.map(t => {
             const isSelected = t.id === this.selectedTraceId;
             const timeStr = t.timestamp ? new Date(t.timestamp).toLocaleTimeString('vi-VN') : '—';
+            const latency = t.latency_ms ? `${t.latency_ms}ms` : '—';
             const totalTok = t.total_tokens || 0;
             const inTok = t.total_input_tokens !== undefined ? t.total_input_tokens : 0;
             const outTok = t.total_output_tokens !== undefined ? t.total_output_tokens : 0;

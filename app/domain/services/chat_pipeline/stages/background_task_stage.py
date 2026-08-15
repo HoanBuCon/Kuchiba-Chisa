@@ -20,18 +20,20 @@ class BackgroundTaskStage(PipelineStage):
         self.unified_auto_summarize_callback = unified_auto_summarize_callback
 
     async def process(self, context: ChatContext) -> ChatContext:
-        # Trigger background fact extraction (tracked task) for non-small-talk messages
-        if not context.is_small_talk:
+        # Trigger batched background fact extraction every 3 interaction turns (batch of 3 pairs + 2 context msgs)
+        if context.stats and context.stats.interaction_count > 0 and context.stats.interaction_count % 3 == 0:
             BackgroundTaskManager.spawn(
-                self.memory_extractor.extract_and_store(
+                self.memory_extractor.extract_and_store_batch(
                     user_id=context.user_id,
                     conversation_id=str(context.conv_id),
-                    user_message=context.user_message
+                    history=context.history,
+                    current_user_message=context.user_message,
+                    current_assistant_reply=context.chisa_reply,
                 ),
-                name=f"memory_extract:{context.user_id}",
+                name=f"memory_extract_batch:{context.user_id}",
             )
         else:
-            log.debug("Skipping memory extraction for small talk message", user_id=context.user_id)
+            log.debug("Skipping batch memory extraction (runs every 3 turns)", user_id=context.user_id, count=getattr(context.stats, 'interaction_count', 0))
         
         # Periodically trigger unified background auto-summarization (every 10 interactions)
         if context.stats.interaction_count > 0 and context.stats.interaction_count % 10 == 0:

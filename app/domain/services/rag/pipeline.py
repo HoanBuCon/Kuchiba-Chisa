@@ -83,6 +83,7 @@ class RAGPipeline:
         web_search_tool: Any,
         is_small_talk: bool = False,
         conversation_summary: str = None,
+        conversation_id: Optional[str] = None,
     ) -> RAGContext:
         """
         Runs E2E RAG Pipeline: Retrieves memory & lore, checks alignment, and runs thinking loop if necessary.
@@ -136,6 +137,7 @@ class RAGPipeline:
                         collection="memories",
                         query_vector=query_vector,
                         user_id=user_id,
+                        conversation_id=conversation_id,
                         current_emotion=current_emotions,
                         limit=10,
                         top_k=RAGTuning.TOP_K

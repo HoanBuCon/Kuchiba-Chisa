@@ -129,7 +129,7 @@ class QdrantService(IVectorStore):
                 log.error("Failed to create payload indexes", collection=name, error=str(e))
 
     async def ensure_payload_indexes(self) -> None:
-        """Ensures all lore collections have keyword indexes for fast entity/metadata filtering."""
+        """Ensures all lore and memory collections have keyword indexes for fast entity/metadata filtering."""
         from qdrant_client.http.models import PayloadSchemaType
         lore_cols = [COLLECTION_CHARACTER_LORE, COLLECTION_WORLD_LORE, COLLECTION_STORY_LORE]
         fields = ["entities", "region", "faction", "canonical_name"]
@@ -145,7 +145,20 @@ class QdrantService(IVectorStore):
                         )
                     except Exception:
                         pass
-        log.info("Qdrant payload indexes ensured across all lore collections ✓")
+
+        # Ensure memories collection has indexes on user_id and conversation_id for fast isolation
+        if await self.collection_exists(COLLECTION_MEMORIES):
+            for f in ["user_id", "conversation_id", "memory_type"]:
+                try:
+                    await self._client.create_payload_index(
+                        collection_name=COLLECTION_MEMORIES,
+                        field_name=f,
+                        field_schema=PayloadSchemaType.KEYWORD,
+                        wait=False
+                    )
+                except Exception:
+                    pass
+        log.info("Qdrant payload indexes ensured across all collections ✓")
 
     async def initialize_all_collections(self) -> None:
         """
@@ -159,26 +172,38 @@ class QdrantService(IVectorStore):
         log.info("All Qdrant collections initialized", count=len(ALL_COLLECTIONS))
 
     # ── Vector Upsert & Prune ──────────────────────────────────────────────
-    async def prune_user_memories(self, collection: str, user_id: str, cap: int = 200) -> None:
+    async def prune_user_memories(
+        self,
+        collection: str,
+        user_id: str,
+        conversation_id: Optional[str] = None,
+        cap: int = 200
+    ) -> None:
         """
-        VPS Optimization: Enforce a hard cap of 200 LTM entries per user.
+        VPS Optimization: Enforce a hard cap of 200 LTM entries per conversation/user.
         If exceeded, deletes the lowest importance memories (excluding critical tier).
         """
-        user_filter = Filter(
-            must=[FieldCondition(key="user_id", match=MatchValue(value=user_id))]
-        )
+        must_conditions = [
+            FieldCondition(key="user_id", match=MatchValue(value=str(user_id)))
+        ]
+        if conversation_id:
+            must_conditions.append(
+                FieldCondition(key="conversation_id", match=MatchValue(value=str(conversation_id)))
+            )
+
+        filter_condition = Filter(must=must_conditions)
         count_result = await self._client.count(
             collection_name=collection,
-            count_filter=user_filter,
+            count_filter=filter_condition,
             exact=True
         )
         
         if count_result.count > cap:
             num_to_delete = count_result.count - cap
-            # Fetch all for the user to sort in memory (since max is roughly ~200, this is extremely fast)
+            # Fetch all for the conversation to sort in memory
             points, _ = await self._client.scroll(
                 collection_name=collection,
-                scroll_filter=user_filter,
+                scroll_filter=filter_condition,
                 limit=cap + 50,
                 with_payload=True
             )
@@ -192,7 +217,7 @@ class QdrantService(IVectorStore):
                 to_delete = prunable[:num_to_delete]
                 ids_to_delete = [p.id for p in to_delete]
                 await self.delete_points(collection, ids_to_delete)
-                log.info("Pruned LTM entries for user mapping to VPS limits", user_id=user_id, pruned_count=len(ids_to_delete))
+                log.info("Pruned LTM entries mapping to bounds", user_id=user_id, conversation_id=conversation_id, pruned_count=len(ids_to_delete))
 
     async def upsert_memory(
         self,
@@ -203,7 +228,7 @@ class QdrantService(IVectorStore):
     ) -> None:
         """
         Upsert a single memory point.
-        Payload MUST include 'user_id' for isolation enforcement.
+        Payload MUST include 'user_id' and optional 'conversation_id' for isolation enforcement.
         """
         structured = PointStruct(
             id=point_id, 
@@ -212,25 +237,37 @@ class QdrantService(IVectorStore):
         )
         await self._client.upsert(collection_name=collection, points=[structured], wait=True)
         
-        # Enforce multi-user bounds immediately after insert
-        await self.prune_user_memories(collection, user_id=payload.user_id, cap=200)
+        # Enforce bounds per conversation immediately after insert
+        await self.prune_user_memories(
+            collection,
+            user_id=payload.user_id,
+            conversation_id=payload.conversation_id,
+            cap=200
+        )
 
-    # ── Vector Search with User Isolation ─────────────────────────
+    # ── Vector Search with User/Conversation Isolation ────────────
     async def search_by_user(
         self,
         collection: str,
         query_vector: list[float],
         user_id: str,
+        conversation_id: Optional[str] = None,
         limit: int = 10,
         score_threshold: float = 0.65,
     ) -> list[dict[str, Any]]:
         """
-        CRITICAL: All searches MUST use this method to enforce user isolation.
+        CRITICAL: All searches MUST use this method to enforce user/conversation isolation.
         Direct search() calls without user_id filter are not permitted outside of this service.
         """
-        user_filter = Filter(
-            must=[FieldCondition(key="user_id", match=MatchValue(value=user_id))]
-        )
+        must_conditions = [
+            FieldCondition(key="user_id", match=MatchValue(value=str(user_id)))
+        ]
+        if conversation_id:
+            must_conditions.append(
+                FieldCondition(key="conversation_id", match=MatchValue(value=str(conversation_id)))
+            )
+
+        user_filter = Filter(must=must_conditions)
 
         results = await self._client.search(
             collection_name=collection,
