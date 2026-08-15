@@ -11,3 +11,6 @@ class RAGTuning:
     WEIGHT_KEYWORD: float = 0.10     # Sparse text keyword/BM25 token overlap (for exact entity names)
     WEIGHT_METADATA: float = 0.10    # Metadata match (canonical_name, heading_path, entities graph)
 
+    # Micro LLM Query Rewriter timeout (seconds) — Generous buffer for peak-hour queueing and network jitter
+    REWRITE_TIMEOUT_SECONDS: float = 2.5
+

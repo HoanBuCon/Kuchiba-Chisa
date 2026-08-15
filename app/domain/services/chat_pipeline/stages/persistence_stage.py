@@ -22,7 +22,15 @@ class PersistenceStage(PipelineStage):
         conv_repo = self.conv_repo_factory(context.session)
 
         total_tokens = context.estimated_input_tokens + context.estimated_output_tokens
-        await conv_repo.save_message(context.conv_id, context.user_uuid, "user", context.user_message, is_success=True)
+        user_rw = context.rewritten_query or context.cleaned_query or None
+        await conv_repo.save_message(
+            context.conv_id,
+            context.user_uuid,
+            "user",
+            context.user_message,
+            rewritten_content=user_rw,
+            is_success=True
+        )
         await conv_repo.save_message(
             context.conv_id,
             context.user_uuid,

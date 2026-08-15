@@ -44,6 +44,7 @@ class SqlAlchemyConversationRepository(IConversationRepository):
         content: str,
         token_count: Optional[int] = None,
         is_success: bool = True,
+        rewritten_content: Optional[str] = None,
     ) -> None:
         enum_role = MessageRoleModel.USER if role == "user" else MessageRoleModel.ASSISTANT
         msg = MessageModel(
@@ -52,12 +53,46 @@ class SqlAlchemyConversationRepository(IConversationRepository):
             user_id=user_id,
             role=enum_role,
             content=content,
+            rewritten_content=rewritten_content,
             token_count=token_count,
             is_success=is_success,
             created_at=datetime.utcnow()
         )
         self.session.add(msg)
         await self.session.flush()
+
+    async def get_last_user_rewritten_query(
+        self, user_id: uuid.UUID, conversation_id: uuid.UUID, max_lookback: int = 3
+    ) -> Optional[str]:
+        """
+        Knowledge-Aware Lookback: Retrieves the most recent meaningful user query from conversation history.
+        Skips superficial short reactions (e.g. 'haha', 'ok', 'cảm ơn') to preserve multi-turn context
+        when follow-up questions occur after short interjections.
+        """
+        stmt = (
+            select(MessageModel.rewritten_content, MessageModel.content)
+            .where(
+                MessageModel.user_id == user_id,
+                MessageModel.conversation_id == conversation_id,
+                MessageModel.role == MessageRoleModel.USER,
+                MessageModel.is_success == True
+            )
+            .order_by(MessageModel.created_at.desc())
+            .limit(max_lookback)
+        )
+        result = await self.session.execute(stmt)
+        rows = result.all()
+        if not rows:
+            return None
+
+        from app.shared.utils.query_cleaner import is_meaningful_query
+        for row in rows:
+            candidate = row[0] or row[1]
+            if candidate and is_meaningful_query(candidate):
+                return candidate
+
+        # Fallback to the latest message if all were short
+        return rows[0][0] or rows[0][1]
 
     async def get_recent_history(
         self, user_id: uuid.UUID, conversation_id: uuid.UUID, limit: int = 15

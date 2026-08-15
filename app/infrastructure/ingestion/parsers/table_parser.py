@@ -125,6 +125,18 @@ def _clean_cell_value(raw: str) -> str:
     return ", ".join(cleaned_parts)
 
 
+def _clean_header_value(raw: str) -> str:
+    """Clean a table header name by stripping attributes and wikitext."""
+    val = raw.strip()
+    if "|" in val and ("style=" in val or "class=" in val or "width=" in val or "scope=" in val):
+        val = val.split("|", 1)[1].strip()
+    val = _RE_CELL_LINK_DISPLAY.sub(r"\1", val)
+    val = _RE_CELL_LINK_SIMPLE.sub(r"\1", val)
+    val = _RE_CELL_BOLD.sub(r"\1", val)
+    val = _RE_CELL_ITALIC.sub(r"\1", val)
+    return val.strip()
+
+
 def _parse_header_row(row_text: str) -> List[str]:
     """
     Parse a header row (! delimited) into a list of column names.
@@ -137,13 +149,17 @@ def _parse_header_row(row_text: str) -> List[str]:
     Returns:
         List of cleaned header strings.
     """
-    # Remove the leading ! and split by !!
-    row_text = row_text.strip()
-    if row_text.startswith("!"):
-        row_text = row_text[1:]
-
-    headers = re.split(r"!!", row_text)
-    return [h.strip() for h in headers if h.strip()]
+    lines = [l.strip() for l in row_text.split("\n") if l.strip()]
+    headers = []
+    for line in lines:
+        if line.startswith("!"):
+            line = line[1:].strip()
+        parts = re.split(r"\s*!{1,2}\s*", line)
+        for p in parts:
+            clean_h = _clean_header_value(p)
+            if clean_h:
+                headers.append(clean_h)
+    return headers
 
 
 def _split_into_raw_rows(table_body: str) -> List[str]:

@@ -173,6 +173,21 @@ def sync_entities_dictionary(
         }
     }
 
+    ENTITY_SYNC_BLACKLIST = {
+        "she", "he", "they", "it", "you", "we", "i", "the", "and", "but", "for", "intro", "name", "image",
+        "images", "description", "location", "locations", "areas", "area", "points", "interest",
+        "item", "items", "bell", "situated", "according", "details", "summary", "type", "category",
+        "rarity", "cost", "source", "effect", "stats", "attribute", "attributes", "unlocked",
+        "level", "rank", "stat", "value", "property", "properties", "table", "column", "row",
+        "file", "icon", "thumb", "picture", "making", "could", "would", "should", "yet", "one",
+        "nutri", "pack", "aren", "pattern", "relatively", "previous", "class", "subsequent",
+        "presently", "routine", "release", "cleanse", "category table", "these resonators",
+        "extra effect", "mutant resonators", "ex42978", "although", "gold", "finally", "silence",
+        "numb", "teachers", "among", "soon", "back", "normally", "occasionally", "wind", "sitting",
+        "seeing", "beneath", "tears", "heartbeat", "someone", "anyone", "everyone", "nobody",
+        "anything", "everything", "nothing", "department", "startorch", "lahai", "roi"
+    }
+
     # 2. Extract from chunks.jsonl if present
     c_path = Path(chunks_path)
     if c_path.exists():
@@ -184,13 +199,16 @@ def sync_entities_dictionary(
                     if not canon:
                         continue
                     
-                    if len(canon) < 3 or canon in ["She", "He", "They", "It", "You", "The", "And", "But", "For"]:
+                    if len(canon) < 3 or canon.lower() in ENTITY_SYNC_BLACKLIST:
                         continue
 
                     etype = c.get("entity_type") or c.get("page_type") or "GENERIC"
                     region = c.get("region")
                     faction = c.get("faction")
-                    chunk_ents = [e for e in (c.get("entities") or []) if e != canon and len(e) > 2]
+                    chunk_ents = [
+                        e for e in (c.get("entities") or [])
+                        if e != canon and len(e) > 2 and e.lower() not in ENTITY_SYNC_BLACKLIST
+                    ]
 
                     if canon not in entities:
                         entities[canon] = {
@@ -202,10 +220,9 @@ def sync_entities_dictionary(
                             "related": chunk_ents[:10]
                         }
                     else:
-                        # Append any new related entities
                         existing_related = set(entities[canon].get("related", []))
                         for e in chunk_ents:
-                            if e not in existing_related:
+                            if e not in existing_related and e.lower() not in ENTITY_SYNC_BLACKLIST:
                                 entities[canon]["related"].append(e)
                                 existing_related.add(e)
         except Exception as e:

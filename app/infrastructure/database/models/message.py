@@ -30,6 +30,7 @@ class Message(Base, UUIDMixin, TimestampMixin):
     
     role: Mapped[MessageRole] = mapped_column(SQLEnum(MessageRole, name="message_role_enum", create_type=False), nullable=False)
     content: Mapped[str] = mapped_column(Text, nullable=False)
+    rewritten_content: Mapped[str | None] = mapped_column(Text, nullable=True)
     token_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
     is_success: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     

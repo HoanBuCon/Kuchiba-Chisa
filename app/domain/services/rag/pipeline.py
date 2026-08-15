@@ -174,6 +174,22 @@ class RAGPipeline:
                                 if not any(c[0] == text for c in lore_scored):
                                     lore_scored.append((text, score, meta))
                     
+                    # Subject-Entity Alignment Reranking:
+                    # If recognized entities exist, boost chunks containing the target entities to prevent generic lore from overtaking
+                    if extracted:
+                        adjusted_scored = []
+                        for text, score, meta in lore_scored:
+                            boost = 0.0
+                            text_lower = text.lower()
+                            chunk_ents = [e.lower() for e in meta.get("entities", [])] if isinstance(meta, dict) else []
+                            for ent in extracted:
+                                ent_lower = ent.lower()
+                                if ent_lower in text_lower or any(ent_lower in ce for ce in chunk_ents):
+                                    boost = 0.15
+                                    break
+                            adjusted_scored.append((text, score + boost, meta))
+                        lore_scored = adjusted_scored
+
                     # Sort globally by score and enforce global TOP_K limit
                     lore_scored.sort(key=lambda x: x[1], reverse=True)
                     lore_chunks = [x[0] for x in lore_scored[:RAGTuning.TOP_K]]
@@ -225,14 +241,23 @@ class RAGPipeline:
         alignment_reason = "Small talk or system bypass"
         search_query = ""
         use_lore = True
+        has_retrieved_context = bool(lore_chunks or memories)
+
         if not is_small_talk:
-            is_aligned, alignment_reason, search_query, use_lore = await self.assessor.assess_alignment(
-                user_message=user_message,
-                context_text=retrieved_context_str,
-                llm=llm,
-                history=history,
-                conversation_summary=conversation_summary,
-            )
+            if not has_retrieved_context:
+                # Fast Bypass: If Vector Search returned 0 chunks, skip calling the 760-token LLM Alignment Assessor!
+                is_aligned = True
+                alignment_reason = "No vector chunks retrieved (0 lore, 0 memory) - Auto-aligned to save LLM tokens"
+                search_query = ""
+                use_lore = False
+            else:
+                is_aligned, alignment_reason, search_query, use_lore = await self.assessor.assess_alignment(
+                    user_message=user_message,
+                    context_text=retrieved_context_str,
+                    llm=llm,
+                    history=history,
+                    conversation_summary=conversation_summary,
+                )
             
             # Log assessment result in trace
             history_mode = "summary" if (conversation_summary and conversation_summary.strip()) else "raw"

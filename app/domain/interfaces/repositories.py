@@ -83,9 +83,18 @@ class IConversationRepository(Protocol):
         content: str,
         token_count: Optional[int] = None,
         is_success: bool = True,
+        rewritten_content: Optional[str] = None,
     ) -> None:
         """
         Persists a new message into STM.
+        """
+        ...
+
+    async def get_last_user_rewritten_query(
+        self, user_id: uuid.UUID, conversation_id: uuid.UUID
+    ) -> Optional[str]:
+        """
+        Retrieves the rewritten_content (or original content) of the most recent user message.
         """
         ...
 

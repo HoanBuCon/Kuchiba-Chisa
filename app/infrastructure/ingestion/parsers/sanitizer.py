@@ -195,13 +195,14 @@ _RE_EXTERNAL_LINK_BARE = re.compile(r"\[https?://[^\s\]]+\]")      # [url]
 
 # Display-only templates with no text content or nested transclusions
 _RE_DISPLAY_TEMPLATES = re.compile(
-    r"\{\{(?:Resonator Tabs|Intro/Resonator|Skill Navbox|Nodes Navbox|"
-    r"Quests and Events|Featured|Resonator Navbox|Reflist|Skill Upgrade|"
-    r"Character Ascensions and Stats|Main|Change History|Other Languages|"
-    r"Trophies|Resonator Instructions|Forte Table|Chain Table|Tabber|"
-    r"Transclude|Trials by Character|Character Mentions|Character Archives|"
-    r"Stub|Stubs|Notice|WIP|Needs Image|Cleanup|Expand|Disclaimer|Spoiler|Warning|Note|Archive|"
-    r"Dialogue Start|Dialogue End|DIcon|sic|tx|color|Reward|Exit|Play|Sound|Prompt|Option|Choice)[^}]*\}\}",
+    r"\{\{(?:[^\}|]+\s+by\s+Category\s+(?:Table|List)|Files\s+by|Resonators\s+by|Quest\s+by|"
+    r"Echoes\s+by|Weapons\s+by|Enemy\s+List|Item\s+List|Navbox[^\}|]*|Resonator Tabs|"
+    r"Intro/Resonator|Skill Navbox|Nodes Navbox|Quests and Events|Featured|Resonator Navbox|"
+    r"Reflist|Skill Upgrade|Character Ascensions and Stats|Main|Change History|Other Languages|"
+    r"Trophies|Resonator Instructions|Forte Table|Chain Table|Tabber|Transclude|Trials by Character|"
+    r"Character Mentions|Character Archives|Stub|Stubs|Notice|WIP|Needs Image|Cleanup|Expand|"
+    r"Disclaimer|Spoiler|Warning|Note|Archive|Dialogue Start|Dialogue End|DIcon|sic|tx|color|"
+    r"Reward|Exit|Play|Sound|Prompt|Option|Choice)[^}]*\}\}",
     re.IGNORECASE,
 )
 
@@ -753,6 +754,49 @@ def sanitize_wikitext_regex(text: str, page_id: Optional[int] = None, page_title
 
     text = re.sub(r"\{\{Quote\|([^}]+)\}\}", _quote_replacer, text, flags=re.IGNORECASE)
 
+    # Convert ParserFunction Quotes {{#SQuote: Text | author = Author}} -> > Text — Author
+    def _squote_replacer(match: re.Match[str]) -> str:
+        content = match.group(1).strip()
+        parts = [p.strip() for p in content.split("|") if p.strip()]
+        if not parts:
+            return ""
+        q_text = parts[0]
+        q_author = ""
+        for p in parts[1:]:
+            if p.lower().startswith("author="):
+                q_author = p.split("=", 1)[1].strip()
+            elif not q_author and not p.startswith("http") and not p.startswith("source="):
+                q_author = p
+        if q_author:
+            return f"> \"{q_text}\"\n> — {q_author}"
+        return f"> \"{q_text}\""
+
+    text = re.sub(r"\{\{#SQuote:([^}]+)\}\}", _squote_replacer, text, flags=re.IGNORECASE)
+
+    # Convert {{Extra Effect|Name|Display|Description}} -> Display (Description)
+    def _extra_effect_replacer(match: re.Match[str]) -> str:
+        content = match.group(1).strip()
+        parts = [p.strip() for p in content.split("|") if p.strip()]
+        if not parts:
+            return ""
+        if len(parts) >= 3:
+            name = parts[1] or parts[0]
+            desc = parts[2]
+            return f"{name} ({desc})"
+        elif len(parts) == 2:
+            return f"{parts[0]} ({parts[1]})"
+        return parts[0]
+
+    text = re.sub(r"\{\{Extra Effect\|([^}]+)\}\}", _extra_effect_replacer, text, flags=re.IGNORECASE)
+    text = re.sub(r"\{\{Tooltip\|([^}|]+)\|([^}]+)\}\}", r"\1 (\2)", text, flags=re.IGNORECASE)
+
+    # Unpack Game Entity Macros: {{Enemy|Name}}, {{Item|Name}}, {{Resonator|Name}}, {{Faction|Name}}, {{Location|Name}}, {{Echo|Name}}, {{Weapon|Name}}
+    text = re.sub(r"\{\{(?:Enemy|Item|Resonator|Location|Faction|Echo|Weapon|Character)\|([^}|]+)(?:\|[^}]+)?\}\}", r"\1", text, flags=re.IGNORECASE)
+    text = re.sub(r"\{\{(?:Icon|Color|Card|Asset)\|[^}]*\}\}", "", text, flags=re.IGNORECASE)
+
+    # Strip remaining untransformed display templates
+    text = _RE_DISPLAY_TEMPLATES.sub("", text)
+
     # ── Operation 7: Strip image-only lines ──
     text = _RE_IMAGE_LINE.sub("", text)
 
@@ -760,7 +804,15 @@ def sanitize_wikitext_regex(text: str, page_id: Optional[int] = None, page_title
     text = _RE_CRLF.sub("\n", text)
     text = _RE_CR.sub("\n", text)
 
-    # ── Operation 9: Collapse excessive blank lines ──
+    # ── Operation 9: Fix punctuation spacing glitches ──
+    # Fix glued quotation mark to sentence start: "rest?"She -> "rest?" She
+    text = re.sub(r'([.?!",])([A-Z])', r'\1 \2', text)
+    # Fix orphan dot: from .Her -> from Her
+    text = re.sub(r'\bfrom\s+\.\s*([A-Z])', r'from \1', text)
+    # Fix space before punctuation
+    text = re.sub(r'\s+([,.:;?!])', r'\1', text)
+
+    # ── Operation 10: Collapse excessive blank lines ──
     text = _RE_EXCESS_BLANK_LINES.sub("\n\n", text)
 
     # Trim leading/trailing whitespace
@@ -783,10 +835,158 @@ def sanitize_wikitext_regex(text: str, page_id: Optional[int] = None, page_title
 # ─────────────────────────────────────────────────────────────
 
 
+def convert_mediawiki_tables_to_markdown(text: str) -> str:
+    """
+    Converts MediaWiki table syntax ({| ... |}) to clean GFM Markdown tables or lists.
+    Properly handles multi-line cells, bullet lists within cells, and cell attributes.
+    """
+    if "{|" not in text:
+        return text
+
+    table_block_pattern = re.compile(r"\{\|[^\n]*\n.*?\|\}", re.DOTALL)
+
+    def _clean_cell_content(raw: str) -> str:
+        if not raw:
+            return ""
+        # Strip cell HTML/CSS attributes like style="...", class="...", id="...", width="..."
+        if "|" in raw:
+            parts = raw.split("|")
+            first = parts[0].strip()
+            if any(attr in first.lower() for attr in ("style=", "class=", "id=", "width=", "colspan=", "rowspan=", "align=", "valign=")):
+                raw = "|".join(parts[1:]).strip()
+
+        # Format multi-line list items within cell
+        lines = [l.strip() for l in raw.split("\n") if l.strip()]
+        cleaned_items = []
+        for l in lines:
+            # Strip bullet prefixes (*, **, #, -)
+            l = re.sub(r"^[\*\#\-]+\s*", "", l).strip()
+            if l:
+                cleaned_items.append(l)
+
+        cell_text = "; ".join(cleaned_items) if len(cleaned_items) > 1 else (cleaned_items[0] if cleaned_items else "")
+        # Clean wikitext artifacts
+        cell_text = re.sub(r"\[\[(?:File|Image):[^\]]*\]\]", "", cell_text, flags=re.IGNORECASE)
+        cell_text = re.sub(r"\[\[(?:[^\]|]+\|)?([^\]]+)\]\]", r"\1", cell_text)
+        cell_text = re.sub(r"\{\{(?:Enemy|Item|Resonator|Location|Faction|Echo|Weapon|Character)\|([^}|]+)(?:\|[^}]+)?\}\}", r"\1", cell_text, flags=re.IGNORECASE)
+        cell_text = re.sub(r"\{\{(?:Icon|Color|Card|Asset)\|[^}]*\}\}", "", cell_text, flags=re.IGNORECASE)
+        cell_text = re.sub(r"'{2,3}", "", cell_text)
+        cell_text = cell_text.replace("|", "\\|").strip()
+        return cell_text
+
+    def _table_to_markdown(match: re.Match[str]) -> str:
+        raw_table = match.group(0)
+        lines = raw_table.split("\n")
+        if not lines:
+            return ""
+
+        headers: List[str] = []
+        rows: List[List[str]] = []
+        current_row: List[str] = []
+        current_cell_lines: List[str] = []
+        in_header = False
+
+        def flush_cell():
+            nonlocal current_cell_lines
+            if current_cell_lines:
+                raw_cell = "\n".join(current_cell_lines).strip()
+                cleaned_val = _clean_cell_content(raw_cell)
+                if in_header:
+                    headers.append(cleaned_val)
+                else:
+                    current_row.append(cleaned_val)
+                current_cell_lines = []
+
+        def flush_row():
+            nonlocal current_row
+            flush_cell()
+            if current_row:
+                rows.append(current_row)
+                current_row = []
+
+        for line in lines:
+            stripped = line.strip()
+            if not stripped:
+                continue
+            if stripped.startswith("{|") or stripped == "|}":
+                continue
+
+            if stripped.startswith("|-"):
+                flush_row()
+                in_header = False
+                continue
+
+            # Header definitions (! Col1 ! Col2 or ! Col1 !! Col2)
+            if stripped.startswith("!"):
+                flush_row()
+                in_header = True
+                content = stripped[1:].strip()
+                parts = re.split(r"\s*!{1,2}\s*", content)
+                for p in parts:
+                    headers.append(_clean_cell_content(p))
+                current_cell_lines = []
+                continue
+
+            # Data cell definitions (| Cell1 || Cell2 or | Cell1)
+            if stripped.startswith("|"):
+                in_header = False
+                content = stripped[1:].strip()
+                parts = re.split(r"\s*\|\|\s*", content)
+                flush_cell()
+                for p in parts[:-1]:
+                    current_row.append(_clean_cell_content(p))
+                current_cell_lines = [parts[-1]] if parts else []
+                continue
+
+            # Continuation line for the current cell
+            if current_cell_lines is not None:
+                current_cell_lines.append(stripped)
+
+        flush_row()
+
+        cols_to_keep: List[int] = []
+        if headers:
+            for idx, h in enumerate(headers):
+                if h.lower() not in ("image", "icon", "picture", "file", "thumb", "photo"):
+                    cols_to_keep.append(idx)
+        else:
+            max_cols = max((len(r) for r in rows), default=0)
+            cols_to_keep = list(range(max_cols))
+
+        if not rows:
+            return ""
+
+        md_lines = []
+        if headers and cols_to_keep:
+            active_headers = [headers[i] if i < len(headers) else f"Column {i+1}" for i in cols_to_keep]
+            md_lines.append("| " + " | ".join(active_headers) + " |")
+            md_lines.append("| " + " | ".join(["---"] * len(active_headers)) + " |")
+
+        for r in rows:
+            row_cells = []
+            for i in cols_to_keep:
+                c_val = r[i] if i < len(r) else ""
+                row_cells.append(c_val.strip())
+            if any(c for c in row_cells if c):
+                if not headers:
+                    non_empty = [c for c in row_cells if c]
+                    if non_empty:
+                        md_lines.append("- " + ": ".join(non_empty))
+                else:
+                    md_lines.append("| " + " | ".join(row_cells) + " |")
+
+        return "\n\n" + "\n".join(md_lines) + "\n\n"
+
+    return table_block_pattern.sub(_table_to_markdown, text)
+
+
 def wikitext_to_markdown(text: str) -> str:
     """Convert wikitext markup to clean Markdown formatting."""
     if not text:
         return ""
+
+    # Convert MediaWiki tables ({| ... |}) to clean GFM Markdown tables first
+    text = convert_mediawiki_tables_to_markdown(text)
 
     # Fix broken headings first
     text = _RE_BROKEN_HEADING.sub(r"\1 \2", text)
@@ -795,6 +995,48 @@ def wikitext_to_markdown(text: str) -> str:
     text = _RE_BOLD_ITALIC.sub(r"***\1***", text)
     text = _RE_BOLD.sub(r"**\1**", text)
     text = _RE_ITALIC.sub(r"*\1*", text)
+
+    # Unpack templates into clean Markdown text
+    def _squote_replacer(match: re.Match[str]) -> str:
+        content = match.group(1).strip()
+        parts = [p.strip() for p in content.split("|") if p.strip()]
+        if not parts:
+            return ""
+        q_text = parts[0]
+        q_author = ""
+        for p in parts[1:]:
+            if p.lower().startswith("author="):
+                q_author = p.split("=", 1)[1].strip()
+            elif not q_author and not p.startswith("http") and not p.startswith("source="):
+                q_author = p
+        if q_author:
+            return f"> \"{q_text}\"\n> — {q_author}"
+        return f"> \"{q_text}\""
+
+    text = re.sub(r"\{\{#SQuote:([^}]+)\}\}", _squote_replacer, text, flags=re.IGNORECASE)
+
+    def _extra_effect_replacer(match: re.Match[str]) -> str:
+        content = match.group(1).strip()
+        parts = [p.strip() for p in content.split("|") if p.strip()]
+        if not parts:
+            return ""
+        if len(parts) >= 3:
+            name = parts[1] or parts[0]
+            desc = parts[2]
+            return f"{name} ({desc})"
+        elif len(parts) == 2:
+            return f"{parts[0]} ({parts[1]})"
+        return parts[0]
+
+    text = re.sub(r"\{\{Extra Effect\|([^}]+)\}\}", _extra_effect_replacer, text, flags=re.IGNORECASE)
+    text = re.sub(r"\{\{Tooltip\|([^}|]+)\|([^}]+)\}\}", r"\1 (\2)", text, flags=re.IGNORECASE)
+
+    # Unpack Game Entity Macros: {{Enemy|Name}}, {{Item|Name}}, {{Resonator|Name}}, {{Faction|Name}}, {{Location|Name}}, {{Echo|Name}}, {{Weapon|Name}}
+    text = re.sub(r"\{\{(?:Enemy|Item|Resonator|Location|Faction|Echo|Weapon|Character)\|([^}|]+)(?:\|[^}]+)?\}\}", r"\1", text, flags=re.IGNORECASE)
+    text = re.sub(r"\{\{(?:Icon|Color|Card|Asset)\|[^}]*\}\}", "", text, flags=re.IGNORECASE)
+
+    # Strip display and dynamic category table templates
+    text = _RE_DISPLAY_TEMPLATES.sub("", text)
 
     # Wiki links → plain text
     text = _RE_WIKILINK_DISPLAY.sub(r"\1", text)
@@ -814,6 +1056,11 @@ def wikitext_to_markdown(text: str) -> str:
 
     # Remove inline image size references
     text = _RE_INLINE_IMAGE.sub("", text)
+
+    # Fix punctuation spacing glitches
+    text = re.sub(r'([.?!",])([A-Z])', r'\1 \2', text)
+    text = re.sub(r'\bfrom\s+\.\s*([A-Z])', r'from \1', text)
+    text = re.sub(r'\s+([,.:;?!])', r'\1', text)
 
     # Collapse any newly-created excessive blank lines
     text = _RE_EXCESS_BLANK_LINES.sub("\n\n", text)
@@ -945,7 +1192,7 @@ def clean_entities(
     if not isinstance(entities, list):
         entities = []
 
-    # Common English non-entity words to exclude from auto-NER regex
+    # Common English non-entity words, pronouns, adverbs, and verbs to exclude from NER
     NOISE_WORDS = {
         "profile", "title", "origin", "affiliation", "lead", "during", "however", "also", 
         "its", "they", "this", "that", "these", "those", "upon", "while", "certain", "known", 
@@ -962,7 +1209,17 @@ def clean_entities(
         "something", "yes", "sure", "come", "don", "eyeing", "set", "humans", "loans", "memories",
         "the moon", "ahem", "sic", "tx", "color", "exit", "leave", "thanks", "sorry", "wait",
         "hey", "hello", "hi", "okay", "fine", "cool", "well", "nice", "good", "bad", "riddle",
-        "riddles", "stall", "booth", "dialogue", "dialogue start", "dialogue end", "prof", "professor"
+        "riddles", "stall", "booth", "dialogue", "dialogue start", "dialogue end", "prof", "professor",
+        "name", "image", "images", "description", "intro", "location", "locations", "areas", "area",
+        "points", "interest", "item", "items", "bell", "situated", "according", "details", "summary",
+        "type", "category", "rarity", "cost", "source", "effect", "stats", "attribute", "attributes",
+        "unlocked", "level", "rank", "stat", "value", "property", "properties", "table", "column", "row",
+        "making", "could", "would", "should", "she", "he", "they", "it", "yet", "but", "one", "nutri",
+        "pack", "aren", "pattern", "relatively", "previous", "class", "subsequent", "presently", "routine",
+        "release", "cleanse", "category table", "these resonators", "extra effect", "mutant resonators",
+        "ex42978", "although", "gold", "finally", "silence", "numb", "teachers", "among", "soon", "back",
+        "normally", "occasionally", "wind", "sitting", "seeing", "beneath", "tears", "heartbeat",
+        "someone", "anyone", "everyone", "nobody", "anything", "everything", "nothing"
     }
 
     cleaned: List[str] = []
@@ -989,9 +1246,9 @@ def clean_entities(
             continue
 
         # Noise entity pattern filter (e.g. "His Resonance Liberation", "Sometimes Aalto", "Official Website", "Diagnostic Report")
-        if re.search(r"^(His|Her|Their|Its|Sometimes|Always|Many|Some|Other)\b", ent_str, re.IGNORECASE):
+        if re.search(r"^(His|Her|Their|Its|Sometimes|Always|Many|Some|Other|Although|These|Those|This|That)\b", ent_str, re.IGNORECASE):
             continue
-        if re.search(r"\b(Report|Assessment|Diagnostic|Evaluation|Website)$", ent_str, re.IGNORECASE):
+        if re.search(r"\b(Report|Assessment|Diagnostic|Evaluation|Website|Table|List)$", ent_str, re.IGNORECASE):
             continue
 
         # If text_content is supplied, ensure entity actually appears in this chunk!
@@ -1000,24 +1257,6 @@ def clean_entities(
 
         if ent_str not in cleaned:
             cleaned.append(ent_str)
-
-    # Re-scan text_content for proper noun entities present in this specific chunk
-    if text_content:
-        # Match capitalized proper nouns (e.g., Aemeath, Schwarzloch, Solaris-3, Exostrider, Stridergate)
-        matches = re.findall(r"\b([A-Z][a-zA-Z0-9]+(?:-[A-Z0-9]+)?(?:[ \t]+[A-Z][a-zA-Z0-9]+)*)\b", text_content)
-        for m in matches:
-            m_str = m.strip()
-            m_low = m_str.lower()
-            if (
-                len(m_str) >= 3
-                and m_low not in engine.blacklist
-                and m_low not in engine.stopwords
-                and m_low not in NOISE_WORDS
-                and not re.search(r"^(His|Her|Their|Its|Sometimes|Always|Many|Some|Other)\b", m_str, re.IGNORECASE)
-                and not re.search(r"\b(Report|Assessment|Diagnostic|Evaluation|Website)$", m_str, re.IGNORECASE)
-                and m_str not in cleaned
-            ):
-                cleaned.append(m_str)
 
     return cleaned
 

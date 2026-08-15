@@ -37,9 +37,18 @@ class TableInlinerChunker(BaseChunker):
         Example::
 
             row = {"Name": "Lucilla", "Position": "President"}
-            result = "Startorch Academy Staff row: Name: Lucilla. Position: President."
+            result = "Startorch Academy Staff: Name: Lucilla. Position: President."
         """
-        parts = [f"{k}: {v}" for k, v in row.items() if v]
+        import re
+        parts = []
+        for k, v in row.items():
+            if not v:
+                continue
+            if k.lower() in ("icon", "image", "picture", "thumb", "file", "photo"):
+                continue
+            val = re.sub(r"\[\[(?:File|Image):[^\]]*\]\]", "", v, flags=re.IGNORECASE).strip()
+            if val:
+                parts.append(f"{k}: {val}")
         row_str = ". ".join(parts)
         if not row_str.endswith("."):
             row_str += "."
