@@ -18,5 +18,6 @@ class Message:
     content: str
     created_at: datetime
     updated_at: datetime
+    rewritten_content: Optional[str] = None
     token_count: Optional[int] = None
     is_success: bool = True

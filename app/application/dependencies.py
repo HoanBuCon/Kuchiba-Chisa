@@ -122,7 +122,7 @@ class AppContainer:
         from app.domain.services.chat_pipeline.stages.background_task_stage import BackgroundTaskStage
         
         entity_resolver = self.entity_resolver
-        intent_classifier = IntentClassifier(llm=self.llm, embedder=self.embedder)
+        intent_classifier = IntentClassifier(llm=self.llm, embedder=self.embedder, entity_resolver=entity_resolver)
         
         # Tools registration
         from app.domain.services.tools.web_search import WebSearchAgentTool
@@ -194,6 +194,9 @@ class AppContainer:
             entity_resolver=entity_resolver
         )
         
+        from app.domain.services.rag.query_rewriter import QueryRewriter
+        query_rewriter = QueryRewriter(llm=self.llm, entity_resolver=entity_resolver)
+
         # Let's instantiate ChatPipeline first, we can use a lambda to defer the callback.
         engine_ref: list[ChatEngine] = []
 
@@ -206,6 +209,8 @@ class AppContainer:
             IntentStage(
                 intent_classifier=intent_classifier,
                 embedder=self.embedder,
+                query_rewriter=query_rewriter,
+                conv_repo_factory=SqlAlchemyConversationRepository,
                 pipeline_tracker=pipeline_tracker
             ),
             CacheStage(

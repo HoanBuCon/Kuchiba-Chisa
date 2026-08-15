@@ -46,14 +46,16 @@ window.PipelineTreeEngine = {
             subtitle: (step) => {
                 const method = step.data?.routing_method;
                 const intents = step.data?.intents || [];
+                const rwMethod = step.data?.rewrite_method;
                 const conf = step.data?.confidence !== undefined ? `${Math.round(step.data.confidence * 100)}%` : '';
+                const rwTag = rwMethod ? ` · [${rwMethod}]` : '';
                 if (method === 'L1_SMALL_TALK' || step.data?.is_small_talk) {
                     return 'L1 Small Talk (Tán gẫu · Bỏ qua RAG)';
                 }
                 if (method) {
-                    return `${method} · [${intents.join(', ')}] ${conf ? `(${conf})` : ''}`;
+                    return `${method} · [${intents.join(', ')}] ${conf ? `(${conf})` : ''}${rwTag}`;
                 }
-                return intents.length ? `[${intents.join(', ')}]` : 'RAG Query Search';
+                return intents.length ? `[${intents.join(', ')}]${rwTag}` : 'RAG Query Search';
             }
         },
         'intent_stage': {
@@ -63,14 +65,16 @@ window.PipelineTreeEngine = {
             subtitle: (step) => {
                 const method = step.data?.routing_method;
                 const intents = step.data?.intents || [];
+                const rwMethod = step.data?.rewrite_method;
                 const conf = step.data?.confidence !== undefined ? `${Math.round(step.data.confidence * 100)}%` : '';
+                const rwTag = rwMethod ? ` · [${rwMethod}]` : '';
                 if (method === 'L1_SMALL_TALK' || step.data?.is_small_talk) {
                     return 'L1 Small Talk (Tán gẫu · Bỏ qua RAG)';
                 }
                 if (method) {
-                    return `${method} · [${intents.join(', ')}] ${conf ? `(${conf})` : ''}`;
+                    return `${method} · [${intents.join(', ')}] ${conf ? `(${conf})` : ''}${rwTag}`;
                 }
-                return intents.length ? `[${intents.join(', ')}]` : 'RAG Query Search';
+                return intents.length ? `[${intents.join(', ')}]${rwTag}` : 'RAG Query Search';
             }
         },
         'tool_routing': {
@@ -419,6 +423,13 @@ window.PipelineTreeEngine = {
                     badges.push(`<span class="tree-node-badge badge-intent-l2">🎯 L2 Match</span>`);
                 } else if (method === 'L3_SEMANTIC') {
                     badges.push(`<span class="tree-node-badge badge-intent-l3">🧠 L3 Deep</span>`);
+                }
+
+                const rwMethod = step.data?.rewrite_method;
+                if (rwMethod === 'LLM_FLASH') {
+                    badges.push(`<span class="tree-node-badge" style="background: rgba(255, 152, 0, 0.2); color: #ffb74d; border: 1px solid rgba(255, 152, 0, 0.4);">🤖 LLM Flash</span>`);
+                } else if (rwMethod === 'FAST_PATH') {
+                    badges.push(`<span class="tree-node-badge" style="background: rgba(0, 230, 118, 0.15); color: #00e676; border: 1px solid rgba(0, 230, 118, 0.3);">⚡ Fast Path</span>`);
                 }
             } else if (step.name === 'cache_lookup' || step.name === 'cache_stage') {
                 if (step.data?.hit) {

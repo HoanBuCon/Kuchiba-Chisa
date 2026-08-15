@@ -129,7 +129,12 @@ _ENTITY_BLACKLIST = frozenset({
     "dear guest", "free service", "bad deal", "overview", "description",
     "trivia", "lead", "main", "page", "section", "even common echoes",
     "through leviathan", "each threnodian", "other languages", "campus life",
-    "fan clubs", "resonator nursing unit",
+    "fan clubs", "resonator nursing unit", "name", "image", "images",
+    "intro", "location", "locations", "areas", "area", "points", "interest",
+    "item", "items", "bell", "situated", "according", "details", "summary",
+    "type", "category", "rarity", "cost", "source", "effect", "stats",
+    "attribute", "attributes", "unlocked", "level", "rank", "stat", "value",
+    "property", "properties", "table", "column", "row"
 })
 
 

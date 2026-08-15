@@ -94,3 +94,26 @@ class EntityResolver:
                 expanded.add(related)
                 
         return expanded
+
+
+def enrich_query_with_entities(query: str, resolver: EntityResolver) -> str:
+    """
+    Enriches user query by appending canonical names and primary aliases
+    of recognized entities to maximize lexical and semantic retrieval hit rate.
+    """
+    if not query or not resolver:
+        return query
+    
+    extracted = resolver.extract_entities(query)
+    if not extracted:
+        return query
+        
+    enriched_terms = []
+    for canon in extracted:
+        if canon.lower() not in query.lower():
+            enriched_terms.append(canon)
+            
+    if enriched_terms:
+        return f"{query} ({', '.join(enriched_terms)})"
+    return query
+

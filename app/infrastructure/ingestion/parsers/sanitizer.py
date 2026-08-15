@@ -783,10 +783,111 @@ def sanitize_wikitext_regex(text: str, page_id: Optional[int] = None, page_title
 # ─────────────────────────────────────────────────────────────
 
 
+def convert_mediawiki_tables_to_markdown(text: str) -> str:
+    """
+    Converts MediaWiki table syntax ({| ... |}) to clean GFM Markdown tables or lists.
+    Strips raw wikitext table artifacts, image placeholders, and class styles.
+    """
+    if "{|" not in text:
+        return text
+
+    table_block_pattern = re.compile(r"\{\|[^\n]*\n.*?\|\}", re.DOTALL)
+
+    def _table_to_markdown(match: re.Match[str]) -> str:
+        raw_table = match.group(0)
+        lines = [l.strip() for l in raw_table.split("\n") if l.strip()]
+        if not lines:
+            return ""
+
+        headers: List[str] = []
+        rows: List[List[str]] = []
+        current_row: List[str] = []
+
+        for line in lines:
+            if line.startswith("{|") or line == "|}":
+                continue
+            if line.startswith("|-"):
+                if current_row:
+                    rows.append(current_row)
+                    current_row = []
+                continue
+
+            # Header line: ! Col1 ! Col2 or ! Col1 !! Col2
+            if line.startswith("!"):
+                hdr_content = line[1:].strip()
+                parts = re.split(r"\s*!{1,2}\s*", hdr_content)
+                for p in parts:
+                    if "|" in p and ("style=" in p or "class=" in p or "width=" in p):
+                        p = p.split("|", 1)[1]
+                    clean_hdr = re.sub(r"\[\[(?:[^\]|]+\|)?([^\]]+)\]\]", r"\1", p).strip()
+                    clean_hdr = re.sub(r"'{2,3}", "", clean_hdr).strip()
+                    if clean_hdr:
+                        headers.append(clean_hdr)
+                continue
+
+            # Data cell line: | Cell1 || Cell2 or | Cell1
+            if line.startswith("|"):
+                cell_content = line[1:].strip()
+                parts = re.split(r"\s*\|\|\s*", cell_content)
+                for p in parts:
+                    if "|" in p and ("style=" in p or "class=" in p or "id=" in p or "width=" in p):
+                        sub_parts = p.split("|")
+                        p = sub_parts[-1]
+                    val = re.sub(r"\[\[(?:File|Image):[^\]]+\]\]", "", p, flags=re.IGNORECASE)
+                    val = re.sub(r"\[\[(?:[^\]|]+\|)?([^\]]+)\]\]", r"\1", val)
+                    val = re.sub(r"\{\{Enemy\|([^}]+)\}\}", r"\1", val)
+                    val = re.sub(r"\{\{Item\|([^}]+)\}\}", r"\1", val)
+                    val = re.sub(r"\{\{Resonator\|([^}]+)\}\}", r"\1", val)
+                    val = re.sub(r"'{2,3}", "", val)
+                    val = val.replace("\n", " ").replace("|", "\\|").strip()
+                    current_row.append(val)
+
+        if current_row:
+            rows.append(current_row)
+
+        cols_to_keep: List[int] = []
+        if headers:
+            for idx, h in enumerate(headers):
+                if h.lower() not in ("image", "icon", "picture", "file", "thumb", "photo"):
+                    cols_to_keep.append(idx)
+        else:
+            max_cols = max((len(r) for r in rows), default=0)
+            cols_to_keep = list(range(max_cols))
+
+        if not rows:
+            return ""
+
+        md_lines = []
+        if headers and cols_to_keep:
+            active_headers = [headers[i] if i < len(headers) else f"Column {i+1}" for i in cols_to_keep]
+            md_lines.append("| " + " | ".join(active_headers) + " |")
+            md_lines.append("| " + " | ".join(["---"] * len(active_headers)) + " |")
+
+        for r in rows:
+            row_cells = []
+            for i in cols_to_keep:
+                c_val = r[i] if i < len(r) else ""
+                row_cells.append(c_val.strip())
+            if any(c for c in row_cells if c):
+                if not headers:
+                    non_empty = [c for c in row_cells if c]
+                    if non_empty:
+                        md_lines.append("- " + ": ".join(non_empty))
+                else:
+                    md_lines.append("| " + " | ".join(row_cells) + " |")
+
+        return "\n\n" + "\n".join(md_lines) + "\n\n"
+
+    return table_block_pattern.sub(_table_to_markdown, text)
+
+
 def wikitext_to_markdown(text: str) -> str:
     """Convert wikitext markup to clean Markdown formatting."""
     if not text:
         return ""
+
+    # Convert MediaWiki tables ({| ... |}) to clean GFM Markdown tables first
+    text = convert_mediawiki_tables_to_markdown(text)
 
     # Fix broken headings first
     text = _RE_BROKEN_HEADING.sub(r"\1 \2", text)
@@ -962,7 +1063,11 @@ def clean_entities(
         "something", "yes", "sure", "come", "don", "eyeing", "set", "humans", "loans", "memories",
         "the moon", "ahem", "sic", "tx", "color", "exit", "leave", "thanks", "sorry", "wait",
         "hey", "hello", "hi", "okay", "fine", "cool", "well", "nice", "good", "bad", "riddle",
-        "riddles", "stall", "booth", "dialogue", "dialogue start", "dialogue end", "prof", "professor"
+        "riddles", "stall", "booth", "dialogue", "dialogue start", "dialogue end", "prof", "professor",
+        "name", "image", "images", "description", "intro", "location", "locations", "areas", "area",
+        "points", "interest", "item", "items", "bell", "situated", "according", "details", "summary",
+        "type", "category", "rarity", "cost", "source", "effect", "stats", "attribute", "attributes",
+        "unlocked", "level", "rank", "stat", "value", "property", "properties", "table", "column", "row"
     }
 
     cleaned: List[str] = []

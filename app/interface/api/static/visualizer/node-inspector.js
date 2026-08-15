@@ -308,19 +308,24 @@ ${window.VisualizerApp.escapeHtml(data.reasoning_content)}
                     <div class="inspector-card-title">
                         <span>🧭 Hybrid Semantic Intent Router v2</span>
                     </div>
-                    <div style="display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; align-items: center;">
-                        <span class="pill" style="background: ${ragBadgeBg}; color: ${ragBadgeColor}; border: 1px solid ${ragBadgeColor}44; font-size: 12px; padding: 4px 10px; font-weight: 600;">
+                    <div style="display: flex; gap: 10px; row-gap: 10px; margin-bottom: 16px; flex-wrap: wrap; align-items: center;">
+                        <span class="pill" style="background: ${ragBadgeBg}; color: ${ragBadgeColor}; border: 1px solid ${ragBadgeColor}44; font-size: 12px; padding: 5px 12px; font-weight: 600;">
                             ${ragStatusText}
                         </span>
-                        <span class="pill" style="background: rgba(171, 71, 188, 0.15); color: #ab47bc; border: 1px solid rgba(171, 71, 188, 0.3); font-size: 12px; padding: 4px 10px;">
+                        <span class="pill" style="background: rgba(171, 71, 188, 0.15); color: #ab47bc; border: 1px solid rgba(171, 71, 188, 0.3); font-size: 12px; padding: 5px 12px;">
                             <b>Intents:</b> ${intentsText}
                         </span>
-                        <span class="pill" style="background: rgba(0, 230, 118, 0.15); color: #00e676; border: 1px solid rgba(0, 230, 118, 0.3); font-size: 12px; padding: 4px 10px;">
+                        <span class="pill" style="background: rgba(0, 230, 118, 0.15); color: #00e676; border: 1px solid rgba(0, 230, 118, 0.3); font-size: 12px; padding: 5px 12px;">
                             <b>Method:</b> ${routingMethod}
                         </span>
-                        <span class="pill" style="background: rgba(41, 182, 246, 0.15); color: #29b6f6; border: 1px solid rgba(41, 182, 246, 0.3); font-size: 12px; padding: 4px 10px;">
+                        <span class="pill" style="background: rgba(41, 182, 246, 0.15); color: #29b6f6; border: 1px solid rgba(41, 182, 246, 0.3); font-size: 12px; padding: 5px 12px;">
                             <b>Confidence:</b> ${confidencePct}%
                         </span>
+                        ${data.rewrite_method ? `
+                            <span class="pill" style="background: ${data.rewrite_method === 'LLM_FLASH' ? 'rgba(255, 152, 0, 0.2)' : 'rgba(0, 230, 118, 0.2)'}; color: ${data.rewrite_method === 'LLM_FLASH' ? '#ffb74d' : '#00e676'}; border: 1px solid ${data.rewrite_method === 'LLM_FLASH' ? 'rgba(255, 152, 0, 0.4)' : 'rgba(0, 230, 118, 0.4)'}; font-size: 12px; padding: 5px 12px; font-weight: 600;">
+                                <b>Rewrite Mode:</b> ${data.rewrite_method}
+                            </span>
+                        ` : ''}
                     </div>
 
                     ${semanticScoresHtml}
@@ -331,8 +336,14 @@ ${window.VisualizerApp.escapeHtml(data.reasoning_content)}
                             <div class="json-block" style="margin-top: 4px; color: #ffe082;">${window.VisualizerApp.escapeHtml(data.routing_reason)}</div>
                         </div>
                     ` : ''}
+                    ${data.rewritten_query ? `
+                        <div style="margin-bottom: 12px;">
+                            <b style="font-size: 13px;">✨ Rewritten Query (Câu hỏi sau Rewrite / Mở rộng ngữ cảnh):</b>
+                            <div class="json-block" style="margin-top: 4px; color: #69f0ae; font-weight: 500;">${window.VisualizerApp.escapeHtml(data.rewritten_query)}</div>
+                        </div>
+                    ` : ''}
                     <div>
-                        <b style="font-size: 13px;">Cleaned User Query (Dùng cho RAG Search):</b>
+                        <b style="font-size: 13px;">Cleaned User Query (Lọc từ đệm ban đầu):</b>
                         <div class="json-block" style="margin-top: 4px; color: ${data.cleaned_query ? '#81c784' : 'var(--text-muted)'};">${window.VisualizerApp.escapeHtml(data.cleaned_query || '(Rỗng - Bỏ qua RAG Search)')}</div>
                     </div>
                 </div>

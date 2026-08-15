@@ -30,6 +30,8 @@ class ChatContext:
     
     # Intent and Routing
     cleaned_query: str = ""
+    rewritten_query: str = ""
+    rewrite_method: str = "FAST_PATH"  # "BYPASS", "FAST_PATH", "LLM_FLASH", "FAST_PATH_FALLBACK"
     query_vector: Optional[List[float]] = None
     intent_result: Optional[IntentResult] = None
     _is_small_talk: bool = False
@@ -38,7 +40,10 @@ class ChatContext:
     @property
     def is_small_talk(self) -> bool:
         if self.intent_result is not None:
-            return ChatIntent.SMALL_TALK in self.intent_result.intents
+            knowledge_intents = {ChatIntent.LORE, ChatIntent.MEMORY, ChatIntent.SYSTEM_ACTION}
+            if any(ki in self.intent_result.intents for ki in knowledge_intents):
+                return False
+            return self.intent_result.intents == [ChatIntent.SMALL_TALK]
         return self._is_small_talk
 
     @is_small_talk.setter

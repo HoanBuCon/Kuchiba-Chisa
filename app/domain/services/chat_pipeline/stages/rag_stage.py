@@ -30,7 +30,7 @@ class RAGStage(PipelineStage):
             user_id=context.user_id,
             user_message=context.user_message,
             query_vector=context.query_vector,
-            cleaned_query=context.cleaned_query,
+            cleaned_query=context.rewritten_query or context.cleaned_query,
             intents=context.intents,
             current_emotions=context.current_emotions,
             history=context.history,
