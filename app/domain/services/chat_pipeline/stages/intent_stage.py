@@ -33,39 +33,85 @@ class IntentStage(PipelineStage):
         self.pipeline_tracker = pipeline_tracker
 
     async def process(self, context: ChatContext) -> ChatContext:
-        is_st = IntentClassifier.is_small_talk(context.user_message)
+        is_st, st_reason = await self.intent_classifier.is_small_talk_hybrid(context.user_message)
         
         query_vector = None
         cleaned_query = ""
-        rewritten_query = ""
-        rewrite_method = "FAST_PATH"
+        rewritten_query = context.user_message
+        rewrite_method = "BYPASS"
+        needs_vector_search = False
+        needs_web_search = False
         intent_result: Optional[IntentResult] = None
 
         if not is_st:
             cleaned_query = clean_query_for_rag(context.user_message)
-            # Second-level guard: If cleaned query contains no meaningful search content, treat as small talk!
             if not is_meaningful_query(cleaned_query):
-                log.info("Intent post-clean guard: query cleaned down to non-meaningful content", original=context.user_message, cleaned=cleaned_query)
+                log.info("Intent post-clean guard: query cleaned down to non-meaningful content -> Small Talk", original=context.user_message, cleaned=cleaned_query)
                 is_st = True
+                st_reason = "Non-meaningful query guard (Bypass RAG)"
                 cleaned_query = ""
 
+        # ── BRANCH 1: Small Talk (0ms Latency, 0 Token LLM Rewrite Bypass) ──
         if is_st:
             intent_result = IntentResult(
                 intents=[ChatIntent.SMALL_TALK],
                 confidence=1.0,
-                routing_method="L1_SMALL_TALK",
+                routing_method="HYBRID_SMALL_TALK",
                 query_vector=None,
                 semantic_scores={"SMALL_TALK": 1.0},
-                routing_reason="L1 Small Talk fast-path matched (Bypass RAG & Rewrite)"
+                routing_reason=f"Hardcore Hybrid Small Talk: {st_reason}"
             )
+            context.is_small_talk = True
             rewritten_query = context.user_message
             rewrite_method = "BYPASS"
-        else:
-            # 1. Preliminary classification on cleaned_query
-            prelim_vec = await self.embedder.embed_text(cleaned_query, prefix="query: ")
-            intent_result = await self.intent_classifier.classify(cleaned_query, prelim_vec)
+            needs_vector_search = False
+            needs_web_search = False
 
-            # 2. Retrieve previous user rewritten query from SQL (1-Turn Context Chaining)
+            # Optionally embed text for long-term memory retrieval
+            try:
+                query_vector = await self.embedder.embed_text(context.user_message, prefix="query: ")
+                intent_result.query_vector = query_vector
+            except Exception as ex:
+                log.debug("Small talk memory embedding skipped", error=str(ex))
+
+            if self.pipeline_tracker:
+                self.pipeline_tracker.add_step("intent_classification", {
+                    "is_small_talk": True,
+                    "intents": ["SMALL_TALK"],
+                    "cleaned_query": "",
+                    "rewritten_query": context.user_message,
+                    "rewrite_method": "BYPASS",
+                    "needs_vector_search": False,
+                    "needs_web_search": False,
+                    "confidence": 1.0,
+                    "routing_method": "HYBRID_SMALL_TALK",
+                    "semantic_scores": {"SMALL_TALK": 1.0},
+                    "rag_triggered": False,
+                    "routing_reason": f"Hardcore Hybrid Small Talk: {st_reason}"
+                })
+
+        # ── BRANCH 2: Knowledge / Task / Out-of-Lore / Code (LLM Rewriter & Tri-State Router) ──
+        else:
+            context.is_small_talk = False
+
+            # Register Stage 2 root step FIRST so sub-action LLM rewrite appears hierarchically as its child node
+            stage_tracker_data = {
+                "is_small_talk": False,
+                "intents": ["KNOWLEDGE_OR_TASK"],
+                "cleaned_query": cleaned_query,
+                "rewritten_query": cleaned_query or context.user_message,
+                "rewrite_method": "LLM_FLASH",
+                "needs_vector_search": False,
+                "needs_web_search": False,
+                "rag_triggered": False,
+                "confidence": 1.0,
+                "routing_method": "LLM_ROUTER",
+                "routing_reason": "Knowledge / Task Query ➔ Handover to Micro LLM Rewriter"
+            }
+            if self.pipeline_tracker:
+                self.pipeline_tracker.add_step("intent_classification", stage_tracker_data)
+
+            # 1. Retrieve previous user rewritten query from SQL (1-Turn Context Chaining)
             prev_rewritten_query = None
             if self.conv_repo_factory and context.session and context.conv_id and context.user_uuid:
                 try:
@@ -83,52 +129,73 @@ class IntentStage(PipelineStage):
                 if user_hist:
                     prev_rewritten_query = user_hist[-1]
 
-            # 3. Dual-Signal Decision Matrix
-            has_history = bool(prev_rewritten_query or context.history)
-            decision_info = IntentClassifier.determine_routing_and_rewrite(
-                user_message=context.user_message,
-                cleaned_query=cleaned_query,
-                intent_result=intent_result,
-                has_history=has_history
-            )
-
-            rewrite_decision = decision_info["decision"]
-
-            # 4. Execute Tiered Rewrite
-            primary_intent = intent_result.intents[0].value if intent_result.intents else None
+            # 2. Execute Micro LLM Rewrite & Tri-State Routing (Sub-step LLM is recorded after root step)
             if self.query_rewriter:
-                rewritten_query, rewrite_method = await self.query_rewriter.rewrite(
+                rewritten_query, rewrite_method, needs_vector_search, needs_web_search = await self.query_rewriter.rewrite(
                     user_message=context.user_message,
                     cleaned_query=cleaned_query,
                     prev_rewritten_query=prev_rewritten_query,
-                    needs_llm_rewrite=(rewrite_decision == "LLM_REWRITE"),
-                    intent_hint=primary_intent,
+                    needs_llm_rewrite=True,
+                    intent_hint=None,
                 )
             else:
-                # Fast-Path: Zero-token entity alias enrichment
-                if self.intent_classifier.entity_resolver:
-                    from app.domain.services.rag.entity_resolver import enrich_query_with_entities
-                    rewritten_query = enrich_query_with_entities(cleaned_query, self.intent_classifier.entity_resolver, intent_hint=primary_intent)
-                else:
-                    rewritten_query = cleaned_query
+                rewritten_query = cleaned_query or context.user_message
                 rewrite_method = "FAST_PATH"
+                needs_vector_search = True
+                needs_web_search = False
 
-            # 5. Embed the final aligned query for RAG
-            if rewritten_query != cleaned_query:
-                query_vector = await self.embedder.embed_text(rewritten_query, prefix="query: ")
-                # Re-check intent if rewritten query significantly changed
-                intent_result.query_vector = query_vector
+            # 3. Determine intents based on LLM Router decisions
+            matched_intents: List[ChatIntent] = []
+            if needs_vector_search:
+                matched_intents.append(ChatIntent.LORE)
+                matched_intents.append(ChatIntent.KNOWLEDGE_OR_TASK)
+            elif needs_web_search:
+                matched_intents.append(ChatIntent.KNOWLEDGE_OR_TASK)
             else:
-                query_vector = prelim_vec
+                matched_intents.append(ChatIntent.CONVERSATIONAL)
 
-        intent_values = [i.value for i in intent_result.intents]
+            # 4. Embed the final aligned query for Vector Search (if needed)
+            if needs_vector_search or (needs_web_search and not query_vector):
+                query_vector = await self.embedder.embed_text(rewritten_query, prefix="query: ")
+
+            routing_reason = (
+                "LLM Tri-State: Qdrant Vector Search (Game Lore)" if needs_vector_search
+                else ("LLM Tri-State: Direct Web Search (External / Internet)" if needs_web_search
+                else "LLM Tri-State: Code / Small Talk (0ms RAG Bypass)")
+            )
+
+            intent_result = IntentResult(
+                intents=matched_intents,
+                confidence=1.0,
+                routing_method="LLM_ROUTER",
+                query_vector=query_vector,
+                semantic_scores={"LORE": 1.0 if needs_vector_search else 0.0, "WEB": 1.0 if needs_web_search else 0.0},
+                routing_reason=routing_reason
+            )
+
+            intent_values = [i.value for i in intent_result.intents]
+            rag_triggered = bool(needs_vector_search or needs_web_search)
+
+            # 5. Update Stage 2 tracker step data with finalized rewrite & routing outcomes
+            stage_tracker_data.update({
+                "intents": intent_values,
+                "rewritten_query": rewritten_query,
+                "rewrite_method": rewrite_method,
+                "needs_vector_search": needs_vector_search,
+                "needs_web_search": needs_web_search,
+                "rag_triggered": rag_triggered,
+                "routing_reason": routing_reason
+            })
+
         log.info(
             "Production query classified and routed",
-            intents=intent_values,
+            intents=[i.value for i in intent_result.intents],
             confidence=intent_result.confidence,
             method=intent_result.routing_method,
             rewrite_method=rewrite_method,
             rewritten_query=rewritten_query,
+            needs_vector_search=needs_vector_search,
+            needs_web_search=needs_web_search,
             user_id=context.user_id
         )
 
@@ -136,21 +203,9 @@ class IntentStage(PipelineStage):
         context.cleaned_query = cleaned_query
         context.rewritten_query = rewritten_query
         context.rewrite_method = rewrite_method
+        context.needs_vector_search = needs_vector_search
+        context.needs_web_search = needs_web_search
         context.query_vector = query_vector
         context.intents = intent_result.intents
-
-        if self.pipeline_tracker:
-            self.pipeline_tracker.add_step("intent_classification", {
-                "is_small_talk": context.is_small_talk,
-                "intents": intent_values,
-                "cleaned_query": cleaned_query,
-                "rewritten_query": rewritten_query,
-                "rewrite_method": rewrite_method,
-                "confidence": intent_result.confidence,
-                "routing_method": intent_result.routing_method,
-                "semantic_scores": intent_result.semantic_scores,
-                "rag_triggered": not context.is_small_talk,
-                "routing_reason": intent_result.routing_reason
-            })
 
         return context

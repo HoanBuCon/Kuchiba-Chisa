@@ -32,6 +32,8 @@ class ChatContext:
     cleaned_query: str = ""
     rewritten_query: str = ""
     rewrite_method: str = "FAST_PATH"  # "BYPASS", "FAST_PATH", "LLM_FLASH", "FAST_PATH_FALLBACK"
+    needs_vector_search: bool = True
+    needs_web_search: bool = False
     query_vector: Optional[List[float]] = None
     intent_result: Optional[IntentResult] = None
     _is_small_talk: bool = False

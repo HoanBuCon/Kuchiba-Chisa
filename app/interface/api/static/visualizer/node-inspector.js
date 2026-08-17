@@ -72,6 +72,9 @@ ${window.VisualizerApp.escapeHtml(userMessage)}
                     case 'intent_stage':
                         contentHtml = this.renderIntentInspector(step);
                         break;
+                    case 'query_rewrite':
+                        contentHtml = this.renderQueryRewriteInspector(step);
+                        break;
                     case 'tool_routing':
                     case 'tool_routing_stage':
                         contentHtml = this.renderToolRoutingInspector(step);
@@ -265,48 +268,25 @@ ${window.VisualizerApp.escapeHtml(data.reasoning_content)}
         const ragTriggered = data.rag_triggered !== undefined ? data.rag_triggered : !isSt;
         const ragBadgeColor = ragTriggered ? '#4caf50' : '#ff9800';
         const ragBadgeBg = ragTriggered ? 'rgba(76, 175, 80, 0.15)' : 'rgba(255, 152, 0, 0.15)';
-        const ragStatusText = ragTriggered ? '🟢 Bật RAG Vector Search' : '🟠 Tắt RAG Search (Small Talk / Conversational)';
-        const routingMethod = data.routing_method || (isSt ? 'L1_SMALL_TALK' : 'L2_KEYWORD');
+        const ragStatusText = ragTriggered ? '🟢 Bật Tri thức RAG' : '🟠 Tắt RAG (Small Talk · 0ms Bypass)';
+        const routingMethod = data.routing_method || (isSt ? 'HYBRID_SMALL_TALK' : 'LLM_ROUTER');
         const confidencePct = Math.round((data.confidence || 1.0) * 100);
 
-        // Render Semantic Scores chart if available
-        let semanticScoresHtml = '';
-        if (data.semantic_scores && Object.keys(data.semantic_scores).length > 0) {
-            const scoreBars = Object.entries(data.semantic_scores).map(([cat, score]) => {
-                const pct = Math.round(score * 100);
-                let color = '#ab47bc';
-                if (cat === 'LORE') color = '#66bb6a';
-                if (cat === 'MEMORY') color = '#42a5f5';
-                if (cat === 'SYSTEM_ACTION') color = '#ffa726';
-                if (cat === 'CONVERSATIONAL') color = '#26a69a';
-                return `
-                    <div style="margin-bottom: 8px;">
-                        <div style="display: flex; justify-content: space-between; font-size: 11.5px; margin-bottom: 3px;">
-                            <span style="color: var(--text-secondary); font-weight: 500;">${cat}</span>
-                            <span style="font-family: monospace; color: ${color}; font-weight: 600;">${score.toFixed(3)} (${pct}%)</span>
-                        </div>
-                        <div style="height: 6px; background: rgba(255,255,255,0.08); border-radius: 3px; overflow: hidden;">
-                            <div style="width: ${pct}%; height: 100%; background: ${color}; transition: width 0.4s ease;"></div>
-                        </div>
-                    </div>
-                `;
-            }).join('');
+        const needsVec = data.needs_vector_search !== false && !isSt;
+        const needsWeb = Boolean(data.needs_web_search);
+        const vecBadgeColor = needsVec ? '#66bb6a' : '#ef5350';
+        const vecBadgeBg = needsVec ? 'rgba(76, 175, 80, 0.15)' : 'rgba(239, 83, 80, 0.15)';
+        const vecStatusText = needsVec ? '🎯 Tra cứu Qdrant Lore' : '⚡ Bỏ qua Vector DB (0ms)';
 
-            semanticScoresHtml = `
-                <div style="margin-bottom: 14px; background: rgba(0, 0, 0, 0.25); border: 1px solid var(--border-color); border-radius: 8px; padding: 12px;">
-                    <div style="font-size: 12px; font-weight: 600; color: var(--text-secondary); margin-bottom: 10px;">
-                        📊 L3 Multi-Anchor Cluster Cosine Scores (Threshold = 0.65)
-                    </div>
-                    ${scoreBars}
-                </div>
-            `;
-        }
+        const webBadgeColor = needsWeb ? '#42a5f5' : 'var(--text-muted)';
+        const webBadgeBg = needsWeb ? 'rgba(33, 150, 243, 0.15)' : 'rgba(255, 255, 255, 0.05)';
+        const webStatusText = needsWeb ? '🌐 Kích hoạt Direct Web Search' : '⚪ Web Search Tắt';
 
         return `
             <div class="inspector-panel">
                 <div class="inspector-card">
                     <div class="inspector-card-title">
-                        <span>🧭 Hybrid Semantic Intent Router v2</span>
+                        <span>🧭 Phân loại Ý định & Viết lại Câu hỏi (Intent & Tiered Rewrite)</span>
                     </div>
                     <div style="display: flex; gap: 10px; row-gap: 10px; margin-bottom: 16px; flex-wrap: wrap; align-items: center;">
                         <span class="pill" style="background: ${ragBadgeBg}; color: ${ragBadgeColor}; border: 1px solid ${ragBadgeColor}44; font-size: 12px; padding: 5px 12px; font-weight: 600;">
@@ -326,9 +306,13 @@ ${window.VisualizerApp.escapeHtml(data.reasoning_content)}
                                 <b>Rewrite Mode:</b> ${data.rewrite_method}
                             </span>
                         ` : ''}
+                        <span class="pill" style="background: ${vecBadgeBg}; color: ${vecBadgeColor}; border: 1px solid ${vecBadgeColor}44; font-size: 12px; padding: 5px 12px; font-weight: 600;">
+                            <b>Vector DB:</b> ${vecStatusText}
+                        </span>
+                        <span class="pill" style="background: ${webBadgeBg}; color: ${webBadgeColor}; border: 1px solid ${webBadgeColor}44; font-size: 12px; padding: 5px 12px; font-weight: 600;">
+                            <b>Web Search:</b> ${webStatusText}
+                        </span>
                     </div>
-
-                    ${semanticScoresHtml}
 
                     ${data.routing_reason ? `
                         <div style="margin-bottom: 12px;">
@@ -338,13 +322,63 @@ ${window.VisualizerApp.escapeHtml(data.reasoning_content)}
                     ` : ''}
                     ${data.rewritten_query ? `
                         <div style="margin-bottom: 12px;">
-                            <b style="font-size: 13px;">✨ Rewritten Query (Câu hỏi sau Rewrite / Mở rộng ngữ cảnh):</b>
+                            <b style="font-size: 13px;">✨ Rewritten Query (Câu hỏi sau Rewrite / Độc lập ngữ cảnh):</b>
                             <div class="json-block" style="margin-top: 4px; color: #69f0ae; font-weight: 500;">${window.VisualizerApp.escapeHtml(data.rewritten_query)}</div>
                         </div>
                     ` : ''}
                     <div>
                         <b style="font-size: 13px;">Cleaned User Query (Lọc từ đệm ban đầu):</b>
                         <div class="json-block" style="margin-top: 4px; color: ${data.cleaned_query ? '#81c784' : 'var(--text-muted)'};">${window.VisualizerApp.escapeHtml(data.cleaned_query || '(Rỗng - Bỏ qua RAG Search)')}</div>
+                    </div>
+                </div>
+            </div>
+        `;
+    },
+
+    renderQueryRewriteInspector(step) {
+        const data = step.data || {};
+        const method = data.rewrite_method || 'FAST_PATH';
+        const needsVec = data.needs_vector_search !== false;
+        const needsWeb = Boolean(data.needs_web_search);
+        const ragTriggered = data.rag_triggered !== false && (needsVec || needsWeb);
+        const vecBadgeColor = needsVec ? '#66bb6a' : '#ef5350';
+        const vecBadgeBg = needsVec ? 'rgba(76, 175, 80, 0.15)' : 'rgba(239, 83, 80, 0.15)';
+        const vecStatusText = needsVec ? '🎯 Cần tra cứu Qdrant Lore' : '⚡ Bỏ qua Vector DB (0ms)';
+
+        const webBadgeColor = needsWeb ? '#42a5f5' : 'var(--text-muted)';
+        const webBadgeBg = needsWeb ? 'rgba(33, 150, 243, 0.15)' : 'rgba(255, 255, 255, 0.05)';
+        const webStatusText = needsWeb ? '🌐 Kích hoạt Web Search (Internet/Out-of-Lore)' : '⚪ Web Search Tắt';
+
+        return `
+            <div class="inspector-panel">
+                <div class="inspector-card">
+                    <div class="inspector-card-title">
+                        <span>✨ Query Rewrite & Tri-State Knowledge Router</span>
+                    </div>
+                    <div style="display: flex; gap: 10px; row-gap: 10px; margin-bottom: 16px; flex-wrap: wrap; align-items: center;">
+                        <span class="pill" style="background: ${vecBadgeBg}; color: ${vecBadgeColor}; border: 1px solid ${vecBadgeColor}44; font-size: 12px; padding: 5px 12px; font-weight: 600;">
+                            <b>Vector Status:</b> ${vecStatusText}
+                        </span>
+                        <span class="pill" style="background: ${webBadgeBg}; color: ${webBadgeColor}; border: 1px solid ${webBadgeColor}44; font-size: 12px; padding: 5px 12px; font-weight: 600;">
+                            <b>Web Search:</b> ${webStatusText}
+                        </span>
+                        <span class="pill" style="background: ${method === 'LLM_FLASH' ? 'rgba(255, 152, 0, 0.2)' : 'rgba(0, 230, 118, 0.2)'}; color: ${method === 'LLM_FLASH' ? '#ffb74d' : '#00e676'}; border: 1px solid ${method === 'LLM_FLASH' ? 'rgba(255, 152, 0, 0.4)' : 'rgba(0, 230, 118, 0.4)'}; font-size: 12px; padding: 5px 12px; font-weight: 600;">
+                            <b>Rewrite Mode:</b> ${method}
+                        </span>
+                        <span class="pill" style="background: ${ragTriggered ? 'rgba(76, 175, 80, 0.15)' : 'rgba(255, 152, 0, 0.15)'}; color: ${ragTriggered ? '#4caf50' : '#ff9800'}; border: 1px solid ${ragTriggered ? '#4caf5044' : '#ff980044'}; font-size: 12px; padding: 5px 12px;">
+                            <b>Knowledge Stage:</b> ${ragTriggered ? '🟢 Kích hoạt' : '⚪ Bỏ qua'}
+                        </span>
+                    </div>
+
+                    ${data.rewritten_query ? `
+                        <div style="margin-bottom: 12px;">
+                            <b style="font-size: 13px;">✨ Rewritten Query (Câu hỏi sau Rewrite / Độc lập ngữ cảnh):</b>
+                            <div class="json-block" style="margin-top: 4px; color: #69f0ae; font-weight: 500;">${window.VisualizerApp.escapeHtml(data.rewritten_query)}</div>
+                        </div>
+                    ` : ''}
+                    <div>
+                        <b style="font-size: 13px;">Cleaned Query (Câu hỏi sau tiền xử lý):</b>
+                        <div class="json-block" style="margin-top: 4px; color: ${data.cleaned_query ? '#81c784' : 'var(--text-muted)'};">${window.VisualizerApp.escapeHtml(data.cleaned_query || '(Rỗng)')}</div>
                     </div>
                 </div>
             </div>
@@ -398,6 +432,35 @@ ${window.VisualizerApp.escapeHtml(data.reasoning_content)}
 
     renderRAGInspector(step) {
         const data = step.data || {};
+
+        if (data.mode === 'WEB_SEARCH') {
+            return `
+                <div class="inspector-panel">
+                    <div class="inspector-card">
+                        <div class="inspector-card-title">
+                            <span>🌐 Knowledge Retrieval · Web Search Mode (Option 2)</span>
+                        </div>
+                        <div style="display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; align-items: center;">
+                            <span class="pill" style="background: rgba(0, 230, 118, 0.15); color: #00e676; border: 1px solid rgba(0, 230, 118, 0.3); font-size: 12px; padding: 4px 10px;">
+                                <b>Chế độ:</b> Direct Web Search (Lần 1)
+                            </span>
+                            <span class="pill" style="background: rgba(38, 198, 218, 0.15); color: #26c6da; border: 1px solid rgba(38, 198, 218, 0.3); font-size: 12px; padding: 4px 10px;">
+                                <b>Snippets thu thập:</b> ${data.snippets_count || 0}
+                            </span>
+                        </div>
+                        <div style="margin-bottom: 12px;">
+                            <b style="font-size: 13px;">Search Query Lần 1:</b>
+                            <div class="json-block" style="margin-top: 4px; color: #26c6da; font-weight: 600;">🔍 ${window.VisualizerApp.escapeHtml(data.search_query || '')}</div>
+                        </div>
+                        <div>
+                            <b style="font-size: 13px;">Dữ liệu Tri thức Thu thập (Round 1 Context):</b>
+                            <div class="json-block" style="margin-top: 4px; color: #eceff1; max-height: 400px; white-space: pre-wrap;">${window.VisualizerApp.escapeHtml(data.search_result || '')}</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
         const lore = data.retrieved_lore_chunks || [];
         const mem = data.retrieved_memories || [];
         const collections = data.lore_collections_queried || [];
@@ -930,12 +993,49 @@ ${window.VisualizerApp.escapeHtml(reasonText)}
     renderEmotionInspector(step) {
         const data = step.data || {};
         const emotions = data.new_emotions || {};
+        const sentiment = data.sentiment_analysis || {};
+        const primaryEmotion = sentiment.primary_emotion || 'calm_warmth';
+        const intensity = sentiment.intensity !== undefined ? Math.round(sentiment.intensity * 100) : 50;
+        const valence = sentiment.valence !== undefined ? sentiment.valence : 0.0;
+
+        const archetypeMeta = {
+            'flustered_affection': { label: '🌸 Ngượng ngùng / Hạnh phúc (Flustered Affection)', color: '#f06292', bg: 'rgba(240, 98, 146, 0.15)', border: 'rgba(240, 98, 146, 0.35)' },
+            'playful_pout': { label: '😾 Dỗi hờn đáng yêu (Playful Pout)', color: '#ffb74d', bg: 'rgba(255, 183, 77, 0.15)', border: 'rgba(255, 183, 77, 0.35)' },
+            'melancholic_care': { label: '🌧️ Xót xa / Đồng cảm sâu sắc (Melancholic Care)', color: '#64b5f6', bg: 'rgba(100, 181, 246, 0.15)', border: 'rgba(100, 181, 246, 0.35)' },
+            'cheerful_joy': { label: '✨ Hào hứng / Rạng rỡ (Cheerful Joy)', color: '#81c784', bg: 'rgba(129, 199, 132, 0.15)', border: 'rgba(129, 199, 132, 0.35)' },
+            'guarded_cold': { label: '❄️ Lạnh lùng dè chừng (Guarded Cold)', color: '#e57373', bg: 'rgba(229, 115, 115, 0.15)', border: 'rgba(229, 115, 115, 0.35)' },
+            'calm_warmth': { label: '🍃 Điềm tĩnh ấm áp (Calm Warmth)', color: '#4db6ac', bg: 'rgba(77, 182, 172, 0.15)', border: 'rgba(77, 182, 172, 0.35)' },
+            'neutral': { label: '⚖️ Khách quan / Trung tính (Neutral)', color: '#b0bec5', bg: 'rgba(176, 190, 197, 0.15)', border: 'rgba(176, 190, 197, 0.35)' },
+        };
+
+        const meta = archetypeMeta[primaryEmotion] || archetypeMeta['calm_warmth'];
+
+        // Compute Progression Tiers
+        const trustVal = emotions.trust || 0.5;
+        const attachVal = emotions.attachment || 0.0;
+        let trustTier = "T2: Người quen";
+        if (trustVal < 0.35) trustTier = "T1: Dè chừng";
+        else if (trustVal < 0.55) trustTier = "T2: Người quen";
+        else if (trustVal < 0.75) trustTier = "T3: Đồng hành";
+        else if (trustVal < 0.90) trustTier = "T4: Tri kỷ (Dễ dụ)";
+        else trustTier = "T5: Tuyệt đối Tin cậy";
+
+        let attachTier = "A1: Độc lập";
+        if (attachVal < 0.20) attachTier = "A1: Độc lập";
+        else if (attachVal < 0.45) attachTier = "A2: Quý mến";
+        else if (attachVal < 0.70) attachTier = "A3: Rung động";
+        else if (attachVal < 0.88) attachTier = "A4: Tâm đầu ý hợp";
+        else attachTier = "A5: Bất khả phân ly";
+
         const bars = [
+            { label: 'Tin tưởng', key: 'trust', color: '#ffeb3b' },
+            { label: 'Gắn bó', key: 'attachment', color: '#e91e63' },
+            { label: 'Ngại ngùng', key: 'shyness', color: '#ba68c8' },
+            { label: 'Hiếu kỳ', key: 'curiosity', color: '#00bcd4' },
+            { label: 'Bình yên', key: 'comfort', color: '#26a69a' },
             { label: 'Vui vẻ', key: 'joy', color: '#4caf50' },
             { label: 'Buồn bã', key: 'sadness', color: '#2196f3' },
-            { label: 'Tin tưởng', key: 'trust', color: '#ffeb3b' },
             { label: 'Khó chịu', key: 'irritation', color: '#f44336' },
-            { label: 'Gắn kết', key: 'attachment', color: '#e91e63' },
         ];
 
         const barsHtml = bars.map(b => {
@@ -958,17 +1058,34 @@ ${window.VisualizerApp.escapeHtml(reasonText)}
             <div class="inspector-panel">
                 <div class="inspector-card">
                     <div class="inspector-card-title">
-                        <span>🎭 Emotion State Update</span>
+                        <span>🎭 8-Dimensional Emotion & Relationship Update</span>
+                    </div>
+                    <div style="display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; align-items: center;">
+                        <span class="pill" style="background: ${meta.bg}; color: ${meta.color}; border: 1px solid ${meta.border}; font-size: 12px; padding: 4px 10px; font-weight: 600;">
+                            ${meta.label}
+                        </span>
+                        <span class="pill" style="background: rgba(255, 235, 59, 0.12); color: #fff59d; border: 1px solid rgba(255, 235, 59, 0.25); font-size: 12px; padding: 4px 10px;">
+                            🛡️ <b>${trustTier}</b>
+                        </span>
+                        <span class="pill" style="background: rgba(233, 30, 99, 0.12); color: #f48fb1; border: 1px solid rgba(233, 30, 99, 0.25); font-size: 12px; padding: 4px 10px;">
+                            💖 <b>${attachTier}</b>
+                        </span>
+                        <span class="pill" style="background: rgba(255, 255, 255, 0.05); color: var(--text-secondary); font-size: 12px;">
+                            <b>Intensity:</b> ${intensity}%
+                        </span>
+                        <span class="pill" style="background: rgba(255, 255, 255, 0.05); color: ${valence > 0 ? '#81c784' : valence < 0 ? '#e57373' : '#b0bec5'}; font-size: 12px;">
+                            <b>Valence:</b> ${valence > 0 ? '+' : ''}${valence.toFixed(2)}
+                        </span>
                     </div>
                     <div style="margin-bottom: 16px;">
-                        <b style="font-size: 13px;">Chỉ số cảm xúc mới (Updated Vector):</b>
+                        <b style="font-size: 13px;">Chỉ số Cảm xúc & Quan hệ 8 Chiều (Updated Vector):</b>
                         <div style="margin-top: 10px; background: rgba(0,0,0,0.25); padding: 12px 14px; border-radius: 8px; border: 1px solid var(--border-color);">
                             ${barsHtml}
                         </div>
                     </div>
                     <div>
-                        <b style="font-size: 13px;">User Sentiment Payload:</b>
-                        <div class="json-block" style="margin-top: 4px; max-height: 150px;">${window.VisualizerApp.escapeHtml(JSON.stringify(data.user_sentiment || {}, null, 2))}</div>
+                        <b style="font-size: 13px;">Sentiment Analysis Payload:</b>
+                        <div class="json-block" style="margin-top: 4px; max-height: 150px;">${window.VisualizerApp.escapeHtml(JSON.stringify(data.sentiment_analysis || data.user_sentiment || {}, null, 2))}</div>
                     </div>
                 </div>
             </div>

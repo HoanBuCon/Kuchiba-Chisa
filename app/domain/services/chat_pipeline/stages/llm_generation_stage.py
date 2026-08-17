@@ -21,6 +21,12 @@ class LLMGenerationStage(PipelineStage):
 
     async def process(self, context: ChatContext) -> ChatContext:
         if context.is_cached_answer:
+            if context.on_token and context.response_text:
+                for token in context.response_text:
+                    if asyncio.iscoroutinefunction(context.on_token):
+                        await context.on_token(token)
+                    else:
+                        context.on_token(token)
             return context
             
         log.info("Generating response with structured LLM")
@@ -131,8 +137,11 @@ class LLMGenerationStage(PipelineStage):
         context.estimated_input_tokens = response.input_tokens
         context.estimated_output_tokens = response.output_tokens
         
-        # We temporarily store the parsed sentiment directly into tool_res or similar, 
-        # or just attach it to context for emotion update
+        # Store parsed sentiment into tool_res for emotion update stage
+        sentiment_analysis = response.parsed.get("sentiment_analysis", {})
+        if not isinstance(sentiment_analysis, dict):
+            sentiment_analysis = {}
+
         user_sentiment = response.parsed.get("user_sentiment", {})
         chisa_sentiment = response.parsed.get("chisa_sentiment", {})
         if not isinstance(user_sentiment, dict):
@@ -141,6 +150,7 @@ class LLMGenerationStage(PipelineStage):
             chisa_sentiment = {}
             
         context.tool_res = context.tool_res or {}
+        context.tool_res["sentiment_analysis"] = sentiment_analysis
         context.tool_res["user_sentiment"] = user_sentiment
         context.tool_res["chisa_sentiment"] = chisa_sentiment
 

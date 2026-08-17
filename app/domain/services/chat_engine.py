@@ -112,6 +112,12 @@ class ChatEngine:
                     await self.cache.delete(cache_key)
                 else:
                     log.info("Redis Answer Cache HIT", user_id=user_id, query_hash=query_hash)
+                    if on_token:
+                        for token in cached_answer.split(" "):
+                            if asyncio.iscoroutinefunction(on_token):
+                                await on_token(token + " ")
+                            else:
+                                on_token(token + " ")
                     current_emotion = await self.get_emotion_state(session, user_id)
                     if hasattr(current_emotion, "model_dump"):
                         emotion_dict = current_emotion.model_dump()

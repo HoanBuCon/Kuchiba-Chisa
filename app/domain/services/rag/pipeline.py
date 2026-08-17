@@ -84,6 +84,8 @@ class RAGPipeline:
         is_small_talk: bool = False,
         conversation_summary: str = None,
         conversation_id: Optional[str] = None,
+        needs_vector_search: bool = True,
+        needs_web_search: bool = False,
     ) -> RAGContext:
         """
         Runs E2E RAG Pipeline: Retrieves memory & lore, checks alignment, and runs thinking loop if necessary.
@@ -93,21 +95,74 @@ class RAGPipeline:
         lore_chunks = []
         queried_lore_cols = []
         intent_strs = self._normalize_intents(intents)
-        has_knowledge_intent = ("LORE" in intent_strs or "MEMORY" in intent_strs or "OTHER" in intent_strs)
-        should_retrieve = not is_small_talk and "SMALL_TALK" not in intent_strs and has_knowledge_intent
+        has_knowledge_intent = ("LORE" in intent_strs or "MEMORY" in intent_strs or "OTHER" in intent_strs or "KNOWLEDGE_OR_TASK" in intent_strs)
         
-        LORE_COLLECTIONS = ["character_lore", "world_lore", "story_lore"]
+        is_web_search_mode = bool(needs_web_search and not needs_vector_search and not is_small_talk)
+        is_vector_search_mode = bool(
+            not is_small_talk 
+            and "SMALL_TALK" not in intent_strs 
+            and has_knowledge_intent 
+            and (needs_vector_search is not False)
+            and not is_web_search_mode
+        )
 
+        LORE_COLLECTIONS = ["character_lore", "world_lore", "story_lore"]
         extracted = set()
         expanded = set()
+        scoring_details = []
+        web_search_1_res = None
+        retrieved_context_str = "(No context retrieved)"
 
-        # 1. Standard retrieval from Qdrant (parallelized across all lore collections)
-        if query_vector and should_retrieve:
+        # ── OPTION 2: Web Search Mode (Search Lần 1 trực tiếp tại Knowledge Retrieval Stage) ──
+        if is_web_search_mode and web_search_tool:
+            web_search_1_query = cleaned_query or user_message
+            log.info("Knowledge Retrieval executing Option 2 (Web Search Mode - Round 1)", query=web_search_1_query)
+            try:
+                web_search_1_res = await web_search_tool.execute(
+                    session=session,
+                    user_id=user_id,
+                    user_message=web_search_1_query,
+                    llm=llm,
+                    embedder=embedder,
+                    history=history,
+                    bypass_optimize=True
+                )
+                search_msg = web_search_1_res.get("message", "")
+                snippets = web_search_1_res.get("snippets") or []
+                
+                # Log step: Knowledge Retrieval (Web Search Mode)
+                self.pipeline_tracker.add_step("rag_retrieval", {
+                    "mode": "WEB_SEARCH",
+                    "should_retrieve": True,
+                    "search_query": web_search_1_query,
+                    "snippets_count": len(snippets),
+                    "search_result": search_msg,
+                    "intents": intent_strs,
+                })
+                
+                # Log child step: Web Search Round 1 trace
+                from app.domain.services.tools.web_search import web_search_trace_payload
+                self.pipeline_tracker.add_step(
+                    "web_search",
+                    web_search_trace_payload(
+                        web_search_1_res,
+                        source="knowledge_retrieval_round_1",
+                        original_message=web_search_1_query,
+                    ),
+                )
+                
+                retrieved_context_str = f"[Web Search Round 1 Results for '{web_search_1_query}']:\n{search_msg}"
+            except Exception as ex:
+                log.error("Failed to execute Web Search Round 1", error=str(ex))
+                retrieved_context_str = "(No context retrieved from Web Search)"
+
+        # ── OPTION 1: Vector Search Mode (Qdrant Vector Retrieval for Lore & Memory) ──
+        elif is_vector_search_mode and query_vector:
             retrieval_tasks = []
             active_intents = []
 
-            # Perform lore retrieval if explicit LORE intent or fallback for OTHER
-            should_fetch_lore = ("LORE" in intent_strs or "OTHER" in intent_strs)
+            # Perform lore retrieval if explicit LORE intent or fallback for OTHER / KNOWLEDGE
+            should_fetch_lore = ("LORE" in intent_strs or "OTHER" in intent_strs or "KNOWLEDGE_OR_TASK" in intent_strs)
 
             if should_fetch_lore:
                 if self.entity_resolver:
@@ -175,7 +230,6 @@ class RAGPipeline:
                                     lore_scored.append((text, score, meta))
                     
                     # Subject-Entity Alignment Reranking:
-                    # If recognized entities exist, boost chunks containing the target entities to prevent generic lore from overtaking
                     if extracted:
                         adjusted_scored = []
                         for text, score, meta in lore_scored:
@@ -199,99 +253,99 @@ class RAGPipeline:
                 except Exception as ex:
                     log.error("Failed to retrieve data from Qdrant vector database", error=str(ex))
 
-        # 1.1 Track retrieval step in real-time with rich scoring breakdown
-        scoring_details = [x[2] for x in lore_scored[:RAGTuning.TOP_K] if len(x) > 2 and x[2]]
-        skip_reason = None
-        if not should_retrieve:
+            scoring_details = [x[2] for x in lore_scored[:RAGTuning.TOP_K] if len(x) > 2 and x[2]]
+
+            self.pipeline_tracker.add_step("rag_retrieval", {
+                "mode": "VECTOR_SEARCH",
+                "should_retrieve": True,
+                "intents": intent_strs,
+                "lore_collections_queried": queried_lore_cols,
+                "extracted_entities": list(extracted),
+                "expanded_entities": list(expanded),
+                "retrieved_lore_chunks": lore_chunks,
+                "lore_scoring_details": scoring_details,
+                "retrieved_memories": memories,
+                "weights": {
+                    "vector": RAGTuning.WEIGHT_VECTOR,
+                    "keyword": RAGTuning.WEIGHT_KEYWORD,
+                    "metadata": RAGTuning.WEIGHT_METADATA
+                }
+            })
+
+            context_pieces = []
+            if lore_chunks:
+                context_pieces.append("[Retrieved Lore Chunks]:\n" + "\n".join(lore_chunks))
+            if memories:
+                context_pieces.append("[Retrieved Memories]:\n" + "\n".join(memories))
+            retrieved_context_str = "\n\n".join(context_pieces) if context_pieces else "(No context retrieved)"
+
+        else:
+            skip_reason = "Code / Technical or Small Talk bypass (0ms RAG)"
             if is_small_talk:
                 skip_reason = "Small Talk detected (L1 Intent bypass)"
-            elif "SMALL_TALK" in intent_strs:
-                skip_reason = "Intent classified as SMALL_TALK"
             elif not has_knowledge_intent:
-                skip_reason = f"Intent '{', '.join(intent_strs)}' does not require Lore or Memory retrieval"
+                skip_reason = f"Intent '{', '.join(intent_strs)}' does not require Lore or Web retrieval"
 
-        self.pipeline_tracker.add_step("rag_retrieval", {
-            "should_retrieve": should_retrieve,
-            "skip_reason": skip_reason,
-            "intents": intent_strs,
-            "lore_collections_queried": queried_lore_cols if should_retrieve else [],
-            "extracted_entities": list(extracted),
-            "expanded_entities": list(expanded),
-            "retrieved_lore_chunks": lore_chunks,
-            "lore_scoring_details": scoring_details,
-            "retrieved_memories": memories,
-            "weights": {
-                "vector": RAGTuning.WEIGHT_VECTOR,
-                "keyword": RAGTuning.WEIGHT_KEYWORD,
-                "metadata": RAGTuning.WEIGHT_METADATA
-            }
-        })
+            self.pipeline_tracker.add_step("rag_retrieval", {
+                "mode": "BYPASS",
+                "should_retrieve": False,
+                "skip_reason": skip_reason,
+                "intents": intent_strs,
+            })
 
-        # 2. Assemble retrieved context pieces
-        context_pieces = []
-        if lore_chunks:
-            context_pieces.append("[Retrieved Lore Chunks]:\n" + "\n".join(lore_chunks))
-        if memories:
-            context_pieces.append("[Retrieved Memories]:\n" + "\n".join(memories))
-        
-        retrieved_context_str = "\n\n".join(context_pieces) if context_pieces else "(No context retrieved)"
-
-        # 3. Assess context alignment
+        # ── UNIVERSAL CONTEXT ASSESSOR (Đánh giá Đủ Context & Viết lại Query Lần 2) ──
         is_aligned = True
         alignment_reason = "Small talk or system bypass"
         search_query = ""
         use_lore = True
-        has_retrieved_context = bool(lore_chunks or memories)
 
-        if not is_small_talk:
-            if not has_retrieved_context:
-                # Fast Bypass: If Vector Search returned 0 chunks, skip calling the 760-token LLM Alignment Assessor!
-                is_aligned = True
-                alignment_reason = "No vector chunks retrieved (0 lore, 0 memory) - Auto-aligned to save LLM tokens"
-                search_query = ""
-                use_lore = False
-            else:
-                is_aligned, alignment_reason, search_query, use_lore = await self.assessor.assess_alignment(
-                    user_message=user_message,
-                    context_text=retrieved_context_str,
-                    llm=llm,
-                    history=history,
-                    conversation_summary=conversation_summary,
-                )
-            
-            # Log assessment result in trace
-            history_mode = "summary" if (conversation_summary and conversation_summary.strip()) else "raw"
-            if history_mode == "summary":
-                history_display = conversation_summary.strip()
-            elif history and len(history) > 0:
-                history_lines = []
-                for m in history[-4:]:
-                    r = m.get("role", "user").upper()
-                    c = m.get("content", "")
-                    history_lines.append(f"{r}: {c}")
-                history_display = "\n".join(history_lines)
-            else:
-                history_display = "(Không có lịch sử trò chuyện)"
-
-            self.pipeline_tracker.add_step(
-                name="information_alignment_check",
-                data={
-                    "is_aligned": is_aligned,
-                    "reason": alignment_reason,
-                    "triggers_loop_thinking": not is_aligned,
-                    "use_lore": use_lore,
-                    "lore_count": len(lore_chunks),
-                    "memory_count": len(memories),
-                    "has_rag_context": len(lore_chunks) > 0 or len(memories) > 0,
-                    "generated_search_query": search_query,
-                    "history_mode": history_mode,
-                    "history": history_display,
-                    "latest_query": user_message,
-                    "retrieved_context": retrieved_context_str
-                }
+        if not is_small_talk and (is_vector_search_mode or is_web_search_mode):
+            is_aligned, alignment_reason, search_query, use_lore = await self.assessor.assess_alignment(
+                user_message=cleaned_query or user_message,
+                context_text=retrieved_context_str,
+                llm=llm,
+                history=history,
+                conversation_summary=conversation_summary,
             )
+        else:
+            is_aligned = True
+            alignment_reason = "Bypassed Context Assessor (Code snippet or Small Talk)"
+            search_query = ""
+            use_lore = False
+            
+        # Log assessment result in trace
+        history_mode = "summary" if (conversation_summary and conversation_summary.strip()) else "raw"
+        if history_mode == "summary":
+            history_display = conversation_summary.strip()
+        elif history and len(history) > 0:
+            history_lines = []
+            for m in history[-4:]:
+                r = m.get("role", "user").upper()
+                c = m.get("content", "")
+                history_lines.append(f"{r}: {c}")
+            history_display = "\n".join(history_lines)
+        else:
+            history_display = "(Không có lịch sử trò chuyện)"
 
-        # 4. Thinking Loop (Web Search Iteration) if context is not aligned
+        self.pipeline_tracker.add_step(
+            name="information_alignment_check",
+            data={
+                "is_aligned": is_aligned,
+                "reason": alignment_reason,
+                "triggers_loop_thinking": not is_aligned,
+                "use_lore": use_lore,
+                "lore_count": len(lore_chunks),
+                "memory_count": len(memories),
+                "has_rag_context": bool(lore_chunks or memories or web_search_1_res),
+                "generated_search_query": search_query,
+                "history_mode": history_mode,
+                "history": history_display,
+                "latest_query": user_message,
+                "retrieved_context": retrieved_context_str
+            }
+        )
+
+        # ── LOOP THINKING (Search Lần 2 nếu ContextAssessor phát hiện thiếu dữ liệu) ──
         tool_output_msg = ""
         thinking_steps = []
         if not is_aligned:
@@ -304,7 +358,7 @@ class RAGPipeline:
                 llm=llm,
                 embedder=embedder,
                 web_search_tool=web_search_tool,
-                initial_search_query=search_query
+                initial_search_query=search_query  # <-- Refined Query do Assessor vừa viết lại!
             )
             search_parts = []
             for step in thinking_steps:

@@ -38,8 +38,8 @@ function createSetupEmbed(client, channelName) {
         value: 'Từ bây giờ, bạn có thể nhắn tin trực tiếp trong kênh này và Chisa sẽ luôn trả lời mà không cần dùng lệnh `/ask` hay prefix `c!ask`' 
       },
       { 
-        name: '🤫 Tắt tự động phản hồi', 
-        value: 'Nếu muốn gửi tin nhắn thường trong kênh này mà **không muốn Chisa trả lời**, hãy thêm dấu chấm than `!` ở đầu tin nhắn (Ví dụ: `!Chào mọi người`)' 
+        name: '🤫 Tắt tự động phản hồi / Dùng lệnh Bot khác', 
+        value: 'Nếu muốn gửi tin nhắn thường hoặc dùng lệnh prefix bot khác trong kênh này mà **không muốn Chisa trả lời**, hãy thêm tiền tố `!` hoặc `c!` ở đầu tin nhắn (Ví dụ: `!Chào mọi người`, `c!help`, `!play ...`).' 
       }
     )
     .setColor('#ffb6c1')

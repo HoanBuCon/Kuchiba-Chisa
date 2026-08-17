@@ -98,7 +98,7 @@ CONVERSATIONAL_SUFFIXES = [
     "hông em", "hông chisa", "hông anh", "hông",
     "ko em", "ko chisa", "ko anh", "ko", "k em", "k chisa", "k",
     "chưa em", "chưa chisa", "chưa anh", "chưa senpai", "chưa ạ", "chưa",
-    "đi chứ", "đi nào", "đi", "với em", "với", "ạ", "thế nào", "sao",
+    "đi chứ", "đi nào", "đi", "với em", "với", "ạ", "thế nào", "thế em", "thế anh", "thế", "đấy em", "đấy anh", "đấy", "đó em", "đó anh", "đó", "sao",
     "được không em", "được không", "hả em", "hả chisa", "hả anh", "hả", "vậy em", "vậy anh", "vậy"
 ]
 
@@ -189,6 +189,27 @@ def resolve_persona_pronouns(text: str, intent_hint: Optional[str] = None) -> st
     return resolved
 
 
+def strip_platform_mentions(text: str) -> str:
+    """
+    Strips platform-specific mentions, tags, and formatting artifacts:
+    - Discord User/Bot mentions: <@1512944169310748682>, <@!1512944169310748682>
+    - Discord Role mentions: <@&123456789012345678>
+    - Discord Channel mentions: <#123456789012345678>
+    - Discord Custom Emojis: <:custom_emoji:123456789012345678>, <a:animated:123456789012345678>
+    - Discord Timestamps: <t:1234567890:R>
+    - Generic @mentions: @everyone, @here
+    """
+    if not text:
+        return ""
+    cleaned = re.sub(r'<@!?&?\d+>', '', text)
+    cleaned = re.sub(r'<#\d+>', '', cleaned)
+    cleaned = re.sub(r'<a?:[a-zA-Z0-9_]+:\d+>', '', cleaned)
+    cleaned = re.sub(r'<t:\d+(?::[a-zA-Z])?>', '', cleaned)
+    cleaned = re.sub(r'\b@(everyone|here)\b', '', cleaned)
+    cleaned = re.sub(r'\s+', ' ', cleaned).strip()
+    return cleaned
+
+
 def clean_query_for_rag(text: str) -> str:
     """
     Cleans user query by iteratively removing conversational greetings, chatbot request prefixes, 
@@ -197,7 +218,12 @@ def clean_query_for_rag(text: str) -> str:
     """
     if not text:
         return text
-        
+
+    # 0. Strip platform tags and mentions first (<@1512944169310748682>, etc.)
+    text = strip_platform_mentions(text)
+    if not text:
+        return ""
+
     original = text
     text = text.lower().strip()
     

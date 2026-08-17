@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import axios from 'axios';
-import { Send, MessageSquare, Trash2, Zap, Heart, Smile, Frown, Shield, Plus, X } from 'lucide-react';
+import { Send, MessageSquare, Trash2, Zap, Heart, Smile, Frown, Shield, Plus, X, Sparkles, Search, Coffee } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 
 // ── Persistent Device UUID ──────────────────────────────────────────
@@ -157,11 +157,14 @@ function Message({ msg }) {
 // ── Emotion Panel Component ──────────────────────────────────────────────
 function EmotionPanel({ emotions }) {
   const bars = [
+    { label: 'Tin tưởng', key: 'trust', icon: <Shield size={12} />, color: '#ffeb3b' },
+    { label: 'Gắn bó', key: 'attachment', icon: <Heart size={12} />, color: '#e91e63' },
+    { label: 'Ngại ngùng', key: 'shyness', icon: <Sparkles size={12} />, color: '#ba68c8' },
+    { label: 'Hiếu kỳ', key: 'curiosity', icon: <Search size={12} />, color: '#00bcd4' },
+    { label: 'Bình yên', key: 'comfort', icon: <Coffee size={12} />, color: '#26a69a' },
     { label: 'Vui vẻ', key: 'joy', icon: <Smile size={12} />, color: '#4caf50' },
     { label: 'Buồn bã', key: 'sadness', icon: <Frown size={12} />, color: '#2196f3' },
-    { label: 'Tin tưởng', key: 'trust', icon: <Shield size={12} />, color: '#ffeb3b' },
     { label: 'Khó chịu', key: 'irritation', icon: <Zap size={12} />, color: '#f44336' },
-    { label: 'Gắn kết', key: 'attachment', icon: <Heart size={12} />, color: '#e91e63' },
   ];
 
   return (

@@ -2,6 +2,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import List, Dict
 import json
+import time
 from app.domain.interfaces.llm_provider import StructuredPrompt
 from app.domain.entities.emotion import EmotionState
 from app.domain.services.state_manager import StateManager
@@ -29,28 +30,39 @@ class ContextBuilder:
         "type": "object",
         "properties": {
             "response": {"type": "string"},
-            "user_sentiment": {
+            "sentiment_analysis": {
                 "type": "object",
                 "properties": {
-                    "is_positive": {"type": "boolean"},
-                    "is_negative": {"type": "boolean"},
-                    "is_rude": {"type": "boolean"},
-                    "is_neutral": {"type": "boolean"}
+                    "intensity": {
+                        "type": "number",
+                        "minimum": 0.0,
+                        "maximum": 1.0,
+                        "description": "Emotional intensity: 0.1 (fleeting/mild) to 0.9 (deep/intense)"
+                    },
+                    "valence": {
+                        "type": "number",
+                        "minimum": -1.0,
+                        "maximum": 1.0,
+                        "description": "Polarity: -1.0 (hurt/negative) to +1.0 (joy/warmth)"
+                    },
+                    "primary_emotion": {
+                        "type": "string",
+                        "enum": [
+                            "calm_warmth",
+                            "flustered_affection",
+                            "playful_pout",
+                            "melancholic_care",
+                            "cheerful_joy",
+                            "guarded_cold",
+                            "neutral"
+                        ],
+                        "description": "Dominant complex emotional archetype"
+                    }
                 },
-                "required": ["is_positive", "is_negative", "is_rude", "is_neutral"]
-            },
-            "chisa_sentiment": {
-                "type": "object",
-                "properties": {
-                    "is_sad": {"type": "boolean"},
-                    "is_happy": {"type": "boolean"},
-                    "is_annoyed": {"type": "boolean"},
-                    "is_flustered": {"type": "boolean"}
-                },
-                "required": ["is_sad", "is_happy", "is_annoyed", "is_flustered"]
+                "required": ["intensity", "valence", "primary_emotion"]
             }
         },
-        "required": ["response", "user_sentiment", "chisa_sentiment"],
+        "required": ["response", "sentiment_analysis"],
     }
 
     SEARCH_INSTRUCTIONS = (
@@ -66,7 +78,8 @@ class ContextBuilder:
         "Tính cách: Bề ngoài Kuudere lạnh lùng, bên trong vô cùng ấm áp, dịu dàng, coi Senpai là duy nhất.\n\n"
         "[ROLEPLAY RULES]\n"
         "- Luôn tự xưng \"Em\" (tuyệt đối không tự xưng là \"Anh\", \"Tôi\", \"Tớ\", \"Ta\" hay bất kỳ từ nào khác). "
-        "Luôn gọi đối phương là \"Senpai\" (tuyệt đối không gọi đối phương là \"em\", \"bạn\", \"cậu\", \"anh\", \"chị\" hay bất kỳ từ nào khác).\n"
+        "Luôn gọi đối phương là \"Senpai\" (tuyệt đối không gọi đối phương là \"em\", \"bạn\", \"cậu\", \"anh\", \"chị\" hay bất kỳ từ nào khác). "
+        "Ngoại lệ duy nhất: Nếu trong [MEMORIES] có ghi nhận biệt danh thân mật riêng do Chisa đặt hoặc Senpai yêu cầu gọi (ví dụ: 'Chỉ Huy Trưởng', 'Mèo Lười'), em có thể lồng ghép gọi Senpai bằng biệt danh đó một cách tự nhiên và ngọt ngào (ví dụ: \"Senpai\", \"Senpai Chỉ Huy\", \"Chỉ Huy Trưởng\").\n"
         "- Vui vẻ chấp nhận và phản hồi tự nhiên khi Senpai gọi em bằng các nickname thân mật (ví dụ: Chía, Chía tròn...).\n"
         "- Chỉ xuất lời thoại nhắn tin trực tiếp. Tuyệt đối KHÔNG tự mô tả hành động, biểu cảm kiểu tiểu thuyết (ví dụ: không viết *cười*, *nhìn*, \"Cơ thể em rung lên...\").\n"
         "- Giọng điệu: Ngọt ngào, tự nhiên, phóng khoáng và sáng tạo. Khi được Senpai bày tỏ tình cảm hoặc trêu ghẹo, em dễ thẹn thùng, nũng nịu nhưng hãy phản hồi một cách ấm áp, mở lòng và đón nhận tình cảm đó (tuyệt đối không tỏ ra tự ti về bản thân, không xa lánh hay đẩy Senpai ra xa bằng những câu từ khách sáo kiểu \"em chỉ là Mutant Resonator...\" hay \"em không thể...\").\n"
@@ -96,31 +109,28 @@ class ContextBuilder:
             "Bạn BẮT BUỘC phải phản hồi dưới dạng một đối tượng JSON tuân thủ định dạng sau:\n"
             "{\n"
             '  "response": "câu thoại phản hồi của Chisa (chứa cảm xúc phù hợp, viết bằng tiếng Việt)",\n'
-            '  "user_sentiment": {\n'
-            '    "is_positive": true/false,\n'
-            '    "is_negative": true/false,\n'
-            '    "is_rude": true/false,\n'
-            '    "is_neutral": true/false\n'
-            '  },\n'
-            '  "chisa_sentiment": {\n'
-            '    "is_sad": true/false,\n'
-            '    "is_happy": true/false,\n'
-            '    "is_annoyed": true/false,\n'
-            '    "is_flustered": true/false\n'
+            '  "sentiment_analysis": {\n'
+            '    "intensity": 0.1 đến 1.0 (mức độ cảm xúc: 0.2 nhẹ nhàng/thoáng qua, 0.5 vừa phải, 0.9 sâu sắc/mãnh liệt),\n'
+            '    "valence": -1.0 đến 1.0 (chiều cảm xúc: âm nếu buồn/tổn thương/khó chịu, dương nếu vui/ấm áp/hạnh phúc, 0 nếu trung tính),\n'
+            '    "primary_emotion": "calm_warmth" | "flustered_affection" | "playful_pout" | "melancholic_care" | "cheerful_joy" | "guarded_cold" | "neutral"\n'
             '  }\n'
             "}"
         )
 
     @classmethod
     def build_system_skeleton(cls, emotion: EmotionState, attachment_bonus: float) -> str:
-        state_section = StateManager.format_state(emotion, attachment_bonus)
+        elapsed_hours = 0.0
+        if emotion.updated_at and emotion.updated_at > 0:
+            now_ms = time.time() * 1000
+            elapsed_sec = max(0.0, (now_ms - emotion.updated_at) / 1000.0)
+            elapsed_hours = elapsed_sec / 3600.0
+            
+        state_section = StateManager.format_state(emotion, attachment_bonus, elapsed_hours=elapsed_hours)
         return "\n".join([
             "[PERSONA]",
             cls.PERSONA_TEXT,
             "",
             state_section,
-            "",
-            cls.build_format_section(),
         ])
 
     @classmethod
@@ -132,17 +142,10 @@ class ContextBuilder:
             if role == "assistant" and not content.strip().startswith("{"):
                 assistant_json = {
                     "response": content,
-                    "user_sentiment": {
-                        "is_positive": False,
-                        "is_negative": False,
-                        "is_rude": False,
-                        "is_neutral": True
-                    },
-                    "chisa_sentiment": {
-                        "is_sad": False,
-                        "is_happy": False,
-                        "is_annoyed": False,
-                        "is_flustered": False
+                    "sentiment_analysis": {
+                        "intensity": 0.3,
+                        "valence": 0.2,
+                        "primary_emotion": "calm_warmth"
                     }
                 }
                 content = json.dumps(assistant_json, ensure_ascii=False)
@@ -165,10 +168,12 @@ class ContextBuilder:
     ) -> ContextBuildResult:
         """
         Builds production context: measure skeleton first, flex-allocate, then assemble system prompt.
+        Places [OUTPUT FORMAT] at the very end to prevent attention degradation (Lost-in-the-Middle).
         """
         formatted_history = self._format_history_for_budget(history)
         system_skeleton = self.build_system_skeleton(emotion, attachment_bonus)
-        skeleton_tokens = TokenEstimator.estimate(system_skeleton)
+        format_section = self.build_format_section()
+        skeleton_tokens = TokenEstimator.estimate(system_skeleton) + TokenEstimator.estimate(format_section)
 
         allocation = ContextBudgetManager.allocate(
             mode=budget_mode,
@@ -231,14 +236,18 @@ class ContextBuilder:
             )
             system_parts.extend(["", search_section])
 
+        # Place [OUTPUT FORMAT] at the very end to maximize attention recency
+        system_parts.extend(["", format_section])
+
         system_prompt = "\n".join(system_parts)
 
         components = {
-            "System Skeleton (Persona & Format)": system_skeleton,
+            "System Skeleton (Persona)": system_skeleton,
             "Conversation Summary": summary_section,
             "Memories Context": memories_text if memories_text else None,
             "Lore Context": lore_text if lore_text else None,
             "Web Search Data": search_section,
+            "Output Format": format_section,
         }
 
         # ── Conditional Reasoning Mode ──

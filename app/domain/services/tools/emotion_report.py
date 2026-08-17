@@ -72,11 +72,14 @@ class EmotionReportAgentTool(BaseAgentTool):
             emotion = await emotion_repo.get_emotion_state(user_uuid)
 
             report = (
-                f"Vui vẻ (Joy): {emotion.joy:.2f}, "
-                f"Buồn bã (Sadness): {emotion.sadness:.2f}, "
-                f"Tin tưởng (Trust): {emotion.trust:.2f}, "
-                f"Bực dọc (Irritation): {emotion.irritation:.2f}, "
-                f"Gắn kết (Attachment): {emotion.attachment:.2f}"
+                f"Tin tưởng: {emotion.trust:.2f}, "
+                f"Gắn bó: {emotion.attachment:.2f}, "
+                f"Ngại ngùng: {getattr(emotion, 'shyness', 0.0):.2f}, "
+                f"Hiếu kỳ: {getattr(emotion, 'curiosity', 0.20):.2f}, "
+                f"Bình yên: {getattr(emotion, 'comfort', 0.50):.2f}, "
+                f"Vui vẻ: {emotion.joy:.2f}, "
+                f"Buồn bã: {emotion.sadness:.2f}, "
+                f"Khó chịu: {emotion.irritation:.2f}"
             )
             return {
                 "status": "success",

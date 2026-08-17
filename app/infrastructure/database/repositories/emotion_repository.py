@@ -28,6 +28,9 @@ class SqlAlchemyEmotionRepository(IEmotionRepository):
                 trust=0.50,
                 attachment=0.00,
                 irritation=0.00,
+                shyness=0.00,
+                curiosity=0.20,
+                comfort=0.50,
                 updated_at=int(time.time() * 1000)
             )
             self.session.add(state_db)
@@ -35,11 +38,14 @@ class SqlAlchemyEmotionRepository(IEmotionRepository):
             await self.session.refresh(state_db)
         return EmotionStateEntity(
             user_id=state_db.user_id,
-            joy=state_db.joy,
-            sadness=state_db.sadness,
-            trust=state_db.trust,
-            attachment=state_db.attachment,
-            irritation=state_db.irritation,
+            joy=getattr(state_db, "joy", 0.10) or 0.10,
+            sadness=getattr(state_db, "sadness", 0.00) or 0.00,
+            trust=getattr(state_db, "trust", 0.50) or 0.50,
+            attachment=getattr(state_db, "attachment", 0.00) or 0.00,
+            irritation=getattr(state_db, "irritation", 0.00) or 0.00,
+            shyness=getattr(state_db, "shyness", 0.00) or 0.00,
+            curiosity=getattr(state_db, "curiosity", 0.20) or 0.20,
+            comfort=getattr(state_db, "comfort", 0.50) or 0.50,
             updated_at=state_db.updated_at
         )
 
@@ -53,6 +59,9 @@ class SqlAlchemyEmotionRepository(IEmotionRepository):
             state_db.trust = emotion.trust
             state_db.attachment = emotion.attachment
             state_db.irritation = emotion.irritation
+            state_db.shyness = getattr(emotion, "shyness", 0.0)
+            state_db.curiosity = getattr(emotion, "curiosity", 0.20)
+            state_db.comfort = getattr(emotion, "comfort", 0.50)
             state_db.updated_at = emotion.updated_at
         else:
             state_db = EmotionStateModel(
@@ -62,6 +71,9 @@ class SqlAlchemyEmotionRepository(IEmotionRepository):
                 trust=emotion.trust,
                 attachment=emotion.attachment,
                 irritation=emotion.irritation,
+                shyness=getattr(emotion, "shyness", 0.0),
+                curiosity=getattr(emotion, "curiosity", 0.20),
+                comfort=getattr(emotion, "comfort", 0.50),
                 updated_at=emotion.updated_at
             )
             self.session.add(state_db)

@@ -47,21 +47,37 @@ from app.domain.interfaces.llm_provider import BaseLLMAdapter, StructuredPrompt,
 class MockFastFlashLLMAdapter(BaseLLMAdapter):
     async def generate(self, prompt: StructuredPrompt) -> LLMResponse:
         user_msg = prompt.user_message.lower()
+        needs_vec = True
+        needs_web = False
         if "vũ khí của anh ấy" in user_msg and "jiyan" in user_msg:
             rewritten = "Vũ khí của tướng quân Jiyan (Midnight Rangers)"
+            needs_vec = True
+            needs_web = False
         elif "con rồng đó" in user_msg and "jiyan" in user_msg:
             rewritten = "Nguồn gốc rồng Thanh Long Qingloong của Jiyan"
+            needs_vec = True
+            needs_web = False
         elif "vũ khí của cô ấy" in user_msg and "chixia" in user_msg:
             rewritten = "Loại vũ khí súng lục Dual Pistols của Chixia"
+            needs_vec = True
+            needs_web = False
+        elif "lfucache" in user_msg or "struct" in user_msg or "class" in user_msg:
+            rewritten = "giải thích và phân tích mã nguồn LFUCache bằng C++"
+            needs_vec = False
+            needs_web = False
+        elif "hoanbucon" in user_msg:
+            rewritten = "hoanbucon là ai"
+            needs_vec = False
+            needs_web = True
         else:
             # Clean fallback
             rewritten = prompt.user_message.split("\n")[-1].replace('Câu hỏi hiện tại: "', '').rstrip('"')
 
         return LLMResponse(
-            raw_content=f'{{"rewritten_query": "{rewritten}"}}',
-            parsed={"rewritten_query": rewritten},
+            raw_content=f'{{"rewritten_query": "{rewritten}", "needs_vector_search": {str(needs_vec).lower()}, "needs_web_search": {str(needs_web).lower()}}}',
+            parsed={"rewritten_query": rewritten, "needs_vector_search": needs_vec, "needs_web_search": needs_web},
             input_tokens=35,
-            output_tokens=12,
+            output_tokens=15,
             model="mock-deepseek-v4-flash"
         )
 
@@ -95,7 +111,18 @@ async def test_all_phases():
     cleaned_hiyuki = clean_query_for_rag(q_hiyuki)
     assert cleaned_hiyuki == "hiyuki"
     print(f"  • Hiyuki cleaner : \"{q_hiyuki}\" -> \"{cleaned_hiyuki}\"")
-    print("  ✓ PASS: Viết tắt và đệm chào hỏi được chuẩn hóa hoàn hảo.")
+
+    # Test Discord user mention & platform tags (<@1512944169310748682>, <#...>, <@&...>)
+    q_mention = "<@1512944169310748682> hướng dẫn port forward fpt"
+    cleaned_mention = clean_query_for_rag(q_mention)
+    assert cleaned_mention == "hướng dẫn port forward fpt"
+    print(f"  • Discord Mention cleaner: \"{q_mention}\" -> \"{cleaned_mention}\"")
+
+    q_multi_tags = "<@!1512944169310748682> <#987654321> <@&11223344> chào em Chisa, Jiyan dùng vũ khí gì thế"
+    cleaned_multi = clean_query_for_rag(q_multi_tags)
+    assert cleaned_multi == "jiyan dùng vũ khí gì"
+    print(f"  • Multi-tag cleaner     : \"{q_multi_tags}\" -> \"{cleaned_multi}\"")
+    print("  ✓ PASS: Viết tắt, đệm chào hỏi và Discord Tag/Mention được làm sạch 100%.")
 
     # ── TEST 2: Coreference Marker Detection ──
     print("\n[TEST 2] Kiểm tra Nhận diện Đại từ & Câu hỏi nối (Coreference Trigger)...")
@@ -145,13 +172,14 @@ async def test_all_phases():
     print("  ✓ PASS: Định tuyến quyết định hoạt động chuẩn xác.")
 
     # ── TEST 5: Micro LLM Rewriter Execution & 1-Turn Chaining ──
-    print("\n[TEST 5] Kiểm tra Micro LLM Rewriter với 1-Turn Context Chaining...")
+    print("\n[TEST 5] Kiểm tra Micro LLM Rewriter với Tri-State Routing (Vector vs Web Search vs Code)...")
     mock_llm = MockFastFlashLLMAdapter()
     rewriter = QueryRewriter(llm=mock_llm, entity_resolver=entity_resolver)
 
+    # Test 5a: Lore follow-up -> Vector Search ON, Web Search OFF
     prev_q = "Kể về vị tướng Jiyan lãnh đạo Midnight Rangers"
     curr_q = "Vũ khí của anh ấy là gì?"
-    final_q, method = await rewriter.rewrite(
+    final_q, method, needs_vec, needs_web = await rewriter.rewrite(
         user_message=curr_q,
         cleaned_query="vũ khí của anh ấy",
         prev_rewritten_query=prev_q,
@@ -159,10 +187,40 @@ async def test_all_phases():
     )
     print(f"  • Context N-1 : \"{prev_q}\"")
     print(f"  • Current N   : \"{curr_q}\"")
-    print(f"  • Rewritten   : \"{final_q}\" (Method: {method})")
+    print(f"  • Rewritten   : \"{final_q}\" (Method: {method}, Vector: {needs_vec}, Web: {needs_web})")
     assert "Jiyan" in final_q
     assert method == "LLM_FLASH"
-    print("  ✓ PASS: 1-Turn Context Chaining giải mã hoàn toàn đại từ 'anh ấy'!")
+    assert needs_vec is True
+    assert needs_web is False
+    print("  ✓ PASS: Lore query bật Vector Search = True và tắt Web Search = False!")
+
+    # Test 5b: Code snippet input -> Vector Search OFF, Web Search OFF
+    code_q = "ý anh là bài này class LFUCache{struct Bucket; int get(int k); void put(int k, int v);};"
+    final_code_q, code_method, code_needs_vec, code_needs_web = await rewriter.rewrite(
+        user_message=code_q,
+        cleaned_query=clean_query_for_rag(code_q),
+        prev_rewritten_query=None,
+        needs_llm_rewrite=True,
+    )
+    print(f"  • Code Query  : \"{code_q[:50]}...\"")
+    print(f"  • Rewritten   : \"{final_code_q}\" (Vector: {code_needs_vec}, Web: {code_needs_web})")
+    assert code_needs_vec is False
+    assert code_needs_web is False
+    print("  ✓ PASS: Mã nguồn lập trình LFUCache tự động tắt cả Vector Search và Web Search (0ms RAG overhead)!")
+
+    # Test 5c: External entity -> Vector Search OFF, Web Search ON (Direct Web Search)
+    entity_q = "biết hoanbucon là ai không em"
+    final_entity_q, entity_method, entity_needs_vec, entity_needs_web = await rewriter.rewrite(
+        user_message=entity_q,
+        cleaned_query=clean_query_for_rag(entity_q),
+        prev_rewritten_query=None,
+        needs_llm_rewrite=True,
+    )
+    print(f"  • Entity Query: \"{entity_q}\"")
+    print(f"  • Rewritten   : \"{final_entity_q}\" (Vector: {entity_needs_vec}, Web: {entity_needs_web})")
+    assert entity_needs_vec is False
+    assert entity_needs_web is True
+    print("  ✓ PASS: Thực thể ngoài game 'hoanbucon' kích hoạt Direct Web Search (Vector=False, Web=True) nhảy thẳng sang DuckDuckGo!")
 
     # ── TEST 6: PostgreSQL Storage & Sub-Millisecond Retrieval ──
     print("\n[TEST 6] Kiểm tra Lưu trữ & Truy hồi SQL `rewritten_content` (<1ms)...")

@@ -4,12 +4,13 @@ from typing import Dict, List, Optional
 
 
 class ChatIntent(str, Enum):
-    SMALL_TALK = "SMALL_TALK"         # Lời chào, phản hồi ngắn, xã giao
-    LORE = "LORE"                     # Hỏi về nhân vật, thế giới game, cốt truyện
-    MEMORY = "MEMORY"                 # Hỏi về thông tin cá nhân Senpai
-    CONVERSATIONAL = "CONVERSATIONAL" # Trò chuyện tự do, tán gẫu dài
-    SYSTEM_ACTION = "SYSTEM_ACTION"   # Lệnh hệ thống (tóm tắt, báo cáo, web search)
-    OTHER = "OTHER"                   # Không xác định được ý định
+    SMALL_TALK = "SMALL_TALK"                 # Lời chào, phản hồi ngắn, xã giao (Bypass RAG)
+    KNOWLEDGE_OR_TASK = "KNOWLEDGE_OR_TASK"   # Câu hỏi tri thức, thực thể, code, sự kiện, lore, lệnh bot
+    LORE = "LORE"                             # Hỏi về nhân vật, thế giới game, cốt truyện
+    MEMORY = "MEMORY"                         # Hỏi về thông tin cá nhân Senpai
+    CONVERSATIONAL = "CONVERSATIONAL"         # Trò chuyện tự do, tán gẫu sâu
+    SYSTEM_ACTION = "SYSTEM_ACTION"           # Lệnh hệ thống
+    OTHER = "OTHER"                           # Không xác định được ý định
 
 
 @dataclass

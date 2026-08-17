@@ -127,10 +127,33 @@ class HybridMemoryScorer:
         self.W_EMOTION = w_emotion
         self.DECAY_LAMBDA = decay_lambda
 
-    def calculate_recency(self, created_at: int, now: int) -> float:
-        age_seconds = max(0, now - created_at)
+    def calculate_recency(
+        self,
+        created_at: int,
+        now: int,
+        importance: float = 0.7,
+        memory_type: str = "user_fact",
+        last_accessed_at: int = None
+    ) -> float:
+        """
+        Adaptive Ebbinghaus Time-Decay Scoring:
+        - Core permanent facts & nicknames (importance >= 0.85 or shared_story) decay very slowly (~140 days half-life).
+        - Standard preferences/habits (0.65 <= importance < 0.85) decay moderately (~28 days half-life).
+        - Fleeting/casual memories (importance < 0.65) decay quickly (~7 days half-life).
+        - Spaced repetition: uses max(created_at, last_accessed_at) to reinforce recalled memories.
+        """
+        ref_time = max(created_at, last_accessed_at or created_at)
+        age_seconds = max(0, now - ref_time)
         age_days = age_seconds / 86400.0
-        return math.exp(-self.DECAY_LAMBDA * age_days)
+
+        if importance >= 0.85 or memory_type == "shared_story":
+            adaptive_lambda = 0.005  # Half-life: ~138 days
+        elif importance >= 0.65:
+            adaptive_lambda = 0.025  # Half-life: ~28 days
+        else:
+            adaptive_lambda = 0.10   # Half-life: ~7 days
+
+        return max(0.01, min(1.0, math.exp(-adaptive_lambda * age_days)))
 
     def calculate_emotion_match(self, memory_emotion: Dict[str, float], current_emotion: Dict[str, float]) -> float:
         if not memory_emotion or not current_emotion:

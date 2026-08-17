@@ -51,17 +51,26 @@ class MemoryRetriever:
             payload = cand["payload"]
             similarity_score = cand["score"]
             
-            # Recency decay
+            # Adaptive Ebbinghaus Recency decay with importance modulation
             created_at = payload.get("created_at", now)
-            recency_score = self.scorer.calculate_recency(created_at, now)
-            
-            # Importance boosting by tier
+            last_accessed_at = payload.get("last_accessed_at")
             importance_score = payload.get("importance_score", MemoryTuning.IMPORTANCE_SCORE)
+            memory_type = payload.get("memory_type", "user_fact")
+
+            # Importance boosting by tier
             tier = payload.get("memory_tier", "casual")
             if tier == "critical":
                 importance_score = min(1.0, importance_score + MemoryTuning.TIER_BOOST_RELATIONSHIP)
             elif tier == "personal":
                 importance_score = min(1.0, importance_score + MemoryTuning.TIER_BOOST_CORE)
+
+            recency_score = self.scorer.calculate_recency(
+                created_at=created_at,
+                now=now,
+                importance=importance_score,
+                memory_type=memory_type,
+                last_accessed_at=last_accessed_at
+            )
                 
             # Emotion alignment match
             emotion_match_score = 0.5

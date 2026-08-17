@@ -35,29 +35,99 @@ export function getCustomEmoji(client, name) {
   return emoji ? `<:${emoji.name}:${emoji.id}>` : null;
 }
 
+export function getDynamicEmotionEmoji(key, value) {
+  const v = Number(value) || 0;
+  switch (key) {
+    case 'trust':
+      if (v < 0.35) return '✋';
+      if (v <= 0.75) return '🤝';
+      return '🛡️';
+    case 'attachment':
+      if (v < 0.45) return '🌸';
+      if (v <= 0.70) return '💗';
+      return '💖';
+    case 'shyness':
+      if (v < 0.25) return '😶';
+      if (v <= 0.55) return '😳';
+      return '🙈';
+    case 'curiosity':
+      if (v < 0.40) return '🔍';
+      if (v <= 0.70) return '🔎';
+      return '💡';
+    case 'comfort':
+      if (v < 0.40) return '🍃';
+      if (v <= 0.70) return '🍵';
+      return '🕊️';
+    case 'joy':
+      if (v < 0.30) return '🙂';
+      if (v <= 0.60) return '😊';
+      return '🥰';
+    case 'sadness':
+      if (v < 0.40) return '💧';
+      if (v <= 0.70) return '🥺';
+      return '🌧️';
+    case 'irritation':
+      if (v < 0.40) return '😾';
+      if (v <= 0.70) return '😤';
+      return '💢';
+    default:
+      return '💬';
+  }
+}
+
+const CANONICAL_EMOTION_ORDER = [
+  'trust',
+  'attachment',
+  'shyness',
+  'curiosity',
+  'comfort',
+  'joy',
+  'sadness',
+  'irritation',
+];
+
 const EMOTION_LABELS = {
-  joy: { label: 'Vui vẻ', emoji: '💖' },
-  sadness: { label: 'Buồn bã', emoji: '💧' },
-  trust: { label: 'Tin tưởng', emoji: '🤝' },
-  irritation: { label: 'Khó chịu', emoji: '💢' },
-  attachment: { label: 'Gắn bó', emoji: '🌸' }
+  trust: { label: 'Tin tưởng' },
+  attachment: { label: 'Gắn bó' },
+  shyness: { label: 'Ngại ngùng' },
+  curiosity: { label: 'Hiếu kỳ' },
+  comfort: { label: 'Bình yên' },
+  joy: { label: 'Vui vẻ' },
+  sadness: { label: 'Buồn bã' },
+  irritation: { label: 'Khó chịu' },
 };
 
 export function formatCoreResponse(responseText, emotions, client) {
   const lines = [responseText?.trim() ?? ''];
 
   if (emotions && typeof emotions === 'object') {
-    const emotionLines = Object.entries(emotions)
-      .filter(([_, value]) => value !== null && value !== undefined)
-      .map(([key, value]) => {
-        const info = EMOTION_LABELS[key] || { label: key, emoji: '💬' };
+    const emotionLines = [];
+    for (const key of CANONICAL_EMOTION_ORDER) {
+      if (emotions[key] !== null && emotions[key] !== undefined) {
+        const value = emotions[key];
+        const info = EMOTION_LABELS[key] || { label: key };
+        const dynamicEmoji = getDynamicEmotionEmoji(key, value);
         const customEmoji = getCustomEmoji(client, key);
-        const emojiStr = customEmoji || info.emoji;
+        const emojiStr = customEmoji || dynamicEmoji;
         let percent = Math.round(Number(value) * 100);
         if (percent > 100) percent = 100;
         if (percent < 0) percent = 0;
-        return `${emojiStr} ${info.label}: ${percent}%`;
-      });
+        emotionLines.push(`${emojiStr} ${info.label}: ${percent}%`);
+      }
+    }
+
+    for (const [key, value] of Object.entries(emotions)) {
+      if (!CANONICAL_EMOTION_ORDER.includes(key) && value !== null && value !== undefined) {
+        const info = EMOTION_LABELS[key] || { label: key };
+        const dynamicEmoji = getDynamicEmotionEmoji(key, value);
+        const customEmoji = getCustomEmoji(client, key);
+        const emojiStr = customEmoji || dynamicEmoji;
+        let percent = Math.round(Number(value) * 100);
+        if (percent > 100) percent = 100;
+        if (percent < 0) percent = 0;
+        emotionLines.push(`${emojiStr} ${info.label}: ${percent}%`);
+      }
+    }
 
     if (emotionLines.length > 0) {
       lines.push('');
