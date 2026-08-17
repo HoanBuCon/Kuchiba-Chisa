@@ -77,6 +77,12 @@ class IntentClassifier:
         "Em là cô bé dễ thương nhất trần đời luôn á Chisa",
         "Nụ cười của Chisa làm anh thấy vui cả ngày luôn",
         "Sao em lại đáng yêu đến mức này cơ chứ bé Chisa",
+        "Lát anh dẫn đi ăn nhé",
+        "Đi chơi với anh nhé",
+        "Anh đi mua trà sữa với em nha",
+        "Đi xem phim với anh nhé",
+        "Cùng nhau đi dạo đi",
+        "Đi mua đồ với anh nha",
 
         # Nhóm 3: Tâm sự tâm trạng, than thở thường ngày & tìm sự ủi an
         "Hôm nay đi làm về mệt quá em ơi",
@@ -132,8 +138,38 @@ class IntentClassifier:
         "Hỏi đáp kiến thức khoa học công nghệ tài liệu kỹ thuật và hướng dẫn"
     ]
 
+    # Chisa Persona Semantic Anchors for Dynamic Trait Injection
+    CHISA_PERSONALITY_ANCHORS = [
+        "Rủ đi ăn kem, ăn bánh ngọt, nhâm nhi đồ ăn vặt, uống trà, cà phê hay nạp chút đồ ngọt",
+        "Thử món ăn cay xé lưỡi, ăn ớt, đồ cay nóng, dị ứng hay khẩu vị món ăn",
+        "Sở thích lúc rảnh rỗi, nuôi mèo, chơi với mèo, làm đồ thủ công, nấu nướng hay giải toán",
+        "Rủ Chisa đi chơi, tản bộ dạo phố, ngắm hoàng hôn, ngắm hoa anh đào, hẹn hò và tâm sự cùng Senpai",
+        "Hỏi về sở thích, gu ẩm thực, tính cách, điều Chisa thích nhất hoặc điều Chisa sợ nhất"
+    ]
+
+    CHISA_PROFILE_ANCHORS = [
+        "Hỏi Chisa bao nhiêu tuổi, tuổi thật, ngày sinh nhật, sinh năm bao nhiêu hay tuổi tác",
+        "Hỏi quê quán, nơi sinh ra, xuất thân, lai lịch, học viện Startorch hay thành phố Lahai-Roi",
+        "Hỏi về dấu ấn Tacet Mark trên cánh tay phải, danh hiệu Resonance Eye of Unravelling hay quá khứ Sonoro Sphere"
+    ]
+
+    _PERSONALITY_PATTERNS = [
+        r'\b(ăn|uống|kem|bánh|kẹo|socola|chocolate|pocky|trà|cafe|cà phê|món|vị|nấu|đói|quán ăn|quán nước|quán kem|quán cafe|quán trà|tiệm)\b',
+        r'\b(cay|ớt|nóng|chua|ngọt|đắng|dị ứng)\b',
+        r'\b(thích|ghét|sợ|mê|mèo|hoa anh đào|hoàng hôn|tản bộ|dạo|hẹn hò|rảnh|thủ công|làm toán|giải toán)\b',
+        r'\b(em thích|chisa thích|em ghét|em sợ|sở thích của em|gu của em)\b',
+    ]
+
+    _PROFILE_PATTERNS = [
+        r'\b(bao nhiêu tuổi|mấy tuổi|tuổi thật|tuổi của em|sinh năm|ngày sinh|sinh nhật|\d+\s*tuổi|tuổi tác)\b',
+        r'\b(quê ở đâu|quê quán|sinh ra ở|đến từ đâu|ashinohara|startorch|lahai-roi|chôn rau cắt rốn)\b',
+        r'\b(tacet mark|dấu ấn|eye of unravelling|sonoro sphere|ngưng đọng|cánh tay phải)\b',
+    ]
+
     _anchor_vectors: List[List[float]] = []
     _neg_anchor_vectors: List[List[float]] = []
+    _persona_vectors: List[List[float]] = []
+    _profile_vectors: List[List[float]] = []
     _anchor_lock = asyncio.Lock()
 
     def __init__(
@@ -246,6 +282,108 @@ class IntentClassifier:
             IntentClassifier._neg_anchor_vectors = neg_vectors
 
             log.info("Dual-Signal Anchors initialized", pos_count=len(pos_vectors), neg_count=len(neg_vectors))
+
+    async def _ensure_persona_anchor_vectors(self) -> None:
+        if (IntentClassifier._persona_vectors and len(IntentClassifier._persona_vectors) == len(self.CHISA_PERSONALITY_ANCHORS) and
+            IntentClassifier._profile_vectors and len(IntentClassifier._profile_vectors) == len(self.CHISA_PROFILE_ANCHORS)) or not self.embedder:
+            return
+
+        async with self._anchor_lock:
+            if (IntentClassifier._persona_vectors and len(IntentClassifier._persona_vectors) == len(self.CHISA_PERSONALITY_ANCHORS) and
+                IntentClassifier._profile_vectors and len(IntentClassifier._profile_vectors) == len(self.CHISA_PROFILE_ANCHORS)):
+                return
+
+            log.info("Computing Chisa Persona & Profile Anchor vectors...")
+            pers_vecs = []
+            for text in self.CHISA_PERSONALITY_ANCHORS:
+                vec = await self.embedder.embed_text(text, prefix="passage: ")
+                pers_vecs.append(vec)
+            IntentClassifier._persona_vectors = pers_vecs
+
+            prof_vecs = []
+            for text in self.CHISA_PROFILE_ANCHORS:
+                vec = await self.embedder.embed_text(text, prefix="passage: ")
+                prof_vecs.append(vec)
+            IntentClassifier._profile_vectors = prof_vecs
+
+            log.info("Chisa Persona & Profile Anchors initialized", personality_count=len(pers_vecs), profile_count=len(prof_vecs))
+
+    async def detect_persona_trait(
+        self,
+        message: str,
+        query_vector: Optional[List[float]] = None
+    ) -> Optional[str]:
+        """
+        Fast-Path Regex & Semantic Persona Detector:
+        Detects if the user query refers to Chisa's food/hobbies (PERSONALITY) or identity/age/origin (PROFILE).
+        Returns 'PERSONALITY', 'PROFILE', 'BOTH', or None.
+        """
+        if not message:
+            return None
+        
+        msg_clean = strip_platform_mentions(message.strip())
+        if not msg_clean:
+            return None
+        msg_lower = msg_clean.lower()
+
+        # Guard 1: Code / Technical / Scientific questions do not trigger Persona Traits (0 token overhead)
+        code_markers = [
+            "{", "}", ";", "def ", "class ", "int ", "float ", "const ", "import ", "from ", "return ",
+            "thuật toán", "viết code", "lập trình", "phương trình", "độ phức tạp", "regex", "cơ sở dữ liệu",
+            "sql", "git ", "viết chương trình", "chương trình", "dynamic programming", "python", "c++", "c#",
+            "java", "javascript", "golang", "rust", "html", "css", "function", "var ", "let "
+        ]
+        if any(cm in msg_lower for cm in code_markers):
+            return None
+
+        # Guard 2: Third-party entity inquiry (e.g. asking about Jiyan's food or Shorekeeper's origin)
+        if self.entity_resolver:
+            try:
+                extracted = self.entity_resolver.extract_entities(msg_clean)
+                chisa_associated = {
+                    "chisa", "kuchiba chisa", "kuchiba", "startorch academy", "startorch",
+                    "lahai-roi", "ashinohara", "sonoro sphere", "eye of unravelling"
+                }
+                third_party = {e for e in extracted if e.lower() not in chisa_associated}
+                if third_party:
+                    is_chisa_direct = any(w in msg_lower for w in ["chisa thích", "em thích", "em sợ", "bé chisa", "chisa bao nhiêu tuổi", "em bao nhiêu tuổi", "của em"])
+                    if not is_chisa_direct:
+                        return None
+            except Exception as ex:
+                log.debug("Entity check in persona detector skipped", error=str(ex))
+
+        # 1. Fast-Path Regex Match (<0.01ms)
+        is_pers_regex = any(re.search(pat, msg_lower) for pat in self._PERSONALITY_PATTERNS)
+        is_prof_regex = any(re.search(pat, msg_lower) for pat in self._PROFILE_PATTERNS)
+
+        if is_pers_regex and is_prof_regex:
+            return "BOTH"
+        if is_pers_regex:
+            return "PERSONALITY"
+        if is_prof_regex:
+            return "PROFILE"
+
+        # 2. Semantic Cosine Match (if embedder available)
+        if self.embedder:
+            try:
+                await self._ensure_persona_anchor_vectors()
+                if query_vector is None:
+                    query_vector = await self.embedder.embed_text(msg_clean, prefix="query: ")
+
+                max_pers = max((_cosine_similarity(query_vector, vec) for vec in IntentClassifier._persona_vectors), default=0.0)
+                max_prof = max((_cosine_similarity(query_vector, vec) for vec in IntentClassifier._profile_vectors), default=0.0)
+
+                # High-precision threshold 0.82 for subtle semantic expressions
+                if max_pers >= 0.82 and max_prof >= 0.82:
+                    return "BOTH"
+                if max_pers >= 0.82:
+                    return "PERSONALITY"
+                if max_prof >= 0.82:
+                    return "PROFILE"
+            except Exception as e:
+                log.warning("Semantic persona detection error", error=str(e))
+
+        return None
 
     async def is_small_talk_hybrid(
         self,

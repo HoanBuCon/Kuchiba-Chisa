@@ -6,6 +6,7 @@ import time
 from app.domain.interfaces.llm_provider import StructuredPrompt
 from app.domain.entities.emotion import EmotionState
 from app.domain.services.state_manager import StateManager
+from app.domain.services.persona_loader import persona_loader
 from app.domain.services.context_budget_manager import ContextBudgetManager, BudgetAudit
 from app.domain.services.budget_mode import BudgetMode
 from app.shared.utils.token_estimator import TokenEstimator
@@ -118,7 +119,7 @@ class ContextBuilder:
         )
 
     @classmethod
-    def build_system_skeleton(cls, emotion: EmotionState, attachment_bonus: float) -> str:
+    def build_system_skeleton(cls, emotion: EmotionState, attachment_bonus: float, persona_trait_type: Optional[str] = None) -> str:
         elapsed_hours = 0.0
         if emotion.updated_at and emotion.updated_at > 0:
             now_ms = time.time() * 1000
@@ -126,12 +127,16 @@ class ContextBuilder:
             elapsed_hours = elapsed_sec / 3600.0
             
         state_section = StateManager.format_state(emotion, attachment_bonus, elapsed_hours=elapsed_hours)
-        return "\n".join([
+        traits_snippet = persona_loader.get_snippet(persona_trait_type)
+
+        sections = [
             "[PERSONA]",
             cls.PERSONA_TEXT,
-            "",
-            state_section,
-        ])
+        ]
+        if traits_snippet and traits_snippet.strip():
+            sections.append(traits_snippet.strip())
+        sections.extend(["", state_section])
+        return "\n".join(sections)
 
     @classmethod
     def _format_history_for_budget(cls, history: List[Dict[str, str]]) -> list[dict[str, str]]:
@@ -165,13 +170,14 @@ class ContextBuilder:
         conversation_summary: str | None = None,
         budget_mode: BudgetMode = BudgetMode.RAG,
         is_small_talk: bool = False,
+        persona_trait_type: Optional[str] = None,
     ) -> ContextBuildResult:
         """
         Builds production context: measure skeleton first, flex-allocate, then assemble system prompt.
         Places [OUTPUT FORMAT] at the very end to prevent attention degradation (Lost-in-the-Middle).
         """
         formatted_history = self._format_history_for_budget(history)
-        system_skeleton = self.build_system_skeleton(emotion, attachment_bonus)
+        system_skeleton = self.build_system_skeleton(emotion, attachment_bonus, persona_trait_type=persona_trait_type)
         format_section = self.build_format_section()
         skeleton_tokens = TokenEstimator.estimate(system_skeleton) + TokenEstimator.estimate(format_section)
 

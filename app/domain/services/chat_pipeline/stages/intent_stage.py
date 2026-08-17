@@ -74,6 +74,10 @@ class IntentStage(PipelineStage):
             except Exception as ex:
                 log.debug("Small talk memory embedding skipped", error=str(ex))
 
+            # Detect Chisa Persona Trait (Personality vs Profile vs None)
+            persona_trait = await self.intent_classifier.detect_persona_trait(context.user_message, query_vector=query_vector)
+            context.persona_trait_type = persona_trait
+
             if self.pipeline_tracker:
                 self.pipeline_tracker.add_step("intent_classification", {
                     "is_small_talk": True,
@@ -86,6 +90,7 @@ class IntentStage(PipelineStage):
                     "confidence": 1.0,
                     "routing_method": "HYBRID_SMALL_TALK",
                     "semantic_scores": {"SMALL_TALK": 1.0},
+                    "persona_trait_type": persona_trait,
                     "rag_triggered": False,
                     "routing_reason": f"Hardcore Hybrid Small Talk: {st_reason}"
                 })
@@ -176,6 +181,10 @@ class IntentStage(PipelineStage):
             intent_values = [i.value for i in intent_result.intents]
             rag_triggered = bool(needs_vector_search or needs_web_search)
 
+            # Detect Chisa Persona Trait (Personality vs Profile vs None)
+            persona_trait = await self.intent_classifier.detect_persona_trait(context.user_message, query_vector=query_vector)
+            context.persona_trait_type = persona_trait
+
             # 5. Update Stage 2 tracker step data with finalized rewrite & routing outcomes
             stage_tracker_data.update({
                 "intents": intent_values,
@@ -184,6 +193,7 @@ class IntentStage(PipelineStage):
                 "needs_vector_search": needs_vector_search,
                 "needs_web_search": needs_web_search,
                 "rag_triggered": rag_triggered,
+                "persona_trait_type": persona_trait,
                 "routing_reason": routing_reason
             })
 

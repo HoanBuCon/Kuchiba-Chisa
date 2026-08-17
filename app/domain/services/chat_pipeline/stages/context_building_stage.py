@@ -39,6 +39,7 @@ class ContextBuildingStage(PipelineStage):
             conversation_summary=context.conversation_summary,
             budget_mode=budget_mode,
             is_small_talk=context.is_small_talk,
+            persona_trait_type=context.persona_trait_type,
         )
         
         context.prompt = build_result.prompt
@@ -63,6 +64,7 @@ class ContextBuildingStage(PipelineStage):
                 "history_count": len(context.prompt.history),
                 "conversation_summary": context.conversation_summary,
                 "budget_mode": budget_mode.value,
+                "persona_trait_type": context.persona_trait_type,
                 "budget_audit": context.budget_audit.to_dict(),
                 "total_estimated_tokens": context.budget_audit.total_used,
                 "effective_ceiling": context.budget_audit.effective_ceiling,

@@ -312,6 +312,11 @@ ${window.VisualizerApp.escapeHtml(data.reasoning_content)}
                         <span class="pill" style="background: ${webBadgeBg}; color: ${webBadgeColor}; border: 1px solid ${webBadgeColor}44; font-size: 12px; padding: 5px 12px; font-weight: 600;">
                             <b>Web Search:</b> ${webStatusText}
                         </span>
+                        ${data.persona_trait_type ? `
+                            <span class="pill" style="background: rgba(236, 64, 122, 0.15); color: #f06292; border: 1px solid rgba(236, 64, 122, 0.4); font-size: 12px; padding: 5px 12px; font-weight: 600;">
+                                <b>👤 Chisa Persona:</b> ${data.persona_trait_type === 'PERSONALITY' ? '🍰 Personality (Ẩm thực / Sở thích)' : (data.persona_trait_type === 'PROFILE' ? '📜 Profile (Tiểu sử / Lai lịch)' : '✨ Both (Tính cách & Thân thế)')}
+                            </span>
+                        ` : ''}
                     </div>
 
                     ${data.routing_reason ? `
@@ -901,6 +906,11 @@ ${window.VisualizerApp.escapeHtml(reasonText)}
                 <div style="display: flex; gap: 8px; font-size: 12px; flex-wrap: wrap;">
                     <span class="pill" style="background: rgba(255, 255, 255, 0.05); color: var(--text-secondary);"><b>Within Budget:</b> ${data.within_budget ? '✓ Yes' : '✗ Exceeded'}</span>
                     <span class="pill" style="background: rgba(255, 255, 255, 0.05); color: var(--text-secondary);"><b>History Count:</b> ${historyCount} msgs</span>
+                    ${data.persona_trait_type ? `
+                        <span class="pill" style="background: rgba(236, 64, 122, 0.15); color: #f06292; border: 1px solid rgba(236, 64, 122, 0.4);">
+                            <b>👤 Persona Injected:</b> ${data.persona_trait_type === 'PERSONALITY' ? '🍰 Personality (Sở thích/Ẩm thực)' : (data.persona_trait_type === 'PROFILE' ? '📜 Profile (Tiểu sử/Tuổi tác)' : '✨ Both (Tính cách & Thân thế)')}
+                        </span>
+                    ` : ''}
                 </div>
             </div>
         `;

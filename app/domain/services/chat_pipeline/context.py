@@ -36,6 +36,7 @@ class ChatContext:
     needs_web_search: bool = False
     query_vector: Optional[List[float]] = None
     intent_result: Optional[IntentResult] = None
+    persona_trait_type: Optional[str] = None  # "PERSONALITY", "PROFILE", "BOTH", None
     _is_small_talk: bool = False
     _intents: List[Any] = field(default_factory=list)
 

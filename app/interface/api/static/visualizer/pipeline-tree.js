@@ -44,8 +44,10 @@ window.PipelineTreeEngine = {
             icon: '🧭',
             title: 'Phân loại Ý định & Viết lại Câu hỏi (Intent & Rewrite)',
             subtitle: (step) => {
+                const trait = step.data?.persona_trait_type;
+                const traitTag = trait === 'PERSONALITY' ? ' · 🍰 Personality' : (trait === 'PROFILE' ? ' · 📜 Profile' : (trait === 'BOTH' ? ' · ✨ Both Traits' : ''));
                 if (step.data?.is_small_talk || step.data?.routing_method === 'HYBRID_SMALL_TALK' || step.data?.routing_method === 'L1_SMALL_TALK') {
-                    return '⚡ Small Talk (Tán gẫu · 0ms RAG Bypass)';
+                    return `⚡ Small Talk (0ms RAG Bypass)${traitTag}`;
                 }
                 const method = step.data?.rewrite_method || 'LLM_FLASH';
                 const needsVec = step.data?.needs_vector_search !== false;
@@ -58,7 +60,7 @@ window.PipelineTreeEngine = {
                 } else if (needsVec) {
                     routeTag = '🎯 Tra cứu Qdrant Lore';
                 }
-                return `[${method}] · ${routeTag}`;
+                return `[${method}] · ${routeTag}${traitTag}`;
             }
         },
         'intent_stage': {
@@ -66,8 +68,10 @@ window.PipelineTreeEngine = {
             icon: '🧭',
             title: 'Phân loại Ý định & Viết lại Câu hỏi (Intent & Rewrite)',
             subtitle: (step) => {
+                const trait = step.data?.persona_trait_type;
+                const traitTag = trait === 'PERSONALITY' ? ' · 🍰 Personality' : (trait === 'PROFILE' ? ' · 📜 Profile' : (trait === 'BOTH' ? ' · ✨ Both Traits' : ''));
                 if (step.data?.is_small_talk || step.data?.routing_method === 'HYBRID_SMALL_TALK' || step.data?.routing_method === 'L1_SMALL_TALK') {
-                    return '⚡ Small Talk (Tán gẫu · 0ms RAG Bypass)';
+                    return `⚡ Small Talk (0ms RAG Bypass)${traitTag}`;
                 }
                 const method = step.data?.rewrite_method || 'LLM_FLASH';
                 const needsVec = step.data?.needs_vector_search !== false;
@@ -80,7 +84,7 @@ window.PipelineTreeEngine = {
                 } else if (needsVec) {
                     routeTag = '🎯 Tra cứu Qdrant Lore';
                 }
-                return `[${method}] · ${routeTag}`;
+                return `[${method}] · ${routeTag}${traitTag}`;
             }
         },
         'query_rewrite': {
@@ -238,13 +242,21 @@ window.PipelineTreeEngine = {
             type: 'prompt',
             icon: '🧱',
             title: 'Đóng gói Prompt & Budget Token',
-            subtitle: (step) => `${step.data?.total_estimated_tokens || 0} tokens · Mode: ${step.data?.budget_mode || 'RAG'}`
+            subtitle: (step) => {
+                const trait = step.data?.persona_trait_type;
+                const traitTag = trait ? ` · 👤 Chisa ${trait}` : '';
+                return `${step.data?.total_estimated_tokens || 0} tokens · Mode: ${step.data?.budget_mode || 'RAG'}${traitTag}`;
+            }
         },
         'context_builder': {
             type: 'prompt',
             icon: '🧱',
             title: 'Đóng gói Prompt & Budget Token',
-            subtitle: (step) => `${step.data?.total_estimated_tokens || 0} tokens · Mode: ${step.data?.budget_mode || 'RAG'}`
+            subtitle: (step) => {
+                const trait = step.data?.persona_trait_type;
+                const traitTag = trait ? ` · 👤 Chisa ${trait}` : '';
+                return `${step.data?.total_estimated_tokens || 0} tokens · Mode: ${step.data?.budget_mode || 'RAG'}${traitTag}`;
+            }
         },
         'llm_generation': {
             type: 'llm',
