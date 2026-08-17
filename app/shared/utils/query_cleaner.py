@@ -91,11 +91,14 @@ CONVERSATIONAL_SUFFIXES = [
     "nhé chía chía", "nhé chisa", "nhé em", "nhé anh", "nhé senpai", "nhé",
     "nha chía chía", "nha chisa", "nha em", "nha anh", "nha senpai", "nha",
     "nhỉ chisa", "nhỉ em", "nhỉ", "nhở", "nhá", "nhen", "hén",
+    "phải không em", "phải không chisa", "phải không chía", "phải không anh", "phải không senpai", "phải không ạ", "phải không nè", "phải không",
+    "đúng không em", "đúng không chisa", "đúng không anh", "đúng không senpai", "đúng không ạ", "đúng không nè", "đúng không",
+    "có phải không em", "có phải không chisa", "có phải không", "có đúng không",
     "không em", "không chisa", "không chía", "không anh", "không senpai", "không ạ", "không nè", "không nha", "không nhé", "không nhỉ", "không",
     "hông em", "hông chisa", "hông anh", "hông",
     "ko em", "ko chisa", "ko anh", "ko", "k em", "k chisa", "k",
     "chưa em", "chưa chisa", "chưa anh", "chưa senpai", "chưa ạ", "chưa",
-    "đi chứ", "đi nào", "đi", "với em", "với", "ạ", "thế nào", "sao",
+    "đi chứ", "đi nào", "đi", "với em", "với", "ạ", "thế nào", "thế em", "thế anh", "thế", "đấy em", "đấy anh", "đấy", "đó em", "đó anh", "đó", "sao",
     "được không em", "được không", "hả em", "hả chisa", "hả anh", "hả", "vậy em", "vậy anh", "vậy"
 ]
 
@@ -108,15 +111,119 @@ PRONOUNS_STOPWORDS = {
 }
 
 
-def clean_query_for_rag(text: str) -> str:
+# Community Nicknames & Slang to Canonical Game Names
+COMMUNITY_NICKNAMES = {
+    r'\b(tướng rồng|rồng xanh|long vương)\b': 'Jiyan',
+    r'\b(rùa chuông|con rùa chuông|chuông mai rùa)\b': 'Bell-Borne Geochelone',
+    r'\b(cá voi|người giữ bờ|thủ hộ giả)\b': 'Shorekeeper',
+    r'\b(chị dậu|bướm hoa)\b': 'Camellya',
+    r'\b(cáo lửa|cô giáo changli)\b': 'Changli',
+    r'\b(bác sĩ rồng|tiểu thư jinhsi)\b': 'Jinhsi',
+    r'\b(thầy thuốc baizhi|bác sĩ baizhi)\b': 'Baizhi',
+    r'\b(mỏ đá|khu mỏ)\b': "Tiger's Maw",
+    r'\b(thừa tiêu sơn)\b': 'Mt. Firmament',
+    r'\b(thành jinzhou|kim châu)\b': 'Jinzhou',
+    r'\b(hắc ngạn|biển đen)\b': 'Black Shores',
+    r'\b(thánh thú jue|rồng vàng)\b': 'Jué',
+    r'\b(thảm họa lament|diệt vong lament)\b': 'The Lament',
+    r'\b(dạ hành quân)\b': 'Midnight Rangers',
+    r'\b(tàn tinh hội)\b': 'Fractsidus',
+}
+
+# Bot Persona indicators: Match when asking about AI (Chisa)'s attributes
+# Ensures "em" does NOT match if immediately followed by another name (e.g. "em Chixia")
+BOT_PERSONA_INDICATORS = [
+    r'\b(em|chisa|chía|bé chisa)\b\s+(có\s+)?(năng lực|kỹ năng|forte|chiêu|resonance|vũ khí|thuộc tính|hệ|tiểu sử|xuất thân|lý lịch|lai lịch|quê|tuổi|sở thích|món ăn|sợ|điểm yếu|bí mật)',
+    r'\b(năng lực|kỹ năng|forte|chiêu|resonance|vũ khí|thuộc tính|hệ|tiểu sử|xuất thân|lý lịch|lai lịch|quê|tuổi|sở thích|món ăn|sợ|điểm yếu|bí mật)\s+(của\s+)?(em|chisa|chía|bé chisa)\b',
+    r'\b(em|chisa|chía|bé chisa)\b\s+(dùng\s+vũ\s+khí|chiến\s+đấu|sinh\s+ra|thích\s+ăn|thích\s+gì|ghét\s+gì|sợ\s+gì)',
+    r'\b(em|chisa|chía)\s+(là\s+ai|là\s+gì|ở\s+đâu|thuộc\s+phe\s+nào|đến\s+từ\s+đâu)\b',
+]
+
+# User Persona indicators: Match when asking about User (Senpai)'s memory/profile
+USER_PERSONA_INDICATORS = [
+    r'\b(anh|tôi|mình|senpai|tớ|chị)\b\s+(tên\s+là|làm\s+nghề|làm\s+việc|ở\s+đâu|sinh\s+năm|mấy\s+tuổi|thích|dị\s+ứng|ghét|hứa|bảo|dặn|nhớ)',
+    r'\b(tên|công\s+việc|nghề\s+nghiệp|sở\s+thích|món\s+ăn|kỷ\s+niệm|lời\s+hứa|quê\s+quán|tuổi)\s+(của\s+)?(anh|tôi|mình|senpai|tớ|chị)\b',
+    r'\b(anh|tôi|mình|senpai|tớ|chị)\b\s+(có\s+nhớ|hôm\s+trước|hôm\s+qua|ngày\s+mai)',
+]
+
+
+def resolve_persona_pronouns(text: str, intent_hint: Optional[str] = None) -> str:
     """
-    Cleans user query by iteratively removing conversational greetings, chatbot request prefixes, 
-    and common suffixes/particles with strict word-boundary matching. This prevents semantic dilution in dense embedding search,
-    ensuring relevant lore chunks are retrieved without mutilating proper entity names (e.g. Hiyuki -> Yuki bug).
+    Deictic Pronoun & Community Slang Disambiguation:
+    - Resolves 'em', 'chisa' inquiring about bot attributes -> 'Kuchiba Chisa (Resonator)'
+    - Resolves 'anh', 'senpai' inquiring about user memory -> 'Senpai / người dùng'
+    - Normalizes community nicknames ('tướng rồng' -> 'Jiyan', 'rùa chuông' -> 'Bell-Borne Geochelone')
+    Zero-token Fast-Path (<0.1ms).
     """
     if not text:
         return text
-        
+
+    resolved = text.strip()
+    resolved_lower = resolved.lower()
+
+    # 1. Apply Community Nicknames Normalization
+    for pattern, repl in COMMUNITY_NICKNAMES.items():
+        if re.search(pattern, resolved_lower, re.IGNORECASE):
+            resolved = re.sub(pattern, repl, resolved, flags=re.IGNORECASE)
+            resolved_lower = resolved.lower()
+
+    # 2. Resolve Bot Persona ("em", "chisa" -> Kuchiba Chisa)
+    is_bot_persona_query = any(re.search(pat, resolved_lower) for pat in BOT_PERSONA_INDICATORS)
+    if is_bot_persona_query or intent_hint == "LORE":
+        # Check if "em" is used without a third-party character name directly behind it
+        # e.g., "em chixia" -> do NOT replace; "em có năng lực gì" -> REPLACE
+        if re.search(r'\b(em|bé chisa|chía)\b', resolved_lower) and not re.search(r'\b(em|bé)\s+(chixia|jiyan|sanhua|yinlin|camellya|jinhsi|changli|yangyang|baizhi|danjin|encore|aalto|calcharo|mortefi|verina|lingyang|taoqi|rover)\b', resolved_lower):
+            # If query has persona words, enrich with canonical Kuchiba Chisa
+            if "kuchiba chisa" not in resolved_lower and "chisa" not in resolved_lower:
+                resolved = f"{resolved} (Kuchiba Chisa Resonator)"
+            elif "kuchiba" not in resolved_lower:
+                resolved = re.sub(r'\bchisa\b', 'Kuchiba Chisa', resolved, flags=re.IGNORECASE)
+
+    # 3. Resolve User Persona ("anh", "senpai" -> Senpai/User memory)
+    is_user_persona_query = any(re.search(pat, resolved_lower) for pat in USER_PERSONA_INDICATORS)
+    if is_user_persona_query or intent_hint == "MEMORY":
+        if re.search(r'\b(anh|senpai|tớ|mình|chị)\b', resolved_lower) and not re.search(r'\b(anh|ông|chú)\s+(jiyan|aalto|calcharo|mortefi|lingyang|geshu lin|scar)\b', resolved_lower):
+            if "senpai" not in resolved_lower and "người dùng" not in resolved_lower:
+                resolved = f"{resolved} (Senpai / người dùng)"
+
+    return resolved
+
+
+def strip_platform_mentions(text: str) -> str:
+    """
+    Strips platform-specific mentions, tags, and formatting artifacts:
+    - Discord User/Bot mentions: <@1512944169310748682>, <@!1512944169310748682>
+    - Discord Role mentions: <@&123456789012345678>
+    - Discord Channel mentions: <#123456789012345678>
+    - Discord Custom Emojis: <:custom_emoji:123456789012345678>, <a:animated:123456789012345678>
+    - Discord Timestamps: <t:1234567890:R>
+    - Generic @mentions: @everyone, @here
+    """
+    if not text:
+        return ""
+    cleaned = re.sub(r'<@!?&?\d+>', '', text)
+    cleaned = re.sub(r'<#\d+>', '', cleaned)
+    cleaned = re.sub(r'<a?:[a-zA-Z0-9_]+:\d+>', '', cleaned)
+    cleaned = re.sub(r'<t:\d+(?::[a-zA-Z])?>', '', cleaned)
+    cleaned = re.sub(r'\b@(everyone|here)\b', '', cleaned)
+    cleaned = re.sub(r'\s+', ' ', cleaned).strip()
+    return cleaned
+
+
+def clean_query_for_rag(text: str) -> str:
+    """
+    Cleans user query by iteratively removing conversational greetings, chatbot request prefixes, 
+    and common suffixes/particles with strict word-boundary matching.
+    Intelligently preserves calling names when no other entity exists in the query.
+    """
+    if not text:
+        return text
+
+    # 0. Strip platform tags and mentions first (<@1512944169310748682>, etc.)
+    text = strip_platform_mentions(text)
+    if not text:
+        return ""
+
     original = text
     text = text.lower().strip()
     
@@ -129,11 +236,6 @@ def clean_query_for_rag(text: str) -> str:
         prev_text = text
         text = re.sub(r'^[,\.\?\!\-\s\:]+|[,\.\?\!\-\s\:]+$', '', text).strip()
         
-        # Strip calling names with word boundaries
-        for name in CALLING_NAMES:
-            text = re.sub(rf'^(?:{re.escape(name)})(?:\s+|$|[,\.\?\!\-\:])', '', text).strip()
-            text = re.sub(rf'(?:\s+|^|[,\.\?\!\-\:])(?:{re.escape(name)})$', '', text).strip()
-
         # Strip greetings with word boundaries
         for g in sorted(GREETING_PREFIXES, key=len, reverse=True):
             text = re.sub(rf'^(?:{re.escape(g)})(?:\s+|$|[,\.\?\!\-\:])', '', text).strip()
@@ -152,13 +254,25 @@ def clean_query_for_rag(text: str) -> str:
         # Strip particles at start like "nhé,", "nha,"
         text = re.sub(r'^(nhé|nha|ạ|ơi|nè)[,\.\?\!\-\s\:]+', '', text).strip()
 
+        # Strip calling names with word boundaries ONLY IF the question is not about bot's own attributes
+        # (e.g. "Chisa ơi Jiyan dùng gì" -> "jiyan dùng gì", but "Chisa có năng lực gì" -> keeps "chisa có năng lực gì")
+        for name in CALLING_NAMES:
+            if re.search(rf'^(?:{re.escape(name)})(?:\s+|$|[,\.\?\!\-\:])', text):
+                test_sub = re.sub(rf'^(?:{re.escape(name)})(?:\s+|$|[,\.\?\!\-\:])', '', text).strip()
+                is_attr_inquiry = any(re.search(pat, text) for pat in BOT_PERSONA_INDICATORS)
+                if not is_attr_inquiry:
+                    text = test_sub
+            
+            # Suffix calling name
+            text = re.sub(rf'(?:\s+|^|[,\.\?\!\-\:])(?:{re.escape(name)})$', '', text).strip()
+
         if text == prev_text:
             break
             
     text = re.sub(r'^[,\.\?\!\-\s\:]+|[,\.\?\!\-\s\:]+$', '', text).strip()
     
     if not text:
-        return ""
+        return original.strip()
     return text
 
 
@@ -176,45 +290,62 @@ def has_coreference_markers(text: str) -> bool:
     return False
 
 
+REACTION_WORDS = {
+    "haha", "hihi", "hehe", "kaka", "kkk", "lol", "lmao", "ahihi",
+    "ok", "okay", "ừ", "ừm", "vâng", "dạ", "chào", "đúng", "chuẩn", "chính xác",
+    "cảm", "ơn", "cảm ơn", "thanks", "thank", "tks", "bye", "tạm", "biệt", "tạm biệt",
+    "g9", "ngủ", "ngon", "ngủ ngon", "uầy", "chà", "wow", "oh", "ô", "ôi", "haiz",
+    "hic", "huhu", "vui", "quá", "đi", "nhỉ", "nhở", "thật", "luôn", "nha", "nhé",
+    "nè", "nhen", "hén", "đấy", "đó", "lắm", "ghê", "đỉnh", "tuyệt", "hay"
+}
+
+
 def is_meaningful_query(query: str) -> bool:
     """
     Kiểm tra xem query sau khi làm sạch có chứa từ vựng mang ngữ nghĩa tìm kiếm RAG hay không.
-    Nếu chỉ còn lại đại từ nhân xưng ("em", "chisa", "anh") thì trả về False.
+    Nếu chỉ là các câu cảm thán/phản hồi ngắn (haha, ok, cảm ơn, uầy đỉnh vậy...) hoặc đại từ thì trả về False.
     """
     if not query:
         return False
-    words = [w for w in re.findall(r'\w+', query.lower()) if w not in PRONOUNS_STOPWORDS]
-    total_chars = sum(len(w) for w in words)
-    return len(words) > 0 and total_chars >= 3
+    words = re.findall(r'\w+', query.lower())
+    non_reaction_words = [w for w in words if w not in PRONOUNS_STOPWORDS and w not in REACTION_WORDS]
+    total_chars = sum(len(w) for w in non_reaction_words)
+    return len(non_reaction_words) > 0 and total_chars >= 3
 
 
-def enrich_query_with_entities(cleaned_query: str, entity_resolver: Any) -> str:
+def enrich_query_with_entities(cleaned_query: str, entity_resolver: Any, intent_hint: Optional[str] = None) -> str:
     """
-    Fast-Path Entity Enrichment: Extracts matched entities from EntityResolver
-    and appends their canonical/English aliases to boost cross-lingual vector retrieval.
+    Fast-Path Entity & Persona Enrichment:
+    1. Resolves Persona Pronouns ('em' -> 'Kuchiba Chisa', 'anh' -> 'Senpai') and Community Nicknames.
+    2. Extracts matched entities from EntityResolver and appends canonical/English aliases.
     Zero LLM cost (< 0.2ms).
     """
-    if not cleaned_query or not entity_resolver:
+    if not cleaned_query:
         return cleaned_query
-        
+
+    # Step 1: Deictic Persona & Slang Disambiguation
+    query = resolve_persona_pronouns(cleaned_query, intent_hint=intent_hint)
+    if not entity_resolver:
+        return query
+
     try:
-        extracted = entity_resolver.extract_entities(cleaned_query)
+        extracted = entity_resolver.extract_entities(query)
         if not extracted:
-            return cleaned_query
+            return query
             
         aliases_to_add: Set[str] = set()
         for ent in extracted:
-            if ent.lower() not in cleaned_query.lower():
+            if ent.lower() not in query.lower():
                 aliases_to_add.add(ent)
             # Check canonical / English mappings in entity registry
             if hasattr(entity_resolver, "get_entity_record"):
                 rec = entity_resolver.get_entity_record(ent)
-                if rec and rec.canonical_name and rec.canonical_name.lower() not in cleaned_query.lower():
+                if rec and rec.canonical_name and rec.canonical_name.lower() not in query.lower():
                     aliases_to_add.add(rec.canonical_name)
                     
         if aliases_to_add:
-            return f"{cleaned_query} ({', '.join(sorted(aliases_to_add))})"
+            return f"{query} ({', '.join(sorted(aliases_to_add))})"
     except Exception:
         pass
         
-    return cleaned_query
+    return query

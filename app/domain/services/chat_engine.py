@@ -112,6 +112,12 @@ class ChatEngine:
                     await self.cache.delete(cache_key)
                 else:
                     log.info("Redis Answer Cache HIT", user_id=user_id, query_hash=query_hash)
+                    if on_token:
+                        for token in cached_answer.split(" "):
+                            if asyncio.iscoroutinefunction(on_token):
+                                await on_token(token + " ")
+                            else:
+                                on_token(token + " ")
                     current_emotion = await self.get_emotion_state(session, user_id)
                     if hasattr(current_emotion, "model_dump"):
                         emotion_dict = current_emotion.model_dump()
@@ -198,7 +204,7 @@ class ChatEngine:
                                 "properties": {
                                     "type": {
                                         "type": "string",
-                                        "enum": ["preferences", "shared_memories", "relationship", "important_facts"]
+                                        "enum": ["user_fact", "shared_story"]
                                     },
                                     "content": {"type": "string"},
                                     "importance_score": {"type": "number", "minimum": 0.1, "maximum": 1.0}
@@ -216,15 +222,15 @@ class ChatEngine:
                     "CRITICAL RULES:\n"
                     "1. 'summary': PRESERVE important details from previous summary and merge new info from recent messages. "
                     "Must be a STANDALONE, COMPLETE, concise narrative summary in Vietnamese.\n"
-                    "2. 'extracted_facts': Extract discrete, persistent memory facts (user preferences, relationship milestones, important events) "
-                    "to store long-term in memory DB. Output in Vietnamese with types 'preferences', 'shared_memories', 'relationship', or 'important_facts'.\n"
+                    "2. 'extracted_facts': Extract discrete, persistent memory facts (real-world facts/preferences of Senpai as 'user_fact', or nicknames/promises as 'shared_story') "
+                    "to store long-term in memory DB. Output in Vietnamese with types 'user_fact' or 'shared_story'. DO NOT extract roleplay banter or jokes.\n"
                     "You MUST output a valid JSON object matching the requested schema."
                 )
 
                 FRESH_SYSTEM_PROMPT = (
                     "You are a conversation summarizer and memory extractor for Kuchiba Chisa.\n"
                     "1. 'summary': Analyze transcript and provide a concise standalone summary in Vietnamese.\n"
-                    "2. 'extracted_facts': Extract discrete persistent memory facts to store long-term in memory DB.\n"
+                    "2. 'extracted_facts': Extract discrete persistent memory facts to store long-term in memory DB with types 'user_fact' or 'shared_story'.\n"
                     "You MUST output a valid JSON object matching the requested schema."
                 )
 

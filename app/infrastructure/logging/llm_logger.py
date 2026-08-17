@@ -59,6 +59,8 @@ _init_logger()
 
 LLM_PURPOSE_LABELS: dict[str, str] = {
     "chat_response": "Trả lời Chisa (call chính)",
+    "micro_llm_query_rewrite": "Viết lại câu hỏi & Router RAG (Micro LLM)",
+    "query_rewrite": "Viết lại câu hỏi (Query Rewrite)",
     "alignment_assessor": "Alignment Assessor",
     "web_search_query_extract": "Web Search · trích query",
     "summarize_conversation": "Tóm tắt hội thoại (Tool Summarize)",

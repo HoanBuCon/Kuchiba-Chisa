@@ -134,7 +134,12 @@ _ENTITY_BLACKLIST = frozenset({
     "item", "items", "bell", "situated", "according", "details", "summary",
     "type", "category", "rarity", "cost", "source", "effect", "stats",
     "attribute", "attributes", "unlocked", "level", "rank", "stat", "value",
-    "property", "properties", "table", "column", "row"
+    "property", "properties", "table", "column", "row", "these resonators",
+    "category table", "extra effect", "mutant resonators", "ex42978",
+    "preparatory program", "making", "nutri pack", "one night", "midnight now",
+    "time domain", "class 2", "routine examinations", "release the wants",
+    "cleanse the thoughts", "she quickly", "yet it", "could someone",
+    "that person", "gold eyes", "someone like", "first recorded", "subsequent examinations"
 })
 
 
@@ -155,18 +160,18 @@ def clean_entity_name(entity: str) -> str:
 
 
 def _extract_entities_from_text(text: str) -> List[str]:
-    """Extract potential entity names from wiki links, markdown links, or capitalized names."""
+    """Extract potential entity names from wiki links, structured templates, or verified capitalized names."""
     entities: Set[str] = set()
 
-    # Wiki links [[Link]]
+    # Wiki links [[Link]] or [[Link|Display]]
     for match in _RE_WIKI_LINK.finditer(text):
         cleaned = clean_entity_name(match.group(1))
         if cleaned:
             entities.add(cleaned)
 
-    # Capitalized entity phrases (2-4 words, e.g. "Spacetrek Collective", "Startorch Academy", "Lahai-Roi")
-    cap_phrase_regex = re.compile(r"\b([A-Z][a-z]+(?:[ \t]+[A-Z][a-z]+){1,3})\b")
-    for match in cap_phrase_regex.finditer(text):
+    # Structured Game Entity Templates {{Resonator|Name}}, {{Enemy|Name}}, {{Location|Name}}, etc.
+    template_entity_regex = re.compile(r"\{\{(?:Enemy|Item|Resonator|Location|Faction|Echo|Weapon|Character)\|([^}|]+)(?:\|[^}]+)?\}\}", re.IGNORECASE)
+    for match in template_entity_regex.finditer(text):
         cleaned = clean_entity_name(match.group(1))
         if cleaned:
             entities.add(cleaned)

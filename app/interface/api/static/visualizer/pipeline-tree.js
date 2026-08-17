@@ -42,39 +42,68 @@ window.PipelineTreeEngine = {
         'intent_classification': {
             type: 'intent',
             icon: '🧭',
-            title: 'Phân loại Ý định (Semantic Router)',
+            title: 'Phân loại Ý định & Viết lại Câu hỏi (Intent & Rewrite)',
             subtitle: (step) => {
-                const method = step.data?.routing_method;
-                const intents = step.data?.intents || [];
-                const rwMethod = step.data?.rewrite_method;
-                const conf = step.data?.confidence !== undefined ? `${Math.round(step.data.confidence * 100)}%` : '';
-                const rwTag = rwMethod ? ` · [${rwMethod}]` : '';
-                if (method === 'L1_SMALL_TALK' || step.data?.is_small_talk) {
-                    return 'L1 Small Talk (Tán gẫu · Bỏ qua RAG)';
+                const trait = step.data?.persona_trait_type;
+                const traitTag = trait === 'PERSONALITY' ? ' · 🍰 Personality' : (trait === 'PROFILE' ? ' · 📜 Profile' : (trait === 'BOTH' ? ' · ✨ Both Traits' : ''));
+                if (step.data?.is_small_talk || step.data?.routing_method === 'HYBRID_SMALL_TALK' || step.data?.routing_method === 'L1_SMALL_TALK') {
+                    return `⚡ Small Talk (0ms RAG Bypass)${traitTag}`;
                 }
-                if (method) {
-                    return `${method} · [${intents.join(', ')}] ${conf ? `(${conf})` : ''}${rwTag}`;
+                const method = step.data?.rewrite_method || 'LLM_FLASH';
+                const needsVec = step.data?.needs_vector_search !== false;
+                const needsWeb = Boolean(step.data?.needs_web_search);
+                let routeTag = '⚡ Code / Task (0ms RAG Bypass)';
+                if (needsWeb && !needsVec) {
+                    routeTag = '🌐 Direct Web Search';
+                } else if (needsVec && needsWeb) {
+                    routeTag = '🎯 Vector + 🌐 Web Search';
+                } else if (needsVec) {
+                    routeTag = '🎯 Tra cứu Qdrant Lore';
                 }
-                return intents.length ? `[${intents.join(', ')}]${rwTag}` : 'RAG Query Search';
+                return `[${method}] · ${routeTag}${traitTag}`;
             }
         },
         'intent_stage': {
             type: 'intent',
             icon: '🧭',
-            title: 'Phân loại Ý định (Semantic Router)',
+            title: 'Phân loại Ý định & Viết lại Câu hỏi (Intent & Rewrite)',
             subtitle: (step) => {
-                const method = step.data?.routing_method;
-                const intents = step.data?.intents || [];
-                const rwMethod = step.data?.rewrite_method;
-                const conf = step.data?.confidence !== undefined ? `${Math.round(step.data.confidence * 100)}%` : '';
-                const rwTag = rwMethod ? ` · [${rwMethod}]` : '';
-                if (method === 'L1_SMALL_TALK' || step.data?.is_small_talk) {
-                    return 'L1 Small Talk (Tán gẫu · Bỏ qua RAG)';
+                const trait = step.data?.persona_trait_type;
+                const traitTag = trait === 'PERSONALITY' ? ' · 🍰 Personality' : (trait === 'PROFILE' ? ' · 📜 Profile' : (trait === 'BOTH' ? ' · ✨ Both Traits' : ''));
+                if (step.data?.is_small_talk || step.data?.routing_method === 'HYBRID_SMALL_TALK' || step.data?.routing_method === 'L1_SMALL_TALK') {
+                    return `⚡ Small Talk (0ms RAG Bypass)${traitTag}`;
                 }
-                if (method) {
-                    return `${method} · [${intents.join(', ')}] ${conf ? `(${conf})` : ''}${rwTag}`;
+                const method = step.data?.rewrite_method || 'LLM_FLASH';
+                const needsVec = step.data?.needs_vector_search !== false;
+                const needsWeb = Boolean(step.data?.needs_web_search);
+                let routeTag = '⚡ Code / Task (0ms RAG Bypass)';
+                if (needsWeb && !needsVec) {
+                    routeTag = '🌐 Direct Web Search';
+                } else if (needsVec && needsWeb) {
+                    routeTag = '🎯 Vector + 🌐 Web Search';
+                } else if (needsVec) {
+                    routeTag = '🎯 Tra cứu Qdrant Lore';
                 }
-                return intents.length ? `[${intents.join(', ')}]${rwTag}` : 'RAG Query Search';
+                return `[${method}] · ${routeTag}${traitTag}`;
+            }
+        },
+        'query_rewrite': {
+            type: 'intent',
+            icon: '✨',
+            title: 'Viết lại & Định tuyến Tri thức (Query Rewrite)',
+            subtitle: (step) => {
+                const method = step.data?.rewrite_method || 'FAST_PATH';
+                const needsVec = step.data?.needs_vector_search !== false;
+                const needsWeb = Boolean(step.data?.needs_web_search);
+                let routeTag = '⚡ Code / Smalltalk (0ms RAG)';
+                if (needsWeb && !needsVec) {
+                    routeTag = '🌐 Web Search Direct';
+                } else if (needsVec && needsWeb) {
+                    routeTag = '🎯 Vector + 🌐 Web Search';
+                } else if (needsVec) {
+                    routeTag = '🎯 Qdrant Lore';
+                }
+                return `[${method}] · ${routeTag}`;
             }
         },
         'tool_routing': {
@@ -98,8 +127,21 @@ window.PipelineTreeEngine = {
         'rag_stage': {
             type: 'rag',
             icon: '🧠',
-            title: 'Truy hồi Tri thức & Ký ức (Metadata-Hybrid RAG)',
+            title: (step) => {
+                const mode = step.data?.mode;
+                if (mode === 'WEB_SEARCH') return 'Truy hồi Tri thức (Web Search Mode)';
+                if (mode === 'VECTOR_SEARCH') return 'Truy hồi Tri thức & Ký ức (Vector Search Mode)';
+                if (mode === 'BYPASS') return 'Truy hồi Tri thức (0ms RAG Bypass)';
+                return 'Truy hồi Tri thức & Ký ức (Metadata-Hybrid RAG)';
+            },
             subtitle: (step) => {
+                const mode = step.data?.mode;
+                if (mode === 'WEB_SEARCH') {
+                    const q = step.data?.search_query || '';
+                    const count = step.data?.snippets_count || 0;
+                    return `🌐 Web Search Lần 1 · "${q.slice(0, 24)}..." (${count} kết quả)`;
+                }
+                if (mode === 'BYPASS') return '⚡ Bỏ qua (Code / Small Talk)';
                 const lore = step.data?.retrieved_lore_chunks?.length || 0;
                 const mem = step.data?.retrieved_memories?.length || 0;
                 const ents = step.data?.extracted_entities?.length || 0;
@@ -109,8 +151,21 @@ window.PipelineTreeEngine = {
         'rag_retrieval': {
             type: 'rag',
             icon: '🧠',
-            title: 'Truy hồi Tri thức & Ký ức (Metadata-Hybrid RAG)',
+            title: (step) => {
+                const mode = step.data?.mode;
+                if (mode === 'WEB_SEARCH') return 'Truy hồi Tri thức (Web Search Mode)';
+                if (mode === 'VECTOR_SEARCH') return 'Truy hồi Tri thức & Ký ức (Vector Search Mode)';
+                if (mode === 'BYPASS') return 'Truy hồi Tri thức (0ms RAG Bypass)';
+                return 'Truy hồi Tri thức & Ký ức (Metadata-Hybrid RAG)';
+            },
             subtitle: (step) => {
+                const mode = step.data?.mode;
+                if (mode === 'WEB_SEARCH') {
+                    const q = step.data?.search_query || '';
+                    const count = step.data?.snippets_count || 0;
+                    return `🌐 Web Search Lần 1 · "${q.slice(0, 24)}..." (${count} kết quả)`;
+                }
+                if (mode === 'BYPASS') return '⚡ Bỏ qua (Code / Small Talk)';
                 const lore = step.data?.retrieved_lore_chunks?.length || 0;
                 const mem = step.data?.retrieved_memories?.length || 0;
                 const ents = step.data?.extracted_entities?.length || 0;
@@ -138,14 +193,22 @@ window.PipelineTreeEngine = {
         'information_alignment_check': {
             type: 'alignment',
             icon: '⚖️',
-            title: 'Đánh giá Đủ Context (Context Assessor)',
-            subtitle: (step) => step.data?.is_aligned ? '✓ Context đầy đủ để trả lời' : '⚠️ Thiếu dữ liệu -> Kích hoạt Thinking Loop'
+            title: 'Kiểm định Context & Tinh chỉnh Query (Context Assessor)',
+            subtitle: (step) => {
+                if (step.data?.is_aligned) return '✓ Đã đủ thông tin để trả lời';
+                const q2 = step.data?.generated_search_query;
+                return q2 ? `⚠️ Thiếu dữ liệu ➔ Tinh chỉnh Query 2: "${q2.slice(0, 22)}..."` : '⚠️ Thiếu dữ liệu -> Kích hoạt Thinking Loop';
+            }
         },
         'alignment_assessment': {
             type: 'alignment',
             icon: '⚖️',
-            title: 'Đánh giá Đủ Context (Context Assessor)',
-            subtitle: (step) => step.data?.is_aligned ? '✓ Context đầy đủ để trả lời' : '⚠️ Thiếu dữ liệu -> Kích hoạt Thinking Loop'
+            title: 'Kiểm định Context & Tinh chỉnh Query (Context Assessor)',
+            subtitle: (step) => {
+                if (step.data?.is_aligned) return '✓ Đã đủ thông tin để trả lời';
+                const q2 = step.data?.generated_search_query;
+                return q2 ? `⚠️ Thiếu dữ liệu ➔ Tinh chỉnh Query 2: "${q2.slice(0, 22)}..."` : '⚠️ Thiếu dữ liệu -> Kích hoạt Thinking Loop';
+            }
         },
         'thinking_loop_cycle_1': {
             type: 'thinking',
@@ -179,13 +242,21 @@ window.PipelineTreeEngine = {
             type: 'prompt',
             icon: '🧱',
             title: 'Đóng gói Prompt & Budget Token',
-            subtitle: (step) => `${step.data?.total_estimated_tokens || 0} tokens · Mode: ${step.data?.budget_mode || 'RAG'}`
+            subtitle: (step) => {
+                const trait = step.data?.persona_trait_type;
+                const traitTag = trait ? ` · 👤 Chisa ${trait}` : '';
+                return `${step.data?.total_estimated_tokens || 0} tokens · Mode: ${step.data?.budget_mode || 'RAG'}${traitTag}`;
+            }
         },
         'context_builder': {
             type: 'prompt',
             icon: '🧱',
             title: 'Đóng gói Prompt & Budget Token',
-            subtitle: (step) => `${step.data?.total_estimated_tokens || 0} tokens · Mode: ${step.data?.budget_mode || 'RAG'}`
+            subtitle: (step) => {
+                const trait = step.data?.persona_trait_type;
+                const traitTag = trait ? ` · 👤 Chisa ${trait}` : '';
+                return `${step.data?.total_estimated_tokens || 0} tokens · Mode: ${step.data?.budget_mode || 'RAG'}${traitTag}`;
+            }
         },
         'llm_generation': {
             type: 'llm',
@@ -199,6 +270,7 @@ window.PipelineTreeEngine = {
                 if (p === 'memory_extractor') return 'LLM · Trích xuất Ký ức (Memory Extractor)';
                 if (p === 'alignment_assessor' || p === 'context_assessor') return 'LLM · Đánh giá Context (Context Assessor)';
                 if (p === 'summary_generator' || p === 'auto_summarize') return 'LLM · Tóm tắt Hội thoại (Summarizer)';
+                if (p === 'micro_llm_query_rewrite' || p === 'query_rewrite') return 'LLM · Viết lại Câu hỏi & Định tuyến (Micro LLM Rewrite)';
                 if (p === 'intent_classifier') return 'LLM · Phân loại Ý định (Semantic Router)';
                 if (p.startsWith('thinking_loop')) return `LLM · Loop Thinking (${p.replace('thinking_loop_', '')})`;
                 return `LLM · ${p ? p.toUpperCase() : 'Inference'}`;
@@ -328,6 +400,10 @@ window.PipelineTreeEngine = {
         }
 
         // ── Level 1 (Child / Sub-steps inside a Stage) ──
+        // 0. Children of Intent & Rewrite Stage
+        if (name === 'query_rewrite' || (name === 'llm_generation' && (data.purpose === 'micro_llm_query_rewrite' || data.purpose === 'query_rewrite'))) {
+            return 1;
+        }
         // 1. Children of RAG Retrieval Stage
         if (name === 'information_alignment_check' || name === 'alignment_assessment') {
             return 1;
@@ -342,7 +418,7 @@ window.PipelineTreeEngine = {
             return 1;
         }
         // 2. Children of Tool Routing Stage
-        if (name === 'web_search' && data.source === 'tool_routing') {
+        if (name === 'web_search' && (data.source === 'tool_routing' || data.source === 'system_action')) {
             return 1;
         }
         if (['summarize_conversation_memory', 'get_emotion_report', 'web_search_tool', 'summarize_tool', 'emotion_report_tool'].includes(name)) {
@@ -396,6 +472,31 @@ window.PipelineTreeEngine = {
             return;
         }
 
+        // Calculate hierarchical step numbering (e.g., #1, #1.1, #1.2, #2, #3, #3.1)
+        const stepNumbers = [];
+        let rootCount = 0;
+        let childCount = 0;
+        let grandChildCount = 0;
+
+        for (let i = 0; i < trace.steps.length; i++) {
+            const depth = this.getNodeDepth(trace.steps[i]);
+            if (depth === 0) {
+                rootCount++;
+                childCount = 0;
+                grandChildCount = 0;
+                stepNumbers.push(`#${rootCount}`);
+            } else if (depth === 1) {
+                childCount++;
+                grandChildCount = 0;
+                stepNumbers.push(`#${rootCount}.${childCount}`);
+            } else if (depth === 2) {
+                grandChildCount++;
+                stepNumbers.push(`#${rootCount}.${childCount}.${grandChildCount}`);
+            } else {
+                stepNumbers.push(`#${i + 1}`);
+            }
+        }
+
         const stepsHtml = trace.steps.map((step, idx) => {
             const def = this.getNodeDefinition(step);
             const depth = this.getNodeDepth(step);
@@ -403,6 +504,7 @@ window.PipelineTreeEngine = {
             const subtitle = typeof def.subtitle === 'function' ? def.subtitle(step) : def.subtitle;
             const isSelected = window.VisualizerApp.selectedStepIndex === idx;
             const branchPrefix = this.getBranchPrefix(trace.steps, idx, depth);
+            const stepNumText = stepNumbers[idx] || `#${idx + 1}`;
 
             // Badges calculation
             const badges = [];
@@ -464,7 +566,7 @@ window.PipelineTreeEngine = {
                      onclick="PipelineTreeEngine.selectStep(${idx})">
                     <div class="tree-node-left">
                         ${branchPrefix ? `<span class="branch-prefix">${branchPrefix}</span>` : ''}
-                        <span class="tree-node-step-num">#${idx + 1}</span>
+                        <span class="tree-node-step-num">${stepNumText}</span>
                         <span class="tree-node-icon">${def.icon}</span>
                         <div class="tree-node-info">
                             <span class="tree-node-title">${window.VisualizerApp.escapeHtml(title)}</span>

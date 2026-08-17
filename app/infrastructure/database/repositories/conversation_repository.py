@@ -62,8 +62,13 @@ class SqlAlchemyConversationRepository(IConversationRepository):
         await self.session.flush()
 
     async def get_last_user_rewritten_query(
-        self, user_id: uuid.UUID, conversation_id: uuid.UUID
+        self, user_id: uuid.UUID, conversation_id: uuid.UUID, max_lookback: int = 3
     ) -> Optional[str]:
+        """
+        Knowledge-Aware Lookback: Retrieves the most recent meaningful user query from conversation history.
+        Skips superficial short reactions (e.g. 'haha', 'ok', 'cảm ơn') to preserve multi-turn context
+        when follow-up questions occur after short interjections.
+        """
         stmt = (
             select(MessageModel.rewritten_content, MessageModel.content)
             .where(
@@ -73,13 +78,21 @@ class SqlAlchemyConversationRepository(IConversationRepository):
                 MessageModel.is_success == True
             )
             .order_by(MessageModel.created_at.desc())
-            .limit(1)
+            .limit(max_lookback)
         )
         result = await self.session.execute(stmt)
-        row = result.first()
-        if row:
-            return row[0] or row[1]
-        return None
+        rows = result.all()
+        if not rows:
+            return None
+
+        from app.shared.utils.query_cleaner import is_meaningful_query
+        for row in rows:
+            candidate = row[0] or row[1]
+            if candidate and is_meaningful_query(candidate):
+                return candidate
+
+        # Fallback to the latest message if all were short
+        return rows[0][0] or rows[0][1]
 
     async def get_recent_history(
         self, user_id: uuid.UUID, conversation_id: uuid.UUID, limit: int = 15

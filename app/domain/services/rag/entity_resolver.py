@@ -1,6 +1,6 @@
 import json
 import re
-from typing import Set, Dict
+from typing import Set, Dict, Optional, Any
 from pathlib import Path
 from app.domain.entities.dictionary import LoreEntityNode, EntityDictionary
 from app.shared.utils.logger import get_logger
@@ -96,24 +96,30 @@ class EntityResolver:
         return expanded
 
 
-def enrich_query_with_entities(query: str, resolver: EntityResolver) -> str:
+def enrich_query_with_entities(query: str, resolver: EntityResolver, intent_hint: Optional[str] = None) -> str:
     """
     Enriches user query by appending canonical names and primary aliases
     of recognized entities to maximize lexical and semantic retrieval hit rate.
+    Includes Persona pronoun & slang disambiguation.
     """
-    if not query or not resolver:
+    if not query:
         return query
-    
-    extracted = resolver.extract_entities(query)
+
+    from app.shared.utils.query_cleaner import resolve_persona_pronouns
+    resolved_query = resolve_persona_pronouns(query, intent_hint=intent_hint)
+    if not resolver:
+        return resolved_query
+
+    extracted = resolver.extract_entities(resolved_query)
     if not extracted:
-        return query
+        return resolved_query
         
     enriched_terms = []
     for canon in extracted:
-        if canon.lower() not in query.lower():
+        if canon.lower() not in resolved_query.lower():
             enriched_terms.append(canon)
             
     if enriched_terms:
-        return f"{query} ({', '.join(enriched_terms)})"
-    return query
+        return f"{resolved_query} ({', '.join(enriched_terms)})"
+    return resolved_query
 

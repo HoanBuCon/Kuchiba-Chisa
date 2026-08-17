@@ -22,6 +22,7 @@ class EmotionUpdateStage(PipelineStage):
 
     async def process(self, context: ChatContext) -> ChatContext:
         tool_res = context.tool_res or {}
+        sentiment_analysis = tool_res.get("sentiment_analysis", {})
         user_sentiment = tool_res.get("user_sentiment", {})
         chisa_sentiment = tool_res.get("chisa_sentiment", {})
         
@@ -37,8 +38,9 @@ class EmotionUpdateStage(PipelineStage):
         
         emotion_repo = self.emotion_repo_factory(context.session)
 
-        self.emotion_engine.update(
+        delta = self.emotion_engine.update(
             context.emotion,
+            sentiment_analysis=sentiment_analysis,
             is_positive=is_positive,
             is_negative=is_negative,
             is_rude=is_rude,
@@ -58,7 +60,15 @@ class EmotionUpdateStage(PipelineStage):
                     "sadness": context.emotion.sadness,
                     "trust": context.emotion.trust,
                     "irritation": context.emotion.irritation,
-                    "attachment": context.emotion.attachment + context.attachment_bonus_raw
+                    "attachment": context.emotion.attachment + context.attachment_bonus_raw,
+                    "shyness": getattr(context.emotion, "shyness", 0.0),
+                    "curiosity": getattr(context.emotion, "curiosity", 0.20),
+                    "comfort": getattr(context.emotion, "comfort", 0.50),
+                },
+                "sentiment_analysis": {
+                    "primary_emotion": delta.primary_emotion,
+                    "intensity": delta.intensity,
+                    "valence": delta.valence,
                 },
                 "user_sentiment": {
                     "is_positive": is_positive,
@@ -85,7 +95,10 @@ class EmotionUpdateStage(PipelineStage):
             "sadness": context.emotion.sadness,
             "trust": context.emotion.trust,
             "irritation": context.emotion.irritation,
-            "attachment": context.emotion.attachment + attachment_bonus
+            "attachment": context.emotion.attachment + attachment_bonus,
+            "shyness": getattr(context.emotion, "shyness", 0.0),
+            "curiosity": getattr(context.emotion, "curiosity", 0.20),
+            "comfort": getattr(context.emotion, "comfort", 0.50),
         }
 
         return context

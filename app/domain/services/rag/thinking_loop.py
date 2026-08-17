@@ -100,23 +100,15 @@ class ThinkingLoopAgent:
                     "- For real-world history/politics questions (including sensitive topics), do NOT refuse or evade. "
                     "Your job is fact-gathering via search, not censorship. Prefer neutral encyclopedic search queries "
                     "(e.g. 'Tiananmen Square 1989 events summary' or 'Thiên An Môn 1989 diễn biến').\n"
-                )
-                
-                if is_reasoning_cycle:
-                    system_prompt += "- If has_enough_info is false, write step-by-step reasoning under 'thinking' and generate a highly-optimized search query under 'search_query'.\n"
-                else:
-                    system_prompt += "- Output the JSON immediately without reasoning. Provide a highly-optimized search query under 'search_query'.\n"
-                
-                system_prompt += (
-                    "- When generating a 'search_query', you must optimize it specifically for search engines (like DuckDuckGo):\n"
-                    "  * Keep it focused and keyword-based. Strip out conversational fillers, greetings, punctuation, and generic question words (e.g., do NOT use 'cho hỏi', 'em ơi', 'là gì', 'được không', 'của em', 'vậy em', 'nhé').\n"
-                    "  * Resolve pronouns and relative terms to their absolute names (e.g., 'em' -> 'Kuchiba Chisa', 'game này' -> 'Wuthering Waves').\n"
-                    "  * CRITICAL FOR RELEVANCE: Retain all distinct semantic constraints from the user's question. Do NOT over-truncate. A high-quality query must combine: (1) the primary Subject/Entity, (2) the target Action/Attribute, and (3) key qualifiers (such as Location, Nationality, or specific Industry). Omitting any of these distinct constraints makes the search too broad and yields useless results.\n"
-                    "  * Focus on semantic completeness: include all distinct constraints in a concise manner (typically 4 to 8 search terms). Do not search for a broad profile if the user asks about a very specific attribute.\n"
-                    "  * Keep the language consistent: use clean, direct keywords matching the language of the query. Do NOT mix conversational Vietnamese and English.\n"
-                    "  * Context Integration: You are encouraged to combine context from the [Conversation History], the [Current Context], and the [User Question] to formulate the best search query. However, you MUST intelligently filter out irrelevant fictional concepts, lore, or names that do not directly pertain to the specific question being asked.\n\n"
+                    "- MULTI-HOP SEARCH REFINEMENT (CYCLE 2+):\n"
+                    "  * When evaluating in Cycle 2+, carefully inspect the knowledge and entities discovered from Cycle 1.\n"
+                    "  * If key details are still missing, synthesize new proper names, titles, or technical terms found in Cycle 1 to craft a sharper, targeted 'search_query' for Cycle 2.\n"
+                    "  * DO NOT repeat the exact same search query as Cycle 1.\n\n"
+                    "- OPTIMIZATION GUIDELINES FOR 'search_query':\n"
+                    "  * Keep it focused and keyword-based (4 to 8 search terms). Combine: (1) Primary Entity, (2) Target Action/Attribute, and (3) Key Qualifiers.\n"
+                    "  * Strip out conversational fillers ('cho hỏi', 'em ơi', 'là gì', 'được không', 'của em', 'vậy em', 'nhé') and resolve relative pronouns ('em' -> 'Kuchiba Chisa', 'game này' -> 'Wuthering Waves').\n\n"
                     "FEW-SHOT EXAMPLES:\n"
-                    "Example 1:\n"
+                    "Example 1 (Cycle 1 Initial Search):\n"
                     "- User Question: 'Phiên bản 2.8 cập nhật ngày nào và có nhân vật mới nào không?'\n"
                     "- Current Context: '(No context retrieved)'\n"
                     "- Output JSON:\n"
@@ -125,22 +117,50 @@ class ThinkingLoopAgent:
                     "  \"has_enough_info\": false,\n"
                     "  \"search_query\": \"Wuthering Waves 2.8 release date characters\"\n"
                     "}\n\n"
-                    "Example 2:\n"
+                    "Example 2 (Sufficient Context Found):\n"
                     "- User Question: 'Sở thích của Chisa là gì vậy?'\n"
                     "- Current Context: '[Thinking Cycle 1 Search Results for 'Sở thích của Chisa']: Chisa thích ăn đồ ngọt, đặc biệt là que socola đen. Cô ấy cũng thích đi dạo ở công viên Honami vào buổi tối.'\n"
                     "- Output JSON:\n"
                     "{\n"
                     "  \"thinking\": \"Context hiện tại đã ghi rõ sở thích của Chisa là ăn đồ ngọt (que socola đen) và đi dạo ở công viên Honami vào buổi tối. Thông tin này đã đầy đủ để trả lời câu hỏi.\",\n"
-                    "  \"has_enough_info\": true\n"
+                    "  \"has_enough_info\": true,\n"
+                    "  \"search_query\": \"\"\n"
+                    "}\n\n"
+                    "Example 3 (Cycle 2 Multi-Hop Query Refinement):\n"
+                    "- User Question: 'Tác giả của bộ truyện Doraemon sinh năm bao nhiêu và còn sống không?'\n"
+                    "- Cycle 1 Query: 'Tác giả bộ truyện Doraemon'\n"
+                    "- Cycle 1 Results: 'Doraemon là bộ truyện tranh Nhật Bản được sáng tác bởi họa sĩ Fujiko F. Fujio (bút danh của Hiroshi Fujimoto).'\n"
+                    "- Output JSON:\n"
+                    "{\n"
+                    "  \"thinking\": \"Kết quả Cycle 1 đã xác định được tác giả là Fujiko F. Fujio (Hiroshi Fujimoto), nhưng chưa có thông tin về năm sinh và tình trạng còn sống/đã mất. Tôi cần dùng tên tác giả vừa tìm được để tra cứu năm sinh và ngày mất của ông.\",\n"
+                    "  \"has_enough_info\": false,\n"
+                    "  \"search_query\": \"Fujiko F. Fujio Hiroshi Fujimoto năm sinh ngày mất\"\n"
                     "}\n\n"
                     "You MUST output the result as a valid JSON object matching the requested schema."
                 )
 
-                user_prompt = (
-                    f"[Conversation History]:\n{history_str}\n\n"
-                    f"[User Question]: \"{user_message}\"\n\n"
-                    f"[Current Context]:\n{current_context}"
-                )
+                if i > 1 and thinking_steps:
+                    # Explicit Multi-Hop Context Injection for Cycle 2
+                    cycle_1_step = thinking_steps[0]
+                    cycle_1_query = cycle_1_step.get("search_query", "")
+                    cycle_1_result = cycle_1_step.get("search_result", "")
+                    user_prompt = (
+                        f"[Conversation History]:\n{history_str}\n\n"
+                        f"[User Original Question]: \"{user_message}\"\n\n"
+                        f"[Cycle 1 Search Query Executed]: \"{cycle_1_query}\"\n"
+                        f"[Cycle 1 Search Results Gathered]:\n{cycle_1_result}\n\n"
+                        f"[Total Accumulated Context]:\n{current_context}\n\n"
+                        f"INSTRUCTION FOR CYCLE 2 SEARCH REFINEMENT:\n"
+                        f"1. Check if Cycle 1 results answer all facts of the User Original Question.\n"
+                        f"2. If satisfied -> Set 'has_enough_info': true, 'search_query': ''.\n"
+                        f"3. If missing information -> Synthesize new entities/keywords from Cycle 1 to produce a refined, deeper 'search_query' for Cycle 2."
+                    )
+                else:
+                    user_prompt = (
+                        f"[Conversation History]:\n{history_str}\n\n"
+                        f"[User Question]: \"{user_message}\"\n\n"
+                        f"[Current Context]:\n{current_context}"
+                    )
 
                 schema_properties = {
                     "has_enough_info": {"type": "boolean"},
@@ -235,7 +255,14 @@ class ThinkingLoopAgent:
                     "search_result": search_result_text,
                     "search_detail": search_res,
                 })
-                # Add steps to tracker in real-time
+                # Add steps to tracker in real-time (Cycle first, then its inner web_search)
+                self.pipeline_tracker.add_step(f"thinking_loop_cycle_{i}", {
+                    "thinking": thinking,
+                    "has_enough_info": False,
+                    "search_query": search_query,
+                    "search_result": search_result_text,
+                    "input_context": context_before_search
+                })
                 from app.domain.services.tools.web_search import web_search_trace_payload
                 self.pipeline_tracker.add_step(
                     "web_search",
@@ -245,13 +272,6 @@ class ThinkingLoopAgent:
                         original_message=search_query,
                     ),
                 )
-                self.pipeline_tracker.add_step(f"thinking_loop_cycle_{i}", {
-                    "thinking": thinking,
-                    "has_enough_info": False,
-                    "search_query": search_query,
-                    "search_result": search_result_text,
-                    "input_context": context_before_search
-                })
 
                 # ── AUTO-SATISFY: Skip Cycle 2 LLM if Cycle 1 search returned valid results ──
                 search_success = search_res.get("status") == "success"

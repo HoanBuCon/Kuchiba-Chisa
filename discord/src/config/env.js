@@ -1,3 +1,10 @@
+import dotenv from 'dotenv';
+
+dotenv.config();
+try {
+  dotenv.config({ path: new URL('../../.env', import.meta.url) });
+} catch (_) {}
+
 const required = (name) => {
   const value = process.env[name];
   if (!value) {

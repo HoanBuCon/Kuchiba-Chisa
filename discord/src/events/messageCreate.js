@@ -17,8 +17,17 @@ export async function execute(client, message) {
     if (message.guild && !message.author?.bot) {
       const isDirectChannel = client.services.guildSettingsCache?.has(message.channelId);
       if (isDirectChannel) {
-        // If message starts with '!', do not respond
-        if (message.content?.trim().startsWith('!')) {
+        const rawContent = message.content?.trim() || '';
+        const lowerContent = rawContent.toLowerCase();
+        const prefix = (runner.prefix || 'c!').toLowerCase();
+
+        // If message starts with '!', 'c!', configured prefix, or is any prefix command, do not respond
+        if (
+          rawContent.startsWith('!') ||
+          lowerContent.startsWith('c!') ||
+          lowerContent.startsWith(prefix) ||
+          runner.isPrefixCommand(message)
+        ) {
           return;
         }
 
@@ -33,7 +42,7 @@ export async function execute(client, message) {
             discordUserTag: message.author.tag ?? message.author.username,
           });
 
-          await askCommand.executePrefix(client, message, message.content.trim(), discordUser);
+          await askCommand.executePrefix(client, message, rawContent, discordUser);
         }
       }
     }

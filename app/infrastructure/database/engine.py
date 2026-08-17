@@ -87,6 +87,16 @@ async def connect_database() -> None:
     healthy = await check_database_health()
     if healthy:
         log.info("PostgreSQL connection established")
+        # Ensure new emotion columns exist safely
+        try:
+            async with AsyncSessionFactory() as session:
+                await session.execute(text("ALTER TABLE emotion_state ADD COLUMN IF NOT EXISTS shyness FLOAT DEFAULT 0.0;"))
+                await session.execute(text("ALTER TABLE emotion_state ADD COLUMN IF NOT EXISTS curiosity FLOAT DEFAULT 0.20;"))
+                await session.execute(text("ALTER TABLE emotion_state ADD COLUMN IF NOT EXISTS comfort FLOAT DEFAULT 0.50;"))
+                await session.commit()
+                log.info("Emotion schema auto-migration verified ✓")
+        except Exception as e:
+            log.warning("Emotion schema auto-migration check skipped or failed", error=str(e))
     else:
         raise RuntimeError("PostgreSQL health check failed on startup")
 

@@ -44,8 +44,9 @@ class ToolRoutingStage(PipelineStage):
         emotion_repo = self.emotion_repo_factory(context.session)
 
         if ChatIntent.SYSTEM_ACTION in context.intents:
+            target_query = context.rewritten_query or context.cleaned_query or context.user_message
             tool_res = await self.tool_router.execute(
-                user_message=context.cleaned_query or context.user_message,
+                user_message=target_query,
                 user_id=context.user_id,
                 query_vector=context.query_vector,
                 history=context.history,
@@ -54,10 +55,21 @@ class ToolRoutingStage(PipelineStage):
                 cache=self.cache,
                 session=context.session
             )
-            tool_output_msg = tool_res.get("message")
-            tool_name = tool_res.get("tool", "none")
-            tool_score = tool_res.get("score", 0.0)
-            log.info("Tool executed from SYSTEM_ACTION intent", tool_res=tool_res)
+            raw_tool_name = tool_res.get("tool", "none")
+            raw_tool_score = tool_res.get("score", 0.0)
+
+            # If tool selected is web_search, delegate to RAGStage / ThinkingLoopAgent to prevent duplicate search
+            if raw_tool_name == "web_search":
+                log.info("ToolRouter identified web_search; delegating to RAGStage ThinkingLoop for unified iterative retrieval")
+                tool_output_msg = None
+                tool_name = "none"
+                tool_score = 0.0
+                context.needs_web_search = True
+            else:
+                tool_output_msg = tool_res.get("message")
+                tool_name = raw_tool_name
+                tool_score = raw_tool_score
+                log.info("Tool executed from SYSTEM_ACTION intent", tool_res=tool_res, query=target_query)
 
         intent_values = [i.value for i in context.intents]
 
@@ -75,7 +87,7 @@ class ToolRoutingStage(PipelineStage):
         reason_text = (
             f"Đã kích hoạt công cụ '{tool_name}' với độ tin cậy {round(tool_score * 100)}%."
             if tool_name != "none"
-            else "Không có công cụ hệ thống nào vượt ngưỡng tin cậy để thực thi."
+            else "Không kích hoạt công cụ ngoài (Chuyển tiếp RAG Pipeline & Tri thức)."
         )
 
         self.pipeline_tracker.add_step("tool_routing", {
@@ -95,7 +107,7 @@ class ToolRoutingStage(PipelineStage):
                 "web_search",
                 web_search_trace_payload(
                     tool_res,
-                    source="system_action",
+                    source="tool_routing",
                     original_message=context.user_message,
                 ),
             )

@@ -22,7 +22,7 @@ class MemoryExtractor:
             "properties": {
                 "type": {
                     "type": "string",
-                    "enum": ["preferences", "shared_memories", "relationship", "important_facts", "none"]
+                    "enum": ["user_fact", "shared_story", "none"]
                 },
                 "content": {"type": "string"},
                 "importance_score": {
@@ -43,7 +43,7 @@ class MemoryExtractor:
                         "properties": {
                             "type": {
                                 "type": "string",
-                                "enum": ["preferences", "shared_memories", "relationship", "important_facts"]
+                                "enum": ["user_fact", "shared_story"]
                             },
                             "content": {"type": "string"},
                             "importance_score": {
@@ -272,33 +272,46 @@ class MemoryExtractor:
         to extract multi-fact milestones, preferences, or nicknames, and saves them to Vector DB.
         """
         system_prompt = (
-            "Extract persistent facts, preferences, milestones, nicknames, or mutual commitments from the 3-turn conversation snippet between Senpai (User) and Chisa (AI Companion).\n\n"
-            "EXTRACTION RULES:\n"
-            "1. Bidirectional: Capture facts stated by Senpai (career, habits, preferences, life events) OR mutual agreements/nicknames established by Chisa/Senpai.\n"
-            "2. Strict Roleplay Filter: Ignore Chisa's emotional roleplay filler, poetic descriptions ('phân tích cấu trúc', sweet compliments), and daily small-talk. Only extract concrete, persistent information.\n"
-            "3. Types:\n"
-            "   - 'preferences': Senpai's lasting tastes, habits, likes/dislikes.\n"
-            "   - 'important_facts': Real-world info (jobs, events, locations, exams, achievements).\n"
-            "   - 'relationship': Nicknames, terms of endearment, special relationship dynamic.\n"
-            "   - 'shared_memories': Concrete mutual promises, plans, or shared milestones.\n"
-            "4. Multiple Facts Allowed: Return all persistent facts found across the turns in the 'facts' array. If no persistent facts exist, return {\"facts\": []}.\n"
-            "5. Importance: Float (0.1 - 1.0) reflecting longevity and significance.\n\n"
+            "You are a Precision Long-Term Memory Extractor for an AI Companion application.\n"
+            "Your mission is to extract persistent, meaningful long-term facts from the 3-turn conversation snippet between Senpai (User) and Chisa (AI Companion).\n\n"
+            "TWO ALLOWED MEMORY TYPES:\n"
+            "1. 'user_fact' (Information about Senpai):\n"
+            "   - Real-world life: Job applications, career, studies, exams, location/city, family, pets, health.\n"
+            "   - Personal tastes & habits: Favorite foods, drinks, music, games, hobbies, recurring routines.\n"
+            "   - Source: Stated directly by Senpai.\n"
+            "2. 'shared_story' (Collaborative Milestones between Senpai and Chisa):\n"
+            "   - Nickname assignments: Custom nicknames newly established by Chisa for Senpai (or vice-versa), e.g. 'Mèo Lười'. (NOT default 'Senpai - em').\n"
+            "   - Mutual promises: Concrete actionable commitments made for future events (e.g. 'Chisa hứa sẽ làm bánh kem tặng Senpai khi Senpai đỗ Viettel').\n"
+            "   - Memorable shared milestones: Meaningful agreements or shared moments explicitly acknowledged by both.\n\n"
+            "STRICT REJECTION RULES (RETURN {\"facts\": []}):\n"
+            "- ROLEPLAY JOKES & TEASES: Ignore all playful banter, flirtatious jokes, hypothetical teases (e.g., 'em đủ tuổi chưa' -> 'em đủ tuổi apply rồi nha' is a pure joke, DO NOT extract).\n"
+            "- DEFAULT PERSONA TRAITS: DO NOT extract built-in persona habits ('Chisa xưng em gọi Senpai', 'Chisa thích phân tích cấu trúc', 'Chisa là AI companion').\n"
+            "- SOCIAL PLEASANTRIES: DO NOT extract greetings ('chào em'), generic well-wishes ('chúc may mắn'), or fleeting moods ('hôm nay đói bụng').\n\n"
             "FEW-SHOT EXAMPLES:\n"
-            "- Snippet:\n"
-            "  [BỐI CẢNH]: Senpai: 'anh đang nộp hồ sơ xin việc'\n"
-            "  Cặp 1: Senpai: 'anh nộp Viettel rồi' | Chisa: 'Chúc Senpai may mắn nha!'\n"
-            "  Cặp 2: Senpai: 'anh thích uống matcha để tập trung' | Chisa: 'Dạ matcha thanh mát lắm nè~'\n"
-            "  Cặp 3: Senpai: 'anh vừa nhận offer Viettel!' | Chisa: 'Oa chúc mừng Senpai nha!'\n"
+            "Example 1 (User Fact & Joke Filter):\n"
+            "  Senpai: 'chào em' | Chisa: 'Chào Senpai~'\n"
+            "  Senpai: 'anh sắp apply viettel software rồi' | Chisa: 'Oa Viettel Software xịn lắm nha! Chúc Senpai may mắn~'\n"
+            "  Senpai: 'em đủ tuổi apply cùng anh chưa?' | Chisa: 'Em đủ tuổi apply rồi nha, đùa chứ chúc Senpai thành công!'\n"
             "  -> Output: {\"facts\": [\n"
-            "       {\"type\": \"important_facts\", \"content\": \"Senpai đã nhận được offer làm việc tại Viettel\", \"importance_score\": 0.95},\n"
-            "       {\"type\": \"preferences\", \"content\": \"Senpai thích uống matcha để tập trung\", \"importance_score\": 0.7}\n"
-            "     ]}\n"
-            "- Snippet:\n"
-            "  Cặp 1: Senpai: 'hôm nay em vui không' | Chisa: 'Em đang phân tích niềm vui nè~'\n"
-            "  Cặp 2: Senpai: 'thời tiết đẹp ghê' | Chisa: 'Dạ trời trong xanh lắm ạ.'\n"
-            "  Cặp 3: Senpai: 'tối nay ăn gì nhỉ' | Chisa: 'Senpai ăn món gì nhẹ nhàng nhé~'\n"
+            "       {\"type\": \"user_fact\", \"content\": \"Senpai đang chuẩn bị nộp hồ sơ (apply) vào Viettel Software\", \"importance_score\": 0.9}\n"
+            "     ]}\n\n"
+            "Example 2 (Nickname Assignment):\n"
+            "  Senpai: 'em đặt cho anh một biệt danh đi' | Chisa: 'Từ nay em sẽ gọi Senpai là \"Mèo Lười\" nha~'\n"
+            "  Senpai: 'haha biệt danh dễ thương đấy'\n"
+            "  -> Output: {\"facts\": [\n"
+            "       {\"type\": \"shared_story\", \"content\": \"Chisa đã đặt biệt danh cho Senpai là 'Mèo Lười'\", \"importance_score\": 0.85}\n"
+            "     ]}\n\n"
+            "Example 3 (Mutual Promise):\n"
+            "  Senpai: 'khi nào anh đỗ phỏng vấn thì sao?' | Chisa: 'Em hứa sẽ làm tặng Senpai một bài thơ mừng công đặc biệt nha!'\n"
+            "  Senpai: 'nhớ giữ lời hứa nhé'\n"
+            "  -> Output: {\"facts\": [\n"
+            "       {\"type\": \"shared_story\", \"content\": \"Chisa đã hứa sẽ làm tặng Senpai một bài thơ mừng công đặc biệt khi Senpai đỗ phỏng vấn\", \"importance_score\": 0.85}\n"
+            "     ]}\n\n"
+            "Example 4 (Pure Banter / Small talk):\n"
+            "  Senpai: 'Chisa em là con mèo hay con cáo?' | Chisa: 'Em là Kuchiba Chisa của Senpai đó nha~'\n"
+            "  Senpai: 'Haha đáng yêu thế'\n"
             "  -> Output: {\"facts\": []}\n\n"
-            "Return JSON matching schema: {\"facts\": [{\"type\": \"...\", \"content\": \"...\", \"importance_score\": ...}]}"
+            "Return valid JSON matching schema: {\"facts\": [{\"type\": \"...\", \"content\": \"...\", \"importance_score\": ...}]}"
         )
 
         transcript = self.build_batch_transcript(history, current_user_message, current_assistant_reply)
@@ -320,7 +333,7 @@ class MemoryExtractor:
             parsed = response.parsed or {}
             extracted_facts = parsed.get("facts", [])
             
-            # Step 1: Filter and validate extracted facts
+            # Step 1: Filter and validate extracted facts with strict quality guards
             valid_facts = []
             for fact in extracted_facts:
                 if not isinstance(fact, dict):
@@ -329,7 +342,21 @@ class MemoryExtractor:
                 content = (fact.get("content") or "").strip()
                 importance = float(fact.get("importance_score", 0.7))
 
-                if not fact_type or len(content) < 5:
+                if fact_type not in ["user_fact", "shared_story"]:
+                    continue
+
+                if len(content) < 8:
+                    continue
+
+                # Enforce minimum quality & importance threshold
+                if importance < 0.65:
+                    log.debug("Dropped low-importance memory fact", content=content, importance=importance)
+                    continue
+
+                # Filter out meta persona definitions (e.g. speech habit definitions)
+                content_lower = content.lower()
+                if "xưng em" in content_lower or "chisa là companion" in content_lower or "chisa là ai" in content_lower:
+                    log.info("Dropped meta-persona noise fact", content=content)
                     continue
 
                 valid_facts.append({

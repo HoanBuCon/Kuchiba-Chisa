@@ -174,12 +174,18 @@ def sync_entities_dictionary(
     }
 
     ENTITY_SYNC_BLACKLIST = {
-        "she", "he", "they", "it", "you", "the", "and", "but", "for", "intro", "name", "image",
+        "she", "he", "they", "it", "you", "we", "i", "the", "and", "but", "for", "intro", "name", "image",
         "images", "description", "location", "locations", "areas", "area", "points", "interest",
         "item", "items", "bell", "situated", "according", "details", "summary", "type", "category",
         "rarity", "cost", "source", "effect", "stats", "attribute", "attributes", "unlocked",
         "level", "rank", "stat", "value", "property", "properties", "table", "column", "row",
-        "file", "icon", "thumb", "picture"
+        "file", "icon", "thumb", "picture", "making", "could", "would", "should", "yet", "one",
+        "nutri", "pack", "aren", "pattern", "relatively", "previous", "class", "subsequent",
+        "presently", "routine", "release", "cleanse", "category table", "these resonators",
+        "extra effect", "mutant resonators", "ex42978", "although", "gold", "finally", "silence",
+        "numb", "teachers", "among", "soon", "back", "normally", "occasionally", "wind", "sitting",
+        "seeing", "beneath", "tears", "heartbeat", "someone", "anyone", "everyone", "nobody",
+        "anything", "everything", "nothing", "department", "startorch", "lahai", "roi"
     }
 
     # 2. Extract from chunks.jsonl if present

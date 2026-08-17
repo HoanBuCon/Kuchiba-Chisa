@@ -40,6 +40,8 @@ class RAGStage(PipelineStage):
             is_small_talk=context.is_small_talk,
             conversation_summary=context.conversation_summary,
             conversation_id=str(context.conv_id) if context.conv_id else None,
+            needs_vector_search=context.needs_vector_search,
+            needs_web_search=context.needs_web_search,
         )
         
         context.rag_context = rag_context
