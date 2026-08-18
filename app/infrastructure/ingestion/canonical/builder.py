@@ -24,6 +24,7 @@ Key Responsibilities:
 
 from __future__ import annotations
 
+import copy
 import re
 from typing import Any, Dict, List, Optional, Tuple, Set
 
@@ -652,3 +653,73 @@ def build_canonical_page(
     )
 
     return canonical_page
+
+
+def split_backstory_and_forte_sections(
+    page: CanonicalPage,
+) -> Tuple[CanonicalPage, Optional[CanonicalPage]]:
+    """
+    If a CanonicalPage is a Resonator Backstory containing embedded Forte / Overclock reports,
+    splits it into:
+      1. Pure Narrative Backstory page (Stories, Personality, Clothing, Timeline)
+      2. Dedicated Forte Examination Report page (Forte Report, Overclock Diagnostic, Resonance Power)
+    """
+    title = page.identity.title
+    # Check if page is a Backstory page
+    if not (title.endswith("/Backstory") or "/Backstory" in title):
+        return page, None
+
+    forte_keywords = [
+        "forte examination",
+        "overclock diagnostic",
+        "resonance power",
+        "archives",
+        "resonance evaluation",
+        "resonance assessment",
+        "forte evaluation",
+    ]
+
+    backstory_sections: List[CanonicalSection] = []
+    forte_sections: List[CanonicalSection] = []
+
+    for sec in page.sections:
+        sec_title_lower = sec.title.lower()
+        if any(k in sec_title_lower for k in forte_keywords):
+            forte_sections.append(sec)
+        else:
+            backstory_sections.append(sec)
+
+    if not forte_sections:
+        return page, None
+
+    # Update backstory page to keep only backstory sections
+    page.sections = backstory_sections
+
+    # Build dedicated forte page
+    parent_name = title.split("/")[0].strip()
+    forte_title = f"{parent_name}/Forte Examination Report"
+    forte_slug = _derive_slug(forte_title)
+    forte_page_id = page.identity.page_id + 50000
+
+    forte_identity = CanonicalIdentity(
+        page_id=forte_page_id,
+        title=forte_title,
+        canonical_slug=forte_slug,
+        page_type=PageTypeEnum.CHARACTER,
+        page_type_confidence=0.95,
+    )
+
+    forte_page = CanonicalPage(
+        _meta=copy.deepcopy(page.meta),
+        identity=forte_identity,
+        document_metadata=copy.deepcopy(page.document_metadata),
+        entities=copy.deepcopy(page.entities),
+        relationships=copy.deepcopy(page.relationships),
+        cross_references=copy.deepcopy(page.cross_references),
+        infobox=copy.deepcopy(page.infobox),
+        sections=forte_sections,
+        quality=copy.deepcopy(page.quality),
+    )
+
+    return page, forte_page
+

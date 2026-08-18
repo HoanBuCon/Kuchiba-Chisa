@@ -122,6 +122,243 @@ ${window.VisualizerApp.escapeHtml(userMessage)}
         this.bindTabEvents();
     },
 
+    renderTokenBreakdownCard(tokenData, stepData = {}) {
+        if (!tokenData && !stepData.input_tokens && !stepData.total_tokens) return '';
+
+        // Synthesize token breakdown from available fields if tokenData is missing
+        let tb = tokenData;
+        if (!tb) {
+            const inTok = stepData.input_tokens || 0;
+            const outTok = stepData.output_tokens || 0;
+            const cotTok = stepData.reasoning_tokens || 0;
+            const sysEstimate = stepData.system_prompt ? Math.round(stepData.system_prompt.length / 2.5) : Math.round(inTok * 0.7);
+            const userEstimate = stepData.user_message ? Math.round(stepData.user_message.length / 2.5) : Math.round(inTok * 0.1);
+            const histEstimate = Math.max(0, inTok - sysEstimate - userEstimate);
+
+            tb = {
+                system_prompt: sysEstimate,
+                base_system: sysEstimate,
+                context_lore: 0,
+                context_memories: 0,
+                context_web_search: 0,
+                conversation_summary: 0,
+                conversation_history: histEstimate,
+                user_message: userEstimate,
+                reasoning_cot: cotTok,
+                completion_output: outTok,
+                total_input: inTok || (sysEstimate + histEstimate + userEstimate),
+                total_output: outTok,
+                total_tokens: stepData.total_tokens || (inTok + outTok + cotTok),
+                history_count: Array.isArray(stepData.history) ? stepData.history.length : 0,
+                lore_count: 0,
+                memory_count: 0
+            };
+        }
+
+        const inTok = tb.total_input || stepData.input_tokens || 0;
+        const outTok = tb.total_output || tb.completion_output || stepData.output_tokens || 0;
+        const cotTok = tb.reasoning_cot || tb.reasoning_tokens || stepData.reasoning_tokens || 0;
+        const totTok = tb.total_tokens || stepData.total_tokens || (inTok + outTok + cotTok);
+
+        if (totTok === 0) return '';
+
+        const sysTok = tb.system_prompt || tb.base_system || 0;
+        const loreTok = tb.context_lore || 0;
+        const memTok = tb.context_memories || 0;
+        const searchTok = tb.context_web_search || 0;
+        const sumTok = tb.conversation_summary || 0;
+        const histTok = tb.conversation_history || 0;
+        const usrTok = tb.user_message || 0;
+
+        // Calculate percentages relative to total tokens
+        const calcPct = (v) => totTok > 0 ? (v / totTok * 100).toFixed(1) : '0.0';
+
+        // Prepare source components list
+        const sources = [];
+
+        if (sysTok > 0) {
+            sources.push({
+                key: 'system',
+                label: 'System Prompt & Persona',
+                icon: '📜',
+                tokens: sysTok,
+                pct: calcPct(sysTok),
+                color: '#42a5f5',
+                desc: 'Persona, hướng dẫn & định dạng JSON',
+                type: 'Input'
+            });
+        }
+
+        if (loreTok > 0) {
+            sources.push({
+                key: 'lore',
+                label: 'Tri thức RAG Lore',
+                icon: '📚',
+                tokens: loreTok,
+                pct: calcPct(loreTok),
+                color: '#66bb6a',
+                desc: `${tb.lore_count || 'Các'} chunks từ Qdrant Lore DB`,
+                type: 'Context'
+            });
+        }
+
+        if (memTok > 0) {
+            sources.push({
+                key: 'memory',
+                label: 'Ký ức Dài hạn (Memories)',
+                icon: '🧠',
+                tokens: memTok,
+                pct: calcPct(memTok),
+                color: '#00e676',
+                desc: `${tb.memory_count || 'Các'} memories người dùng`,
+                type: 'Context'
+            });
+        }
+
+        if (searchTok > 0) {
+            sources.push({
+                key: 'search',
+                label: 'Web Search Data',
+                icon: '🌐',
+                tokens: searchTok,
+                pct: calcPct(searchTok),
+                color: '#26c6da',
+                desc: 'Kết quả tìm kiếm internet trực tuyến',
+                type: 'Context'
+            });
+        }
+
+        if (sumTok > 0) {
+            sources.push({
+                key: 'summary',
+                label: 'Tóm tắt Hội thoại (Summary)',
+                icon: '📝',
+                tokens: sumTok,
+                pct: calcPct(sumTok),
+                color: '#ffa726',
+                desc: 'Ngữ cảnh nén các lượt chat trước',
+                type: 'History'
+            });
+        }
+
+        if (histTok > 0) {
+            sources.push({
+                key: 'history',
+                label: 'Lịch sử Hội thoại (History)',
+                icon: '💬',
+                tokens: histTok,
+                pct: calcPct(histTok),
+                color: '#ab47bc',
+                desc: `${tb.history_count || 'Các'} tin nhắn gần đây`,
+                type: 'History'
+            });
+        }
+
+        if (usrTok > 0) {
+            sources.push({
+                key: 'user',
+                label: 'User Query / Input',
+                icon: '👤',
+                tokens: usrTok,
+                pct: calcPct(usrTok),
+                color: '#ff7043',
+                desc: 'Câu hỏi / tin nhắn người dùng hiện tại',
+                type: 'Input'
+            });
+        }
+
+        if (cotTok > 0) {
+            sources.push({
+                key: 'cot',
+                label: 'Thinking / CoT Reasoning',
+                icon: '🧠',
+                tokens: cotTok,
+                pct: calcPct(cotTok),
+                color: '#f06292',
+                desc: 'Tokens suy luận logic (DeepSeek / CoT)',
+                type: 'Reasoning'
+            });
+        }
+
+        if (outTok > 0) {
+            sources.push({
+                key: 'output',
+                label: 'Completion Output',
+                icon: '📤',
+                tokens: outTok,
+                pct: calcPct(outTok),
+                color: '#26a69a',
+                desc: 'Nội dung phản hồi sinh ra từ LLM',
+                type: 'Output'
+            });
+        }
+
+        // Multi-segment progress bar HTML
+        const barSegmentsHtml = sources.map(s => {
+            const widthPct = Math.max(parseFloat(s.pct), 1.5);
+            return `<div class="token-bar-segment" style="width: ${widthPct}%; background: ${s.color};" title="${s.label}: ${s.tokens.toLocaleString()} tok (${s.pct}%)"></div>`;
+        }).join('');
+
+        // Grid cards HTML
+        const gridHtml = sources.map(s => `
+            <div class="token-source-item" style="border-left: 3px solid ${s.color};">
+                <div class="token-source-header">
+                    <span class="token-source-title">${s.icon} ${window.VisualizerApp.escapeHtml(s.label)}</span>
+                    <span class="token-source-type-pill" style="background: ${s.color}22; color: ${s.color}; border: 1px solid ${s.color}44;">${s.type}</span>
+                </div>
+                <div class="token-source-metrics">
+                    <span class="token-source-value" style="color: ${s.color};">${s.tokens.toLocaleString()} <small>tok</small></span>
+                    <span class="token-source-pct">${s.pct}%</span>
+                </div>
+                <div class="token-source-desc">${window.VisualizerApp.escapeHtml(s.desc)}</div>
+            </div>
+        `).join('');
+
+        // Cache efficiency estimation (System Prompt / Total Input)
+        const cachePct = inTok > 0 ? ((sysTok / inTok) * 100).toFixed(0) : 0;
+
+        return `
+            <div class="inspector-card token-breakdown-card">
+                <div class="inspector-card-title" style="display: flex; justify-content: space-between; align-items: center;">
+                    <span>📊 Phân rã Chi tiết Token Tiêu thụ (Detailed Token Breakdown)</span>
+                    <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #ffa726; font-weight: 600;">
+                        Tổng: ${totTok.toLocaleString()} tokens
+                    </span>
+                </div>
+
+                <!-- Multi-segment visual bar -->
+                <div class="token-bar-wrapper">
+                    <div class="token-bar-segmented">
+                        ${barSegmentsHtml}
+                    </div>
+                </div>
+
+                <!-- Summary Pills -->
+                <div class="token-summary-pills">
+                    <span class="pill" style="background: rgba(66, 165, 245, 0.15); color: #64b5f6; border: 1px solid rgba(66, 165, 245, 0.3);">
+                        📥 <b>Prompt Input:</b> ${inTok.toLocaleString()} tok
+                    </span>
+                    ${cotTok > 0 ? `
+                        <span class="pill" style="background: rgba(240, 98, 146, 0.15); color: #f48fb1; border: 1px solid rgba(240, 98, 146, 0.3);">
+                            🧠 <b>CoT Thinking:</b> ${cotTok.toLocaleString()} tok
+                        </span>
+                    ` : ''}
+                    <span class="pill" style="background: rgba(76, 175, 80, 0.15); color: #81c784; border: 1px solid rgba(76, 175, 80, 0.3);">
+                        📤 <b>Completion:</b> ${outTok.toLocaleString()} tok
+                    </span>
+                    <span class="pill" style="background: rgba(255, 255, 255, 0.05); color: var(--text-secondary); border: 1px solid var(--border-color);">
+                        ⚡ <b>Prompt Cacheable:</b> ${cachePct}%
+                    </span>
+                </div>
+
+                <!-- Grid Breakdown by Component -->
+                <div class="token-source-grid">
+                    ${gridHtml}
+                </div>
+            </div>
+        `;
+    },
+
     renderLLMInspector(step) {
         const data = step.data || {};
         const isFinalResponse = data.purpose === 'chat_response';
@@ -188,6 +425,9 @@ ${window.VisualizerApp.escapeHtml(data.reasoning_content)}
             </div>
         `;
 
+        // Render Token Breakdown Card
+        const tokenBreakdownCardHtml = this.renderTokenBreakdownCard(data.token_breakdown, data);
+
         // Tab Headers
         let tabButtons = `
             <button class="tab-btn active" data-tab="tab-request">📤 Request Prompt</button>
@@ -250,6 +490,7 @@ ${window.VisualizerApp.escapeHtml(data.reasoning_content)}
         return `
             <div class="inspector-panel">
                 ${headerHtml}
+                ${tokenBreakdownCardHtml}
                 ${featuredReasoningBox}
                 <div class="tab-container">
                     <div class="tab-header">${tabButtons}</div>
@@ -986,9 +1227,30 @@ ${window.VisualizerApp.escapeHtml(reasonText)}
             </div>
         `;
 
+        const audit = data.budget_audit || {};
+        const used = audit.used || {};
+        const tokenBreakdownFromAudit = {
+            system_prompt: (used.skeleton || 0),
+            base_system: (used.skeleton || 0),
+            context_lore: (used.lore || 0),
+            context_memories: (used.memory || 0),
+            context_web_search: (used.search || 0),
+            conversation_summary: (used.summary || 0),
+            conversation_history: (used.history || 0),
+            user_message: (used.user || 0),
+            total_input: totalTokens,
+            total_output: 0,
+            total_tokens: totalTokens,
+            history_count: historyCount,
+            lore_count: used.lore ? 'Lore' : 0,
+            memory_count: used.memory ? 'Mem' : 0
+        };
+        const tokenBreakdownCardHtml = this.renderTokenBreakdownCard(tokenBreakdownFromAudit, data);
+
         return `
             <div class="inspector-panel">
                 ${headerHtml}
+                ${tokenBreakdownCardHtml}
                 <div class="tab-container">
                     <div class="tab-header">${tabButtons}</div>
                     ${tabSystemPrompt}
@@ -1218,6 +1480,7 @@ ${window.VisualizerApp.escapeHtml(thinkingText)}
         const data = step?.data || {};
         const name = step?.name || 'Step';
         const formattedTitle = name.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+        const tokenBreakdownHtml = (data.token_breakdown || data.input_tokens) ? this.renderTokenBreakdownCard(data.token_breakdown, data) : '';
 
         return `
             <div class="inspector-panel">
@@ -1230,6 +1493,7 @@ ${window.VisualizerApp.escapeHtml(thinkingText)}
                         <div class="json-block" style="margin-top: 6px;">${this.escapeHtml(JSON.stringify(data, null, 2))}</div>
                     </div>
                 </div>
+                ${tokenBreakdownHtml}
             </div>
         `;
     },

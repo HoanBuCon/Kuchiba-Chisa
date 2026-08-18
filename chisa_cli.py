@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import os
 import sys
 import time
@@ -7,6 +8,8 @@ import webbrowser
 import atexit
 import signal
 import threading
+import asyncio
+from pathlib import Path
 
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
 FRONTEND_DIR = os.path.join(ROOT_DIR, "frontend")
@@ -75,13 +78,10 @@ C_MAGENTA = "\033[35m"
 C_CYAN    = "\033[36m"
 C_GRAY    = "\033[90m"
 C_BG_RED  = "\033[41m\033[37m"
+C_BG_BLUE = "\033[44m\033[37m"
 C_BG_GRAY = "\033[47m\033[30m"
 
 # ── Helper Functions ─────────────────────────────────────────────────
-
-# ── Status Cache Globals ──────────────────────────────────────────────
-LAST_STATUS_CACHE = None
-LAST_STATUS_TIME = 0.0
 
 def clear_screen():
     os.system('cls' if os.name == 'nt' else 'clear')
@@ -154,7 +154,7 @@ def kill_process_on_port(port: int):
 def cleanup_all_spawned():
     """Cleanup all processes launched during CLI session on exit."""
     if SPAWNED_PIDS:
-        print(f"\n{C_YELLOW}[CLI Cleanup] Dang dọn dẹp các tiến trình đã khởi chạy trong session...{C_RESET}")
+        print(f"\n{C_YELLOW}[CLI Cleanup] Đang dọn dẹp các tiến trình đã khởi chạy trong session...{C_RESET}")
         for pid in list(SPAWNED_PIDS):
             kill_process_tree_by_pid(pid)
         SPAWNED_PIDS.clear()
@@ -196,7 +196,6 @@ def launch_backend() -> bool:
         return False
 
     print(f"{C_YELLOW}[Backend] Đang khởi chạy Backend Core RAG trên cửa sổ mới...{C_RESET}")
-    venv_dir = os.path.dirname(os.path.dirname(VENV_PYTHON))
     ps_script = (
         f"$host.UI.RawUI.WindowTitle='[CHISA BACKEND CORE RAG]'; "
         f"cd '{ROOT_DIR}'; "
@@ -326,6 +325,24 @@ def kill_visualizer():
     print(f"{C_GREEN}[Kill] Đã đóng Visualizer!{C_RESET}")
     time.sleep(1.5)
 
+# ── Ingestion Handlers ───────────────────────────────────────────────
+
+def run_ingestion_pipeline_mode(mode: str):
+    """Executes ingestion pipeline with live feedback."""
+    clear_screen()
+    print(f"\n{C_BOLD}{C_CYAN}📚 CHISA INGESTION PIPELINE (Mode: {mode.upper()}){C_RESET}")
+    print(f"{C_GRAY}─────────────────────────────────────────────────────────────{C_RESET}")
+    try:
+        from app.infrastructure.ingestion.pipeline import MasterIngestionPipeline
+        pipeline = MasterIngestionPipeline()
+        summary = asyncio.run(pipeline.run(mode=mode))
+        print(f"\n{C_GREEN}{C_BOLD}✓ Ingestion task completed successfully!{C_RESET}")
+    except Exception as e:
+        print(f"\n{C_RED}{C_BOLD}✗ Ingestion task encountered error: {e}{C_RESET}")
+    
+    print(f"\n{C_GRAY}Nhấn phím bất kỳ để quay lại menu...{C_RESET}")
+    read_key()
+
 # ── Keyboard & Input Processing ─────────────────────────────────────
 
 def read_key():
@@ -349,7 +366,6 @@ def read_key():
             except Exception:
                 return 'OTHER'
     else:
-        # Fallback for Linux/macOS standard input
         import tty
         import termios
         fd = sys.stdin.fileno()
@@ -371,7 +387,6 @@ def read_key():
 
 # ── Menus & Rendering ────────────────────────────────────────────────
 
-# ── Status Cache & Background Checker ────────────────────────────────
 SYSTEM_STATUS = (f"{C_RED}🔴 CHECKING...{C_RESET}", f"{C_RED}🔴 CHECKING...{C_RESET}", f"{C_RED}🔴 CHECKING...{C_RESET}", f"{C_RED}🔴 CHECKING...{C_RESET}")
 IS_FIRST_RENDER = True
 
@@ -394,7 +409,6 @@ def background_status_updater():
             pass
         time.sleep(3.0)
 
-# Start background status updater
 threading.Thread(target=background_status_updater, daemon=True).start()
 
 def get_status_indicators():
@@ -419,7 +433,7 @@ def render_main_menu(selected_idx: int):
     print(f"  • Bot Discord      : {st_discord}\033[K")
     print(f"  • Visualizer       : {st_visualizer} (http://localhost:8000/visualizer)\033[K")
     print(f" {C_GRAY}─────────────────────────────────────────────────────────────{C_RESET}\033[K")
-    print(f" {C_YELLOW}Điều hướng: Dùng phím [↑]/[↓] + [Enter] HOẶC nhập số (1-7){C_RESET}\n\033[K")
+    print(f" {C_YELLOW}Điều hướng: Dùng phím [↑]/[↓] + [Enter] HOẶC nhập số (1-8){C_RESET}\n\033[K")
 
     options = [
         ("1", "🚀 Khởi động toàn bộ Chisa (Backend, Discord Bot, Frontend, Visualizer)"),
@@ -427,8 +441,9 @@ def render_main_menu(selected_idx: int):
         ("3", "🎨 Khởi động Frontend (Vite)"),
         ("4", "🤖 Khởi động Bot Discord"),
         ("5", "📊 Khởi động Visualizer (Trình duyệt http://localhost:8000/visualizer)"),
-        ("6", "🛑 Kill tiến trình (Menu dừng/tắt các dịch vụ)"),
-        ("7", "🚪 Exit (Thoát CLI - tự động dọn dẹp tiến trình)")
+        ("6", "📚 Ingestion Pipeline (Scan Wiki, Crawl Raw, Clean, Ingest, Benchmark)"),
+        ("7", "🛑 Kill tiến trình (Menu dừng/tắt các dịch vụ)"),
+        ("8", "🚪 Exit (Thoát CLI - tự động dọn dẹp tiến trình)")
     ]
 
     for idx, (num, label) in enumerate(options):
@@ -440,6 +455,89 @@ def render_main_menu(selected_idx: int):
     print(f"\n {C_GRAY}─────────────────────────────────────────────────────────────{C_RESET}\033[K")
     sys.stdout.write("\033[J")
     sys.stdout.flush()
+
+def render_ingestion_menu(selected_idx: int):
+    global IS_FIRST_RENDER
+    if IS_FIRST_RENDER:
+        clear_screen()
+        IS_FIRST_RENDER = False
+    else:
+        sys.stdout.write("\033[H")
+        sys.stdout.flush()
+
+    print(f"\n{C_BLUE}{C_BOLD}  📚 MENU DATA INGESTION & QUALITY PIPELINE (6 GIAI ĐOẠN){C_RESET}\033[K")
+    print(f" {C_GRAY}─────────────────────────────────────────────────────────────{C_RESET}\033[K")
+    print(f" {C_YELLOW}Điều hướng: Dùng phím [↑]/[↓] + [Enter] HOẶC nhập số (1-8){C_RESET}\n\033[K")
+
+    options = [
+        ("1", "🚀 Chạy toàn bộ 6 bước (Scan -> Crawl -> Clean -> Chunk -> Ingest -> Benchmark)"),
+        ("2", "🔄 Cập nhật Lore có duyệt (Scan Wiki -> Duyệt danh sách mới/sửa -> Nạp DB)"),
+        ("3", "🔍 Quét & Xem trước báo cáo chọn lọc (Scan Wiki & Pre-Crawl Dry Run)"),
+        ("4", "📥 Cào dữ liệu Wiki sạch về đĩa (Crawl Clean Lore Pages)"),
+        ("5", "🧹 Làm sạch dữ liệu & Đóng gói Canonical (Clean & Build Canonical)"),
+        ("6", "🧩 Phân mảnh ngữ nghĩa & Nạp Vector DB (Chunk & Ingest Qdrant)"),
+        ("7", "🏆 Chạy bộ 50 Test Cases Benchmark kiểm định chất lượng RAG"),
+        ("8", "↩️ Quay lại Menu chính")
+    ]
+
+    for idx, (num, label) in enumerate(options):
+        if idx == selected_idx:
+            print(f"  {C_BG_BLUE} > [{num}] {label} {C_RESET}\033[K")
+        else:
+            print(f"    [{num}] {label}\033[K")
+
+    print(f"\n {C_GRAY}─────────────────────────────────────────────────────────────{C_RESET}\033[K")
+    sys.stdout.write("\033[J")
+    sys.stdout.flush()
+
+def run_ingestion_sub_menu():
+    global IS_FIRST_RENDER
+    IS_FIRST_RENDER = True
+    selected_idx = 0
+    max_idx = 7
+
+    while True:
+        render_ingestion_menu(selected_idx)
+        key = read_key()
+
+        if key == 'UP':
+            selected_idx = (selected_idx - 1) % (max_idx + 1)
+            continue
+        elif key == 'DOWN':
+            selected_idx = (selected_idx + 1) % (max_idx + 1)
+            continue
+        elif key == 'ENTER':
+            choice_idx = selected_idx
+        elif key in ('1', '2', '3', '4', '5', '6', '7', '8'):
+            choice_idx = int(key) - 1
+        elif key.lower() in ('q', 'e', 'b'):
+            break
+        else:
+            continue
+
+        if choice_idx == 0:
+            run_ingestion_pipeline_mode("full")
+            IS_FIRST_RENDER = True
+        elif choice_idx == 1:
+            run_ingestion_pipeline_mode("reviewed")
+            IS_FIRST_RENDER = True
+        elif choice_idx == 2:
+            run_ingestion_pipeline_mode("scan")
+            IS_FIRST_RENDER = True
+        elif choice_idx == 3:
+            run_ingestion_pipeline_mode("crawl")
+            IS_FIRST_RENDER = True
+        elif choice_idx == 4:
+            run_ingestion_pipeline_mode("clean")
+            IS_FIRST_RENDER = True
+        elif choice_idx == 5:
+            run_ingestion_pipeline_mode("reingest")
+            IS_FIRST_RENDER = True
+        elif choice_idx == 6:
+            run_ingestion_pipeline_mode("benchmark")
+            IS_FIRST_RENDER = True
+        elif choice_idx == 7:
+            break
 
 def render_kill_menu(selected_idx: int):
     global IS_FIRST_RENDER
@@ -518,11 +616,93 @@ def run_kill_sub_menu():
         elif choice_idx == 4:
             break
 
+# ── Direct CLI Arguments Dispatcher ──────────────────────────────────
+
+def handle_direct_cli_args() -> bool:
+    """Dispatches direct command line arguments if provided (e.g. chisa.bat ingest --mode full)."""
+    if len(sys.argv) <= 1:
+        return False
+
+    cmd = sys.argv[1].lower()
+
+    if cmd in ("ingest", "ingestion", "pipeline"):
+        from app.infrastructure.ingestion.pipeline import MasterIngestionPipeline
+        import argparse
+        parser = argparse.ArgumentParser(description="Kuchiba Chisa Ingestion")
+        parser.add_argument("--mode", default="full", choices=["full", "scan", "crawl", "clean", "reingest", "benchmark"])
+        parser.add_argument("--categories", nargs="+")
+        parsed, _ = parser.parse_known_args(sys.argv[2:])
+        pipeline = MasterIngestionPipeline()
+        asyncio.run(pipeline.run(mode=parsed.mode, categories=parsed.categories))
+        return True
+
+    elif cmd in ("update", "reviewed", "update-lore", "review"):
+        from app.infrastructure.ingestion.pipeline import MasterIngestionPipeline
+        pipeline = MasterIngestionPipeline()
+        asyncio.run(pipeline.run(mode="reviewed"))
+        return True
+
+    elif cmd == "scan":
+        from app.infrastructure.ingestion.pipeline import MasterIngestionPipeline
+        pipeline = MasterIngestionPipeline()
+        asyncio.run(pipeline.run(mode="scan"))
+        return True
+
+    elif cmd == "crawl":
+        from app.infrastructure.ingestion.pipeline import MasterIngestionPipeline
+        pipeline = MasterIngestionPipeline()
+        asyncio.run(pipeline.run(mode="crawl"))
+        return True
+
+    elif cmd == "clean":
+        from app.infrastructure.ingestion.pipeline import MasterIngestionPipeline
+        pipeline = MasterIngestionPipeline()
+        asyncio.run(pipeline.run(mode="clean"))
+        return True
+
+    elif cmd == "benchmark":
+        from app.infrastructure.ingestion.pipeline import MasterIngestionPipeline
+        pipeline = MasterIngestionPipeline()
+        asyncio.run(pipeline.run(mode="benchmark"))
+        return True
+
+    elif cmd in ("start", "launch", "run"):
+        target = sys.argv[2].lower() if len(sys.argv) > 2 else "all"
+        if target == "all":
+            launch_all()
+        elif target in ("backend", "core"):
+            launch_backend()
+        elif target in ("frontend", "ui"):
+            launch_frontend()
+        elif target in ("discord", "bot"):
+            launch_discord()
+        elif target in ("visualizer", "vis"):
+            launch_visualizer()
+        return True
+
+    elif cmd in ("kill", "stop"):
+        target = sys.argv[2].lower() if len(sys.argv) > 2 else "all"
+        if target == "all":
+            kill_all_services()
+        elif target in ("backend", "core"):
+            kill_backend_frontend_core()
+        elif target in ("discord", "bot"):
+            kill_discord_bot()
+        elif target in ("visualizer", "vis"):
+            kill_visualizer()
+        return True
+
+    return False
+
 # ── Main Entry Point ─────────────────────────────────────────────────
 
 def main():
+    # Check if arguments were passed directly from terminal/cmd
+    if handle_direct_cli_args():
+        return
+
     selected_idx = 0
-    max_idx = 6
+    max_idx = 7
 
     while True:
         try:
@@ -537,7 +717,7 @@ def main():
                 continue
             elif key == 'ENTER':
                 choice = selected_idx + 1
-            elif key in ('1', '2', '3', '4', '5', '6', '7'):
+            elif key in ('1', '2', '3', '4', '5', '6', '7', '8'):
                 choice = int(key)
             else:
                 continue
@@ -558,9 +738,12 @@ def main():
                 launch_visualizer()
                 IS_FIRST_RENDER = True
             elif choice == 6:
-                run_kill_sub_menu()
+                run_ingestion_sub_menu()
                 IS_FIRST_RENDER = True
             elif choice == 7:
+                run_kill_sub_menu()
+                IS_FIRST_RENDER = True
+            elif choice == 8:
                 print(f"\n{C_YELLOW}[CLI] Đang thoát và dọn dẹp tiến trình...{C_RESET}")
                 cleanup_all_spawned()
                 print(f"{C_GREEN}[CLI] Cảm ơn Senpai đã sử dụng Chisa AI Control Center! Bye bye~{C_RESET}")

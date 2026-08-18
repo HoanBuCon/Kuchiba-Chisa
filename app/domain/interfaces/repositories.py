@@ -153,22 +153,6 @@ class ILoreParentRepository(Protocol):
         """
         ...
 
-class IWikiSyncRepository(Protocol):
-    """
-    Domain adapter port for tracking Wiki page synchronization state in Postgres.
-    """
-
-    async def get_latest_revision_id(self, page_id: int) -> Optional[int]:
-        """
-        Returns the last synced revision ID for a given page, or None if never synced.
-        """
-        ...
-
-    async def update_sync_state(self, page_id: int, title: str, revision_id: int, status: str) -> None:
-        """
-        Updates the sync status and revision ID for a page.
-        """
-        ...
 
 class IChunkStateRepository(Protocol):
     async def get_chunk_state(self, chunk_id: uuid.UUID) -> Optional[dict]:

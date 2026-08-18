@@ -572,5 +572,102 @@ def enrich_canonical_command(input_file: Path, output_file: Path) -> None:
     click.echo(f"[SUCCESS] Processed enrichment for {len(enriched_pages)} canonical pages into {output_file}")
 
 
+# ─────────────────────────────────────────────────────────────
+# Command 9: scan-wiki
+# ─────────────────────────────────────────────────────────────
+
+
+@cli.command("scan-wiki", help="Scan MediaWiki categories and generate pre-crawl selection report.")
+@click.option(
+    "--categories",
+    "-c",
+    multiple=True,
+    help="Specific categories to scan (e.g. -c Resonators -c Factions).",
+)
+def scan_wiki_cmd(categories: Tuple[str, ...]) -> None:
+    """Scan MediaWiki categories and print dry-run selection report."""
+    from app.infrastructure.ingestion.crawlers import WikiCrawler
+
+    crawler = WikiCrawler()
+    report = asyncio.run(crawler.scan_and_select(categories=list(categories) if categories else None))
+    click.echo(report.summary_markdown())
+
+
+# ─────────────────────────────────────────────────────────────
+# Command 10: crawl-wiki
+# ─────────────────────────────────────────────────────────────
+
+
+@cli.command("crawl-wiki", help="Crawl approved lore pages from MediaWiki into raw storage.")
+@click.option(
+    "--raw-dir",
+    type=click.Path(path_type=Path),
+    default=Path("data/raw_wiki"),
+    help="Target directory for raw wikitext and metadata files.",
+)
+@click.option(
+    "--categories",
+    "-c",
+    multiple=True,
+    help="Specific categories to crawl (e.g. -c Resonators -c Factions).",
+)
+def crawl_wiki_cmd(raw_dir: Path, categories: Tuple[str, ...]) -> None:
+    """Download approved lore pages into data/raw_wiki/."""
+    from app.infrastructure.ingestion.crawlers import WikiCrawler
+
+    crawler = WikiCrawler(output_dir=raw_dir)
+    report = asyncio.run(crawler.crawl_and_save(categories=list(categories) if categories else None, dry_run=False))
+    click.echo(f"[SUCCESS] Downloaded {report.saved_count} clean lore pages into {raw_dir}")
+
+
+# ─────────────────────────────────────────────────────────────
+# Command 11: benchmark
+# ─────────────────────────────────────────────────────────────
+
+
+@cli.command("benchmark", help="Run automated 50-case retrieval accuracy benchmark.")
+@click.option(
+    "--top-k",
+    type=int,
+    default=5,
+    help="Top K candidates to evaluate (default: 5).",
+)
+def benchmark_cmd(top_k: int) -> None:
+    """Run automated 50-case benchmark on current Vector Store."""
+    from app.infrastructure.ingestion.quality.benchmark_runner import BenchmarkRunner
+
+    runner = BenchmarkRunner(top_k=top_k)
+    result = asyncio.run(runner.run())
+    click.echo(result.generate_report_markdown())
+
+
+# ─────────────────────────────────────────────────────────────
+# Command 12: run-pipeline
+# ─────────────────────────────────────────────────────────────
+
+
+@cli.command("run-pipeline", help="Execute the unified 6-stage master ingestion pipeline.")
+@click.option(
+    "--mode",
+    type=click.Choice(["full", "scan", "crawl", "clean", "reingest", "benchmark"]),
+    default="full",
+    help="Execution mode (default: full).",
+)
+@click.option(
+    "--raw-dir",
+    type=click.Path(path_type=Path),
+    default=Path("data/raw_wiki"),
+    help="Raw wiki storage directory.",
+)
+def run_pipeline_cmd(mode: str, raw_dir: Path) -> None:
+    """Run master ingestion pipeline end-to-end."""
+    from app.infrastructure.ingestion.pipeline import MasterIngestionPipeline
+
+    pipeline = MasterIngestionPipeline(raw_dir=raw_dir)
+    summary = asyncio.run(pipeline.run(mode=mode))
+    click.echo(summary.to_markdown())
+
+
 if __name__ == "__main__":
     cli()
+

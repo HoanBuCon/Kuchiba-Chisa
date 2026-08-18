@@ -185,12 +185,104 @@ def _write_log_sync(prompt: StructuredPrompt, response: LLMResponse, q_idx: int,
     }
     llm_telemetry_logger.info(payload)
 
+def compute_token_breakdown(prompt: StructuredPrompt, response: LLMResponse) -> dict[str, Any]:
+    """
+    Computes a fine-grained token breakdown across all input and output components.
+    """
+    from app.shared.utils.token_estimator import TokenEstimator
+
+    system_text = prompt.system or ""
+    user_text = prompt.user_message or ""
+    history = prompt.history or []
+
+    # 1. Parse sub-sections from system_text if present
+    lore_text = ""
+    memories_text = ""
+    search_text = ""
+    summary_text = ""
+    format_text = ""
+
+    if "[LORE — REFERENCE DATA START]" in system_text and "[LORE — REFERENCE DATA END]" in system_text:
+        start = system_text.find("[LORE — REFERENCE DATA START]")
+        end = system_text.find("[LORE — REFERENCE DATA END]") + len("[LORE — REFERENCE DATA END]")
+        lore_text = system_text[start:end]
+
+    if "[MEMORIES — REFERENCE DATA START]" in system_text and "[MEMORIES — REFERENCE DATA END]" in system_text:
+        start = system_text.find("[MEMORIES — REFERENCE DATA START]")
+        end = system_text.find("[MEMORIES — REFERENCE DATA END]") + len("[MEMORIES — REFERENCE DATA END]")
+        memories_text = system_text[start:end]
+
+    if "[SEARCH DATA — REFERENCE DATA START]" in system_text and "[SEARCH DATA — REFERENCE DATA END]" in system_text:
+        start = system_text.find("[SEARCH DATA — REFERENCE DATA START]")
+        end = system_text.find("[SEARCH DATA — REFERENCE DATA END]") + len("[SEARCH DATA — REFERENCE DATA END]")
+        search_text = system_text[start:end]
+
+    if "[CONVERSATION SUMMARY]" in system_text:
+        start = system_text.find("[CONVERSATION SUMMARY]")
+        next_markers = ["[MEMORIES", "[LORE", "[SEARCH DATA", "[OUTPUT FORMAT", "\n\n["]
+        end = len(system_text)
+        for m in next_markers:
+            p = system_text.find(m, start + len("[CONVERSATION SUMMARY]"))
+            if p != -1 and p < end:
+                end = p
+        summary_text = system_text[start:end].strip()
+
+    if "[OUTPUT FORMAT]" in system_text:
+        start = system_text.find("[OUTPUT FORMAT]")
+        format_text = system_text[start:].strip()
+
+    # Calculate token counts for each section
+    lore_tokens = TokenEstimator.estimate(lore_text) if lore_text else sum(TokenEstimator.estimate(c) for c in (getattr(prompt, "retrieved_lore", []) or []))
+    memory_tokens = TokenEstimator.estimate(memories_text) if memories_text else sum(TokenEstimator.estimate(m.text_content if hasattr(m, 'text_content') else str(m)) for m in (getattr(prompt, "retrieved_memories", []) or []))
+    search_tokens = TokenEstimator.estimate(search_text) if search_text else 0
+    summary_tokens = TokenEstimator.estimate(summary_text) if summary_text else 0
+    format_tokens = TokenEstimator.estimate(format_text) if format_text else 0
+
+    total_system_tokens = TokenEstimator.estimate(system_text)
+    base_system_tokens = max(0, total_system_tokens - lore_tokens - memory_tokens - search_tokens - summary_tokens - format_tokens)
+    if base_system_tokens == 0 and total_system_tokens > 0:
+        base_system_tokens = total_system_tokens
+
+    history_tokens = TokenEstimator.estimate_messages(history, overhead_per_msg=4) if history else 0
+    user_tokens = TokenEstimator.estimate(user_text)
+
+    reasoning_tokens = getattr(response, "reasoning_tokens", 0) or 0
+    if not reasoning_tokens and getattr(response, "reasoning_content", None):
+        reasoning_tokens = TokenEstimator.estimate(response.reasoning_content)
+
+    output_tokens = response.output_tokens or TokenEstimator.estimate(response.raw_content or "")
+    total_input = response.input_tokens or (total_system_tokens + history_tokens + user_tokens)
+    total_tokens = total_input + output_tokens + reasoning_tokens
+
+    return {
+        "system_prompt": total_system_tokens,
+        "base_system": base_system_tokens,
+        "format_instructions": format_tokens,
+        "context_lore": lore_tokens,
+        "context_memories": memory_tokens,
+        "context_web_search": search_tokens,
+        "conversation_summary": summary_tokens,
+        "conversation_history": history_tokens,
+        "user_message": user_tokens,
+        "reasoning_cot": reasoning_tokens,
+        "completion_output": output_tokens,
+        "total_input": total_input,
+        "total_output": output_tokens,
+        "total_tokens": total_tokens,
+        "history_count": len(history),
+        "lore_count": len(getattr(prompt, "retrieved_lore", []) or []),
+        "memory_count": len(getattr(prompt, "retrieved_memories", []) or []),
+    }
+
+
 async def log_llm_transaction(prompt: StructuredPrompt, response: LLMResponse) -> None:
     try:
         q_idx = request_question_idx.get()
         t_idx = request_turn_idx.get()
         request_turn_idx.set(t_idx + 1)
         
+        token_breakdown = compute_token_breakdown(prompt, response)
+
         # Add LLM call step to the pipeline tracker
         try:
             from app.infrastructure.logging.pipeline_tracker import pipeline_tracker
@@ -200,8 +292,9 @@ async def log_llm_transaction(prompt: StructuredPrompt, response: LLMResponse) -
                 "model": response.model,
                 "input_tokens": response.input_tokens,
                 "output_tokens": response.output_tokens,
-                "reasoning_tokens": getattr(response, "reasoning_tokens", 0),
-                "total_tokens": response.input_tokens + response.output_tokens,
+                "reasoning_tokens": token_breakdown["reasoning_cot"],
+                "total_tokens": token_breakdown["total_tokens"],
+                "token_breakdown": token_breakdown,
                 "finish_reason": response.finish_reason,
                 "raw_response": response.raw_content,
                 "parsed_response": response.parsed,

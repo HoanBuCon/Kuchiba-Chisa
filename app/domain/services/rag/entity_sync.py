@@ -22,7 +22,7 @@ def sync_entities_dictionary(
         "Kuchiba Chisa": {
             "aliases": ["Chisa", "Kuchiba", "Chía", "Chía Chía", "Bé Chisa", "Chisa Forte", "Mutant Resonator"],
             "type": "CHARACTER",
-            "region": "Huanglong",
+            "region": "Lahai-Roi",
             "faction": "Startorch Academy",
             "parent": None,
             "related": ["Rover", "Sumika", "Thread Perception", "Honami", "Broadblade"]
@@ -38,7 +38,7 @@ def sync_entities_dictionary(
         "Sumika": {
             "aliases": ["Sumika", "Nhật ký Sumika", "Sumika's Diary"],
             "type": "CHARACTER",
-            "region": "Huanglong",
+            "region": "Lahai-Roi",
             "faction": "Startorch Academy",
             "parent": None,
             "related": ["Kuchiba Chisa", "Honami Loop"]

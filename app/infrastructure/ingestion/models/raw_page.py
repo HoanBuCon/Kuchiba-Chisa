@@ -41,7 +41,7 @@ class RawPageMeta(BaseModel):
         description="Latest revision ID used for incremental change detection.",
     )
     revision_timestamp: datetime = Field(
-        ...,
+        default_factory=datetime.utcnow,
         description="ISO-8601 timestamp of the revision.",
     )
     namespace: int = Field(
