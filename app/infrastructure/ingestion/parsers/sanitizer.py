@@ -126,7 +126,6 @@ AST_TEMPLATE_BLOCKLIST: FrozenSet[str] = frozenset({
     "infobox gallery",
     "trials by character",
     "character mentions",
-    "character archives",
     "stub",
     "stubs",
     "notice",
@@ -138,7 +137,6 @@ AST_TEMPLATE_BLOCKLIST: FrozenSet[str] = frozenset({
     "spoiler",
     "warning",
     "note",
-    "archive",
 })
 
 
@@ -200,7 +198,7 @@ _RE_DISPLAY_TEMPLATES = re.compile(
     r"Intro/Resonator|Skill Navbox|Nodes Navbox|Quests and Events|Featured|Resonator Navbox|"
     r"Reflist|Skill Upgrade|Character Ascensions and Stats|Main|Change History|Other Languages|"
     r"Trophies|Resonator Instructions|Forte Table|Chain Table|Tabber|Transclude|Trials by Character|"
-    r"Character Mentions|Character Archives|Stub|Stubs|Notice|WIP|Needs Image|Cleanup|Expand|"
+    r"Character Mentions|Stub|Stubs|Notice|WIP|Needs Image|Cleanup|Expand|"
     r"Disclaimer|Spoiler|Warning|Note|Archive|Dialogue Start|Dialogue End|DIcon|sic|tx|color|"
     r"Reward|Exit|Play|Sound|Prompt|Option|Choice)[^}]*\}\}",
     re.IGNORECASE,
@@ -456,8 +454,15 @@ def sanitize_wikitext(text: str, page_id: Optional[int] = None, page_title: Opti
 
     # 3. Extract Infobox to text & remove raw template
     infobox_summary = ""
-    for tmpl in code.filter_templates():
+    for tmpl in list(code.filter_templates()):
         tmpl_name = str(tmpl.name).strip().lower()
+        if tmpl_name in ("infobox gallery", "gallery"):
+            try:
+                code.remove(tmpl)
+            except ValueError:
+                pass
+            continue
+
         if "infobox" in tmpl_name:
             fields: dict[str, str] = {}
             for param in tmpl.params:
@@ -496,7 +501,8 @@ def sanitize_wikitext(text: str, page_id: Optional[int] = None, page_title: Opti
                     parts.append(f"# {name}")
                 if meta_items:
                     parts.append(f"**Faction Profile**: {', '.join(meta_items)}.")
-                infobox_summary = "\n\n".join(parts)
+                if parts:
+                    infobox_summary = "\n\n".join(parts)
             else:
                 name = fields.get("name", "")
                 res_title = fields.get("title", "")
@@ -507,10 +513,16 @@ def sanitize_wikitext(text: str, page_id: Optional[int] = None, page_title: Opti
                 affiliation = fields.get("affiliation", "")
                 affiliation2 = fields.get("affiliation2", "")
                 relative = fields.get("relative", "")
+                gender = fields.get("gender", "")
+                res_type = fields.get("type", "")
 
                 meta_items = []
                 if res_title:
                     meta_items.append(f"Title: {res_title}")
+                if res_type:
+                    meta_items.append(f"Status: {res_type}")
+                if gender:
+                    meta_items.append(f"Gender: {gender}")
                 if rarity:
                     meta_items.append(f"Rarity: {rarity}★")
                 if attribute:
@@ -532,21 +544,57 @@ def sanitize_wikitext(text: str, page_id: Optional[int] = None, page_title: Opti
                     parts.append(f"# {name}")
                 if meta_items:
                     parts.append(f"**Profile**: {', '.join(meta_items)}.")
-                infobox_summary = "\n\n".join(parts)
+                if parts:
+                    infobox_summary = "\n\n".join(parts)
 
             try:
                 code.remove(tmpl)
             except ValueError:
                 pass
 
-    # 4. Remove blocklisted templates and handle special inline templates
+    # 4. Handle special inline templates first, then remove blocklisted templates
     for tmpl in code.filter_templates():
         t_name = str(tmpl.name).strip().lower()
-        if any(b in t_name for b in AST_TEMPLATE_BLOCKLIST):
-            try:
-                code.remove(tmpl)
-            except ValueError:
-                pass
+
+        if "character archives" in t_name or "character archive" in t_name:
+            unrolled_blocks = []
+            power = ""
+            evaluation = ""
+            overclock = ""
+            info = ""
+
+            if tmpl.has("power"):
+                p_code = mwparserfromhell.parse(str(tmpl.get("power").value).strip())
+                power = str(p_code.strip_code()).strip()
+            if tmpl.has("evaluation"):
+                e_code = mwparserfromhell.parse(str(tmpl.get("evaluation").value).strip())
+                evaluation = str(e_code.strip_code()).strip()
+                # Clean html line breaks
+                evaluation = re.sub(r"<br\s*/?>", "\n", evaluation, flags=re.IGNORECASE)
+            if tmpl.has("overclock"):
+                o_code = mwparserfromhell.parse(str(tmpl.get("overclock").value).strip())
+                overclock = str(o_code.strip_code()).strip()
+                overclock = re.sub(r"<br\s*/?>", "\n", overclock, flags=re.IGNORECASE)
+            if tmpl.has("info"):
+                i_code = mwparserfromhell.parse(str(tmpl.get("info").value).strip())
+                info = str(i_code.strip_code()).strip()
+                info = re.sub(r"<br\s*/?>", "\n", info, flags=re.IGNORECASE)
+
+            if power:
+                unrolled_blocks.append(f"**Resonance Power**: {power}")
+            if evaluation:
+                unrolled_blocks.append(f"### Forte Examination Report\n{evaluation}")
+            if overclock:
+                unrolled_blocks.append(f"### Overclock Diagnostic Report\n{overclock}")
+            if info:
+                unrolled_blocks.append(f"### Character Profile\n{info}")
+
+            if unrolled_blocks:
+                try:
+                    code.replace(tmpl, "\n\n" + "\n\n".join(unrolled_blocks) + "\n\n")
+                except ValueError:
+                    pass
+
         elif "cherished items" in t_name or "cherished item" in t_name:
             unrolled_blocks = []
             param_dict = {str(p.name).strip().lower(): str(p.value).strip() for p in tmpl.params}
@@ -564,6 +612,7 @@ def sanitize_wikitext(text: str, page_id: Optional[int] = None, page_title: Opti
                     code.replace(tmpl, "\n\n".join(unrolled_blocks))
                 except ValueError:
                     pass
+
         elif "character stories" in t_name or "character story" in t_name:
             unrolled_blocks = []
             param_dict = {str(p.name).strip().lower(): str(p.value).strip() for p in tmpl.params}
@@ -581,6 +630,12 @@ def sanitize_wikitext(text: str, page_id: Optional[int] = None, page_title: Opti
                     code.replace(tmpl, "\n\n".join(unrolled_blocks))
                 except ValueError:
                     pass
+
+        elif any(b in t_name for b in AST_TEMPLATE_BLOCKLIST):
+            try:
+                code.remove(tmpl)
+            except ValueError:
+                pass
         elif t_name == "description":
             desc_val = ""
             if tmpl.has(1):

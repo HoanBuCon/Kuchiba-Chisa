@@ -164,8 +164,11 @@ def create_app() -> FastAPI:
     app.include_router(visualizer.router, tags=["Visualizer"])
     # app.include_router(users.router, prefix="/api/v1", tags=["Users"])
     
-    from app.api.routers import admin_ingestion
-    app.include_router(admin_ingestion.router, prefix="/api/v1")
+    try:
+        from app.interface.api.routes import admin_ingestion
+        app.include_router(admin_ingestion.router, prefix="/api/v1")
+    except ImportError:
+        pass
 
     if ASSETS_DIR.is_dir():
         app.mount("/assets", StaticFiles(directory=str(ASSETS_DIR)), name="assets")

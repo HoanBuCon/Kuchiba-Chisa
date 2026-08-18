@@ -277,9 +277,19 @@ window.PipelineTreeEngine = {
             },
             subtitle: (step) => {
                 const model = step.data?.model || 'Model';
-                const tokens = step.data?.total_tokens ? `${step.data.total_tokens} tok` : '';
-                const cot = (step.data?.reasoning_content || step.data?.use_deep_thinking) ? 'CoT ON' : '';
-                const parts = [model, tokens, cot].filter(Boolean);
+                const tb = step.data?.token_breakdown;
+                let tokenSummary = '';
+                if (tb) {
+                    const inTok = tb.total_input || step.data?.input_tokens || 0;
+                    const outTok = tb.total_output || step.data?.output_tokens || 0;
+                    const cotTok = tb.reasoning_cot || step.data?.reasoning_tokens || 0;
+                    const cotPart = cotTok > 0 ? ` 🧠 ${cotTok}` : '';
+                    tokenSummary = `📥 ${inTok}${cotPart} 📤 ${outTok} (📊 ${tb.total_tokens || (inTok + outTok)} tok)`;
+                } else if (step.data?.total_tokens) {
+                    tokenSummary = `${step.data.total_tokens} tok`;
+                }
+                const cot = (step.data?.reasoning_content || step.data?.use_deep_thinking) && !tb?.reasoning_cot ? 'CoT ON' : '';
+                const parts = [model, tokenSummary, cot].filter(Boolean);
                 return parts.join(' · ');
             }
         },

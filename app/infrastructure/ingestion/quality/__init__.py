@@ -1,11 +1,10 @@
 """
 Quality Validation & Quarantine Management Package.
 
-Implements §4.2 & §9 (5-Gate Quality Control System & Quarantine) of v1.1 Ingestion Architecture.
-
 Modules:
-    gates     — Individual Gate 1 to Gate 5 validators
-    validator — Main QualityValidator engine & Quarantine Manager
+    gates            — Individual Gate 1 to Gate 5 validators
+    validator        — Main QualityValidator engine & Quarantine Manager
+    benchmark_runner — Automated 50-case retrieval accuracy benchmark
 """
 
 from app.infrastructure.ingestion.quality.gates import (
@@ -21,6 +20,11 @@ from app.infrastructure.ingestion.quality.validator import (
     QualityValidator,
     ValidationReport,
 )
+from app.infrastructure.ingestion.quality.benchmark_runner import (
+    BenchmarkRunner,
+    BenchmarkResult,
+    BENCHMARK_TEST_CASES,
+)
 
 __all__ = [
     "Gate1StructureValidator",
@@ -32,4 +36,7 @@ __all__ = [
     "QualityStatusEnum",
     "QualityValidator",
     "ValidationReport",
+    "BenchmarkRunner",
+    "BenchmarkResult",
+    "BENCHMARK_TEST_CASES",
 ]
