@@ -1,4 +1,4 @@
-import { SlashCommandBuilder, EmbedBuilder } from 'discord.js';
+import { SlashCommandBuilder, EmbedBuilder, InteractionContextType } from 'discord.js';
 import { isGuildModeratorOrAdmin } from '../utils/permissions.js';
 
 export const data = new SlashCommandBuilder()
@@ -12,6 +12,7 @@ export const data = new SlashCommandBuilder()
       .addChoices(
         { name: 'Kích hoạt cho kênh (enable)', value: 'enable' },
         { name: 'Hủy kích hoạt cho kênh (disable)', value: 'disable' },
+        { name: 'Xem danh sách các kênh (list)', value: 'list' },
       ),
   )
   .addChannelOption((option) =>
@@ -26,7 +27,7 @@ export const data = new SlashCommandBuilder()
       .setDescription('Hủy kích hoạt cho tất cả các kênh (chỉ dùng với action disable)')
       .setRequired(false),
   )
-  .setDMPermission(false);
+  .setContexts(InteractionContextType.Guild);
 
 function createSetupEmbed(client, channelName) {
   return new EmbedBuilder()
@@ -211,8 +212,6 @@ async function enableChannels(client, guildId, channelIds, triggeredByUserId) {
 }
 
 export async function execute(client, interaction) {
-  const { logger, repositories, guildSettingsCache } = client.services;
-  
   if (!isGuildModeratorOrAdmin(interaction.member)) {
     await interaction.reply({
       content: 'Chỉ Admin hoặc Moderator mới có quyền sử dụng lệnh này.',
@@ -224,6 +223,32 @@ export async function execute(client, interaction) {
   const action = interaction.options.getString('action') || 'enable';
   const allOption = interaction.options.getBoolean('all') || false;
   const guildId = interaction.guildId;
+
+  // Action: list
+  if (action === 'list') {
+    const { guildSettingsCache } = client.services;
+    const activeChannels = [];
+    for (const [chanId, gId] of guildSettingsCache.entries()) {
+      if (gId === guildId) {
+        activeChannels.push(chanId);
+      }
+    }
+
+    if (activeChannels.length === 0) {
+      await interaction.reply({
+        content: 'Hiện tại server này không có kênh nào được thiết lập làm cổng kết nối trực tiếp với Chisa.',
+        ephemeral: true,
+      });
+      return;
+    }
+
+    const channelListStr = activeChannels.map((id) => `- <#${id}>`).join('\n');
+    await interaction.reply({
+      content: `🌸 **Danh sách các cổng kết nối trực tiếp với Chisa:**\n${channelListStr}`,
+      ephemeral: true,
+    });
+    return;
+  }
 
   if (action === 'disable' && allOption) {
     await interaction.deferReply({ ephemeral: true });
@@ -254,15 +279,23 @@ export async function execute(client, interaction) {
   }
 
   // Action: enable
-  await interaction.deferReply({ ephemeral: true });
-  const res = await enableChannels(client, guildId, [targetChannel.id], interaction.user.id);
-  await interaction.editReply({
-    content: res.replyText,
+  if (action === 'enable') {
+    await interaction.deferReply({ ephemeral: true });
+    const res = await enableChannels(client, guildId, [targetChannel.id], interaction.user.id);
+    await interaction.editReply({
+      content: res.replyText,
+    });
+    return;
+  }
+
+  await interaction.reply({
+    content: `Hành động không hợp lệ: ${action}`,
+    ephemeral: true,
   });
 }
 
 export async function executePrefix(client, message, argsText) {
-  const { logger, repositories, guildSettingsCache } = client.services;
+  const { guildSettingsCache } = client.services;
   
   if (!isGuildModeratorOrAdmin(message.member)) {
     await message.reply('Chỉ Admin hoặc Moderator mới có quyền sử dụng lệnh này.');

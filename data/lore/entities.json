@@ -275,7 +275,8 @@
       "Denia",
       "Lynae",
       "Rover",
-      "Sigrika"
+      "Sigrika",
+      "Aemeath"
     ]
   },
   "Lahai-Roi": {
@@ -330,7 +331,7 @@
       "Aalto"
     ],
     "type": "CHARACTER",
-    "region": "New Federation",
+    "region": null,
     "faction": "Black Shores",
     "parent": null,
     "related": []
@@ -360,8 +361,8 @@
       "Baizhi"
     ],
     "type": "CHARACTER",
-    "region": "Huanglong",
-    "faction": "Huaxu Academy",
+    "region": null,
+    "faction": null,
     "parent": null,
     "related": []
   },
@@ -381,7 +382,7 @@
     ],
     "type": "CHARACTER",
     "region": "Huanglong",
-    "faction": "Black Shores",
+    "faction": null,
     "parent": null,
     "related": []
   },
@@ -390,7 +391,7 @@
       "Calcharo"
     ],
     "type": "CHARACTER",
-    "region": "Huanglong",
+    "region": null,
     "faction": null,
     "parent": null,
     "related": []
@@ -400,8 +401,8 @@
       "Camellya"
     ],
     "type": "CHARACTER",
-    "region": "Black Shores",
-    "faction": "Black Shores",
+    "region": null,
+    "faction": null,
     "parent": null,
     "related": []
   },
@@ -440,7 +441,7 @@
       "Changli"
     ],
     "type": "CHARACTER",
-    "region": "Huanglong",
+    "region": null,
     "faction": null,
     "parent": null,
     "related": []
@@ -450,7 +451,7 @@
       "Chixia"
     ],
     "type": "CHARACTER",
-    "region": "Other",
+    "region": null,
     "faction": null,
     "parent": null,
     "related": []
@@ -470,8 +471,8 @@
       "Danjin"
     ],
     "type": "CHARACTER",
-    "region": "Huanglong",
-    "faction": "Midnight Rangers",
+    "region": null,
+    "faction": null,
     "parent": null,
     "related": []
   },
@@ -491,7 +492,7 @@
     ],
     "type": "CHARACTER",
     "region": "Other",
-    "faction": "Black Shores",
+    "faction": null,
     "parent": null,
     "related": []
   },
@@ -500,8 +501,8 @@
       "Galbrena"
     ],
     "type": "CHARACTER",
-    "region": "Black Shores",
-    "faction": "Black Shores",
+    "region": "Rinascita",
+    "faction": null,
     "parent": null,
     "related": []
   },
@@ -540,6 +541,16 @@
       "Jianxin"
     ],
     "type": "CHARACTER",
+    "region": "Other",
+    "faction": null,
+    "parent": null,
+    "related": []
+  },
+  "Jingran": {
+    "aliases": [
+      "Jingran"
+    ],
+    "type": "CHARACTER",
     "region": "Huanglong",
     "faction": null,
     "parent": null,
@@ -550,7 +561,7 @@
       "Jinhsi"
     ],
     "type": "CHARACTER",
-    "region": "Huanglong",
+    "region": null,
     "faction": null,
     "parent": null,
     "related": []
@@ -560,8 +571,8 @@
       "Jiyan"
     ],
     "type": "CHARACTER",
-    "region": "Huanglong",
-    "faction": "Midnight Rangers",
+    "region": null,
+    "faction": null,
     "parent": null,
     "related": []
   },
@@ -570,7 +581,7 @@
       "Lingyang"
     ],
     "type": "CHARACTER",
-    "region": "Huanglong",
+    "region": null,
     "faction": null,
     "parent": null,
     "related": []
@@ -650,8 +661,8 @@
       "Mortefi"
     ],
     "type": "CHARACTER",
-    "region": "Huanglong",
-    "faction": "Huaxu Academy",
+    "region": null,
+    "faction": null,
     "parent": null,
     "related": []
   },
@@ -700,7 +711,7 @@
       "Rebecca"
     ],
     "type": "CHARACTER",
-    "region": null,
+    "region": "Other",
     "faction": null,
     "parent": null,
     "related": []
@@ -720,7 +731,7 @@
       "Sanhua"
     ],
     "type": "CHARACTER",
-    "region": "Huanglong",
+    "region": null,
     "faction": null,
     "parent": null,
     "related": []
@@ -730,8 +741,8 @@
       "Shorekeeper"
     ],
     "type": "CHARACTER",
-    "region": "Black Shores",
-    "faction": "Black Shores",
+    "region": null,
+    "faction": null,
     "parent": null,
     "related": []
   },
@@ -755,13 +766,23 @@
     "parent": null,
     "related": []
   },
+  "Suoming": {
+    "aliases": [
+      "Suoming"
+    ],
+    "type": "CHARACTER",
+    "region": "Huanglong",
+    "faction": "Mengzhou",
+    "parent": null,
+    "related": []
+  },
   "Taoqi": {
     "aliases": [
       "Taoqi"
     ],
     "type": "CHARACTER",
-    "region": "Huanglong",
-    "faction": "Ministry of Development",
+    "region": null,
+    "faction": null,
     "parent": null,
     "related": []
   },
@@ -770,8 +791,8 @@
       "Verina"
     ],
     "type": "CHARACTER",
-    "region": "New Federation",
-    "faction": "Jinzhou",
+    "region": null,
+    "faction": null,
     "parent": null,
     "related": []
   },
@@ -780,8 +801,8 @@
       "Xiangli Yao"
     ],
     "type": "CHARACTER",
-    "region": "Huanglong",
-    "faction": "Huaxu Academy",
+    "region": null,
+    "faction": null,
     "parent": null,
     "related": []
   },
@@ -790,8 +811,8 @@
       "Yangyang"
     ],
     "type": "CHARACTER",
-    "region": "Huanglong",
-    "faction": "Midnight Rangers",
+    "region": null,
+    "faction": null,
     "parent": null,
     "related": []
   },
@@ -801,7 +822,7 @@
     ],
     "type": "CHARACTER",
     "region": "Huanglong",
-    "faction": "Midnight Rangers",
+    "faction": null,
     "parent": null,
     "related": []
   },
@@ -810,7 +831,7 @@
       "Yinlin"
     ],
     "type": "CHARACTER",
-    "region": "Huanglong",
+    "region": null,
     "faction": null,
     "parent": null,
     "related": []
@@ -850,7 +871,7 @@
       "Zhezhi"
     ],
     "type": "CHARACTER",
-    "region": "Huanglong",
+    "region": null,
     "faction": null,
     "parent": null,
     "related": []
@@ -870,7 +891,7 @@
       "Court of Savantae"
     ],
     "type": "FACTION",
-    "region": "Lahai-Roi",
+    "region": "Other",
     "faction": "Court of Savantae",
     "parent": null,
     "related": []
@@ -890,7 +911,7 @@
       "Exiles"
     ],
     "type": "FACTION",
-    "region": null,
+    "region": "Other",
     "faction": null,
     "parent": null,
     "related": []
@@ -910,7 +931,7 @@
       "Fractsidus"
     ],
     "type": "FACTION",
-    "region": null,
+    "region": "Other",
     "faction": "Fractsidus",
     "parent": null,
     "related": []
@@ -920,10 +941,12 @@
       "Ghost Hounds"
     ],
     "type": "FACTION",
-    "region": "New Federation",
+    "region": "Other",
     "faction": null,
     "parent": null,
-    "related": []
+    "related": [
+      "Calcharo"
+    ]
   },
   "House Silva": {
     "aliases": [
@@ -934,6 +957,20 @@
     "faction": null,
     "parent": null,
     "related": []
+  },
+  "Huaxu Academy": {
+    "aliases": [
+      "Huaxu Academy"
+    ],
+    "type": "FACTION",
+    "region": "Huanglong",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "Baizhi",
+      "Mortefi",
+      "Xiangli Yao"
+    ]
   },
   "Internal Security Agency": {
     "aliases": [
@@ -950,7 +987,7 @@
       "Lollo Logistics"
     ],
     "type": "FACTION",
-    "region": null,
+    "region": "Other",
     "faction": null,
     "parent": null,
     "related": []
@@ -961,7 +998,7 @@
     ],
     "type": "FACTION",
     "region": "Huanglong",
-    "faction": "Midnight Rangers",
+    "faction": null,
     "parent": null,
     "related": []
   },
@@ -971,7 +1008,7 @@
     ],
     "type": "FACTION",
     "region": "Huanglong",
-    "faction": "Ministry of Development",
+    "faction": null,
     "parent": null,
     "related": []
   },
@@ -991,7 +1028,7 @@
     ],
     "type": "FACTION",
     "region": "Huanglong",
-    "faction": "Ministry of War",
+    "faction": null,
     "parent": null,
     "related": []
   },
@@ -1023,7 +1060,7 @@
     ],
     "type": "FACTION",
     "region": null,
-    "faction": "Pioneer Association",
+    "faction": null,
     "parent": null,
     "related": [
       "Lucilla",
@@ -1081,7 +1118,9 @@
     "region": "Lahai-Roi",
     "faction": null,
     "parent": null,
-    "related": []
+    "related": [
+      "Hiyuki"
+    ]
   },
   "Tetragon Temple": {
     "aliases": [
@@ -1123,13 +1162,82 @@
     "parent": null,
     "related": []
   },
+  "Averardo Vault": {
+    "aliases": [
+      "Averardo Vault"
+    ],
+    "type": "REGION",
+    "region": "Rinascita",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "!Image, !Description",
+      "Hidden Place",
+      "Averardo Vault (Area)",
+      "Vault Underground"
+    ]
+  },
+  "Avinoleum": {
+    "aliases": [
+      "Avinoleum"
+    ],
+    "type": "REGION",
+    "region": "Rinascita",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "! Image, ! Description",
+      "Hall of Swordsmanship: Ruins",
+      "Holy Spire of Confluence",
+      "Path of Bestowal",
+      "Titular Repository: Ruins",
+      "Tower of Ascension",
+      "Tower of Salvation",
+      "Tower of Unity",
+      "Zargon Garden"
+    ]
+  },
+  "Beohr Waters": {
+    "aliases": [
+      "Beohr Waters"
+    ],
+    "type": "REGION",
+    "region": "Rinascita",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "!Image, !Description",
+      "Avinoleum: Ground Remains",
+      "Beohr Trench"
+    ]
+  },
+  "Bjartr Woods": {
+    "aliases": [
+      "Bjartr Woods"
+    ],
+    "type": "REGION",
+    "region": "Roya Frostlands",
+    "faction": "Roya Tribe",
+    "parent": null,
+    "related": [
+      "!Image, !Description",
+      "First Solistree",
+      "Fourth Solistree",
+      "Haldarheim",
+      "Second Solistree",
+      "Soliseed Plains",
+      "Solisylum",
+      "Solistree's Core",
+      "Third Solistree"
+    ]
+  },
   "Black Shores Archipelago": {
     "aliases": [
       "Black Shores Archipelago"
     ],
     "type": "REGION",
     "region": "The Black Shores",
-    "faction": "Black Shores",
+    "faction": null,
     "parent": null,
     "related": []
   },
@@ -1142,6 +1250,7 @@
     "faction": null,
     "parent": null,
     "related": [
+      "!Image, !Description",
       "Fireflies Sea",
       "Gubei Pass",
       "Loong's Gaze Suburbs",
@@ -1153,15 +1262,27 @@
       "Xiehua Village"
     ]
   },
-  "Court of Savantae Ruins": {
+  "Chronorift Metropolis": {
     "aliases": [
-      "Court of Savantae Ruins"
+      "Chronorift Metropolis"
     ],
     "type": "REGION",
-    "region": "Huanglong",
+    "region": "The Black Shores",
     "faction": null,
     "parent": null,
-    "related": []
+    "related": [
+      "!Image, ! Description",
+      "Hanakage Underground Street",
+      "Harukaze Stadium",
+      "Honami Central Park",
+      "Honami Convention Center",
+      "Meishin Passageway",
+      "Sakura Pedway",
+      "Sakura Quarter",
+      "Sazanami Avenue",
+      "Shashou Cafe",
+      "Shiawase Fountain Square"
+    ]
   },
   "Desorock Highland": {
     "aliases": [
@@ -1172,10 +1293,28 @@
     "faction": null,
     "parent": null,
     "related": [
+      "! Image, ! Description",
       "Camp Overwatch",
       "Misty Coast",
       "Rearguard Base",
       "Withering Frontline"
+    ]
+  },
+  "Dimmr Deep": {
+    "aliases": [
+      "Dimmr Deep"
+    ],
+    "type": "REGION",
+    "region": "Roya Frostlands",
+    "faction": "Roya Tribe",
+    "parent": null,
+    "related": [
+      "!Image, !Description",
+      "Endreach Barrens",
+      "Frostseize Isle",
+      "Keystone",
+      "Solvein Heartwood",
+      "Tomorrow's Horizon"
     ]
   },
   "Dim Forest": {
@@ -1187,11 +1326,114 @@
     "faction": null,
     "parent": null,
     "related": [
+      "! Image, ! Description",
       "Forbidden Forest",
       "Giant Banyan",
       "Thorny Passage",
       "Violet Banyan",
       "Wenye Beach"
+    ]
+  },
+  "Eastern Xuan Peaks": {
+    "aliases": [
+      "Eastern Xuan Peaks"
+    ],
+    "type": "REGION",
+    "region": "Huanglong",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "! Description"
+    ]
+  },
+  "Etching Plains": {
+    "aliases": [
+      "Etching Plains"
+    ],
+    "type": "REGION",
+    "region": "Roya Frostlands",
+    "faction": "Roya Tribe",
+    "parent": null,
+    "related": [
+      "!Image, !Description",
+      "Collapsed Arcbend Ravine"
+    ]
+  },
+  "Fabricatorium of the Deep": {
+    "aliases": [
+      "Fabricatorium of the Deep"
+    ],
+    "type": "REGION",
+    "region": "Rinascita",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "!Image, !Description",
+      "Anima Cradle",
+      "Energy Hub",
+      "Fallen Grave",
+      "Lumen Tower",
+      "Sanctuary of Faith"
+    ]
+  },
+  "Fagaceae Peninsula": {
+    "aliases": [
+      "Fagaceae Peninsula"
+    ],
+    "type": "REGION",
+    "region": "Rinascita",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "!Image, !Description",
+      "Coast of Anticipation",
+      "Oakheart Highcourt",
+      "Oakheart Highcourt: Lower Tier",
+      "Shores of Last Breath"
+    ]
+  },
+  "Fangspire Chasm": {
+    "aliases": [
+      "Fangspire Chasm"
+    ],
+    "type": "REGION",
+    "region": "Roya Frostlands",
+    "faction": "Roya Tribe",
+    "parent": null,
+    "related": [
+      "!Image, !Description",
+      "Dawnsip Fjord",
+      "Exospine Barrows",
+      "Riseway-Sundermere Corridor"
+    ]
+  },
+  "Frostlands Transit Port": {
+    "aliases": [
+      "Frostlands Transit Port"
+    ],
+    "type": "REGION",
+    "region": "Roya Frostlands",
+    "faction": "Roya Tribe",
+    "parent": null,
+    "related": [
+      "!Image, !Description",
+      "Offshore Void Storm Monitoring Zone",
+      "Polar Research Outpost",
+      "Roya Icebreak Port"
+    ]
+  },
+  "Giant's Gaze": {
+    "aliases": [
+      "Giant's Gaze"
+    ],
+    "type": "REGION",
+    "region": "Roya Frostlands",
+    "faction": "Roya Tribe",
+    "parent": null,
+    "related": [
+      "!Image, !Description",
+      "Orbit Valley Pass",
+      "Spacetrek Observatory"
     ]
   },
   "Gorges of Spirits": {
@@ -1203,10 +1445,59 @@
     "faction": null,
     "parent": null,
     "related": [
+      "! Image, ! Description",
       "Bell-Borne Ravine",
       "Clouded Cliffs",
       "Dreaming Cavern",
       "Memento Square"
+    ]
+  },
+  "Hallowed Reach": {
+    "aliases": [
+      "Hallowed Reach"
+    ],
+    "type": "REGION",
+    "region": "Rinascita",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "!Image, !Description",
+      "Hallowed Reach: Underground",
+      "Requiem Ravine"
+    ]
+  },
+  "Lilyland": {
+    "aliases": [
+      "Lilyland"
+    ],
+    "type": "REGION",
+    "region": "Rinascita",
+    "faction": null,
+    "parent": null,
+    "related": []
+  },
+  "Mawburrow Desert": {
+    "aliases": [
+      "Mawburrow Desert"
+    ],
+    "type": "REGION",
+    "region": "Roya Frostlands",
+    "faction": "Roya Tribe",
+    "parent": null,
+    "related": []
+  },
+  "Mount Gjallar": {
+    "aliases": [
+      "Mount Gjallar"
+    ],
+    "type": "REGION",
+    "region": "Roya Frostlands",
+    "faction": "Roya Tribe",
+    "parent": null,
+    "related": [
+      "!Image, !Description",
+      "Ginnungamere",
+      "Ginnungamere Void Storm Monitoring Zone"
     ]
   },
   "Mt. Firmament": {
@@ -1218,6 +1509,7 @@
     "faction": null,
     "parent": null,
     "related": [
+      "!Image, ! Description",
       "Hongzhen",
       "Loong's Crest",
       "Loong's Rest",
@@ -1230,6 +1522,21 @@
       "Xuanji Ridges"
     ]
   },
+  "Nimbus Sanctum": {
+    "aliases": [
+      "Nimbus Sanctum"
+    ],
+    "type": "REGION",
+    "region": "Rinascita",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "!Image, !Description",
+      "Atrium of Reflections",
+      "Gold's Landing",
+      "Mistveil Bay"
+    ]
+  },
   "Norfall Barrens": {
     "aliases": [
       "Norfall Barrens"
@@ -1239,8 +1546,25 @@
     "faction": null,
     "parent": null,
     "related": [
+      "! Image, ! Description",
       "Norfall Valley",
       "Suspended Ruins"
+    ]
+  },
+  "Penitent's End": {
+    "aliases": [
+      "Penitent's End"
+    ],
+    "type": "REGION",
+    "region": "Rinascita",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "!Image, !Description",
+      "Figurehead's Shrine",
+      "Fool's Elysium",
+      "Strand",
+      "Wailing Ascent"
     ]
   },
   "Port City of Guixu": {
@@ -1252,31 +1576,276 @@
     "faction": null,
     "parent": null,
     "related": [
+      "!Image, !Description",
       "Donglu Research Station",
       "Nostalgia Isle",
       "Sea of Flames",
       "Settle Range"
     ]
   },
-  "Rinascita": {
+  "Ragunna City": {
     "aliases": [
-      "Rinascita"
+      "Ragunna City"
     ],
     "type": "REGION",
-    "region": null,
+    "region": "Rinascita",
     "faction": null,
     "parent": null,
-    "related": []
+    "related": [
+      "! Image, ! Description",
+      "Bank Street",
+      "City Square",
+      "Montelli Quarter",
+      "Order of the Deep"
+    ]
   },
-  "Taoyuan Vale": {
+  "Rebirth Uplands": {
     "aliases": [
-      "Taoyuan Vale"
+      "Rebirth Uplands"
+    ],
+    "type": "REGION",
+    "region": "Roya Frostlands",
+    "faction": "Roya Tribe",
+    "parent": null,
+    "related": [
+      "!Image, !Description",
+      "Golden Spiral",
+      "Lightfall Tunnel",
+      "Ribcage Bends"
+    ]
+  },
+  "Riccioli Islands": {
+    "aliases": [
+      "Riccioli Islands"
+    ],
+    "type": "REGION",
+    "region": "Rinascita",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "!Image, !Description",
+      "Drake's Island",
+      "Helm Village",
+      "Port of Riccioli",
+      "Reyes Ruins",
+      "Serene Bay"
+    ]
+  },
+  "Sanguis Plateaus": {
+    "aliases": [
+      "Sanguis Plateaus"
+    ],
+    "type": "REGION",
+    "region": "Rinascita",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "!Image, !Description",
+      "Asphodel Barrens",
+      "Atilius Canyon",
+      "Earthrend Wedge",
+      "Erosion Cavern",
+      "Howlfang Lair",
+      "Hunter's Den",
+      "Maroonwood",
+      "Murmurstown",
+      "Rustblood Pass",
+      "Tetragon Temple",
+      "Wastelands",
+      "Three Heroes' Crest",
+      "Tideline Verge"
+    ]
+  },
+  "Sealed Fissure": {
+    "aliases": [
+      "Sealed Fissure"
+    ],
+    "type": "REGION",
+    "region": "Roya Frostlands",
+    "faction": "Roya Tribe",
+    "parent": null,
+    "related": [
+      "!Image, !Description",
+      "Ceased Court",
+      "Nevermore Halls",
+      "Petalfold Recess"
+    ]
+  },
+  "Septimont": {
+    "aliases": [
+      "Septimont"
+    ],
+    "type": "REGION",
+    "region": "Rinascita",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "!Image, !Description",
+      "Border Mountains",
+      "Capitoline Hill",
+      "Minos Sewers",
+      "Mournfell Canyon",
+      "Titanbone Expanse",
+      "Vale of Glory"
+    ]
+  },
+  "Silent Crag": {
+    "aliases": [
+      "Silent Crag"
+    ],
+    "type": "REGION",
+    "region": "Roya Frostlands",
+    "faction": "Roya Tribe",
+    "parent": null,
+    "related": [
+      "!Image, !Description",
+      "Ljos Isle",
+      "Skyrelic Cascade",
+      "Voidthirst Cradle"
+    ]
+  },
+  "Solisia Landing": {
+    "aliases": [
+      "Solisia Landing"
+    ],
+    "type": "REGION",
+    "region": "Roya Frostlands",
+    "faction": "Roya Tribe",
+    "parent": null,
+    "related": [
+      "!Image, !Description",
+      "Base Camp",
+      "Dimmr Plains Shaft",
+      "Rustbound Hillside",
+      "Stalaglow Cavern",
+      "Twilight Woodlands"
+    ]
+  },
+  "Southern Yuan Hills": {
+    "aliases": [
+      "Southern Yuan Hills"
     ],
     "type": "REGION",
     "region": "Huanglong",
     "faction": null,
     "parent": null,
-    "related": []
+    "related": [
+      "! Description"
+    ]
+  },
+  "Stagnant Run": {
+    "aliases": [
+      "Stagnant Run"
+    ],
+    "type": "REGION",
+    "region": "Roya Frostlands",
+    "faction": "Roya Tribe",
+    "parent": null,
+    "related": [
+      "!Image, !Description",
+      "Argentflare Drapes",
+      "Atuja Camp",
+      "Jetray Marsh",
+      "Jetrified Ridge"
+    ]
+  },
+  "Starblind Crashsite": {
+    "aliases": [
+      "Starblind Crashsite"
+    ],
+    "type": "REGION",
+    "region": "Roya Frostlands",
+    "faction": "Roya Tribe",
+    "parent": null,
+    "related": [
+      "!Image, !Description",
+      "Observation Passage",
+      "Oldfrost Harbor",
+      "SkyArk Space Station",
+      "SkyArk Space Station: Blocked Sector",
+      "SkyArk Space Station: Central Sector"
+    ]
+  },
+  "Startorch Academy (Region)": {
+    "aliases": [
+      "Startorch Academy (Region)"
+    ],
+    "type": "REGION",
+    "region": "Roya Frostlands",
+    "faction": "Roya Tribe",
+    "parent": null,
+    "related": [
+      "!Image, !Description",
+      "Freight Zone",
+      "Spacetrek Archive - Recreational Zone",
+      "Square",
+      "Teaching Zone"
+    ]
+  },
+  "Starward Riseway": {
+    "aliases": [
+      "Starward Riseway"
+    ],
+    "type": "REGION",
+    "region": "Roya Frostlands",
+    "faction": "Roya Tribe",
+    "parent": null,
+    "related": [
+      "!Image, !Description",
+      "Spacetrek Collective",
+      "Submerged Tunnel",
+      "Sundermere"
+    ]
+  },
+  "Tethys' Deep": {
+    "aliases": [
+      "Tethys' Deep"
+    ],
+    "type": "REGION",
+    "region": "The Black Shores",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "!Image, ! Description",
+      "Bank of Life",
+      "Data Torrent",
+      "Eidoscope",
+      "Energy Hub",
+      "Error Cell",
+      "Modulation Hall"
+    ]
+  },
+  "Thessaleo Fells": {
+    "aliases": [
+      "Thessaleo Fells"
+    ],
+    "type": "REGION",
+    "region": "Rinascita",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "!Image, !Description",
+      "Garden of the Lost",
+      "Porto-Veno Castle",
+      "Thorncrown Rises",
+      "Twin Peaks"
+    ]
+  },
+  "Tidelost Forest": {
+    "aliases": [
+      "Tidelost Forest"
+    ],
+    "type": "REGION",
+    "region": "Roya Frostlands",
+    "faction": "Roya Tribe",
+    "parent": null,
+    "related": [
+      "!Image, !Description",
+      "Everfrost Cavern",
+      "Exostrider Observation Station",
+      "Exostrider Slumber Site",
+      "Wavecleave Cape"
+    ]
   },
   "Tiger's Maw": {
     "aliases": [
@@ -1287,9 +1856,54 @@
     "faction": null,
     "parent": null,
     "related": [
+      "! Image, ! Description",
       "Distribution Center",
       "Dust-Sealed Track",
       "Tiger's Maw Mine"
+    ]
+  },
+  "Upphaf Forest Ruins": {
+    "aliases": [
+      "Upphaf Forest Ruins"
+    ],
+    "type": "REGION",
+    "region": "Roya Frostlands",
+    "faction": "Roya Tribe",
+    "parent": null,
+    "related": [
+      "!Image, !Description",
+      "Provenance Enclave",
+      "Upphaf Forest Excavation Site",
+      "Upphaf Life Chamber"
+    ]
+  },
+  "Vault Underground": {
+    "aliases": [
+      "Vault Underground"
+    ],
+    "type": "REGION",
+    "region": "Rinascita",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "!Image, !Description",
+      "Abandoned Tower",
+      "Echo Depository",
+      "Echo Station",
+      "Precious Metals and Artworks Depository",
+      "Unknown Vault Area"
+    ]
+  },
+  "Western Fang Peaks": {
+    "aliases": [
+      "Western Fang Peaks"
+    ],
+    "type": "REGION",
+    "region": "Huanglong",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "! Description"
     ]
   },
   "Whining Aix's Mire": {
@@ -1301,6 +1915,7 @@
     "faction": null,
     "parent": null,
     "related": [
+      "!Image, !Description",
       "Court of Savantae Ruins",
       "Frosting Harbor",
       "Heron Wetland",
@@ -1308,6 +1923,49 @@
       "Plateau Ruins",
       "Port Gunchao",
       "Waving Battlefield"
+    ]
+  },
+  "Whisperwind Haven": {
+    "aliases": [
+      "Whisperwind Haven"
+    ],
+    "type": "REGION",
+    "region": "Rinascita",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "!Image, !Description",
+      "Egla Town",
+      "Polyphemos Windmills",
+      "Silver Moon Grove"
+    ]
+  },
+  "Wuming Bay": {
+    "aliases": [
+      "Wuming Bay"
+    ],
+    "type": "REGION",
+    "region": "Huanglong",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "! Image, ! Description",
+      "Corroded Ruins",
+      "Hermit Settlement",
+      "Remnant Residence",
+      "Shattered Blocks"
+    ]
+  },
+  "Xuanfang Hold": {
+    "aliases": [
+      "Xuanfang Hold"
+    ],
+    "type": "REGION",
+    "region": "Huanglong",
+    "faction": null,
+    "parent": null,
+    "related": [
+      "! Description"
     ]
   },
   "Aleph-1": {
@@ -1325,7 +1983,7 @@
       "Arbiter"
     ],
     "type": "GENERIC",
-    "region": null,
+    "region": "Other",
     "faction": null,
     "parent": null,
     "related": []
@@ -1345,7 +2003,7 @@
       "Blake Bloom"
     ],
     "type": "GENERIC",
-    "region": null,
+    "region": "Other",
     "faction": null,
     "parent": null,
     "related": []
@@ -1405,7 +2063,7 @@
       "Echo"
     ],
     "type": "GENERIC",
-    "region": null,
+    "region": "Other",
     "faction": null,
     "parent": null,
     "related": []
@@ -1415,7 +2073,7 @@
       "Etheric Sea"
     ],
     "type": "GENERIC",
-    "region": null,
+    "region": "Other",
     "faction": null,
     "parent": null,
     "related": []
@@ -1435,7 +2093,7 @@
       "Exploration Report"
     ],
     "type": "GENERIC",
-    "region": null,
+    "region": "Other",
     "faction": null,
     "parent": null,
     "related": []
@@ -1535,7 +2193,7 @@
       "KU-Roro"
     ],
     "type": "GENERIC",
-    "region": "Black Shores",
+    "region": "Other",
     "faction": "Black Shores",
     "parent": null,
     "related": []
@@ -1595,7 +2253,7 @@
       "Pilgrim's Sail"
     ],
     "type": "GENERIC",
-    "region": null,
+    "region": "Other",
     "faction": null,
     "parent": null,
     "related": []
@@ -1625,7 +2283,7 @@
       "Ragunna Terminal"
     ],
     "type": "GENERIC",
-    "region": null,
+    "region": "Other",
     "faction": null,
     "parent": null,
     "related": []
@@ -1636,6 +2294,16 @@
     ],
     "type": "GENERIC",
     "region": "Lahai-Roi",
+    "faction": null,
+    "parent": null,
+    "related": []
+  },
+  "Reactor Drive": {
+    "aliases": [
+      "Reactor Drive"
+    ],
+    "type": "GENERIC",
+    "region": "Other",
     "faction": null,
     "parent": null,
     "related": []
@@ -1655,7 +2323,7 @@
       "Remnant"
     ],
     "type": "GENERIC",
-    "region": null,
+    "region": "Other",
     "faction": null,
     "parent": null,
     "related": []
@@ -1663,6 +2331,16 @@
   "Remnant Creature": {
     "aliases": [
       "Remnant Creature"
+    ],
+    "type": "GENERIC",
+    "region": "Other",
+    "faction": null,
+    "parent": null,
+    "related": []
+  },
+  "Resonance Nexus": {
+    "aliases": [
+      "Resonance Nexus"
     ],
     "type": "GENERIC",
     "region": null,
@@ -1675,7 +2353,7 @@
       "Retroact Rain"
     ],
     "type": "GENERIC",
-    "region": null,
+    "region": "Other",
     "faction": null,
     "parent": null,
     "related": []
@@ -1685,7 +2363,7 @@
       "Reverberation"
     ],
     "type": "GENERIC",
-    "region": null,
+    "region": "Other",
     "faction": null,
     "parent": null,
     "related": []
@@ -1705,7 +2383,7 @@
       "Sentinel"
     ],
     "type": "GENERIC",
-    "region": null,
+    "region": "Other",
     "faction": null,
     "parent": null,
     "related": []
@@ -1760,12 +2438,22 @@
     "parent": null,
     "related": []
   },
+  "Stargram": {
+    "aliases": [
+      "Stargram"
+    ],
+    "type": "GENERIC",
+    "region": "Lahai-Roi",
+    "faction": null,
+    "parent": null,
+    "related": []
+  },
   "Starstack": {
     "aliases": [
       "Starstack"
     ],
     "type": "GENERIC",
-    "region": null,
+    "region": "Lahai-Roi",
     "faction": null,
     "parent": null,
     "related": []
@@ -1776,7 +2464,7 @@
     ],
     "type": "GENERIC",
     "region": "The Black Shores",
-    "faction": "Black Shores",
+    "faction": null,
     "parent": null,
     "related": []
   },
@@ -1795,7 +2483,7 @@
       "Suan'ni"
     ],
     "type": "GENERIC",
-    "region": null,
+    "region": "Other",
     "faction": null,
     "parent": null,
     "related": []
@@ -1815,7 +2503,7 @@
       "Tacetite"
     ],
     "type": "GENERIC",
-    "region": null,
+    "region": "Other",
     "faction": null,
     "parent": null,
     "related": []
@@ -1824,7 +2512,7 @@
     "aliases": [
       "Tales of the Past and Present"
     ],
-    "type": "QUEST",
+    "type": "GENERIC",
     "region": "Huanglong",
     "faction": null,
     "parent": null,
@@ -1835,7 +2523,7 @@
       "Terminal"
     ],
     "type": "GENERIC",
-    "region": null,
+    "region": "Other",
     "faction": null,
     "parent": null,
     "related": []
@@ -1845,8 +2533,8 @@
       "Tethys System"
     ],
     "type": "GENERIC",
-    "region": "Black Shores",
-    "faction": "Black Shores",
+    "region": "Other",
+    "faction": null,
     "parent": null,
     "related": []
   },
@@ -1885,7 +2573,7 @@
       "The Lament"
     ],
     "type": "GENERIC",
-    "region": null,
+    "region": "Other",
     "faction": null,
     "parent": null,
     "related": []
@@ -1895,7 +2583,7 @@
       "The Moon"
     ],
     "type": "GENERIC",
-    "region": null,
+    "region": "Other",
     "faction": null,
     "parent": null,
     "related": []
@@ -1905,7 +2593,7 @@
       "The White Tower"
     ],
     "type": "GENERIC",
-    "region": null,
+    "region": "Other",
     "faction": null,
     "parent": null,
     "related": []
@@ -1935,7 +2623,7 @@
       "Torn Pages and Abandoned Data Chips"
     ],
     "type": "GENERIC",
-    "region": null,
+    "region": "Other",
     "faction": null,
     "parent": null,
     "related": []
@@ -1965,7 +2653,7 @@
       "Waveworn Phenomenon"
     ],
     "type": "GENERIC",
-    "region": null,
+    "region": "Other",
     "faction": null,
     "parent": null,
     "related": []
@@ -1976,6 +2664,16 @@
     ],
     "type": "GENERIC",
     "region": "Lahai-Roi",
+    "faction": null,
+    "parent": null,
+    "related": []
+  },
+  "Xuanling Bird": {
+    "aliases": [
+      "Xuanling Bird"
+    ],
+    "type": "GENERIC",
+    "region": "Other",
     "faction": null,
     "parent": null,
     "related": []

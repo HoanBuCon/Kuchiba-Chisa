@@ -1,4 +1,4 @@
-import { SlashCommandBuilder } from 'discord.js';
+import { SlashCommandBuilder, InteractionContextType } from 'discord.js';
 import { DEFAULT_COMMANDS } from '../config/constants.js';
 import { isGuildModeratorOrAdmin } from '../utils/permissions.js';
 
@@ -15,7 +15,7 @@ export const data = new SlashCommandBuilder()
         { name: 'Toàn bộ Server (all) - Yêu cầu quyền Admin/Mod', value: 'all' },
       ),
   )
-  .setDMPermission(false);
+  .setContexts(InteractionContextType.Guild);
 
 export async function execute(client, interaction, discordUser) {
   const { logger, rateLimiter, repositories, coreRagClient } = client.services;

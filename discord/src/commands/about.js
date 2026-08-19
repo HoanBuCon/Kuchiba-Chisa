@@ -6,44 +6,44 @@ const bannerUrl = new URL('../assets/img/chisa_banner.jpg', import.meta.url);
 const bannerPath = fileURLToPath(bannerUrl);
 
 export const data = new SlashCommandBuilder()
-  .setName('docs')
-  .setDescription('Hiển thị tài liệu chi tiết về hệ thống cảm xúc của Chisa')
+  .setName('about')
+  .setDescription('Giới thiệu về Bot Kuchiba Chisa')
   .setContexts(InteractionContextType.Guild);
 
-async function loadDocsContent() {
+async function loadAboutContent() {
   try {
-    const filePath = new URL('../assets/docs/emotion_docs.md', import.meta.url);
+    const filePath = new URL('../assets/docs/about.md', import.meta.url);
     return await readFile(filePath, 'utf8');
   } catch (error) {
-    return 'Không thể tải tệp tài liệu cảm xúc. Vui lòng liên hệ Admin.';
+    return 'Không thể tải tệp giới thiệu. Vui lòng liên hệ Admin.';
   }
 }
 
 export async function execute(client, interaction) {
-  const content = await loadDocsContent();
+  const content = await loadAboutContent();
   const bannerAttachment = new AttachmentBuilder(bannerPath, { name: 'chisa_banner.jpg' });
 
   const embed = new EmbedBuilder()
-    .setTitle('🌸 TÀI LIỆU HỆ THỐNG CẢM XÚC 🌸')
+    .setTitle('🌸 GIỚI THIỆU VỀ KUCHIBA CHISA 🌸')
     .setDescription(content)
-    .setColor('#ba68c8')
+    .setColor('#ffb6c1')
     .setImage('attachment://chisa_banner.jpg')
-    .setFooter({ text: 'Kuchiba Chisa Emotion Engine' })
+    .setFooter({ text: 'Kuchiba Chisa' })
     .setTimestamp();
 
   await interaction.reply({ embeds: [embed], files: [bannerAttachment] });
 }
 
 export async function executePrefix(client, message, argsText) {
-  const content = await loadDocsContent();
+  const content = await loadAboutContent();
   const bannerAttachment = new AttachmentBuilder(bannerPath, { name: 'chisa_banner.jpg' });
 
   const embed = new EmbedBuilder()
-    .setTitle('🌸 TÀI LIỆU HỆ THỐNG CẢM XÚC 🌸')
+    .setTitle('🌸 GIỚI THIỆU VỀ KUCHIBA CHISA AI 🌸')
     .setDescription(content)
-    .setColor('#ba68c8')
+    .setColor('#ffb6c1')
     .setImage('attachment://chisa_banner.jpg')
-    .setFooter({ text: 'Kuchiba Chisa Emotion Engine' })
+    .setFooter({ text: 'Kuchiba Chisa' })
     .setTimestamp();
 
   await message.reply({ embeds: [embed], files: [bannerAttachment] });

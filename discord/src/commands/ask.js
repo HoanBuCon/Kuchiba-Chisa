@@ -1,4 +1,4 @@
-import { SlashCommandBuilder } from 'discord.js';
+import { SlashCommandBuilder, InteractionContextType } from 'discord.js';
 import { DEFAULT_COMMANDS } from '../config/constants.js';
 import { replyWithChunks } from '../utils/reply.js';
 
@@ -11,7 +11,7 @@ export const data = new SlashCommandBuilder()
       .setDescription('Nội dung muốn hỏi Chisa')
       .setRequired(true),
   )
-  .setDMPermission(false);
+  .setContexts(InteractionContextType.Guild);
 
 export async function execute(client, interaction, discordUser) {
   const { logger, rateLimiter, repositories, coreRagClient } = client.services;
