@@ -100,6 +100,13 @@ class LLMGenerationStage(PipelineStage):
                     
         chisa_reply = chisa_reply or ""
         
+        # Defense against raw JSON string leaking through as message text
+        if chisa_reply.strip().startswith("{") and ('"response"' in chisa_reply or "'response'" in chisa_reply):
+            from app.shared.utils.json_parser import robust_parse_json
+            inner_parsed = robust_parse_json(chisa_reply)
+            if inner_parsed and isinstance(inner_parsed, dict) and inner_parsed.get("response"):
+                chisa_reply = inner_parsed["response"]
+        
         # Enforce output token limit control
         estimated_tokens = TokenEstimator.estimate(chisa_reply)
         if estimated_tokens > settings.MAX_RESPONSE_TOKENS:

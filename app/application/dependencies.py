@@ -148,8 +148,10 @@ class AppContainer:
                 "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
                 "Accept-Language": "vi-VN,vi;q=0.9,en-US;q=0.8,en;q=0.7",
             }
+            if "wikipedia.org" in url:
+                headers["User-Agent"] = "KuchibaChisa/2.1 (contact: bot@chisa.ai) Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
             try:
-                resp = await self.http_client.get(url, timeout=2.0, headers=headers)
+                resp = await self.http_client.get(url, timeout=3.5, headers=headers, follow_redirects=True)
                 if resp.status_code == 200:
                     return resp.text
             except Exception as e:

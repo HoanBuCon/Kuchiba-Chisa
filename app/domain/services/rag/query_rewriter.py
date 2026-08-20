@@ -15,34 +15,27 @@ from app.shared.utils.query_cleaner import (
 log = get_logger(__name__)
 
 REWRITE_SYSTEM_PROMPT = (
-    "Bạn là bộ Query Rewriter & Tri-State Knowledge Router thông minh cho trợ lý AI Kuchiba Chisa (game Wuthering Waves).\n"
-    "Nhiệm vụ:\n"
-    "1. Viết lại câu hỏi của user thành câu truy vấn tìm kiếm độc lập, rõ ràng bằng tiếng Việt, kèm thuật ngữ/tên riêng chuẩn.\n"
-    "2. Đánh 2 cờ định tuyến kiến thức độc lập:\n"
-    "   a. 'needs_vector_search' (Tra cứu Database Game Wuthering Waves / Ký ức):\n"
-    "      - true: Câu hỏi về nhân vật, kỹ năng Forte, vũ khí, Echo, quái vật, cốt truyện, lore game Wuthering Waves, hoặc ký ức của Senpai.\n"
-    "      - false: Câu hỏi ngoài game, lập trình, hoặc không liên quan đến database game.\n"
-    "   b. 'needs_web_search' (Tìm kiếm Internet / DuckDuckGo bên ngoài):\n"
-    "      - true: Câu hỏi về thông tin thực tế ngoài đời, người thật (tác giả, streamer, hoanbucon, nhà phát triển...), tin tức mới, sự kiện ngoài game, tra cứu internet mà database game không có.\n"
-    "      - false: Câu hỏi về lore game nội bộ, lập trình (C++, Python...), hoặc tâm sự trò chuyện thường ngày.\n\n"
-    "QUY TẮC ĐẶC BIỆT:\n"
-    "- LẬP TRÌNH / CODE / THUẬT TOÁN: Nếu user gửi code C++, Python, LeetCode (như LFUCache, QuickSort...) -> BẮT BUỘC đặt needs_vector_search = false VÀ needs_web_search = false.\n"
-    "- TÁN GẪU / TÂM SỰ: 'chào em', 'hôm nay anh mệt quá' -> BẮT BUỘC đặt needs_vector_search = false VÀ needs_web_search = false.\n"
-    "- THỰC THỂ NGOÀI GAME: 'hoanbucon là ai', 'thời tiết hôm nay', 'tin tức mới' -> BẮT BUỘC đặt needs_vector_search = false VÀ needs_web_search = true.\n"
-    "- LORE GAME WUTHERING WAVES: 'vũ khí của Jiyan', 'kỹ năng của Chisa' -> BẮT BUỘC đặt needs_vector_search = true VÀ needs_web_search = false.\n\n"
-    "QUY TẮC BẮT BUỘC VỀ ĐẠI TỪ:\n"
-    "1. ĐẠI TỪ CHỈ AI ('em', 'chisa', 'chía', 'bé chisa', 'cô bé'): Khi user hỏi về năng lực, kỹ năng, vũ khí của AI -> Đổi 'em' thành 'Kuchiba Chisa'.\n"
-    "2. ĐẠI TỪ CHỈ USER ('anh', 'tôi', 'mình', 'senpai', 'tớ'): Khi hỏi ký ức của user -> Đổi thành 'Senpai / người dùng'.\n"
-    "3. ĐẠI TỪ CHỈ NGỮ CẢNH CÂU TRƯỚC ('anh ấy', 'cô ấy', 'họ', 'vị tướng đó', 'vũ khí đó'): Dùng thực thể trong 'Ngữ cảnh câu trước' để thay thế chính xác.\n\n"
-    "VÍ DỤ MẪU (FEW-SHOT):\n"
-    "- Ngữ cảnh: \"\" | Câu hỏi: \"vậy em có năng lực gì\" -> {\"rewritten_query\": \"năng lực kỹ năng Forte của Kuchiba Chisa\", \"needs_vector_search\": true, \"needs_web_search\": false}\n"
-    "- Ngữ cảnh: \"\" | Câu hỏi: \"biết hoanbucon là ai không em\" -> {\"rewritten_query\": \"hoanbucon là ai\", \"needs_vector_search\": false, \"needs_web_search\": true}\n"
-    "- Ngữ cảnh: \"Kể về vị tướng Jiyan\" | Câu hỏi: \"Vũ khí của anh ấy là gì?\" -> {\"rewritten_query\": \"vũ khí của tướng quân Jiyan\", \"needs_vector_search\": true, \"needs_web_search\": false}\n"
-    "- Ngữ cảnh: \"\" | Câu hỏi: \"ý anh là bài này class LFUCache{...}\" -> {\"rewritten_query\": \"giải thích và tối ưu mã nguồn cấu trúc dữ liệu LFUCache bằng C++\", \"needs_vector_search\": false, \"needs_web_search\": false}\n"
-    "- Ngữ cảnh: \"\" | Câu hỏi: \"viết giúp anh hàm quicksort bằng python\" -> {\"rewritten_query\": \"thuật toán sắp xếp QuickSort bằng ngôn ngữ Python\", \"needs_vector_search\": false, \"needs_web_search\": false}\n"
-    "- Ngữ cảnh: \"Jiyan dùng vũ khí gì\" | Câu hỏi: \"Mà thôi hôm nay anh mệt quá\" -> {\"rewritten_query\": \"tâm sự chia sẻ khi Senpai cảm thấy mệt mỏi\", \"needs_vector_search\": false, \"needs_web_search\": false}\n"
-    "- Ngữ cảnh: \"\" | Câu hỏi: \"khi nào banner Shorekeeper ra mắt\" -> {\"rewritten_query\": \"thời gian ra mắt banner Shorekeeper Wuthering Waves\", \"needs_vector_search\": true, \"needs_web_search\": true}\n\n"
-    "Bắt buộc trả về JSON: {\"rewritten_query\": \"...\", \"needs_vector_search\": true/false, \"needs_web_search\": true/false}"
+    "Bạn là bộ Query Rewriter & Knowledge Router thông minh cho trợ lý AI Kuchiba Chisa (game Wuthering Waves).\n\n"
+    "NHIỆM VỤ 1: ĐỊNH TUYẾN NGUỒN TRI THỨC (Đánh 2 cờ boolean độc lập dựa trên 4 trạng thái):\n"
+    "1. LORE GAME NỘI BỘ (needs_vector_search = true, needs_web_search = false):\n"
+    "   - Câu hỏi cần tra cứu dữ liệu game Wuthering Waves (nhân vật, kỹ năng Forte, vũ khí, Echo, quái vật, cốt truyện) hoặc ký ức của Senpai.\n"
+    "2. THÔNG TIN NGOÀI ĐỜI (needs_vector_search = false, needs_web_search = true):\n"
+    "   - Câu hỏi cần tra cứu dữ kiện thực tế bên ngoài (người thật, tin tức mới, sự kiện đời thực, thời gian thực, kiến thức chuyên ngành, bài báo khoa học, tài liệu kỹ thuật).\n"
+    "3. CẢ HAI (needs_vector_search = true, needs_web_search = true):\n"
+    "   - Câu hỏi kết hợp giữa nội dung game và thông tin cập nhật bên ngoài (như tin tức/rò rỉ cập nhật mới về game, thời gian ra mắt banner/sự kiện sắp tới, so sánh đối chiếu).\n"
+    "4. KHÔNG CẦN TRA CỨU (needs_vector_search = false, needs_web_search = false):\n"
+    "   - Trò chuyện tâm sự, tán gẫu cảm xúc thường nhật, chào hỏi, hoặc thao tác trực tiếp trên văn bản/đoạn mã do chính người dùng cung cấp trong đoạn chat.\n\n"
+    "NHIỆM VỤ 2: VIẾT LẠI TRUY VẤN TÌM KIẾM ('rewritten_query'):\n"
+    "- Viết lại câu hỏi thành chuỗi từ khóa tìm kiếm độc lập, rõ ràng, gãy gọn.\n"
+    "- Loại bỏ toàn bộ từ đệm đàm thoại ('cho anh hỏi', 'tìm giúp em', 'là gì thế', 'nhé').\n"
+    "- Sử dụng danh xưng/thuật ngữ tự nhiên và hiệu quả nhất cho đối tượng được hỏi.\n"
+    "- Chuẩn hóa đại từ: đổi 'em/chisa' -> 'Kuchiba Chisa'; 'anh/tôi' -> 'Senpai'; đại từ ngữ cảnh ('anh ấy', 'cô ấy', 'nhân vật đó') -> thực thể câu trước.\n\n"
+    "Bắt buộc trả về JSON:\n"
+    "{\n"
+    "  \"rewritten_query\": \"chuỗi từ khóa tìm kiếm\",\n"
+    "  \"needs_vector_search\": true/false,\n"
+    "  \"needs_web_search\": true/false\n"
+    "}"
 )
 
 REWRITE_SCHEMA: Dict[str, Any] = {
@@ -50,15 +43,15 @@ REWRITE_SCHEMA: Dict[str, Any] = {
     "properties": {
         "rewritten_query": {
             "type": "string",
-            "description": "Câu hỏi đã được viết lại tường minh, độc lập."
+            "description": "Câu truy vấn tìm kiếm độc lập, súc tích, chuẩn danh xưng."
         },
         "needs_vector_search": {
             "type": "boolean",
-            "description": "True nếu câu hỏi liên quan đến kiến thức game Wuthering Waves (nhân vật, lore, kỹ năng, vũ khí...) hoặc ký ức của Senpai."
+            "description": "True nếu cần tra cứu database game Wuthering Waves hoặc ký ức của Senpai."
         },
         "needs_web_search": {
             "type": "boolean",
-            "description": "True nếu câu hỏi là về thông tin thực tế ngoài đời, người thật (hoanbucon, tác giả, streamer...), sự kiện internet, tin tức bên ngoài."
+            "description": "True nếu cần tìm kiếm internet thông tin thực tế ngoài đời, tin tức mới hoặc tài liệu chuyên ngành."
         }
     },
     "required": ["rewritten_query", "needs_vector_search", "needs_web_search"],

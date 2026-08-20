@@ -680,6 +680,8 @@ ${window.VisualizerApp.escapeHtml(data.reasoning_content)}
         const data = step.data || {};
 
         if (data.mode === 'WEB_SEARCH') {
+            const hasDeep = !!data.deep_page_url;
+            const extractedFacts = data.extracted_facts || '';
             return `
                 <div class="inspector-panel">
                     <div class="inspector-card">
@@ -693,11 +695,27 @@ ${window.VisualizerApp.escapeHtml(data.reasoning_content)}
                             <span class="pill" style="background: rgba(38, 198, 218, 0.15); color: #26c6da; border: 1px solid rgba(38, 198, 218, 0.3); font-size: 12px; padding: 4px 10px;">
                                 <b>Snippets thu thập:</b> ${data.snippets_count || 0}
                             </span>
+                            ${hasDeep ? `
+                                <span class="pill" style="background: rgba(33, 150, 243, 0.15); color: #42a5f5; border: 1px solid rgba(33, 150, 243, 0.3); font-size: 12px; padding: 4px 10px;">
+                                    📄 Deep Crawl: ✓ 1.500 chars
+                                </span>
+                            ` : ''}
                         </div>
                         <div style="margin-bottom: 12px;">
                             <b style="font-size: 13px;">Search Query Lần 1:</b>
                             <div class="json-block" style="margin-top: 4px; color: #26c6da; font-weight: 600;">🔍 ${window.VisualizerApp.escapeHtml(data.search_query || '')}</div>
                         </div>
+
+                        ${extractedFacts ? `
+                            <div style="margin-top: 14px; margin-bottom: 14px; background: rgba(76, 175, 80, 0.08); border: 1px solid rgba(76, 175, 80, 0.3); border-radius: 8px; padding: 12px 14px;">
+                                <div style="font-size: 12.5px; color: #81c784; font-weight: 600; margin-bottom: 6px; display: flex; align-items: center; justify-content: space-between;">
+                                    <span>🌟 Dữ Kiện Chắt Lọc & Tóm Tắt (Factual Distillation Summary)</span>
+                                    <span style="font-size: 11px; background: rgba(76, 175, 80, 0.2); padding: 2px 6px; border-radius: 4px; color: #a5d6a7;">${extractedFacts.length} chars</span>
+                                </div>
+                                <div style="font-size: 12.5px; line-height: 1.6; color: #e8f5e9; white-space: pre-wrap; word-break: break-word;">${window.VisualizerApp.escapeHtml(extractedFacts)}</div>
+                            </div>
+                        ` : ''}
+
                         <div>
                             <b style="font-size: 13px;">Dữ liệu Tri thức Thu thập (Round 1 Context):</b>
                             <div class="json-block" style="margin-top: 4px; color: #eceff1; max-height: 400px; white-space: pre-wrap;">${window.VisualizerApp.escapeHtml(data.search_result || '')}</div>
@@ -944,6 +962,7 @@ ${window.VisualizerApp.escapeHtml(chunk)}
         const statusText = isAligned ? '✓ Context Đầy Đủ (Aligned)' : '⚡ Cần Tìm Kiếm Bổ Sung (Misaligned)';
         const reasonText = data.reason || 'Không có mô tả lý do chi tiết.';
         const searchQ = data.generated_search_query || '';
+        const extractedFacts = data.extracted_facts || '';
         const hasRagCtx = !!data.has_rag_context;
         const loreCount = data.lore_count || 0;
         const memCount = data.memory_count || 0;
@@ -968,6 +987,27 @@ ${window.VisualizerApp.escapeHtml(reasonText)}
             `;
         }
 
+        let extractedFactsBox = '';
+        if (extractedFacts) {
+            extractedFactsBox = `
+                <div style="margin-top: 14px; background: rgba(76, 175, 80, 0.08); border: 1px solid rgba(76, 175, 80, 0.35); border-radius: 8px; padding: 12px 14px;">
+                    <div style="font-size: 12.5px; color: #81c784; font-weight: 600; margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between;">
+                        <span style="display: flex; align-items: center; gap: 6px;">
+                            <span>🌟 Dữ Kiện Chắt Lọc & Tóm Tắt (Factual Distillation Summary)</span>
+                        </span>
+                        <div style="display: flex; align-items: center; gap: 6px;">
+                            <span style="font-size: 11px; background: rgba(76, 175, 80, 0.2); padding: 2px 6px; border-radius: 4px; color: #a5d6a7;">${extractedFacts.length} ký tự</span>
+                            <button class="reasoning-btn-action" onclick="NodeInspectorEngine.copyReasoning(this)" title="Sao chép nội dung tóm tắt">📋 Sao chép</button>
+                        </div>
+                    </div>
+                    <div class="reasoning-box-content" style="font-size: 12.5px; line-height: 1.6; color: #e8f5e9; white-space: pre-wrap; word-break: break-word; background: rgba(0,0,0,0.25); padding: 10px 12px; border-radius: 6px;">${window.VisualizerApp.escapeHtml(extractedFacts)}</div>
+                    <div style="margin-top: 6px; font-size: 11px; color: #a5d6a7; opacity: 0.9;">
+                        💡 <i>LLM Assessor đã tóm tắt & lọc sạch nhiễu HTML, nạp bản tóm tắt này trực tiếp vào System Prompt của Main LLM.</i>
+                    </div>
+                </div>
+            `;
+        }
+
         let tabButtons = `
             <button class="tab-btn active" data-tab="tab-align-decision">⚖️ Phân tích Alignment</button>
             <button class="tab-btn" data-tab="tab-align-context">📚 Ngữ cảnh đã đánh giá</button>
@@ -977,9 +1017,10 @@ ${window.VisualizerApp.escapeHtml(reasonText)}
         const tabDecision = `
             <div class="tab-content active" id="tab-align-decision">
                 ${alignmentReasoningBox}
+                ${extractedFactsBox}
                 ${searchQ ? `
                     <div style="margin-top: 12px;">
-                        <b style="font-size: 13px;">Search Query đề xuất cho Web Search:</b>
+                        <b style="font-size: 13px;">Search Query đề xuất cho Web Search Lần 2:</b>
                         <div class="json-block" style="margin-top: 4px; color: #26c6da; font-weight: 500;">🔍 ${window.VisualizerApp.escapeHtml(searchQ)}</div>
                     </div>
                 ` : ''}
@@ -1019,6 +1060,11 @@ ${window.VisualizerApp.escapeHtml(reasonText)}
                         <span class="pill" style="background: ${isAligned ? 'rgba(76, 175, 80, 0.15)' : 'rgba(255, 167, 38, 0.15)'}; color: ${statusColor}; border: 1px solid ${isAligned ? 'rgba(76, 175, 80, 0.3)' : 'rgba(255, 167, 38, 0.3)'}; font-size: 12px; padding: 5px 12px; font-weight: 600;">
                             ${statusText}
                         </span>
+                        ${extractedFacts ? `
+                            <span class="pill" style="background: rgba(129, 199, 132, 0.15); color: #81c784; border: 1px solid rgba(129, 199, 132, 0.3); font-size: 12px; padding: 5px 10px; font-weight: 500;">
+                                🌟 Đã chắt lọc Dữ kiện
+                            </span>
+                        ` : ''}
                         <span class="pill" style="background: rgba(102, 187, 106, 0.15); color: #66bb6a; border: 1px solid rgba(102, 187, 106, 0.3); font-size: 12px; padding: 5px 10px;">
                             <b>Lore Chunks:</b> ${loreCount}
                         </span>
@@ -1046,8 +1092,10 @@ ${window.VisualizerApp.escapeHtml(reasonText)}
         const snippets = data.snippets || [];
         const query = data.original_message || data.search_query || '';
         const provider = data.provider || 'DuckDuckGo Scraper';
-        const source = data.source || 'thinking_loop';
+        const source = data.source || 'knowledge_retrieval_round_1';
         const sourceUrls = data.source_urls || [];
+        const deepPageUrl = data.deep_page_url || null;
+        const deepPagePreview = data.deep_page_preview || null;
         const hasSnippets = snippets.length > 0;
 
         const statusBg = hasSnippets ? 'rgba(76, 175, 80, 0.15)' : 'rgba(255, 152, 0, 0.15)';
@@ -1071,6 +1119,16 @@ ${window.VisualizerApp.escapeHtml(reasonText)}
                     <div>Công cụ tìm kiếm (${window.VisualizerApp.escapeHtml(provider)}) không trả về đoạn trích phù hợp cho câu query này. Trong kiến trúc Thinking Loop, hệ thống sẽ tự động tinh chỉnh câu truy vấn và tiếp tục tìm kiếm ở Cycle tiếp theo nếu ngữ cảnh chưa đủ.</div>
                 </div>
             `;
+
+        const deepCrawlerHtml = deepPagePreview ? `
+            <div style="margin-top: 14px; background: rgba(33, 150, 243, 0.08); border: 1px solid rgba(33, 150, 243, 0.3); border-radius: 8px; padding: 12px 14px;">
+                <div style="font-size: 12.5px; color: #64b5f6; font-weight: 600; margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center;">
+                    <span>📄 Deep Page Crawler (Đã cào sâu nội dung gốc)</span>
+                    ${deepPageUrl ? `<a href="${deepPageUrl}" target="_blank" style="color: #90caf9; font-size: 11.5px; text-decoration: none;">🔗 ${window.VisualizerApp.escapeHtml(deepPageUrl)} ↗</a>` : ''}
+                </div>
+                <div style="font-size: 12.5px; line-height: 1.5; color: #e1f5fe; max-height: 250px; overflow-y: auto; white-space: pre-wrap; word-break: break-word;">${window.VisualizerApp.escapeHtml(deepPagePreview)}</div>
+            </div>
+        ` : '';
 
         const urlsHtml = sourceUrls.length > 0 ? `
             <div style="margin-top: 14px;">
@@ -1099,6 +1157,11 @@ ${window.VisualizerApp.escapeHtml(reasonText)}
                         <span class="pill" style="background: rgba(38, 198, 218, 0.15); color: #26c6da; border: 1px solid rgba(38, 198, 218, 0.3); font-size: 12px; padding: 4px 10px;">
                             <b>Snippets:</b> ${snippets.length}
                         </span>
+                        ${deepPageUrl ? `
+                            <span class="pill" style="background: rgba(33, 150, 243, 0.15); color: #42a5f5; border: 1px solid rgba(33, 150, 243, 0.3); font-size: 12px; padding: 4px 10px; font-weight: 500;">
+                                📄 Deep Crawl: ✓ 1.500 ký tự
+                            </span>
+                        ` : ''}
                         <span class="pill" style="background: ${statusBg}; color: ${statusColor}; border: 1px solid ${statusBorder}; font-size: 12px; padding: 4px 10px; font-weight: 500;">
                             <b>Status:</b> ${statusText}
                         </span>
@@ -1113,6 +1176,7 @@ ${window.VisualizerApp.escapeHtml(reasonText)}
                         <b style="font-size: 13px;">Search Snippets (${snippets.length}):</b>
                         ${snippetsHtml}
                     </div>
+                    ${deepCrawlerHtml}
                     ${urlsHtml}
                 </div>
             </div>
@@ -1177,8 +1241,24 @@ ${window.VisualizerApp.escapeHtml(reasonText)}
             <button class="tab-btn" data-tab="tab-conv-summary">📝 Summary</button>
         `;
 
+        let factualSummaryCard = '';
+        const searchDataComp = promptComponents.search_data || promptComponents.tool_result || '';
+        const hasFactualSummary = (typeof searchDataComp === 'string' && searchDataComp.includes('FACTUAL SUMMARY')) || 
+                                  (typeof data.system_prompt === 'string' && data.system_prompt.includes('FACTUAL SUMMARY'));
+        if (hasFactualSummary) {
+            factualSummaryCard = `
+                <div style="margin-bottom: 12px; background: rgba(76, 175, 80, 0.08); border: 1px solid rgba(76, 175, 80, 0.35); border-radius: 8px; padding: 10px 14px;">
+                    <div style="font-size: 12px; color: #81c784; font-weight: 600; display: flex; align-items: center; justify-content: space-between;">
+                        <span>🌟 Đã nạp Bản Tóm Tắt Dữ Kiện (Factual Summary) vào System Prompt</span>
+                        <span style="font-size: 11px; background: rgba(76, 175, 80, 0.2); padding: 2px 6px; border-radius: 4px; color: #a5d6a7;">✓ Ground Truth Active</span>
+                    </div>
+                </div>
+            `;
+        }
+
         const tabSystemPrompt = `
             <div class="tab-content active" id="tab-system-prompt">
+                ${factualSummaryCard}
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
                     <b style="font-size: 13px;">Final Assembled System Prompt:</b>
                     <button class="reasoning-btn-action" onclick="NodeInspectorEngine.copyReasoning(this)" title="Sao chép toàn bộ System Prompt">📋 Sao chép Prompt</button>
@@ -1413,8 +1493,22 @@ ${window.VisualizerApp.escapeHtml(thinkingText)}
 
                     ${searchQuery ? `
                         <div style="margin-bottom: 12px;">
-                            <b style="font-size: 13px;">Generated Search Query:</b>
+                            <b style="font-size: 13px;">Search Query Thực Thi:</b>
                             <div class="json-block" style="margin-top: 4px; color: #26c6da; font-weight: 500;">🔍 ${window.VisualizerApp.escapeHtml(searchQuery)}</div>
+                        </div>
+                    ` : ''}
+
+                    ${data.search_result && data.search_result !== 'No further search needed.' ? `
+                        <div style="margin-bottom: 12px;">
+                            <b style="font-size: 13px;">Kết quả Web Search Thu thập được ở Vòng này:</b>
+                            <div class="json-block" style="margin-top: 4px; max-height: 250px; color: #eceff1; white-space: pre-wrap;">${window.VisualizerApp.escapeHtml(data.search_result)}</div>
+                        </div>
+                    ` : ''}
+
+                    ${data.input_context ? `
+                        <div style="margin-bottom: 12px;">
+                            <b style="font-size: 13px;">Ngữ cảnh RAG đưa vào phân tích vòng này:</b>
+                            <div class="json-block" style="margin-top: 4px; max-height: 200px; color: #b0bec5; white-space: pre-wrap;">${window.VisualizerApp.escapeHtml(data.input_context)}</div>
                         </div>
                     ` : ''}
                 </div>

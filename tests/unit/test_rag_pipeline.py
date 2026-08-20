@@ -23,7 +23,7 @@ class DummyLoreRetriever:
 
 class DummyAssessor:
     async def assess_alignment(self, user_message, context_text, llm, *args, **kwargs):
-        return True, "aligned", "", True
+        return True, "aligned", "", True, ""
 
 
 class DummyThinkingLoop:
@@ -61,6 +61,7 @@ async def test_no_retrieval_for_other_and_system_action_intents():
         embedder=None,
         web_search_tool=None,
         is_small_talk=False,
+        needs_vector_search=False,
     )
 
     assert memory_retriever.calls == 0

@@ -69,6 +69,10 @@ class MockFastFlashLLMAdapter(BaseLLMAdapter):
             rewritten = "hoanbucon là ai"
             needs_vec = False
             needs_web = True
+        elif "limowryrao" in user_msg or "li–mowry–rao" in user_msg or "li-mowry-rao" in user_msg:
+            rewritten = "thuật toán Li-Mowry-Rao SSSP algorithm tìm đường đi ngắn nhất đồ thị trọng số âm"
+            needs_vec = False
+            needs_web = True
         else:
             # Clean fallback
             rewritten = prompt.user_message.split("\n")[-1].replace('Câu hỏi hiện tại: "', '').rstrip('"')
@@ -221,6 +225,20 @@ async def test_all_phases():
     assert entity_needs_vec is False
     assert entity_needs_web is True
     print("  ✓ PASS: Thực thể ngoài game 'hoanbucon' kích hoạt Direct Web Search (Vector=False, Web=True) nhảy thẳng sang DuckDuckGo!")
+
+    # Test 5d: Specialized / Named algorithm -> Vector Search OFF, Web Search ON
+    algo_q = "chía ơi code cho anh thuật toán Li–Mowry–Rao SSSP algorithm để tìm đường đi ngắn nhất trên đồ thị có trọng số âm"
+    final_algo_q, algo_method, algo_needs_vec, algo_needs_web = await rewriter.rewrite(
+        user_message=algo_q,
+        cleaned_query=clean_query_for_rag(algo_q),
+        prev_rewritten_query=None,
+        needs_llm_rewrite=True,
+    )
+    print(f"  • Algo Query  : \"{algo_q}\"")
+    print(f"  • Rewritten   : \"{final_algo_q}\" (Vector: {algo_needs_vec}, Web: {algo_needs_web})")
+    assert algo_needs_vec is False
+    assert algo_needs_web is True
+    print("  ✓ PASS: Thuật toán chuyên sâu/paper 'Li-Mowry-Rao' kích hoạt Web Search (Vector=False, Web=True) thành công!")
 
     # ── TEST 6: PostgreSQL Storage & Sub-Millisecond Retrieval ──
     print("\n[TEST 6] Kiểm tra Lưu trữ & Truy hồi SQL `rewritten_content` (<1ms)...")

@@ -88,12 +88,32 @@ class GeminiAdapter(BaseLLMAdapter):
         
         contents.append({"role": "user", "parts": [{"text": prompt.user_message}]})
 
+        safety_settings = [
+            types.SafetySetting(
+                category=types.HarmCategory.HARM_CATEGORY_HARASSMENT,
+                threshold=types.HarmBlockThreshold.BLOCK_ONLY_HIGH,
+            ),
+            types.SafetySetting(
+                category=types.HarmCategory.HARM_CATEGORY_HATE_SPEECH,
+                threshold=types.HarmBlockThreshold.BLOCK_ONLY_HIGH,
+            ),
+            types.SafetySetting(
+                category=types.HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
+                threshold=types.HarmBlockThreshold.BLOCK_ONLY_HIGH,
+            ),
+            types.SafetySetting(
+                category=types.HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
+                threshold=types.HarmBlockThreshold.BLOCK_ONLY_HIGH,
+            ),
+        ]
+
         try:
             config = types.GenerateContentConfig(
                 temperature=prompt.temperature if prompt.temperature is not None else self._temperature,
                 max_output_tokens=prompt.max_tokens or self._max_tokens,
                 response_mime_type="application/json",
-                system_instruction=prompt.system
+                system_instruction=prompt.system,
+                safety_settings=safety_settings,
             )
             
             response = await self._client.aio.models.generate_content(
@@ -126,6 +146,8 @@ class GeminiAdapter(BaseLLMAdapter):
 
         if "MAX_TOKENS" in finish_reason:
             error_to_raise = LLMTokenOverflowError()
+        elif "SAFETY" in finish_reason or "BLOCKLIST" in finish_reason:
+            error_to_raise = LLMInvalidResponseError(f"Generation interrupted by safety filter: {finish_reason}")
         else:
             try:
                 parsed = await self.validate_response(raw, prompt.response_schema)
@@ -168,12 +190,32 @@ class GeminiAdapter(BaseLLMAdapter):
         
         contents.append({"role": "user", "parts": [{"text": prompt.user_message}]})
 
+        safety_settings = [
+            types.SafetySetting(
+                category=types.HarmCategory.HARM_CATEGORY_HARASSMENT,
+                threshold=types.HarmBlockThreshold.BLOCK_ONLY_HIGH,
+            ),
+            types.SafetySetting(
+                category=types.HarmCategory.HARM_CATEGORY_HATE_SPEECH,
+                threshold=types.HarmBlockThreshold.BLOCK_ONLY_HIGH,
+            ),
+            types.SafetySetting(
+                category=types.HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
+                threshold=types.HarmBlockThreshold.BLOCK_ONLY_HIGH,
+            ),
+            types.SafetySetting(
+                category=types.HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
+                threshold=types.HarmBlockThreshold.BLOCK_ONLY_HIGH,
+            ),
+        ]
+
         try:
             config = types.GenerateContentConfig(
                 temperature=prompt.temperature if prompt.temperature is not None else self._temperature,
                 max_output_tokens=prompt.max_tokens or self._max_tokens,
                 response_mime_type="application/json",
-                system_instruction=prompt.system
+                system_instruction=prompt.system,
+                safety_settings=safety_settings,
             )
             
             response_stream = await self._client.aio.models.generate_content_stream(
