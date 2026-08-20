@@ -42,20 +42,26 @@ class ContextAssessor:
             history_text = "(No conversation history)"
 
         system_prompt = (
-            "You are an Information Alignment Assessor & Search Query Refiner for Kuchiba Chisa (Wuthering Waves).\n"
-            "Evaluate whether the retrieved context (which may come from Qdrant Game Lore OR initial Web Search Round 1) contains enough specific, factual, and relevant information to fully "
-            "and accurately answer the user's question without any hallucination, given the conversation history.\n\n"
+            "You are an Information Alignment Assessor & Factual Distiller for Kuchiba Chisa (Wuthering Waves).\n"
+            "Evaluate whether the retrieved context (from Qdrant Game Lore OR Web Search) contains enough specific, factual, and verified information "
+            "to answer the user's question accurately without any hallucination, given the conversation history.\n\n"
             "TASKS:\n"
-            "1. Decide whether to keep the retrieved context under the key 'use_lore':\n"
-            "   - Set 'use_lore' to true if the context contains relevant facts about the characters, lore, or real-world subject of the question.\n"
-            "   - Set 'use_lore' to false ONLY IF the retrieved context is completely irrelevant or noise.\n\n"
-            "2. Determine factual alignment under the key 'is_aligned':\n"
-            "   - Set 'is_aligned' to true ONLY if the current context has enough verified facts to answer ALL key aspects of the question.\n"
-            "   - Set 'is_aligned' to false if information is incomplete, missing specific details, or if further internet search is needed.\n\n"
-            "3. Multi-Hop Search Query Refinement ('search_query'):\n"
-            "   - If 'is_aligned' is false, generate a sharp, optimized search query for the NEXT search cycle in Loop Thinking.\n"
-            "   - CRITICAL: Read the facts, real names, aliases, or entities already discovered in [Retrieved Context] and synthesize them with the user question to create a deeper, multi-hop search query (DO NOT repeat the exact old search query).\n"
-            "   - Keep query focused and keyword-based (4 to 8 search terms). Strip conversational fillers ('cho hỏi', 'vậy em', 'nhé').\n\n"
+            "1. Determine factual alignment ('is_aligned'):\n"
+            "   - true: The context already contains enough verified facts/principles/steps to answer ALL core aspects of the question (>80% answerable).\n"
+            "     * SPECIAL RULE FOR ALGORITHMS/CODE: If the context contains the core mathematical principle, recurrence, or algorithmic steps, mark is_aligned = true (the LLM can implement the code without further searching).\n"
+            "   - false: Information is missing critical details, ambiguous, or needs deeper web search.\n\n"
+            "2. Decide whether to keep the context ('use_lore'):\n"
+            "   - Set to true if the context contains relevant facts about the game lore or real-world topic.\n"
+            "   - Set to false ONLY if the context is completely irrelevant noise or error page.\n\n"
+            "3. MANDATORY FACT DISTILLATION & SUMMARY ('extracted_facts'):\n"
+            "   - Whenever the retrieved context contains relevant information (from Web Search or Vector Lore), YOU MUST summarize all essential facts into concise, high-density bullet points.\n"
+            "   - PRESERVE 100% OF IMPORTANT INFO: Keep all exact numbers, percentages, dates, proper names, entities, mathematical formulas, time complexities, and algorithmic steps.\n"
+            "   - STRIP OUT ALL JUNK: Remove promotional text, website navigation menus, duplicates, filler phrases, and HTML clutter.\n"
+            "   - This distilled summary is injected directly into the Main LLM system prompt as the ground truth reference.\n"
+            "   - If no relevant facts found, return empty string.\n\n"
+            "4. Multi-Hop Search Query Refinement ('search_query'):\n"
+            "   - If 'is_aligned' is false, craft a sharp, focused keyword search query (4 to 8 terms) for the NEXT search cycle.\n"
+            "   - Synthesize entities/terms discovered in the context to dig deeper. Use standard English terms for technical/academic topics.\n\n"
             "You MUST output the result as a valid JSON object matching the requested schema."
         )
 
@@ -70,10 +76,14 @@ class ContextAssessor:
             "properties": {
                 "is_aligned": {"type": "boolean"},
                 "reason": {"type": "string"},
+                "extracted_facts": {
+                    "type": ["string", "array"],
+                    "description": "Concise bullet-point factual summary preserving exact numbers, dates, steps and formulas."
+                },
                 "search_query": {"type": "string"},
                 "use_lore": {"type": "boolean"}
             },
-            "required": ["is_aligned", "reason", "use_lore"]
+            "required": ["is_aligned", "use_lore"]
         }
 
         prompt = StructuredPrompt(
@@ -92,11 +102,26 @@ class ContextAssessor:
             response = await llm.generate(prompt)
             parsed = response.parsed or {}
             is_aligned = parsed.get("is_aligned", True)
-            reason = parsed.get("reason", "No reason provided")
-            search_query = (parsed.get("search_query") or "").strip()
+            
+            reason = parsed.get("reason")
+            if not reason or not str(reason).strip():
+                reason = "Ngữ cảnh đầy đủ thông tin để trả lời" if is_aligned else "Cần tìm kiếm bổ sung thêm dữ liệu"
+            else:
+                reason = str(reason).strip()
+
+            search_query = (parsed.get("search_query") or "").strip() if isinstance(parsed.get("search_query"), str) else ""
             use_lore = parsed.get("use_lore", True)
-            log.info("Information alignment check complete", is_aligned=is_aligned, reason=reason, search_query=search_query, use_lore=use_lore)
-            return is_aligned, reason, search_query, use_lore
+            
+            raw_facts = parsed.get("extracted_facts") or ""
+            if isinstance(raw_facts, list):
+                extracted_facts = "\n".join(f"- {str(f).strip()}" for f in raw_facts if str(f).strip())
+            elif isinstance(raw_facts, str):
+                extracted_facts = raw_facts.strip()
+            else:
+                extracted_facts = str(raw_facts).strip() if raw_facts else ""
+
+            log.info("Information alignment check complete", is_aligned=is_aligned, reason=reason, search_query=search_query, use_lore=use_lore, facts_len=len(extracted_facts))
+            return is_aligned, reason, search_query, use_lore, extracted_facts
         except Exception as e:
             log.warning("Information alignment check failed, defaulting to True", error=str(e))
-            return True, "Check failed, defaulting to aligned", "", True
+            return True, "Check failed, defaulting to aligned", "", True, ""

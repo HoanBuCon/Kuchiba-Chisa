@@ -61,12 +61,49 @@ def robust_parse_json(raw: str) -> dict[str, Any]:
         except Exception:
             pass
 
+    # 4.5. Heuristic Regex field extraction for malformed JSON with unescaped quotes inside strings
+    extracted_obj = {}
+    resp_match = re.search(
+        r'["\']response["\']\s*:\s*["\']([\s\S]*?)["\']\s*,\s*["\'](?:sentiment_analysis|user_sentiment|chisa_sentiment|summary|intensity|reasoning)["\']',
+        raw_cleaned
+    )
+    if not resp_match:
+        resp_match = re.search(r'["\']response["\']\s*:\s*["\']([\s\S]*?)["\']\s*\}', raw_cleaned)
+
+    if resp_match:
+        extracted_resp = resp_match.group(1).strip()
+        if extracted_resp:
+            extracted_obj["response"] = extracted_resp
+
+    sent_match = re.search(r'["\']sentiment_analysis["\']\s*:\s*(\{[\s\S]*?\})', raw_cleaned)
+    if sent_match:
+        try:
+            sent_obj = json.loads(sent_match.group(1).strip())
+            if isinstance(sent_obj, dict):
+                extracted_obj["sentiment_analysis"] = sent_obj
+        except Exception:
+            pass
+
+    if extracted_obj and "response" in extracted_obj:
+        return extracted_obj
+
     # 5. Fallback: Strip reasoning tags (<think>...</think>) & markdown, wrap clean text in {"response": text}
     clean_text = re.sub(r"<think>[\s\S]*?</think>", "", raw_cleaned, flags=re.IGNORECASE).strip()
     clean_text = re.sub(r"```[\s\S]*?```", "", clean_text).strip()
 
     if "Phản hồi từ LLM" in clean_text:
         clean_text = clean_text.split("Phản hồi từ LLM")[-1].strip()
+
+    # Drop single punctuation/syntax fragments (e.g. "{", "}", "{}", "[]", "null")
+    if clean_text in ("{", "}", "{}", "[]", '""', "null", "None", ""):
+        return {}
+
+    # If clean_text starts with "{" and has "response": key, do not leak raw JSON structure
+    if clean_text.startswith("{") and ('"response"' in clean_text or "'response'" in clean_text):
+        m = re.search(r'["\']response["\']\s*:\s*["\']?([^"\'\}\n]+)', clean_text)
+        if m and m.group(1).strip():
+            return {"response": m.group(1).strip()}
+        return {}
 
     if clean_text:
         log.warning("Could not parse JSON object from LLM output. Wrapping text into response key.", raw_preview=raw_cleaned[:150])

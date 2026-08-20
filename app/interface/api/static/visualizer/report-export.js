@@ -54,9 +54,27 @@ window.ReportExportEngine = {
                 else if (step.name === 'web_search') {
                     md += `*   **Query:** \`${step.data?.original_message || step.data?.search_query || ''}\`\n`;
                     const snippets = step.data?.snippets || [];
-                    md += `*   **Số lượng kết quả:** ${snippets.length}\n\n`;
+                    md += `*   **Số lượng Snippets:** ${snippets.length}\n`;
+                    if (step.data?.deep_page_url) {
+                        md += `*   **Deep Page Crawler URL:** \`${step.data.deep_page_url}\`\n`;
+                    }
+                    md += `\n`;
                     if (snippets.length) {
-                        md += `\`\`\`text\n${snippets.join('\n\n---\n\n')}\n\`\`\`\n\n`;
+                        md += `#### 🌐 Search Snippets:\n\`\`\`text\n${snippets.join('\n\n---\n\n')}\n\`\`\`\n\n`;
+                    }
+                    if (step.data?.deep_page_preview) {
+                        md += `#### 📄 Deep Page Content (Cào sâu):\n\`\`\`text\n${step.data.deep_page_preview}\n\`\`\`\n\n`;
+                    }
+                }
+                else if (step.name === 'information_alignment_check' || step.name === 'alignment_assessment') {
+                    md += `*   **Aligned:** \`${step.data?.is_aligned}\`\n`;
+                    md += `*   **Lý do:** ${step.data?.reason || '—'}\n`;
+                    if (step.data?.generated_search_query) {
+                        md += `*   **Query Lần 2 đề xuất:** \`${step.data.generated_search_query}\`\n`;
+                    }
+                    md += `\n`;
+                    if (step.data?.extracted_facts) {
+                        md += `#### 🌟 Dữ Kiện Chắt Lọc (Factual Summary):\n\`\`\`text\n${step.data.extracted_facts}\n\`\`\`\n\n`;
                     }
                 } 
                 else if (step.name === 'context_building') {

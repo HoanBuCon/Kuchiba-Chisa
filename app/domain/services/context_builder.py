@@ -107,9 +107,9 @@ class ContextBuilder:
     def build_format_section(cls) -> str:
         return (
             "[OUTPUT FORMAT]\n"
-            "Bạn BẮT BUỘC phải phản hồi dưới dạng một đối tượng JSON tuân thủ định dạng sau:\n"
+            "Bạn BẮT BUỘC phải phản hồi dưới dạng một đối tượng JSON hợp lệ tuân thủ định dạng sau:\n"
             "{\n"
-            '  "response": "câu thoại phản hồi của Chisa (chứa cảm xúc phù hợp, viết bằng tiếng Việt)",\n'
+            '  "response": "câu thoại phản hồi của Chisa (chứa cảm xúc phù hợp, viết bằng tiếng Việt, tuyệt đối escape mọi dấu ngoặc kép bên trong bằng \\\")",\n'
             '  "sentiment_analysis": {\n'
             '    "intensity": 0.1 đến 1.0 (mức độ cảm xúc: 0.2 nhẹ nhàng/thoáng qua, 0.5 vừa phải, 0.9 sâu sắc/mãnh liệt),\n'
             '    "valence": -1.0 đến 1.0 (chiều cảm xúc: âm nếu buồn/tổn thương/khó chịu, dương nếu vui/ấm áp/hạnh phúc, 0 nếu trung tính),\n'

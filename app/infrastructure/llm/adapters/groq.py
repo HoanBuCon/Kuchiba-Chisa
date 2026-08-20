@@ -130,6 +130,8 @@ class GroqAdapter(BaseLLMAdapter):
 
         if finish_reason == "length":
             error_to_raise = LLMTokenOverflowError()
+        elif finish_reason in ("content_filter", "safety"):
+            error_to_raise = LLMInvalidResponseError(f"Generation interrupted by Groq content filter: {finish_reason}")
         else:
             try:
                 parsed = await self.validate_response(raw, prompt.response_schema)

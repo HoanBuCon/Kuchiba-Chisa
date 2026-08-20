@@ -130,17 +130,70 @@ class WebSearchAgentTool(BaseAgentTool):
 
     @staticmethod
     def _clean_html_to_text(html: str) -> str:
+        """
+        Industry-Standard Web Content Extractor (Trafilatura + Link-Density Fallback).
+        Extracts high-signal article body, tables, and facts while stripping boilerplate, 
+        navbars, menus, and footers without any language hardcoding.
+        """
         if not html:
             return ""
+        
+        # 1. Primary: Trafilatura (State-of-the-art Content Extractor for LLM/NLP pipelines)
+        try:
+            import trafilatura
+            extracted = trafilatura.extract(
+                html,
+                include_comments=False,
+                include_tables=True,
+                no_fallback=False
+            )
+            if extracted and len(extracted.strip()) >= 50:
+                return extracted.strip()
+        except Exception:
+            pass
+
+        # 2. Fallback: First-Principles Link-to-Text Density Extractor
         import html as html_module
-        # Remove script and style elements
-        text = re.sub(r"<(script|style)[^>]*>.*?</\1>", " ", html, flags=re.DOTALL | re.IGNORECASE)
-        # Strip HTML tags
+        text = re.sub(r"<!--.*?-->", " ", html, flags=re.DOTALL)
+        text = re.sub(
+            r"<(script|style|nav|header|footer|aside|noscript|form|svg|button|iframe|select|option)[^>]*>.*?</\1>",
+            " ",
+            text,
+            flags=re.DOTALL | re.IGNORECASE,
+        )
+        
+        paragraphs = []
+        h1_match = re.search(r"<h1[^>]*>(.*?)</h1>", text, flags=re.DOTALL | re.IGNORECASE)
+        if h1_match:
+            t = re.sub(r"<[^>]+>", " ", h1_match.group(1))
+            t = html_module.unescape(t).strip()
+            if len(t) >= 15:
+                paragraphs.append(t)
+        
+        p_matches = re.findall(r"<p[^>]*>(.*?)</p>", text, flags=re.DOTALL | re.IGNORECASE)
+        for p in p_matches:
+            p_text = re.sub(r"<[^>]+>", " ", p)
+            p_text = html_module.unescape(p_text)
+            p_text = re.sub(r"\s+", " ", p_text).strip()
+            
+            if len(p_text) < 40:
+                continue
+            
+            link_texts = re.findall(r"<a[^>]*>(.*?)</a>", p, flags=re.DOTALL | re.IGNORECASE)
+            link_chars = sum(len(re.sub(r"<[^>]+>", "", lt).strip()) for lt in link_texts)
+            link_density = link_chars / max(1, len(p_text))
+            
+            if link_density > 0.40:
+                continue
+                
+            paragraphs.append(p_text)
+        
+        if paragraphs:
+            return "\n\n".join(paragraphs)
+        
         text = re.sub(r"<[^>]+>", " ", text)
-        # Unescape HTML entities and normalize whitespace
         text = html_module.unescape(text)
-        text = re.sub(r"\s+", " ", text).strip()
-        return text
+        return re.sub(r"\s+", " ", text).strip()
 
     def __init__(
         self,
@@ -183,34 +236,40 @@ class WebSearchAgentTool(BaseAgentTool):
         results = snippets[:4]
         results_str = f"SEARCH SNIPPETS ({provider_name}):\n" + "\n".join([f"- {r}" for r in results])
 
-        # Parallel Deep Page Crawling (Load tolerant and fast, max 1 top URL with 3s timeout)
+        # Parallel Deep Page Crawling (Load tolerant and fast, up to 3 candidate URLs in parallel)
         filtered_urls = [
-            u for u in urls[:3]
+            u for u in urls[:5]
             if not any(domain in u for domain in ["youtube.com", "facebook.com", "twitter.com", "instagram.com", "tiktok.com"])
-        ][:1]
+        ][:3]
 
         fetched_content = []
         deep_page_url = None
         deep_page_preview = None
 
-        if filtered_urls:
-            if self.page_fetcher:
-                async def fetch_page(target_url: str):
-                    try:
-                        log.info("Fetching deep page in parallel", url=target_url)
-                        html = await asyncio.wait_for(self.page_fetcher(target_url), timeout=3.0)
-                        if html:
-                            cleaned_text = self._clean_html_to_text(html)
-                            if len(cleaned_text) > 100:
-                                return target_url, cleaned_text[:1000]
-                    except asyncio.TimeoutError:
-                        log.warning("Deep page fetch timed out after 3.0s", url=target_url)
-                    except Exception as pe:
-                        log.warning("Failed parallel deep page fetch", url=target_url, error=str(pe))
-                    return None
-            else:
-                async def fetch_page(target_url: str):
-                    return None
+        if filtered_urls and self.page_fetcher:
+            async def fetch_page(target_url: str):
+                try:
+                    log.info("Fetching deep page in parallel", url=target_url)
+                    html = await asyncio.wait_for(self.page_fetcher(target_url), timeout=3.5)
+                    if html:
+                        cleaned_text = self._clean_html_to_text(html)
+                        # Filter out robot policy blocks or captcha error messages
+                        is_blocked = any(err in cleaned_text.lower() for err in [
+                            "please set a user-agent",
+                            "robot policy",
+                            "403 forbidden",
+                            "access denied",
+                            "attention required",
+                            "cloudflare",
+                            "just a moment..."
+                        ])
+                        if len(cleaned_text) >= 150 and not is_blocked:
+                            return target_url, cleaned_text[:1500]
+                except asyncio.TimeoutError:
+                    log.warning("Deep page fetch timed out after 3.5s", url=target_url)
+                except Exception as pe:
+                    log.warning("Failed parallel deep page fetch", url=target_url, error=str(pe))
+                return None
 
             tasks = [fetch_page(u) for u in filtered_urls]
             fetch_results = await asyncio.gather(*tasks)
@@ -221,7 +280,7 @@ class WebSearchAgentTool(BaseAgentTool):
                     deep_page_url = target_url
                     deep_page_preview = content_snippet
                     fetched_content.append(f"SOURCE URL: {target_url}\nCONTENT: {content_snippet}")
-                    break # Grab first successful page to conserve token budget
+                    break  # Grab first successful high-quality page to conserve token budget
 
             if fetched_content:
                 results_str += "\n\nDEEP PAGE CONTENT:\n" + "\n\n".join(fetched_content)

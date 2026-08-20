@@ -128,19 +128,8 @@ class RAGPipeline:
                     bypass_optimize=True
                 )
                 search_msg = web_search_1_res.get("message", "")
-                snippets = web_search_1_res.get("snippets") or []
                 
-                # Log step: Knowledge Retrieval (Web Search Mode)
-                self.pipeline_tracker.add_step("rag_retrieval", {
-                    "mode": "WEB_SEARCH",
-                    "should_retrieve": True,
-                    "search_query": web_search_1_query,
-                    "snippets_count": len(snippets),
-                    "search_result": search_msg,
-                    "intents": intent_strs,
-                })
-                
-                # Log child step: Web Search Round 1 trace
+                # Log Web Search Round 1 trace directly as single clean tool step
                 from app.domain.services.tools.web_search import web_search_trace_payload
                 self.pipeline_tracker.add_step(
                     "web_search",
@@ -293,25 +282,32 @@ class RAGPipeline:
                 "intents": intent_strs,
             })
 
-        # ── UNIVERSAL CONTEXT ASSESSOR (Đánh giá Đủ Context & Viết lại Query Lần 2) ──
+        # ── UNIVERSAL CONTEXT ASSESSOR (Đánh giá Đủ Context, Viết lại Query & Chắt lọc Dữ kiện) ──
         is_aligned = True
         alignment_reason = "Small talk or system bypass"
         search_query = ""
         use_lore = True
+        extracted_facts = ""
 
         if not is_small_talk and (is_vector_search_mode or is_web_search_mode):
-            is_aligned, alignment_reason, search_query, use_lore = await self.assessor.assess_alignment(
+            assess_res = await self.assessor.assess_alignment(
                 user_message=cleaned_query or user_message,
                 context_text=retrieved_context_str,
                 llm=llm,
                 history=history,
                 conversation_summary=conversation_summary,
             )
+            if len(assess_res) == 5:
+                is_aligned, alignment_reason, search_query, use_lore, extracted_facts = assess_res
+            else:
+                is_aligned, alignment_reason, search_query, use_lore = assess_res[:4]
+                extracted_facts = ""
         else:
             is_aligned = True
             alignment_reason = "Bypassed Context Assessor (Code snippet or Small Talk)"
             search_query = ""
             use_lore = False
+            extracted_facts = ""
             
         # Log assessment result in trace
         history_mode = "summary" if (conversation_summary and conversation_summary.strip()) else "raw"
@@ -334,6 +330,7 @@ class RAGPipeline:
                 "reason": alignment_reason,
                 "triggers_loop_thinking": not is_aligned,
                 "use_lore": use_lore,
+                "extracted_facts": extracted_facts,
                 "lore_count": len(lore_chunks),
                 "memory_count": len(memories),
                 "has_rag_context": bool(lore_chunks or memories or web_search_1_res),
@@ -360,12 +357,20 @@ class RAGPipeline:
                 web_search_tool=web_search_tool,
                 initial_search_query=search_query  # <-- Refined Query do Assessor vừa viết lại!
             )
-            search_parts = []
-            for step in thinking_steps:
-                if step.get("search_query") and step.get("search_result") and step["search_result"] != "No further search needed.":
-                    search_parts.append(f"[Thinking Cycle {step['cycle']} Search Results for '{step['search_query']}']:\n{step['search_result']}")
-            if search_parts:
-                tool_output_msg = "\n\n".join(search_parts)
+            # If in Vector Mode with Lore Chunks, strip the initial lore block so it's not duplicated in [SEARCH DATA]
+            search_delta = retrieved_context_str
+            if is_vector_search_mode and lore_chunks and "[Retrieved Lore Chunks]:" in search_delta:
+                parts = search_delta.split("[Thinking Cycle", 1)
+                if len(parts) > 1:
+                    search_delta = "[Thinking Cycle" + parts[1]
+
+            tool_output_msg = search_delta.strip()
+        elif is_web_search_mode and web_search_1_res:
+            # Distilled factual summary from Round 1 (Fast & clean token budget)
+            if extracted_facts:
+                tool_output_msg = f"[SEARCH DATA — FACTUAL SUMMARY]:\n{extracted_facts}"
+            else:
+                tool_output_msg = retrieved_context_str
 
         return RAGContext(
             lore_chunks=lore_chunks if use_lore else [],

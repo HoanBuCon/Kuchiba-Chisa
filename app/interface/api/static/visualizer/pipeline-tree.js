@@ -193,9 +193,12 @@ window.PipelineTreeEngine = {
         'information_alignment_check': {
             type: 'alignment',
             icon: '⚖️',
-            title: 'Kiểm định Context & Tinh chỉnh Query (Context Assessor)',
+            title: 'Kiểm định Context & Chắt lọc Dữ kiện (Context Assessor)',
             subtitle: (step) => {
-                if (step.data?.is_aligned) return '✓ Đã đủ thông tin để trả lời';
+                const hasFacts = !!step.data?.extracted_facts;
+                if (step.data?.is_aligned) {
+                    return hasFacts ? '✓ Đã đủ thông tin · 🌟 Đã chắt lọc Dữ kiện' : '✓ Đã đủ thông tin để trả lời';
+                }
                 const q2 = step.data?.generated_search_query;
                 return q2 ? `⚠️ Thiếu dữ liệu ➔ Tinh chỉnh Query 2: "${q2.slice(0, 22)}..."` : '⚠️ Thiếu dữ liệu -> Kích hoạt Thinking Loop';
             }
@@ -203,9 +206,12 @@ window.PipelineTreeEngine = {
         'alignment_assessment': {
             type: 'alignment',
             icon: '⚖️',
-            title: 'Kiểm định Context & Tinh chỉnh Query (Context Assessor)',
+            title: 'Kiểm định Context & Chắt lọc Dữ kiện (Context Assessor)',
             subtitle: (step) => {
-                if (step.data?.is_aligned) return '✓ Đã đủ thông tin để trả lời';
+                const hasFacts = !!step.data?.extracted_facts;
+                if (step.data?.is_aligned) {
+                    return hasFacts ? '✓ Đã đủ thông tin · 🌟 Đã chắt lọc Dữ kiện' : '✓ Đã đủ thông tin để trả lời';
+                }
                 const q2 = step.data?.generated_search_query;
                 return q2 ? `⚠️ Thiếu dữ liệu ➔ Tinh chỉnh Query 2: "${q2.slice(0, 22)}..."` : '⚠️ Thiếu dữ liệu -> Kích hoạt Thinking Loop';
             }
@@ -231,11 +237,13 @@ window.PipelineTreeEngine = {
         'web_search': {
             type: 'search',
             icon: '🌐',
-            title: 'Tìm kiếm Trực tuyến (DuckDuckGo Web Search)',
+            title: 'Tìm kiếm & Cào sâu (DuckDuckGo Search & Crawler)',
             subtitle: (step) => {
                 const q = step.data?.original_message || step.data?.search_query || '';
                 const count = step.data?.snippets?.length || 0;
-                return q ? `"${q.slice(0, 28)}..." (${count} kết quả)` : `${count} kết quả`;
+                const hasDeep = !!step.data?.deep_page_url;
+                const deepTag = hasDeep ? ' + 📄 Deep Crawl' : '';
+                return q ? `"${q.slice(0, 24)}..." (${count} snippets${deepTag})` : `${count} kết quả${deepTag}`;
             }
         },
         'context_building': {
