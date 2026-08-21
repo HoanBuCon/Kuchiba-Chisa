@@ -163,11 +163,14 @@ class IntentStage(PipelineStage):
             if needs_vector_search or (needs_web_search and not query_vector):
                 query_vector = await self.embedder.embed_text(rewritten_query, prefix="query: ")
 
-            routing_reason = (
-                "LLM Tri-State: Qdrant Vector Search (Game Lore)" if needs_vector_search
-                else ("LLM Tri-State: Direct Web Search (External / Internet)" if needs_web_search
-                else "LLM Tri-State: Code / Small Talk (0ms RAG Bypass)")
-            )
+            if needs_vector_search and needs_web_search:
+                routing_reason = "LLM Tri-State: Hybrid Search (Vector Lore + Direct Web Search)"
+            elif needs_vector_search:
+                routing_reason = "LLM Tri-State: Qdrant Vector Search (Game Lore)"
+            elif needs_web_search:
+                routing_reason = "LLM Tri-State: Direct Web Search (External / Internet)"
+            else:
+                routing_reason = "LLM Tri-State: Code / Small Talk (0ms RAG Bypass)"
 
             intent_result = IntentResult(
                 intents=matched_intents,

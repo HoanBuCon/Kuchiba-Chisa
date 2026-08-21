@@ -43,25 +43,25 @@ class ContextAssessor:
 
         system_prompt = (
             "You are an Information Alignment Assessor & Factual Distiller for Kuchiba Chisa (Wuthering Waves).\n"
-            "Evaluate whether the retrieved context (from Qdrant Game Lore OR Web Search) contains enough specific, factual, and verified information "
-            "to answer the user's question accurately without any hallucination, given the conversation history.\n\n"
-            "TASKS:\n"
-            "1. Determine factual alignment ('is_aligned'):\n"
-            "   - true: The context already contains enough verified facts/principles/steps to answer ALL core aspects of the question (>80% answerable).\n"
-            "     * SPECIAL RULE FOR ALGORITHMS/CODE: If the context contains the core mathematical principle, recurrence, or algorithmic steps, mark is_aligned = true (the LLM can implement the code without further searching).\n"
-            "   - false: Information is missing critical details, ambiguous, or needs deeper web search.\n\n"
-            "2. Decide whether to keep the context ('use_lore'):\n"
-            "   - Set to true if the context contains relevant facts about the game lore or real-world topic.\n"
-            "   - Set to false ONLY if the context is completely irrelevant noise or error page.\n\n"
-            "3. MANDATORY FACT DISTILLATION & SUMMARY ('extracted_facts'):\n"
-            "   - Whenever the retrieved context contains relevant information (from Web Search or Vector Lore), YOU MUST summarize all essential facts into concise, high-density bullet points.\n"
-            "   - PRESERVE 100% OF IMPORTANT INFO: Keep all exact numbers, percentages, dates, proper names, entities, mathematical formulas, time complexities, and algorithmic steps.\n"
-            "   - STRIP OUT ALL JUNK: Remove promotional text, website navigation menus, duplicates, filler phrases, and HTML clutter.\n"
-            "   - This distilled summary is injected directly into the Main LLM system prompt as the ground truth reference.\n"
-            "   - If no relevant facts found, return empty string.\n\n"
-            "4. Multi-Hop Search Query Refinement ('search_query'):\n"
-            "   - If 'is_aligned' is false, craft a sharp, focused keyword search query (4 to 8 terms) for the NEXT search cycle.\n"
-            "   - Synthesize entities/terms discovered in the context to dig deeper. Use standard English terms for technical/academic topics.\n\n"
+            "Evaluate whether the retrieved context contains enough facts to answer the user's specific question accurately without hallucinations.\n\n"
+            "CRITICAL SCOPING PRINCIPLES (PREVENT OVER-ASSESSMENT & UNNECESSARY SEARCHES):\n"
+            "1. SCOPE-BOUND EVALUATION: Evaluate ONLY what the user explicitly asks for.\n"
+            "   - If the user asks a general question (e.g. 'Who is Chisa?'), general background/identity/personality is 100% SUFFICIENT -> mark is_aligned = true.\n"
+            "   - DO NOT demand encyclopedic completeness. NEVER mark false for missing combat skills, multipliers, or voice lines unless the user EXPLICITLY asked for them.\n"
+            "   - SPECIAL RULE FOR ALGORITHMS/CODE: If the context contains the core mathematical principle, recurrence, or algorithmic steps, mark is_aligned = true.\n\n"
+            "2. 80/20 SUFFICIENCY GATE ('is_aligned'):\n"
+            "   - true: The context enables answering the user's core question (>80% answerable without guessing).\n"
+            "   - false: The core question CANNOT be answered at all (context is completely irrelevant, empty, or misses the exact specific fact requested).\n\n"
+            "3. INTENT CONSERVATION FOR SEARCH TARGET ('search_target'):\n"
+            "   - Only determine 'search_target' when is_aligned = false.\n"
+            "   - 'vector': For in-game lore, story, characters, and canon game mechanics (Default for all game lore queries unless internet/real-world is explicitly mentioned).\n"
+            "   - 'web': For real-world news, release dates, patch updates, internet leaks, or non-game topics.\n"
+            "   - 'both': ONLY when the user explicitly asks to compare in-game lore with online discussions/leaks/buffs.\n\n"
+            "4. MANDATORY FACT DISTILLATION ('extracted_facts'):\n"
+            "   - Summarize verified facts from the context into concise bullet points.\n"
+            "   - Preserve 100% of exact numbers, percentages, dates, proper names, entities, and formulas. Strip website junk/boilerplate.\n\n"
+            "5. SEARCH QUERY REFINEMENT ('search_query'):\n"
+            "   - If is_aligned = false, craft a focused keyword query (4 to 8 search terms) targeting ONLY the missing aspect of the user's question.\n\n"
             "You MUST output the result as a valid JSON object matching the requested schema."
         )
 
@@ -81,6 +81,11 @@ class ContextAssessor:
                     "description": "Concise bullet-point factual summary preserving exact numbers, dates, steps and formulas."
                 },
                 "search_query": {"type": "string"},
+                "search_target": {
+                    "type": "string",
+                    "enum": ["vector", "web", "both"],
+                    "description": "Target engine for next search cycle ('vector', 'web', or 'both')."
+                },
                 "use_lore": {"type": "boolean"}
             },
             "required": ["is_aligned", "use_lore"]
@@ -110,6 +115,9 @@ class ContextAssessor:
                 reason = str(reason).strip()
 
             search_query = (parsed.get("search_query") or "").strip() if isinstance(parsed.get("search_query"), str) else ""
+            search_target = str(parsed.get("search_target") or "web").strip().lower()
+            if search_target not in ("vector", "web", "both"):
+                search_target = "web"
             use_lore = parsed.get("use_lore", True)
             
             raw_facts = parsed.get("extracted_facts") or ""
@@ -135,8 +143,8 @@ class ContextAssessor:
             else:
                 extracted_facts = str(raw_facts).strip() if raw_facts else ""
 
-            log.info("Information alignment check complete", is_aligned=is_aligned, reason=reason, search_query=search_query, use_lore=use_lore, facts_len=len(extracted_facts))
-            return is_aligned, reason, search_query, use_lore, extracted_facts
+            log.info("Information alignment check complete", is_aligned=is_aligned, reason=reason, search_query=search_query, search_target=search_target, use_lore=use_lore, facts_len=len(extracted_facts))
+            return is_aligned, reason, search_query, use_lore, extracted_facts, search_target
         except Exception as e:
             log.warning("Information alignment check failed, defaulting to True", error=str(e))
-            return True, "Check failed, defaulting to aligned", "", True, ""
+            return True, "Check failed, defaulting to aligned", "", True, "", "web"

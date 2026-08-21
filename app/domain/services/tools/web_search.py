@@ -150,7 +150,8 @@ class WebSearchAgentTool(BaseAgentTool):
                 deduplicate=True,
             )
             if extracted and len(extracted.strip()) >= 50:
-                return extracted.strip()
+                import html as html_module
+                return html_module.unescape(extracted.strip())
         except Exception:
             pass
 

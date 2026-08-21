@@ -16,8 +16,7 @@ window.InspectorWidgets = {
             .replace(/&/g, "&amp;")
             .replace(/</g, "&lt;")
             .replace(/>/g, "&gt;")
-            .replace(/"/g, "&quot;")
-            .replace(/'/g, "&#039;");
+            .replace(/"/g, "&quot;");
     },
 
     /**
@@ -504,9 +503,57 @@ window.InspectorWidgets = {
     },
 
     /**
+     * 4.b Render Extracted Facts Card (Numbered item badges, copy button, gold theme)
+     */
+    renderExtractedFactsCard(rawFacts, title = "Dữ Kiện Đã Chắt Lọc (Extracted Facts & Ground Truth)") {
+        if (!rawFacts) return '';
+        
+        let factsArray = [];
+        let factsText = '';
+
+        if (Array.isArray(rawFacts)) {
+            factsArray = rawFacts.map(f => typeof f === 'string' ? f.trim() : (f.content || f.text || f.fact || JSON.stringify(f))).filter(Boolean);
+            factsText = factsArray.join('\n');
+        } else if (typeof rawFacts === 'string' && rawFacts.trim()) {
+            factsText = rawFacts.trim();
+            factsArray = factsText.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+        }
+
+        if (!factsArray.length) return '';
+
+        return `
+            <div class="inspector-card" style="border-left: 3px solid var(--accent-amber); background: linear-gradient(135deg, rgba(245, 158, 11, 0.06), rgba(18, 10, 8, 0.6)); margin-bottom: 12px;">
+                <div class="inspector-card-title" style="justify-content: space-between;">
+                    <div style="display: flex; align-items: center; gap: 6px;">
+                        ${this.icon('sparkles', { size: 14, color: 'var(--accent-amber)' })}
+                        <span style="color: #fbbf24; font-weight: 700;">${this.escapeHtml(title)}</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 6px;">
+                        <span class="pill" style="background: rgba(245, 158, 11, 0.18); color: #fde68a; border-color: rgba(245, 158, 11, 0.4); font-size: 10.5px; font-weight: 600;">${factsArray.length} Facts</span>
+                        <button class="btn" style="padding: 3px 8px; font-size: 11px;" onclick="InspectorWidgets.copyToClipboard(this.getAttribute('data-copy'), this)" data-copy="${this.escapeHtml(factsText)}">
+                            ${this.icon('copy', { size: 11 })} <span>Sao chép</span>
+                        </button>
+                    </div>
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 6px; margin-top: 8px;">
+                    ${factsArray.map((factItem, fIdx) => {
+                        const factClean = factItem.replace(/^[-*•]\s*/, '');
+                        return `
+                            <div style="background: rgba(14, 7, 10, 0.85); border: 1px solid rgba(245, 158, 11, 0.25); border-radius: var(--radius-sm); padding: 9px 12px; font-size: 12.5px; line-height: 1.55; border-left: 3px solid var(--accent-amber); display: flex; gap: 10px; align-items: flex-start;">
+                                <span style="font-family: 'JetBrains Mono', monospace; font-size: 10.5px; color: #fbbf24; opacity: 0.9; font-weight: 700; min-width: 22px; padding-top: 1px;">#${fIdx + 1}</span>
+                                <div style="color: #fef3c7; font-size: 12.5px;">${this.escapeHtml(factClean)}</div>
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+            </div>
+        `;
+    },
+
+    /**
      * 5. Render Search Snippets List
      */
-    renderSearchSnippetList(snippets = [], deepPages = []) {
+    renderSearchSnippetList(snippets = [], deepPages = [], sourceUrls = []) {
         if ((!snippets || !snippets.length) && (!deepPages || !deepPages.length)) {
             return `
                 <div class="inspector-card">
@@ -522,20 +569,55 @@ window.InspectorWidgets = {
         }
 
         const snippetsHtml = (snippets || []).map((snip, i) => {
-            const title = snip.title || `Snippet #${i + 1}`;
-            const url = snip.url || snip.link || '';
-            const body = snip.body || snip.snippet || snip.content || '';
-            const score = snip.score ? `<span class="pill" style="font-size: 9.5px; color: #ff758c; border-color: rgba(255, 34, 62, 0.35);">Score: ${snip.score.toFixed(2)}</span>` : '';
+            let title = '';
+            let url = '';
+            let body = '';
+            let score = '';
+
+            if (typeof snip === 'string') {
+                body = snip;
+                url = (sourceUrls && sourceUrls[i]) ? sourceUrls[i] : '';
+                if (url) {
+                    try {
+                        const parsedUrl = new URL(url);
+                        title = `${parsedUrl.hostname.replace('www.', '')}${parsedUrl.pathname.length > 1 ? parsedUrl.pathname.slice(0, 32) + '...' : ''}`;
+                    } catch (e) {
+                        title = url.length > 40 ? url.slice(0, 37) + '...' : url;
+                    }
+                } else {
+                    title = `Snippet #${i + 1}`;
+                }
+            } else if (typeof snip === 'object' && snip !== null) {
+                body = snip.body || snip.snippet || snip.content || snip.text || JSON.stringify(snip);
+                url = snip.url || snip.link || (sourceUrls && sourceUrls[i] ? sourceUrls[i] : '');
+                title = snip.title || (url ? (url.replace(/^https?:\/\//, '').split('/')[0] + '...') : `Snippet #${i + 1}`);
+                if (snip.score !== undefined) {
+                    score = `<span class="pill" style="font-size: 9.5px; color: #ff758c; border-color: rgba(255, 34, 62, 0.35);">Score: ${typeof snip.score === 'number' ? snip.score.toFixed(2) : snip.score}</span>`;
+                }
+            }
+
+            const headerLink = url ? `
+                <a href="${this.escapeHtml(url)}" target="_blank" rel="noopener noreferrer" style="color: #ff758c; text-decoration: none; font-weight: 600; font-size: 12.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: inline-flex; align-items: center; gap: 4px; max-width: 80%;">
+                    ${this.icon('globe', { size: 12, color: '#ff758c' })}
+                    <span>${this.escapeHtml(title)}</span>
+                </a>
+            ` : `
+                <span style="color: #ff758c; font-weight: 600; font-size: 12.5px; display: inline-flex; align-items: center; gap: 4px;">
+                    ${this.icon('file-text', { size: 12, color: '#ff758c' })}
+                    <span>${this.escapeHtml(title)}</span>
+                </span>
+            `;
 
             return `
                 <div style="background: rgba(14, 7, 10, 0.75); border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 9px 11px; margin-bottom: 6px; font-size: 12px; border-left: 3px solid var(--red);">
-                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 4px; gap: 8px;">
-                        <a href="${this.escapeHtml(url)}" target="_blank" style="color: #ff758c; text-decoration: none; font-weight: 600; font-size: 12.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-                            ${this.escapeHtml(title)}
-                        </a>
-                        ${score}
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 5px; gap: 8px;">
+                        ${headerLink}
+                        <div style="display: flex; align-items: center; gap: 4px;">
+                            <span class="pill" style="font-size: 9px; opacity: 0.7;">#${i + 1}</span>
+                            ${score}
+                        </div>
                     </div>
-                    <div style="color: var(--text-secondary); font-size: 12px; line-height: 1.5; max-height: 80px; overflow-y: auto; white-space: pre-wrap;">${this.escapeHtml(body.trim())}</div>
+                    <div style="color: var(--text-secondary); font-size: 12px; line-height: 1.5; max-height: 120px; overflow-y: auto; white-space: pre-wrap;">${this.escapeHtml((body || '').trim())}</div>
                 </div>
             `;
         }).join('');
@@ -642,12 +724,13 @@ window.InspectorWidgets = {
     },
 
     /**
-     * 7. Render Raw JSON Viewer
+     * 7. Render Raw JSON Viewer with Syntax Highlighting & Formatted Spacing
      */
     renderJsonViewer(data, title = "Raw Payload Data", collapsed = true) {
         if (!data || Object.keys(data).length === 0) return '';
 
         const jsonStr = JSON.stringify(data, null, 2);
+        const highlightedHtml = this.syntaxHighlightJson(jsonStr);
 
         return `
             <div class="inspector-card" style="margin-top: 12px;">
@@ -660,9 +743,41 @@ window.InspectorWidgets = {
                         ${this.icon('copy', { size: 12 })} <span>Sao chép JSON</span>
                     </button>
                 </div>
-                <div class="json-block" style="max-height: 260px; font-size: 11.5px;">${this.escapeHtml(jsonStr)}</div>
+                <div class="json-block" style="max-height: 380px; font-size: 12px; line-height: 1.7; white-space: pre-wrap; word-break: break-word;">${highlightedHtml}</div>
             </div>
         `;
+    },
+
+    /**
+     * JSON Syntax Highlighter
+     */
+    syntaxHighlightJson(json) {
+        if (!json) return '';
+        if (typeof json !== 'string') {
+            json = JSON.stringify(json, null, 2);
+        }
+        const safe = this.escapeHtml(json);
+        return safe.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, (match) => {
+            let cls = 'json-number';
+            let color = '#60a5fa';
+            if (/^"/.test(match)) {
+                if (/:$/.test(match)) {
+                    cls = 'json-key';
+                    color = '#ff758c';
+                    return `<span class="${cls}" style="color: ${color}; font-weight: 600;">${match.slice(0, -1)}</span>:`;
+                } else {
+                    cls = 'json-string';
+                    color = '#a7f3d0';
+                }
+            } else if (/true|false/.test(match)) {
+                cls = 'json-boolean';
+                color = '#fbbf24';
+            } else if (/null/.test(match)) {
+                cls = 'json-null';
+                color = '#94a3b8';
+            }
+            return `<span class="${cls}" style="color: ${color};">${match}</span>`;
+        });
     },
 
     /**

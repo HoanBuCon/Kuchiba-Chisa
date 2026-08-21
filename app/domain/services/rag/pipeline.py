@@ -97,6 +97,7 @@ class RAGPipeline:
         intent_strs = self._normalize_intents(intents)
         has_knowledge_intent = ("LORE" in intent_strs or "MEMORY" in intent_strs or "OTHER" in intent_strs or "KNOWLEDGE_OR_TASK" in intent_strs)
         
+        is_hybrid_search_mode = bool(needs_web_search and needs_vector_search and not is_small_talk)
         is_web_search_mode = bool(needs_web_search and not needs_vector_search and not is_small_talk)
         is_vector_search_mode = bool(
             not is_small_talk 
@@ -104,6 +105,7 @@ class RAGPipeline:
             and has_knowledge_intent 
             and (needs_vector_search is not False)
             and not is_web_search_mode
+            and not is_hybrid_search_mode
         )
 
         LORE_COLLECTIONS = ["character_lore", "world_lore", "story_lore"]
@@ -111,68 +113,18 @@ class RAGPipeline:
         expanded = set()
         scoring_details = []
         web_search_1_res = None
+        search_msg = ""
+        web_search_1_query = cleaned_query or user_message
         retrieved_context_str = "(No context retrieved)"
 
-        # ── OPTION 2: Web Search Mode (Search Lần 1 trực tiếp tại Knowledge Retrieval Stage) ──
-        if is_web_search_mode and web_search_tool:
-            web_search_1_query = cleaned_query or user_message
-            log.info("Knowledge Retrieval executing Option 2 (Web Search Mode - Round 1)", query=web_search_1_query)
+        # Helper coroutine: Execute Qdrant Vector Lore & Memory Retrieval
+        async def _fetch_vector_lore_and_memory():
+            nonlocal lore_scored, memories, lore_chunks, queried_lore_cols, extracted, expanded, scoring_details
+            if not query_vector:
+                return
 
-            # Emit Stage 5 Root step first
-            self.pipeline_tracker.add_step(
-                name="rag_retrieval",
-                stage_id="stage_5_rag",
-                depth=0,
-                category="stage_root",
-                title="Stage 5: [RAG] Truy hồi Tri thức Đa tầng",
-                subtitle=f"Web Search Mode · \"{web_search_1_query[:25]}...\"",
-                data={
-                    "mode": "WEB_SEARCH",
-                    "should_retrieve": True,
-                    "search_query": web_search_1_query,
-                    "intents": list(intent_strs),
-                }
-            )
-
-            try:
-                web_search_1_res = await web_search_tool.execute(
-                    session=session,
-                    user_id=user_id,
-                    user_message=web_search_1_query,
-                    llm=llm,
-                    embedder=embedder,
-                    history=history,
-                    bypass_optimize=True
-                )
-                search_msg = web_search_1_res.get("message", "")
-                
-                # Log Web Search Round 1 as child sub-node 5.1.b
-                from app.domain.services.tools.web_search import web_search_trace_payload
-                self.pipeline_tracker.add_step(
-                    name="web_search",
-                    stage_id="stage_5_rag",
-                    depth=1,
-                    category="retrieval",
-                    title="5.1.b [SEARCH] DuckDuckGo Search & Deep Crawler",
-                    subtitle=f"\"{web_search_1_query[:24]}...\" ({len(web_search_1_res.get('snippets', []))} snippets)",
-                    data=web_search_trace_payload(
-                        web_search_1_res,
-                        source="knowledge_retrieval_round_1",
-                        original_message=web_search_1_query,
-                    ),
-                )
-                
-                retrieved_context_str = f"[Web Search Round 1 Results for '{web_search_1_query}']:\n{search_msg}"
-            except Exception as ex:
-                log.error("Failed to execute Web Search Round 1", error=str(ex))
-                retrieved_context_str = "(No context retrieved from Web Search)"
-
-        # ── OPTION 1: Vector Search Mode (Qdrant Vector Retrieval for Lore & Memory) ──
-        elif is_vector_search_mode and query_vector:
             retrieval_tasks = []
             active_intents = []
-
-            # Perform lore retrieval if explicit LORE intent or fallback for OTHER / KNOWLEDGE
             should_fetch_lore = ("LORE" in intent_strs or "OTHER" in intent_strs or "KNOWLEDGE_OR_TASK" in intent_strs)
 
             if should_fetch_lore:
@@ -225,12 +177,10 @@ class RAGPipeline:
                             log.warning("Retrieval sub-task failed", error=str(retrieved_data))
                             continue
                         if intent_type == "MEMORY":
-                            # Deduplicate memories by content
                             for m in retrieved_data:
                                 if m.text_content and m.text_content not in memories:
                                     memories.append(m.text_content)
                         else:
-                            # Deduplicate and track scores across lore collections
                             for item in retrieved_data:
                                 if len(item) == 3:
                                     text, score, meta = item
@@ -239,7 +189,7 @@ class RAGPipeline:
                                     meta = {}
                                 if not any(c[0] == text for c in lore_scored):
                                     lore_scored.append((text, score, meta))
-                    
+
                     # Subject-Entity Alignment Reranking:
                     if extracted:
                         adjusted_scored = []
@@ -255,17 +205,137 @@ class RAGPipeline:
                             adjusted_scored.append((text, score + boost, meta))
                         lore_scored = adjusted_scored
 
-                    # Sort globally by score and enforce global TOP_K limit
                     lore_scored.sort(key=lambda x: x[1], reverse=True)
                     lore_chunks = [x[0] for x in lore_scored[:RAGTuning.TOP_K]]
                     if len(memories) > RAGTuning.TOP_K:
                         memories = memories[:RAGTuning.TOP_K]
-
                 except Exception as ex:
                     log.error("Failed to retrieve data from Qdrant vector database", error=str(ex))
 
             scoring_details = [x[2] for x in lore_scored[:RAGTuning.TOP_K] if len(x) > 2 and x[2]]
 
+            # Emit sub-nodes 5.1.a and 5.1.c
+            if lore_chunks:
+                self.pipeline_tracker.add_step(
+                    name="lore_retrieval",
+                    stage_id="stage_5_rag",
+                    depth=1,
+                    category="retrieval",
+                    title="5.1.a [VECTOR] Truy hồi Lore Qdrant (Parent-Child)",
+                    subtitle=f"\"{cleaned_query[:24]}...\" ({len(lore_chunks)} chunks từ {len(queried_lore_cols)} collections)",
+                    data={
+                        "query": cleaned_query,
+                        "source": "knowledge_retrieval_round_1",
+                        "collections_queried": queried_lore_cols,
+                        "chunks_count": len(lore_chunks),
+                        "chunks": [
+                            {"text": x[0], "score": round(x[1], 3), "metadata": x[2] if len(x) > 2 else {}}
+                            for x in lore_scored[:RAGTuning.TOP_K]
+                        ],
+                        "extracted_entities": list(extracted),
+                        "expanded_entities": list(expanded),
+                    }
+                )
+
+            if memories:
+                self.pipeline_tracker.add_step(
+                    name="memory_retrieval",
+                    stage_id="stage_5_rag",
+                    depth=1,
+                    category="retrieval",
+                    title="5.1.c [MEMORY] Truy hồi Ký ức Dài hạn (Qdrant Memory)",
+                    subtitle=f"Đã tìm thấy {len(memories)} ký ức liên quan",
+                    data={
+                        "source": "knowledge_retrieval_round_1",
+                        "memories_count": len(memories),
+                        "memories": memories,
+                    }
+                )
+
+        # Helper coroutine: Execute Web Search & Deep Crawler
+        async def _fetch_web_search_data():
+            nonlocal web_search_1_res, search_msg
+            if not web_search_tool:
+                return
+
+            log.info("Knowledge Retrieval executing Web Search (Round 1)", query=web_search_1_query)
+            try:
+                web_search_1_res = await web_search_tool.execute(
+                    session=session,
+                    user_id=user_id,
+                    user_message=web_search_1_query,
+                    llm=llm,
+                    embedder=embedder,
+                    history=history,
+                    bypass_optimize=True
+                )
+                search_msg = web_search_1_res.get("message", "")
+                from app.domain.services.tools.web_search import web_search_trace_payload
+                self.pipeline_tracker.add_step(
+                    name="web_search",
+                    stage_id="stage_5_rag",
+                    depth=1,
+                    category="retrieval",
+                    title="5.1.b [SEARCH] DuckDuckGo Search & Deep Crawler",
+                    subtitle=f"\"{web_search_1_query[:24]}...\" ({len(web_search_1_res.get('snippets', []))} snippets)",
+                    data=web_search_trace_payload(
+                        web_search_1_res,
+                        source="knowledge_retrieval_round_1",
+                        original_message=web_search_1_query,
+                    ),
+                )
+            except Exception as ex:
+                log.error("Failed to execute Web Search Round 1", error=str(ex))
+                search_msg = "(No context retrieved from Web Search)"
+
+        # ── EXECUTE STAGE 5 RETRIEVAL ACCORDING TO MODE ──
+        if is_hybrid_search_mode:
+            # Emit Stage 5 Root Step for Hybrid Mode
+            self.pipeline_tracker.add_step(
+                name="rag_retrieval",
+                stage_id="stage_5_rag",
+                depth=0,
+                category="stage_root",
+                title="Stage 5: [RAG] Truy hồi Tri thức Đa tầng",
+                subtitle="Hybrid Mode · Vector Lore (Qdrant) + DuckDuckGo Web Search",
+                data={
+                    "mode": "HYBRID_SEARCH",
+                    "should_retrieve": True,
+                    "search_query": web_search_1_query,
+                    "intents": list(intent_strs),
+                }
+            )
+            await asyncio.gather(_fetch_vector_lore_and_memory(), _fetch_web_search_data())
+
+            context_pieces = []
+            if lore_chunks:
+                context_pieces.append("[Retrieved Lore Chunks]:\n" + "\n".join(lore_chunks))
+            if memories:
+                context_pieces.append("[Retrieved Memories]:\n" + "\n".join(memories))
+            if web_search_1_res and search_msg:
+                context_pieces.append(f"[Web Search Round 1 Results for '{web_search_1_query}']:\n{search_msg}")
+            retrieved_context_str = "\n\n".join(context_pieces) if context_pieces else "(No context retrieved)"
+
+        elif is_web_search_mode and web_search_tool:
+            self.pipeline_tracker.add_step(
+                name="rag_retrieval",
+                stage_id="stage_5_rag",
+                depth=0,
+                category="stage_root",
+                title="Stage 5: [RAG] Truy hồi Tri thức Đa tầng",
+                subtitle=f"Web Search Mode · \"{web_search_1_query[:25]}...\"",
+                data={
+                    "mode": "WEB_SEARCH",
+                    "should_retrieve": True,
+                    "search_query": web_search_1_query,
+                    "intents": list(intent_strs),
+                }
+            )
+            await _fetch_web_search_data()
+            retrieved_context_str = f"[Web Search Round 1 Results for '{web_search_1_query}']:\n{search_msg}" if search_msg else "(No context retrieved from Web Search)"
+
+        elif is_vector_search_mode and query_vector:
+            await _fetch_vector_lore_and_memory()
             self.pipeline_tracker.add_step(
                 name="rag_retrieval",
                 stage_id="stage_5_rag",
@@ -290,7 +360,6 @@ class RAGPipeline:
                     }
                 }
             )
-
             context_pieces = []
             if lore_chunks:
                 context_pieces.append("[Retrieved Lore Chunks]:\n" + "\n".join(lore_chunks))
@@ -324,10 +393,11 @@ class RAGPipeline:
         is_aligned = True
         alignment_reason = "Small talk or system bypass"
         search_query = ""
+        search_target = "web"
         use_lore = True
         extracted_facts = ""
 
-        if not is_small_talk and (is_vector_search_mode or is_web_search_mode):
+        if not is_small_talk and (is_hybrid_search_mode or is_vector_search_mode or is_web_search_mode):
             assess_res = await self.assessor.assess_alignment(
                 user_message=cleaned_query or user_message,
                 context_text=retrieved_context_str,
@@ -335,15 +405,20 @@ class RAGPipeline:
                 history=history,
                 conversation_summary=conversation_summary,
             )
-            if len(assess_res) == 5:
+            if len(assess_res) == 6:
+                is_aligned, alignment_reason, search_query, use_lore, extracted_facts, search_target = assess_res
+            elif len(assess_res) == 5:
                 is_aligned, alignment_reason, search_query, use_lore, extracted_facts = assess_res
+                search_target = "both" if is_hybrid_search_mode else ("vector" if is_vector_search_mode else "web")
             else:
                 is_aligned, alignment_reason, search_query, use_lore = assess_res[:4]
                 extracted_facts = ""
+                search_target = "both" if is_hybrid_search_mode else ("vector" if is_vector_search_mode else "web")
         else:
             is_aligned = True
             alignment_reason = "Bypassed Context Assessor (Code snippet or Small Talk)"
             search_query = ""
+            search_target = "web"
             use_lore = False
             extracted_facts = ""
             
@@ -367,13 +442,14 @@ class RAGPipeline:
             depth=1,
             category="decision",
             title="5.2 [LLM & DECISION] Context Assessor & Chắt lọc Dữ kiện",
-            subtitle="✓ Đã đủ thông tin" if is_aligned else f"⚠️ Thiếu dữ liệu ➔ Query 2: \"{search_query[:20]}...\"",
+            subtitle="✓ Đã đủ thông tin" if is_aligned else f"⚠️ Thiếu dữ liệu ➔ Query 2 ({search_target.upper()}): \"{search_query[:20]}...\"",
             data={
                 "is_aligned": is_aligned,
                 "reason": alignment_reason,
                 "triggers_loop_thinking": not is_aligned,
                 "use_lore": use_lore,
                 "extracted_facts": extracted_facts,
+                "search_target": search_target,
                 "lore_count": len(lore_chunks),
                 "memory_count": len(memories),
                 "has_rag_context": bool(lore_chunks or memories or web_search_1_res),
@@ -390,7 +466,9 @@ class RAGPipeline:
         tool_output_msg = ""
         thinking_steps = []
         if not is_aligned:
-            initial_target = "vector" if is_vector_search_mode else "web"
+            # Use dynamically decided target from ContextAssessor if available
+            initial_target = search_target or ("both" if is_hybrid_search_mode else ("vector" if is_vector_search_mode else "web"))
+
             retrieved_context_str, thinking_steps = await self.thinking_loop_agent.run(
                 session=session,
                 user_id=user_id,
@@ -448,7 +526,7 @@ class RAGPipeline:
                 output_parts.append(search_delta.strip())
 
             tool_output_msg = "\n\n".join(output_parts).strip()
-        elif is_web_search_mode and web_search_1_res:
+        elif (is_web_search_mode or is_hybrid_search_mode) and web_search_1_res:
             # Distilled factual summary from Round 1 (Fast & clean token budget)
             if extracted_facts:
                 tool_output_msg = f"[SEARCH DATA — FACTUAL SUMMARY]:\n{extracted_facts}"

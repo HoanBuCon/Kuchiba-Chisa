@@ -92,6 +92,12 @@ ${window.VisualizerApp.escapeHtml(userMessage.trim())}
                     case 'rag_stage':
                         contentHtml = this.renderRAGInspector(step);
                         break;
+                    case 'lore_retrieval':
+                        contentHtml = this.renderLoreRetrievalInspector(step);
+                        break;
+                    case 'memory_retrieval':
+                        contentHtml = this.renderMemoryRetrievalInspector(step);
+                        break;
                     case 'information_alignment_check':
                     case 'alignment_assessment':
                         contentHtml = this.renderAlignmentInspector(step);
@@ -438,14 +444,14 @@ ${window.VisualizerApp.escapeHtml(userMessage.trim())}
         ];
 
         const metricGridHtml = InspectorWidgets.renderMetricGrid(metrics);
-        const snippetListHtml = InspectorWidgets.renderSearchSnippetList(snippets, deepPages);
+        const snippetListHtml = InspectorWidgets.renderSearchSnippetList(snippets, deepPages, data.source_urls || []);
         const rawJsonHtml = InspectorWidgets.renderJsonViewer(data, "Raw Web Search Payload");
 
         return `
             <div class="inspector-panel">
                 <div class="inspector-header">
                     <div class="inspector-title-group">
-                        <span class="inspector-badge badge-search">Stage 5.1.b: Web Search & Crawler</span>
+                        <span class="inspector-badge badge-search">Web Search & Crawler</span>
                         <h2>${window.VisualizerApp.escapeHtml(step.title || '5.1.b [SEARCH] DuckDuckGo Search & Crawler')}</h2>
                     </div>
                 </div>
@@ -456,19 +462,112 @@ ${window.VisualizerApp.escapeHtml(userMessage.trim())}
         `;
     },
 
+    // ── STAGE 5.1.a: VECTOR LORE INSPECTOR ──
+    renderLoreRetrievalInspector(step) {
+        const data = step.data || {};
+        const chunks = data.chunks || [];
+        const collections = data.collections_queried || [];
+
+        const metrics = [
+            { label: 'Truy vấn Lore', value: data.query || '—', icon: 'search', color: '#ff4d66', small: true },
+            { label: 'Số lượng Chunks', value: data.chunks_count || chunks.length, icon: 'book-open', color: '#10b981' },
+            { label: 'Nguồn gọi', value: data.source || 'Knowledge Retrieval', icon: 'compass', color: '#f59e0b' },
+            { label: 'Collections', value: collections.length ? collections.join(', ') : 'Qdrant Lore', icon: 'database', color: '#00f2fe', small: true },
+        ];
+
+        const metricGridHtml = InspectorWidgets.renderMetricGrid(metrics);
+
+        const chunkCardsHtml = chunks.map((c, idx) => {
+            const text = typeof c === 'string' ? c : (c.text || JSON.stringify(c));
+            const score = typeof c === 'object' && c.score !== undefined ? `<span class="pill" style="font-size: 9.5px; color: #ff758c; border-color: rgba(255, 34, 62, 0.35);">Score: ${typeof c.score === 'number' ? c.score.toFixed(2) : c.score}</span>` : '';
+            const col = typeof c === 'object' && c.collection ? `<span class="pill" style="font-size: 9.5px; background: rgba(255, 77, 102, 0.12); color: #ffa4b2; border-color: rgba(255, 77, 102, 0.3);">${window.VisualizerApp.escapeHtml(c.collection)}</span>` : '';
+
+            return `
+                <div style="background: rgba(14, 7, 10, 0.75); border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 9px 11px; margin-bottom: 6px; font-size: 12px; border-left: 3px solid var(--red);">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                        <div style="display: flex; align-items: center; gap: 6px;">
+                            <span class="pill" style="font-size: 9px; opacity: 0.7;">#${idx + 1}</span>
+                            ${col}
+                        </div>
+                        ${score}
+                    </div>
+                    <div style="color: var(--text-primary); font-size: 12.5px; line-height: 1.55; white-space: pre-wrap;">${window.VisualizerApp.escapeHtml(text.trim())}</div>
+                </div>
+            `;
+        }).join('');
+
+        const rawJsonHtml = InspectorWidgets.renderJsonViewer(data, "Raw Lore Retrieval Payload");
+
+        return `
+            <div class="inspector-panel">
+                <div class="inspector-header">
+                    <div class="inspector-title-group">
+                        <span class="inspector-badge badge-rag">Vector Lore Retrieval</span>
+                        <h2>${window.VisualizerApp.escapeHtml(step.title || '5.1.a [VECTOR] Qdrant Lore Retrieval')}</h2>
+                    </div>
+                </div>
+                ${metricGridHtml}
+                ${chunks.length ? `
+                    <div class="inspector-card">
+                        <div class="inspector-card-title" style="justify-content: space-between;">
+                            <div style="display: flex; align-items: center; gap: 6px;">
+                                ${InspectorWidgets.icon('book-open', { size: 14, color: 'var(--red)' })}
+                                <span>Danh sách Vector Lore Chunks (${chunks.length})</span>
+                            </div>
+                        </div>
+                        ${chunkCardsHtml}
+                    </div>
+                ` : ''}
+                ${rawJsonHtml}
+            </div>
+        `;
+    },
+
+    // ── STAGE 5.1.c: MEMORY RETRIEVAL INSPECTOR ──
+    renderMemoryRetrievalInspector(step) {
+        const data = step.data || {};
+        const memories = data.memories || [];
+
+        const metrics = [
+            { label: 'Số lượng Ký ức', value: data.memories_count || memories.length, icon: 'brain', color: '#a855f7' },
+            { label: 'Nguồn gọi', value: data.source || 'Knowledge Retrieval', icon: 'compass', color: '#f59e0b' },
+        ];
+
+        const metricGridHtml = InspectorWidgets.renderMetricGrid(metrics);
+        const memCardsHtml = memories.length ? InspectorWidgets.renderFactList(memories, "Danh Sách Ký Ức Truy Hồi", "Không có ký ức nào") : '';
+        const rawJsonHtml = InspectorWidgets.renderJsonViewer(data, "Raw Memory Retrieval Payload");
+
+        return `
+            <div class="inspector-panel">
+                <div class="inspector-header">
+                    <div class="inspector-title-group">
+                        <span class="inspector-badge badge-rag">Memory Retrieval</span>
+                        <h2>${window.VisualizerApp.escapeHtml(step.title || '5.1.c [MEMORY] Truy hồi Ký ức')}</h2>
+                    </div>
+                </div>
+                ${metricGridHtml}
+                ${memCardsHtml}
+                ${rawJsonHtml}
+            </div>
+        `;
+    },
+
     // ── STAGE 5.2: CONTEXT ASSESSOR INSPECTOR ──
     renderAlignmentInspector(step) {
         const data = step.data || {};
-        const isAligned = Boolean(data.is_aligned);
+        const targetColor = (data.search_target === 'vector') ? '#ff4d66' : (data.search_target === 'both' ? '#a855f7' : '#00f2fe');
+        const targetLabel = (data.search_target === 'vector') ? 'Qdrant Vector DB' : (data.search_target === 'both' ? 'Hybrid (Vector + Web)' : 'DuckDuckGo Web');
 
         const metrics = [
             { label: 'Đánh giá Đủ Context', value: isAligned ? 'ĐÃ ĐỦ DỮ LIỆU' : 'THIẾU DỮ LIỆU', icon: 'shield-check', color: isAligned ? '#10b981' : '#f43f5e', badge: isAligned ? 'Pass' : 'Loop Thinking' },
             { label: 'Lý do Đánh giá', value: data.reason || '—', icon: 'file-text', color: '#38bdf8', small: true },
-            { label: 'Sử dụng Lore', value: data.use_lore !== false ? 'Có' : 'Không', icon: 'book-open', color: '#10b981' },
+            { label: 'Mục tiêu Tìm kiếm', value: isAligned ? 'Không cần thêm' : targetLabel, icon: 'compass', color: isAligned ? '#64748b' : targetColor, badge: isAligned ? undefined : (data.search_target || 'web').toUpperCase() },
             { label: 'Query Lần 2', value: data.generated_search_query ? `"${data.generated_search_query}"` : 'None', icon: 'refresh-cw', color: '#f59e0b', small: true },
         ];
 
         const metricGridHtml = InspectorWidgets.renderMetricGrid(metrics);
+        const rawFacts = data.extracted_facts || data.distilled_facts || data.facts;
+        const factsCardHtml = InspectorWidgets.renderExtractedFactsCard(rawFacts, "Dữ Kiện Đã Chắt Lọc Chuyển Giao Cho Prompt (Distilled Facts)");
         const rawJsonHtml = InspectorWidgets.renderJsonViewer(data, "Raw Alignment Assessor Payload");
 
         return `
@@ -480,20 +579,7 @@ ${window.VisualizerApp.escapeHtml(userMessage.trim())}
                     </div>
                 </div>
                 ${metricGridHtml}
-                ${data.extracted_facts ? `
-                    <div class="inspector-card" style="border-left: 3px solid var(--accent-amber);">
-                        <div class="inspector-card-title" style="justify-content: space-between;">
-                            <div style="display: flex; align-items: center; gap: 6px;">
-                                ${InspectorWidgets.icon('sparkles', { size: 14, color: 'var(--accent-amber)' })}
-                                <span>Dữ kiện Đã Chắt lọc Chuyển Giao Cho Prompt (Distilled Facts)</span>
-                            </div>
-                            <button class="btn" style="padding: 3px 8px; font-size: 11px;" onclick="InspectorWidgets.copyToClipboard(this.getAttribute('data-copy'), this)" data-copy="${window.VisualizerApp.escapeHtml((typeof data.extracted_facts === 'string' ? data.extracted_facts : JSON.stringify(data.extracted_facts, null, 2)).trim())}">
-                                ${InspectorWidgets.icon('copy', { size: 11 })} <span>Sao chép</span>
-                            </button>
-                        </div>
-                        <div class="json-block" style="max-height: 320px; white-space: pre-wrap; font-size: 12px; line-height: 1.6;">${window.VisualizerApp.escapeHtml((typeof data.extracted_facts === 'string' ? data.extracted_facts : JSON.stringify(data.extracted_facts, null, 2)).trim())}</div>
-                    </div>
-                ` : ''}
+                ${factsCardHtml}
                 ${data.retrieved_context && data.retrieved_context !== '(No context retrieved)' ? `
                     <div class="inspector-card" style="border-left: 3px solid var(--accent-cyan); margin-top: 12px;">
                         <div class="inspector-card-title" style="justify-content: space-between;">
@@ -529,6 +615,8 @@ ${window.VisualizerApp.escapeHtml(userMessage.trim())}
         ];
 
         const metricGridHtml = InspectorWidgets.renderMetricGrid(metrics);
+        const rawFacts = data.extracted_facts || data.distilled_facts || data.facts;
+        const factsCardHtml = InspectorWidgets.renderExtractedFactsCard(rawFacts, `Dữ Kiện Đã Chắt Lọc (Thinking Cycle #${cycleNum})`);
         const rawJsonHtml = InspectorWidgets.renderJsonViewer(data, "Raw Thinking Loop Payload");
 
         return `
@@ -554,21 +642,8 @@ ${window.VisualizerApp.escapeHtml(userMessage.trim())}
                     </div>
                 ` : ''}
 
-                <!-- Distilled Facts in this Cycle -->
-                ${data.distilled_facts ? `
-                    <div class="inspector-card" style="border-left: 3px solid var(--accent-amber);">
-                        <div class="inspector-card-title" style="justify-content: space-between;">
-                            <div style="display: flex; align-items: center; gap: 6px;">
-                                ${InspectorWidgets.icon('sparkles', { size: 14, color: 'var(--accent-amber)' })}
-                                <span>Dữ Kiện Đã Chắt Lọc Trong Chu Kỳ Này (Distilled Facts)</span>
-                            </div>
-                            <button class="btn" style="padding: 3px 8px; font-size: 11px;" onclick="InspectorWidgets.copyToClipboard(this.getAttribute('data-copy'), this)" data-copy="${window.VisualizerApp.escapeHtml(data.distilled_facts.trim())}">
-                                ${InspectorWidgets.icon('copy', { size: 11 })} <span>Sao chép</span>
-                            </button>
-                        </div>
-                        <div class="json-block" style="max-height: 300px; white-space: pre-wrap; font-size: 12px; line-height: 1.6;">${window.VisualizerApp.escapeHtml(data.distilled_facts.trim())}</div>
-                    </div>
-                ` : ''}
+                <!-- Distilled / Extracted Facts in this Cycle -->
+                ${factsCardHtml}
 
                 <!-- Cycle Reasoning -->
                 ${data.thinking ? `

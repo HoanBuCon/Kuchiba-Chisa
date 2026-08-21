@@ -78,6 +78,7 @@ class PipelineTracker:
         self.max_history = max_history
         self.history: List[Dict[str, Any]] = []
         self.listeners: Set[Callable[[Dict[str, Any]], Any]] = set()
+        self._pending_tasks: Set[asyncio.Task] = set()
         self._subscriber_task: Any = None
         self.instance_id: str = str(uuid.uuid4())
 
@@ -94,16 +95,24 @@ class PipelineTracker:
             try:
                 event["_publisher_id"] = self.instance_id
                 loop = asyncio.get_running_loop()
-                loop.create_task(self._publish_redis_event(event))
+                if loop.is_running():
+                    task = loop.create_task(self._publish_redis_event(event))
+                    self._pending_tasks.add(task)
+                    task.add_done_callback(self._pending_tasks.discard)
             except RuntimeError:
                 pass  # Event loop not running
+
+    async def flush(self):
+        """Awaits all pending background tasks (e.g. before loop shutdown in tests)."""
+        if self._pending_tasks:
+            tasks = list(self._pending_tasks)
+            await asyncio.gather(*tasks, return_exceptions=True)
 
     async def _publish_redis_event(self, event: Dict[str, Any]):
         try:
             from app.infrastructure.cache.redis.redis_service import get_redis_client
             redis = get_redis_client()
             await redis.publish(REDIS_PUBSUB_CHANNEL, json.dumps(event, default=str))
-            await redis.close()
         except Exception:
             pass
 
@@ -365,7 +374,10 @@ class PipelineTracker:
             # Persist to Redis history list asynchronously
             try:
                 loop = asyncio.get_running_loop()
-                loop.create_task(self._push_history_redis(trace))
+                if loop.is_running():
+                    task = loop.create_task(self._push_history_redis(trace))
+                    self._pending_tasks.add(task)
+                    task.add_done_callback(self._pending_tasks.discard)
             except RuntimeError:
                 pass
 
@@ -388,7 +400,6 @@ class PipelineTracker:
             redis = get_redis_client()
             await redis.lpush(REDIS_HISTORY_KEY, json.dumps(trace, default=str))
             await redis.ltrim(REDIS_HISTORY_KEY, 0, self.max_history - 1)
-            await redis.close()
         except Exception:
             pass
 

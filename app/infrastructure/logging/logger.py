@@ -6,6 +6,16 @@ import structlog
 from structlog.types import EventDict, WrappedLogger
 from app.config.settings import settings
 
+# Reconfigure Windows stdout/stderr to UTF-8 to prevent charmap encoding errors with Vietnamese/Unicode
+if sys.platform == "win32":
+    try:
+        if hasattr(sys.stdout, "reconfigure"):
+            sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+        if hasattr(sys.stderr, "reconfigure"):
+            sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
+
 def _add_service_info(
     logger: WrappedLogger,
     method_name: str,

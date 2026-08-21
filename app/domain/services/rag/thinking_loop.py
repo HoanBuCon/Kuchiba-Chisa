@@ -192,24 +192,22 @@ class ThinkingLoopAgent:
 
                 system_prompt = (
                     "You are an Adaptive Loop Thinking Agent for Kuchiba Chisa (Wuthering Waves).\n"
-                    "Your goal is to gather objective, verifiable facts so Chisa can answer the user's question accurately.\n"
+                    "Your goal is to gather objective, verifiable facts so Chisa can answer the user's specific question accurately.\n"
                     "Analyze the conversation history, the user's question, and the current accumulated context.\n\n"
-                    "RULES:\n"
-                    "- Set 'has_enough_info' to true ONLY when the current context already contains specific, relevant facts "
-                    "that directly answer the question (names, dates, events, causes, outcomes).\n"
-                    "- If context lacks concrete facts, set 'has_enough_info' to false and provide 'search_query' and 'search_target'.\n"
-                    "- SEARCH TARGET ROUTING ('search_target'):\n"
-                    "  * 'vector': Query Qdrant lore/memory DB (for character lore, skills, story, in-game mechanics).\n"
-                    "  * 'web': Query Internet search (for real-world history/facts, news, release dates, patch notes).\n"
-                    "  * 'both': Query both sources when question spans game lore and real-world updates.\n"
-                    "- MANDATORY FACT DISTILLATION ('distilled_facts'):\n"
+                    "CRITICAL SCOPING RULES (PREVENT OVER-SEARCHING):\n"
+                    "1. SCOPE-BOUND EVALUATION: Evaluate ONLY what the user explicitly asks for.\n"
+                    "   - If the user asks a general question, general factual background is 100% SUFFICIENT -> set 'has_enough_info': true.\n"
+                    "   - DO NOT demand encyclopedic completeness. NEVER search for combat stats, multipliers, or voice lines unless the user EXPLICITLY requested them.\n"
+                    "2. SUFFICIENCY GATE: Set 'has_enough_info' to true when the current context contains enough facts to answer >80% of the question.\n"
+                    "3. SEARCH TARGET ROUTING ('search_target') - ONLY WHEN has_enough_info = false:\n"
+                    "  * 'vector': For character lore, story, and canon in-game mechanics (Default for game questions unless internet info is explicitly requested).\n"
+                    "  * 'web': For real-world facts, news, release dates, patch notes, or internet discussions.\n"
+                    "  * 'both': ONLY when comparing in-game lore with online discussions/leaks/buffs.\n"
+                    "4. MANDATORY FACT DISTILLATION ('distilled_facts'):\n"
                     "  * Distill key factual points from context, preserving 100% of exact numbers, percentages, dates, proper names, entities, and formulas.\n"
-                    "- MULTI-HOP SEARCH REFINEMENT (CYCLE 2+):\n"
-                    "  * Synthesize entities/terms discovered in Cycle 1 to craft a sharper, targeted 'search_query' for Cycle 2.\n"
+                    "5. MULTI-HOP SEARCH REFINEMENT (CYCLE 2+):\n"
+                    "  * Synthesize terms discovered in Cycle 1 to craft a sharper, targeted 'search_query' (4 to 8 terms) targeting ONLY the missing aspect.\n"
                     "  * DO NOT repeat the exact same search query as Cycle 1.\n\n"
-                    "- OPTIMIZATION GUIDELINES FOR 'search_query':\n"
-                    "  * Keep it focused and keyword-based (4 to 8 search terms).\n"
-                    "  * Strip conversational fillers ('cho hỏi', 'em ơi', 'là gì') and resolve relative pronouns ('em' -> 'Kuchiba Chisa').\n\n"
                     "You MUST output the result as a valid JSON object matching the requested schema."
                 )
 
@@ -357,14 +355,14 @@ class ThinkingLoopAgent:
                 }
                 thinking_steps.append(step_data)
 
-                # Add steps to tracker in real-time
+                # ── Real-time step logging for Inspector / Visualizer ──
                 self.pipeline_tracker.add_step(
                     name=f"thinking_loop_cycle_{i}",
                     stage_id="stage_5_rag",
                     depth=1,
                     category="llm_inference",
                     title=f"5.3.{i} [THINKING] Vòng lặp Loop Thinking Cycle {i}",
-                    subtitle=f"Đang tìm kiếm: \"{search_query[:24]}...\"",
+                    subtitle=f"Đang tìm kiếm ({search_target.upper()}): \"{search_query[:24]}...\"",
                     data={
                         "thinking": thinking,
                         "has_enough_info": False,
@@ -376,14 +374,33 @@ class ThinkingLoopAgent:
                     }
                 )
 
+                # Sub-node for Vector Lore Retrieval (5.3.i.1)
+                if search_target in ("vector", "both") and search_details.get("vector_results"):
+                    self.pipeline_tracker.add_step(
+                        name="lore_retrieval",
+                        stage_id="stage_5_rag",
+                        depth=2,
+                        category="retrieval",
+                        title=f"5.3.{i}.1 [VECTOR] Qdrant Lore Retrieval",
+                        subtitle=f"\"{search_query[:24]}...\" ({len(search_details.get('vector_results', []))} chunks)",
+                        data={
+                            "query": search_query,
+                            "source": f"thinking_loop_cycle_{i}",
+                            "chunks_count": len(search_details.get("vector_results", [])),
+                            "chunks": search_details.get("vector_results", []),
+                        }
+                    )
+
+                # Sub-node for Web Search (5.3.i.1 or 5.3.i.2)
                 if search_target in ("web", "both") and search_details.get("web_results"):
                     from app.domain.services.tools.web_search import web_search_trace_payload
+                    web_sub_idx = "2" if (search_target == "both" and search_details.get("vector_results")) else "1"
                     self.pipeline_tracker.add_step(
                         name="web_search",
                         stage_id="stage_5_rag",
                         depth=2,
                         category="tool_execution",
-                        title=f"5.3.{i}.1 [TOOL] DuckDuckGo Search & Crawler",
+                        title=f"5.3.{i}.{web_sub_idx} [TOOL] DuckDuckGo Search & Crawler",
                         subtitle=f"\"{search_query[:24]}...\" ({len(search_details.get('snippets', []))} snippets)",
                         data=web_search_trace_payload(
                             search_details["web_results"],
@@ -398,12 +415,26 @@ class ThinkingLoopAgent:
                 web_success = search_details.get("status") == "success" and len(snippets) >= 2
                 vector_success = len(vector_hits) >= 1
 
-                if i == 1 and (web_success or vector_success):
+                if search_target == "both":
+                    is_satisfied = (web_success and vector_success)
                     satisfied_reason = (
-                        f"Tìm kiếm Cycle 1 ({search_target}) trả về "
-                        f"{len(snippets)} web snippets / {len(vector_hits)} vector chunks phù hợp. "
+                        f"Tìm kiếm Hybrid Cycle 1 trả về {len(vector_hits)} vector chunks và {len(snippets)} web snippets. "
+                        "Đầy đủ cả 2 nguồn tri thức ➔ Tự động chuyển sang Prompt Build."
+                    )
+                elif search_target == "vector":
+                    is_satisfied = vector_success
+                    satisfied_reason = (
+                        f"Tìm kiếm Vector Cycle 1 trả về {len(vector_hits)} vector chunks phù hợp. "
                         "Tự động chuyển sang Prompt Build để tối ưu latency."
                     )
+                else:  # "web"
+                    is_satisfied = web_success
+                    satisfied_reason = (
+                        f"Tìm kiếm Web Cycle 1 trả về {len(snippets)} web snippets phù hợp. "
+                        "Tự động chuyển sang Prompt Build để tối ưu latency."
+                    )
+
+                if i == 1 and is_satisfied:
                     log.info("Auto-satisfying after Cycle 1 search", reason=satisfied_reason)
                     self.pipeline_tracker.add_step(
                         name="thinking_loop_auto_satisfy",
@@ -411,7 +442,7 @@ class ThinkingLoopAgent:
                         depth=1,
                         category="decision",
                         title="5.3.2 [AUTO-SATISFY] Tự động Thỏa mãn Dữ liệu",
-                        subtitle=f"Đã đủ dữ liệu ➔ Bỏ qua Cycle 2",
+                        subtitle="Đã đủ dữ liệu ➔ Bỏ qua Cycle 2",
                         data={
                             "cycle": 1,
                             "auto_satisfied": True,
