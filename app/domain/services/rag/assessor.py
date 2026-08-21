@@ -114,9 +114,24 @@ class ContextAssessor:
             
             raw_facts = parsed.get("extracted_facts") or ""
             if isinstance(raw_facts, list):
-                extracted_facts = "\n".join(f"- {str(f).strip()}" for f in raw_facts if str(f).strip())
+                bullet_lines = []
+                for f in raw_facts:
+                    f_str = str(f).strip()
+                    if f_str:
+                        if not f_str.startswith(("- ", "* ", "• ")):
+                            bullet_lines.append(f"- {f_str}")
+                        else:
+                            bullet_lines.append(f_str)
+                extracted_facts = "\n".join(bullet_lines)
             elif isinstance(raw_facts, str):
-                extracted_facts = raw_facts.strip()
+                lines = [line.strip() for line in raw_facts.strip().split("\n") if line.strip()]
+                bullet_lines = []
+                for line in lines:
+                    if not line.startswith(("- ", "* ", "• ")):
+                        bullet_lines.append(f"- {line}")
+                    else:
+                        bullet_lines.append(line)
+                extracted_facts = "\n".join(bullet_lines) if bullet_lines else ""
             else:
                 extracted_facts = str(raw_facts).strip() if raw_facts else ""
 

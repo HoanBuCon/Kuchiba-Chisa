@@ -117,6 +117,23 @@ class RAGPipeline:
         if is_web_search_mode and web_search_tool:
             web_search_1_query = cleaned_query or user_message
             log.info("Knowledge Retrieval executing Option 2 (Web Search Mode - Round 1)", query=web_search_1_query)
+
+            # Emit Stage 5 Root step first
+            self.pipeline_tracker.add_step(
+                name="rag_retrieval",
+                stage_id="stage_5_rag",
+                depth=0,
+                category="stage_root",
+                title="Stage 5: [RAG] Truy hồi Tri thức Đa tầng",
+                subtitle=f"Web Search Mode · \"{web_search_1_query[:25]}...\"",
+                data={
+                    "mode": "WEB_SEARCH",
+                    "should_retrieve": True,
+                    "search_query": web_search_1_query,
+                    "intents": list(intent_strs),
+                }
+            )
+
             try:
                 web_search_1_res = await web_search_tool.execute(
                     session=session,
@@ -129,11 +146,16 @@ class RAGPipeline:
                 )
                 search_msg = web_search_1_res.get("message", "")
                 
-                # Log Web Search Round 1 trace directly as single clean tool step
+                # Log Web Search Round 1 as child sub-node 5.1.b
                 from app.domain.services.tools.web_search import web_search_trace_payload
                 self.pipeline_tracker.add_step(
-                    "web_search",
-                    web_search_trace_payload(
+                    name="web_search",
+                    stage_id="stage_5_rag",
+                    depth=1,
+                    category="retrieval",
+                    title="5.1.b [SEARCH] DuckDuckGo Search & Deep Crawler",
+                    subtitle=f"\"{web_search_1_query[:24]}...\" ({len(web_search_1_res.get('snippets', []))} snippets)",
+                    data=web_search_trace_payload(
                         web_search_1_res,
                         source="knowledge_retrieval_round_1",
                         original_message=web_search_1_query,
@@ -244,22 +266,30 @@ class RAGPipeline:
 
             scoring_details = [x[2] for x in lore_scored[:RAGTuning.TOP_K] if len(x) > 2 and x[2]]
 
-            self.pipeline_tracker.add_step("rag_retrieval", {
-                "mode": "VECTOR_SEARCH",
-                "should_retrieve": True,
-                "intents": intent_strs,
-                "lore_collections_queried": queried_lore_cols,
-                "extracted_entities": list(extracted),
-                "expanded_entities": list(expanded),
-                "retrieved_lore_chunks": lore_chunks,
-                "lore_scoring_details": scoring_details,
-                "retrieved_memories": memories,
-                "weights": {
-                    "vector": RAGTuning.WEIGHT_VECTOR,
-                    "keyword": RAGTuning.WEIGHT_KEYWORD,
-                    "metadata": RAGTuning.WEIGHT_METADATA
+            self.pipeline_tracker.add_step(
+                name="rag_retrieval",
+                stage_id="stage_5_rag",
+                depth=0,
+                category="stage_root",
+                title="Stage 5: [RAG] Truy hồi Tri thức Đa tầng",
+                subtitle=f"Vector Search · {len(lore_chunks)} lore chunks · {len(memories)} memories",
+                data={
+                    "mode": "VECTOR_SEARCH",
+                    "should_retrieve": True,
+                    "intents": list(intent_strs),
+                    "lore_collections_queried": queried_lore_cols,
+                    "extracted_entities": list(extracted),
+                    "expanded_entities": list(expanded),
+                    "retrieved_lore_chunks": lore_chunks,
+                    "lore_scoring_details": scoring_details,
+                    "retrieved_memories": memories,
+                    "weights": {
+                        "vector": RAGTuning.WEIGHT_VECTOR,
+                        "keyword": RAGTuning.WEIGHT_KEYWORD,
+                        "metadata": RAGTuning.WEIGHT_METADATA
+                    }
                 }
-            })
+            )
 
             context_pieces = []
             if lore_chunks:
@@ -275,12 +305,20 @@ class RAGPipeline:
             elif not has_knowledge_intent:
                 skip_reason = f"Intent '{', '.join(intent_strs)}' does not require Lore or Web retrieval"
 
-            self.pipeline_tracker.add_step("rag_retrieval", {
-                "mode": "BYPASS",
-                "should_retrieve": False,
-                "skip_reason": skip_reason,
-                "intents": intent_strs,
-            })
+            self.pipeline_tracker.add_step(
+                name="rag_retrieval",
+                stage_id="stage_5_rag",
+                depth=0,
+                category="stage_root",
+                title="Stage 5: [RAG] Truy hồi Tri thức Đa tầng",
+                subtitle=f"0ms RAG Bypass ({skip_reason})",
+                data={
+                    "mode": "BYPASS",
+                    "should_retrieve": False,
+                    "skip_reason": skip_reason,
+                    "intents": list(intent_strs),
+                }
+            )
 
         # ── UNIVERSAL CONTEXT ASSESSOR (Đánh giá Đủ Context, Viết lại Query & Chắt lọc Dữ kiện) ──
         is_aligned = True
@@ -325,6 +363,11 @@ class RAGPipeline:
 
         self.pipeline_tracker.add_step(
             name="information_alignment_check",
+            stage_id="stage_5_rag",
+            depth=1,
+            category="decision",
+            title="5.2 [LLM & DECISION] Context Assessor & Chắt lọc Dữ kiện",
+            subtitle="✓ Đã đủ thông tin" if is_aligned else f"⚠️ Thiếu dữ liệu ➔ Query 2: \"{search_query[:20]}...\"",
             data={
                 "is_aligned": is_aligned,
                 "reason": alignment_reason,
@@ -342,10 +385,12 @@ class RAGPipeline:
             }
         )
 
+
         # ── LOOP THINKING (Search Lần 2 nếu ContextAssessor phát hiện thiếu dữ liệu) ──
         tool_output_msg = ""
         thinking_steps = []
         if not is_aligned:
+            initial_target = "vector" if is_vector_search_mode else "web"
             retrieved_context_str, thinking_steps = await self.thinking_loop_agent.run(
                 session=session,
                 user_id=user_id,
@@ -355,16 +400,54 @@ class RAGPipeline:
                 llm=llm,
                 embedder=embedder,
                 web_search_tool=web_search_tool,
-                initial_search_query=search_query  # <-- Refined Query do Assessor vừa viết lại!
+                initial_search_query=search_query,  # <-- Refined Query do Assessor vừa viết lại!
+                initial_extracted_facts=extracted_facts,
+                lore_retriever=self.lore_retriever,
+                initial_search_target=initial_target,
             )
-            # If in Vector Mode with Lore Chunks, strip the initial lore block so it's not duplicated in [SEARCH DATA]
-            search_delta = retrieved_context_str
-            if is_vector_search_mode and lore_chunks and "[Retrieved Lore Chunks]:" in search_delta:
-                parts = search_delta.split("[Thinking Cycle", 1)
-                if len(parts) > 1:
-                    search_delta = "[Thinking Cycle" + parts[1]
 
-            tool_output_msg = search_delta.strip()
+            # ── BUILD TOOL OUTPUT MESSAGE (KẾT HỢP FACTUAL SUMMARY + DỮ LIỆU TÌM KIẾM MỚI TỪ LOOP) ──
+            # 1. Thu thập tất cả distilled facts đã được chắt lọc qua các bước
+            step_facts = [
+                step.get("distilled_facts", "").strip()
+                for step in thinking_steps
+                if step.get("distilled_facts", "").strip()
+            ]
+            if extracted_facts and extracted_facts not in step_facts:
+                step_facts.insert(0, extracted_facts)
+
+            # 2. Thu thập kết quả tìm kiếm của chu kỳ CUỐI CÙNG (Trailing Search Cycle chưa được distill)
+            latest_search_detail = None
+            for step in reversed(thinking_steps):
+                search_res = step.get("search_result", "").strip()
+                search_q = step.get("search_query", "").strip()
+                cycle_num = step.get("cycle", 1)
+                target = step.get("search_target", "web").upper()
+                
+                # Tìm chu kỳ gần nhất có thực thi search thực tế và có kết quả hợp lệ
+                if search_res and search_res not in ("No further search needed.", "No search results returned.") and search_q:
+                    latest_search_detail = f"[Thinking Cycle {cycle_num} ({target}) Results for '{search_q}']:\n{search_res}"
+                    break
+
+            # 3. Lắp ráp tool_output_msg (Phương án A: Facts đã chắt lọc + Kết quả tìm kiếm mới nhất)
+            output_parts = []
+            if step_facts:
+                merged_facts = "\n".join(step_facts)
+                output_parts.append(f"[SEARCH DATA — FACTUAL SUMMARY]:\n{merged_facts}")
+
+            if latest_search_detail:
+                # Đính kèm kết quả mới nhất chưa qua distill từ lượt search cuối (5.3.2.1 hoặc 5.3.1.1)
+                output_parts.append(f"[SEARCH DATA — LATEST RETRIEVED DETAILS]:\n{latest_search_detail}")
+            elif not step_facts:
+                # Fallback an toàn nếu không có step_facts và không có latest_search_detail
+                search_delta = retrieved_context_str
+                if is_vector_search_mode and lore_chunks and "[Retrieved Lore Chunks]:" in search_delta:
+                    parts = search_delta.split("[Thinking Cycle", 1)
+                    if len(parts) > 1:
+                        search_delta = "[Thinking Cycle" + parts[1]
+                output_parts.append(search_delta.strip())
+
+            tool_output_msg = "\n\n".join(output_parts).strip()
         elif is_web_search_mode and web_search_1_res:
             # Distilled factual summary from Round 1 (Fast & clean token budget)
             if extracted_facts:

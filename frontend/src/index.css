@@ -39,6 +39,31 @@ body {
   overflow: hidden;
 }
 
+/* ─── Global Scrollbars ──────────────────────────────────────────────── */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(229, 57, 53, 0.25) transparent;
+}
+
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(229, 57, 53, 0.25);
+  border-radius: 4px;
+  transition: background 0.2s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--red);
+}
+
 /* ─── App Shell ──────────────────────────────────────────────────────── */
 .app-shell {
   display: flex;
@@ -266,40 +291,34 @@ body {
   box-shadow: 0 0 10px var(--red-glow);
 }
 
+/* ── Emotion Panel (Side-by-Side Flex Section) ── */
+/* ── Emotion Panel (Silky Smooth Side-by-Side Section) ── */
 .emotion-drawer-backdrop {
-  position: absolute;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.4);
-  backdrop-filter: blur(2px);
-  z-index: 15;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.25s ease;
-}
-
-.emotion-drawer-backdrop.open {
-  opacity: 1;
-  pointer-events: auto;
+  display: none;
 }
 
 .emotion-drawer {
-  position: absolute;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  width: 290px;
+  width: 0;
   background: var(--bg-elevated);
-  border-left: 1px solid var(--border);
-  z-index: 20;
+  border-left: 1px solid transparent;
   display: flex;
   flex-direction: column;
-  transform: translateX(100%);
-  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: -8px 0 24px rgba(0, 0, 0, 0.5);
+  overflow: hidden;
+  pointer-events: none;
+  flex-shrink: 0;
+  visibility: hidden;
+  transition: 
+    width 0.36s cubic-bezier(0.16, 1, 0.3, 1),
+    border-color 0.25s ease,
+    visibility 0.36s;
+  will-change: width;
 }
 
 .emotion-drawer.open {
-  transform: translateX(0);
+  width: 290px;
+  border-left: 1px solid var(--border);
+  pointer-events: auto;
+  visibility: visible;
 }
 
 .drawer-header {
@@ -308,6 +327,12 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  width: 290px;
+  min-width: 290px;
+  flex-shrink: 0;
+  transform: translateX(16px);
+  opacity: 0;
+  transition: transform 0.36s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.28s ease;
 }
 
 .drawer-title {
@@ -348,6 +373,17 @@ body {
   display: flex;
   flex-direction: column;
   gap: 14px;
+  width: 290px;
+  min-width: 290px;
+  transform: translateX(16px);
+  opacity: 0;
+  transition: transform 0.36s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.28s ease;
+}
+
+.emotion-drawer.open .drawer-header,
+.emotion-drawer.open .drawer-body {
+  transform: translateX(0);
+  opacity: 1;
 }
 
 .sidebar-spacer { flex: 1; }
@@ -646,8 +682,24 @@ body {
   resize: none;
   max-height: 180px;
   padding: 4px 0;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(229, 57, 53, 0.35) transparent;
 }
 .chat-input::placeholder { color: var(--text-muted); }
+
+.chat-input::-webkit-scrollbar {
+  width: 4px;
+}
+.chat-input::-webkit-scrollbar-track {
+  background: transparent;
+}
+.chat-input::-webkit-scrollbar-thumb {
+  background: rgba(229, 57, 53, 0.35);
+  border-radius: 4px;
+}
+.chat-input::-webkit-scrollbar-thumb:hover {
+  background: var(--red);
+}
 
 .send-btn {
   width: 34px;

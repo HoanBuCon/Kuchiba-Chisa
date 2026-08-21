@@ -80,9 +80,9 @@ class IntentStage(PipelineStage):
 
             if self.pipeline_tracker:
                 self.pipeline_tracker.add_step("intent_classification", {
+                    "user_message": context.user_message,
                     "is_small_talk": True,
                     "intents": ["SMALL_TALK"],
-                    "cleaned_query": "",
                     "rewritten_query": context.user_message,
                     "rewrite_method": "BYPASS",
                     "needs_vector_search": False,
@@ -101,10 +101,10 @@ class IntentStage(PipelineStage):
 
             # Register Stage 2 root step FIRST so sub-action LLM rewrite appears hierarchically as its child node
             stage_tracker_data = {
+                "user_message": context.user_message,
                 "is_small_talk": False,
                 "intents": ["KNOWLEDGE_OR_TASK"],
-                "cleaned_query": cleaned_query,
-                "rewritten_query": cleaned_query or context.user_message,
+                "rewritten_query": context.user_message,
                 "rewrite_method": "LLM_FLASH",
                 "needs_vector_search": False,
                 "needs_web_search": False,

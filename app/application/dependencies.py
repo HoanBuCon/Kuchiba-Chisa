@@ -207,6 +207,7 @@ class AppContainer:
                 user_repo_factory=SqlAlchemyUserRepository,
                 emotion_repo_factory=SqlAlchemyEmotionRepository,
                 conv_repo_factory=SqlAlchemyConversationRepository,
+                pipeline_tracker=pipeline_tracker
             ),
             IntentStage(
                 intent_classifier=intent_classifier,
@@ -216,7 +217,8 @@ class AppContainer:
                 pipeline_tracker=pipeline_tracker
             ),
             CacheStage(
-                cache=redis_service
+                cache=redis_service,
+                pipeline_tracker=pipeline_tracker
             ),
             ToolRoutingStage(
                 tool_router=tool_router,
@@ -247,16 +249,19 @@ class AppContainer:
             ),
             PersistenceStage(
                 user_repo_factory=SqlAlchemyUserRepository,
-                conv_repo_factory=SqlAlchemyConversationRepository
+                conv_repo_factory=SqlAlchemyConversationRepository,
+                pipeline_tracker=pipeline_tracker
             ),
             CacheUpdateStage(
                 cache=redis_service
             ),
             BackgroundTaskStage(
                 memory_extractor=self.memory_extractor,
-                unified_auto_summarize_callback=lambda uid, cid: engine_ref[0]._unified_auto_summarize(uid, cid)
+                unified_auto_summarize_callback=lambda uid, cid: engine_ref[0]._unified_auto_summarize(uid, cid),
+                pipeline_tracker=pipeline_tracker
             )
         ]
+
         
         pipeline = ChatPipeline(stages=stages)
         

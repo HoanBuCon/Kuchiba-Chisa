@@ -6,8 +6,10 @@
     <title>Chisa AI — Pipeline Visualizer Dashboard</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/static/visualizer/visualizer.css?v=3">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/visualizer/visualizer.css?v=7">
+    <!-- Lucide Icons Vector Library -->
+    <script src="https://unpkg.com/lucide@latest"></script>
 </head>
 <body>
     <div id="app-container">
@@ -15,19 +17,22 @@
         <header>
             <div class="brand">
                 <div class="logo-icon">
-                    <img src="/assets/dance_chisa.gif" alt="Chisa" style="width: 100%; height: 100%; object-fit: cover; border-radius: 8px;">
+                    <img src="/assets/dance_chisa.gif" alt="Chisa" style="width: 100%; height: 100%; object-fit: cover; border-radius: 4px;">
                 </div>
-                <span class="logo-text">CHISA<span class="logo-dot">.</span>AI</span>
-                <span class="brand-badge">Pipeline Visualizer</span>
+                <div class="brand-text-group">
+                    <span class="logo-text">CHISA<span class="logo-dot">.</span>AI</span>
+                    <span class="brand-badge">PIPELINE VISUALIZER</span>
+                </div>
             </div>
             
             <div class="status-bar">
-                <div style="display: flex; align-items: center; gap: 8px;">
+                <div class="ws-status-container">
                     <span id="ws-status-dot" class="status-dot"></span>
                     <span id="ws-status-text">Connecting...</span>
                 </div>
                 <button class="btn btn-primary" onclick="ReportExportEngine.exportCurrentTrace()">
-                    📥 Xuất Báo Cáo Markdown
+                    <i data-lucide="download" class="icon-sm"></i>
+                    <span>Xuất Báo Cáo Markdown</span>
                 </button>
             </div>
         </header>
@@ -37,10 +42,16 @@
             <!-- Column 1: Trace History List -->
             <aside class="panel">
                 <div class="panel-header">
-                    <span>📜 Lịch sử Traces</span>
+                    <div class="panel-header-title">
+                        <i data-lucide="history" class="icon-header icon-crimson"></i>
+                        <span>Lịch sử Traces</span>
+                    </div>
                 </div>
-                <div style="padding: 10px 12px; border-bottom: 1px solid var(--border-color);">
-                    <input type="text" id="search-traces" placeholder="Tìm kiếm theo tin nhắn hoặc ID...">
+                <div class="search-box-container">
+                    <div class="search-input-wrapper">
+                        <i data-lucide="search" class="search-icon"></i>
+                        <input type="text" id="search-traces" placeholder="Tìm kiếm theo tin nhắn hoặc ID...">
+                    </div>
                 </div>
                 <div class="panel-body" id="trace-list-container">
                     <!-- Loaded dynamically via visualizer.js -->
@@ -50,7 +61,10 @@
             <!-- Column 2: Pipeline Execution Tree -->
             <section class="panel">
                 <div class="panel-header">
-                    <span>🌳 Cây Pipeline RAG</span>
+                    <div class="panel-header-title">
+                        <i data-lucide="git-branch" class="icon-header icon-crimson"></i>
+                        <span>Cây Pipeline Execution</span>
+                    </div>
                 </div>
                 <div class="panel-body" id="pipeline-tree-container">
                     <!-- Loaded dynamically via pipeline-tree.js -->
@@ -60,7 +74,10 @@
             <!-- Column 3: Node Inspector Detail Panel -->
             <main class="panel" style="background-color: var(--bg-base);">
                 <div class="panel-header">
-                    <span>🔍 Chi tiết Node (Inspector)</span>
+                    <div class="panel-header-title">
+                        <i data-lucide="cpu" class="icon-header icon-crimson"></i>
+                        <span>Chi tiết Node (Inspector)</span>
+                    </div>
                 </div>
                 <div class="panel-body" id="node-inspector-container" style="padding: 0;">
                     <!-- Loaded dynamically via node-inspector.js -->
@@ -70,9 +87,10 @@
     </div>
 
     <!-- ── Modular Scripts ── -->
-    <script src="/static/visualizer/visualizer.js?v=5"></script>
-    <script src="/static/visualizer/pipeline-tree.js?v=5"></script>
-    <script src="/static/visualizer/node-inspector.js?v=5"></script>
-    <script src="/static/visualizer/report-export.js?v=5"></script>
+    <script src="/static/visualizer/inspector-widgets.js?v=7"></script>
+    <script src="/static/visualizer/pipeline-tree.js?v=7"></script>
+    <script src="/static/visualizer/node-inspector.js?v=7"></script>
+    <script src="/static/visualizer/report-export.js?v=7"></script>
+    <script src="/static/visualizer/visualizer.js?v=7"></script>
 </body>
 </html>

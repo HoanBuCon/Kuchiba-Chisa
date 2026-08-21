@@ -102,8 +102,9 @@ class DDGScraperSearchProvider(ISearchProvider):
                 import html as html_lib
                 for s in raw:
                     c = re.sub(r'<[^>]+>', '', s)
-                    c = html_lib.unescape(c).strip()
-                    if c:
+                    c = html_lib.unescape(c)
+                    c = re.sub(r'\s+', ' ', c).strip()
+                    if c and len(c) >= 25:
                         cleaned.append(c)
                 if cleaned:
                     return cleaned
