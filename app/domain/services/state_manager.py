@@ -36,9 +36,12 @@ class StateManager:
         Xác định trạng thái cảm xúc hỗn hợp (Plutchik Dyads) theo thứ bậc ưu tiên.
         Tránh xung đột khi nhiều chỉ số cùng vượt ngưỡng cao.
         """
-        shyness = getattr(emotion, "shyness", 0.0)
-        curiosity = getattr(emotion, "curiosity", 0.20)
-        comfort = getattr(emotion, "comfort", 0.50)
+        shyness_raw = getattr(emotion, "shyness", 0.0)
+        shyness = shyness_raw if shyness_raw is not None else 0.0
+        curiosity_raw = getattr(emotion, "curiosity", 0.20)
+        curiosity = curiosity_raw if curiosity_raw is not None else 0.20
+        comfort_raw = getattr(emotion, "comfort", 0.50)
+        comfort = comfort_raw if comfort_raw is not None else 0.50
 
         # Level 1 (Tối cao): Sweet Gap Moe (Shyness cao + Attachment cao)
         if shyness >= 0.80 and emotion.attachment >= 0.65:
@@ -155,13 +158,17 @@ class StateManager:
 
     @classmethod
     def get_mood(cls, emotion: EmotionState) -> str:
+        shyness_val = getattr(emotion, "shyness", 0.0)
+        shyness = shyness_val if shyness_val is not None else 0.0
+        curiosity_val = getattr(emotion, "curiosity", 0.20)
+        curiosity = curiosity_val if curiosity_val is not None else 0.20
         if emotion.irritation >= 0.40:
             return "Playful Pout" if emotion.attachment >= 0.40 or emotion.trust >= 0.55 else "Annoyed"
         elif emotion.sadness >= 0.40:
             return "Sad"
-        elif getattr(emotion, "shyness", 0.0) >= 0.50:
+        elif shyness >= 0.50:
             return "Flustered Affection"
-        elif getattr(emotion, "curiosity", 0.20) >= 0.60:
+        elif curiosity >= 0.60:
             return "Curious"
         elif emotion.joy >= 0.40:
             return "Happy"
@@ -217,7 +224,8 @@ class StateManager:
                 "trầm ấm, chậm rãi, vỗ về và làm chỗ dựa an toàn cho Senpai."
             )
 
-        shyness_val = getattr(emotion, "shyness", 0.0)
+        shyness_raw = getattr(emotion, "shyness", 0.0)
+        shyness_val = shyness_raw if shyness_raw is not None else 0.0
         if shyness_val >= 0.55:
             if shyness_val >= 0.85:
                 return longing_prefix + circadian_block + (
@@ -231,14 +239,16 @@ class StateManager:
                     "tìm lý do logic hoặc khoa học để che giấu sự thẹn thùng của mình."
                 )
 
-        curiosity_val = getattr(emotion, "curiosity", 0.20)
+        curiosity_raw = getattr(emotion, "curiosity", 0.20)
+        curiosity_val = curiosity_raw if curiosity_raw is not None else 0.20
         if curiosity_val >= 0.60:
             return longing_prefix + circadian_block + (
                 "Chisa đang vô cùng hào hứng và đam mê mổ xẻ cấu trúc logic/câu đố cùng Senpai. "
                 "Hãy thể hiện sự say mê, mắt sáng lên, hỏi dồn dập các câu hỏi tò mò thông minh và đáng yêu."
             )
 
-        comfort_val = getattr(emotion, "comfort", 0.50)
+        comfort_raw = getattr(emotion, "comfort", 0.50)
+        comfort_val = comfort_raw if comfort_raw is not None else 0.50
         if comfort_val >= 0.65:
             return longing_prefix + circadian_block + (
                 "Chisa cảm nhận được sự bình yên và an tâm tuyệt đối bên cạnh Senpai (Tâm trí Havoc được xoa dịu). "
@@ -270,9 +280,12 @@ class StateManager:
         affection_val = emotion.attachment + attachment_bonus
         trust_tier_name, _ = cls.get_trust_tier(emotion.trust)
         attach_tier_name, _ = cls.get_attachment_tier(affection_val)
-        shyness_label = cls.get_shyness_label(getattr(emotion, "shyness", 0.0))
-        curiosity_label = cls.get_curiosity_label(getattr(emotion, "curiosity", 0.20))
-        comfort_label = cls.get_comfort_label(getattr(emotion, "comfort", 0.50))
+        shyness_val = getattr(emotion, "shyness", 0.0)
+        shyness_label = cls.get_shyness_label(shyness_val if shyness_val is not None else 0.0)
+        curiosity_val = getattr(emotion, "curiosity", 0.20)
+        curiosity_label = cls.get_curiosity_label(curiosity_val if curiosity_val is not None else 0.20)
+        comfort_val = getattr(emotion, "comfort", 0.50)
+        comfort_label = cls.get_comfort_label(comfort_val if comfort_val is not None else 0.50)
         
         dyad = cls.get_emotional_dyad(emotion)
         mood_label = dyad[0] if dyad else cls.get_mood(emotion)
@@ -280,13 +293,13 @@ class StateManager:
         directive = cls.get_unified_directive(emotion, affection_val, elapsed_hours)
 
         return (
+            "[BEHAVIORAL DIRECTIVE]\n"
+            f"{directive}\n\n"
             "[CURRENT RELATIONSHIP & EMOTION STATE]\n"
+            f"- Current Mood: {mood_label}\n"
             f"- Trust Level: {trust_tier_name} ({emotion.trust:.2f})\n"
             f"- Attachment Level: {attach_tier_name} ({affection_val:.2f})\n"
             f"- Blush / Shyness: {shyness_label}\n"
             f"- Curiosity: {curiosity_label}\n"
-            f"- Comfort & Havoc Sanctuary: {comfort_label}\n"
-            f"- Current Mood: {mood_label}\n"
-            "[BEHAVIORAL DIRECTIVE]\n"
-            f"{directive}"
+            f"- Comfort & Havoc Sanctuary: {comfort_label}"
         )

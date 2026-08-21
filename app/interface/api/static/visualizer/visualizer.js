@@ -11,6 +11,10 @@ window.VisualizerApp = {
     selectedStepIndex: null,
     ws: null,
 
+    get currentTrace() {
+        return this.traces.find(t => t.id === this.selectedTraceId) || null;
+    },
+
     init() {
         console.log("Initializing Chisa Pipeline Visualizer...");
         this.fetchInitialTraces();
@@ -24,6 +28,12 @@ window.VisualizerApp = {
             searchInput.addEventListener('input', (e) => {
                 this.renderTraceList(e.target.value.trim().toLowerCase());
             });
+        }
+    },
+
+    refreshLucideIcons() {
+        if (window.lucide && typeof window.lucide.createIcons === 'function') {
+            window.lucide.createIcons();
         }
     },
 
@@ -57,6 +67,7 @@ window.VisualizerApp = {
             console.log("WebSocket connected ✓");
             if (statusDot) statusDot.classList.add('connected');
             if (statusText) statusText.innerText = "Real-time Live";
+            this.refreshLucideIcons();
         };
 
         this.ws.onmessage = (event) => {
@@ -108,7 +119,6 @@ window.VisualizerApp = {
             }
             if (!trace.steps) trace.steps = [];
             
-            // Deduplicate step if exact same name and timestamp/purpose already exists
             const incomingStep = eventData.step;
             const isDuplicate = trace.steps.some(s => {
                 if (s.name !== incomingStep.name) return false;
@@ -144,7 +154,7 @@ window.VisualizerApp = {
         if (filtered.length === 0) {
             container.innerHTML = `
                 <div style="padding: 30px 16px; text-align: center; color: var(--text-muted); font-size: 13px;">
-                    <img src="/assets/pet_chisa_gif.gif" alt="Chisa" style="width: 48px; height: 48px; border-radius: 8px; margin-bottom: 8px; opacity: 0.8;">
+                    <img src="/assets/pet_chisa_gif.gif" alt="Chisa" style="width: 44px; height: 44px; border-radius: var(--radius-sm); margin-bottom: 8px; opacity: 0.8;">
                     <div>Chưa có trace nào</div>
                 </div>
             `;
@@ -161,23 +171,28 @@ window.VisualizerApp = {
             const reasonTok = t.total_reasoning_tokens || 0;
             const tokenTooltip = `Tổng: ${totalTok} tok (Input: ${inTok} | Output: ${outTok}${reasonTok ? ` | Reasoning: ${reasonTok}` : ''})`;
 
+            const clockIcon = window.InspectorWidgets ? window.InspectorWidgets.icon('clock', { size: 10, color: '#38bdf8' }) : '';
+            const coinIcon = window.InspectorWidgets ? window.InspectorWidgets.icon('coins', { size: 10, color: '#34d399' }) : '';
+
             return `
                 <div class="trace-item ${isSelected ? 'active' : ''}" onclick="VisualizerApp.selectTrace('${t.id}')">
                     <div class="trace-item-header">
                         <div style="display: flex; align-items: center; gap: 6px;">
-                            <img src="/assets/dance_chisa.gif" style="width: 16px; height: 16px; border-radius: 4px; object-fit: cover;" alt="Chisa">
+                            <img src="/assets/dance_chisa.gif" style="width: 15px; height: 15px; border-radius: 3px; object-fit: cover;" alt="Chisa">
                             <span>#${t.id.substring(0, 8)}</span>
                         </div>
                         <span>${timeStr}</span>
                     </div>
                     <div class="trace-message">${this.escapeHtml(t.message || '(Chưa có câu hỏi)')}</div>
                     <div class="trace-meta">
-                        <span class="pill pill-latency">⚡ ${latency}</span>
-                        <span class="pill pill-tokens" title="${tokenTooltip}">🎟️ ${totalTok} tok</span>
+                        <span class="pill pill-latency" style="display: inline-flex; align-items: center; gap: 4px;">${clockIcon} ${latency}</span>
+                        <span class="pill pill-tokens" style="display: inline-flex; align-items: center; gap: 4px;" title="${tokenTooltip}">${coinIcon} ${totalTok.toLocaleString()} tok</span>
                     </div>
                 </div>
             `;
         }).join('');
+
+        this.refreshLucideIcons();
     },
 
     selectTrace(traceId) {
@@ -188,7 +203,17 @@ window.VisualizerApp = {
         const trace = this.traces.find(t => t.id === traceId);
         if (trace) {
             window.PipelineTreeEngine.render(trace);
+            // Auto select first step or show empty overview
+            if (trace.steps && trace.steps.length > 0) {
+                window.PipelineTreeEngine.selectNode(0);
+            } else {
+                window.NodeInspectorEngine.renderEmpty();
+            }
+        } else {
+            window.NodeInspectorEngine.renderEmpty();
         }
+
+        this.refreshLucideIcons();
     },
 
     escapeHtml(str) {
@@ -197,8 +222,7 @@ window.VisualizerApp = {
             .replace(/&/g, "&amp;")
             .replace(/</g, "&lt;")
             .replace(/>/g, "&gt;")
-            .replace(/"/g, "&quot;")
-            .replace(/'/g, "&#039;");
+            .replace(/"/g, "&quot;");
     }
 };
 

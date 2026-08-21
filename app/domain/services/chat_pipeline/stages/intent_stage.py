@@ -80,9 +80,9 @@ class IntentStage(PipelineStage):
 
             if self.pipeline_tracker:
                 self.pipeline_tracker.add_step("intent_classification", {
+                    "user_message": context.user_message,
                     "is_small_talk": True,
                     "intents": ["SMALL_TALK"],
-                    "cleaned_query": "",
                     "rewritten_query": context.user_message,
                     "rewrite_method": "BYPASS",
                     "needs_vector_search": False,
@@ -101,10 +101,10 @@ class IntentStage(PipelineStage):
 
             # Register Stage 2 root step FIRST so sub-action LLM rewrite appears hierarchically as its child node
             stage_tracker_data = {
+                "user_message": context.user_message,
                 "is_small_talk": False,
                 "intents": ["KNOWLEDGE_OR_TASK"],
-                "cleaned_query": cleaned_query,
-                "rewritten_query": cleaned_query or context.user_message,
+                "rewritten_query": context.user_message,
                 "rewrite_method": "LLM_FLASH",
                 "needs_vector_search": False,
                 "needs_web_search": False,
@@ -163,11 +163,14 @@ class IntentStage(PipelineStage):
             if needs_vector_search or (needs_web_search and not query_vector):
                 query_vector = await self.embedder.embed_text(rewritten_query, prefix="query: ")
 
-            routing_reason = (
-                "LLM Tri-State: Qdrant Vector Search (Game Lore)" if needs_vector_search
-                else ("LLM Tri-State: Direct Web Search (External / Internet)" if needs_web_search
-                else "LLM Tri-State: Code / Small Talk (0ms RAG Bypass)")
-            )
+            if needs_vector_search and needs_web_search:
+                routing_reason = "LLM Tri-State: Hybrid Search (Vector Lore + Direct Web Search)"
+            elif needs_vector_search:
+                routing_reason = "LLM Tri-State: Qdrant Vector Search (Game Lore)"
+            elif needs_web_search:
+                routing_reason = "LLM Tri-State: Direct Web Search (External / Internet)"
+            else:
+                routing_reason = "LLM Tri-State: Code / Small Talk (0ms RAG Bypass)"
 
             intent_result = IntentResult(
                 intents=matched_intents,

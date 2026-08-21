@@ -1,4 +1,4 @@
-from typing import List, Tuple, Optional, Callable, Any
+from typing import List, Tuple, Optional, Callable, Any, Dict
 from app.domain.interfaces.vector_store import IVectorStore
 from app.domain.interfaces.repositories import ILoreParentRepository
 from app.domain.services.rag.reranker import KeywordOverlapReranker
@@ -26,6 +26,50 @@ class LoreRetriever:
         self.reranker = reranker or KeywordOverlapReranker()
         self.lore_parent_repo_factory = lore_parent_repo_factory
 
+    @staticmethod
+    def resolve_windowed_parent(parent_markdown: Optional[str], child_text: str, window_chars: int = 1200) -> str:
+        """
+        Extracts a localized context window around child_text instead of loading the entire parent markdown.
+        Prevents Parent Document Bloat and token starvation.
+        """
+        if not parent_markdown:
+            return child_text
+        if not child_text:
+            return parent_markdown[:window_chars].strip()
+
+        # If parent markdown is already compact, use it directly
+        if len(parent_markdown) <= window_chars:
+            return parent_markdown.strip()
+
+        # Find position of child chunk in parent document
+        pos = parent_markdown.find(child_text[:80])
+        if pos == -1:
+            pos = parent_markdown.find(child_text[:40])
+
+        if pos == -1:
+            return child_text
+
+        half_window = window_chars // 2
+        start = max(0, pos - half_window)
+        end = min(len(parent_markdown), pos + len(child_text) + half_window)
+
+        # Align start boundary to newline if close
+        if start > 0:
+            prev_nl = parent_markdown.rfind("\n", 0, start)
+            if prev_nl != -1 and (start - prev_nl) < 200:
+                start = prev_nl + 1
+
+        # Align end boundary to newline if close
+        if end < len(parent_markdown):
+            next_nl = parent_markdown.find("\n", end)
+            if next_nl != -1 and (next_nl - end) < 200:
+                end = next_nl
+
+        snippet = parent_markdown[start:end].strip()
+        prefix = "... " if start > 0 else ""
+        suffix = " ..." if end < len(parent_markdown) else ""
+        return f"{prefix}{snippet}{suffix}"
+
     async def retrieve_lore_parent_child(
         self,
         collection: str,
@@ -36,7 +80,7 @@ class LoreRetriever:
         score_threshold: float = RAGTuning.SCORE_THRESHOLD,
         entities_filter: Optional[List[str]] = None,
         max_token_budget: Optional[int] = None,
-    ) -> List[Tuple[str, float]]:
+    ) -> List[Tuple[str, float, Dict[str, Any]]]:
         try:
             if not self.vector_store:
                 return []
@@ -131,10 +175,10 @@ class LoreRetriever:
             
             # 1. Try to get section parent markdown from DB
             parent_text = parent_docs.get(parent_id) if parent_id else None
-            
-            # 2. Fallback to child chunk text
             child_text = payload.get("text_content", "")
-            resolved_text = parent_text or child_text
+            
+            # 2. Windowed Parent Resolution (mitigate parent bloat)
+            resolved_text = self.resolve_windowed_parent(parent_text, child_text, window_chars=1200) if parent_text else child_text
             
             if not resolved_text:
                 continue

@@ -490,12 +490,20 @@ class MemoryExtractor:
     ) -> None:
         try:
             from app.infrastructure.logging.pipeline_tracker import pipeline_tracker
-            pipeline_tracker.add_step("memory_extraction", {
-                "status": status,
-                "facts": facts,
-                "fact_count": len(facts),
-                "raw_facts_count": raw_facts_count,
-                "extracted_input_context": extracted_input_context,
-            })
+            pipeline_tracker.add_step(
+                name="memory_extraction",
+                stage_id="stage_10_bg",
+                depth=1,
+                category="task",
+                title="10.1 [BG] Trích xuất Ký ức (Batch 3 lượt)",
+                subtitle=f"{len(facts)} facts trích xuất",
+                data={
+                    "status": status,
+                    "facts": facts,
+                    "fact_count": len(facts),
+                    "raw_facts_count": raw_facts_count,
+                    "extracted_input_context": extracted_input_context,
+                }
+            )
         except Exception:
             pass

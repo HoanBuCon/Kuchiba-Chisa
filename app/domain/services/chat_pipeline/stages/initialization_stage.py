@@ -1,10 +1,10 @@
-import math
-from typing import Callable
+from typing import Callable, Optional
 from app.domain.interfaces.session import IDbSession
 
 from app.domain.services.chat_pipeline.stage import PipelineStage
 from app.domain.services.chat_pipeline.context import ChatContext
 from app.domain.interfaces.repositories import IUserRepository, IEmotionRepository, IConversationRepository
+from app.domain.interfaces.tracker import IPipelineTracker
 from app.shared.utils.user_identity import normalize_user_id
 from app.shared.utils.logger import get_logger
 from app.domain.context import request_question_idx, request_turn_idx
@@ -21,10 +21,13 @@ class InitializationStage(PipelineStage):
         user_repo_factory: Callable[[IDbSession], IUserRepository],
         emotion_repo_factory: Callable[[IDbSession], IEmotionRepository],
         conv_repo_factory: Callable[[IDbSession], IConversationRepository],
+        pipeline_tracker: Optional[IPipelineTracker] = None,
     ):
         self.user_repo_factory = user_repo_factory
         self.emotion_repo_factory = emotion_repo_factory
         self.conv_repo_factory = conv_repo_factory
+        self.pipeline_tracker = pipeline_tracker
+
 
     async def process(self, context: ChatContext) -> ChatContext:
         user_uuid = normalize_user_id(context.user_id)
@@ -50,13 +53,17 @@ class InitializationStage(PipelineStage):
         request_turn_idx.set(1)
         
         # Formulate Attachment Bonus and current emotions snapshot
+        import math
         attachment_bonus_raw = math.log(max(1, stats.interaction_count)) * 0.05
         current_emotions = {
             "joy": emotion.joy,
             "sadness": emotion.sadness,
             "trust": emotion.trust,
             "irritation": emotion.irritation,
-            "attachment": emotion.attachment + attachment_bonus_raw
+            "attachment": emotion.attachment + attachment_bonus_raw,
+            "shyness": getattr(emotion, "shyness", 0.0),
+            "curiosity": getattr(emotion, "curiosity", 0.20),
+            "comfort": getattr(emotion, "comfort", 0.50),
         }
 
         # Update context
@@ -69,9 +76,34 @@ class InitializationStage(PipelineStage):
         context.attachment_bonus_raw = attachment_bonus_raw
         context.current_emotions = current_emotions
 
+        if self.pipeline_tracker:
+            self.pipeline_tracker.add_step(
+                name="initialization",
+                stage_id="stage_1_init",
+                depth=0,
+                category="stage_root",
+                title="Stage 1: [INIT] Khởi tạo Phiên & Ngữ cảnh",
+                subtitle=f"Load stats, profile · Turn #{question_idx} ({context.user_id[:8]}...)",
+                data={
+                    "user_uuid": user_uuid,
+                    "user_id": context.user_id,
+                    "conv_id": str(conv_id) if conv_id else None,
+                    "turn_index": question_idx,
+                    "interaction_count": stats.interaction_count,
+                    "history_count": len(history),
+                    "has_summary": bool(summary),
+                    "summary_preview": (summary[:200] + "...") if summary and len(summary) > 200 else summary,
+                    "current_emotions": current_emotions,
+                    "baseline_emotions": current_emotions,
+                    "attachment_bonus_raw": round(attachment_bonus_raw, 4),
+                    "status": "success"
+                }
+            )
+
         # PH-001: Explicitly commit to release the initial read connection back to the pool
         # before the pipeline proceeds to external network LLM calls.
         if hasattr(context.session, "commit"):
             await context.session.commit()
 
         return context
+

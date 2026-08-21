@@ -288,28 +288,84 @@ async def log_llm_transaction(prompt: StructuredPrompt, response: LLMResponse) -
             from app.infrastructure.logging.pipeline_tracker import pipeline_tracker
             purpose = llm_call_purpose.get()
             is_deep_thinking = prompt.rag_decisions.get("use_deep_thinking", False) if hasattr(prompt, "rag_decisions") and prompt.rag_decisions else False
-            pipeline_tracker.add_step("llm_generation", {
-                "model": response.model,
-                "input_tokens": response.input_tokens,
-                "output_tokens": response.output_tokens,
-                "reasoning_tokens": token_breakdown["reasoning_cot"],
-                "total_tokens": token_breakdown["total_tokens"],
-                "token_breakdown": token_breakdown,
-                "finish_reason": response.finish_reason,
-                "raw_response": response.raw_content,
-                "parsed_response": response.parsed,
-                "purpose": purpose,
-                "purpose_label": purpose_label(purpose),
-                "call_index": t_idx,
-                "token_source": "api",
-                "system_prompt": prompt.system,
-                "user_message": prompt.user_message,
-                "use_deep_thinking": is_deep_thinking,
-                "reasoning_content": response.reasoning_content,
-                "history": prompt.history,
-            })
+            is_main_chat = (purpose == "chat_response" or not purpose or purpose == "unknown")
+
+            if is_main_chat:
+                pipeline_tracker.add_step(
+                    name="llm_generation",
+                    stage_id="stage_7_llm",
+                    depth=0,
+                    category="llm_inference",
+                    title="Stage 7: [LLM] Sinh Phản hồi Chisa (Main LLM)",
+                    subtitle=f"Model: {response.model} · {token_breakdown['total_tokens']} tokens",
+                    tokens=token_breakdown,
+                    data={
+                        "model": response.model,
+                        "input_tokens": response.input_tokens,
+                        "output_tokens": response.output_tokens,
+                        "reasoning_tokens": token_breakdown["reasoning_cot"],
+                        "total_tokens": token_breakdown["total_tokens"],
+                        "token_breakdown": token_breakdown,
+                        "finish_reason": response.finish_reason,
+                        "raw_response": response.raw_content,
+                        "parsed_response": response.parsed,
+                        "purpose": purpose or "chat_response",
+                        "purpose_label": purpose_label(purpose or "chat_response"),
+                        "call_index": t_idx,
+                        "token_source": "api",
+                        "system_prompt": prompt.system,
+                        "user_message": prompt.user_message,
+                        "use_deep_thinking": is_deep_thinking,
+                        "reasoning_content": response.reasoning_content,
+                        "history": prompt.history,
+                        "temperature": getattr(prompt, "temperature", 0.5),
+                    }
+                )
+            else:
+                # Sub-calls (Micro Rewriter, Assessor, Thinking Loop cycles):
+                # Do not emit a standalone root node, but aggregate tokens in trace and attach telemetry to parent stage
+                trace = pipeline_tracker.get_current_trace()
+                if trace:
+                    in_tok = response.input_tokens or token_breakdown["total_input"]
+                    out_tok = response.output_tokens or token_breakdown["total_output"]
+                    reason_tok = token_breakdown.get("reasoning_cot", 0) or getattr(response, "reasoning_tokens", 0)
+                    tot_tok = token_breakdown.get("total_tokens") or (in_tok + out_tok + reason_tok)
+
+                    trace["total_input_tokens"] = trace.get("total_input_tokens", 0) + in_tok
+                    trace["total_output_tokens"] = trace.get("total_output_tokens", 0) + out_tok
+                    trace["total_reasoning_tokens"] = trace.get("total_reasoning_tokens", 0) + reason_tok
+                    trace["total_tokens"] = trace.get("total_tokens", 0) + tot_tok
+
+                    # Attach sub-call telemetry to parent stage payload
+                    if "steps" in trace and trace["steps"]:
+                        for s in reversed(trace["steps"]):
+                            if purpose in ("micro_llm_query_rewrite", "query_rewrite") and s.get("name") in ("intent_classification", "intent_stage"):
+                                s["data"]["llm_rewrite_telemetry"] = {
+                                    "model": response.model,
+                                    "tokens": token_breakdown,
+                                    "raw_response": response.raw_content,
+                                    "parsed_response": response.parsed
+                                }
+                                break
+                            elif purpose in ("alignment_assessor", "context_assessor") and s.get("name") in ("information_alignment_check", "alignment_assessment"):
+                                s["data"]["assessor_llm_telemetry"] = {
+                                    "model": response.model,
+                                    "tokens": token_breakdown,
+                                    "raw_response": response.raw_content,
+                                    "parsed_response": response.parsed
+                                }
+                                break
+                            elif purpose.startswith("thinking_loop_cycle_") and s.get("name") == purpose:
+                                s["data"]["llm_telemetry"] = {
+                                    "model": response.model,
+                                    "tokens": token_breakdown,
+                                    "raw_response": response.raw_content,
+                                    "parsed_response": response.parsed
+                                }
+                                break
         except Exception:
             pass
+
 
         if not enable_clean_log.get():
             return

@@ -145,10 +145,13 @@ class WebSearchAgentTool(BaseAgentTool):
                 html,
                 include_comments=False,
                 include_tables=True,
-                no_fallback=False
+                no_fallback=False,
+                favor_precision=True,
+                deduplicate=True,
             )
             if extracted and len(extracted.strip()) >= 50:
-                return extracted.strip()
+                import html as html_module
+                return html_module.unescape(extracted.strip())
         except Exception:
             pass
 
@@ -195,6 +198,96 @@ class WebSearchAgentTool(BaseAgentTool):
         text = html_module.unescape(text)
         return re.sub(r"\s+", " ", text).strip()
 
+    @staticmethod
+    def _filter_quality_snippets(snippets: List[str], query: str) -> List[str]:
+        """
+        Snippet Quality Gate:
+        - Filters out snippets that are too short (< 30 chars).
+        - Fuzzy deduplication with normalized hash.
+        - Relevance check: snippet must contain at least 1 keyword from query.
+        """
+        if not snippets:
+            return []
+
+        seen_hashes = set()
+        quality_snippets = []
+        query_tokens = {tok.lower() for tok in re.findall(r"[\w]+", query) if len(tok) >= 3}
+
+        for snippet in snippets:
+            s_clean = snippet.strip()
+            # 1. Filter out too short snippets
+            if len(s_clean) < 30:
+                continue
+
+            # 2. Fuzzy dedup using normalized prefix hash
+            normalized = re.sub(r"\s+", " ", s_clean.lower())
+            h = hash(normalized[:80])
+            if h in seen_hashes:
+                continue
+            seen_hashes.add(h)
+
+            # 3. Relevance check: snippet should contain at least 1 query keyword
+            if len(query_tokens) >= 3:
+                has_overlap = any(tok in normalized for tok in query_tokens)
+                if not has_overlap:
+                    continue
+
+            quality_snippets.append(s_clean)
+
+        # Fallback if strict filter rejected all snippets
+        if not quality_snippets and snippets:
+            for s in snippets:
+                s_clean = s.strip()
+                if len(s_clean) >= 20:
+                    normalized = re.sub(r"\s+", " ", s_clean.lower())
+                    h = hash(normalized[:80])
+                    if h not in seen_hashes:
+                        seen_hashes.add(h)
+                        quality_snippets.append(s_clean)
+                if len(quality_snippets) >= 4:
+                    break
+
+        return quality_snippets[:4]
+
+    @staticmethod
+    def _rank_urls_by_relevance(urls: List[str], snippets: List[str], query: str) -> List[str]:
+        """
+        Smart Deep Page Selection:
+        Prioritizes candidate URLs with high snippet keyword overlap and reputable domains.
+        """
+        DOMAIN_BLACKLIST = {
+            "youtube.com", "facebook.com", "twitter.com", "x.com",
+            "instagram.com", "tiktok.com", "pinterest.com"
+        }
+        DOMAIN_BOOST = {
+            "wikipedia.org": 2.0,
+            "fandom.com": 1.5,
+            "wutheringwaves.wiki": 2.0,
+            "kurobbs.com": 1.5,
+            "github.com": 1.5,
+            "reddit.com": 0.5,
+            "kurogame.com": 2.0,
+        }
+
+        scored = []
+        query_tokens = {tok.lower() for tok in re.findall(r"[\w]+", query) if len(tok) >= 3}
+
+        for i, url in enumerate(urls[:8]):
+            url_lower = url.lower()
+            if any(d in url_lower for d in DOMAIN_BLACKLIST):
+                continue
+
+            snippet_text = snippets[i].lower() if i < len(snippets) else ""
+            overlap = sum(1 for t in query_tokens if t in snippet_text or t in url_lower)
+            domain_boost = sum(boost for dom, boost in DOMAIN_BOOST.items() if dom in url_lower)
+            position_penalty = i * 0.1
+
+            score = overlap + domain_boost - position_penalty
+            scored.append((url, score))
+
+        scored.sort(key=lambda x: x[1], reverse=True)
+        return [u for u, _ in scored[:3]]
+
     def __init__(
         self,
         providers: List['ISearchProvider'] = None,
@@ -233,20 +326,19 @@ class WebSearchAgentTool(BaseAgentTool):
                 "provider": provider_name,
             }
 
-        results = snippets[:4]
+        # ── Snippet Quality Gate ──
+        quality_snippets = self._filter_quality_snippets(snippets, query)
+        results = quality_snippets if quality_snippets else snippets[:4]
         results_str = f"SEARCH SNIPPETS ({provider_name}):\n" + "\n".join([f"- {r}" for r in results])
 
-        # Parallel Deep Page Crawling (Load tolerant and fast, up to 3 candidate URLs in parallel)
-        filtered_urls = [
-            u for u in urls[:5]
-            if not any(domain in u for domain in ["youtube.com", "facebook.com", "twitter.com", "instagram.com", "tiktok.com"])
-        ][:3]
+        # ── Smart Deep Page Selection ──
+        candidate_urls = self._rank_urls_by_relevance(urls, snippets, query)
 
         fetched_content = []
         deep_page_url = None
         deep_page_preview = None
 
-        if filtered_urls and self.page_fetcher:
+        if candidate_urls and self.page_fetcher:
             async def fetch_page(target_url: str):
                 try:
                     log.info("Fetching deep page in parallel", url=target_url)
@@ -264,23 +356,25 @@ class WebSearchAgentTool(BaseAgentTool):
                             "just a moment..."
                         ])
                         if len(cleaned_text) >= 150 and not is_blocked:
-                            return target_url, cleaned_text[:1500]
+                            return target_url, cleaned_text[:2500]
                 except asyncio.TimeoutError:
                     log.warning("Deep page fetch timed out after 3.5s", url=target_url)
                 except Exception as pe:
                     log.warning("Failed parallel deep page fetch", url=target_url, error=str(pe))
                 return None
 
-            tasks = [fetch_page(u) for u in filtered_urls]
+            tasks = [fetch_page(u) for u in candidate_urls]
             fetch_results = await asyncio.gather(*tasks)
 
             for f_res in fetch_results:
                 if f_res:
                     target_url, content_snippet = f_res
-                    deep_page_url = target_url
-                    deep_page_preview = content_snippet
+                    if not deep_page_url:
+                        deep_page_url = target_url
+                        deep_page_preview = content_snippet[:500]
                     fetched_content.append(f"SOURCE URL: {target_url}\nCONTENT: {content_snippet}")
-                    break  # Grab first successful high-quality page to conserve token budget
+                    if len(fetched_content) >= 2:
+                        break  # Grab up to 2 high-quality pages to enrich context
 
             if fetched_content:
                 results_str += "\n\nDEEP PAGE CONTENT:\n" + "\n\n".join(fetched_content)

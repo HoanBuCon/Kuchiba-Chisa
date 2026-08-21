@@ -94,20 +94,20 @@ class DDGScraperSearchProvider(ISearchProvider):
             r'<a class="result__snippet"[^>]*>(.*?)</a>',
             r'<div class="result__snippet"[^>]*>(.*?)</div>',
             r'class="result__body"[^>]*>(.*?)</div>',
+            r'class=[\'"]result-snippet[\'"][^>]*>(.*?)</td>',
         ]
+        import html as html_lib
+        snippets = []
         for pattern in patterns:
             raw = re.findall(pattern, html, re.DOTALL)
             if raw:
-                cleaned = []
-                import html as html_lib
                 for s in raw:
                     c = re.sub(r'<[^>]+>', '', s)
-                    c = html_lib.unescape(c).strip()
-                    if c:
-                        cleaned.append(c)
-                if cleaned:
-                    return cleaned
-        return []
+                    c = html_lib.unescape(c)
+                    c = re.sub(r'\s+', ' ', c).strip()
+                    if c and len(c) >= 25 and c not in snippets:
+                        snippets.append(c)
+        return snippets
 
     def _extract_urls(self, html: str) -> List[str]:
         urls = []
@@ -118,7 +118,7 @@ class DDGScraperSearchProvider(ISearchProvider):
                 query_params = urllib.parse.parse_qs(parsed.query)
                 if 'uddg' in query_params:
                     u = query_params['uddg'][0]
-                    if u not in urls:
+                    if u not in urls and u.startswith("http"):
                         urls.append(u)
             except Exception:
                 pass
@@ -130,16 +130,41 @@ class DDGScraperSearchProvider(ISearchProvider):
         return urls
 
     async def search(self, query: str) -> Optional[SearchResult]:
-        try:
-            log.info("Running DDG HTML scraper fallback...")
-            url = f"https://html.duckduckgo.com/html/?q={urllib.parse.quote(query)}"
-            response = await self._http_client.get(url, timeout=5.0, headers=COMMON_HEADERS)
-            if 200 <= response.status_code < 300:
-                snippets = self._parse_snippets(response.text)
-                urls = self._extract_urls(response.text)
-                if snippets:
-                    log.info("DDG HTML scraper fallback succeeded")
-                    return SearchResult(snippets=snippets, urls=urls, provider=self.name)
-        except Exception as ex:
-            log.error("DDG HTML scraper failed", error=str(ex))
+        sanitized_query = re.sub(r'[\(\)\[\]\{\}\"\']', ' ', query)
+        sanitized_query = re.sub(r'\s+', ' ', sanitized_query).strip()
+
+        queries_to_try = [query]
+        if sanitized_query and sanitized_query != query:
+            queries_to_try.append(sanitized_query)
+
+        endpoints = [
+            "https://html.duckduckgo.com/html/",
+            "https://lite.duckduckgo.com/lite/",
+        ]
+
+        post_headers = {
+            **COMMON_HEADERS,
+            "Content-Type": "application/x-www-form-urlencoded; charset=utf-8",
+        }
+
+        for q in queries_to_try:
+            body_bytes = urllib.parse.urlencode({"q": q}, encoding="utf-8").encode("utf-8")
+            for ep in endpoints:
+                try:
+                    log.info("Running resilient DDG POST search...", endpoint=ep, query=q)
+                    response = await self._http_client.post(
+                        ep,
+                        content=body_bytes,
+                        timeout=5.0,
+                        headers=post_headers
+                    )
+                    if 200 <= response.status_code < 300:
+                        snippets = self._parse_snippets(response.text)
+                        urls = self._extract_urls(response.text)
+                        if snippets:
+                            log.info("DDG search succeeded ✓", endpoint=ep, count=len(snippets))
+                            return SearchResult(snippets=snippets, urls=urls, provider=self.name)
+                except Exception as ex:
+                    log.warning("DDG search attempt failed", endpoint=ep, error=str(ex))
+
         return None

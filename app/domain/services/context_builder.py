@@ -157,6 +157,27 @@ class ContextBuilder:
             formatted_history.append({"role": role, "content": content})
         return formatted_history
 
+    @staticmethod
+    def _u_curve_sort(items: List[Any]) -> List[Any]:
+        """
+        U-Shaped Attention Sorting:
+        Arranges sorted items (from most relevant to least relevant) such that
+        the most relevant items are placed at the high-attention ends (top & bottom of section),
+        and lower-relevance items reside in the middle.
+        Example: [A, B, C, D] -> [A, C, D, B] (A at start, B at end).
+        """
+        if len(items) <= 2:
+            return items
+        
+        left_side = []
+        right_side = []
+        for idx, item in enumerate(items):
+            if idx % 2 == 0:
+                left_side.append(item)
+            else:
+                right_side.insert(0, item)
+        return left_side + right_side
+
     def build(
         self,
         emotion: EmotionState,
@@ -195,9 +216,10 @@ class ContextBuilder:
 
         memories_text = ""
         if allocation.trimmed_memories:
+            u_memories = self._u_curve_sort(allocation.trimmed_memories)
             mem_items = [
                 f"- {m.text_content if hasattr(m, 'text_content') else str(m)}"
-                for m in allocation.trimmed_memories
+                for m in u_memories
             ]
             memories_text = (
                 "[MEMORIES — REFERENCE DATA START]\n"
@@ -207,7 +229,8 @@ class ContextBuilder:
 
         lore_text = ""
         if allocation.trimmed_lore:
-            lore_items = [f"- {chunk}" for chunk in allocation.trimmed_lore]
+            u_lore = self._u_curve_sort(allocation.trimmed_lore)
+            lore_items = [f"- {chunk}" for chunk in u_lore]
             lore_text = (
                 "[LORE — REFERENCE DATA START]\n"
                 + "\n".join(lore_items)
@@ -225,12 +248,6 @@ class ContextBuilder:
             )
             system_parts.extend(["", summary_section])
 
-        if memories_text:
-            system_parts.extend(["", memories_text])
-
-        if lore_text:
-            system_parts.extend(["", lore_text])
-
         search_section = None
         if allocation.trimmed_search_body:
             search_section = (
@@ -240,7 +257,31 @@ class ContextBuilder:
                 f"{self.SEARCH_INSTRUCTIONS}\n"
                 "[SEARCH DATA — REFERENCE DATA END]"
             )
-            system_parts.extend(["", search_section])
+
+        # U-Shaped Dynamic Context Ordering:
+        # High-relevance primary knowledge target sits immediately before [OUTPUT FORMAT] (Recency Zone).
+        is_lore_primary = bool(intent_name and any(k in intent_name.upper() for k in ["LORE", "CHARACTER", "WORLD", "STORY"]))
+
+        knowledge_sections = []
+        if is_lore_primary:
+            # Secondary/Contextual info first, Primary Lore knowledge closest to output format
+            if memories_text:
+                knowledge_sections.append(memories_text)
+            if search_section:
+                knowledge_sections.append(search_section)
+            if lore_text:
+                knowledge_sections.append(lore_text)
+        else:
+            # Factual / Search or General queries: Memories -> Lore -> Search Data
+            if memories_text:
+                knowledge_sections.append(memories_text)
+            if lore_text:
+                knowledge_sections.append(lore_text)
+            if search_section:
+                knowledge_sections.append(search_section)
+
+        for sec in knowledge_sections:
+            system_parts.extend(["", sec])
 
         # Place [OUTPUT FORMAT] at the very end to maximize attention recency
         system_parts.extend(["", format_section])

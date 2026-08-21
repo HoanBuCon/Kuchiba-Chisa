@@ -560,28 +560,24 @@ export default function App() {
           </div>
           <div className="input-hint">Gõ <code>/clear</code> để xóa ký ức • Shift+Enter để xuống dòng</div>
         </div>
+      </div>
 
-        {/* ── Right Side Emotion Drawer Panel ── */}
-        <div 
-          className={`emotion-drawer-backdrop ${isEmotionOpen ? 'open' : ''}`}
-          onClick={() => setIsEmotionOpen(false)}
-        />
-        <div className={`emotion-drawer ${isEmotionOpen ? 'open' : ''}`}>
-          <div className="drawer-header">
-            <div className="drawer-title">
-              <Heart size={16} className="drawer-title-icon" />
-              <span>Trạng thái cảm xúc</span>
-            </div>
-            <button className="drawer-close-btn" onClick={() => setIsEmotionOpen(false)}>
-              <X size={16} />
-            </button>
+      {/* ── Right Side Emotion Panel (Desktop Column) ── */}
+      <div className={`emotion-drawer ${isEmotionOpen ? 'open' : ''}`}>
+        <div className="drawer-header">
+          <div className="drawer-title">
+            <Heart size={16} className="drawer-title-icon" />
+            <span>Trạng thái cảm xúc</span>
           </div>
-          <div className="drawer-body">
-            <div className="sidebar-chisa-art">
-              <img src="/chisa_drink.gif" alt="Chisa" className="sidebar-chisa-img" />
-            </div>
-            <EmotionPanel emotions={emotions} />
+          <button className="drawer-close-btn" onClick={() => setIsEmotionOpen(false)}>
+            <X size={16} />
+          </button>
+        </div>
+        <div className="drawer-body">
+          <div className="sidebar-chisa-art">
+            <img src="/chisa_drink.gif" alt="Chisa" className="sidebar-chisa-img" />
           </div>
+          <EmotionPanel emotions={emotions} />
         </div>
       </div>
     </div>
