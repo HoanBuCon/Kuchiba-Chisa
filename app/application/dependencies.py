@@ -297,6 +297,36 @@ class AppContainer:
             vector_store=qdrant_service
         )
 
+    @cached_property
+    def community_pipeline(self):
+        from app.domain.services.community.community_pipeline import CommunityChatPipeline
+        from app.domain.services.community.community_context_builder import CommunityContextBuilder
+        from app.domain.services.emotion_engine import EmotionEngine
+        from app.domain.services.rag.pipeline import RAGPipeline
+        from app.domain.services.rag.retriever_memory import MemoryRetriever
+        from app.domain.services.rag.retriever_lore import LoreRetriever
+        from app.domain.services.rag.assessor import ContextAssessor
+        from app.domain.services.rag.thinking_loop import ThinkingLoopAgent
+        from app.infrastructure.database.repositories.lore_parent_repository import LoreParentRepository
+        
+        rag_pipeline = RAGPipeline(
+            memory_retriever=MemoryRetriever(vector_store=qdrant_service),
+            lore_retriever=LoreRetriever(
+                vector_store=qdrant_service,
+                lore_parent_repo_factory=LoreParentRepository
+            ),
+            assessor=ContextAssessor(),
+            thinking_loop_agent=ThinkingLoopAgent(),
+            entity_resolver=self.entity_resolver
+        )
+        
+        return CommunityChatPipeline(
+            llm=self.llm,
+            retrieval_pipeline=rag_pipeline,
+            context_builder=CommunityContextBuilder(),
+            emotion_engine=EmotionEngine(),
+        )
+
 # Global container instance
 container = AppContainer()
 
@@ -304,6 +334,10 @@ container = AppContainer()
 def get_chat_engine() -> ChatEngine:
     """FastAPI Dependency for injecting ChatEngine."""
     return container.chat_engine
+
+def get_community_pipeline():
+    """FastAPI Dependency for injecting CommunityChatPipeline."""
+    return container.community_pipeline
 
 def get_clear_user_memory_use_case():
     """FastAPI Dependency for injecting ClearUserMemoryUseCase."""

@@ -11,7 +11,7 @@ from app.infrastructure.logging.logger import configure_logging, get_logger
 from app.infrastructure.database.engine import connect_database, disconnect_database
 from app.infrastructure.cache.redis.redis_service import redis_service
 from app.infrastructure.vector.qdrant.qdrant_service import qdrant_service
-from app.interface.api.routes import health, chat, visualizer
+from app.interface.api.routes import health, chat, visualizer, community
 from app.interface.middlewares.rate_limiter import RateLimitMiddleware
 from app.shared.utils.background_tasks import BackgroundTaskManager
 
@@ -161,6 +161,7 @@ def create_app() -> FastAPI:
     
     # Phase 3+ routes:
     app.include_router(chat.router, prefix="/api/v1", tags=["Chat"])
+    app.include_router(community.router, prefix="/api/v1", tags=["Community"])
     app.include_router(visualizer.router, tags=["Visualizer"])
     # app.include_router(users.router, prefix="/api/v1", tags=["Users"])
     

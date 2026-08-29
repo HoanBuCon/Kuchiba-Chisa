@@ -17,6 +17,30 @@ export const data = new SlashCommandBuilder()
     InteractionContextType.PrivateChannel,
   ]);
 
+async function fetchRecentChannelMessages(channel, limit = 15) {
+  if (!channel?.messages?.fetch) {
+    return [];
+  }
+  try {
+    const fetched = await channel.messages.fetch({ limit });
+    const sorted = Array.from(fetched.values()).sort((a, b) => a.createdTimestamp - b.createdTimestamp);
+    return sorted
+      .map((m) => ({
+        message_id: m.id,
+        speaker_id: m.author.id,
+        speaker_name: m.member?.displayName || m.author.globalName || m.author.username,
+        content: m.content || '',
+        reply_to_speaker: m.reference ? m.mentions?.repliedUser?.username : null,
+        reply_to_content: null,
+        is_bot: m.author.bot,
+        created_at: new Date(m.createdTimestamp).toISOString(),
+      }))
+      .filter((m) => m.content.trim().length > 0);
+  } catch {
+    return [];
+  }
+}
+
 export async function execute(client, interaction, discordUser) {
   const { logger, rateLimiter, repositories, coreRagClient } = client.services;
   const question = interaction.options.getString('message', true).trim();
@@ -44,13 +68,28 @@ export async function execute(client, interaction, discordUser) {
   try {
     await repositories.interactions.markCoreRequest(interactionId);
 
-    const result = await coreRagClient.ask({
-      coreUserId: discordUser.core_user_id,
-      message: question,
-      username: interaction.user.username,
-      channelName: interaction.channel ? (interaction.channel.name || 'DM') : 'DM',
-      guildName: interaction.guild ? interaction.guild.name : null,
-    });
+    let result;
+    if (interaction.guild) {
+      const recentMessages = await fetchRecentChannelMessages(interaction.channel, 15);
+      result = await coreRagClient.askCommunity({
+        channelId: interaction.channelId,
+        guildId: interaction.guildId,
+        channelName: interaction.channel?.name || 'general',
+        guildName: interaction.guild.name,
+        coreUserId: discordUser.core_user_id,
+        username: interaction.member?.displayName || interaction.user.globalName || interaction.user.username,
+        message: question,
+        recentMessages,
+      });
+    } else {
+      result = await coreRagClient.ask({
+        coreUserId: discordUser.core_user_id,
+        message: question,
+        username: interaction.user.username,
+        channelName: 'DM',
+        guildName: null,
+      });
+    }
 
     await repositories.interactions.markSuccess(interactionId, {
       assistantMessage: result.response,
@@ -103,13 +142,28 @@ export async function executePrefix(client, message, question, discordUser) {
   try {
     await repositories.interactions.markCoreRequest(interactionId);
 
-    const result = await coreRagClient.ask({
-      coreUserId: discordUser.core_user_id,
-      message: question,
-      username: message.author.username,
-      channelName: message.channel ? (message.channel.name || 'DM') : 'DM',
-      guildName: message.guild ? message.guild.name : null,
-    });
+    let result;
+    if (message.guild) {
+      const recentMessages = await fetchRecentChannelMessages(message.channel, 15);
+      result = await coreRagClient.askCommunity({
+        channelId: message.channelId,
+        guildId: message.guildId,
+        channelName: message.channel?.name || 'general',
+        guildName: message.guild.name,
+        coreUserId: discordUser.core_user_id,
+        username: message.member?.displayName || message.author.globalName || message.author.username,
+        message: question,
+        recentMessages,
+      });
+    } else {
+      result = await coreRagClient.ask({
+        coreUserId: discordUser.core_user_id,
+        message: question,
+        username: message.author.username,
+        channelName: 'DM',
+        guildName: null,
+      });
+    }
 
     await repositories.interactions.markSuccess(interactionId, {
       assistantMessage: result.response,
