@@ -4,6 +4,7 @@ from app.domain.interfaces.session import IDbSession
 from app.domain.services.chat_pipeline.stage import PipelineStage
 from app.domain.services.chat_pipeline.context import ChatContext
 from app.domain.interfaces.repositories import IUserRepository, IEmotionRepository, IConversationRepository
+from app.domain.interfaces.cache_provider import ICacheProvider
 from app.domain.interfaces.tracker import IPipelineTracker
 from app.shared.utils.user_identity import normalize_user_id
 from app.shared.utils.logger import get_logger
@@ -14,18 +15,21 @@ log = get_logger(__name__)
 class InitializationStage(PipelineStage):
     """
     Stage 1: Initialize repositories, load context,
-    and compute initial emotion/attachment baseline.
+    and compute initial emotion/attachment baseline with
+    Dual-Layer Ambient Social & Cross-Channel Residual Dynamics.
     """
     def __init__(
         self,
         user_repo_factory: Callable[[IDbSession], IUserRepository],
         emotion_repo_factory: Callable[[IDbSession], IEmotionRepository],
         conv_repo_factory: Callable[[IDbSession], IConversationRepository],
+        cache_provider: Optional[ICacheProvider] = None,
         pipeline_tracker: Optional[IPipelineTracker] = None,
     ):
         self.user_repo_factory = user_repo_factory
         self.emotion_repo_factory = emotion_repo_factory
         self.conv_repo_factory = conv_repo_factory
+        self.cache_provider = cache_provider
         self.pipeline_tracker = pipeline_tracker
 
 
@@ -53,6 +57,22 @@ class InitializationStage(PipelineStage):
         else:
             history = await conv_repo.get_recent_history(user_uuid, conv_id, limit=40)
             summary = await conv_repo.get_latest_summary(user_uuid, conv_id)
+
+        # 4. Server-Level Holistic Ambient Emotion Dynamics (Continuous Exponential Decay)
+        is_server_shared = (
+            bool(context.guild_id)
+            and not context.guild_id.startswith("CHANNEL_")
+            and context.guild_id != "DM"
+        )
+        if is_server_shared and self.cache_provider:
+            from app.domain.services.community.ambient_manager import AmbientMoodManager
+            cache_key = f"chisa:guild:{context.guild_id}:ambient_mood"
+            stored_ambient = await self.cache_provider.get_json(cache_key)
+            decayed_ambient = AmbientMoodManager.calculate_decay(stored_ambient)
+            
+            # Synthesize transient ambient channels into current emotion state (preserving individual Trust & Attachment)
+            AmbientMoodManager.synthesize_ambient_into_emotion(emotion, decayed_ambient)
+            context.recent_social_trace = decayed_ambient
 
         # Initialize ContextVars for request-scoped logging
         question_idx = len([m for m in history if m.get("role") == "user"]) + 1
