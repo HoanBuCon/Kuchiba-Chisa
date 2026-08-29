@@ -1,4 +1,4 @@
-Hệ thống cảm xúc **DEHA 3.1** của Chisa vận hành dựa trên **Ma Trận Phản Xạ Ngữ Nghĩa Đa Chiều (Semantic Dynamic Resonance)**, kết hợp giữa khí sắc môi trường xã hội trong Server và tiến trình quan hệ cá nhân sâu sắc cùng từng Senpai.
+Hệ thống cảm xúc **RESONA Engine (Relational & Environmental Synthesis of Organic Neuro-Affect)** của Chisa vận hành dựa trên **Ma Trận Phản Xạ Ngữ Nghĩa Đa Chiều (Semantic Dynamic Resonance)**, kết hợp giữa khí sắc môi trường xã hội trong Server và tiến trình quan hệ cá nhân sâu sắc cùng từng Senpai.
 
 ---
 
@@ -50,7 +50,7 @@ Dỗi hờn phụng phịu đáng yêu (khi quan hệ tốt) hoặc lạnh lùng
 
 ---
 
-### ⚡ 3. CƠ CHẾ ĐỘNG LỰC HỌC CẢM XÚC NÂNG CAO (DEHA 3.1)
+### ⚡ 3. CƠ CHẾ ĐỘNG LỰC HỌC CẢM XÚC NÂNG CAO (RESONA ENGINE)
 
 • 🛡️ **Khiên Dỗi Hờn (Pout Shield):** Khi Chisa dỗi yêu (`playful_pout`), điểm **Trust giữ nguyên 100% (không bị trừ điểm)**. Điều kiện kích hoạt: Senpai có điểm `Trust ≥ 65%` và `Attachment ≥ 25%`.
 • 🌌 **Khí Sắc Môi Trường Server (Holistic Ambient Resonance):**

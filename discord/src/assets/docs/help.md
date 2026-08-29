@@ -3,7 +3,7 @@ Em là Chisa, học sinh tại **Startorch Academy**. Em luôn ở đây để �
 ### 💡 Các Tính Năng Chính
 • **Trí tuệ Nhân tạo Đa tầng (Hybrid RAG):** Trò chuyện tự nhiên, giải đáp Lore Wuthering Waves, phân tích ký ức và hỗ trợ cả đối thoại cá nhân lẫn kênh cộng đồng đông người.
 • **3 Không Gian Kênh (3-Tier Channel Spaces):** Hỗ trợ kênh `Community` (nhóm đông người), `Semi-Private` (kênh 1-1 liên thông server) và `Private` (ốc đảo riêng tư cô lập).
-• **Hệ Thống Cảm Xúc DEHA 3.1:** 8 kênh cảm xúc liên tục cùng ma trận Khí sắc Server (Ambient Mood), cho phép Chisa cảm nhận không khí chung và bộc lộ cảm xúc chân thật với từng Senpai.
+• **Hệ Thống Cảm Xúc RESONA Engine:** 8 kênh cảm xúc liên tục cùng ma trận Khí sắc Server (Ambient Mood), cho phép Chisa cảm nhận không khí chung và bộc lộ cảm xúc chân thật với từng Senpai.
 
 ### 🛠️ Danh Sách Lệnh
 • 💬 **`/ask <câu thoại>` hoặc `c!ask <câu thoại>`**
@@ -19,7 +19,7 @@ Em là Chisa, học sinh tại **Startorch Academy**. Em luôn ở đây để �
   * **`private`**: Ốc đảo 1-on-1 cô lập 100%. Ký ức và cảm xúc tại đây hoàn toàn tách biệt, không bị ảnh hưởng bởi bên ngoài.
   * *Cú pháp tắt/liệt kê:* `/setup action:disable [channel]`, `/setup action:disable all:True`, `/setup action:list`.
 • 📖 **`/docs` hoặc `c!docs`**
-  Hiển thị tài liệu chi tiết về hệ thống cảm xúc DEHA 3.1 & Khí sắc Môi trường Server.
+  Hiển thị tài liệu chi tiết về hệ thống cảm xúc RESONA Engine & Khí sắc Môi trường Server.
 • 🌸 **`/about` hoặc `c!about`**
   Giới thiệu về Kuchiba Chisa, Forte, Resonator profile và công nghệ AI tích hợp.
 • ❓ **`/help` hoặc `c!help`**

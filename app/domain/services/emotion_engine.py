@@ -1,6 +1,6 @@
 """
-EmotionEngine — Domain Service (DEHA 3.0)
-Applies non-linear dynamic matrix updates and relational resonance to EmotionState after each conversation turn.
+EmotionEngine — Domain Service (RESONA Engine: Relational & Environmental Synthesis of Organic Neuro-Affect)
+Applies non-linear dynamic matrix updates, ambient server resonance, and relational dynamics to EmotionState after each conversation turn.
 
 Design principles:
 - Pure domain logic: no HTTP, no DB calls directly.

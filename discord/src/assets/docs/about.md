@@ -12,9 +12,9 @@ Em là **Kuchiba Chisa**, học sinh tại **Startorch Academy**. Em luôn sẵn
 
 ---
 
-### 🧠 2. Công Nghệ & Trí Tuệ AI (DEHA 3.1)
+### 🧠 2. Công Nghệ & Trí Tuệ AI (RESONA Engine)
 • **Unified 10-Stage Hybrid RAG Pipeline:** Hệ thống truy xuất ngữ nghĩa đa tầng kết hợp Vector Search (Qdrant) & Parent Document Store (PostgreSQL) từ kho dữ liệu Lore Wuthering Waves chuẩn hóa. Hỗ trợ xử lý thông minh cả chế độ đơn thoại (Direct) lẫn hội thoại cộng đồng đa người nói (Community Multi-Speaker).
-• **DEHA 3.1 Emotion & Ambient Resonance Engine:**
+• **RESONA Emotion Engine (Relational & Environmental Synthesis of Organic Neuro-Affect):**
   - Hệ thống cảm xúc 8 chiều liên tục (*Tin tưởng, Gắn bó, Ngại ngùng, Hiếu kỳ, Bình yên, Vui vẻ, Buồn bã, Khó chịu*).
   - Vận hành trên ma trận phản xạ ngữ nghĩa 4 tham số (*Reaction, User Stance, Intensity, Variance*), bảo vệ lòng tin tuyệt đối (*100% Trust Guard* khi dỗi yêu), khiên dỗi yêu (*Pout Shield* với ngưỡng Trust ≥ 65% & Attachment ≥ 25%), và tự động trừng phạt vi phạm ranh giới toxic.
   - **Khí Sắc Môi Trường Server (Holistic Ambient Resonance):** Tâm trạng tức thời của Chisa liên thông và phản ánh trung thực bầu không khí chung của Server, phân rã hàm mũ tự nhiên về trạng thái cân bằng (*Exponential Decay $T_{half} = 30$ phút*).
