@@ -36,6 +36,9 @@ class TokenEstimator:
         encoder = cls._get_encoder()
         if encoder:
             try:
+                # encode_ordinary bypasses special-token regex parsing, significantly faster
+                if hasattr(encoder, "encode_ordinary"):
+                    return len(encoder.encode_ordinary(text))
                 return len(encoder.encode(text))
             except Exception:
                 pass
@@ -51,8 +54,12 @@ class TokenEstimator:
         encoder = cls._get_encoder()
         if encoder:
             try:
-                tokens = encoder.encode(text)
-                suffix_tokens = encoder.encode(suffix)
+                if hasattr(encoder, "encode_ordinary"):
+                    tokens = encoder.encode_ordinary(text)
+                    suffix_tokens = encoder.encode_ordinary(suffix)
+                else:
+                    tokens = encoder.encode(text)
+                    suffix_tokens = encoder.encode(suffix)
                 budget_for_text = max_tokens - len(suffix_tokens)
                 if budget_for_text <= 0:
                     return suffix

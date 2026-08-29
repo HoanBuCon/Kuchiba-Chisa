@@ -105,20 +105,45 @@ class RedisService(ICacheProvider):
     async def ltrim(self, key: str, start: int, stop: int) -> None:
         await self._client.ltrim(key, start, stop)
 
-    # ── Distributed Lock ──────────────────────────────────────────
-    async def acquire_lock(self, lock_key: str, ttl: int = 5) -> bool:
+    # ── Distributed Lock (Safe Token-based with Lua Script) ────────
+    _RELEASE_LOCK_LUA = """
+    if redis.call("get", KEYS[1]) == ARGV[1] then
+        return redis.call("del", KEYS[1])
+    else
+        return 0
+    end
+    """
+
+    async def acquire_lock(self, lock_key: str, ttl: int = 5, token: Optional[str] = None) -> Optional[str]:
+        """
+        Acquires a distributed lock using a unique token to prevent race conditions.
+        Returns the token string if acquired (truthy), or None/empty if failed.
+        """
+        import uuid
+        lock_token = token or str(uuid.uuid4())
         try:
-            result = await self._client.set(lock_key, "1", ex=ttl, nx=True)
-            return result is True
+            result = await self._client.set(lock_key, lock_token, ex=ttl, nx=True)
+            if result is True:
+                return lock_token
+            return None
         except Exception as e:
             log.warning("Redis acquire_lock failed, proceeding without lock (fail-open)", lock_key=lock_key, error=str(e))
-            return True
+            return lock_token
 
-    async def release_lock(self, lock_key: str) -> None:
+    async def release_lock(self, lock_key: str, token: Optional[str] = None) -> bool:
+        """
+        Safely releases the distributed lock only if the token matches, preventing accidental deletion of others' locks.
+        """
         try:
-            await self._client.delete(lock_key)
+            if token:
+                res = await self._client.eval(self._RELEASE_LOCK_LUA, 1, lock_key, token)
+                return bool(res)
+            else:
+                await self._client.delete(lock_key)
+                return True
         except Exception as e:
             log.warning("Redis release_lock failed, ignoring", lock_key=lock_key, error=str(e))
+            return False
 
     # ── Connection Management ────────────────────────────────────
     async def disconnect(self) -> None:
