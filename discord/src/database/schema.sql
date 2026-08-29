@@ -53,6 +53,7 @@ END $$;
 
 DELETE FROM guild_settings WHERE chisa_channel_id IS NULL;
 ALTER TABLE guild_settings ALTER COLUMN chisa_channel_id SET NOT NULL;
+ALTER TABLE guild_settings ADD COLUMN IF NOT EXISTS mode TEXT NOT NULL DEFAULT 'private';
 
 CREATE UNIQUE INDEX IF NOT EXISTS idx_guild_settings_channel_unique ON guild_settings (chisa_channel_id);
 

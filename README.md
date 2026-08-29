@@ -37,7 +37,7 @@
 ## 🚀 Tính năng nổi bật
 
 - **Lập chỉ mục Trí nhớ Dài hạn:** Trích xuất và nhúng (embed) các ký ức quan hệ và tình huống (episodic) một cách bất đồng bộ dưới nền.
-- **Theo dõi Trạng thái Cảm xúc Thực tế:** Hệ thống Cảm xúc Động (DEHA) lưu trạng thái trực tiếp trong database (vui vẻ, gắn kết, tin tưởng) thay vì chỉ phó mặc cho "ảo giác" của LLM.
+- **Theo dõi Trạng thái Cảm xúc Thực tế:** Hệ thống Cảm xúc Động (RESONA Engine) quản lý không gian 8 chiều liên tục (*Tin tưởng, Gắn bó, Ngại ngùng, Hiếu kỳ, Bình yên, Vui vẻ, Buồn bã, Khó chịu*) cùng khí sắc môi trường Server (*Ambient Resonance*) lưu trạng thái trực tiếp trong database & Redis thay vì chỉ phó mặc cho "ảo giác" của LLM.
 - **Hệ thống Gắn kết (Affection System):** Theo dõi sự thay đổi độ gắn kết của Chisa theo thời gian bằng `AffectionLog`, quyết định thái độ và hành vi của cô ấy.
 - **Vòng đời Hội thoại:** Quản lý toàn diện Session Layer và liên tục lập chỉ mục các bản tóm tắt ẩn.
 - **Tối ưu hóa Định tuyến & Khởi chạy (Fast Cold-Start & Routing)**: Tích hợp định tuyến ý định đa lớp Hybrid Intent Routing, màng lọc từ khóa động (Dynamic Keyword Guards) tránh truy xuất RAG nhầm cho câu hỏi Fact phổ thông ngoài game, sinh vector anchors hàng loạt (Batch Embedding) và nạp sẵn vào RAM khi khởi động server (Lifespan Pre-warming) giúp triệt tiêu hoàn toàn độ trễ khởi động lạnh.

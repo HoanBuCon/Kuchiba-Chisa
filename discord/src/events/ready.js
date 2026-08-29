@@ -21,7 +21,10 @@ export async function execute(client) {
     client.services.guildSettingsCache = new Map();
     for (const row of settings) {
       if (row.chisa_channel_id) {
-        client.services.guildSettingsCache.set(row.chisa_channel_id, row.discord_guild_id);
+        client.services.guildSettingsCache.set(row.chisa_channel_id, {
+          guildId: row.discord_guild_id,
+          mode: row.mode || 'private',
+        });
       }
     }
     logger.info({ count: client.services.guildSettingsCache.size }, 'Guild settings cache loaded');

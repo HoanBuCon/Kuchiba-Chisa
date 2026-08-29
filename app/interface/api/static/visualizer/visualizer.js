@@ -171,20 +171,31 @@ window.VisualizerApp = {
             const reasonTok = t.total_reasoning_tokens || 0;
             const tokenTooltip = `Tổng: ${totalTok} tok (Input: ${inTok} | Output: ${outTok}${reasonTok ? ` | Reasoning: ${reasonTok}` : ''})`;
 
+            const isCommunity = t.pipeline === 'community' || t.source === 'discord_community' || t.is_community;
+            const channelDisp = t.channel_name ? `#${t.channel_name}` : (isCommunity ? '#community' : '');
+            const speakerDisp = t.username || (t.user_id ? t.user_id.substring(0, 8) : 'Senpai');
+
             const clockIcon = window.InspectorWidgets ? window.InspectorWidgets.icon('clock', { size: 10, color: '#38bdf8' }) : '';
             const coinIcon = window.InspectorWidgets ? window.InspectorWidgets.icon('coins', { size: 10, color: '#34d399' }) : '';
+            const modeIcon = isCommunity 
+                ? (window.InspectorWidgets ? window.InspectorWidgets.icon('users', { size: 10, color: '#a855f7' }) : '')
+                : (window.InspectorWidgets ? window.InspectorWidgets.icon('user', { size: 10, color: '#f43f5e' }) : '');
 
             return `
                 <div class="trace-item ${isSelected ? 'active' : ''}" onclick="VisualizerApp.selectTrace('${t.id}')">
                     <div class="trace-item-header">
                         <div style="display: flex; align-items: center; gap: 6px;">
                             <img src="/assets/dance_chisa.gif" style="width: 15px; height: 15px; border-radius: 3px; object-fit: cover;" alt="Chisa">
-                            <span>#${t.id.substring(0, 8)}</span>
+                            <span style="font-weight: 600;">${this.escapeHtml(speakerDisp)}</span>
+                            ${channelDisp ? `<span style="font-size: 10.5px; opacity: 0.75; color: var(--text-muted);">${this.escapeHtml(channelDisp)}</span>` : ''}
                         </div>
-                        <span>${timeStr}</span>
+                        <span style="font-size: 11px; opacity: 0.8;">${timeStr}</span>
                     </div>
                     <div class="trace-message">${this.escapeHtml(t.message || '(Chưa có câu hỏi)')}</div>
                     <div class="trace-meta">
+                        <span class="pill" style="display: inline-flex; align-items: center; gap: 4px; font-size: 10px; ${isCommunity ? 'background: rgba(168, 85, 247, 0.15); color: #c084fc; border-color: rgba(168, 85, 247, 0.35);' : 'background: rgba(244, 63, 94, 0.12); color: #fb7185; border-color: rgba(244, 63, 94, 0.3);'}">
+                            ${modeIcon} ${isCommunity ? 'Community' : 'Direct'}
+                        </span>
                         <span class="pill pill-latency" style="display: inline-flex; align-items: center; gap: 4px;">${clockIcon} ${latency}</span>
                         <span class="pill pill-tokens" style="display: inline-flex; align-items: center; gap: 4px;" title="${tokenTooltip}">${coinIcon} ${totalTok.toLocaleString()} tok</span>
                     </div>

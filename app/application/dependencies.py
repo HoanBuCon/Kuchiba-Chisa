@@ -207,6 +207,7 @@ class AppContainer:
                 user_repo_factory=SqlAlchemyUserRepository,
                 emotion_repo_factory=SqlAlchemyEmotionRepository,
                 conv_repo_factory=SqlAlchemyConversationRepository,
+                cache_provider=redis_service,
                 pipeline_tracker=pipeline_tracker
             ),
             IntentStage(
@@ -245,6 +246,7 @@ class AppContainer:
             EmotionUpdateStage(
                 emotion_engine=emotion_engine,
                 emotion_repo_factory=SqlAlchemyEmotionRepository,
+                cache_provider=redis_service,
                 pipeline_tracker=pipeline_tracker
             ),
             PersistenceStage(

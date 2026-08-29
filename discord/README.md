@@ -1,14 +1,15 @@
-# Discord microservice
+# Discord Microservice — Kuchiba Chisa
 
-Microservice Discord cho Chisa, tách độc lập khỏi core RAG và giao tiếp với backend qua HTTP API.
+Microservice Discord cho chatbot AI **Kuchiba Chisa**, hoạt động độc lập khỏi core backend và giao tiếp qua REST API.
 
-## Chọn kiến trúc
-- Kết nối tới core RAG: `HTTP API`
-- Thư viện Discord: `discord.js`
-- Database: `PostgreSQL` với `pg`
-- Cách tương tác: `slash command /ask`, `slash command /clear`, và prefix `c!ask`, `c!clear`
+## 🏗️ Kiến trúc & Công nghệ
+- **Kết nối Core RAG Backend:** REST API (`POST /api/v1/chat`, `POST /community/chat`, `POST /api/v1/chat/clear/{user_id}`)
+- **Thư viện Discord:** `discord.js` v14 (ES Modules)
+- **Database:** PostgreSQL (Lưu trữ guild settings, direct channels, user mapping)
+- **Hệ thống Cảm xúc:** RESONA Emotion Engine 8 chiều (*Tin tưởng, Gắn bó, Ngại ngùng, Hiếu kỳ, Bình yên, Vui vẻ, Buồn bã, Khó chịu*) cùng Khí sắc Server (Ambient Resonance)
+- **Tương tác:** Hỗ trợ song song cả **Slash Commands (`/`)** và **Prefix Commands (`c!`)** với 3 chế độ không gian kênh (`community`, `semi-private`, `private`)
 
-## Cây thư mục đề xuất
+## 📂 Cấu trúc Thư mục
 ```text
 discord/
   .dockerignore
@@ -17,68 +18,68 @@ discord/
   package.json
   README.md
   scripts/
-    register-commands.js
+    register-commands.js    # Script deploy slash commands lên Discord API
   src/
-    index.js
-    app.js
-    config/
-      env.js
-      logger.js
-      constants.js
+    index.js                # Entry point
+    app.js                  # Khởi tạo Discord client & kết nối DB
+    assets/
+      docs/                 # Tài liệu Markdown nhúng trong bot (/docs, /about, /help)
+      img/                  # Banner & hình ảnh giao diện
     bot/
       client.js
-      loadCommands.js
-      loadEvents.js
-    commands/
-      ask.js
-      clear.js
+      loadCommands.js       # Dynamic command loader
+      loadEvents.js         # Event listeners loader
+    commands/               # /ask, /clear, /setup, /docs, /about, /help
+    database/
+      pool.js               # PostgreSQL connection pool
+      schema.sql            # Migration schema
     events/
       ready.js
-      interactionCreate.js
-    database/
-      pool.js
-      schema.sql
+      interactionCreate.js  # Xử lý slash commands & interactive buttons
+      messageCreate.js      # Xử lý prefix commands & auto-chat channel
     repositories/
       discordUserRepository.js
+      guildSettingsRepository.js
       interactionRepository.js
     services/
-      coreRagClient.js
+      coreRagClient.js      # HTTP client kết nối FastAPI Core
       rateLimiter.js
     utils/
       reply.js
 ```
 
-## Luồng chạy
-1. User gõ `/ask <message>` trong Discord.
-2. Bot lấy hoặc tạo `core_user_id` nội bộ cho user Discord.
-3. Bot lưu metadata hội thoại vào PostgreSQL.
-4. Bot gọi `POST /api/v1/chat` của core RAG.
-5. Bot nhận response và trả lời lại trong Discord.
-6. Khi user chạy `/clear`, bot gọi endpoint clear memory của core RAG và dọn log local.
+## 🛠️ Danh sách Lệnh Hỗ trợ
+| Slash Command | Prefix Command | Mô tả |
+|---|---|---|
+| `/ask <nội dung>` | `c!ask <nội dung>` | Trò chuyện, hỏi đáp lore hoặc tâm sự cùng Chisa |
+| `/clear [self/all]` | `c!clear [self/all]` | Xóa bộ nhớ ngắn hạn & dài hạn (bản thân hoặc toàn server) |
+| `/setup <enable/disable/list>` | `c!setup ...` | Thiết lập kênh chat trực tiếp không cần gõ lệnh (Admin/Mod) |
+| `/docs` | `c!docs` | Xem tài liệu chi tiết về hệ thống cảm xúc & quan hệ 8 chiều (RESONA Engine) |
+| `/about` | `c!about` | Xem hồ sơ nhân vật, Forte và công nghệ AI tích hợp |
+| `/help` | `c!help` | Bảng điều khiển hướng dẫn tương tác & danh sách lệnh |
 
-## Chạy local
-1. Copy `.env.example` thành `.env`.
-2. Cài dependencies:
+## 🚀 Cài đặt & Khởi chạy Local
+1. Sao chép file môi trường:
+   ```bash
+   cp .env.example .env
+   ```
+2. Cài đặt dependencies:
    ```bash
    npm install
    ```
-3. Đăng ký slash commands:
+3. Đăng ký Slash Commands với Discord:
    ```bash
    npm run register:commands
    ```
-4. Chạy bot:
+4. Khởi chạy Bot:
    ```bash
    npm start
    ```
 
-## Quyền tối thiểu
-Bot chỉ cần:
-- View Channel
-- Send Messages
+## 🔐 Quyền Hạn Tối Thiểu (Bot Permissions)
+- View Channels
+- Send Messages & Send Messages in Threads
 - Read Message History
+- Embed Links & Attach Files
 - Use Application Commands
-
-## Ghi chú
-- Bot không gọi thẳng vào database của core RAG.
-- `user_id` gửi sang core RAG là UUID riêng được bot quản lý để tương thích với `/clear/{user_id}`.
-- Prefix mode cần bật `Message Content Intent` trong Discord Developer Portal.
+- *Lưu ý:* Cần bật **Message Content Intent** trong [Discord Developer Portal](https://discord.com/developers/applications) để sử dụng chế độ prefix command (`c!`) và kênh chat trực tiếp `/setup`.

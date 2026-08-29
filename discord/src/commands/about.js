@@ -8,7 +8,11 @@ const bannerPath = fileURLToPath(bannerUrl);
 export const data = new SlashCommandBuilder()
   .setName('about')
   .setDescription('Giới thiệu về Bot Kuchiba Chisa')
-  .setContexts(InteractionContextType.Guild);
+  .setContexts([
+    InteractionContextType.Guild,
+    InteractionContextType.BotDM,
+    InteractionContextType.PrivateChannel,
+  ]);
 
 async function loadAboutContent() {
   try {

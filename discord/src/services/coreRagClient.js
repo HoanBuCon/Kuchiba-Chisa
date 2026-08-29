@@ -92,6 +92,39 @@ export class CoreRagClient {
     };
   }
 
+  async askCommunity({
+    channelId,
+    guildId,
+    channelName,
+    guildName,
+    coreUserId,
+    username,
+    message,
+    recentMessages = [],
+  } = {}) {
+    const url = this.buildUrl('/api/v1/community/chat');
+    const payload = await this.requestJson(url, {
+      method: 'POST',
+      body: JSON.stringify({
+        channel_id: channelId,
+        guild_id: guildId ?? null,
+        channel_name: channelName || 'general',
+        guild_name: guildName ?? null,
+        user_id: coreUserId,
+        username,
+        message,
+        recent_messages: recentMessages,
+      }),
+    });
+
+    return {
+      response: payload.response ?? '',
+      emotions: payload.emotions ?? null,
+      sentiment: payload.sentiment ?? null,
+      raw: payload,
+    };
+  }
+
   async clearMemory(coreUserId) {
     const path = this.clearPathTemplate.replace('{user_id}', encodeURIComponent(coreUserId));
     const url = this.buildUrl(path);

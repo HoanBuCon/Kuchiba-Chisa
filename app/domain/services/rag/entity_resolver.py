@@ -47,11 +47,9 @@ class EntityResolver:
             sorted_aliases = sorted(alias_map.keys(), key=len, reverse=True)
             if sorted_aliases:
                 escaped_aliases = [re.escape(a) for a in sorted_aliases]
-                # Regex boundary \b might fail for CJK characters, but assuming Wuthering Waves aliases are Latin/English primarily,
-                # or we can use a more robust matching if CJK is involved. We'll use \b for safety with English.
-                # Since Chisa is Vietnamese/English mixed, let's use a standard lookaround if needed, but \b is a good start.
-                pattern_str = r'\b(' + '|'.join(escaped_aliases) + r')\b'
-                self._pattern = re.compile(pattern_str, re.IGNORECASE)
+                # Use Unicode-aware lookarounds instead of ASCII-only \b for Vietnamese diacritics
+                pattern_str = r'(?<![\wÀ-ỹ])(' + '|'.join(escaped_aliases) + r')(?![\wÀ-ỹ])'
+                self._pattern = re.compile(pattern_str, re.IGNORECASE | re.UNICODE)
             
             self._is_loaded = True
             log.info("Entity dictionary loaded successfully", entities=len(entities), aliases=len(alias_map))

@@ -23,3 +23,8 @@ class IntentResult:
     query_vector: Optional[List[float]] = None  # Vector đã tính, tái sử dụng cho RAG
     semantic_scores: Optional[Dict[str, float]] = None  # {"LORE": 0.82, "MEMORY": 0.45, ...}
     routing_reason: str = ""
+
+    def __iter__(self):
+        """Hỗ trợ tương thích ngược với cú pháp unpacking: intents, conf = classify(...)"""
+        yield self.intents
+        yield self.confidence

@@ -29,7 +29,7 @@ class ContextBuildingStage(PipelineStage):
 
         build_result = self.context_builder.build(
             emotion=context.emotion,
-            attachment_bonus=context.attachment_bonus_raw,
+            attachment_bonus=0.0,
             memories=memories,
             lore=lore_chunks,
             history=context.history,
@@ -40,6 +40,12 @@ class ContextBuildingStage(PipelineStage):
             budget_mode=budget_mode,
             is_small_talk=context.is_small_talk,
             persona_trait_type=context.persona_trait_type,
+            is_community=context.is_community,
+            current_speaker_name=context.speaker_name,
+            channel_name=context.channel_name,
+            guild_name=context.guild_name,
+            channel_transcript=context.channel_transcript,
+            ambient_context=context.ambient_context,
         )
         
         context.prompt = build_result.prompt

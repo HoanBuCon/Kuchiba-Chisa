@@ -6,5 +6,5 @@
 
 ### 🌸 Nội dung giới thiệu
 • **Hồ sơ nhân vật:** Xuất thân Ashinohara, học sinh Startorch Academy, Forte *Eye of Unraveling*, Mutant Resonator.
-• **Công nghệ AI:** Multi-Stage RAG Pipeline (Qdrant & PostgreSQL), 8D Emotion Engine 2.0, Memory độc lập từng Server.
-• **Thông tin hệ thống & Tác giả:** Tech Stack Python 3.11, Discord.js v14 và nhà phát triển HoanBuCon.
+• **Công nghệ AI:** Unified Hybrid RAG Pipeline, RESONA Emotion & Holistic Ambient Resonance Engine, 3 Chế độ không gian kênh (`community` / `semi-private` / `private`), Memory độc lập từng Server.
+• **Thông tin hệ thống & Tác giả:** Tech Stack Python 3.11 FastAPI, Discord.js v14, Pipeline Visualizer Dashboard và nhà phát triển HoanBuCon.

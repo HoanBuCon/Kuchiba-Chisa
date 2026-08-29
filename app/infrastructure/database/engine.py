@@ -19,10 +19,11 @@ engine: AsyncEngine = create_async_engine(
     settings.DATABASE_URL,
     echo=False,          # Disable SQL query logging to prevent UnicodeEncodeError on Windows
     echo_pool=False,
-    pool_size=10,
-    max_overflow=20,
+    pool_size=20,
+    max_overflow=40,
+    pool_timeout=30,
     pool_pre_ping=True,            # Verify connections before use
-    pool_recycle=3600,             # Recycle connections every hour
+    pool_recycle=1800,             # Recycle connections every 30 minutes
 )
 
 # ─── Session Factory ──────────────────────────────────────────────────────────

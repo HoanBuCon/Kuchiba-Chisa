@@ -4,6 +4,7 @@ from app.domain.interfaces.session import IDbSession
 from app.domain.services.chat_pipeline.stage import PipelineStage
 from app.domain.services.chat_pipeline.context import ChatContext
 from app.domain.interfaces.repositories import IUserRepository, IEmotionRepository, IConversationRepository
+from app.domain.interfaces.cache_provider import ICacheProvider
 from app.domain.interfaces.tracker import IPipelineTracker
 from app.shared.utils.user_identity import normalize_user_id
 from app.shared.utils.logger import get_logger
@@ -14,18 +15,21 @@ log = get_logger(__name__)
 class InitializationStage(PipelineStage):
     """
     Stage 1: Initialize repositories, load context,
-    and compute initial emotion/attachment baseline.
+    and compute initial emotion/attachment baseline with
+    Dual-Layer Ambient Social & Cross-Channel Residual Dynamics.
     """
     def __init__(
         self,
         user_repo_factory: Callable[[IDbSession], IUserRepository],
         emotion_repo_factory: Callable[[IDbSession], IEmotionRepository],
         conv_repo_factory: Callable[[IDbSession], IConversationRepository],
+        cache_provider: Optional[ICacheProvider] = None,
         pipeline_tracker: Optional[IPipelineTracker] = None,
     ):
         self.user_repo_factory = user_repo_factory
         self.emotion_repo_factory = emotion_repo_factory
         self.conv_repo_factory = conv_repo_factory
+        self.cache_provider = cache_provider
         self.pipeline_tracker = pipeline_tracker
 
 
@@ -44,23 +48,45 @@ class InitializationStage(PipelineStage):
         conv_id = await conv_repo.get_or_create_conversation(user_uuid)
 
         # 3. Sequentialize conversation history and summary reads
-        history = await conv_repo.get_recent_history(user_uuid, conv_id, limit=40)
-        summary = await conv_repo.get_latest_summary(user_uuid, conv_id)
+        if context.is_community:
+            history = []
+            summary = None
+            if context.recent_community_messages and not context.channel_transcript:
+                from app.domain.services.community.transcript_formatter import ChannelTranscriptFormatter
+                context.channel_transcript = ChannelTranscriptFormatter.format_transcript(context.recent_community_messages)
+        else:
+            history = await conv_repo.get_recent_history(user_uuid, conv_id, limit=40)
+            summary = await conv_repo.get_latest_summary(user_uuid, conv_id)
+
+        # 4. Server-Level Holistic Ambient Emotion Dynamics (Continuous Exponential Decay)
+        is_server_shared = (
+            bool(context.guild_id)
+            and not context.guild_id.startswith("CHANNEL_")
+            and context.guild_id != "DM"
+        )
+        if is_server_shared and self.cache_provider:
+            from app.domain.services.community.ambient_manager import AmbientMoodManager
+            cache_key = f"chisa:guild:{context.guild_id}:ambient_mood"
+            stored_ambient = await self.cache_provider.get_json(cache_key)
+            decayed_ambient = AmbientMoodManager.calculate_decay(stored_ambient)
+            
+            # Synthesize transient ambient channels into current emotion state (preserving individual Trust & Attachment)
+            AmbientMoodManager.synthesize_ambient_into_emotion(emotion, decayed_ambient)
+            context.recent_social_trace = decayed_ambient
 
         # Initialize ContextVars for request-scoped logging
         question_idx = len([m for m in history if m.get("role") == "user"]) + 1
         request_question_idx.set(question_idx)
         request_turn_idx.set(1)
         
-        # Formulate Attachment Bonus and current emotions snapshot
-        import math
-        attachment_bonus_raw = math.log(max(1, stats.interaction_count)) * 0.05
+        # Single Source of Truth for emotions
+        attachment_bonus_raw = 0.0
         current_emotions = {
             "joy": emotion.joy,
             "sadness": emotion.sadness,
             "trust": emotion.trust,
             "irritation": emotion.irritation,
-            "attachment": emotion.attachment + attachment_bonus_raw,
+            "attachment": emotion.attachment,
             "shyness": getattr(emotion, "shyness", 0.0),
             "curiosity": getattr(emotion, "curiosity", 0.20),
             "comfort": getattr(emotion, "comfort", 0.50),
@@ -73,7 +99,7 @@ class InitializationStage(PipelineStage):
         context.emotion = emotion
         context.history = history
         context.conversation_summary = summary
-        context.attachment_bonus_raw = attachment_bonus_raw
+        context.attachment_bonus_raw = 0.0
         context.current_emotions = current_emotions
 
         if self.pipeline_tracker:
@@ -87,6 +113,10 @@ class InitializationStage(PipelineStage):
                 data={
                     "user_uuid": user_uuid,
                     "user_id": context.user_id,
+                    "speaker_name": context.speaker_name,
+                    "is_community": context.is_community,
+                    "channel_name": context.channel_name,
+                    "guild_name": context.guild_name,
                     "conv_id": str(conv_id) if conv_id else None,
                     "turn_index": question_idx,
                     "interaction_count": stats.interaction_count,
@@ -94,7 +124,10 @@ class InitializationStage(PipelineStage):
                     "has_summary": bool(summary),
                     "summary_preview": (summary[:200] + "...") if summary and len(summary) > 200 else summary,
                     "current_emotions": current_emotions,
+                    "initial_emotions": current_emotions,
                     "baseline_emotions": current_emotions,
+                    "ambient_mood": context.recent_social_trace,
+                    "channel_transcript_preview": (context.channel_transcript[:300] + "...") if context.channel_transcript and len(context.channel_transcript) > 300 else context.channel_transcript,
                     "attachment_bonus_raw": round(attachment_bonus_raw, 4),
                     "status": "success"
                 }

@@ -1,28 +1,32 @@
-from typing import Callable
+from typing import Callable, Optional
 from app.domain.interfaces.session import IDbSession
 from app.domain.services.chat_pipeline.stage import PipelineStage
 from app.domain.services.chat_pipeline.context import ChatContext
 from app.domain.services.emotion_engine import EmotionEngine
 from app.domain.interfaces.repositories import IEmotionRepository
+from app.domain.interfaces.cache_provider import ICacheProvider
 from app.domain.interfaces.tracker import IPipelineTracker
 
 class EmotionUpdateStage(PipelineStage):
     """
-    Stage 7: Update emotion state based on sentiments.
+    Stage 8: Update individual emotion state based on sentiments and
+    sync collective Server-Level Ambient State in shared environments.
     """
     def __init__(
         self,
         emotion_engine: EmotionEngine,
         emotion_repo_factory: Callable[[IDbSession], IEmotionRepository],
+        cache_provider: Optional[ICacheProvider] = None,
         pipeline_tracker: IPipelineTracker = None
     ):
         self.emotion_engine = emotion_engine
         self.emotion_repo_factory = emotion_repo_factory
+        self.cache_provider = cache_provider
         self.pipeline_tracker = pipeline_tracker
 
     async def process(self, context: ChatContext) -> ChatContext:
         tool_res = context.tool_res or {}
-        sentiment_analysis = tool_res.get("sentiment_analysis", {})
+        sentiment_analysis = tool_res.get("sentiment") or tool_res.get("sentiment_analysis", {})
         user_sentiment = tool_res.get("user_sentiment", {})
         chisa_sentiment = tool_res.get("chisa_sentiment", {})
         
@@ -52,6 +56,18 @@ class EmotionUpdateStage(PipelineStage):
         )
         await emotion_repo.update_emotion(context.emotion)
 
+        # Sync Server-Level Ambient Mood in shared server environments
+        is_server_shared = (
+            bool(context.guild_id)
+            and not context.guild_id.startswith("CHANNEL_")
+            and context.guild_id != "DM"
+        )
+        if is_server_shared and self.cache_provider:
+            from app.domain.services.community.ambient_manager import AmbientMoodManager
+            ambient_snapshot = AmbientMoodManager.extract_ambient_snapshot(context.emotion)
+            cache_key = f"chisa:guild:{context.guild_id}:ambient_mood"
+            await self.cache_provider.set_json(cache_key, ambient_snapshot, ttl=7200)
+
         if self.pipeline_tracker:
             self.pipeline_tracker.add_step("emotion_update", {
                 "old_emotions": context.current_emotions,
@@ -60,15 +76,35 @@ class EmotionUpdateStage(PipelineStage):
                     "sadness": context.emotion.sadness,
                     "trust": context.emotion.trust,
                     "irritation": context.emotion.irritation,
-                    "attachment": context.emotion.attachment + context.attachment_bonus_raw,
+                    "attachment": context.emotion.attachment,
                     "shyness": getattr(context.emotion, "shyness", 0.0),
                     "curiosity": getattr(context.emotion, "curiosity", 0.20),
                     "comfort": getattr(context.emotion, "comfort", 0.50),
+                },
+                "delta": {
+                    "joy": delta.joy_delta,
+                    "sadness": delta.sadness_delta,
+                    "trust": delta.trust_delta,
+                    "irritation": delta.irritation_delta,
+                    "attachment": delta.attachment_delta,
+                    "shyness": delta.shyness_delta,
+                    "curiosity": delta.curiosity_delta,
+                    "comfort": delta.comfort_delta,
+                },
+                "server_ambient_synced": is_server_shared,
+                "sentiment": {
+                    "reaction": delta.reaction,
+                    "user_stance": delta.user_stance,
+                    "intensity": delta.intensity,
+                    "variance": delta.variance,
                 },
                 "sentiment_analysis": {
                     "primary_emotion": delta.primary_emotion,
                     "intensity": delta.intensity,
                     "valence": delta.valence,
+                    "reaction": delta.reaction,
+                    "user_stance": delta.user_stance,
+                    "variance": delta.variance,
                 },
                 "user_sentiment": {
                     "is_positive": is_positive,
@@ -84,18 +120,12 @@ class EmotionUpdateStage(PipelineStage):
                 }
             })
 
-        # Recompute dampening details for return
-        attachment_bonus = context.attachment_bonus_raw
-        if context.emotion.sadness > 0.15 and context.emotion.irritation > 0.10:
-            dampen_factor = max(0.0, 1.0 - (context.emotion.sadness * context.emotion.irritation * 3.0))
-            attachment_bonus = context.attachment_bonus_raw * dampen_factor
-            
         context.updated_emotions = {
             "joy": context.emotion.joy,
             "sadness": context.emotion.sadness,
             "trust": context.emotion.trust,
             "irritation": context.emotion.irritation,
-            "attachment": context.emotion.attachment + attachment_bonus,
+            "attachment": context.emotion.attachment,
             "shyness": getattr(context.emotion, "shyness", 0.0),
             "curiosity": getattr(context.emotion, "curiosity", 0.20),
             "comfort": getattr(context.emotion, "comfort", 0.50),

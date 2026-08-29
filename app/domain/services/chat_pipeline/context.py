@@ -17,6 +17,18 @@ class ChatContext:
     user_id: str
     user_message: str
     on_token: Optional[Callable[[str], Any]] = None
+
+    # Community Mode Extensions
+    is_community: bool = False
+    channel_id: Optional[str] = None
+    guild_id: Optional[str] = None
+    channel_name: str = "general"
+    guild_name: Optional[str] = None
+    speaker_name: Optional[str] = None
+    recent_community_messages: List[Any] = field(default_factory=list)
+    channel_transcript: str = ""
+    recent_social_trace: Optional[Dict[str, Any]] = None
+    ambient_context: Optional[str] = None
     
     # State populated during pipeline execution
     user_uuid: Optional[uuid.UUID] = None

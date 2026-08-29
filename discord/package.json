@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "description": "Discord microservice for the Chisa core RAG backend",
+  "license": "Apache-2.0",
   "main": "src/index.js",
   "engines": {
     "node": ">=20.0.0"

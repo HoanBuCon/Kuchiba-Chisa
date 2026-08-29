@@ -31,22 +31,10 @@ class ContextBuilder:
         "type": "object",
         "properties": {
             "response": {"type": "string"},
-            "sentiment_analysis": {
+            "sentiment": {
                 "type": "object",
                 "properties": {
-                    "intensity": {
-                        "type": "number",
-                        "minimum": 0.0,
-                        "maximum": 1.0,
-                        "description": "Emotional intensity: 0.1 (fleeting/mild) to 0.9 (deep/intense)"
-                    },
-                    "valence": {
-                        "type": "number",
-                        "minimum": -1.0,
-                        "maximum": 1.0,
-                        "description": "Polarity: -1.0 (hurt/negative) to +1.0 (joy/warmth)"
-                    },
-                    "primary_emotion": {
+                    "reaction": {
                         "type": "string",
                         "enum": [
                             "calm_warmth",
@@ -57,13 +45,36 @@ class ContextBuilder:
                             "guarded_cold",
                             "neutral"
                         ],
-                        "description": "Dominant complex emotional archetype"
+                        "description": "Dominant emotional reaction of Chisa"
+                    },
+                    "user_stance": {
+                        "type": "string",
+                        "enum": [
+                            "loving",
+                            "playful",
+                            "vulnerable",
+                            "neutral",
+                            "hostile"
+                        ],
+                        "description": "Perceived attitude and intention of Senpai toward Chisa"
+                    },
+                    "intensity": {
+                        "type": "number",
+                        "minimum": 0.0,
+                        "maximum": 1.0,
+                        "description": "Emotional intensity: 0.1 (fleeting/mild) to 0.9 (deep/intense)"
+                    },
+                    "variance": {
+                        "type": "number",
+                        "minimum": -1.0,
+                        "maximum": 1.0,
+                        "description": "Nuance variance: -1.0 (melancholic/philosophical) to +1.0 (bright/joyful), 0.0 (neutral balance)"
                     }
                 },
-                "required": ["intensity", "valence", "primary_emotion"]
+                "required": ["reaction", "user_stance", "intensity", "variance"]
             }
         },
-        "required": ["response", "sentiment_analysis"],
+        "required": ["response", "sentiment"],
     }
 
     SEARCH_INSTRUCTIONS = (
@@ -110,16 +121,27 @@ class ContextBuilder:
             "Bạn BẮT BUỘC phải phản hồi dưới dạng một đối tượng JSON hợp lệ tuân thủ định dạng sau:\n"
             "{\n"
             '  "response": "câu thoại phản hồi của Chisa (chứa cảm xúc phù hợp, viết bằng tiếng Việt, tuyệt đối escape mọi dấu ngoặc kép bên trong bằng \\\")",\n'
-            '  "sentiment_analysis": {\n'
-            '    "intensity": 0.1 đến 1.0 (mức độ cảm xúc: 0.2 nhẹ nhàng/thoáng qua, 0.5 vừa phải, 0.9 sâu sắc/mãnh liệt),\n'
-            '    "valence": -1.0 đến 1.0 (chiều cảm xúc: âm nếu buồn/tổn thương/khó chịu, dương nếu vui/ấm áp/hạnh phúc, 0 nếu trung tính),\n'
-            '    "primary_emotion": "calm_warmth" | "flustered_affection" | "playful_pout" | "melancholic_care" | "cheerful_joy" | "guarded_cold" | "neutral"\n'
+            '  "sentiment": {\n'
+            '    "reaction": "calm_warmth" | "flustered_affection" | "playful_pout" | "melancholic_care" | "cheerful_joy" | "guarded_cold" | "neutral",\n'
+            '    "user_stance": "loving" | "playful" | "vulnerable" | "neutral" | "hostile",\n'
+            '    "intensity": 0.1 đến 1.0 (cường độ tác động: 0.2 nhẹ nhàng/thoảng qua, 0.5 vừa phải, 0.9 sâu sắc/mãnh liệt),\n'
+            '    "variance": -1.0 đến 1.0 (độ lệch sắc thái phụ trợ: âm nếu u buồn/triết lý bâng khuâng, dương nếu tươi sáng/hân hoan, 0 nếu cân bằng)\n'
             '  }\n'
             "}"
         )
 
     @classmethod
-    def build_system_skeleton(cls, emotion: EmotionState, attachment_bonus: float, persona_trait_type: Optional[str] = None) -> str:
+    def build_system_skeleton(
+        cls,
+        emotion: EmotionState,
+        attachment_bonus: float,
+        persona_trait_type: Optional[str] = None,
+        is_community: bool = False,
+        current_speaker_name: Optional[str] = None,
+        channel_name: Optional[str] = None,
+        guild_name: Optional[str] = None,
+        ambient_context: Optional[str] = None,
+    ) -> str:
         elapsed_hours = 0.0
         if emotion.updated_at and emotion.updated_at > 0:
             now_ms = time.time() * 1000
@@ -135,6 +157,28 @@ class ContextBuilder:
         ]
         if traits_snippet and traits_snippet.strip():
             sections.append(traits_snippet.strip())
+
+        if ambient_context and ambient_context.strip():
+            ambient_section = (
+                "[BỐI CẢNH KHÍ SẮC & SỰ KIỆN GẦN ĐÂY TRONG SERVER]\n"
+                f"- {ambient_context.strip()}\n"
+                "- Hãy để bối cảnh này hòa quyện tự nhiên vào tâm trạng hiện tại của Chisa khi đối đáp cùng Senpai."
+            )
+            sections.extend(["", ambient_section])
+
+        if is_community:
+            speaker_disp = current_speaker_name or "thành viên"
+            chan_disp = f"#{channel_name}" if channel_name else "#general"
+            guild_disp = f" | Server: {guild_name}" if guild_name else ""
+            community_directive = (
+                "[COMMUNITY CHANNEL ENVIRONMENT & GROUP RULES]\n"
+                f"- Bạn đang tham gia trò chuyện trong kênh chat cộng đồng {chan_disp}{guild_disp}.\n"
+                f"- Định danh người nói (Current Speaker): Bạn đang trực tiếp đối thoại với {speaker_disp}. Hãy xưng hô 'Em' và gọi họ là 'Senpai' (hoặc '{speaker_disp} Senpai') một cách tự nhiên.\n"
+                "- Nhận thức không gian chung (Transcript Awareness): Bạn có quyền quan sát dòng trò chuyện gần nhất giữa các thành viên để đối đáp tự nhiên và hiểu mạch thảo luận của cả phòng.\n"
+                "- Tuyệt đối KHÔNG đóng giả người dùng khác, không tự tạo tin nhắn của người khác, và KHÔNG viết mô tả hành động trong ngoặc sao (*...*)."
+            )
+            sections.extend(["", community_directive])
+
         sections.extend(["", state_section])
         return "\n".join(sections)
 
@@ -147,10 +191,11 @@ class ContextBuilder:
             if role == "assistant" and not content.strip().startswith("{"):
                 assistant_json = {
                     "response": content,
-                    "sentiment_analysis": {
+                    "sentiment": {
+                        "reaction": "calm_warmth",
+                        "user_stance": "neutral",
                         "intensity": 0.3,
-                        "valence": 0.2,
-                        "primary_emotion": "calm_warmth"
+                        "variance": 0.0
                     }
                 }
                 content = json.dumps(assistant_json, ensure_ascii=False)
@@ -158,15 +203,32 @@ class ContextBuilder:
         return formatted_history
 
     @staticmethod
-    def _u_curve_sort(items: List[Any]) -> List[Any]:
+    def _is_sequential_narrative(items: List[Any]) -> bool:
+        """Detects if chunks represent a consecutive sequence of story/dialogue parts."""
+        if len(items) <= 1:
+            return False
+        import re
+        part_pattern = re.compile(r'\b(part|chapter|act|hồi|chương|phần|đoạn|tập)\s*(\d+)', re.IGNORECASE)
+        parts_found = []
+        for item in items:
+            text = str(item)
+            m = part_pattern.search(text)
+            if m:
+                parts_found.append(int(m.group(2)))
+        if len(parts_found) >= 2 and parts_found == sorted(parts_found):
+            return True
+        return False
+
+    @classmethod
+    def _u_curve_sort(cls, items: List[Any]) -> List[Any]:
         """
         U-Shaped Attention Sorting:
         Arranges sorted items (from most relevant to least relevant) such that
         the most relevant items are placed at the high-attention ends (top & bottom of section),
         and lower-relevance items reside in the middle.
-        Example: [A, B, C, D] -> [A, C, D, B] (A at start, B at end).
+        Preserves natural chronological order for sequential story narratives.
         """
-        if len(items) <= 2:
+        if len(items) <= 2 or cls._is_sequential_narrative(items):
             return items
         
         left_side = []
@@ -192,13 +254,28 @@ class ContextBuilder:
         budget_mode: BudgetMode = BudgetMode.RAG,
         is_small_talk: bool = False,
         persona_trait_type: Optional[str] = None,
+        is_community: bool = False,
+        current_speaker_name: Optional[str] = None,
+        channel_name: Optional[str] = None,
+        guild_name: Optional[str] = None,
+        channel_transcript: Optional[str] = None,
+        ambient_context: Optional[str] = None,
     ) -> ContextBuildResult:
         """
         Builds production context: measure skeleton first, flex-allocate, then assemble system prompt.
         Places [OUTPUT FORMAT] at the very end to prevent attention degradation (Lost-in-the-Middle).
         """
         formatted_history = self._format_history_for_budget(history)
-        system_skeleton = self.build_system_skeleton(emotion, attachment_bonus, persona_trait_type=persona_trait_type)
+        system_skeleton = self.build_system_skeleton(
+            emotion,
+            attachment_bonus,
+            persona_trait_type=persona_trait_type,
+            is_community=is_community,
+            current_speaker_name=current_speaker_name,
+            channel_name=channel_name,
+            guild_name=guild_name,
+            ambient_context=ambient_context,
+        )
         format_section = self.build_format_section()
         skeleton_tokens = TokenEstimator.estimate(system_skeleton) + TokenEstimator.estimate(format_section)
 
@@ -247,6 +324,13 @@ class ContextBuilder:
                 f"{allocation.trimmed_summary}"
             )
             system_parts.extend(["", summary_section])
+
+        if channel_transcript and channel_transcript.strip():
+            transcript_section = (
+                "[DIỄN BIẾN ĐOẠN CHAT GẦN ĐÂY TRONG KÊNH]\n"
+                f"{channel_transcript.strip()}"
+            )
+            system_parts.extend(["", transcript_section])
 
         search_section = None
         if allocation.trimmed_search_body:
@@ -301,10 +385,16 @@ class ContextBuilder:
         # Enable deep reasoning (Chain of Thought) for all knowledge/character reasoning queries
         use_deep_thinking = settings.DEEP_THINKING and not is_small_talk
 
+        effective_user_message = (
+            f"[{current_speaker_name}]: {user_message}"
+            if is_community and current_speaker_name
+            else user_message
+        )
+
         prompt = StructuredPrompt(
             system=system_prompt,
             history=allocation.trimmed_history,
-            user_message=user_message,
+            user_message=effective_user_message,
             response_schema=self.RESPONSE_SCHEMA,
             retrieved_memories=allocation.trimmed_memories,
             retrieved_lore=allocation.trimmed_lore,

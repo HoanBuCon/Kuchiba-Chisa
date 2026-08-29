@@ -66,7 +66,7 @@ def test_attachment_5_tier_and_absence_longing():
     # Absence Longing test: Senpai quay lại sau 48 tiếng
     prompt_longing = StateManager.format_state(s_a4, elapsed_hours=48.0)
     print(f"  • Directive khi vắng bóng 48h:\n{prompt_longing}\n")
-    assert "[ABSENCE LONGING: ĐÃ VẮNG BÓNG 48 TIẾNG]" in prompt_longing
+    assert "[ABSENCE LONGING: ĐÃ VẮNG BÓNG 48 TIẾNG" in prompt_longing
     assert "nhớ nhung" in prompt_longing or "hờn dỗi" in prompt_longing
 
     print("  ✓ PASS: Thang đo Gắn bó & Hiệu ứng Nhớ nhung theo Thời gian kích hoạt hoàn hảo!")

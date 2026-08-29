@@ -23,8 +23,8 @@ from app.infrastructure.ingestion.models.chunk_model import Chunk, ChunkStrategy
 
 logger = structlog.get_logger(__name__)
 
-# Matches line with speaker attribution: "Speaker: Quote" or "Speaker: ..."
-_RE_SPEAKER_LINE = re.compile(r"^([A-Z][a-zA-Z0-9_\s\.\-]{1,25}):\s*(.+)$")
+# Matches line with speaker attribution: "Speaker: Quote", "[Speaker]: ...", supporting Unicode
+_RE_SPEAKER_LINE = re.compile(r"^\[?([A-ZÀ-Ỹ][a-zA-ZÀ-ỹ0-9_\s\.\-]{1,30})\]?:\s*(.+)$")
 
 
 class DialogueChunker(BaseChunker):
@@ -53,8 +53,12 @@ class DialogueChunker(BaseChunker):
                 dialogue = match.group(2).strip()
                 turns.append((speaker, dialogue, line_str))
             else:
-                # Narration or non-attributed line
-                turns.append(("Narrator", line_str, line_str))
+                if turns and turns[-1][0] != "Narrator" and not line_str.startswith(("---", "***", "===")):
+                    prev_spk, prev_diag, prev_raw = turns[-1]
+                    turns[-1] = (prev_spk, f"{prev_diag} {line_str}", f"{prev_raw}\n{line_str}")
+                else:
+                    # Narration or non-attributed line
+                    turns.append(("Narrator", line_str, line_str))
 
         return turns
 
