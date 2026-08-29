@@ -15,6 +15,16 @@ export const data = new SlashCommandBuilder()
         { name: 'Xem danh sách các kênh (list)', value: 'list' },
       ),
   )
+  .addStringOption((option) =>
+    option
+      .setName('mode')
+      .setDescription('Chế độ chat: private (1-1 riêng tư, mặc định) hoặc community (chat nhóm đa người)')
+      .setRequired(false)
+      .addChoices(
+        { name: 'Riêng tư 1-1 (private) - Mặc định', value: 'private' },
+        { name: 'Cộng đồng / Nhóm (community)', value: 'community' },
+      ),
+  )
   .addChannelOption((option) =>
     option
       .setName('channel')
@@ -29,21 +39,28 @@ export const data = new SlashCommandBuilder()
   )
   .setContexts(InteractionContextType.Guild);
 
-function createSetupEmbed(client, channelName) {
+function createSetupEmbed(client, channelName, mode = 'private') {
+  const isCommunity = mode === 'community';
   return new EmbedBuilder()
-    .setTitle('🌸 Cổng Kết Nối Trực Tiếp Chisa 🌸')
-    .setDescription(`Kênh **${channelName}** đã được thiết lập để kết nối trực tiếp với Chisa!`)
+    .setTitle(isCommunity ? '🌸 Cổng Kết Nối Cộng Đồng Chisa (Community Mode) 🌸' : '🌸 Cổng Kết Nối Trực Tiếp Chisa (Private Mode) 🌸')
+    .setDescription(
+      isCommunity
+        ? `Kênh **${channelName}** đã được thiết lập ở chế độ **Chat Cộng Đồng (Community)**!`
+        : `Kênh **${channelName}** đã được thiết lập để kết nối trực tiếp **1-1 (Private)** với Chisa!`
+    )
     .addFields(
       { 
-        name: '💬 Trò chuyện không cần lệnh', 
-        value: 'Từ bây giờ, bạn có thể nhắn tin trực tiếp trong kênh này và Chisa sẽ luôn trả lời mà không cần dùng lệnh `/ask` hay prefix `c!ask`' 
+        name: isCommunity ? '👥 Nhận thức Ngữ cảnh Đa Người' : '💬 Trò chuyện không cần lệnh', 
+        value: isCommunity
+          ? 'Chisa sẽ quan sát dòng trò chuyện chung giữa các thành viên trong kênh để đối đáp tự nhiên và hiểu mạch thảo luận của cả nhóm mà không cần dùng lệnh `/ask` hay prefix `c!ask`.'
+          : 'Từ bây giờ, bạn có thể nhắn tin trực tiếp trong kênh này và Chisa sẽ trò chuyện 1-1 riêng tư với bạn mà không cần dùng lệnh `/ask` hay prefix `c!ask`.'
       },
       { 
         name: '🤫 Tắt tự động phản hồi / Dùng lệnh Bot khác', 
         value: 'Nếu muốn gửi tin nhắn thường hoặc dùng lệnh prefix bot khác trong kênh này mà **không muốn Chisa trả lời**, hãy thêm tiền tố `!` hoặc `c!` ở đầu tin nhắn (Ví dụ: `!Chào mọi người`, `c!help`, `!play ...`).' 
       }
     )
-    .setColor('#ffb6c1')
+    .setColor(isCommunity ? '#7289da' : '#ffb6c1')
     .setThumbnail(client.user.displayAvatarURL())
     .setTimestamp();
 }
@@ -69,7 +86,8 @@ async function disableAll(client, guildId) {
   const { logger, repositories, guildSettingsCache } = client.services;
   
   const activeChannels = [];
-  for (const [chanId, gId] of guildSettingsCache.entries()) {
+  for (const [chanId, setting] of guildSettingsCache.entries()) {
+    const gId = typeof setting === 'object' ? setting.guildId : setting;
     if (gId === guildId) {
       activeChannels.push(chanId);
     }
@@ -160,17 +178,21 @@ async function disableChannels(client, guildId, channelIds) {
   return { replyText: replyText.trim(), disabled };
 }
 
-async function enableChannels(client, guildId, channelIds, triggeredByUserId) {
+async function enableChannels(client, guildId, channelIds, triggeredByUserId, mode = 'private') {
   const { logger, repositories, guildSettingsCache } = client.services;
 
   const enabled = [];
   const alreadyEnabled = [];
+  const updatedMode = [];
   const failed = [];
   const invalid = [];
 
   for (const channelId of channelIds) {
-    if (guildSettingsCache.has(channelId)) {
-      alreadyEnabled.push(channelId);
+    const existing = guildSettingsCache.get(channelId);
+    const existingMode = typeof existing === 'object' ? existing.mode : 'private';
+
+    if (existing && existingMode === mode) {
+      alreadyEnabled.push({ id: channelId, mode });
       continue;
     }
 
@@ -181,12 +203,17 @@ async function enableChannels(client, guildId, channelIds, triggeredByUserId) {
         continue;
       }
 
-      await repositories.guildSettings.setChisaChannel(guildId, channelId, triggeredByUserId);
-      guildSettingsCache.set(channelId, guildId);
-      enabled.push(channelId);
+      await repositories.guildSettings.setChisaChannel(guildId, channelId, triggeredByUserId, mode);
+      guildSettingsCache.set(channelId, { guildId, mode });
+
+      if (existing) {
+        updatedMode.push({ id: channelId, mode });
+      } else {
+        enabled.push({ id: channelId, mode });
+      }
 
       // Send the fancy setup embed in the target channel itself
-      const embed = createSetupEmbed(client, channel.name);
+      const embed = createSetupEmbed(client, channel.name, mode);
       await channel.send({ embeds: [embed] });
     } catch (error) {
       logger.error({ err: error, guildId, channelId }, 'Failed to enable channel');
@@ -196,10 +223,13 @@ async function enableChannels(client, guildId, channelIds, triggeredByUserId) {
 
   let replyText = '';
   if (enabled.length > 0) {
-    replyText += `Đã thiết lập thành công cổng kết nối trực tiếp tại các kênh:\n${enabled.map(id => `- <#${id}>`).join('\n')}\n`;
+    replyText += `Đã thiết lập thành công cổng kết nối tại các kênh:\n${enabled.map(item => `- <#${item.id}> (Chế độ: **${item.mode === 'community' ? 'Cộng đồng' : 'Riêng tư 1-1'}**)`).join('\n')}\n`;
+  }
+  if (updatedMode.length > 0) {
+    replyText += `Đã cập nhật chế độ thành công tại các kênh:\n${updatedMode.map(item => `- <#${item.id}> (Chế độ mới: **${item.mode === 'community' ? 'Cộng đồng' : 'Riêng tư 1-1'}**)`).join('\n')}\n`;
   }
   if (alreadyEnabled.length > 0) {
-    replyText += `Các kênh sau đã được kích hoạt cổng kết nối trực tiếp với Chisa rồi ạ:\n${alreadyEnabled.map(id => `- <#${id}>`).join('\n')}\n`;
+    replyText += `Các kênh sau đã đang hoạt động đúng chế độ này rồi ạ:\n${alreadyEnabled.map(item => `- <#${item.id}> (Chế độ: **${item.mode === 'community' ? 'Cộng đồng' : 'Riêng tư 1-1'}**)`).join('\n')}\n`;
   }
   if (invalid.length > 0) {
     replyText += `Các kênh sau không hợp lệ hoặc không phải là kênh chat chữ:\n${invalid.map(id => `- <#${id}>`).join('\n')}\n`;
@@ -208,7 +238,7 @@ async function enableChannels(client, guildId, channelIds, triggeredByUserId) {
     replyText += `Gặp lỗi khi thiết lập các kênh:\n${failed.map(id => `- <#${id}>`).join('\n')}\n`;
   }
 
-  return { replyText: replyText.trim(), enabled };
+  return { replyText: replyText.trim(), enabled, updatedMode };
 }
 
 export async function execute(client, interaction) {
@@ -221,6 +251,7 @@ export async function execute(client, interaction) {
   }
 
   const action = interaction.options.getString('action') || 'enable';
+  const mode = interaction.options.getString('mode') || 'private';
   const allOption = interaction.options.getBoolean('all') || false;
   const guildId = interaction.guildId;
 
@@ -228,9 +259,11 @@ export async function execute(client, interaction) {
   if (action === 'list') {
     const { guildSettingsCache } = client.services;
     const activeChannels = [];
-    for (const [chanId, gId] of guildSettingsCache.entries()) {
+    for (const [chanId, setting] of guildSettingsCache.entries()) {
+      const gId = typeof setting === 'object' ? setting.guildId : setting;
+      const chMode = typeof setting === 'object' ? setting.mode : 'private';
       if (gId === guildId) {
-        activeChannels.push(chanId);
+        activeChannels.push({ id: chanId, mode: chMode });
       }
     }
 
@@ -242,7 +275,7 @@ export async function execute(client, interaction) {
       return;
     }
 
-    const channelListStr = activeChannels.map((id) => `- <#${id}>`).join('\n');
+    const channelListStr = activeChannels.map((item) => `- <#${item.id}> (Chế độ: **${item.mode === 'community' ? 'Cộng đồng' : 'Riêng tư 1-1'}**)`).join('\n');
     await interaction.reply({
       content: `🌸 **Danh sách các cổng kết nối trực tiếp với Chisa:**\n${channelListStr}`,
       ephemeral: true,
@@ -281,7 +314,7 @@ export async function execute(client, interaction) {
   // Action: enable
   if (action === 'enable') {
     await interaction.deferReply({ ephemeral: true });
-    const res = await enableChannels(client, guildId, [targetChannel.id], interaction.user.id);
+    const res = await enableChannels(client, guildId, [targetChannel.id], interaction.user.id, mode);
     await interaction.editReply({
       content: res.replyText,
     });
@@ -310,9 +343,11 @@ export async function executePrefix(client, message, argsText) {
   // Case: c!setup list
   if (arg1 === 'list') {
     const activeChannels = [];
-    for (const [chanId, gId] of guildSettingsCache.entries()) {
+    for (const [chanId, setting] of guildSettingsCache.entries()) {
+      const gId = typeof setting === 'object' ? setting.guildId : setting;
+      const chMode = typeof setting === 'object' ? setting.mode : 'private';
       if (gId === guildId) {
-        activeChannels.push(chanId);
+        activeChannels.push({ id: chanId, mode: chMode });
       }
     }
 
@@ -321,7 +356,7 @@ export async function executePrefix(client, message, argsText) {
       return;
     }
 
-    const channelListStr = activeChannels.map((id) => `- <#${id}>`).join('\n');
+    const channelListStr = activeChannels.map((item) => `- <#${item.id}> (Chế độ: **${item.mode === 'community' ? 'Cộng đồng' : 'Riêng tư 1-1'}**)`).join('\n');
     await message.reply(`🌸 **Danh sách các cổng kết nối trực tiếp với Chisa:**\n${channelListStr}`);
     return;
   }
@@ -354,14 +389,25 @@ export async function executePrefix(client, message, argsText) {
     return;
   }
 
-  // Case: c!setup [channels...] (enable)
-  const channelArgs = args;
+  // Case: c!setup [channels...] [mode: community/private] (enable)
+  let mode = 'private';
+  const cleanArgs = [];
+  for (const a of args) {
+    const lower = a.toLowerCase();
+    if (lower === 'community' || lower === 'group' || lower === 'congdong') {
+      mode = 'community';
+    } else if (lower === 'private' || lower === 'single' || lower === 'riengtu') {
+      mode = 'private';
+    } else {
+      cleanArgs.push(a);
+    }
+  }
+
   let targetChannelIds = [];
-  
-  if (channelArgs.length > 0) {
-    const { channelIds, invalidArgs } = parseChannelIds(channelArgs);
+  if (cleanArgs.length > 0) {
+    const { channelIds, invalidArgs } = parseChannelIds(cleanArgs);
     if (invalidArgs.length > 0) {
-      await message.reply(`Cú pháp không hợp lệ. Sử dụng:\n- \`c!setup\` (Bật kênh này)\n- \`c!setup <#kênh1> <#kênh2> ...\` (Bật nhiều kênh được tag)\n- \`c!setup disable\` (Tắt kênh này)\n- \`c!setup disable <#kênh1> <#kênh2> ...\` (Tắt nhiều kênh được tag)\n- \`c!setup disable all\` (Tắt tất cả)\n- \`c!setup list\` (Xem danh sách các kênh)`);
+      await message.reply(`Cú pháp không hợp lệ. Sử dụng:\n- \`c!setup\` (Bật kênh này chế độ 1-1 Private)\n- \`c!setup community\` (Bật kênh này chế độ Cộng đồng)\n- \`c!setup <#kênh> [community/private]\` (Bật kênh được tag)\n- \`c!setup disable\` (Tắt kênh này)\n- \`c!setup disable all\` (Tắt tất cả)\n- \`c!setup list\` (Xem danh sách các kênh)`);
       return;
     }
     targetChannelIds = channelIds;
@@ -369,6 +415,6 @@ export async function executePrefix(client, message, argsText) {
     targetChannelIds = [message.channel.id];
   }
 
-  const res = await enableChannels(client, guildId, targetChannelIds, message.author.id);
+  const res = await enableChannels(client, guildId, targetChannelIds, message.author.id, mode);
   await message.reply(res.replyText);
 }

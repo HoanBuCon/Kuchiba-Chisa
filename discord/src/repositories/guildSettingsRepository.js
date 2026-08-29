@@ -3,13 +3,13 @@ export class GuildSettingsRepository {
     this.pool = pool;
   }
 
-  async setChisaChannel(guildId, channelId, setupByUserId) {
+  async setChisaChannel(guildId, channelId, setupByUserId, mode = 'private') {
     await this.pool.query(
-      `INSERT INTO guild_settings (discord_guild_id, chisa_channel_id, setup_by_user_id, updated_at)
-       VALUES ($1, $2, $3, NOW())
+      `INSERT INTO guild_settings (discord_guild_id, chisa_channel_id, setup_by_user_id, mode, updated_at)
+       VALUES ($1, $2, $3, $4, NOW())
        ON CONFLICT (chisa_channel_id)
-       DO UPDATE SET setup_by_user_id = $3, updated_at = NOW()`,
-      [guildId, channelId, setupByUserId]
+       DO UPDATE SET setup_by_user_id = $3, mode = $4, updated_at = NOW()`,
+      [guildId, channelId, setupByUserId, mode || 'private']
     );
   }
 
@@ -30,7 +30,7 @@ export class GuildSettingsRepository {
   }
 
   async getAllSettings() {
-    const res = await this.pool.query('SELECT discord_guild_id, chisa_channel_id FROM guild_settings');
+    const res = await this.pool.query("SELECT discord_guild_id, chisa_channel_id, COALESCE(mode, 'private') AS mode FROM guild_settings");
     return res.rows;
   }
 }

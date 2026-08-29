@@ -69,13 +69,16 @@ export async function execute(client, interaction, discordUser) {
     await repositories.interactions.markCoreRequest(interactionId);
 
     let result;
-    if (interaction.guild) {
+    const channelSetting = client.services.guildSettingsCache?.get(interaction.channelId);
+    const isCommunityMode = interaction.guild && channelSetting?.mode === 'community';
+
+    if (isCommunityMode) {
       const recentMessages = await fetchRecentChannelMessages(interaction.channel, 15);
       result = await coreRagClient.askCommunity({
         channelId: interaction.channelId,
         guildId: interaction.guildId,
         channelName: interaction.channel?.name || 'general',
-        guildName: interaction.guild.name,
+        guildName: interaction.guild?.name || null,
         coreUserId: discordUser.core_user_id,
         username: interaction.member?.displayName || interaction.user.globalName || interaction.user.username,
         message: question,
@@ -86,8 +89,8 @@ export async function execute(client, interaction, discordUser) {
         coreUserId: discordUser.core_user_id,
         message: question,
         username: interaction.user.username,
-        channelName: 'DM',
-        guildName: null,
+        channelName: interaction.channel ? (interaction.channel.name || 'DM') : 'DM',
+        guildName: interaction.guild ? interaction.guild.name : null,
       });
     }
 
@@ -143,13 +146,16 @@ export async function executePrefix(client, message, question, discordUser) {
     await repositories.interactions.markCoreRequest(interactionId);
 
     let result;
-    if (message.guild) {
+    const channelSetting = client.services.guildSettingsCache?.get(message.channelId);
+    const isCommunityMode = message.guild && channelSetting?.mode === 'community';
+
+    if (isCommunityMode) {
       const recentMessages = await fetchRecentChannelMessages(message.channel, 15);
       result = await coreRagClient.askCommunity({
         channelId: message.channelId,
         guildId: message.guildId,
         channelName: message.channel?.name || 'general',
-        guildName: message.guild.name,
+        guildName: message.guild?.name || null,
         coreUserId: discordUser.core_user_id,
         username: message.member?.displayName || message.author.globalName || message.author.username,
         message: question,
@@ -160,8 +166,8 @@ export async function executePrefix(client, message, question, discordUser) {
         coreUserId: discordUser.core_user_id,
         message: question,
         username: message.author.username,
-        channelName: 'DM',
-        guildName: null,
+        channelName: message.channel ? (message.channel.name || 'DM') : 'DM',
+        guildName: message.guild ? message.guild.name : null,
       });
     }
 
