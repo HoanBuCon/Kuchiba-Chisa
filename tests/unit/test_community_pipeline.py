@@ -3,14 +3,20 @@ from unittest.mock import AsyncMock, MagicMock
 from uuid import uuid4
 import pytest
 
-from app.domain.entities.community import CommunityChatContext, CommunityMessage
+from app.domain.entities.community import CommunityMessage
 from app.domain.entities.emotion import EmotionState
 from app.domain.entities.user import UserStats
-from app.domain.interfaces.llm_provider import BaseLLMAdapter, StructuredPrompt
+from app.domain.interfaces.llm_provider import BaseLLMAdapter, LLMResponse
 from app.domain.services.budget_mode import BudgetMode
-from app.domain.services.community.community_context_builder import CommunityContextBuilder
-from app.domain.services.community.community_pipeline import CommunityChatPipeline
+from app.domain.services.chat_engine import ChatEngine, ChatPipeline
+from app.domain.services.chat_pipeline.context import ChatContext
+from app.domain.services.chat_pipeline.stages.context_building_stage import ContextBuildingStage
+from app.domain.services.chat_pipeline.stages.emotion_update_stage import EmotionUpdateStage
+from app.domain.services.chat_pipeline.stages.initialization_stage import InitializationStage
+from app.domain.services.chat_pipeline.stages.llm_generation_stage import LLMGenerationStage
+from app.domain.services.chat_pipeline.stages.persistence_stage import PersistenceStage
 from app.domain.services.community.transcript_formatter import ChannelTranscriptFormatter
+from app.domain.services.context_builder import ContextBuilder
 from app.domain.services.emotion_engine import EmotionEngine
 
 
@@ -63,7 +69,7 @@ def test_channel_transcript_formatter_token_truncation():
         for i in range(50)
     ]
 
-    # Truncate with very tight budget (e.g. 100 tokens)
+    # Truncate with tight budget
     formatted = ChannelTranscriptFormatter.format_transcript(long_messages, max_tokens=100)
 
     # Must contain newest messages, but not all 50
@@ -71,8 +77,8 @@ def test_channel_transcript_formatter_token_truncation():
     assert "tin nhắn thứ 0" not in formatted
 
 
-def test_community_context_builder():
-    builder = CommunityContextBuilder()
+def test_context_builder_in_community_mode():
+    builder = ContextBuilder()
     emotion = EmotionState(
         user_id=uuid4(),
         trust=0.70,
@@ -82,83 +88,141 @@ def test_community_context_builder():
 
     transcript = "[01:15] <Hoan>: Chisa ơi em thấy quán này thế nào?"
     result = builder.build(
-        speaker_emotion=emotion,
+        emotion=emotion,
+        attachment_bonus=0.0,
+        memories=["Hoan thích ăn đồ cay"],
+        lore=["Quán ramen nằm gần viện nghiên cứu dữ liệu"],
+        history=[],
+        user_message="Chisa ơi em thấy quán này thế nào?",
+        intent_name="LORE",
+        budget_mode=BudgetMode.RAG,
+        is_community=True,
         current_speaker_name="Hoan",
         channel_name="general-chat",
         guild_name="Chisa Server",
-        transcript=transcript,
-        user_message="Chisa ơi em thấy quán này thế nào?",
-        memories=["Hoan thích ăn đồ cay"],
-        lore=["Quán ramen nằm gần viện nghiên cứu dữ liệu"],
-        budget_mode=BudgetMode.RAG,
+        channel_transcript=transcript,
     )
 
     prompt = result.prompt
     assert prompt is not None
+    # Verify core persona is intact
+    assert "Mutant Resonator" in prompt.system
+    assert "Kuudere" in prompt.system
+    # Verify community layered directive
     assert "#general-chat" in prompt.system
     assert "Chisa Server" in prompt.system
     assert "Hoan" in prompt.system
-    assert "KỶ NIỆM VỀ HOAN" in prompt.system
-    assert "Hoan thích ăn đồ cay" in prompt.system
-    assert "KIẾN THỨC BỔ TRỢ & THẾ GIỚI" in prompt.system
-    assert "Quán ramen nằm gần viện nghiên cứu" in prompt.system
+    assert "COMMUNITY CHANNEL ENVIRONMENT & GROUP RULES" in prompt.system
+    # Verify transcript and memories
     assert "DIỄN BIẾN ĐOẠN CHAT GẦN ĐÂY TRONG KÊNH" in prompt.system
-    assert "[Hoan]: Chisa ơi em thấy quán này thế nào?" in prompt.user_message
+    assert transcript in prompt.system
+    assert "Hoan thích ăn đồ cay" in prompt.system
+    assert prompt.user_message == "[Hoan]: Chisa ơi em thấy quán này thế nào?"
 
 
 @pytest.mark.asyncio
-async def test_community_chat_pipeline_execution():
+async def test_unified_chat_engine_community_mode_execution():
     mock_llm = MagicMock(spec=BaseLLMAdapter)
     mock_llm.generate = AsyncMock(
-        return_value='{"response": "Quán đó tuyệt vời lắm đó Senpai!", "sentiment": {"reaction": "calm_warmth", "user_stance": "loving", "intensity": 0.7, "variance": 0.2}}'
+        return_value=LLMResponse(
+            raw_content='{"response": "Quán đó tuyệt vời lắm đó Senpai!", "sentiment": {"reaction": "calm_warmth", "user_stance": "loving", "intensity": 0.7, "variance": 0.2}}',
+            parsed={
+                "response": "Quán đó tuyệt vời lắm đó Senpai!",
+                "sentiment": {
+                    "reaction": "calm_warmth",
+                    "user_stance": "loving",
+                    "intensity": 0.7,
+                    "variance": 0.2,
+                },
+            },
+            input_tokens=100,
+            output_tokens=30,
+        )
     )
 
-    pipeline = CommunityChatPipeline(
+    user_id = str(uuid4())
+    user_uuid = uuid4()
+    mock_stats = UserStats(user_id=user_uuid, interaction_count=5)
+    initial_emotion = EmotionState(user_id=user_uuid, trust=0.50, attachment=0.10)
+
+    mock_user_repo = MagicMock()
+    mock_user_repo.get_or_create_user = AsyncMock()
+    mock_user_repo.get_user_stats = AsyncMock(return_value=mock_stats)
+    mock_user_repo.update_stats = AsyncMock()
+
+    mock_emotion_repo = MagicMock()
+    mock_emotion_repo.get_emotion_state = AsyncMock(return_value=initial_emotion)
+    mock_emotion_repo.update_emotion = AsyncMock()
+
+    mock_conv_repo = MagicMock()
+    mock_conv_repo.get_or_create_conversation = AsyncMock(return_value=uuid4())
+    mock_conv_repo.get_recent_history = AsyncMock(return_value=[])
+    mock_conv_repo.get_latest_summary = AsyncMock(return_value=None)
+    mock_conv_repo.save_message = AsyncMock()
+
+    stages = [
+        InitializationStage(
+            user_repo_factory=lambda _: mock_user_repo,
+            emotion_repo_factory=lambda _: mock_emotion_repo,
+            conv_repo_factory=lambda _: mock_conv_repo,
+        ),
+        ContextBuildingStage(context_builder=ContextBuilder()),
+        LLMGenerationStage(llm=mock_llm),
+        EmotionUpdateStage(
+            emotion_engine=EmotionEngine(),
+            emotion_repo_factory=lambda _: mock_emotion_repo,
+        ),
+        PersistenceStage(
+            user_repo_factory=lambda _: mock_user_repo,
+            conv_repo_factory=lambda _: mock_conv_repo,
+        ),
+    ]
+
+    pipeline = ChatPipeline(stages)
+    mock_cache = MagicMock()
+    mock_cache.acquire_lock = AsyncMock(return_value="token123")
+    mock_cache.release_lock = AsyncMock()
+
+    chat_engine = ChatEngine(
+        pipeline=pipeline,
+        uow_factory=lambda _: MagicMock(),
+        cache_provider=mock_cache,
+        emotion_repo_factory=lambda _: mock_emotion_repo,
+        conv_repo_factory=lambda _: mock_conv_repo,
+        user_repo_factory=lambda _: mock_user_repo,
+        db_session_factory=lambda: AsyncMock(),
         llm=mock_llm,
-        retrieval_pipeline=None,
-        context_builder=CommunityContextBuilder(),
-        emotion_engine=EmotionEngine(),
+        embedder=MagicMock(),
+        vector_store=MagicMock(),
     )
 
     mock_session = MagicMock()
-    mock_user_repo = MagicMock()
-    mock_user_repo.get_or_create_user = AsyncMock()
-    mock_user_repo.get_user_stats = AsyncMock(return_value=UserStats(user_id=uuid4(), interaction_count=5))
-    mock_user_repo.increment_interaction_count = AsyncMock()
-
-    mock_emotion_repo = MagicMock()
-    speaker_id = str(uuid4())
-    initial_emotion = EmotionState(user_id=uuid4(), trust=0.50, attachment=0.10)
-    mock_emotion_repo.get_emotion_state = AsyncMock(return_value=initial_emotion)
-    mock_emotion_repo.save_emotion_state = AsyncMock()
-
+    mock_session.commit = AsyncMock()
+    mock_session.rollback = AsyncMock()
     recent_messages = [
         CommunityMessage(
             message_id="1",
-            speaker_id="hoan_id",
+            speaker_id="user_123",
             speaker_name="Hoan",
             content="Chào Chisa",
             created_at=datetime.now(),
         )
     ]
 
-    context = await pipeline.execute(
+    reply, updated_emotions = await chat_engine.community_chat(
         session=mock_session,
         channel_id="chan_123",
-        guild_id="guild_456",
-        channel_name="gaming-lounge",
-        guild_name="Anime Guild",
-        current_speaker_id=speaker_id,
-        current_speaker_name="Hoan",
+        user_id=user_id,
         user_message="Em có rảnh không?",
+        speaker_name="Hoan",
+        channel_name="gaming-lounge",
+        guild_id="guild_456",
+        guild_name="Anime Guild",
         recent_messages=recent_messages,
-        user_repo=mock_user_repo,
-        emotion_repo=mock_emotion_repo,
     )
 
-    assert context.cleaned_response == "Quán đó tuyệt vời lắm đó Senpai!"
-    assert context.extracted_sentiment["reaction"] == "calm_warmth"
-    assert context.extracted_sentiment["user_stance"] == "loving"
-    assert context.updated_speaker_emotions["trust"] > 0.50
-    mock_emotion_repo.save_emotion_state.assert_awaited_once()
-    mock_user_repo.increment_interaction_count.assert_awaited_once()
+    assert reply == "Quán đó tuyệt vời lắm đó Senpai!"
+    assert updated_emotions["trust"] > 0.50
+    mock_emotion_repo.update_emotion.assert_awaited_once()
+    mock_user_repo.update_stats.assert_awaited_once()
+    mock_conv_repo.save_message.assert_awaited()

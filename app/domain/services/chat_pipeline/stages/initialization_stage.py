@@ -44,8 +44,15 @@ class InitializationStage(PipelineStage):
         conv_id = await conv_repo.get_or_create_conversation(user_uuid)
 
         # 3. Sequentialize conversation history and summary reads
-        history = await conv_repo.get_recent_history(user_uuid, conv_id, limit=40)
-        summary = await conv_repo.get_latest_summary(user_uuid, conv_id)
+        if context.is_community:
+            history = []
+            summary = None
+            if context.recent_community_messages and not context.channel_transcript:
+                from app.domain.services.community.transcript_formatter import ChannelTranscriptFormatter
+                context.channel_transcript = ChannelTranscriptFormatter.format_transcript(context.recent_community_messages)
+        else:
+            history = await conv_repo.get_recent_history(user_uuid, conv_id, limit=40)
+            summary = await conv_repo.get_latest_summary(user_uuid, conv_id)
 
         # Initialize ContextVars for request-scoped logging
         question_idx = len([m for m in history if m.get("role") == "user"]) + 1

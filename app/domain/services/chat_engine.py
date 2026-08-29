@@ -97,6 +97,52 @@ class ChatEngine:
         finally:
             await self.cache.release_lock(lock_key, token=acquired)
 
+    async def community_chat(
+        self,
+        session: IDbSession,
+        channel_id: str,
+        user_id: str,
+        user_message: str,
+        speaker_name: str,
+        channel_name: str = "general",
+        guild_id: Optional[str] = None,
+        guild_name: Optional[str] = None,
+        recent_messages: Optional[List[Any]] = None,
+        on_token: Optional[Callable[[str], Any]] = None,
+    ) -> Tuple[str, Dict[str, float]]:
+        log.info(
+            "Starting ChatEngine Community cycle",
+            channel_id=channel_id,
+            speaker_id=user_id,
+            speaker_name=speaker_name,
+            channel_name=channel_name,
+        )
+
+        # ── Per-speaker distributed lock to prevent race conditions (TTL 120s) ──
+        lock_key = f"chisa:chat_lock:{user_id}"
+        acquired = await self.cache.acquire_lock(lock_key, ttl=120)
+        if not acquired:
+            log.warning("Community chat lock not acquired — concurrent request for same speaker", user_id=user_id)
+            raise ChatEngineBusyError(user_id)
+        try:
+            context = ChatContext(
+                session=session,
+                user_id=user_id,
+                user_message=user_message,
+                on_token=on_token,
+                is_community=True,
+                channel_id=channel_id,
+                guild_id=guild_id,
+                channel_name=channel_name,
+                guild_name=guild_name,
+                speaker_name=speaker_name,
+                recent_community_messages=recent_messages or [],
+            )
+            context = await self.pipeline.execute(context)
+            return context.chisa_reply, context.updated_emotions
+        finally:
+            await self.cache.release_lock(lock_key, token=acquired)
+
     async def _chat_inner(self, session: IDbSession, user_id: str, user_message: str, on_token: Optional[Callable[[str], Any]] = None) -> Tuple[str, Dict[str, float]]:
         try:
             # Run Chat Pipeline (CacheStage handles pure-lore caching internally)

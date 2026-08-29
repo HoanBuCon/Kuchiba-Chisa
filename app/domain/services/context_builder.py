@@ -131,7 +131,16 @@ class ContextBuilder:
         )
 
     @classmethod
-    def build_system_skeleton(cls, emotion: EmotionState, attachment_bonus: float, persona_trait_type: Optional[str] = None) -> str:
+    def build_system_skeleton(
+        cls,
+        emotion: EmotionState,
+        attachment_bonus: float,
+        persona_trait_type: Optional[str] = None,
+        is_community: bool = False,
+        current_speaker_name: Optional[str] = None,
+        channel_name: Optional[str] = None,
+        guild_name: Optional[str] = None,
+    ) -> str:
         elapsed_hours = 0.0
         if emotion.updated_at and emotion.updated_at > 0:
             now_ms = time.time() * 1000
@@ -147,6 +156,20 @@ class ContextBuilder:
         ]
         if traits_snippet and traits_snippet.strip():
             sections.append(traits_snippet.strip())
+
+        if is_community:
+            speaker_disp = current_speaker_name or "thành viên"
+            chan_disp = f"#{channel_name}" if channel_name else "#general"
+            guild_disp = f" | Server: {guild_name}" if guild_name else ""
+            community_directive = (
+                "[COMMUNITY CHANNEL ENVIRONMENT & GROUP RULES]\n"
+                f"- Bạn đang tham gia trò chuyện trong kênh chat cộng đồng {chan_disp}{guild_disp}.\n"
+                f"- Định danh người nói (Current Speaker): Bạn đang trực tiếp đối thoại với {speaker_disp}. Hãy xưng hô 'Em' và gọi họ là 'Senpai' (hoặc '{speaker_disp} Senpai') một cách tự nhiên.\n"
+                "- Nhận thức không gian chung (Transcript Awareness): Bạn có quyền quan sát dòng trò chuyện gần nhất giữa các thành viên để đối đáp tự nhiên và hiểu mạch thảo luận của cả phòng.\n"
+                "- Tuyệt đối KHÔNG đóng giả người dùng khác, không tự tạo tin nhắn của người khác, và KHÔNG viết mô tả hành động trong ngoặc sao (*...*)."
+            )
+            sections.extend(["", community_directive])
+
         sections.extend(["", state_section])
         return "\n".join(sections)
 
@@ -222,13 +245,26 @@ class ContextBuilder:
         budget_mode: BudgetMode = BudgetMode.RAG,
         is_small_talk: bool = False,
         persona_trait_type: Optional[str] = None,
+        is_community: bool = False,
+        current_speaker_name: Optional[str] = None,
+        channel_name: Optional[str] = None,
+        guild_name: Optional[str] = None,
+        channel_transcript: Optional[str] = None,
     ) -> ContextBuildResult:
         """
         Builds production context: measure skeleton first, flex-allocate, then assemble system prompt.
         Places [OUTPUT FORMAT] at the very end to prevent attention degradation (Lost-in-the-Middle).
         """
         formatted_history = self._format_history_for_budget(history)
-        system_skeleton = self.build_system_skeleton(emotion, attachment_bonus, persona_trait_type=persona_trait_type)
+        system_skeleton = self.build_system_skeleton(
+            emotion,
+            attachment_bonus,
+            persona_trait_type=persona_trait_type,
+            is_community=is_community,
+            current_speaker_name=current_speaker_name,
+            channel_name=channel_name,
+            guild_name=guild_name,
+        )
         format_section = self.build_format_section()
         skeleton_tokens = TokenEstimator.estimate(system_skeleton) + TokenEstimator.estimate(format_section)
 
@@ -277,6 +313,13 @@ class ContextBuilder:
                 f"{allocation.trimmed_summary}"
             )
             system_parts.extend(["", summary_section])
+
+        if channel_transcript and channel_transcript.strip():
+            transcript_section = (
+                "[DIỄN BIẾN ĐOẠN CHAT GẦN ĐÂY TRONG KÊNH]\n"
+                f"{channel_transcript.strip()}"
+            )
+            system_parts.extend(["", transcript_section])
 
         search_section = None
         if allocation.trimmed_search_body:
@@ -331,10 +374,16 @@ class ContextBuilder:
         # Enable deep reasoning (Chain of Thought) for all knowledge/character reasoning queries
         use_deep_thinking = settings.DEEP_THINKING and not is_small_talk
 
+        effective_user_message = (
+            f"[{current_speaker_name}]: {user_message}"
+            if is_community and current_speaker_name
+            else user_message
+        )
+
         prompt = StructuredPrompt(
             system=system_prompt,
             history=allocation.trimmed_history,
-            user_message=user_message,
+            user_message=effective_user_message,
             response_schema=self.RESPONSE_SCHEMA,
             retrieved_memories=allocation.trimmed_memories,
             retrieved_lore=allocation.trimmed_lore,

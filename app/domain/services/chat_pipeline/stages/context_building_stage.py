@@ -40,6 +40,11 @@ class ContextBuildingStage(PipelineStage):
             budget_mode=budget_mode,
             is_small_talk=context.is_small_talk,
             persona_trait_type=context.persona_trait_type,
+            is_community=context.is_community,
+            current_speaker_name=context.speaker_name,
+            channel_name=context.channel_name,
+            guild_name=context.guild_name,
+            channel_transcript=context.channel_transcript,
         )
         
         context.prompt = build_result.prompt

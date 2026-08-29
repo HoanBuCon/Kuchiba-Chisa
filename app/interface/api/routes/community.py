@@ -1,16 +1,14 @@
+import time
 from datetime import datetime
 from typing import Optional
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.application.dependencies import get_community_pipeline
+from app.application.dependencies import get_chat_engine
 from app.domain.entities.community import CommunityMessage
-from app.domain.interfaces.llm_provider import LLMInvalidResponseError, LLMRateLimitError, LLMTimeoutError
-from app.domain.services.community.community_pipeline import CommunityChatPipeline
+from app.domain.interfaces.llm_provider import LLMRateLimitError, LLMTimeoutError
+from app.domain.services.chat_engine import ChatEngine, ChatEngineBusyError
 from app.infrastructure.database.engine import get_db_session
-from app.infrastructure.database.repositories.conversation_repository import SqlAlchemyConversationRepository
-from app.infrastructure.database.repositories.emotion_repository import SqlAlchemyEmotionRepository
-from app.infrastructure.database.repositories.user_repository import SqlAlchemyUserRepository
 from app.infrastructure.logging.logger import get_logger
 from app.interface.api.schemas.community import CommunityChatRequest, CommunityChatResponse
 
@@ -23,11 +21,11 @@ router = APIRouter(prefix="/community", tags=["community"])
 async def community_chat_endpoint(
     request: CommunityChatRequest,
     session: AsyncSession = Depends(get_db_session),
-    pipeline: CommunityChatPipeline = Depends(get_community_pipeline),
+    chat_engine: ChatEngine = Depends(get_chat_engine),
 ) -> CommunityChatResponse:
     """
     Multi-user community channel chat endpoint.
-    Processes multi-speaker dialogue context and provides group-aware responses.
+    Processes multi-speaker dialogue context through the unified 10-stage RAG pipeline.
     """
     log.info(
         "Processing community chat request",
@@ -59,48 +57,47 @@ async def community_chat_endpoint(
             )
         )
 
-    user_repo = SqlAlchemyUserRepository(session)
-    emotion_repo = SqlAlchemyEmotionRepository(session)
-    conv_repo = SqlAlchemyConversationRepository(session)
-
+    t0 = time.time()
     try:
-        context = await pipeline.execute(
+        reply_text, updated_emotions = await chat_engine.community_chat(
             session=session,
             channel_id=request.channel_id,
-            guild_id=request.guild_id,
-            channel_name=request.channel_name,
-            guild_name=request.guild_name,
-            current_speaker_id=request.user_id,
-            current_speaker_name=request.username,
+            user_id=request.user_id,
             user_message=request.message,
+            speaker_name=request.username,
+            channel_name=request.channel_name,
+            guild_id=request.guild_id,
+            guild_name=request.guild_name,
             recent_messages=domain_messages,
-            user_repo=user_repo,
-            emotion_repo=emotion_repo,
-            conv_repo=conv_repo,
         )
 
         await session.commit()
+        duration_ms = round((time.time() - t0) * 1000, 2)
 
         return CommunityChatResponse(
-            response=context.cleaned_response or "Chisa chào mọi người ạ ~",
-            emotions=context.updated_speaker_emotions or {},
-            sentiment=context.extracted_sentiment,
-            execution_time_ms=context.execution_time_ms,
+            response=reply_text or "Chisa chào mọi người ạ ~",
+            emotions=updated_emotions or {},
+            execution_time_ms=duration_ms,
         )
 
+    except ChatEngineBusyError:
+        raise HTTPException(
+            status_code=429,
+            detail="Chisa đang xử lý tin nhắn trước đó của bạn, vui lòng chờ một nhịp nhé!",
+        )
     except LLMRateLimitError:
         log.warning("Community chat rate limited", channel_id=request.channel_id, user_id=request.user_id)
         return CommunityChatResponse(
             response="Kênh chat đang sôi nổi quá, mọi người đợi Chisa một nhịp xíu nhé!",
             emotions={},
-            execution_time_ms=0.0,
+            execution_time_ms=round((time.time() - t0) * 1000, 2),
         )
     except LLMTimeoutError:
         log.error("Community chat timeout", channel_id=request.channel_id, user_id=request.user_id)
         return CommunityChatResponse(
             response="Chisa đang xử lý nhiều dữ liệu cùng lúc nên hơi chậm một chút, mọi người nhắn lại giúp em nha.",
             emotions={},
-            execution_time_ms=0.0,
+            execution_time_ms=round((time.time() - t0) * 1000, 2),
         )
     except Exception as e:
         log.error("Community chat failed", error=str(e), channel_id=request.channel_id, user_id=request.user_id)
