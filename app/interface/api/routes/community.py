@@ -58,6 +58,18 @@ async def community_chat_endpoint(
         )
 
     t0 = time.time()
+    from app.infrastructure.logging.pipeline_tracker import pipeline_tracker
+
+    pipeline_tracker.start_trace(
+        user_id=request.user_id,
+        message=request.message,
+        pipeline="community",
+        source="discord_community",
+        username=request.username,
+        channel_name=request.channel_name,
+        guild_name=request.guild_name,
+    )
+
     try:
         reply_text, updated_emotions = await chat_engine.community_chat(
             session=session,
@@ -74,6 +86,12 @@ async def community_chat_endpoint(
         await session.commit()
         duration_ms = round((time.time() - t0) * 1000, 2)
 
+        pipeline_tracker.end_trace(
+            response_text=reply_text,
+            emotions=updated_emotions,
+            status="success",
+        )
+
         return CommunityChatResponse(
             response=reply_text or "Chisa chào mọi người ạ ~",
             emotions=updated_emotions or {},
@@ -81,26 +99,52 @@ async def community_chat_endpoint(
         )
 
     except ChatEngineBusyError:
+        pipeline_tracker.end_trace(
+            response_text="Chisa đang xử lý tin nhắn trước đó của bạn, vui lòng chờ một nhịp nhé!",
+            emotions={},
+            status="error",
+            error="ChatEngineBusyError",
+        )
         raise HTTPException(
             status_code=429,
             detail="Chisa đang xử lý tin nhắn trước đó của bạn, vui lòng chờ một nhịp nhé!",
         )
     except LLMRateLimitError:
         log.warning("Community chat rate limited", channel_id=request.channel_id, user_id=request.user_id)
+        fallback = "Kênh chat đang sôi nổi quá, mọi người đợi Chisa một nhịp xíu nhé!"
+        pipeline_tracker.end_trace(
+            response_text=fallback,
+            emotions={},
+            status="success",
+            error="LLMRateLimitError",
+        )
         return CommunityChatResponse(
-            response="Kênh chat đang sôi nổi quá, mọi người đợi Chisa một nhịp xíu nhé!",
+            response=fallback,
             emotions={},
             execution_time_ms=round((time.time() - t0) * 1000, 2),
         )
     except LLMTimeoutError:
         log.error("Community chat timeout", channel_id=request.channel_id, user_id=request.user_id)
+        fallback = "Chisa đang xử lý nhiều dữ liệu cùng lúc nên hơi chậm một chút, mọi người nhắn lại giúp em nha."
+        pipeline_tracker.end_trace(
+            response_text=fallback,
+            emotions={},
+            status="success",
+            error="LLMTimeoutError",
+        )
         return CommunityChatResponse(
-            response="Chisa đang xử lý nhiều dữ liệu cùng lúc nên hơi chậm một chút, mọi người nhắn lại giúp em nha.",
+            response=fallback,
             emotions={},
             execution_time_ms=round((time.time() - t0) * 1000, 2),
         )
     except Exception as e:
         log.error("Community chat failed", error=str(e), channel_id=request.channel_id, user_id=request.user_id)
+        pipeline_tracker.end_trace(
+            response_text=f"Lỗi: {str(e)}",
+            emotions={},
+            status="error",
+            error=str(e),
+        )
         await session.rollback()
         raise HTTPException(
             status_code=500,

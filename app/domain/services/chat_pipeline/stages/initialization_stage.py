@@ -113,6 +113,10 @@ class InitializationStage(PipelineStage):
                 data={
                     "user_uuid": user_uuid,
                     "user_id": context.user_id,
+                    "speaker_name": context.speaker_name,
+                    "is_community": context.is_community,
+                    "channel_name": context.channel_name,
+                    "guild_name": context.guild_name,
                     "conv_id": str(conv_id) if conv_id else None,
                     "turn_index": question_idx,
                     "interaction_count": stats.interaction_count,
@@ -120,7 +124,10 @@ class InitializationStage(PipelineStage):
                     "has_summary": bool(summary),
                     "summary_preview": (summary[:200] + "...") if summary and len(summary) > 200 else summary,
                     "current_emotions": current_emotions,
+                    "initial_emotions": current_emotions,
                     "baseline_emotions": current_emotions,
+                    "ambient_mood": context.recent_social_trace,
+                    "channel_transcript_preview": (context.channel_transcript[:300] + "...") if context.channel_transcript and len(context.channel_transcript) > 300 else context.channel_transcript,
                     "attachment_bonus_raw": round(attachment_bonus_raw, 4),
                     "status": "success"
                 }

@@ -155,15 +155,73 @@ ${window.VisualizerApp.escapeHtml(userMessage.trim())}
     // ── STAGE 1: INITIALIZATION INSPECTOR ──
     renderInitializationInspector(step) {
         const data = step.data || {};
+        const isComm = data.is_community || false;
+        const speaker = data.speaker_name || (data.user_id ? `${data.user_id.slice(0, 8)}...` : 'Senpai');
+        const channel = data.channel_name ? `#${data.channel_name}` : (isComm ? '#community' : 'Direct DM');
+
         const metrics = [
-            { label: 'Turn Index', value: data.turn_index ? `#${data.turn_index}` : 'Phiên mới', icon: 'activity', color: '#ff758c' },
-            { label: 'User ID', value: data.user_id ? `${data.user_id.slice(0, 12)}...` : 'Unknown', icon: 'user', small: true },
-            { label: 'Interaction Count', value: data.interaction_count || 0, icon: 'activity', color: '#ff5c75' },
-            { label: 'Status', value: data.status || 'success', icon: 'zap', color: '#ff223e', badge: 'Active' },
+            { label: 'Chế độ Không gian', value: isComm ? 'Community (Group)' : (data.channel_name ? 'Semi-Private / Private' : '1-on-1 Direct'), icon: isComm ? 'users' : 'user', color: isComm ? '#c084fc' : '#ff758c' },
+            { label: 'Người nói (Speaker)', value: speaker, icon: 'user-check', color: '#38bdf8' },
+            { label: 'Kênh / Server', value: channel, icon: 'message-square', color: '#34d399' },
+            { label: 'Lượt tương tác', value: data.turn_index ? `#${data.turn_index}` : `${data.interaction_count || 0} turns`, icon: 'activity', color: '#ff223e' },
         ];
 
         const metricGridHtml = InspectorWidgets.renderMetricGrid(metrics);
         const emotionHtml = data.initial_emotions ? InspectorWidgets.renderEmotionComparison(data.initial_emotions, data.initial_emotions, {}, {}) : '';
+
+        // Ambient Mood Card
+        let ambientMoodHtml = '';
+        if (data.ambient_mood && typeof data.ambient_mood === 'object') {
+            const amb = data.ambient_mood;
+            ambientMoodHtml = `
+                <div class="inspector-card" style="border-left: 3px solid #c084fc; background: linear-gradient(135deg, rgba(168, 85, 247, 0.08), rgba(18, 10, 20, 0.6)); margin-top: 12px;">
+                    <div class="inspector-card-title" style="justify-content: space-between;">
+                        <div style="display: flex; align-items: center; gap: 6px;">
+                            ${InspectorWidgets.icon('cloud-rain', { size: 14, color: '#c084fc' })}
+                            <span style="color: #d8b4fe; font-weight: 700;">Khí Sắc Môi Trường Server (Server Ambient Emotional State)</span>
+                        </div>
+                        <span class="pill" style="background: rgba(168, 85, 247, 0.2); color: #e9d5ff; border-color: rgba(168, 85, 247, 0.4); font-size: 10px;">Exponential Decay (T½ = 30m)</span>
+                    </div>
+                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 8px; font-size: 11.5px; font-family: 'JetBrains Mono', monospace;">
+                        <div style="background: rgba(14, 7, 15, 0.85); padding: 6px 10px; border-radius: 4px; border: 1px solid rgba(168, 85, 247, 0.2);">
+                            <span style="color: var(--text-muted);">Joy:</span> <b style="color: #f43f5e;">${amb.joy !== undefined ? Number(amb.joy).toFixed(2) : '—'}</b>
+                        </div>
+                        <div style="background: rgba(14, 7, 15, 0.85); padding: 6px 10px; border-radius: 4px; border: 1px solid rgba(168, 85, 247, 0.2);">
+                            <span style="color: var(--text-muted);">Sadness:</span> <b style="color: #60a5fa;">${amb.sadness !== undefined ? Number(amb.sadness).toFixed(2) : '—'}</b>
+                        </div>
+                        <div style="background: rgba(14, 7, 15, 0.85); padding: 6px 10px; border-radius: 4px; border: 1px solid rgba(168, 85, 247, 0.2);">
+                            <span style="color: var(--text-muted);">Irritation:</span> <b style="color: #f87171;">${amb.irritation !== undefined ? Number(amb.irritation).toFixed(2) : '—'}</b>
+                        </div>
+                        <div style="background: rgba(14, 7, 15, 0.85); padding: 6px 10px; border-radius: 4px; border: 1px solid rgba(168, 85, 247, 0.2);">
+                            <span style="color: var(--text-muted);">Comfort:</span> <b style="color: #34d399;">${amb.comfort !== undefined ? Number(amb.comfort).toFixed(2) : '—'}</b>
+                        </div>
+                        <div style="background: rgba(14, 7, 15, 0.85); padding: 6px 10px; border-radius: 4px; border: 1px solid rgba(168, 85, 247, 0.2);">
+                            <span style="color: var(--text-muted);">Curiosity:</span> <b style="color: #fbbf24;">${amb.curiosity !== undefined ? Number(amb.curiosity).toFixed(2) : '—'}</b>
+                        </div>
+                        <div style="background: rgba(14, 7, 15, 0.85); padding: 6px 10px; border-radius: 4px; border: 1px solid rgba(168, 85, 247, 0.2);">
+                            <span style="color: var(--text-muted);">Shyness:</span> <b style="color: #ec4899;">${amb.shyness !== undefined ? Number(amb.shyness).toFixed(2) : '—'}</b>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Channel Transcript Preview
+        let transcriptHtml = '';
+        if (data.channel_transcript_preview) {
+            transcriptHtml = `
+                <div class="inspector-card" style="border-left: 3px solid #38bdf8; margin-top: 12px;">
+                    <div class="inspector-card-title">
+                        <div style="display: flex; align-items: center; gap: 6px;">
+                            ${InspectorWidgets.icon('messages-square', { size: 14, color: '#38bdf8' })}
+                            <span style="color: #7dd3fc; font-weight: 700;">Dòng Hội Thoại Kênh Gần Nhất (Community Transcript)</span>
+                        </div>
+                    </div>
+                    <div class="json-block" style="max-height: 180px; font-size: 11.5px; white-space: pre-wrap;">${window.VisualizerApp.escapeHtml(data.channel_transcript_preview)}</div>
+                </div>
+            `;
+        }
+
         const rawJsonHtml = InspectorWidgets.renderJsonViewer(data, "Raw Initialization Payload");
 
         return `
@@ -175,6 +233,8 @@ ${window.VisualizerApp.escapeHtml(userMessage.trim())}
                     </div>
                 </div>
                 ${metricGridHtml}
+                ${ambientMoodHtml}
+                ${transcriptHtml}
                 ${emotionHtml}
                 ${rawJsonHtml}
             </div>
@@ -895,14 +955,30 @@ ${window.VisualizerApp.escapeHtml(userMessage.trim())}
         const delta = data.delta || {};
         const sentiment = data.sentiment || {};
 
+        const reactionLabel = sentiment.reaction || sentiment.primary_emotion || 'calm_warmth';
+        const stanceLabel = sentiment.user_stance || 'neutral';
+        const intensityVal = sentiment.intensity !== undefined ? Number(sentiment.intensity).toFixed(2) : '0.30';
+        const varianceVal = sentiment.variance !== undefined ? Number(sentiment.variance).toFixed(2) : '0.00';
+
         const metrics = [
-            { label: 'Cảm xúc Chủ đạo', value: sentiment.primary_emotion || newEmotions.dominant || 'Joy', icon: 'sparkles', color: '#f59e0b' },
-            { label: 'Valence (Hài lòng)', value: sentiment.valence !== undefined ? Number(sentiment.valence).toFixed(2) : '—', icon: 'activity', color: '#10b981' },
-            { label: 'Intensity (Cường độ)', value: sentiment.intensity !== undefined ? Number(sentiment.intensity).toFixed(2) : '—', icon: 'zap', color: '#f43f5e' },
-            { label: 'Gắn kết (Attachment)', value: newEmotions.attachment !== undefined ? Number(newEmotions.attachment).toFixed(2) : '—', icon: 'heart', color: '#ff334b' },
+            { label: 'Phản ứng Chisa (Reaction)', value: reactionLabel, icon: 'sparkles', color: '#f59e0b' },
+            { label: 'Thái độ Senpai (Stance)', value: stanceLabel, icon: 'user', color: '#10b981' },
+            { label: 'Cường độ (Intensity)', value: intensityVal, icon: 'zap', color: '#f43f5e' },
+            { label: 'Độ phân tán (Variance)', value: varianceVal, icon: 'activity', color: '#38bdf8' },
         ];
 
         const metricGridHtml = InspectorWidgets.renderMetricGrid(metrics);
+        
+        let ambientSyncHtml = '';
+        if (data.server_ambient_synced) {
+            ambientSyncHtml = `
+                <div style="display: flex; align-items: center; gap: 8px; margin-top: 10px; padding: 8px 12px; background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.25); border-radius: var(--radius-sm); font-size: 11.5px; color: #6ee7b7;">
+                    ${InspectorWidgets.icon('refresh-cw', { size: 13, color: '#34d399' })}
+                    <span><b>Đã đồng bộ Khí sắc Server (Ambient Mood Synced)</b> — Trạng thái cảm xúc mới được cập nhật vào không gian chung của Server với chu kỳ phân rã 30 phút.</span>
+                </div>
+            `;
+        }
+
         const emotionComparisonHtml = InspectorWidgets.renderEmotionComparison(oldEmotions, newEmotions, delta, sentiment);
         const rawJsonHtml = InspectorWidgets.renderJsonViewer(data, "Raw Emotion Payload");
 
@@ -915,6 +991,7 @@ ${window.VisualizerApp.escapeHtml(userMessage.trim())}
                     </div>
                 </div>
                 ${metricGridHtml}
+                ${ambientSyncHtml}
                 ${emotionComparisonHtml}
                 ${rawJsonHtml}
             </div>

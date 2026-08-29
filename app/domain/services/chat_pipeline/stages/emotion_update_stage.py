@@ -81,6 +81,17 @@ class EmotionUpdateStage(PipelineStage):
                     "curiosity": getattr(context.emotion, "curiosity", 0.20),
                     "comfort": getattr(context.emotion, "comfort", 0.50),
                 },
+                "delta": {
+                    "joy": delta.joy_delta,
+                    "sadness": delta.sadness_delta,
+                    "trust": delta.trust_delta,
+                    "irritation": delta.irritation_delta,
+                    "attachment": delta.attachment_delta,
+                    "shyness": delta.shyness_delta,
+                    "curiosity": delta.curiosity_delta,
+                    "comfort": delta.comfort_delta,
+                },
+                "server_ambient_synced": is_server_shared,
                 "sentiment": {
                     "reaction": delta.reaction,
                     "user_stance": delta.user_stance,

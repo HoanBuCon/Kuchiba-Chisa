@@ -3,11 +3,11 @@
 Microservice Discord cho chatbot AI **Kuchiba Chisa**, hoạt động độc lập khỏi core backend và giao tiếp qua REST API.
 
 ## 🏗️ Kiến trúc & Công nghệ
-- **Kết nối Core RAG Backend:** REST API (`POST /api/v1/chat`, `POST /api/v1/chat/clear/{user_id}`)
+- **Kết nối Core RAG Backend:** REST API (`POST /api/v1/chat`, `POST /community/chat`, `POST /api/v1/chat/clear/{user_id}`)
 - **Thư viện Discord:** `discord.js` v14 (ES Modules)
 - **Database:** PostgreSQL (Lưu trữ guild settings, direct channels, user mapping)
-- **Hệ thống Cảm xúc:** DEHA 3.0 Emotion Engine 8 chiều (Tin tưởng, Gắn bó, Ngại ngùng, Hiếu kỳ, Bình yên, Vui vẻ, Buồn bã, Khó chịu)
-- **Tương tác:** Hỗ trợ song song cả **Slash Commands (`/`)** và **Prefix Commands (`c!`)**
+- **Hệ thống Cảm xúc:** RESONA Emotion Engine 8 chiều (*Tin tưởng, Gắn bó, Ngại ngùng, Hiếu kỳ, Bình yên, Vui vẻ, Buồn bã, Khó chịu*) cùng Khí sắc Server (Ambient Resonance)
+- **Tương tác:** Hỗ trợ song song cả **Slash Commands (`/`)** và **Prefix Commands (`c!`)** với 3 chế độ không gian kênh (`community`, `semi-private`, `private`)
 
 ## 📂 Cấu trúc Thư mục
 ```text
@@ -54,7 +54,7 @@ discord/
 | `/ask <nội dung>` | `c!ask <nội dung>` | Trò chuyện, hỏi đáp lore hoặc tâm sự cùng Chisa |
 | `/clear [self/all]` | `c!clear [self/all]` | Xóa bộ nhớ ngắn hạn & dài hạn (bản thân hoặc toàn server) |
 | `/setup <enable/disable/list>` | `c!setup ...` | Thiết lập kênh chat trực tiếp không cần gõ lệnh (Admin/Mod) |
-| `/docs` | `c!docs` | Xem tài liệu chi tiết về hệ thống cảm xúc & quan hệ 8 chiều (DEHA 3.0) |
+| `/docs` | `c!docs` | Xem tài liệu chi tiết về hệ thống cảm xúc & quan hệ 8 chiều (RESONA Engine) |
 | `/about` | `c!about` | Xem hồ sơ nhân vật, Forte và công nghệ AI tích hợp |
 | `/help` | `c!help` | Bảng điều khiển hướng dẫn tương tác & danh sách lệnh |
 
