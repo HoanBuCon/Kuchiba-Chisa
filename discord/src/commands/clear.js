@@ -15,7 +15,11 @@ export const data = new SlashCommandBuilder()
         { name: 'Toàn bộ Server (all) - Yêu cầu quyền Admin/Mod', value: 'all' },
       ),
   )
-  .setContexts(InteractionContextType.Guild);
+  .setContexts([
+    InteractionContextType.Guild,
+    InteractionContextType.BotDM,
+    InteractionContextType.PrivateChannel,
+  ]);
 
 export async function execute(client, interaction, discordUser) {
   const { logger, rateLimiter, repositories, coreRagClient } = client.services;
@@ -23,6 +27,13 @@ export async function execute(client, interaction, discordUser) {
   const guildId = interaction.guildId || 'DM';
 
   if (scope === 'all') {
+    if (!interaction.guildId) {
+      await interaction.reply({
+        content: 'Lựa chọn "all" chỉ áp dụng khi sử dụng trong Server Discord.',
+        ephemeral: true,
+      });
+      return;
+    }
     if (!isGuildModeratorOrAdmin(interaction.member)) {
       await interaction.reply({
         content: 'Chỉ Admin hoặc Moderator mới có quyền xóa memory toàn bộ Server.',
@@ -96,8 +107,11 @@ export async function execute(client, interaction, discordUser) {
     });
 
     logger.info({ userId: interaction.user.id, coreUserId: discordUser.core_user_id }, 'Discord user memory cleared');
+    const successMsg = interaction.guildId
+      ? 'Memory của bạn trên server này đã được xóa. Chisa sẽ bắt đầu lại từ đầu trong lần trò chuyện tiếp theo.'
+      : 'Memory trong cuộc trò chuyện riêng (DM) của bạn đã được xóa. Chisa sẽ bắt đầu lại từ đầu trong lần trò chuyện tiếp theo.';
     await interaction.editReply({
-      content: 'Memory của bạn trên server này đã được xóa. Chisa sẽ bắt đầu lại từ đầu trong lần trò chuyện tiếp theo.',
+      content: successMsg,
     });
   } catch (error) {
     logger.error({ err: error, userId: interaction.user.id }, 'Discord /clear self failed');
@@ -115,6 +129,10 @@ export async function executePrefix(client, message, argsText, discordUser) {
   const guildId = message.guildId || 'DM';
 
   if (scope === 'all') {
+    if (!message.guildId) {
+      await message.reply('Lựa chọn "all" chỉ áp dụng khi sử dụng trong Server Discord.');
+      return;
+    }
     if (!isGuildModeratorOrAdmin(message.member)) {
       await message.reply('Chỉ Admin hoặc Moderator mới có quyền xóa memory toàn bộ Server.');
       return;
@@ -178,7 +196,10 @@ export async function executePrefix(client, message, argsText, discordUser) {
     });
 
     logger.info({ userId: message.author.id, coreUserId: discordUser.core_user_id }, 'Discord prefix memory cleared');
-    await message.reply('Memory của bạn trên server này đã được xóa. Chisa sẽ bắt đầu lại từ đầu trong lần trò chuyện tiếp theo.');
+    const successMsg = message.guildId
+      ? 'Memory của bạn trên server này đã được xóa. Chisa sẽ bắt đầu lại từ đầu trong lần trò chuyện tiếp theo.'
+      : 'Memory trong cuộc trò chuyện riêng (DM) của bạn đã được xóa. Chisa sẽ bắt đầu lại từ đầu trong lần trò chuyện tiếp theo.';
+    await message.reply(successMsg);
   } catch (error) {
     logger.error({ err: error, userId: message.author.id }, 'Discord prefix clear failed');
     await repositories.interactions.markFailure(interactionId, error instanceof Error ? error.message : String(error));

@@ -11,7 +11,11 @@ export const data = new SlashCommandBuilder()
       .setDescription('Nội dung muốn hỏi Chisa')
       .setRequired(true),
   )
-  .setContexts(InteractionContextType.Guild);
+  .setContexts([
+    InteractionContextType.Guild,
+    InteractionContextType.BotDM,
+    InteractionContextType.PrivateChannel,
+  ]);
 
 export async function execute(client, interaction, discordUser) {
   const { logger, rateLimiter, repositories, coreRagClient } = client.services;

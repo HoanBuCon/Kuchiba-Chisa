@@ -17,7 +17,11 @@ const bannerPath = fileURLToPath(bannerUrl);
 export const data = new SlashCommandBuilder()
   .setName('help')
   .setDescription('Hiển thị bảng hướng dẫn và tra cứu chi tiết từng lệnh của Chisa')
-  .setContexts(InteractionContextType.Guild);
+  .setContexts([
+    InteractionContextType.Guild,
+    InteractionContextType.BotDM,
+    InteractionContextType.PrivateChannel,
+  ]);
 
 const HELP_PAGES = {
   home: {

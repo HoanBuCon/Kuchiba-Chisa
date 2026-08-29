@@ -7,7 +7,7 @@ export class PrefixCommandRunner {
   }
 
   isPrefixCommand(message) {
-    return Boolean(message?.guild && !message.author?.bot && message.content?.startsWith(this.prefix));
+    return Boolean(!message?.author?.bot && message?.content?.startsWith(this.prefix));
   }
 
   parse(message) {

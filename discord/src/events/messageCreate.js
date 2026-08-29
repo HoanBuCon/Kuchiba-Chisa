@@ -3,7 +3,7 @@ export const once = false;
 
 export async function execute(client, message) {
   const runner = client.services.prefixCommandRunner;
-  if (!runner) {
+  if (!runner || message.author?.bot) {
     return;
   }
 
@@ -13,42 +13,46 @@ export async function execute(client, message) {
       return;
     }
 
-    // Direct chat channel feature
-    if (message.guild && !message.author?.bot) {
-      const isDirectChannel = client.services.guildSettingsCache?.has(message.channelId);
-      if (isDirectChannel) {
-        const rawContent = message.content?.trim() || '';
-        const lowerContent = rawContent.toLowerCase();
-        const prefix = (runner.prefix || 'c!').toLowerCase();
+    const isDM = !message.guild;
+    const isDirectChannel = message.guild && client.services.guildSettingsCache?.has(message.channelId);
 
-        // If message starts with '!', 'c!', configured prefix, or is any prefix command, do not respond
-        if (
-          rawContent.startsWith('!') ||
-          lowerContent.startsWith('c!') ||
-          lowerContent.startsWith(prefix) ||
-          runner.isPrefixCommand(message)
-        ) {
-          return;
-        }
+    // Direct chat in dedicated Guild channel OR 1-on-1 Direct Message (DM)
+    if (isDM || isDirectChannel) {
+      const rawContent = message.content?.trim() || '';
+      const lowerContent = rawContent.toLowerCase();
+      const prefix = (runner.prefix || 'c!').toLowerCase();
 
-        // Otherwise, process as an ask query directly
-        const askCommand = client.commands.get('ask');
-        if (askCommand && typeof askCommand.executePrefix === 'function') {
-          const discordUser = await client.services.repositories.users.ensureDiscordUser({
-            discordUserId: message.author.id,
-            discordGuildId: message.guildId || 'DM',
-            discordUserName: message.author.username,
-            discordUserGlobalName: message.author.globalName ?? null,
-            discordUserTag: message.author.tag ?? message.author.username,
-          });
+      // If message starts with '!', 'c!', configured prefix, or is any prefix command, do not double-process
+      if (
+        rawContent.startsWith('!') ||
+        lowerContent.startsWith('c!') ||
+        lowerContent.startsWith(prefix) ||
+        runner.isPrefixCommand(message)
+      ) {
+        return;
+      }
 
-          await askCommand.executePrefix(client, message, rawContent, discordUser);
-        }
+      if (!rawContent) {
+        return;
+      }
+
+      // Process as a natural conversation query directly to Chisa
+      const askCommand = client.commands.get('ask');
+      if (askCommand && typeof askCommand.executePrefix === 'function') {
+        const discordUser = await client.services.repositories.users.ensureDiscordUser({
+          discordUserId: message.author.id,
+          discordGuildId: isDM ? 'DM' : (message.guildId || 'DM'),
+          discordUserName: message.author.username,
+          discordUserGlobalName: message.author.globalName ?? null,
+          discordUserTag: message.author.tag ?? message.author.username,
+        });
+
+        await askCommand.executePrefix(client, message, rawContent, discordUser);
       }
     }
   } catch (error) {
     client.services.logger.error(
-      { err: error, userId: message.author?.id, channelId: message.channelId },
+      { err: error, userId: message.author?.id, channelId: message.channelId, isDM: !message.guild },
       'Discord message dispatcher failed',
     );
 

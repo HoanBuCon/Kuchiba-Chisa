@@ -8,7 +8,11 @@ const bannerPath = fileURLToPath(bannerUrl);
 export const data = new SlashCommandBuilder()
   .setName('docs')
   .setDescription('Hiển thị tài liệu chi tiết về hệ thống cảm xúc của Chisa')
-  .setContexts(InteractionContextType.Guild);
+  .setContexts([
+    InteractionContextType.Guild,
+    InteractionContextType.BotDM,
+    InteractionContextType.PrivateChannel,
+  ]);
 
 async function loadDocsContent() {
   try {
