@@ -241,7 +241,8 @@ class AppContainer:
             ),
             LLMGenerationStage(
                 llm=self.llm,
-                llm_logger_callback=log_llm_transaction
+                llm_logger_callback=log_llm_transaction,
+                pipeline_tracker=pipeline_tracker
             ),
             EmotionUpdateStage(
                 emotion_engine=emotion_engine,

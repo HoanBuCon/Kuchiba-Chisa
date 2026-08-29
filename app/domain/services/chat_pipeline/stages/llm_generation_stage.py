@@ -1,8 +1,9 @@
 import asyncio
-from typing import Dict, Any, Callable, Awaitable
+from typing import Dict, Any, Callable, Awaitable, Optional
 from app.domain.services.chat_pipeline.stage import PipelineStage
 from app.domain.services.chat_pipeline.context import ChatContext
 from app.domain.interfaces.llm_provider import BaseLLMAdapter, LLMResponse, StructuredPrompt
+from app.domain.interfaces.tracker import IPipelineTracker
 from app.shared.utils.json_stream_parser import IncrementalJsonParser
 from app.shared.utils.token_estimator import TokenEstimator
 from app.shared.utils.logger import get_logger
@@ -13,11 +14,17 @@ log = get_logger(__name__)
 
 class LLMGenerationStage(PipelineStage):
     """
-    Stage 6: LLM Generation (streaming or non-streaming) and token control.
+    Stage 7: LLM Generation (streaming or non-streaming) and token control.
     """
-    def __init__(self, llm: BaseLLMAdapter, llm_logger_callback: Callable[[StructuredPrompt, LLMResponse], Awaitable[None]] = None):
+    def __init__(
+        self,
+        llm: BaseLLMAdapter,
+        llm_logger_callback: Callable[[StructuredPrompt, LLMResponse], Awaitable[None]] = None,
+        pipeline_tracker: Optional[IPipelineTracker] = None
+    ):
         self.llm = llm
         self.llm_logger_callback = llm_logger_callback
+        self.pipeline_tracker = pipeline_tracker
 
     async def process(self, context: ChatContext) -> ChatContext:
         if context.is_cached_answer:
@@ -161,5 +168,29 @@ class LLMGenerationStage(PipelineStage):
         context.tool_res["sentiment_analysis"] = sentiment_analysis
         context.tool_res["user_sentiment"] = user_sentiment
         context.tool_res["chisa_sentiment"] = chisa_sentiment
+
+        # Emit Stage 7 telemetry to Visualizer
+        if self.pipeline_tracker:
+            self.pipeline_tracker.add_step(
+                name="llm_generation",
+                stage_id="stage_7_llm",
+                depth=0,
+                category="stage_root",
+                title="Stage 7: [LLM] Sinh Phản Hồi & Phân tích Cảm xúc",
+                subtitle=f"Model: {getattr(self.llm, '_model', 'unknown')} · {response.input_tokens}↑ {response.output_tokens}↓ tok",
+                data={
+                    "model": getattr(self.llm, "_model", "unknown"),
+                    "input_tokens": response.input_tokens,
+                    "output_tokens": response.output_tokens,
+                    "reasoning_tokens": len(response.reasoning_content.split()) * 1.3 if response.reasoning_content else 0,
+                    "finish_reason": response.finish_reason,
+                    "has_reasoning": bool(response.reasoning_content),
+                    "response_preview": (chisa_reply[:200] + "...") if len(chisa_reply) > 200 else chisa_reply,
+                    "sentiment": sentiment_analysis,
+                    "user_sentiment": user_sentiment,
+                    "chisa_sentiment": chisa_sentiment,
+                    "status": "success"
+                }
+            )
 
         return context
