@@ -29,7 +29,7 @@ class ContextBuildingStage(PipelineStage):
 
         build_result = self.context_builder.build(
             emotion=context.emotion,
-            attachment_bonus=context.attachment_bonus_raw,
+            attachment_bonus=0.0,
             memories=memories,
             lore=lore_chunks,
             history=context.history,

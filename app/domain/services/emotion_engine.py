@@ -76,8 +76,9 @@ RESONANCE_MATRIX: Dict[tuple[str, str], Dict[str, Any]] = {
         "pout_shield": True
     },
     ("loving", "guarded_cold"): {
-        "trust_mult": 0.0, "shyness_bonus": 0.08, "comfort_mult": 0.5,
-        "pout_shield": True
+        # Unwelcome advances / inappropriate romantic pressure -> Chisa rejects
+        "trust_mult": -1.0, "attachment_mult": 0.0, "irritation_gain": 0.10, "comfort_mult": 0.3,
+        "pout_shield": False
     },
 
     # 2. Nhóm Trêu Ghẹo (Playful)
@@ -89,6 +90,11 @@ RESONANCE_MATRIX: Dict[tuple[str, str], Dict[str, Any]] = {
         "shyness_mult": 1.6, "joy_mult": 1.2, "trust_mult": 1.1,
         "pout_shield": True
     },
+    ("playful", "guarded_cold"): {
+        # Boundary breach / vulgar, offensive, or crude teasing -> Cold withdrawal
+        "trust_mult": -1.5, "attachment_mult": 0.0, "attachment_penalty_mult": 1.5, "irritation_gain": 0.15,
+        "pout_shield": False
+    },
 
     # 3. Nhóm Tâm Sự Yếu Lòng & An Ủi (Vulnerable)
     ("vulnerable", "melancholic_care"): {
@@ -99,13 +105,32 @@ RESONANCE_MATRIX: Dict[tuple[str, str], Dict[str, Any]] = {
         "trust_mult": 1.5, "comfort_mult": 1.6, "attachment_mult": 1.2,
         "pout_shield": True
     },
+    ("vulnerable", "guarded_cold"): {
+        # Deceptive / manipulative vulnerability -> Distrust
+        "trust_mult": 0.0, "attachment_mult": 0.0, "curiosity_mult": 0.5,
+        "pout_shield": False
+    },
 
     # 4. Nhóm Xung Đột & Thù Địch (Hostility)
     ("hostile", "guarded_cold"): {
-        "trust_penalty_mult": 1.5, "irritation_mult": 1.8, "shyness_drain": True
+        "trust_penalty_mult": 1.8, "attachment_penalty_mult": 1.5, "irritation_mult": 1.8, "shyness_drain": True,
+        "pout_shield": False
     },
     ("hostile", "melancholic_care"): {
-        "sadness_mult": 2.0, "attachment_penalty_mult": 1.8, "trust_penalty_mult": 1.2
+        "sadness_mult": 2.0, "attachment_penalty_mult": 1.8, "trust_penalty_mult": 1.5,
+        "pout_shield": False
+    },
+    ("hostile", "playful_pout"): {
+        "pout_shield": False, "trust_penalty_mult": 1.2, "irritation_mult": 1.5
+    },
+
+    # 5. Nhóm Trung Tính (Neutral)
+    ("neutral", "playful_pout"): {
+        "irritation_gain": 0.05, "trust_mult": 1.0, "attachment_mult": 1.0,
+        "pout_shield": True
+    },
+    ("neutral", "guarded_cold"): {
+        "trust_mult": -0.5, "attachment_mult": 0.0, "pout_shield": False
     },
 }
 
@@ -345,7 +370,9 @@ class EmotionEngine:
 
         # 3. Lookup Relational Resonance Matrix & Synergies
         synergy = RESONANCE_MATRIX.get((eff_user_stance, eff_reaction), {})
-        pout_shield = synergy.get("pout_shield", False) or (state.attachment >= 0.45 and eff_reaction == "playful_pout")
+        synergy_allows_pout = synergy.get("pout_shield", True) is not False
+        is_natural_pout = (state.trust >= 0.65 and state.attachment >= 0.25 and eff_reaction == "playful_pout")
+        pout_shield = (synergy.get("pout_shield", False) or is_natural_pout) and synergy_allows_pout and (eff_user_stance != "hostile")
 
         # Pre-calculate Psychological Multipliers
         trust_factor = state.trust
@@ -396,14 +423,21 @@ class EmotionEngine:
         # 5. Relational Progression: Trust & Attachment Dynamics
         stance_info = STANCE_RELATION_DELTAS.get(eff_user_stance, STANCE_RELATION_DELTAS["neutral"])
         trust_base = stance_info["trust_gain"]
+        trust_mult = synergy.get("trust_mult", 1.0)
+        trust_pen_mult = synergy.get("trust_penalty_mult", 1.0)
 
-        if trust_base > 0:
-            trust_mult = synergy.get("trust_mult", 1.0)
+        # Boundary breach / Unsafe / Guarded condition
+        is_guarded_or_unsafe = (eff_reaction == "guarded_cold") or (not pout_shield and (eff_user_stance == "hostile" or trust_mult < 0))
+
+        if eff_user_stance == "hostile" and not pout_shield:
+            delta.trust += trust_base * eff_intensity * trust_pen_mult * negativity_multiplier * state.trust
+        elif trust_mult < 0 or eff_reaction == "guarded_cold":
+            # Negative trust multiplier from resonance matrix (e.g. playful + guarded_cold)
+            penalty_intensity = eff_intensity * abs(trust_mult if trust_mult < 0 else 1.0)
+            delta.trust += -0.035 * penalty_intensity * negativity_multiplier * (1.0 + abs(eff_variance)) * state.trust
+        elif trust_base > 0 and not is_guarded_or_unsafe:
             trust_headroom = 1.0 - state.trust
             delta.trust += trust_base * eff_intensity * trust_mult * trust_headroom
-        elif eff_user_stance == "hostile" and not pout_shield:
-            trust_pen_mult = synergy.get("trust_penalty_mult", 1.0)
-            delta.trust += trust_base * eff_intensity * trust_pen_mult * negativity_multiplier * state.trust
 
         # Attachment Progression (Catalyzed by Shyness, Comfort & Joy)
         cur_shy = self._clamp(state.shyness + delta.shyness)
@@ -412,8 +446,14 @@ class EmotionEngine:
         attachment_catalyst = (0.015 * cur_shy + 0.010 * cur_comf + 0.005 * cur_joy) * (1.0 - state.attachment)
 
         attach_base = stance_info["attachment_gain"]
-        if attach_base > 0:
-            attach_mult = synergy.get("attachment_mult", 1.0)
+        attach_mult = synergy.get("attachment_mult", 1.0)
+        attach_pen_mult = synergy.get("attachment_penalty_mult", 1.0)
+
+        if is_guarded_or_unsafe or attach_mult <= 0.0:
+            # Zero positive attachment growth when guarded or unsafe; apply penalty if hostile or boundary breach
+            if eff_reaction == "guarded_cold" or eff_user_stance == "hostile" or attach_pen_mult > 1.0:
+                delta.attachment -= 0.015 * eff_intensity * attach_pen_mult * negativity_multiplier * (1.0 + abs(eff_variance))
+        elif attach_base > 0:
             if state.trust >= 0.35:
                 raw_attach_gain = (attach_base * eff_intensity * attach_mult + attachment_catalyst) * (1.0 - state.attachment)
                 if state.trust > 0.60 and is_neutral:
@@ -421,7 +461,6 @@ class EmotionEngine:
                 # Single-turn growth rate cap (+0.03 max / turn)
                 delta.attachment += min(0.03, raw_attach_gain)
         elif eff_user_stance == "hostile":
-            attach_pen_mult = synergy.get("attachment_penalty_mult", 1.0)
             delta.attachment += attach_base * eff_intensity * attach_pen_mult * negativity_multiplier
 
         # 6. Antagonistic Cross-Inhibition Layer (Plutchik/Russell Coherence Engine)
@@ -456,12 +495,13 @@ class EmotionEngine:
             target_cur = cur_final_cur * curiosity_damp_factor
             delta.curiosity += (target_cur - cur_final_cur)
 
-        # E. Emotional Withdrawal Penalty (Immune when Pout Shield active or non-hostile)
+        # E. Emotional Withdrawal Penalty
         final_sad_post = state.sadness + delta.sadness
         final_irr_post = state.irritation + delta.irritation
-        if final_sad_post > 0.20 and final_irr_post > 0.15 and eff_user_stance == "hostile":
-            withdrawal_intensity = final_sad_post * final_irr_post
-            withdrawal_penalty = min(0.08, withdrawal_intensity * 0.50)
+        is_real_anger_or_withdrawal = (eff_reaction == "guarded_cold") or (eff_user_stance == "hostile") or (final_irr_post >= 0.30 and not pout_shield)
+        if is_real_anger_or_withdrawal and (final_sad_post > 0.08 or final_irr_post > 0.15) and not pout_shield:
+            withdrawal_intensity = (final_sad_post * 0.5 + final_irr_post * 1.0)
+            withdrawal_penalty = min(0.08, withdrawal_intensity * 0.04 * (1.0 + abs(eff_variance)))
             delta.attachment -= withdrawal_penalty
 
         # Apply and Clamp Deltas across all 8 Dimensions

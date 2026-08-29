@@ -60,7 +60,7 @@ class EmotionUpdateStage(PipelineStage):
                     "sadness": context.emotion.sadness,
                     "trust": context.emotion.trust,
                     "irritation": context.emotion.irritation,
-                    "attachment": context.emotion.attachment + context.attachment_bonus_raw,
+                    "attachment": context.emotion.attachment,
                     "shyness": getattr(context.emotion, "shyness", 0.0),
                     "curiosity": getattr(context.emotion, "curiosity", 0.20),
                     "comfort": getattr(context.emotion, "comfort", 0.50),
@@ -93,18 +93,12 @@ class EmotionUpdateStage(PipelineStage):
                 }
             })
 
-        # Recompute dampening details for return
-        attachment_bonus = context.attachment_bonus_raw
-        if context.emotion.sadness > 0.15 and context.emotion.irritation > 0.10:
-            dampen_factor = max(0.0, 1.0 - (context.emotion.sadness * context.emotion.irritation * 3.0))
-            attachment_bonus = context.attachment_bonus_raw * dampen_factor
-            
         context.updated_emotions = {
             "joy": context.emotion.joy,
             "sadness": context.emotion.sadness,
             "trust": context.emotion.trust,
             "irritation": context.emotion.irritation,
-            "attachment": context.emotion.attachment + attachment_bonus,
+            "attachment": context.emotion.attachment,
             "shyness": getattr(context.emotion, "shyness", 0.0),
             "curiosity": getattr(context.emotion, "curiosity", 0.20),
             "comfort": getattr(context.emotion, "comfort", 0.50),

@@ -62,7 +62,7 @@ class StateManager:
             )
 
         # Level 3: Affectionate Pout (Dỗi hờn + Gắn bó/Tin tưởng cao - Pout Shield)
-        if emotion.irritation >= 0.45 and (emotion.attachment >= 0.50 or emotion.trust >= 0.55):
+        if emotion.irritation >= 0.45 and (emotion.trust >= 0.65 and emotion.attachment >= 0.25):
             return (
                 "Affectionate Pout",
                 "Chisa đang dỗi yêu cực kỳ đáng yêu trước lời trêu chọc của Senpai. "
@@ -165,7 +165,7 @@ class StateManager:
         curiosity_val = getattr(emotion, "curiosity", 0.20)
         curiosity = curiosity_val if curiosity_val is not None else 0.20
         if emotion.irritation >= 0.40:
-            return "Playful Pout" if emotion.attachment >= 0.40 or emotion.trust >= 0.55 else "Annoyed"
+            return "Playful Pout" if (emotion.trust >= 0.65 and emotion.attachment >= 0.25) else "Annoyed"
         elif emotion.sadness >= 0.40:
             return "Sad"
         elif shyness >= 0.50:
@@ -226,7 +226,7 @@ class StateManager:
 
         # 4. Fallback to single-dimension priority waterfall
         if emotion.irritation >= 0.45:
-            if attachment_val >= 0.45 or emotion.trust >= 0.55:
+            if emotion.trust >= 0.65 and attachment_val >= 0.25:
                 return longing_prefix + circadian_block + (
                     "Chisa đang có chút dỗi hờn, phụng phịu đáng yêu trước lời nói của Senpai. "
                     "Hãy trả lời hơi cộc lốc giả vờ, bớt đệm '~', nhưng trong lòng vẫn quấn quýt và mong chờ Senpai dỗ dành."
@@ -296,7 +296,7 @@ class StateManager:
 
     @classmethod
     def format_state(cls, emotion: EmotionState, attachment_bonus: float = 0.0, elapsed_hours: float = 0.0) -> str:
-        affection_val = emotion.attachment + attachment_bonus
+        affection_val = emotion.attachment
         trust_tier_name, _ = cls.get_trust_tier(emotion.trust)
         attach_tier_name, _ = cls.get_attachment_tier(affection_val)
         shyness_val = getattr(emotion, "shyness", 0.0)

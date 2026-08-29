@@ -52,15 +52,14 @@ class InitializationStage(PipelineStage):
         request_question_idx.set(question_idx)
         request_turn_idx.set(1)
         
-        # Formulate Attachment Bonus and current emotions snapshot
-        import math
-        attachment_bonus_raw = math.log(max(1, stats.interaction_count)) * 0.05
+        # Single Source of Truth for emotions
+        attachment_bonus_raw = 0.0
         current_emotions = {
             "joy": emotion.joy,
             "sadness": emotion.sadness,
             "trust": emotion.trust,
             "irritation": emotion.irritation,
-            "attachment": emotion.attachment + attachment_bonus_raw,
+            "attachment": emotion.attachment,
             "shyness": getattr(emotion, "shyness", 0.0),
             "curiosity": getattr(emotion, "curiosity", 0.20),
             "comfort": getattr(emotion, "comfort", 0.50),
@@ -73,7 +72,7 @@ class InitializationStage(PipelineStage):
         context.emotion = emotion
         context.history = history
         context.conversation_summary = summary
-        context.attachment_bonus_raw = attachment_bonus_raw
+        context.attachment_bonus_raw = 0.0
         context.current_emotions = current_emotions
 
         if self.pipeline_tracker:
