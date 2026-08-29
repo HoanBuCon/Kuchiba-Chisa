@@ -74,9 +74,20 @@ export async function execute(client, message) {
       // Process as a natural conversation query directly to Chisa
       const askCommand = client.commands.get('ask');
       if (askCommand && typeof askCommand.executePrefix === 'function') {
+        let resolvedGuildId = 'DM';
+        if (!isDM) {
+          if (channelSetting?.mode === 'private') {
+            // Mode private: Completely isolated from other channels in the server
+            resolvedGuildId = `CHANNEL_${message.channelId}`;
+          } else {
+            // Mode semi-private & community: Shared server context and memory
+            resolvedGuildId = message.guildId || 'DM';
+          }
+        }
+
         const discordUser = await client.services.repositories.users.ensureDiscordUser({
           discordUserId: message.author.id,
-          discordGuildId: isDM ? 'DM' : (message.guildId || 'DM'),
+          discordGuildId: resolvedGuildId,
           discordUserName: message.author.username,
           discordUserGlobalName: message.author.globalName ?? null,
           discordUserTag: message.author.tag ?? message.author.username,

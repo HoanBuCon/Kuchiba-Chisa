@@ -36,9 +36,19 @@ export class PrefixCommandRunner {
     // Look up command dynamically from client.commands Map
     const command = this.client.commands.get(parsed.commandName);
     if (command && typeof command.executePrefix === 'function') {
+      const channelSetting = message.guild ? this.client.services.guildSettingsCache?.get(message.channelId) : null;
+      let resolvedGuildId = 'DM';
+      if (message.guild) {
+        if (channelSetting?.mode === 'private') {
+          resolvedGuildId = `CHANNEL_${message.channelId}`;
+        } else {
+          resolvedGuildId = message.guildId || 'DM';
+        }
+      }
+
       const discordUser = await this.client.services.repositories.users.ensureDiscordUser({
         discordUserId: message.author.id,
-        discordGuildId: message.guildId || 'DM',
+        discordGuildId: resolvedGuildId,
         discordUserName: message.author.username,
         discordUserGlobalName: message.author.globalName ?? null,
         discordUserTag: message.author.tag ?? message.author.username,
