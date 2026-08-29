@@ -305,7 +305,10 @@ async def get_emotions(
             "sadness": emotion.sadness,
             "trust": emotion.trust,
             "irritation": emotion.irritation,
-            "attachment": emotion.attachment
+            "attachment": emotion.attachment,
+            "shyness": getattr(emotion, "shyness", 0.0),
+            "curiosity": getattr(emotion, "curiosity", 0.20),
+            "comfort": getattr(emotion, "comfort", 0.50),
         }
     except Exception as e:
         log.error("Failed to fetch emotions", error=str(e), user_id=user_id)

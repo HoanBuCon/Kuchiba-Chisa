@@ -64,7 +64,7 @@ def robust_parse_json(raw: str) -> dict[str, Any]:
     # 4.5. Heuristic Regex field extraction for malformed JSON with unescaped quotes inside strings
     extracted_obj = {}
     resp_match = re.search(
-        r'["\']response["\']\s*:\s*["\']([\s\S]*?)["\']\s*,\s*["\'](?:sentiment_analysis|user_sentiment|chisa_sentiment|summary|intensity|reasoning)["\']',
+        r'["\']response["\']\s*:\s*["\']([\s\S]*?)["\']\s*,\s*["\'](?:sentiment|sentiment_analysis|user_sentiment|chisa_sentiment|summary|intensity|reasoning)["\']',
         raw_cleaned
     )
     if not resp_match:
@@ -75,11 +75,12 @@ def robust_parse_json(raw: str) -> dict[str, Any]:
         if extracted_resp:
             extracted_obj["response"] = extracted_resp
 
-    sent_match = re.search(r'["\']sentiment_analysis["\']\s*:\s*(\{[\s\S]*?\})', raw_cleaned)
+    sent_match = re.search(r'["\'](?:sentiment|sentiment_analysis)["\']\s*:\s*(\{[\s\S]*?\})', raw_cleaned)
     if sent_match:
         try:
             sent_obj = json.loads(sent_match.group(1).strip())
             if isinstance(sent_obj, dict):
+                extracted_obj["sentiment"] = sent_obj
                 extracted_obj["sentiment_analysis"] = sent_obj
         except Exception:
             pass

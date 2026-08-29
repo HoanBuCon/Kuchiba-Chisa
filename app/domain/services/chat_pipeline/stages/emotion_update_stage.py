@@ -22,7 +22,7 @@ class EmotionUpdateStage(PipelineStage):
 
     async def process(self, context: ChatContext) -> ChatContext:
         tool_res = context.tool_res or {}
-        sentiment_analysis = tool_res.get("sentiment_analysis", {})
+        sentiment_analysis = tool_res.get("sentiment") or tool_res.get("sentiment_analysis", {})
         user_sentiment = tool_res.get("user_sentiment", {})
         chisa_sentiment = tool_res.get("chisa_sentiment", {})
         
@@ -65,10 +65,19 @@ class EmotionUpdateStage(PipelineStage):
                     "curiosity": getattr(context.emotion, "curiosity", 0.20),
                     "comfort": getattr(context.emotion, "comfort", 0.50),
                 },
+                "sentiment": {
+                    "reaction": delta.reaction,
+                    "user_stance": delta.user_stance,
+                    "intensity": delta.intensity,
+                    "variance": delta.variance,
+                },
                 "sentiment_analysis": {
                     "primary_emotion": delta.primary_emotion,
                     "intensity": delta.intensity,
                     "valence": delta.valence,
+                    "reaction": delta.reaction,
+                    "user_stance": delta.user_stance,
+                    "variance": delta.variance,
                 },
                 "user_sentiment": {
                     "is_positive": is_positive,
