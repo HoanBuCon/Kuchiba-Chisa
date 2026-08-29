@@ -53,7 +53,7 @@ class TableInlinerChunker(BaseChunker):
         if not row_str.endswith("."):
             row_str += "."
 
-        return f"{context_label}: {row_str}"
+        return row_str
 
     def chunk_section(
         self,
@@ -78,9 +78,9 @@ class TableInlinerChunker(BaseChunker):
         if not rows:
             if not section.content.strip():
                 return []
-            # Create synthetic rows from text lines
-            lines = [l.strip() for l in section.content.split("\n") if l.strip()]
-            rows = [{"Content": l} for l in lines]
+            # Create synthetic rows from text lines (filtering out raw wikitext syntax)
+            lines = [l.strip() for l in section.content.split("\n") if l.strip() and not l.strip().startswith(("{|", "|-", "!"))]
+            rows = [{"Content": l.lstrip("| ")} for l in lines]
 
         chunks: List[Chunk] = []
         current_prose_rows: List[str] = []
@@ -92,16 +92,18 @@ class TableInlinerChunker(BaseChunker):
 
         for row in rows:
             prose_row = self._inline_row(row, context_label)
+            if not prose_row:
+                continue
             row_tokens = estimate_token_count(prose_row)
 
-            # Extract potential entity from "Name", "Character", "Item", etc.
-            for key in ("Name", "Character", "Item", "Boss", "Weapon"):
+            # Extract potential entity from comprehensive entity keys
+            for key in ("Name", "Character", "Item", "Boss", "Weapon", "Resonator", "Echo", "Skill", "Material", "Faction", "Target"):
                 if key in row and row[key]:
-                    current_entities.add(row[key])
+                    current_entities.add(str(row[key]))
 
             # Check max_token_size overflow
             if current_prose_rows and (current_tokens + row_tokens > self.max_token_size):
-                chunk_text = "\n".join(current_prose_rows)
+                chunk_text = f"[{context_label}]\n" + "\n".join(f"- {r}" for r in current_prose_rows)
                 entities = sorted(list(current_entities | set(section.entities_in_section)))
 
                 chunks.append(
@@ -126,7 +128,7 @@ class TableInlinerChunker(BaseChunker):
 
             # Target token size reached
             if current_tokens >= self.target_token_size:
-                chunk_text = "\n".join(current_prose_rows)
+                chunk_text = f"[{context_label}]\n" + "\n".join(f"- {r}" for r in current_prose_rows)
                 entities = sorted(list(current_entities | set(section.entities_in_section)))
 
                 chunks.append(
@@ -146,9 +148,9 @@ class TableInlinerChunker(BaseChunker):
                 current_entities = set()
                 current_tokens = 0
 
-        # Emit remaining rows
+        # Remaining rows
         if current_prose_rows:
-            chunk_text = "\n".join(current_prose_rows)
+            chunk_text = f"[{context_label}]\n" + "\n".join(f"- {r}" for r in current_prose_rows)
             entities = sorted(list(current_entities | set(section.entities_in_section)))
 
             chunks.append(

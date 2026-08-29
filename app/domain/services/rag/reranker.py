@@ -58,9 +58,18 @@ class KeywordOverlapReranker:
         hits = 0
         weighted_hits = 0.0
 
-        # Separate content unigrams to use as a fair denominator base (filtering out stop words)
-        content_unigrams = [t for t in query_tokens if " " not in t and t not in self.VI_STOP_WORDS]
-        denom = max(3.0, float(len(content_unigrams)))
+        # Separate content tokens to use as a fair normalized denominator base
+        content_tokens = [t for t in query_tokens if t not in self.VI_STOP_WORDS]
+        if not content_tokens:
+            return 0.0
+
+        # Calculate dynamic max possible score based on query token weights
+        max_possible = sum(
+            2.0 if (t in self.high_value_terms or any(s in self.high_value_terms for s in self.synonyms.get(t, [])))
+            else (1.5 if " " in t else 1.0)
+            for t in content_tokens
+        )
+        denom = max(2.0, max_possible)
 
         for token in query_tokens:
             matched = False

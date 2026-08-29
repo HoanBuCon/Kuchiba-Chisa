@@ -172,39 +172,39 @@ class RAGPipeline:
                             res = e
                         results.append(res)
 
-                    for intent_type, retrieved_data in zip(active_intents, results):
+                    # Fair Multi-Collection Fusion (RRF + Normalized Score Fusion)
+                    collection_buckets: Dict[str, List[Tuple[str, float, dict]]] = {}
+                    for intent_type, col_name, retrieved_data in zip(active_intents, queried_lore_cols, results):
                         if isinstance(retrieved_data, Exception):
-                            log.warning("Retrieval sub-task failed", error=str(retrieved_data))
+                            log.warning("Retrieval sub-task failed", error=str(retrieved_data), collection=col_name)
                             continue
                         if intent_type == "MEMORY":
                             for m in retrieved_data:
                                 if m.text_content and m.text_content not in memories:
                                     memories.append(m.text_content)
                         else:
+                            if col_name not in collection_buckets:
+                                collection_buckets[col_name] = []
                             for item in retrieved_data:
                                 if len(item) == 3:
                                     text, score, meta = item
                                 else:
                                     text, score = item
                                     meta = {}
-                                if not any(c[0] == text for c in lore_scored):
-                                    lore_scored.append((text, score, meta))
+                                collection_buckets[col_name].append((text, score, meta))
 
-                    # Subject-Entity Alignment Reranking:
-                    if extracted:
-                        adjusted_scored = []
-                        for text, score, meta in lore_scored:
-                            boost = 0.0
-                            text_lower = text.lower()
-                            chunk_ents = [e.lower() for e in meta.get("entities", [])] if isinstance(meta, dict) else []
-                            for ent in extracted:
-                                ent_lower = ent.lower()
-                                if ent_lower in text_lower or any(ent_lower in ce for ce in chunk_ents):
-                                    boost = 0.15
-                                    break
-                            adjusted_scored.append((text, score + boost, meta))
-                        lore_scored = adjusted_scored
+                    # Apply RRF and Interleaving to prevent single-collection starvation
+                    scored_by_text: Dict[str, Tuple[float, dict]] = {}
+                    for col_name, items in collection_buckets.items():
+                        for rank, (text, score, meta) in enumerate(items, start=1):
+                            rrf_score = (1.0 / (60.0 + rank)) * 10.0 + score
+                            if text not in scored_by_text:
+                                scored_by_text[text] = (rrf_score, meta)
+                            else:
+                                existing_score, existing_meta = scored_by_text[text]
+                                scored_by_text[text] = (existing_score + rrf_score, {**existing_meta, **meta})
 
+                    lore_scored = [(t, s, m) for t, (s, m) in scored_by_text.items()]
                     lore_scored.sort(key=lambda x: x[1], reverse=True)
                     lore_chunks = [x[0] for x in lore_scored[:RAGTuning.TOP_K]]
                     if len(memories) > RAGTuning.TOP_K:
