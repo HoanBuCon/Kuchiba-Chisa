@@ -344,9 +344,14 @@ class MasterIngestionPipeline:
         postgres_synced = 0
 
         try:
-            from app.infrastructure.storage.qdrant_sync import QdrantSyncManager
+            from app.infrastructure.ingestion.storage.qdrant_sync import QdrantSyncManager
+            from app.infrastructure.embeddings.fastembed_adapter import FastEmbedAdapter
             sync_mgr = QdrantSyncManager()
-            qdrant_synced = sync_mgr.sync_chunks(chunks)
+            embedder = FastEmbedAdapter()
+            texts_to_embed = [f"{c.context_prefix}\n{c.text_content}" for c in chunks]
+            vectors = await embedder.embed_batch(texts_to_embed, prefix="passage: ")
+            chunks_with_vectors = list(zip(chunks, vectors))
+            qdrant_synced = await sync_mgr.upsert_chunk_batch(chunks_with_vectors)
             print(f"[+] Qdrant Vector Sync: Successfully ingested {qdrant_synced} chunks.")
         except Exception as e:
             logger.warning("qdrant_sync_warning", error=str(e))

@@ -30,44 +30,72 @@ class LoreRetriever:
     def resolve_windowed_parent(parent_markdown: Optional[str], child_text: str, window_chars: int = 1200) -> str:
         """
         Extracts a localized context window around child_text instead of loading the entire parent markdown.
-        Prevents Parent Document Bloat and token starvation.
+        Preserves Markdown Section Headers and prevents Parent Document Bloat.
         """
         if not parent_markdown:
             return child_text
         if not child_text:
             return parent_markdown[:window_chars].strip()
 
+        # Extract top-level section header if present
+        header_line = ""
+        for line in parent_markdown.splitlines():
+            s_line = line.strip()
+            if s_line.startswith("#"):
+                header_line = s_line
+                break
+
         # If parent markdown is already compact, use it directly
         if len(parent_markdown) <= window_chars:
             return parent_markdown.strip()
 
-        # Find position of child chunk in parent document
-        pos = parent_markdown.find(child_text[:80])
-        if pos == -1:
-            pos = parent_markdown.find(child_text[:40])
+        # Clean child text by stripping metadata prefixes if present
+        clean_child = child_text.strip()
+        if clean_child.startswith("[") and "\n" in clean_child:
+            clean_child = clean_child.split("\n", 1)[-1].strip()
+
+        # Multi-resolution substring search
+        pos = -1
+        for sample_len in (80, 50, 30, 20):
+            if len(clean_child) >= sample_len:
+                pos = parent_markdown.find(clean_child[:sample_len])
+                if pos != -1:
+                    break
 
         if pos == -1:
+            # Fallback: return child text prefixed with section header if missing
+            if header_line and header_line not in child_text:
+                return f"{header_line}\n{child_text}".strip()
             return child_text
 
-        half_window = window_chars // 2
-        start = max(0, pos - half_window)
-        end = min(len(parent_markdown), pos + len(child_text) + half_window)
+        # Calculate balanced window without blowing up size
+        child_len = min(len(clean_child), len(parent_markdown) - pos)
+        extra_budget = max(0, window_chars - child_len)
+        half_extra = extra_budget // 2
 
-        # Align start boundary to newline if close
+        start = max(0, pos - half_extra)
+        end = min(len(parent_markdown), pos + child_len + half_extra)
+
+        # Align start boundary to newline or sentence if close
         if start > 0:
             prev_nl = parent_markdown.rfind("\n", 0, start)
-            if prev_nl != -1 and (start - prev_nl) < 200:
+            if prev_nl != -1 and (start - prev_nl) < 150:
                 start = prev_nl + 1
 
         # Align end boundary to newline if close
         if end < len(parent_markdown):
             next_nl = parent_markdown.find("\n", end)
-            if next_nl != -1 and (next_nl - end) < 200:
+            if next_nl != -1 and (next_nl - end) < 150:
                 end = next_nl
 
         snippet = parent_markdown[start:end].strip()
+
         prefix = "... " if start > 0 else ""
         suffix = " ..." if end < len(parent_markdown) else ""
+
+        # Ensure section header is always attached if window starts mid-document
+        if start > 0 and header_line and header_line not in snippet:
+            return f"{header_line}\n{prefix}{snippet}{suffix}"
         return f"{prefix}{snippet}{suffix}"
 
     async def retrieve_lore_parent_child(

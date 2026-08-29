@@ -23,8 +23,8 @@ from app.infrastructure.ingestion.models.chunk_model import Chunk, ChunkStrategy
 
 logger = structlog.get_logger(__name__)
 
-# Sentence boundary regex (. ! ? followed by space or newline)
-_RE_SENTENCE = re.compile(r"(?<=[.!?])\s+")
+# Smart sentence boundary regex (preserves abbreviations like Lv. 90, v1.2, Dr. Honami, decimal 12.5%)
+_RE_SENTENCE = re.compile(r"(?<!\b(?:Lv|v|No|Dr|Mr|Mrs|Ms|Prof|etc|approx|e\.g|i\.e|\d))\b(?<=[.!?])\s+(?=[A-ZÀ-Ỹ\"'‘“\[\(\d])")
 
 
 class GenericChunker(BaseChunker):

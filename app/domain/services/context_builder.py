@@ -171,15 +171,32 @@ class ContextBuilder:
         return formatted_history
 
     @staticmethod
-    def _u_curve_sort(items: List[Any]) -> List[Any]:
+    def _is_sequential_narrative(items: List[Any]) -> bool:
+        """Detects if chunks represent a consecutive sequence of story/dialogue parts."""
+        if len(items) <= 1:
+            return False
+        import re
+        part_pattern = re.compile(r'\b(part|chapter|act|hồi|chương|phần|đoạn|tập)\s*(\d+)', re.IGNORECASE)
+        parts_found = []
+        for item in items:
+            text = str(item)
+            m = part_pattern.search(text)
+            if m:
+                parts_found.append(int(m.group(2)))
+        if len(parts_found) >= 2 and parts_found == sorted(parts_found):
+            return True
+        return False
+
+    @classmethod
+    def _u_curve_sort(cls, items: List[Any]) -> List[Any]:
         """
         U-Shaped Attention Sorting:
         Arranges sorted items (from most relevant to least relevant) such that
         the most relevant items are placed at the high-attention ends (top & bottom of section),
         and lower-relevance items reside in the middle.
-        Example: [A, B, C, D] -> [A, C, D, B] (A at start, B at end).
+        Preserves natural chronological order for sequential story narratives.
         """
-        if len(items) <= 2:
+        if len(items) <= 2 or cls._is_sequential_narrative(items):
             return items
         
         left_side = []

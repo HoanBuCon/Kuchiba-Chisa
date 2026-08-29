@@ -33,15 +33,14 @@ class QdrantUpsertStage(IPipelineStage[QdrantUpsertInput, List[ProcessingChunk]]
         items_failed = 0
         
         if to_upsert:
-            # Pre-Delete Strategy: Delete old chunks for this page_id
-            # Assuming all chunks belong to the same page in this batch
-            page_id = to_upsert[0].page_id
-            try:
-                await self.vector_store.delete_lore_by_page(input_data.collection_name, page_id)
-                log.debug("Deleted old vectors for page", page_id=page_id)
-            except Exception as e:
-                log.error("Failed to delete old vectors", error=str(e), page_id=page_id)
-                # Continuing anyway, though it might leave orphans.
+            # Pre-Delete Strategy: Delete old chunks for all distinct page_ids in this batch
+            distinct_page_ids = {c.page_id for c in to_upsert if c.page_id is not None}
+            for page_id in distinct_page_ids:
+                try:
+                    await self.vector_store.delete_lore_by_page(input_data.collection_name, page_id)
+                    log.debug("Deleted old vectors for page", page_id=page_id, collection=input_data.collection_name)
+                except Exception as e:
+                    log.error("Failed to delete old vectors", error=str(e), page_id=page_id)
             
             # Upsert Batches
             for i in range(0, len(to_upsert), self.batch_size):
