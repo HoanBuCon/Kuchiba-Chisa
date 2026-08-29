@@ -14,11 +14,13 @@ export async function execute(client, message) {
     }
 
     const isDM = !message.guild;
-    const isDirectChannel = message.guild && client.services.guildSettingsCache?.has(message.channelId);
+    const channelSetting = message.guild ? client.services.guildSettingsCache?.get(message.channelId) : null;
+    const isDirectChannel = Boolean(channelSetting);
+    const isCommunityMode = channelSetting?.mode === 'community';
 
     // Direct chat in dedicated Guild channel OR 1-on-1 Direct Message (DM)
     if (isDM || isDirectChannel) {
-      const rawContent = message.content?.trim() || '';
+      let rawContent = message.content?.trim() || '';
       const lowerContent = rawContent.toLowerCase();
       const prefix = (runner.prefix || 'c!').toLowerCase();
 
@@ -30,6 +32,39 @@ export async function execute(client, message) {
         runner.isPrefixCommand(message)
       ) {
         return;
+      }
+
+      // In Community Mode: ONLY reply if user mentions Chisa or replies to Chisa's message
+      if (isCommunityMode) {
+        const botId = client.user?.id;
+        const mentionsBot = botId ? message.mentions.users.has(botId) : false;
+
+        let repliesToBot = false;
+        if (message.reference && botId) {
+          if (message.mentions?.repliedUser?.id === botId) {
+            repliesToBot = true;
+          } else {
+            try {
+              const refMsg = await message.fetchReference();
+              if (refMsg?.author?.id === botId) {
+                repliesToBot = true;
+              }
+            } catch {
+              // Ignore fetch error
+            }
+          }
+        }
+
+        if (!mentionsBot && !repliesToBot) {
+          // Do not reply in community mode if not mentioned or replied to Chisa
+          return;
+        }
+
+        // Clean @bot mention tag from rawContent for clean prompt
+        if (botId) {
+          const mentionRegex = new RegExp(`<@!?${botId}>`, 'g');
+          rawContent = rawContent.replace(mentionRegex, '').trim();
+        }
       }
 
       if (!rawContent) {

@@ -50,9 +50,9 @@ function createSetupEmbed(client, channelName, mode = 'private') {
     )
     .addFields(
       { 
-        name: isCommunity ? '👥 Nhận thức Ngữ cảnh Đa Người' : '💬 Trò chuyện không cần lệnh', 
+        name: isCommunity ? '👥 Điều kiện Phản hồi Cộng đồng' : '💬 Trò chuyện không cần lệnh', 
         value: isCommunity
-          ? 'Chisa sẽ quan sát dòng trò chuyện chung giữa các thành viên trong kênh để đối đáp tự nhiên và hiểu mạch thảo luận của cả nhóm mà không cần dùng lệnh `/ask` hay prefix `c!ask`.'
+          ? 'Trong kênh cộng đồng, Chisa chỉ phản hồi khi bạn **Mention (@Chisa)** hoặc **Reply (Trả lời)** vào tin nhắn của Chisa. Em ấy sẽ tự động nắm bắt 15 tin nhắn gần nhất của phòng để trả lời đúng ngữ cảnh của cả nhóm.'
           : 'Từ bây giờ, bạn có thể nhắn tin trực tiếp trong kênh này và Chisa sẽ trò chuyện 1-1 riêng tư với bạn mà không cần dùng lệnh `/ask` hay prefix `c!ask`.'
       },
       { 
