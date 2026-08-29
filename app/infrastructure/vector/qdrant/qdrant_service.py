@@ -5,6 +5,7 @@ from qdrant_client.http.models import (
     Distance,
     Filter,
     FieldCondition,
+    HnswConfigDiff,
     MatchValue,
     OptimizersConfigDiff,
     PointStruct,
@@ -108,8 +109,10 @@ class QdrantService(IVectorStore):
 
         await self._client.create_collection(
             collection_name=name,
-            vectors_config=VectorParams(size=vector_size, distance=distance),
+            vectors_config=VectorParams(size=vector_size, distance=distance, on_disk=True),
+            hnsw_config=HnswConfigDiff(on_disk=True),
             optimizers_config=OptimizersConfigDiff(indexing_threshold=20000),
+            on_disk_payload=True,
         )
         log.info("Qdrant collection created", collection=name, size=vector_size)
 

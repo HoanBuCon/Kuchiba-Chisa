@@ -35,10 +35,10 @@ class ICacheProvider(Protocol):
         """Sets an expiration TTL on a key."""
         ...
 
-    async def acquire_lock(self, lock_key: str, ttl: int = 5) -> bool:
-        """Acquires a distributed lock. Returns True if successful."""
+    async def acquire_lock(self, lock_key: str, ttl: int = 5, token: Optional[str] = None) -> Any:
+        """Acquires a distributed lock. Returns token string or True if successful, None/False if failed."""
         ...
 
-    async def release_lock(self, lock_key: str) -> None:
-        """Releases a distributed lock."""
+    async def release_lock(self, lock_key: str, token: Optional[str] = None) -> bool:
+        """Releases a distributed lock safely using token comparison."""
         ...

@@ -12,13 +12,19 @@ log = get_logger(__name__)
 
 
 def _cosine_similarity(vec1: List[float], vec2: List[float]) -> float:
-    """Tính độ tương đồng Cosine giữa 2 vector embedding."""
+    """Tính độ tương đồng Cosine giữa 2 vector embedding tối ưu hóa trong 1 vòng lặp."""
     if not vec1 or not vec2 or len(vec1) != len(vec2):
         return 0.0
-    dot = sum(a * b for a, b in zip(vec1, vec2))
-    norm1 = (sum(a * a for a in vec1)) ** 0.5
-    norm2 = (sum(b * b for b in vec2)) ** 0.5
-    return dot / (norm1 * norm2) if norm1 and norm2 else 0.0
+    dot = 0.0
+    norm1 = 0.0
+    norm2 = 0.0
+    for a, b in zip(vec1, vec2):
+        dot += a * b
+        norm1 += a * a
+        norm2 += b * b
+    if norm1 > 0.0 and norm2 > 0.0:
+        return dot / ((norm1 * norm2) ** 0.5)
+    return 0.0
 
 
 class IntentClassifier:
@@ -269,16 +275,13 @@ class IntentClassifier:
                 return
 
             log.info("Computing Small Talk & Contrastive Knowledge Anchor vectors (E5 passage prefix)...")
-            pos_vectors = []
-            for text in self.SMALL_TALK_ANCHORS:
-                vec = await self.embedder.embed_text(text, prefix="passage: ")
-                pos_vectors.append(vec)
+            if hasattr(self.embedder, "embed_batch"):
+                pos_vectors = await self.embedder.embed_batch(self.SMALL_TALK_ANCHORS, prefix="passage: ")
+                neg_vectors = await self.embedder.embed_batch(self.KNOWLEDGE_CONTRASTIVE_ANCHORS, prefix="passage: ")
+            else:
+                pos_vectors = [await self.embedder.embed_text(t, prefix="passage: ") for t in self.SMALL_TALK_ANCHORS]
+                neg_vectors = [await self.embedder.embed_text(t, prefix="passage: ") for t in self.KNOWLEDGE_CONTRASTIVE_ANCHORS]
             IntentClassifier._anchor_vectors = pos_vectors
-
-            neg_vectors = []
-            for text in self.KNOWLEDGE_CONTRASTIVE_ANCHORS:
-                vec = await self.embedder.embed_text(text, prefix="passage: ")
-                neg_vectors.append(vec)
             IntentClassifier._neg_anchor_vectors = neg_vectors
 
             log.info("Dual-Signal Anchors initialized", pos_count=len(pos_vectors), neg_count=len(neg_vectors))
@@ -294,16 +297,13 @@ class IntentClassifier:
                 return
 
             log.info("Computing Chisa Persona & Profile Anchor vectors...")
-            pers_vecs = []
-            for text in self.CHISA_PERSONALITY_ANCHORS:
-                vec = await self.embedder.embed_text(text, prefix="passage: ")
-                pers_vecs.append(vec)
+            if hasattr(self.embedder, "embed_batch"):
+                pers_vecs = await self.embedder.embed_batch(self.CHISA_PERSONALITY_ANCHORS, prefix="passage: ")
+                prof_vecs = await self.embedder.embed_batch(self.CHISA_PROFILE_ANCHORS, prefix="passage: ")
+            else:
+                pers_vecs = [await self.embedder.embed_text(t, prefix="passage: ") for t in self.CHISA_PERSONALITY_ANCHORS]
+                prof_vecs = [await self.embedder.embed_text(t, prefix="passage: ") for t in self.CHISA_PROFILE_ANCHORS]
             IntentClassifier._persona_vectors = pers_vecs
-
-            prof_vecs = []
-            for text in self.CHISA_PROFILE_ANCHORS:
-                vec = await self.embedder.embed_text(text, prefix="passage: ")
-                prof_vecs.append(vec)
             IntentClassifier._profile_vectors = prof_vecs
 
             log.info("Chisa Persona & Profile Anchors initialized", personality_count=len(pers_vecs), profile_count=len(prof_vecs))

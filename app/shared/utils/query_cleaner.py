@@ -210,10 +210,38 @@ def strip_platform_mentions(text: str) -> str:
     return cleaned
 
 
+# Pre-compiled Regex patterns for high performance query cleaning (0 CPU churn)
+_ABBREVIATIONS_COMPILED = [(re.compile(pat, re.IGNORECASE), repl) for pat, repl in ABBREVIATIONS.items()]
+
+_GREETINGS_RE = re.compile(
+    r'^(?:' + '|'.join(re.escape(g) for g in sorted(GREETING_PREFIXES, key=len, reverse=True)) + r')(?:\s+|$|[,\.\?\!\-\:])',
+    re.IGNORECASE
+)
+_CONV_PREFIXES_RE = re.compile(
+    r'^(?:' + '|'.join(re.escape(p) for p in sorted(CONVERSATIONAL_PREFIXES, key=len, reverse=True)) + r')(?:\s+|$|[,\.\?\!\-\:])',
+    re.IGNORECASE
+)
+_CONV_SUFFIXES_RE = re.compile(
+    r'(?:\s+|^|[,\.\?\!\-\:])(?:' + '|'.join(re.escape(s) for s in sorted(CONVERSATIONAL_SUFFIXES, key=len, reverse=True)) + r')$',
+    re.IGNORECASE
+)
+_CALLING_NAMES_PREFIX_RE = re.compile(
+    r'^(?:' + '|'.join(re.escape(n) for n in sorted(CALLING_NAMES, key=len, reverse=True)) + r')(?:\s+|$|[,\.\?\!\-\:])',
+    re.IGNORECASE
+)
+_CALLING_NAMES_SUFFIX_RE = re.compile(
+    r'(?:\s+|^|[,\.\?\!\-\:])(?:' + '|'.join(re.escape(n) for n in sorted(CALLING_NAMES, key=len, reverse=True)) + r')$',
+    re.IGNORECASE
+)
+_PARTICLES_START_RE = re.compile(r'^(nhé|nha|ạ|ơi|nè)[,\.\?\!\-\s\:]+', re.IGNORECASE)
+_PUNCT_EDGES_RE = re.compile(r'^[,\.\?\!\-\s\:]+|[,\.\?\!\-\s\:]+$')
+_BOT_PERSONA_INDICATORS_COMPILED = [re.compile(pat, re.IGNORECASE) for pat in BOT_PERSONA_INDICATORS]
+
+
 def clean_query_for_rag(text: str) -> str:
     """
     Cleans user query by iteratively removing conversational greetings, chatbot request prefixes, 
-    and common suffixes/particles with strict word-boundary matching.
+    and common suffixes/particles using fast pre-compiled regexes.
     Intelligently preserves calling names when no other entity exists in the query.
     """
     if not text:
@@ -228,48 +256,38 @@ def clean_query_for_rag(text: str) -> str:
     text = text.lower().strip()
     
     # 1. Apply abbreviation normalization
-    for pattern, repl in ABBREVIATIONS.items():
-        text = re.sub(pattern, repl, text)
+    for compiled_pat, repl in _ABBREVIATIONS_COMPILED:
+        text = compiled_pat.sub(repl, text)
         
-    # Iterative cleaning pass (up to 3 passes to handle nested patterns like "Chào em Chisa nhé, cho anh hỏi là...")
+    # Iterative cleaning pass (up to 3 passes to handle nested patterns)
     for _ in range(3):
         prev_text = text
-        text = re.sub(r'^[,\.\?\!\-\s\:]+|[,\.\?\!\-\s\:]+$', '', text).strip()
+        text = _PUNCT_EDGES_RE.sub('', text).strip()
         
-        # Strip greetings with word boundaries
-        for g in sorted(GREETING_PREFIXES, key=len, reverse=True):
-            text = re.sub(rf'^(?:{re.escape(g)})(?:\s+|$|[,\.\?\!\-\:])', '', text).strip()
+        # Strip greetings
+        text = _GREETINGS_RE.sub('', text).strip()
                 
-        # Strip conversational prefixes with word boundaries
-        for p in sorted(CONVERSATIONAL_PREFIXES, key=len, reverse=True):
-            subbed = re.sub(rf'^(?:{re.escape(p)})(?:\s+|$|[,\.\?\!\-\:])', '', text).strip()
-            if subbed != text:
-                text = subbed
-                break
+        # Strip conversational prefixes
+        text = _CONV_PREFIXES_RE.sub('', text).strip()
                 
-        # Strip trailing suffixes with word boundaries
-        for s in sorted(CONVERSATIONAL_SUFFIXES, key=len, reverse=True):
-            text = re.sub(rf'(?:\s+|^|[,\.\?\!\-\:])(?:{re.escape(s)})$', '', text).strip()
+        # Strip trailing suffixes
+        text = _CONV_SUFFIXES_RE.sub('', text).strip()
 
         # Strip particles at start like "nhé,", "nha,"
-        text = re.sub(r'^(nhé|nha|ạ|ơi|nè)[,\.\?\!\-\s\:]+', '', text).strip()
+        text = _PARTICLES_START_RE.sub('', text).strip()
 
-        # Strip calling names with word boundaries ONLY IF the question is not about bot's own attributes
-        # (e.g. "Chisa ơi Jiyan dùng gì" -> "jiyan dùng gì", but "Chisa có năng lực gì" -> keeps "chisa có năng lực gì")
-        for name in CALLING_NAMES:
-            if re.search(rf'^(?:{re.escape(name)})(?:\s+|$|[,\.\?\!\-\:])', text):
-                test_sub = re.sub(rf'^(?:{re.escape(name)})(?:\s+|$|[,\.\?\!\-\:])', '', text).strip()
-                is_attr_inquiry = any(re.search(pat, text) for pat in BOT_PERSONA_INDICATORS)
-                if not is_attr_inquiry:
-                    text = test_sub
-            
-            # Suffix calling name
-            text = re.sub(rf'(?:\s+|^|[,\.\?\!\-\:])(?:{re.escape(name)})$', '', text).strip()
+        # Strip calling names ONLY IF the question is not about bot's own attributes
+        if _CALLING_NAMES_PREFIX_RE.search(text):
+            is_attr_inquiry = any(pat.search(text) for pat in _BOT_PERSONA_INDICATORS_COMPILED)
+            if not is_attr_inquiry:
+                text = _CALLING_NAMES_PREFIX_RE.sub('', text).strip()
+        
+        text = _CALLING_NAMES_SUFFIX_RE.sub('', text).strip()
 
         if text == prev_text:
             break
             
-    text = re.sub(r'^[,\.\?\!\-\s\:]+|[,\.\?\!\-\s\:]+$', '', text).strip()
+    text = _PUNCT_EDGES_RE.sub('', text).strip()
     
     if not text:
         return original.strip()

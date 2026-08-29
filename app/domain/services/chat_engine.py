@@ -95,41 +95,11 @@ class ChatEngine:
         try:
             return await self._chat_inner(session, user_id, user_message, on_token)
         finally:
-            await self.cache.release_lock(lock_key)
+            await self.cache.release_lock(lock_key, token=acquired)
 
     async def _chat_inner(self, session: IDbSession, user_id: str, user_message: str, on_token: Optional[Callable[[str], Any]] = None) -> Tuple[str, Dict[str, float]]:
-        from app.shared.utils.fallback_detector import is_fallback_reply
         try:
-            import hashlib
-            query_hash = hashlib.md5(user_message.encode('utf-8')).hexdigest()
-            cache_key = f"chisa:answer_cache:{user_id}:{query_hash}"
-            
-            # 1. Check Answer Cache (invalidate if fallback/error reply)
-            cached_answer = await self.cache.get(cache_key)
-            if cached_answer:
-                if is_fallback_reply(cached_answer):
-                    log.warning("Redis Answer Cache contains fallback/error reply. Invalidating key", user_id=user_id, cache_key=cache_key)
-                    await self.cache.delete(cache_key)
-                else:
-                    log.info("Redis Answer Cache HIT", user_id=user_id, query_hash=query_hash)
-                    if on_token:
-                        for token in cached_answer.split(" "):
-                            if asyncio.iscoroutinefunction(on_token):
-                                await on_token(token + " ")
-                            else:
-                                on_token(token + " ")
-                    current_emotion = await self.get_emotion_state(session, user_id)
-                    if hasattr(current_emotion, "model_dump"):
-                        emotion_dict = current_emotion.model_dump()
-                    elif dataclasses.is_dataclass(current_emotion):
-                        emotion_dict = dataclasses.asdict(current_emotion)
-                    elif hasattr(current_emotion, "dict"):
-                        emotion_dict = current_emotion.dict()
-                    else:
-                        emotion_dict = vars(current_emotion)
-                    return cached_answer, emotion_dict
-
-            # 2. Run Pipeline on Cache Miss
+            # Run Chat Pipeline (CacheStage handles pure-lore caching internally)
             context = ChatContext(
                 session=session,
                 user_id=user_id,
@@ -137,11 +107,6 @@ class ChatEngine:
                 on_token=on_token
             )
             context = await self.pipeline.execute(context)
-            
-            # 3. Store in Answer Cache (TTL 12 hours) — only valid responses!
-            if context.chisa_reply and not is_fallback_reply(context.chisa_reply):
-                await self.cache.set(cache_key, context.chisa_reply, ttl=43200)
-                
             return context.chisa_reply, context.updated_emotions
             
         except Exception as e:
