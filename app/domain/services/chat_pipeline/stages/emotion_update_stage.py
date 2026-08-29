@@ -1,23 +1,27 @@
-from typing import Callable
+from typing import Callable, Optional
 from app.domain.interfaces.session import IDbSession
 from app.domain.services.chat_pipeline.stage import PipelineStage
 from app.domain.services.chat_pipeline.context import ChatContext
 from app.domain.services.emotion_engine import EmotionEngine
 from app.domain.interfaces.repositories import IEmotionRepository
+from app.domain.interfaces.cache_provider import ICacheProvider
 from app.domain.interfaces.tracker import IPipelineTracker
 
 class EmotionUpdateStage(PipelineStage):
     """
-    Stage 7: Update emotion state based on sentiments.
+    Stage 8: Update individual emotion state based on sentiments and
+    sync collective Server-Level Ambient State in shared environments.
     """
     def __init__(
         self,
         emotion_engine: EmotionEngine,
         emotion_repo_factory: Callable[[IDbSession], IEmotionRepository],
+        cache_provider: Optional[ICacheProvider] = None,
         pipeline_tracker: IPipelineTracker = None
     ):
         self.emotion_engine = emotion_engine
         self.emotion_repo_factory = emotion_repo_factory
+        self.cache_provider = cache_provider
         self.pipeline_tracker = pipeline_tracker
 
     async def process(self, context: ChatContext) -> ChatContext:
@@ -51,6 +55,18 @@ class EmotionUpdateStage(PipelineStage):
             chisa_flustered=chisa_flustered
         )
         await emotion_repo.update_emotion(context.emotion)
+
+        # Sync Server-Level Ambient Mood in shared server environments
+        is_server_shared = (
+            bool(context.guild_id)
+            and not context.guild_id.startswith("CHANNEL_")
+            and context.guild_id != "DM"
+        )
+        if is_server_shared and self.cache_provider:
+            from app.domain.services.community.ambient_manager import AmbientMoodManager
+            ambient_snapshot = AmbientMoodManager.extract_ambient_snapshot(context.emotion)
+            cache_key = f"chisa:guild:{context.guild_id}:ambient_mood"
+            await self.cache_provider.set_json(cache_key, ambient_snapshot, ttl=7200)
 
         if self.pipeline_tracker:
             self.pipeline_tracker.add_step("emotion_update", {

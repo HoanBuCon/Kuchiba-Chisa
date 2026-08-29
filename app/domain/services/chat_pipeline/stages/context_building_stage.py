@@ -45,6 +45,7 @@ class ContextBuildingStage(PipelineStage):
             channel_name=context.channel_name,
             guild_name=context.guild_name,
             channel_transcript=context.channel_transcript,
+            ambient_context=context.ambient_context,
         )
         
         context.prompt = build_result.prompt

@@ -140,6 +140,7 @@ class ContextBuilder:
         current_speaker_name: Optional[str] = None,
         channel_name: Optional[str] = None,
         guild_name: Optional[str] = None,
+        ambient_context: Optional[str] = None,
     ) -> str:
         elapsed_hours = 0.0
         if emotion.updated_at and emotion.updated_at > 0:
@@ -156,6 +157,14 @@ class ContextBuilder:
         ]
         if traits_snippet and traits_snippet.strip():
             sections.append(traits_snippet.strip())
+
+        if ambient_context and ambient_context.strip():
+            ambient_section = (
+                "[BỐI CẢNH KHÍ SẮC & SỰ KIỆN GẦN ĐÂY TRONG SERVER]\n"
+                f"- {ambient_context.strip()}\n"
+                "- Hãy để bối cảnh này hòa quyện tự nhiên vào tâm trạng hiện tại của Chisa khi đối đáp cùng Senpai."
+            )
+            sections.extend(["", ambient_section])
 
         if is_community:
             speaker_disp = current_speaker_name or "thành viên"
@@ -250,6 +259,7 @@ class ContextBuilder:
         channel_name: Optional[str] = None,
         guild_name: Optional[str] = None,
         channel_transcript: Optional[str] = None,
+        ambient_context: Optional[str] = None,
     ) -> ContextBuildResult:
         """
         Builds production context: measure skeleton first, flex-allocate, then assemble system prompt.
@@ -264,6 +274,7 @@ class ContextBuilder:
             current_speaker_name=current_speaker_name,
             channel_name=channel_name,
             guild_name=guild_name,
+            ambient_context=ambient_context,
         )
         format_section = self.build_format_section()
         skeleton_tokens = TokenEstimator.estimate(system_skeleton) + TokenEstimator.estimate(format_section)
