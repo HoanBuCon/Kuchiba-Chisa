@@ -31,22 +31,10 @@ class ContextBuilder:
         "type": "object",
         "properties": {
             "response": {"type": "string"},
-            "sentiment_analysis": {
+            "sentiment": {
                 "type": "object",
                 "properties": {
-                    "intensity": {
-                        "type": "number",
-                        "minimum": 0.0,
-                        "maximum": 1.0,
-                        "description": "Emotional intensity: 0.1 (fleeting/mild) to 0.9 (deep/intense)"
-                    },
-                    "valence": {
-                        "type": "number",
-                        "minimum": -1.0,
-                        "maximum": 1.0,
-                        "description": "Polarity: -1.0 (hurt/negative) to +1.0 (joy/warmth)"
-                    },
-                    "primary_emotion": {
+                    "reaction": {
                         "type": "string",
                         "enum": [
                             "calm_warmth",
@@ -57,13 +45,36 @@ class ContextBuilder:
                             "guarded_cold",
                             "neutral"
                         ],
-                        "description": "Dominant complex emotional archetype"
+                        "description": "Dominant emotional reaction of Chisa"
+                    },
+                    "user_stance": {
+                        "type": "string",
+                        "enum": [
+                            "loving",
+                            "playful",
+                            "vulnerable",
+                            "neutral",
+                            "hostile"
+                        ],
+                        "description": "Perceived attitude and intention of Senpai toward Chisa"
+                    },
+                    "intensity": {
+                        "type": "number",
+                        "minimum": 0.0,
+                        "maximum": 1.0,
+                        "description": "Emotional intensity: 0.1 (fleeting/mild) to 0.9 (deep/intense)"
+                    },
+                    "variance": {
+                        "type": "number",
+                        "minimum": -1.0,
+                        "maximum": 1.0,
+                        "description": "Nuance variance: -1.0 (melancholic/philosophical) to +1.0 (bright/joyful), 0.0 (neutral balance)"
                     }
                 },
-                "required": ["intensity", "valence", "primary_emotion"]
+                "required": ["reaction", "user_stance", "intensity", "variance"]
             }
         },
-        "required": ["response", "sentiment_analysis"],
+        "required": ["response", "sentiment"],
     }
 
     SEARCH_INSTRUCTIONS = (
@@ -110,10 +121,11 @@ class ContextBuilder:
             "Bạn BẮT BUỘC phải phản hồi dưới dạng một đối tượng JSON hợp lệ tuân thủ định dạng sau:\n"
             "{\n"
             '  "response": "câu thoại phản hồi của Chisa (chứa cảm xúc phù hợp, viết bằng tiếng Việt, tuyệt đối escape mọi dấu ngoặc kép bên trong bằng \\\")",\n'
-            '  "sentiment_analysis": {\n'
-            '    "intensity": 0.1 đến 1.0 (mức độ cảm xúc: 0.2 nhẹ nhàng/thoáng qua, 0.5 vừa phải, 0.9 sâu sắc/mãnh liệt),\n'
-            '    "valence": -1.0 đến 1.0 (chiều cảm xúc: âm nếu buồn/tổn thương/khó chịu, dương nếu vui/ấm áp/hạnh phúc, 0 nếu trung tính),\n'
-            '    "primary_emotion": "calm_warmth" | "flustered_affection" | "playful_pout" | "melancholic_care" | "cheerful_joy" | "guarded_cold" | "neutral"\n'
+            '  "sentiment": {\n'
+            '    "reaction": "calm_warmth" | "flustered_affection" | "playful_pout" | "melancholic_care" | "cheerful_joy" | "guarded_cold" | "neutral",\n'
+            '    "user_stance": "loving" | "playful" | "vulnerable" | "neutral" | "hostile",\n'
+            '    "intensity": 0.1 đến 1.0 (cường độ tác động: 0.2 nhẹ nhàng/thoảng qua, 0.5 vừa phải, 0.9 sâu sắc/mãnh liệt),\n'
+            '    "variance": -1.0 đến 1.0 (độ lệch sắc thái phụ trợ: âm nếu u buồn/triết lý bâng khuâng, dương nếu tươi sáng/hân hoan, 0 nếu cân bằng)\n'
             '  }\n'
             "}"
         )
@@ -147,10 +159,11 @@ class ContextBuilder:
             if role == "assistant" and not content.strip().startswith("{"):
                 assistant_json = {
                     "response": content,
-                    "sentiment_analysis": {
+                    "sentiment": {
+                        "reaction": "calm_warmth",
+                        "user_stance": "neutral",
                         "intensity": 0.3,
-                        "valence": 0.2,
-                        "primary_emotion": "calm_warmth"
+                        "variance": 0.0
                     }
                 }
                 content = json.dumps(assistant_json, ensure_ascii=False)

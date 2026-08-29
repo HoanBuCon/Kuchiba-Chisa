@@ -145,7 +145,7 @@ class LLMGenerationStage(PipelineStage):
         context.estimated_output_tokens = response.output_tokens
         
         # Store parsed sentiment into tool_res for emotion update stage
-        sentiment_analysis = response.parsed.get("sentiment_analysis", {})
+        sentiment_analysis = response.parsed.get("sentiment") or response.parsed.get("sentiment_analysis", {})
         if not isinstance(sentiment_analysis, dict):
             sentiment_analysis = {}
 
@@ -157,6 +157,7 @@ class LLMGenerationStage(PipelineStage):
             chisa_sentiment = {}
             
         context.tool_res = context.tool_res or {}
+        context.tool_res["sentiment"] = sentiment_analysis
         context.tool_res["sentiment_analysis"] = sentiment_analysis
         context.tool_res["user_sentiment"] = user_sentiment
         context.tool_res["chisa_sentiment"] = chisa_sentiment
