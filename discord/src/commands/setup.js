@@ -42,11 +42,11 @@ export const data = new SlashCommandBuilder()
 
 function formatModeName(mode) {
   if (mode === 'community') return 'Cộng đồng (Community)';
-  if (mode === 'semi-private') return 'Riêng tư liên thông (Semi-Private)';
-  return 'Riêng tư cô lập (Private)';
+  if (mode === 'private') return 'Riêng tư cô lập (Private)';
+  return 'Riêng tư liên thông (Semi-Private)';
 }
 
-function createSetupEmbed(client, channelName, mode = 'private') {
+function createSetupEmbed(client, channelName, mode = 'semi-private') {
   if (mode === 'community') {
     return new EmbedBuilder()
       .setTitle('🌸 Cổng Kết Nối Cộng Đồng Chisa (Community Mode) 🌸')
@@ -225,7 +225,7 @@ async function disableChannels(client, guildId, channelIds) {
   return { replyText: replyText.trim(), disabled };
 }
 
-async function enableChannels(client, guildId, channelIds, triggeredByUserId, mode = 'private') {
+async function enableChannels(client, guildId, channelIds, triggeredByUserId, mode = 'semi-private') {
   const { logger, repositories, guildSettingsCache } = client.services;
 
   const enabled = [];
@@ -298,7 +298,7 @@ export async function execute(client, interaction) {
   }
 
   const action = interaction.options.getString('action') || 'enable';
-  const mode = interaction.options.getString('mode') || 'private';
+  const mode = interaction.options.getString('mode') || 'semi-private';
   const allOption = interaction.options.getBoolean('all') || false;
   const guildId = interaction.guildId;
 
@@ -437,7 +437,7 @@ export async function executePrefix(client, message, argsText) {
   }
 
   // Case: c!setup [channels...] [mode: community/semi-private/private] (enable)
-  let mode = 'private';
+  let mode = 'semi-private';
   const cleanArgs = [];
   for (const a of args) {
     const lower = a.toLowerCase();
@@ -456,7 +456,7 @@ export async function executePrefix(client, message, argsText) {
   if (cleanArgs.length > 0) {
     const { channelIds, invalidArgs } = parseChannelIds(cleanArgs);
     if (invalidArgs.length > 0) {
-      await message.reply(`Cú pháp không hợp lệ. Sử dụng:\n- \`c!setup\` (Bật kênh này chế độ Private cô lập)\n- \`c!setup semi-private\` (Bật kênh này chế độ Semi-Private liên thông)\n- \`c!setup community\` (Bật kênh này chế độ Community)\n- \`c!setup <#kênh> [community/semi-private/private]\` (Bật kênh được tag)\n- \`c!setup disable\` (Tắt kênh này)\n- \`c!setup disable all\` (Tắt tất cả)\n- \`c!setup list\` (Xem danh sách các kênh)`);
+      await message.reply(`Cú pháp không hợp lệ. Sử dụng:\n- \`c!setup\` (Bật kênh này chế độ **Semi-Private** liên thông — mặc định)\n- \`c!setup community\` (Bật kênh này chế độ Community cộng đồng)\n- \`c!setup private\` (Bật kênh này chế độ Private cô lập)\n- \`c!setup <#kênh> [community/semi-private/private]\` (Bật kênh được tag)\n- \`c!setup disable\` (Tắt kênh này)\n- \`c!setup disable all\` (Tắt tất cả)\n- \`c!setup list\` (Xem danh sách các kênh)`);
       return;
     }
     targetChannelIds = channelIds;
