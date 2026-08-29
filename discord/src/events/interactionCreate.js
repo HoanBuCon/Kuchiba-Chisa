@@ -16,9 +16,19 @@ export async function execute(client, interaction) {
   }
 
   try {
+    const channelSetting = interaction.guild ? client.services.guildSettingsCache?.get(interaction.channelId) : null;
+    let resolvedGuildId = 'DM';
+    if (interaction.guild) {
+      if (channelSetting?.mode === 'private') {
+        resolvedGuildId = `CHANNEL_${interaction.channelId}`;
+      } else {
+        resolvedGuildId = interaction.guildId || 'DM';
+      }
+    }
+
     const discordUser = await client.services.repositories.users.ensureDiscordUser({
       discordUserId: interaction.user.id,
-      discordGuildId: interaction.guildId || 'DM',
+      discordGuildId: resolvedGuildId,
       discordUserName: interaction.user.username,
       discordUserGlobalName: interaction.user.globalName ?? null,
       discordUserTag: interaction.user.tag ?? interaction.user.username,

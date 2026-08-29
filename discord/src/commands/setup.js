@@ -18,11 +18,12 @@ export const data = new SlashCommandBuilder()
   .addStringOption((option) =>
     option
       .setName('mode')
-      .setDescription('Chế độ chat: private (1-1 riêng tư, mặc định) hoặc community (chat nhóm đa người)')
+      .setDescription('Chế độ: community (cộng đồng), semi-private (liên thông), private (cô lập)')
       .setRequired(false)
       .addChoices(
-        { name: 'Riêng tư 1-1 (private) - Mặc định', value: 'private' },
         { name: 'Cộng đồng / Nhóm (community)', value: 'community' },
+        { name: 'Riêng tư liên thông Server (semi-private)', value: 'semi-private' },
+        { name: 'Riêng tư cô lập tuyệt đối (private)', value: 'private' },
       ),
   )
   .addChannelOption((option) =>
@@ -39,28 +40,74 @@ export const data = new SlashCommandBuilder()
   )
   .setContexts(InteractionContextType.Guild);
 
+function formatModeName(mode) {
+  if (mode === 'community') return 'Cộng đồng (Community)';
+  if (mode === 'semi-private') return 'Riêng tư liên thông (Semi-Private)';
+  return 'Riêng tư cô lập (Private)';
+}
+
 function createSetupEmbed(client, channelName, mode = 'private') {
-  const isCommunity = mode === 'community';
+  if (mode === 'community') {
+    return new EmbedBuilder()
+      .setTitle('🌸 Cổng Kết Nối Cộng Đồng Chisa (Community Mode) 🌸')
+      .setDescription(`Kênh **${channelName}** đã được thiết lập ở chế độ **Chat Cộng Đồng (Community)**!`)
+      .addFields(
+        { 
+          name: '👥 Điều kiện Phản hồi Cộng đồng', 
+          value: 'Trong kênh cộng đồng, Chisa chỉ phản hồi khi bạn **Mention (@Chisa)** hoặc **Reply (Trả lời)** vào tin nhắn của Chisa. Em ấy sẽ tự động nắm bắt 15 tin nhắn gần nhất của phòng để trả lời đúng ngữ cảnh của cả nhóm.'
+        },
+        { 
+          name: '🤫 Tắt tự động phản hồi / Dùng lệnh Bot khác', 
+          value: 'Nếu muốn gửi tin nhắn thường hoặc dùng lệnh prefix bot khác trong kênh này mà **không muốn Chisa trả lời**, hãy thêm tiền tố `!` hoặc `c!` ở đầu tin nhắn (Ví dụ: `!Chào mọi người`, `c!help`, `!play ...`).' 
+        }
+      )
+      .setColor('#7289da')
+      .setThumbnail(client.user.displayAvatarURL())
+      .setTimestamp();
+  }
+
+  if (mode === 'semi-private') {
+    return new EmbedBuilder()
+      .setTitle('🌸 Cổng Trò Chuyện 1-1 Liên Thông Server (Semi-Private Mode) 🌸')
+      .setDescription(`Kênh **${channelName}** đã được thiết lập ở chế độ **Riêng tư Liên thông (Semi-Private)**!`)
+      .addFields(
+        { 
+          name: '💬 Trò chuyện 1-1 không cần lệnh', 
+          value: 'Bạn có thể nhắn tin trực tiếp trong kênh này và Chisa sẽ trò chuyện 1-1 với bạn mà không cần dùng lệnh `/ask` hay prefix `c!ask`.' 
+        },
+        { 
+          name: '🔗 Đồng bộ Ký ức & Bối cảnh Server', 
+          value: 'Kênh này chia sẻ chung ký ức, cảm xúc và nhận thức về các sự kiện diễn ra ở kênh Community trong cùng Server.' 
+        },
+        { 
+          name: '🤫 Tắt tự động phản hồi', 
+          value: 'Thêm tiền tố `!` hoặc `c!` ở đầu tin nhắn nếu không muốn Chisa trả lời.' 
+        }
+      )
+      .setColor('#ff9ff3')
+      .setThumbnail(client.user.displayAvatarURL())
+      .setTimestamp();
+  }
+
+  // Mode: private (isolated)
   return new EmbedBuilder()
-    .setTitle(isCommunity ? '🌸 Cổng Kết Nối Cộng Đồng Chisa (Community Mode) 🌸' : '🌸 Cổng Kết Nối Trực Tiếp Chisa (Private Mode) 🌸')
-    .setDescription(
-      isCommunity
-        ? `Kênh **${channelName}** đã được thiết lập ở chế độ **Chat Cộng Đồng (Community)**!`
-        : `Kênh **${channelName}** đã được thiết lập để kết nối trực tiếp **1-1 (Private)** với Chisa!`
-    )
+    .setTitle('🌸 Cổng Kết Nối Cô Lập Tuyệt Đối (Private Mode) 🌸')
+    .setDescription(`Kênh **${channelName}** đã được thiết lập ở chế độ **Riêng tư Cô lập Tuyệt đối (Private)**!`)
     .addFields(
       { 
-        name: isCommunity ? '👥 Điều kiện Phản hồi Cộng đồng' : '💬 Trò chuyện không cần lệnh', 
-        value: isCommunity
-          ? 'Trong kênh cộng đồng, Chisa chỉ phản hồi khi bạn **Mention (@Chisa)** hoặc **Reply (Trả lời)** vào tin nhắn của Chisa. Em ấy sẽ tự động nắm bắt 15 tin nhắn gần nhất của phòng để trả lời đúng ngữ cảnh của cả nhóm.'
-          : 'Từ bây giờ, bạn có thể nhắn tin trực tiếp trong kênh này và Chisa sẽ trò chuyện 1-1 riêng tư với bạn mà không cần dùng lệnh `/ask` hay prefix `c!ask`.'
+        name: '🔒 Không gian Riêng tư Cô Lập 100%', 
+        value: 'Kênh này là một không gian hoàn toàn riêng biệt. Ký ức và cảm xúc tại kênh này được cô lập độc lập, hoàn toàn không bị ảnh hưởng bởi drama hay sự kiện ở các kênh khác trong server.' 
       },
       { 
-        name: '🤫 Tắt tự động phản hồi / Dùng lệnh Bot khác', 
-        value: 'Nếu muốn gửi tin nhắn thường hoặc dùng lệnh prefix bot khác trong kênh này mà **không muốn Chisa trả lời**, hãy thêm tiền tố `!` hoặc `c!` ở đầu tin nhắn (Ví dụ: `!Chào mọi người`, `c!help`, `!play ...`).' 
+        name: '💬 Trò chuyện 1-1 trực tiếp', 
+        value: 'Nhắn tin trực tiếp với Chisa tự do mà không cần dùng lệnh `/ask` hay `c!ask`.' 
+      },
+      { 
+        name: '🤫 Tắt tự động phản hồi', 
+        value: 'Thêm tiền tố `!` hoặc `c!` ở đầu tin nhắn nếu không muốn Chisa trả lời.' 
       }
     )
-    .setColor(isCommunity ? '#7289da' : '#ffb6c1')
+    .setColor('#ffb6c1')
     .setThumbnail(client.user.displayAvatarURL())
     .setTimestamp();
 }
@@ -223,13 +270,13 @@ async function enableChannels(client, guildId, channelIds, triggeredByUserId, mo
 
   let replyText = '';
   if (enabled.length > 0) {
-    replyText += `Đã thiết lập thành công cổng kết nối tại các kênh:\n${enabled.map(item => `- <#${item.id}> (Chế độ: **${item.mode === 'community' ? 'Cộng đồng' : 'Riêng tư 1-1'}**)`).join('\n')}\n`;
+    replyText += `Đã thiết lập thành công cổng kết nối tại các kênh:\n${enabled.map(item => `- <#${item.id}> (Chế độ: **${formatModeName(item.mode)}**)`).join('\n')}\n`;
   }
   if (updatedMode.length > 0) {
-    replyText += `Đã cập nhật chế độ thành công tại các kênh:\n${updatedMode.map(item => `- <#${item.id}> (Chế độ mới: **${item.mode === 'community' ? 'Cộng đồng' : 'Riêng tư 1-1'}**)`).join('\n')}\n`;
+    replyText += `Đã cập nhật chế độ thành công tại các kênh:\n${updatedMode.map(item => `- <#${item.id}> (Chế độ mới: **${formatModeName(item.mode)}**)`).join('\n')}\n`;
   }
   if (alreadyEnabled.length > 0) {
-    replyText += `Các kênh sau đã đang hoạt động đúng chế độ này rồi ạ:\n${alreadyEnabled.map(item => `- <#${item.id}> (Chế độ: **${item.mode === 'community' ? 'Cộng đồng' : 'Riêng tư 1-1'}**)`).join('\n')}\n`;
+    replyText += `Các kênh sau đã đang hoạt động đúng chế độ này rồi ạ:\n${alreadyEnabled.map(item => `- <#${item.id}> (Chế độ: **${formatModeName(item.mode)}**)`).join('\n')}\n`;
   }
   if (invalid.length > 0) {
     replyText += `Các kênh sau không hợp lệ hoặc không phải là kênh chat chữ:\n${invalid.map(id => `- <#${id}>`).join('\n')}\n`;
@@ -275,7 +322,7 @@ export async function execute(client, interaction) {
       return;
     }
 
-    const channelListStr = activeChannels.map((item) => `- <#${item.id}> (Chế độ: **${item.mode === 'community' ? 'Cộng đồng' : 'Riêng tư 1-1'}**)`).join('\n');
+    const channelListStr = activeChannels.map((item) => `- <#${item.id}> (Chế độ: **${formatModeName(item.mode)}**)`).join('\n');
     await interaction.reply({
       content: `🌸 **Danh sách các cổng kết nối trực tiếp với Chisa:**\n${channelListStr}`,
       ephemeral: true,
@@ -356,7 +403,7 @@ export async function executePrefix(client, message, argsText) {
       return;
     }
 
-    const channelListStr = activeChannels.map((item) => `- <#${item.id}> (Chế độ: **${item.mode === 'community' ? 'Cộng đồng' : 'Riêng tư 1-1'}**)`).join('\n');
+    const channelListStr = activeChannels.map((item) => `- <#${item.id}> (Chế độ: **${formatModeName(item.mode)}**)`).join('\n');
     await message.reply(`🌸 **Danh sách các cổng kết nối trực tiếp với Chisa:**\n${channelListStr}`);
     return;
   }
@@ -389,14 +436,16 @@ export async function executePrefix(client, message, argsText) {
     return;
   }
 
-  // Case: c!setup [channels...] [mode: community/private] (enable)
+  // Case: c!setup [channels...] [mode: community/semi-private/private] (enable)
   let mode = 'private';
   const cleanArgs = [];
   for (const a of args) {
     const lower = a.toLowerCase();
     if (lower === 'community' || lower === 'group' || lower === 'congdong') {
       mode = 'community';
-    } else if (lower === 'private' || lower === 'single' || lower === 'riengtu') {
+    } else if (lower === 'semi-private' || lower === 'semi' || lower === 'semiprivate' || lower === 'lienthong') {
+      mode = 'semi-private';
+    } else if (lower === 'private' || lower === 'isolated' || lower === 'colap' || lower === 'riengtu') {
       mode = 'private';
     } else {
       cleanArgs.push(a);
@@ -407,7 +456,7 @@ export async function executePrefix(client, message, argsText) {
   if (cleanArgs.length > 0) {
     const { channelIds, invalidArgs } = parseChannelIds(cleanArgs);
     if (invalidArgs.length > 0) {
-      await message.reply(`Cú pháp không hợp lệ. Sử dụng:\n- \`c!setup\` (Bật kênh này chế độ 1-1 Private)\n- \`c!setup community\` (Bật kênh này chế độ Cộng đồng)\n- \`c!setup <#kênh> [community/private]\` (Bật kênh được tag)\n- \`c!setup disable\` (Tắt kênh này)\n- \`c!setup disable all\` (Tắt tất cả)\n- \`c!setup list\` (Xem danh sách các kênh)`);
+      await message.reply(`Cú pháp không hợp lệ. Sử dụng:\n- \`c!setup\` (Bật kênh này chế độ Private cô lập)\n- \`c!setup semi-private\` (Bật kênh này chế độ Semi-Private liên thông)\n- \`c!setup community\` (Bật kênh này chế độ Community)\n- \`c!setup <#kênh> [community/semi-private/private]\` (Bật kênh được tag)\n- \`c!setup disable\` (Tắt kênh này)\n- \`c!setup disable all\` (Tắt tất cả)\n- \`c!setup list\` (Xem danh sách các kênh)`);
       return;
     }
     targetChannelIds = channelIds;
