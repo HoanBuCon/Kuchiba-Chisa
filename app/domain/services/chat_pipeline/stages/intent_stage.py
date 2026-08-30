@@ -13,6 +13,53 @@ from app.domain.interfaces.tracker import IPipelineTracker
 
 log = get_logger(__name__)
 
+VISION_GAMEPLAY_ANCHORS = {
+    # Echo, trang bị, vũ khí & chỉ số
+    "echo", "stats", "stat", "crit", "crit rate", "crit dmg", "chỉ số", "vũ khí", "weapon", "build",
+    "nâng cấp", "trang bị", "dòng phụ", "dòng chính", "dòng ẩn", "dòng crit", "dòng stat", "dòng bạo", "substat", "mainstat", "tỷ lệ bạo",
+    "sát thương bạo", "sát thương", "bạo kích", "tấn công", "phòng ngự", "kháng", "atk", "def", "hp",
+    "nạp", "hiệu quả nạp", "energy recharge", "er", "tốc độ nạp", "chấn", "vũ khí trấn", "sonata",
+    "set đồ", "set echo", "cost 1", "cost 3", "cost 4", "relic", "thánh di vật", "tuning", "tune",
+    # Nhân vật, kỹ năng & gacha
+    "cung mệnh", "chuỗi cộng hưởng", "resonance chain", "rc", "forte", "kỹ năng", "skill", "talent",
+    "c0", "c1", "c2", "c3", "c4", "c5", "c6", "s1", "s2", "s3", "s4", "s5", "s6", "gacha", "roll",
+    "lệch rate", "trúng rate", "bảo hiểm", "quay tướng", "pull", "khoe đồ", "khoe luck", "luck",
+    # Thẩm định & Đánh giá
+    "ngon không", "ngon ko", "ổn không", "ổn ko", "dùng được không", "dùng đc ko", "chọn cái nào",
+    "so sánh", "chấm điểm", "tạ không", "phế không", "đạt chuẩn chưa", "chuẩn chưa", "la hoàn",
+    "tháp", "tower", "toa độ", "toa", "hologram", "boss", "dps", "support", "healer", "sub dps"
+}
+
+VISION_MEME_ANCHORS = {
+    # Hài hước, ảnh chế, troll & internet slang
+    "meme", "hài", "ảnh chế", "buồn cười", "vui", "troll", "bựa", "dìm", "chúa hề", "tấu hề",
+    "tấu hài", "cười", "cười ỉa", "cười vcl", "cười vãi", "lmao", "kekw", "bruh", "dảk", "dark meme",
+    "shitpost", "cà khịa", "khịa", "gắt", "ảo thật", "độc lạ", "bất ổn", "wibu", "hội chứng", "ảo ma",
+    "vô tri", "ngáo", "ngố", "chế ảnh", "mặn", "hài hước", "cười đau bụng", "hề hước", "cười bò", "tấu"
+}
+
+VISION_CODE_ANCHORS = {
+    # Lập trình & Debug lỗi
+    "code", "lỗi", "error", "bug", "log", "traceback", "exception", "terminal", "console", "cmd",
+    "powershell", "đoạn mã", "hàm", "function", "class", "script", "debug", "sửa lỗi", "chạy không được",
+    "không chạy", "syntax", "runtime", "compile", "build fail", "ide", "vscode", "stack trace", "output"
+}
+
+VISION_DOCUMENT_OCR_ANCHORS = {
+    # Đọc văn bản, hóa đơn, dịch thuật & OCR
+    "dịch", "translate", "chữ gì", "đọc hộ", "đọc giúp", "tài liệu", "hóa đơn", "bill", "văn bản",
+    "chữ này", "nghĩa là gì", "đoạn văn", "bài tập", "đề bài", "chữ viết tay", "tiếng nhật", "tiếng trung",
+    "tiếng anh", "kanji", "chữ hán", "hán tự", "biển báo", "bảng hiệu", "biên lai", "chứng từ"
+}
+
+VISION_ARTWORK_ANCHORS = {
+    # Tranh vẽ, Fanart, Cosplay & Phong cách
+    "art", "fanart", "cosplay", "ảnh vẽ", "tranh", "avatar", "avt", "vẽ", "sketch", "minh họa",
+    "illustration", "waifu", "husbando", "tạo hình", "trang phục", "outfit", "nét vẽ", "style",
+    "phối màu", "đẹp không", "xinh không", "dễ thương không", "kawaii", "bức tranh", "tranh vẽ"
+}
+
+
 class IntentStage(PipelineStage):
     """
     Stage 2: Classify intent, perform Tiered Query Rewrite (Fast-Path / Micro LLM Rewrite),
@@ -33,7 +80,11 @@ class IntentStage(PipelineStage):
         self.pipeline_tracker = pipeline_tracker
 
     async def process(self, context: ChatContext) -> ChatContext:
-        is_st, st_reason = await self.intent_classifier.is_small_talk_hybrid(context.user_message)
+        if context.has_images:
+            is_st = False
+            st_reason = "Multimodal Vision Input Active (Bypass Small Talk Fast Path)"
+        else:
+            is_st, st_reason = await self.intent_classifier.is_small_talk_hybrid(context.user_message)
         
         query_vector = None
         cleaned_query = ""
@@ -43,7 +94,7 @@ class IntentStage(PipelineStage):
         needs_web_search = False
         intent_result: Optional[IntentResult] = None
 
-        if not is_st:
+        if not is_st and not context.has_images:
             cleaned_query = clean_query_for_rag(context.user_message)
             if not is_meaningful_query(cleaned_query):
                 log.info("Intent post-clean guard: query cleaned down to non-meaningful content -> Small Talk", original=context.user_message, cleaned=cleaned_query)
@@ -149,28 +200,48 @@ class IntentStage(PipelineStage):
                 needs_vector_search = True
                 needs_web_search = False
 
-            # 3. Determine intents based on LLM Router decisions
+            # 3. Determine intents based on LLM Router decisions & Multimodal Vision Anchors
             matched_intents: List[ChatIntent] = []
-            if needs_vector_search:
-                matched_intents.append(ChatIntent.LORE)
-                matched_intents.append(ChatIntent.KNOWLEDGE_OR_TASK)
-            elif needs_web_search:
-                matched_intents.append(ChatIntent.KNOWLEDGE_OR_TASK)
-            else:
-                matched_intents.append(ChatIntent.CONVERSATIONAL)
+            if context.has_images:
+                msg_lower = (context.user_message or "").lower()
 
-            # 4. Embed the final aligned query for Vector Search (if needed)
-            if needs_vector_search or (needs_web_search and not query_vector):
-                query_vector = await self.embedder.embed_text(rewritten_query, prefix="query: ")
-
-            if needs_vector_search and needs_web_search:
-                routing_reason = "LLM Tri-State: Hybrid Search (Vector Lore + Direct Web Search)"
-            elif needs_vector_search:
-                routing_reason = "LLM Tri-State: Qdrant Vector Search (Game Lore)"
-            elif needs_web_search:
-                routing_reason = "LLM Tri-State: Direct Web Search (External / Internet)"
+                if any(kw in msg_lower for kw in VISION_GAMEPLAY_ANCHORS):
+                    matched_intents.append(ChatIntent.GAMEPLAY_STATS_EVALUATION)
+                    matched_intents.append(ChatIntent.LORE)
+                    needs_vector_search = True
+                elif any(kw in msg_lower for kw in VISION_MEME_ANCHORS):
+                    matched_intents.append(ChatIntent.MEME_REACTION)
+                elif any(kw in msg_lower for kw in VISION_CODE_ANCHORS):
+                    matched_intents.append(ChatIntent.CODE_ANALYSIS)
+                    matched_intents.append(ChatIntent.KNOWLEDGE_OR_TASK)
+                elif any(kw in msg_lower for kw in VISION_DOCUMENT_OCR_ANCHORS):
+                    matched_intents.append(ChatIntent.DOCUMENT_OCR)
+                    matched_intents.append(ChatIntent.KNOWLEDGE_OR_TASK)
+                elif any(kw in msg_lower for kw in VISION_ARTWORK_ANCHORS):
+                    matched_intents.append(ChatIntent.ARTWORK_EVALUATION)
+                    matched_intents.append(ChatIntent.CONVERSATIONAL)
+                else:
+                    matched_intents.append(ChatIntent.IMAGE_ANALYSIS)
+                    matched_intents.append(ChatIntent.CONVERSATIONAL)
+                
+                routing_reason = f"Multimodal Vision Router: {[i.value for i in matched_intents]}"
             else:
-                routing_reason = "LLM Tri-State: Code / Small Talk (0ms RAG Bypass)"
+                if needs_vector_search:
+                    matched_intents.append(ChatIntent.LORE)
+                    matched_intents.append(ChatIntent.KNOWLEDGE_OR_TASK)
+                elif needs_web_search:
+                    matched_intents.append(ChatIntent.KNOWLEDGE_OR_TASK)
+                else:
+                    matched_intents.append(ChatIntent.CONVERSATIONAL)
+
+                if needs_vector_search and needs_web_search:
+                    routing_reason = "LLM Tri-State: Hybrid Search (Vector Lore + Direct Web Search)"
+                elif needs_vector_search:
+                    routing_reason = "LLM Tri-State: Qdrant Vector Search (Game Lore)"
+                elif needs_web_search:
+                    routing_reason = "LLM Tri-State: Direct Web Search (External / Internet)"
+                else:
+                    routing_reason = "LLM Tri-State: Code / Small Talk (0ms RAG Bypass)"
 
             intent_result = IntentResult(
                 intents=matched_intents,

@@ -85,8 +85,16 @@ class ChatEngine:
         conv_id = await conv_repo.get_or_create_conversation(user_uuid)
         return await conv_repo.get_recent_history(user_uuid, conv_id, limit)
 
-    async def chat(self, session: IDbSession, user_id: str, user_message: str, on_token: Optional[Callable[[str], Any]] = None) -> Tuple[str, Dict[str, float]]:
-        log.info("Starting ChatEngine cycle", user_id=user_id)
+    async def chat(
+        self,
+        session: IDbSession,
+        user_id: str,
+        user_message: str,
+        on_token: Optional[Callable[[str], Any]] = None,
+        images: Optional[List[str]] = None,
+        is_ephemeral_reference: bool = False,
+    ) -> Tuple[str, Dict[str, float], List[Dict[str, Any]]]:
+        log.info("Starting ChatEngine cycle", user_id=user_id, has_images=bool(images))
 
         # ── Per-user distributed lock to prevent race conditions (TTL 120s) ──
         lock_key = f"chisa:chat_lock:{user_id}"
@@ -95,7 +103,14 @@ class ChatEngine:
             log.warning("Chat lock not acquired — concurrent request for same user", user_id=user_id)
             raise ChatEngineBusyError(user_id)
         try:
-            return await self._chat_inner(session, user_id, user_message, on_token)
+            return await self._chat_inner(
+                session=session,
+                user_id=user_id,
+                user_message=user_message,
+                on_token=on_token,
+                images=images,
+                is_ephemeral_reference=is_ephemeral_reference,
+            )
         finally:
             await self.cache.release_lock(lock_key, token=acquired)
 
@@ -111,13 +126,16 @@ class ChatEngine:
         guild_name: Optional[str] = None,
         recent_messages: Optional[List[Any]] = None,
         on_token: Optional[Callable[[str], Any]] = None,
-    ) -> Tuple[str, Dict[str, float]]:
+        images: Optional[List[str]] = None,
+        is_ephemeral_reference: bool = False,
+    ) -> Tuple[str, Dict[str, float], List[Dict[str, Any]]]:
         log.info(
             "Starting ChatEngine Community cycle",
             channel_id=channel_id,
             speaker_id=user_id,
             speaker_name=speaker_name,
             channel_name=channel_name,
+            has_images=bool(images),
         )
 
         # ── Per-speaker distributed lock to prevent race conditions (TTL 120s) ──
@@ -139,23 +157,35 @@ class ChatEngine:
                 guild_name=guild_name,
                 speaker_name=speaker_name,
                 recent_community_messages=recent_messages or [],
+                images=images or [],
+                is_ephemeral_reference=is_ephemeral_reference,
             )
             context = await self.pipeline.execute(context)
-            return context.chisa_reply, context.updated_emotions
+            return context.chisa_reply, context.updated_emotions, context.images_processed
         finally:
             await self.cache.release_lock(lock_key, token=acquired)
 
-    async def _chat_inner(self, session: IDbSession, user_id: str, user_message: str, on_token: Optional[Callable[[str], Any]] = None) -> Tuple[str, Dict[str, float]]:
+    async def _chat_inner(
+        self,
+        session: IDbSession,
+        user_id: str,
+        user_message: str,
+        on_token: Optional[Callable[[str], Any]] = None,
+        images: Optional[List[str]] = None,
+        is_ephemeral_reference: bool = False,
+    ) -> Tuple[str, Dict[str, float], List[Dict[str, Any]]]:
         try:
             # Run Chat Pipeline (CacheStage handles pure-lore caching internally)
             context = ChatContext(
                 session=session,
                 user_id=user_id,
                 user_message=user_message,
-                on_token=on_token
+                on_token=on_token,
+                images=images or [],
+                is_ephemeral_reference=is_ephemeral_reference,
             )
             context = await self.pipeline.execute(context)
-            return context.chisa_reply, context.updated_emotions
+            return context.chisa_reply, context.updated_emotions, context.images_processed
             
         except Exception as e:
             log.warning("Production chat generation failed, saving user message as failed", user_id=user_id, error=str(e))

@@ -156,6 +156,7 @@ class ContextBuilder:
         channel_name: Optional[str] = None,
         guild_name: Optional[str] = None,
         ambient_context: Optional[str] = None,
+        has_images: bool = False,
     ) -> str:
         elapsed_hours = 0.0
         if emotion.updated_at and emotion.updated_at > 0:
@@ -172,6 +173,16 @@ class ContextBuilder:
         ]
         if traits_snippet and traits_snippet.strip():
             sections.append(traits_snippet.strip())
+
+        if has_images:
+            from app.shared.security.vision_security import VisualPromptDefense
+            vision_directive = (
+                "[MULTIMODAL FORTE: EYE OF UNRAVELING (THẤU THỊ CẤU TRÚC VẠN VẬT)]\n"
+                "- Senpai vừa gửi hình ảnh. Hãy vận dụng năng lực thấu thị chi tiết của Mutant Resonator hệ Havoc để quan sát tỉ mỉ.\n"
+                "- Đưa ra nhận xét sắc bén, thông minh về các chỉ số game / chi tiết đời sống / meme theo phong thái Kuudere điềm đạm, ấm áp.\n\n"
+                f"{VisualPromptDefense.SYSTEM_VISION_ANCHOR}"
+            )
+            sections.extend(["", vision_directive])
 
         if ambient_context and ambient_context.strip():
             ambient_section = (
@@ -278,6 +289,7 @@ class ContextBuilder:
         ambient_context: Optional[str] = None,
         guild_memories: Optional[List[str]] = None,
         topic_summary: Optional[str] = None,
+        has_images: bool = False,
     ) -> ContextBuildResult:
         """
         Builds production context: measure skeleton first, flex-allocate, then assemble system prompt.
@@ -293,6 +305,7 @@ class ContextBuilder:
             channel_name=channel_name,
             guild_name=guild_name,
             ambient_context=ambient_context,
+            has_images=has_images,
         )
         format_section = self.build_format_section()
         skeleton_tokens = TokenEstimator.estimate(system_skeleton) + TokenEstimator.estimate(format_section)

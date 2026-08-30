@@ -70,7 +70,7 @@ export class CoreRagClient {
     throw lastError;
   }
 
-  async ask({ coreUserId, message, username, channelName, guildName } = {}) {
+  async ask({ coreUserId, message, username, channelName, guildName, images = [], isEphemeralReference = false } = {}) {
     const url = this.buildUrl(this.chatPath);
     const payload = await this.requestJson(url, {
       method: 'POST',
@@ -81,6 +81,8 @@ export class CoreRagClient {
         username,
         channel_name: channelName,
         guild_name: guildName,
+        images,
+        is_ephemeral_reference: isEphemeralReference,
       }),
     });
 
@@ -88,6 +90,7 @@ export class CoreRagClient {
       response: payload.response ?? '',
       emotions: payload.emotions ?? null,
       loopThinkingActivated: payload.loop_thinking_activated ?? false,
+      imagesProcessed: payload.images_processed ?? [],
       raw: payload,
     };
   }
@@ -101,6 +104,8 @@ export class CoreRagClient {
     username,
     message,
     recentMessages = [],
+    images = [],
+    isEphemeralReference = false,
   } = {}) {
     const url = this.buildUrl('/api/v1/community/chat');
     const payload = await this.requestJson(url, {
@@ -114,6 +119,8 @@ export class CoreRagClient {
         username,
         message,
         recent_messages: recentMessages,
+        images,
+        is_ephemeral_reference: isEphemeralReference,
       }),
     });
 

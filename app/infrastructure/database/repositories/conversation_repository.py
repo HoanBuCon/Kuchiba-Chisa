@@ -45,6 +45,7 @@ class SqlAlchemyConversationRepository(IConversationRepository):
         token_count: Optional[int] = None,
         is_success: bool = True,
         rewritten_content: Optional[str] = None,
+        media_metadata: Optional[Any] = None,
     ) -> None:
         enum_role = MessageRoleModel.USER if role == "user" else MessageRoleModel.ASSISTANT
         msg = MessageModel(
@@ -56,6 +57,7 @@ class SqlAlchemyConversationRepository(IConversationRepository):
             rewritten_content=rewritten_content,
             token_count=token_count,
             is_success=is_success,
+            media_metadata=media_metadata,
             created_at=datetime.utcnow()
         )
         self.session.add(msg)

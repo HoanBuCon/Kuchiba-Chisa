@@ -94,7 +94,26 @@ class LLMGenerationStage(PipelineStage):
             if error_to_raise:
                 raise error_to_raise
         else:
-            response = await self.llm.generate(context.prompt)
+            try:
+                response = await self.llm.generate(context.prompt)
+            except Exception as gen_err:
+                if context.has_images:
+                    log.warning(
+                        "Vision LLM call encountered an issue, activating In-Character Kuudere Resilience Fallback",
+                        error=str(gen_err),
+                        user_id=context.user_id,
+                    )
+                    context.vision_failed = True
+                    # Create fallback prompt: strip images and inject in-character explanation
+                    fallback_prompt = context.prompt.model_copy(deep=True)
+                    fallback_prompt.images = []
+                    fallback_prompt.system += (
+                        "\n\n[HỆ THỐNG THỊ GIÁC: Tạm thời không thể tải hoặc phân tích bức ảnh này do lỗi đường truyền mạng. "
+                        "Hãy để Chisa ứng biến tự nhiên theo phong thái Kuudere (ví dụ: 'Mạng của Học viện Startorch đang hơi chập chờn / Mắt Forte của em bị nhiễu sóng nên em chưa nhìn rõ ảnh Senpai vừa gửi, Senpai có thể miêu tả sơ qua hoặc lát gửi lại cho em xem nha~') và trả lời câu hỏi của Senpai bình thường.]"
+                    )
+                    response = await self.llm.generate(fallback_prompt)
+                else:
+                    raise gen_err
 
         chisa_reply = response.parsed.get("response")
         

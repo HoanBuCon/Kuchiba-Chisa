@@ -13,6 +13,8 @@ if TYPE_CHECKING:
     from app.infrastructure.database.models.conversation import Conversation
     from app.infrastructure.database.models.memory_metadata import MemoryMetadata
 
+from sqlalchemy.dialects.postgresql import JSONB
+
 class MessageRole(str, enum.Enum):
     USER = "user"
     ASSISTANT = "assistant"
@@ -33,6 +35,7 @@ class Message(Base, UUIDMixin, TimestampMixin):
     rewritten_content: Mapped[str | None] = mapped_column(Text, nullable=True)
     token_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
     is_success: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    media_metadata: Mapped[dict | list | None] = mapped_column(JSONB, nullable=True)
     
     # ── Relationships ─────────────────────────────────────────────────────────
     user: Mapped["User"] = relationship("User", back_populates="messages")

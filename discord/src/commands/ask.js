@@ -9,7 +9,13 @@ export const data = new SlashCommandBuilder()
     option
       .setName('message')
       .setDescription('Nội dung muốn hỏi Chisa')
-      .setRequired(true),
+      .setRequired(false),
+  )
+  .addAttachmentOption((option) =>
+    option
+      .setName('image')
+      .setDescription('Đính kèm hình ảnh để Chisa xem và phân tích')
+      .setRequired(false),
   )
   .setContexts([
     InteractionContextType.Guild,
@@ -89,7 +95,32 @@ async function fetchRecentChannelMessages(channel, limit = 15) {
 
 export async function execute(client, interaction, discordUser) {
   const { logger, rateLimiter, repositories, coreRagClient } = client.services;
-  const question = interaction.options.getString('message', true).trim();
+  let question = interaction.options.getString('message')?.trim() || '';
+  const imageAttachment = interaction.options.getAttachment('image');
+  const images = [];
+
+  if (imageAttachment) {
+    const ct = (imageAttachment.contentType || '').toLowerCase();
+    const isImg = ct.startsWith('image/') || /\.(png|jpe?g|webp|gif)$/i.test(imageAttachment.name || '');
+    if (isImg && imageAttachment.url) {
+      images.push(imageAttachment.url);
+    }
+  }
+
+  if (!question && images.length === 0) {
+    const embed = createNoticeEmbed({
+      title: '💬 THIẾU NỘI DUNG',
+      description: 'Senpai vui lòng nhập câu hỏi hoặc đính kèm một hình ảnh để Chisa hỗ trợ nhé.',
+      color: '#ffb6c1',
+    });
+    await interaction.reply({ embeds: [embed], ephemeral: true });
+    return;
+  }
+
+  if (!question && images.length > 0) {
+    question = 'Em hãy xem và phân tích bức ảnh này giúp Senpai nhé.';
+  }
+
   const rateKey = `${interaction.user.id}:ask`;
   const rate = rateLimiter.allow(rateKey);
 
@@ -110,7 +141,7 @@ export async function execute(client, interaction, discordUser) {
     coreUserId: discordUser.core_user_id,
     commandName: data.name,
     userMessage: question,
-    metadata: { source: 'discord', command: data.name },
+    metadata: { source: 'discord', command: data.name, images_count: images.length },
   });
 
   try {
@@ -131,6 +162,8 @@ export async function execute(client, interaction, discordUser) {
         username: interaction.member?.displayName || interaction.user.globalName || interaction.user.username,
         message: question,
         recentMessages,
+        images,
+        isEphemeralReference: false,
       });
     } else {
       result = await coreRagClient.ask({
@@ -139,6 +172,8 @@ export async function execute(client, interaction, discordUser) {
         username: interaction.user.username,
         channelName: interaction.channel ? (interaction.channel.name || 'DM') : 'DM',
         guildName: interaction.guild ? interaction.guild.name : null,
+        images,
+        isEphemeralReference: false,
       });
     }
 
@@ -171,8 +206,9 @@ export async function execute(client, interaction, discordUser) {
   }
 }
 
-export async function executePrefix(client, message, question, discordUser) {
+export async function executePrefix(client, message, question, discordUser, options = {}) {
   const { logger, rateLimiter, repositories, coreRagClient } = client.services;
+  const { images = [], isEphemeralReference = false } = options;
   const rateKey = `${message.author.id}:ask`;
   const rate = rateLimiter.allow(rateKey);
 
@@ -187,16 +223,18 @@ export async function executePrefix(client, message, question, discordUser) {
     return;
   }
 
-  if (!question) {
+  if (!question && images.length === 0) {
     const prefix = client.services.prefixCommandRunner?.prefix || 'c!';
     const embed = createNoticeEmbed({
       title: '💬 HƯỚNG DẪN DÙNG LỆNH ASK',
-      description: `Dùng \`${prefix}ask <nội dung>\` để trò chuyện hoặc hỏi Chisa nhé Senpai.`,
+      description: `Dùng \`${prefix}ask <nội dung>\` hoặc đính kèm ảnh để trò chuyện cùng Chisa nhé Senpai.`,
       color: '#ffb6c1',
     });
     await message.reply({ embeds: [embed] });
     return;
   }
+
+  const finalQuestion = question || 'Em hãy xem và phân tích bức ảnh này giúp Senpai nhé.';
 
   await message.channel.sendTyping().catch(() => {});
   const typingInterval = setInterval(() => {
@@ -206,8 +244,8 @@ export async function executePrefix(client, message, question, discordUser) {
   const interactionId = await repositories.interactions.createFromContext(message, {
     coreUserId: discordUser.core_user_id,
     commandName: `${client.services.prefixCommandRunner?.prefix || 'c!'}ask`,
-    userMessage: question,
-    metadata: { source: 'discord', command: data.name, mode: 'prefix' },
+    userMessage: finalQuestion,
+    metadata: { source: 'discord', command: data.name, mode: 'prefix', images_count: images.length },
   });
 
   try {
@@ -226,16 +264,20 @@ export async function executePrefix(client, message, question, discordUser) {
         guildName: message.guild?.name || null,
         coreUserId: discordUser.core_user_id,
         username: message.member?.displayName || message.author.globalName || message.author.username,
-        message: question,
+        message: finalQuestion,
         recentMessages,
+        images,
+        isEphemeralReference,
       });
     } else {
       result = await coreRagClient.ask({
         coreUserId: discordUser.core_user_id,
-        message: question,
+        message: finalQuestion,
         username: message.author.username,
         channelName: message.channel ? (message.channel.name || 'DM') : 'DM',
         guildName: message.guild ? message.guild.name : null,
+        images,
+        isEphemeralReference,
       });
     }
 

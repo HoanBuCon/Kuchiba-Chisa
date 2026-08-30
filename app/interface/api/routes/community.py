@@ -71,7 +71,7 @@ async def community_chat_endpoint(
     )
 
     try:
-        reply_text, updated_emotions = await chat_engine.community_chat(
+        reply_text, updated_emotions, images_processed = await chat_engine.community_chat(
             session=session,
             channel_id=request.channel_id,
             user_id=request.user_id,
@@ -81,6 +81,8 @@ async def community_chat_endpoint(
             guild_id=request.guild_id,
             guild_name=request.guild_name,
             recent_messages=domain_messages,
+            images=request.images,
+            is_ephemeral_reference=bool(request.is_ephemeral_reference),
         )
 
         await session.commit()
@@ -109,14 +111,15 @@ async def community_chat_endpoint(
                     comfort=float(updated_emotions.get("comfort", 0.50)),
                 )
                 emotion_caption = StateManager.get_emotion_summary_caption(state_obj)
-            except Exception:
-                emotion_caption = None
+            except Exception as e:
+                log.warning("Failed to generate emotion caption", error=str(e))
 
         return CommunityChatResponse(
             response=reply_text or "Chisa chào mọi người ạ ~",
             emotions=updated_emotions or {},
             emotion_caption=emotion_caption,
             execution_time_ms=duration_ms,
+            images_processed=images_processed,
         )
 
     except ChatEngineBusyError:
