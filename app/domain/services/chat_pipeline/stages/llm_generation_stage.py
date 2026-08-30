@@ -188,4 +188,19 @@ class LLMGenerationStage(PipelineStage):
         context.tool_res["user_sentiment"] = user_sentiment
         context.tool_res["chisa_sentiment"] = chisa_sentiment
 
+        # Extract attached images from LLM output with safety fallback
+        attached_images = response.parsed.get("attached_images") or []
+        if isinstance(attached_images, str):
+            attached_images = [attached_images]
+        elif not isinstance(attached_images, list):
+            attached_images = []
+
+        # Fallback: if retrieved_images exists and is high confidence (score >= 0.68) but LLM forgot to populate attached_images
+        if not attached_images and context.retrieved_images:
+            top_retrieved = context.retrieved_images[0]
+            if top_retrieved.get("score", 0.0) >= 0.68 and top_retrieved.get("url"):
+                attached_images = [top_retrieved["url"]]
+
+        context.attached_images = [img for img in attached_images if isinstance(img, str) and img.strip()]
+
         return context

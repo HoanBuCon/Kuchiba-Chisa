@@ -30,3 +30,4 @@ class ChatResponse(BaseModel):
     emotion_caption: Optional[str] = Field(default=None, description="Dynamic psychological summary caption of Chisa's emotion state")
     loop_thinking_activated: bool = Field(default=False, description="True if the Loop Thinking Agent was activated during this request")
     images_processed: Optional[List[Dict[str, Any]]] = Field(default_factory=list, description="Metadata of processed images")
+    attached_images: Optional[List[str]] = Field(default_factory=list, description="List of retrieved image URLs attached in response")

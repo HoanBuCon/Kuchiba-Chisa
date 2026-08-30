@@ -91,6 +91,7 @@ export class CoreRagClient {
       emotions: payload.emotions ?? null,
       loopThinkingActivated: payload.loop_thinking_activated ?? false,
       imagesProcessed: payload.images_processed ?? [],
+      attachedImages: payload.attached_images ?? [],
       raw: payload,
     };
   }
@@ -128,6 +129,8 @@ export class CoreRagClient {
       response: payload.response ?? '',
       emotions: payload.emotions ?? null,
       sentiment: payload.sentiment ?? null,
+      imagesProcessed: payload.images_processed ?? [],
+      attachedImages: payload.attached_images ?? [],
       raw: payload,
     };
   }

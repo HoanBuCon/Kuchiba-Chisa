@@ -104,30 +104,40 @@ async def test_intent_stage_vision_routing():
 
 @pytest.mark.asyncio
 async def test_intent_stage_vision_gameplay_stats_routing():
-    """Test that IntentStage routes gameplay stats images to GAMEPLAY_STATS_EVALUATION."""
+    """Test that IntentStage routes image to IMAGE_ANALYSIS and adds LORE only when requested."""
+    from app.domain.services.rag.query_rewriter import RewriteResult
     mock_classifier = AsyncMock()
     mock_classifier.is_small_talk_hybrid.return_value = (False, "")
     mock_embedder = AsyncMock()
     mock_embedder.embed_text.return_value = [0.1] * 384
 
+    mock_rewriter = MagicMock()
+    mock_rewriter.rewrite = AsyncMock(return_value=RewriteResult(
+        rewritten_query="Jinhsi Forte Echo build",
+        method="LLM_FLASH",
+        needs_vector_search=True,
+        needs_web_search=False,
+    ))
+
     intent_stage = IntentStage(
         intent_classifier=mock_classifier,
         embedder=mock_embedder,
-        query_rewriter=None,
+        query_rewriter=mock_rewriter,
     )
 
     ctx = ChatContext(
         session=None,
         user_id="test-user-vision",
-        user_message="Echo này dòng crit rate có ổn không em?",
+        user_message="Echo này cho Jinhsi có ổn không em?",
         images=["https://cdn.discordapp.com/attachments/123/456/echo.png"],
         has_images=True,
     )
 
     result_ctx = await intent_stage.process(ctx)
 
-    assert ChatIntent.GAMEPLAY_STATS_EVALUATION in result_ctx.intents
+    assert ChatIntent.IMAGE_ANALYSIS in result_ctx.intents
     assert ChatIntent.LORE in result_ctx.intents
+    assert result_ctx.needs_vector_search is True
 
 
 @pytest.mark.asyncio
@@ -190,6 +200,7 @@ async def test_context_building_stage_vision_sandboxing():
     assert "Xem hộ anh con mèo này với!" in result_ctx.prompt.user_message
     assert "[MULTIMODAL FORTE: EYE OF UNRAVELING" in result_ctx.prompt.system
     assert "CRITICAL MULTIMODAL SECURITY DIRECTIVE" in result_ctx.prompt.system
+    assert result_ctx.prompt.temperature == 0.4
 
 
 @pytest.mark.asyncio
@@ -235,8 +246,8 @@ async def test_llm_generation_stage_vision_resilience_fallback():
 
 
 @pytest.mark.asyncio
-async def test_intent_stage_vision_extended_anchors():
-    """Test that IntentStage correctly routes new anchor categories: Code, OCR, Meme, Artwork."""
+async def test_intent_stage_vision_general_multimodal_routing():
+    """Test that IntentStage unifies general vision inputs to IMAGE_ANALYSIS + CONVERSATIONAL."""
     mock_classifier = AsyncMock()
     mock_classifier.is_small_talk_hybrid.return_value = (False, "")
     mock_embedder = AsyncMock()
@@ -257,7 +268,7 @@ async def test_intent_stage_vision_extended_anchors():
         has_images=True,
     )
     res_code = await intent_stage.process(ctx_code)
-    assert ChatIntent.CODE_ANALYSIS in res_code.intents
+    assert ChatIntent.IMAGE_ANALYSIS in res_code.intents
 
     # 2. OCR / Translate
     ctx_ocr = ChatContext(
@@ -268,7 +279,7 @@ async def test_intent_stage_vision_extended_anchors():
         has_images=True,
     )
     res_ocr = await intent_stage.process(ctx_ocr)
-    assert ChatIntent.DOCUMENT_OCR in res_ocr.intents
+    assert ChatIntent.IMAGE_ANALYSIS in res_ocr.intents
 
     # 3. Artwork / Fanart
     ctx_art = ChatContext(
@@ -279,7 +290,7 @@ async def test_intent_stage_vision_extended_anchors():
         has_images=True,
     )
     res_art = await intent_stage.process(ctx_art)
-    assert ChatIntent.ARTWORK_EVALUATION in res_art.intents
+    assert ChatIntent.IMAGE_ANALYSIS in res_art.intents
 
     # 4. Meme / Troll
     ctx_meme = ChatContext(
@@ -290,47 +301,22 @@ async def test_intent_stage_vision_extended_anchors():
         has_images=True,
     )
     res_meme = await intent_stage.process(ctx_meme)
-    assert ChatIntent.MEME_REACTION in res_meme.intents
+    assert ChatIntent.IMAGE_ANALYSIS in res_meme.intents
 
 
 @pytest.mark.asyncio
 async def test_context_building_stage_vision_temperature_adjustment():
-    """Test that ContextBuildingStage applies specialized dynamic temperatures for Vision intents."""
+    """Test that ContextBuildingStage applies balanced temperature for Multimodal Vision."""
     context_builder = ContextBuilder()
     stage = ContextBuildingStage(context_builder=context_builder)
 
-    # Code / OCR -> temp 0.2
-    ctx_code = ChatContext(
+    ctx = ChatContext(
         session=None,
         user_id="user-1",
-        user_message="Xem code",
+        user_message="Xem ảnh nè",
         emotion=EmotionState(user_id="user-1"),
         has_images=True,
-        _intents=[ChatIntent.CODE_ANALYSIS],
+        _intents=[ChatIntent.IMAGE_ANALYSIS],
     )
-    res_code = await stage.process(ctx_code)
-    assert res_code.prompt.temperature == 0.2
-
-    # Meme -> temp 0.7
-    ctx_meme = ChatContext(
-        session=None,
-        user_id="user-2",
-        user_message="Xem meme",
-        emotion=EmotionState(user_id="user-2"),
-        has_images=True,
-        _intents=[ChatIntent.MEME_REACTION],
-    )
-    res_meme = await stage.process(ctx_meme)
-    assert res_meme.prompt.temperature == 0.7
-
-    # Gameplay Stats -> temp 0.3
-    ctx_stats = ChatContext(
-        session=None,
-        user_id="user-3",
-        user_message="Xem echo",
-        emotion=EmotionState(user_id="user-3"),
-        has_images=True,
-        _intents=[ChatIntent.GAMEPLAY_STATS_EVALUATION],
-    )
-    res_stats = await stage.process(ctx_stats)
-    assert res_stats.prompt.temperature == 0.3
+    res = await stage.process(ctx)
+    assert res.prompt.temperature == 0.4

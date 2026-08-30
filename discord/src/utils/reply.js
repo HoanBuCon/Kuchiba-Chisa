@@ -1,3 +1,7 @@
+import { AttachmentBuilder } from 'discord.js';
+import path from 'node:path';
+import fs from 'node:fs';
+
 export function splitDiscordMessage(text, maxLength = 1900) {
   if (!text || text.length <= maxLength) {
     return [text ?? ''];
@@ -283,7 +287,7 @@ export async function resolveMentionsInGuild(guild, text) {
   return resolvedText;
 }
 
-export async function replyWithChunks(context, text, emotions, client) {
+export async function replyWithChunks(context, text, emotions, client, attachedImages = []) {
   const isInteraction = typeof context.editReply === 'function';
   const guild = context.guild || null;
 
@@ -293,11 +297,54 @@ export async function replyWithChunks(context, text, emotions, client) {
   const formatted = formatCoreResponse(resolvedText, emotions, client);
   const chunks = splitDiscordMessage(formatted, client.services?.config?.reply?.maxChars ?? 1900);
 
+  // Build Discord attachments if Chisa retrieved images from memory
+  const files = [];
+  if (Array.isArray(attachedImages) && attachedImages.length > 0) {
+    for (const imgUrlOrPath of attachedImages) {
+      try {
+        if (typeof imgUrlOrPath === 'string' && imgUrlOrPath.trim()) {
+          if (imgUrlOrPath.startsWith('http://') || imgUrlOrPath.startsWith('https://')) {
+            files.push(new AttachmentBuilder(imgUrlOrPath));
+          } else {
+            // Local file path resolution
+            const relPath = imgUrlOrPath.startsWith('/') ? imgUrlOrPath.slice(1) : imgUrlOrPath;
+            const candidatePaths = [
+              path.resolve(process.cwd(), relPath),
+              path.resolve(process.cwd(), '..', relPath),
+              path.resolve(process.cwd(), 'app', relPath),
+              path.resolve(process.cwd(), '..', 'app', relPath),
+            ];
+            let found = null;
+            for (const p of candidatePaths) {
+              if (fs.existsSync(p)) {
+                found = p;
+                break;
+              }
+            }
+            if (found) {
+              files.push(new AttachmentBuilder(found));
+            } else if (client.services?.coreRagClient?.baseUrl) {
+              const fullUrl = `${client.services.coreRagClient.baseUrl.replace(/\/$/, '')}/${relPath}`;
+              files.push(new AttachmentBuilder(fullUrl));
+            }
+          }
+        }
+      } catch (attErr) {
+        client.services?.logger?.warn({ err: attErr, image: imgUrlOrPath }, 'Failed to create AttachmentBuilder for image');
+      }
+    }
+  }
+
+  const firstMessageOptions = {
+    content: chunks[0] || 'Chisa chưa tạo được phản hồi.',
+    allowedMentions: { parse: ['users'], repliedUser: false },
+  };
+  if (files.length > 0) {
+    firstMessageOptions.files = files;
+  }
+
   if (isInteraction) {
-    await context.editReply({
-      content: chunks[0] || 'Chisa chưa tạo được phản hồi.',
-      allowedMentions: { parse: ['users'], repliedUser: false }
-    });
+    await context.editReply(firstMessageOptions);
     for (let i = 1; i < chunks.length; i += 1) {
       await context.followUp({
         content: chunks[i],
@@ -305,10 +352,7 @@ export async function replyWithChunks(context, text, emotions, client) {
       });
     }
   } else {
-    await context.reply({
-      content: chunks[0] || 'Chisa chưa tạo được phản hồi.',
-      allowedMentions: { parse: ['users'], repliedUser: false }
-    });
+    await context.reply(firstMessageOptions);
     for (let i = 1; i < chunks.length; i += 1) {
       await context.channel.send({
         content: chunks[i],

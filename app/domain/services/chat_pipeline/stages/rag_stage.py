@@ -47,6 +47,7 @@ class RAGStage(PipelineStage):
         )
         
         context.rag_context = rag_context
+        context.retrieved_images = getattr(rag_context, "retrieved_images", [])
         
         # If the RAG process yielded a tool output message, we can override or merge it.
         # Following the old ChatEngine logic:

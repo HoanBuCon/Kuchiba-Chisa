@@ -65,6 +65,7 @@ class ContextBuildingStage(PipelineStage):
             guild_memories=guild_memories,
             topic_summary=context.topic_summary,
             has_images=context.has_images,
+            retrieved_images=context.retrieved_images,
         )
         
         context.prompt = build_result.prompt
@@ -80,15 +81,8 @@ class ContextBuildingStage(PipelineStage):
         # 6. RAG lore / memory context -> 0.5
         # 7. Small talk / casual conversation -> 0.8
         if context.has_images:
-            from app.domain.models.intent_result import ChatIntent
-            if ChatIntent.CODE_ANALYSIS in context.intents or ChatIntent.DOCUMENT_OCR in context.intents:
-                context.prompt.temperature = 0.2
-            elif ChatIntent.MEME_REACTION in context.intents:
-                context.prompt.temperature = 0.7
-            elif ChatIntent.GAMEPLAY_STATS_EVALUATION in context.intents:
-                context.prompt.temperature = 0.3
-            else:
-                context.prompt.temperature = 0.4
+            # Balanced temperature for Multimodal Vision & Kuudere Roleplay
+            context.prompt.temperature = 0.4
         elif context.rag_context and (context.rag_context.thinking_steps or context.tool_output_msg):
             context.prompt.temperature = 0.3
         elif lore_chunks or memories:

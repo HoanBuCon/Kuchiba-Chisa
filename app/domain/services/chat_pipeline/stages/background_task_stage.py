@@ -78,10 +78,36 @@ class BackgroundTaskStage(PipelineStage):
             except Exception as ts_err:
                 log.warning("Failed to trigger community topic summarization", error=str(ts_err))
 
+        # Trigger background visual memory ingestion when permanent images are uploaded
+        triggered_visual_ingest = bool(context.processed_images and not context.is_ephemeral_reference)
+        if triggered_visual_ingest:
+            try:
+                from app.domain.services.visual_memory_ingestion import VisualMemoryIngestionWorker
+                visual_worker = VisualMemoryIngestionWorker(
+                    vector_store=self.memory_extractor.vector_store,
+                    embedder=self.memory_extractor.embedder,
+                )
+                BackgroundTaskManager.spawn(
+                    visual_worker.ingest_image_memories(
+                        user_id=context.user_id,
+                        user_message=context.user_message,
+                        chisa_reply=context.chisa_reply,
+                        processed_images=context.processed_images,
+                        conversation_id=str(context.conv_id) if context.conv_id else None,
+                        guild_id=context.guild_id,
+                        channel_id=context.channel_id,
+                        is_ephemeral=context.is_ephemeral_reference,
+                    ),
+                    name=f"visual_memory_ingest:{context.user_id}",
+                )
+            except Exception as vm_err:
+                log.warning("Failed to trigger visual memory ingestion", error=str(vm_err))
+
         if self.pipeline_tracker:
             extract_desc = "Kích hoạt" if triggered_extract else "Bỏ qua (chu kỳ 3 lượt)"
             summary_desc = "Kích hoạt" if triggered_summary else "Bỏ qua (chu kỳ 10 lượt)"
             topic_desc = "Kích hoạt" if triggered_topic_summary else "Bỏ qua (chu kỳ 30 tin)"
+            vision_desc = "Kích hoạt (Lưu Ký Ức Thị Giác)" if triggered_visual_ingest else "Không có ảnh mới"
             self.pipeline_tracker.add_step(
                 name="background_tasks",
                 stage_id="stage_10_bg",
@@ -89,7 +115,7 @@ class BackgroundTaskStage(PipelineStage):
                 category="stage_root",
                 status="success",
                 title="Stage 10: [BACKGROUND] Tác vụ Nền Tự động",
-                subtitle=f"Batch Facts ({extract_desc}) · Summarize ({summary_desc}) · Topic ({topic_desc})",
+                subtitle=f"Batch Facts ({extract_desc}) · Summarize ({summary_desc}) · Vision ({vision_desc})",
                 data={
                     "interaction_count": getattr(context.stats, 'interaction_count', 0),
                     "batch_memory_extraction_triggered": triggered_extract,
@@ -98,10 +124,10 @@ class BackgroundTaskStage(PipelineStage):
                     "auto_summary_interval": 10,
                     "topic_summarization_triggered": triggered_topic_summary,
                     "topic_summarization_interval": 30,
-                    "status": "success"
+                    "visual_memory_ingestion_triggered": triggered_visual_ingest,
+                    "images_count": len(context.processed_images),
                 }
             )
             
         log.info("ChatPipeline cycle complete", user_id=context.user_id)
         return context
-

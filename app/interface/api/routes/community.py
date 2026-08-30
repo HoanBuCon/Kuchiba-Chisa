@@ -71,7 +71,7 @@ async def community_chat_endpoint(
     )
 
     try:
-        reply_text, updated_emotions, images_processed = await chat_engine.community_chat(
+        reply_text, updated_emotions, images_processed, attached_images = await chat_engine.community_chat(
             session=session,
             channel_id=request.channel_id,
             user_id=request.user_id,
@@ -120,6 +120,7 @@ async def community_chat_endpoint(
             emotion_caption=emotion_caption,
             execution_time_ms=duration_ms,
             images_processed=images_processed,
+            attached_images=attached_images,
         )
 
     except ChatEngineBusyError:

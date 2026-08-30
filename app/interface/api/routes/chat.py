@@ -60,11 +60,11 @@ async def _run_chat_request(
     on_token: Optional[Callable[[str], Any]] = None,
     images: Optional[list[str]] = None,
     is_ephemeral_reference: bool = False,
-) -> tuple[str, dict, bool, list]:
+) -> tuple[str, dict, bool, list, list]:
     from app.infrastructure.logging.pipeline_tracker import pipeline_tracker
 
     try:
-        reply_text, emotions, images_processed = await chat_engine.chat(
+        reply_text, emotions, images_processed, attached_images = await chat_engine.chat(
             session=session,
             user_id=normalized_user_id,
             user_message=message,
@@ -79,7 +79,7 @@ async def _run_chat_request(
             emotions=emotions,
             status="success",
         )
-        return reply_text, emotions, loop_thinking_activated, images_processed
+        return reply_text, emotions, loop_thinking_activated, images_processed, attached_images
     except LLMRateLimitError:
         fallback_text = "Chisa đang hơi bận một chút, Senpai chờ em thêm lát nữa nhé."
         fallback_emotions = None
@@ -89,7 +89,7 @@ async def _run_chat_request(
             status="success",
             error=None,
         )
-        return fallback_text, fallback_emotions, False, []
+        return fallback_text, fallback_emotions, False, [], []
     except (LLMTimeoutError, LLMInvalidResponseError, CircuitBreakerError) as llm_err:
         fallback_text = "Chisa hơi mệt một chút, Senpai nhắn lại sau nhé ~"
         fallback_emotions = None
@@ -100,7 +100,7 @@ async def _run_chat_request(
             status="success",
             error=str(llm_err),
         )
-        return fallback_text, fallback_emotions, False, []
+        return fallback_text, fallback_emotions, False, [], []
     except Exception as error:
         pipeline_tracker.end_trace(
             status="failed",
@@ -125,7 +125,7 @@ async def chat_endpoint(
     _start_chat_trace(request, username)
 
     try:
-        reply_text, emotions, loop_thinking_activated, images_processed = await _run_chat_request(
+        reply_text, emotions, loop_thinking_activated, images_processed, attached_images = await _run_chat_request(
             session=session, 
             message=request.message,
             original_user_id=request.user_id,
@@ -162,6 +162,7 @@ async def chat_endpoint(
             emotion_caption=emotion_caption,
             loop_thinking_activated=loop_thinking_activated,
             images_processed=images_processed,
+            attached_images=attached_images,
         )
     except ChatEngineBusyError:
         raise HTTPException(
@@ -230,13 +231,15 @@ async def chat_stream_endpoint(
                     pass
 
             async with AsyncSessionFactory() as session:
-                reply_text, emotions, loop_thinking_activated = await _run_chat_request(
+                reply_text, emotions, loop_thinking_activated, images_processed, attached_images = await _run_chat_request(
                     session=session,
                     message=request.message,
                     original_user_id=request.user_id,
                     normalized_user_id=normalized_user_id,
                     chat_engine=chat_engine,
                     on_token=sse_on_token,
+                    images=request.images,
+                    is_ephemeral_reference=bool(request.is_ephemeral_reference),
                 )
                 await session.commit()
 
@@ -269,6 +272,8 @@ async def chat_stream_endpoint(
                     "emotions": emotions,
                     "emotion_caption": emotion_caption,
                     "loop_thinking_activated": loop_thinking_activated,
+                    "images_processed": images_processed,
+                    "attached_images": attached_images,
                 },
             })
         except asyncio.CancelledError:

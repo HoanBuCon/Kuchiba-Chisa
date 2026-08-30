@@ -45,3 +45,4 @@ class CommunityChatResponse(BaseModel):
     sentiment: Optional[Dict[str, Any]] = Field(default=None, description="Sentiment analysis of interaction")
     execution_time_ms: float = Field(default=0.0, description="Pipeline execution duration in milliseconds")
     images_processed: Optional[List[Dict[str, Any]]] = Field(default_factory=list, description="Metadata of processed images")
+    attached_images: Optional[List[str]] = Field(default_factory=list, description="List of retrieved image URLs attached in response")

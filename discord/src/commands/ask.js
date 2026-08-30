@@ -182,7 +182,7 @@ export async function execute(client, interaction, discordUser) {
       metadata: { emotions: result.emotions, source: 'core-rag' },
     });
 
-    await replyWithChunks(interaction, result.response, result.emotions, client);
+    await replyWithChunks(interaction, result.response, result.emotions, client, result.attachedImages);
   } catch (error) {
     if (error.status === 429 && error.payload && error.payload.detail) {
       logger.warn({ userId: interaction.user.id, interactionId }, 'Discord /ask blocked by 429 user lock');
@@ -286,7 +286,7 @@ export async function executePrefix(client, message, question, discordUser, opti
       metadata: { emotions: result.emotions, source: 'core-rag', mode: 'prefix' },
     });
 
-    await replyWithChunks(message, result.response, result.emotions, client);
+    await replyWithChunks(message, result.response, result.emotions, client, result.attachedImages);
   } catch (error) {
     if (error.status === 429 && error.payload && error.payload.detail) {
       logger.warn({ userId: message.author.id, interactionId }, 'Discord prefix ask blocked by 429 user lock');

@@ -182,6 +182,7 @@ class AppContainer:
         from app.domain.services.rag.pipeline import RAGPipeline
         from app.domain.services.rag.retriever_memory import MemoryRetriever
         from app.domain.services.rag.retriever_guild_memory import GuildMemoryRetriever
+        from app.domain.services.rag.retriever_image_memory import ImageMemoryRetriever
         from app.domain.services.rag.retriever_lore import LoreRetriever
         from app.domain.services.rag.assessor import ContextAssessor
         from app.domain.services.rag.thinking_loop import ThinkingLoopAgent
@@ -189,6 +190,7 @@ class AppContainer:
         rag_pipeline = RAGPipeline(
             memory_retriever=MemoryRetriever(vector_store=qdrant_service),
             guild_memory_retriever=GuildMemoryRetriever(vector_store=qdrant_service),
+            image_memory_retriever=ImageMemoryRetriever(vector_store=qdrant_service),
             lore_retriever=LoreRetriever(
                 vector_store=qdrant_service,
                 lore_parent_repo_factory=LoreParentRepository
