@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import List, Optional, Any
 from app.domain.entities.community import CommunityMessage
 from app.domain.services.context_budget_manager import TokenEstimator
 
@@ -10,16 +10,33 @@ class ChannelTranscriptFormatter:
     """
 
     @staticmethod
-    def format_message(msg: CommunityMessage) -> str:
+    def format_message(msg: Any) -> str:
         """Format a single message turn with timestamp, speaker and reply context."""
-        time_str = msg.created_at.strftime("%H:%M") if msg.created_at else "Now"
-        speaker_tag = f"<{msg.speaker_name}>"
+        if isinstance(msg, dict):
+            created_at = msg.get("created_at")
+            speaker_name = msg.get("speaker_name", "User")
+            reply_to_speaker = msg.get("reply_to_speaker")
+            content = msg.get("content", "")
+        else:
+            created_at = getattr(msg, "created_at", None)
+            speaker_name = getattr(msg, "speaker_name", "User")
+            reply_to_speaker = getattr(msg, "reply_to_speaker", None)
+            content = getattr(msg, "content", "")
+
+        time_str = "Now"
+        if created_at:
+            if hasattr(created_at, "strftime"):
+                time_str = created_at.strftime("%H:%M")
+            elif isinstance(created_at, str):
+                time_str = created_at[-8:-3] if len(created_at) >= 8 and ":" in created_at else created_at[:5]
+
+        speaker_tag = f"<{speaker_name}>"
 
         reply_info = ""
-        if msg.reply_to_speaker:
-            reply_info = f" [Replying to @{msg.reply_to_speaker}]"
+        if reply_to_speaker:
+            reply_info = f" [Replying to @{reply_to_speaker}]"
 
-        return f"[{time_str}] {speaker_tag}{reply_info}: {msg.content}"
+        return f"[{time_str}] {speaker_tag}{reply_info}: {content}"
 
     @classmethod
     def format_transcript(
