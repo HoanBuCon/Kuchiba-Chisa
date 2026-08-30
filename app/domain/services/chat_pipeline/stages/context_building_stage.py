@@ -25,6 +25,7 @@ class ContextBuildingStage(PipelineStage):
 
         lore_chunks = context.rag_context.lore_chunks if context.rag_context else []
         memories = context.rag_context.memories if context.rag_context else []
+        guild_memories = context.rag_context.guild_memories if context.rag_context else []
         intent_values = [i.value for i in context.intents]
 
         build_result = self.context_builder.build(
@@ -46,6 +47,8 @@ class ContextBuildingStage(PipelineStage):
             guild_name=context.guild_name,
             channel_transcript=context.channel_transcript,
             ambient_context=context.ambient_context,
+            guild_memories=guild_memories,
+            topic_summary=context.topic_summary,
         )
         
         context.prompt = build_result.prompt

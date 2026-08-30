@@ -260,6 +260,8 @@ class ContextBuilder:
         guild_name: Optional[str] = None,
         channel_transcript: Optional[str] = None,
         ambient_context: Optional[str] = None,
+        guild_memories: Optional[List[str]] = None,
+        topic_summary: Optional[str] = None,
     ) -> ContextBuildResult:
         """
         Builds production context: measure skeleton first, flex-allocate, then assemble system prompt.
@@ -304,6 +306,21 @@ class ContextBuilder:
                 + "\n[MEMORIES — REFERENCE DATA END]"
             )
 
+        guild_memories_text = ""
+        if guild_memories:
+            u_guild_mem = self._u_curve_sort(guild_memories)
+            g_items = [
+                f"- {m.text_content if hasattr(m, 'text_content') else str(m)}"
+                for m in u_guild_mem
+                if m and str(m).strip()
+            ]
+            if g_items:
+                guild_memories_text = (
+                    "[TRI THỨC & SỰ KIỆN CHUNG CỦA SERVER]\n"
+                    "Thông tin sự kiện, lịch trình, hoặc văn hóa chung được ghi nhận trong Server:\n"
+                    + "\n".join(g_items)
+                )
+
         lore_text = ""
         if allocation.trimmed_lore:
             u_lore = self._u_curve_sort(allocation.trimmed_lore)
@@ -324,6 +341,13 @@ class ContextBuilder:
                 f"{allocation.trimmed_summary}"
             )
             system_parts.extend(["", summary_section])
+
+        if topic_summary and topic_summary.strip():
+            topic_section = (
+                "[BỐI CẢNH THẢO LUẬN GẦN ĐÂY CỦA NHÓM]\n"
+                f"{topic_summary.strip()}"
+            )
+            system_parts.extend(["", topic_section])
 
         if channel_transcript and channel_transcript.strip():
             transcript_section = (
@@ -351,14 +375,18 @@ class ContextBuilder:
             # Secondary/Contextual info first, Primary Lore knowledge closest to output format
             if memories_text:
                 knowledge_sections.append(memories_text)
+            if guild_memories_text:
+                knowledge_sections.append(guild_memories_text)
             if search_section:
                 knowledge_sections.append(search_section)
             if lore_text:
                 knowledge_sections.append(lore_text)
         else:
-            # Factual / Search or General queries: Memories -> Lore -> Search Data
+            # Factual / Search or General queries: Memories -> Guild Memories -> Lore -> Search Data
             if memories_text:
                 knowledge_sections.append(memories_text)
+            if guild_memories_text:
+                knowledge_sections.append(guild_memories_text)
             if lore_text:
                 knowledge_sections.append(lore_text)
             if search_section:

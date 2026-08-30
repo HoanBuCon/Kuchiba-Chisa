@@ -7,6 +7,7 @@ from app.domain.interfaces.embedding_provider import IEmbeddingProvider
 from app.domain.interfaces.llm_provider import BaseLLMAdapter
 from app.domain.services.rag.base import RAGContext
 from app.domain.services.rag.retriever_memory import MemoryRetriever
+from app.domain.services.rag.retriever_guild_memory import GuildMemoryRetriever
 from app.domain.services.rag.retriever_lore import LoreRetriever
 from app.domain.services.rag.assessor import ContextAssessor
 from app.domain.services.rag.thinking_loop import ThinkingLoopAgent
@@ -25,6 +26,7 @@ class RAGPipeline:
         self,
         memory_retriever: Optional[MemoryRetriever] = None,
         lore_retriever: Optional[LoreRetriever] = None,
+        guild_memory_retriever: Optional[GuildMemoryRetriever] = None,
         assessor: Optional[ContextAssessor] = None,
         thinking_loop_agent: Optional[ThinkingLoopAgent] = None,
         pipeline_tracker: Optional[IPipelineTracker] = None,
@@ -39,6 +41,8 @@ class RAGPipeline:
             raise ValueError("lore_retriever is required")
         else:
             self.lore_retriever = lore_retriever
+            
+        self.guild_memory_retriever = guild_memory_retriever
             
         if assessor is None:
             self.assessor = ContextAssessor()
@@ -84,6 +88,8 @@ class RAGPipeline:
         is_small_talk: bool = False,
         conversation_summary: str = None,
         conversation_id: Optional[str] = None,
+        guild_id: Optional[str] = None,
+        channel_id: Optional[str] = None,
         needs_vector_search: bool = True,
         needs_web_search: bool = False,
     ) -> RAGContext:
@@ -92,6 +98,7 @@ class RAGPipeline:
         """
         lore_scored = []
         memories = []
+        guild_memories = []
         lore_chunks = []
         queried_lore_cols = []
         intent_strs = self._normalize_intents(intents)
@@ -119,7 +126,7 @@ class RAGPipeline:
 
         # Helper coroutine: Execute Qdrant Vector Lore & Memory Retrieval
         async def _fetch_vector_lore_and_memory():
-            nonlocal lore_scored, memories, lore_chunks, queried_lore_cols, extracted, expanded, scoring_details
+            nonlocal lore_scored, memories, guild_memories, lore_chunks, queried_lore_cols, extracted, expanded, scoring_details
             if not query_vector:
                 return
 
@@ -148,7 +155,7 @@ class RAGPipeline:
                         )
                     )
 
-            if "MEMORY" in intent_strs:
+            if "MEMORY" in intent_strs or "KNOWLEDGE_OR_TASK" in intent_strs or "OTHER" in intent_strs or "LORE" in intent_strs:
                 active_intents.append("MEMORY")
                 retrieval_tasks.append(
                     self.memory_retriever.retrieve_memories(
@@ -162,6 +169,19 @@ class RAGPipeline:
                     )
                 )
 
+                if self.guild_memory_retriever and guild_id and not guild_id.startswith("CHANNEL_") and guild_id != "DM":
+                    active_intents.append("GUILD_MEMORY")
+                    retrieval_tasks.append(
+                        self.guild_memory_retriever.retrieve_guild_memories(
+                            collection="guild_memories",
+                            query_vector=query_vector,
+                            guild_id=str(guild_id),
+                            channel_id=str(channel_id) if channel_id else None,
+                            limit=10,
+                            top_k=RAGTuning.TOP_K
+                        )
+                    )
+
             if retrieval_tasks:
                 try:
                     results = []
@@ -174,7 +194,7 @@ class RAGPipeline:
 
                     # Fair Multi-Collection Fusion (RRF + Normalized Score Fusion)
                     collection_buckets: Dict[str, List[Tuple[str, float, dict]]] = {}
-                    for intent_type, col_name, retrieved_data in zip(active_intents, queried_lore_cols, results):
+                    for intent_type, col_name, retrieved_data in zip(active_intents, queried_lore_cols + ["guild_memories"] * (len(active_intents) - len(queried_lore_cols)), results):
                         if isinstance(retrieved_data, Exception):
                             log.warning("Retrieval sub-task failed", error=str(retrieved_data), collection=col_name)
                             continue
@@ -182,6 +202,10 @@ class RAGPipeline:
                             for m in retrieved_data:
                                 if m.text_content and m.text_content not in memories:
                                     memories.append(m.text_content)
+                        elif intent_type == "GUILD_MEMORY":
+                            for m in retrieved_data:
+                                if m.text_content and m.text_content not in guild_memories:
+                                    guild_memories.append(m.text_content)
                         else:
                             if col_name not in collection_buckets:
                                 collection_buckets[col_name] = []
@@ -209,12 +233,14 @@ class RAGPipeline:
                     lore_chunks = [x[0] for x in lore_scored[:RAGTuning.TOP_K]]
                     if len(memories) > RAGTuning.TOP_K:
                         memories = memories[:RAGTuning.TOP_K]
+                    if len(guild_memories) > RAGTuning.TOP_K:
+                        guild_memories = guild_memories[:RAGTuning.TOP_K]
                 except Exception as ex:
                     log.error("Failed to retrieve data from Qdrant vector database", error=str(ex))
 
             scoring_details = [x[2] for x in lore_scored[:RAGTuning.TOP_K] if len(x) > 2 and x[2]]
 
-            # Emit sub-nodes 5.1.a and 5.1.c
+            # Emit sub-nodes 5.1.a, 5.1.c, and 5.1.d
             if lore_chunks:
                 self.pipeline_tracker.add_step(
                     name="lore_retrieval",
@@ -249,6 +275,22 @@ class RAGPipeline:
                         "source": "knowledge_retrieval_round_1",
                         "memories_count": len(memories),
                         "memories": memories,
+                    }
+                )
+
+            if guild_memories:
+                self.pipeline_tracker.add_step(
+                    name="guild_memory_retrieval",
+                    stage_id="stage_5_rag",
+                    depth=1,
+                    category="retrieval",
+                    title="5.1.d [GUILD MEMORY] Truy hồi Tri thức Server (Qdrant Guild)",
+                    subtitle=f"Đã tìm thấy {len(guild_memories)} tri thức / sự kiện chung của Server",
+                    data={
+                        "source": "knowledge_retrieval_round_1",
+                        "guild_id": str(guild_id),
+                        "guild_memories_count": len(guild_memories),
+                        "guild_memories": guild_memories,
                     }
                 )
 
@@ -536,6 +578,7 @@ class RAGPipeline:
         return RAGContext(
             lore_chunks=lore_chunks if use_lore else [],
             memories=memories,
+            guild_memories=guild_memories,
             tool_output_msg=tool_output_msg,
             is_aligned=is_aligned,
             alignment_reason=alignment_reason,

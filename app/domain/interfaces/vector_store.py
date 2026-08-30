@@ -64,8 +64,21 @@ class IVectorStore(ABC):
         pass
 
     @abstractmethod
-    async def delete_lore_by_page(self, collection: str, page_id: int) -> None:
+    async def search_guild_memories(
+        self,
+        collection: str,
+        query_vector: List[float],
+        guild_id: str,
+        channel_id: Optional[str] = None,
+        limit: int = 10,
+        score_threshold: float = 0.60,
+        exclude_expired: bool = True,
+    ) -> List[Dict[str, Any]]:
+        pass
+
+    @abstractmethod
+    async def delete_by_guild(self, collection: str, guild_id: str) -> None:
         """
-        Deletes all lore vectors belonging to a specific page_id.
+        Deletes all vectors belonging to a specific guild_id in the given collection.
         """
         pass

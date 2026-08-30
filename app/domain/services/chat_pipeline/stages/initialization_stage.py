@@ -74,6 +74,16 @@ class InitializationStage(PipelineStage):
             AmbientMoodManager.synthesize_ambient_into_emotion(emotion, decayed_ambient)
             context.recent_social_trace = decayed_ambient
 
+            # Load rolling community topic summary from Redis if available
+            if context.channel_id:
+                try:
+                    summary_key = f"chisa:channel:{context.channel_id}:topic_summary"
+                    stored_summary = await self.cache_provider.get(summary_key)
+                    if stored_summary:
+                        context.topic_summary = stored_summary.strip()
+                except Exception as ts_err:
+                    log.warning("Failed to load topic summary in InitializationStage", error=str(ts_err))
+
         # Initialize ContextVars for request-scoped logging
         question_idx = len([m for m in history if m.get("role") == "user"]) + 1
         request_question_idx.set(question_idx)
@@ -123,6 +133,8 @@ class InitializationStage(PipelineStage):
                     "history_count": len(history),
                     "has_summary": bool(summary),
                     "summary_preview": (summary[:200] + "...") if summary and len(summary) > 200 else summary,
+                    "topic_summary": context.topic_summary,
+                    "topic_summary_preview": (context.topic_summary[:200] + "...") if context.topic_summary and len(context.topic_summary) > 200 else context.topic_summary,
                     "current_emotions": current_emotions,
                     "initial_emotions": current_emotions,
                     "baseline_emotions": current_emotions,

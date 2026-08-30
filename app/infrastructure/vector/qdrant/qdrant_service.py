@@ -41,12 +41,14 @@ COLLECTION_CHARACTER_LORE = "character_lore"
 COLLECTION_WORLD_LORE = "world_lore"
 COLLECTION_STORY_LORE = "story_lore"
 COLLECTION_MEMORIES = "memories"
+COLLECTION_GUILD_MEMORIES = "guild_memories"
 
 ALL_COLLECTIONS = [
     COLLECTION_CHARACTER_LORE,
     COLLECTION_WORLD_LORE,
     COLLECTION_STORY_LORE,
     COLLECTION_MEMORIES,
+    COLLECTION_GUILD_MEMORIES,
 ]
 
 
@@ -161,6 +163,29 @@ class QdrantService(IVectorStore):
                     )
                 except Exception:
                     pass
+
+        # Ensure guild_memories collection has indexes on guild_id, memory_type, and expires_at
+        if await self.collection_exists(COLLECTION_GUILD_MEMORIES):
+            for f in ["guild_id", "channel_id", "memory_type"]:
+                try:
+                    await self._client.create_payload_index(
+                        collection_name=COLLECTION_GUILD_MEMORIES,
+                        field_name=f,
+                        field_schema=PayloadSchemaType.KEYWORD,
+                        wait=False
+                    )
+                except Exception:
+                    pass
+            try:
+                from qdrant_client.http.models import PayloadSchemaType as PST
+                await self._client.create_payload_index(
+                    collection_name=COLLECTION_GUILD_MEMORIES,
+                    field_name="expires_at",
+                    field_schema=PST.INTEGER,
+                    wait=False
+                )
+            except Exception:
+                pass
         log.info("Qdrant payload indexes ensured across all collections ✓")
 
     async def initialize_all_collections(self) -> None:
@@ -286,6 +311,49 @@ class QdrantService(IVectorStore):
             for r in results
         ]
 
+    async def search_guild_memories(
+        self,
+        collection: str,
+        query_vector: list[float],
+        guild_id: str,
+        channel_id: Optional[str] = None,
+        limit: int = 10,
+        score_threshold: float = 0.60,
+        exclude_expired: bool = True,
+    ) -> list[dict[str, Any]]:
+        """
+        Searches guild_memories collection scoped by guild_id.
+        Optionally excludes memories where expires_at < current_timestamp.
+        """
+        must_conditions = [
+            FieldCondition(key="guild_id", match=MatchValue(value=str(guild_id)))
+        ]
+        
+        if exclude_expired:
+            import time
+            now_sec = int(time.time())
+            from qdrant_client.http.models import Range
+            must_not_conditions = [
+                FieldCondition(key="expires_at", range=Range(lt=now_sec))
+            ]
+            guild_filter = Filter(must=must_conditions, must_not=must_not_conditions)
+        else:
+            guild_filter = Filter(must=must_conditions)
+
+        results = await self._client.search(
+            collection_name=collection,
+            query_vector=query_vector,
+            query_filter=guild_filter,
+            limit=limit,
+            score_threshold=score_threshold,
+            with_payload=True,
+        )
+
+        return [
+            {"id": r.id, "score": r.score, "payload": r.payload or {}}
+            for r in results
+        ]
+
     # ── Delete ─────────────────────────────────────────────────────
     async def delete_points(self, collection: str, ids: list[str | int]) -> None:
         from qdrant_client.http.models import PointIdsList
@@ -303,6 +371,17 @@ class QdrantService(IVectorStore):
         await self._client.delete(
             collection_name=collection,
             points_selector=FilterSelector(filter=user_filter),
+            wait=True,
+        )
+
+    async def delete_by_guild(self, collection: str, guild_id: str) -> None:
+        from qdrant_client.http.models import FilterSelector
+        guild_filter = Filter(
+            must=[FieldCondition(key="guild_id", match=MatchValue(value=str(guild_id)))]
+        )
+        await self._client.delete(
+            collection_name=collection,
+            points_selector=FilterSelector(filter=guild_filter),
             wait=True,
         )
 
