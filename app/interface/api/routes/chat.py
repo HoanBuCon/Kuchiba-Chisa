@@ -215,6 +215,7 @@ async def chat_stream_endpoint(
                 except asyncio.QueueFull:
                     pass
 
+            async with AsyncSessionFactory() as session:
                 reply_text, emotions, loop_thinking_activated = await _run_chat_request(
                     session=session,
                     message=request.message,
