@@ -95,7 +95,7 @@ async def community_chat_endpoint(
         emotion_caption = None
         if updated_emotions and isinstance(updated_emotions, dict):
             from app.domain.services.state_manager import StateManager
-            from app.domain.entities.emotion_state import EmotionState
+            from app.domain.entities.emotion import EmotionState
             try:
                 state_obj = EmotionState(
                     user_id=request.user_id,

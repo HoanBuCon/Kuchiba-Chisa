@@ -125,7 +125,7 @@ async def chat_endpoint(
         emotion_caption = None
         if emotions and isinstance(emotions, dict):
             from app.domain.services.state_manager import StateManager
-            from app.domain.entities.emotion_state import EmotionState
+            from app.domain.entities.emotion import EmotionState
             try:
                 state_obj = EmotionState(
                     user_id=request.user_id,
@@ -229,7 +229,7 @@ async def chat_stream_endpoint(
             emotion_caption = None
             if emotions and isinstance(emotions, dict):
                 from app.domain.services.state_manager import StateManager
-                from app.domain.entities.emotion_state import EmotionState
+                from app.domain.entities.emotion import EmotionState
                 try:
                     state_obj = EmotionState(
                         user_id=request.user_id,
