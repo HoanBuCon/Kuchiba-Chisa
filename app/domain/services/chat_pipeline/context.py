@@ -97,13 +97,16 @@ class ChatContext:
     estimated_input_tokens: int = 0
     estimated_output_tokens: int = 0
     
-    # Multimodal Vision Extensions
+    # Multimodal Vision & Reverse Image Retrieval Extensions
     images: List[str] = field(default_factory=list)
     processed_images: List[Dict[str, Any]] = field(default_factory=list)
     has_images: bool = False
     is_ephemeral_reference: bool = False
     image_analysis_summary: Optional[str] = None
     vision_failed: bool = False
+    needs_image_retrieval: bool = False
+    retrieved_images: List[Dict[str, Any]] = field(default_factory=list)
+    attached_images: List[str] = field(default_factory=list)
 
     # Final Result
     updated_emotions: Dict[str, float] = field(default_factory=dict)

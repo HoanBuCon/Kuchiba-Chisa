@@ -397,6 +397,7 @@ window.InspectorWidgets = {
         let loreData = promptComponents["Lore Context"] || null;
         let memData = promptComponents["Memories Context"] || null;
         let guildData = promptComponents["Server Knowledge (Guild Memories)"] || null;
+        let imageMemData = promptComponents["Retrieved Image Memories"] || null;
         let topicData = promptComponents["Community Topic Summary"] || null;
         let transcriptData = promptComponents["Channel Transcript"] || null;
 
@@ -421,6 +422,11 @@ window.InspectorWidgets = {
                 const nextSection = systemPrompt.indexOf("\n\n[", start + 5);
                 guildData = nextSection > start ? systemPrompt.substring(start, nextSection) : systemPrompt.substring(start);
             }
+            if (!imageMemData && systemPrompt.includes("[KÝ ỨC HÌNH ẢNH TÌM THẤY TRONG KHO")) {
+                const start = systemPrompt.indexOf("[KÝ ỨC HÌNH ẢNH TÌM THẤY TRONG KHO");
+                const nextSection = systemPrompt.indexOf("\n\n[", start + 5);
+                imageMemData = nextSection > start ? systemPrompt.substring(start, nextSection) : systemPrompt.substring(start);
+            }
             if (!topicData && systemPrompt.includes("[BỐI CẢNH THẢO LUẬN GẦN ĐÂY CỦA NHÓM]")) {
                 const start = systemPrompt.indexOf("[BỐI CẢNH THẢO LUẬN GẦN ĐÂY CỦA NHÓM]");
                 const nextSection = systemPrompt.indexOf("\n\n[", start + 5);
@@ -433,7 +439,7 @@ window.InspectorWidgets = {
             }
         }
 
-        if (!searchData && !loreData && !memData && !guildData && !topicData && !transcriptData) return '';
+        if (!searchData && !loreData && !memData && !guildData && !imageMemData && !topicData && !transcriptData) return '';
 
         const cards = [];
         if (searchData) {
@@ -500,6 +506,22 @@ window.InspectorWidgets = {
                 </div>
             `);
         }
+        if (imageMemData) {
+            cards.push(`
+                <div class="inspector-card" style="border-left: 3px solid #ff4d88; background: linear-gradient(135deg, rgba(255, 77, 136, 0.08), rgba(20, 10, 15, 0.6));">
+                    <div class="inspector-card-title" style="justify-content: space-between;">
+                        <div style="display: flex; align-items: center; gap: 6px;">
+                            ${this.icon('image', { size: 14, color: '#ff4d88' })}
+                            <span style="color: #ff80aa; font-weight: 700;">Ký Ức Hình Ảnh Đã Tìm Thấy (Retrieved Image Memories Context)</span>
+                        </div>
+                        <button class="btn" style="padding: 3px 8px; font-size: 11px;" onclick="InspectorWidgets.copyToClipboard(this.getAttribute('data-copy'), this)" data-copy="${this.escapeHtml(imageMemData.trim())}">
+                            ${this.icon('copy', { size: 12 })} <span>Sao chép</span>
+                        </button>
+                    </div>
+                    <div class="json-block" style="max-height: 320px; white-space: pre-wrap; font-size: 12px; line-height: 1.6;">${this.escapeHtml(imageMemData.trim())}</div>
+                </div>
+            `);
+        }
         if (topicData) {
             cards.push(`
                 <div class="inspector-card" style="border-left: 3px solid #10b981; background: linear-gradient(135deg, rgba(16, 185, 129, 0.06), rgba(10, 18, 15, 0.6));">
@@ -534,6 +556,68 @@ window.InspectorWidgets = {
         }
 
         return cards.join('');
+    },
+
+    /**
+     * Render Interactive Retrieved Images Gallery Card for Stage 5.1.e and Stage 7
+     */
+    renderRetrievedImagesCard(retrievedImages = [], title = "Danh Sách Ký Ức Hình Ảnh Đã Tìm Thấy (Retrieved Image Memories)") {
+        if (!Array.isArray(retrievedImages) || retrievedImages.length === 0) {
+            return '';
+        }
+
+        const cardsHtml = retrievedImages.map((img, idx) => {
+            const imgSrc = img.thumbnail_url || img.thumbnail_data_uri || img.url || '';
+            const fullUrl = img.url || imgSrc;
+            const score = typeof img.score === 'number' ? (img.score).toFixed(2) : (img.score || '—');
+            const scoreBadge = `<span class="pill" style="font-size: 10px; background: rgba(255, 77, 136, 0.2); color: #ff80aa; border-color: rgba(255, 77, 136, 0.4);">Score: ${score}</span>`;
+            const caption = img.visual_caption || img.caption || 'Ký ức hình ảnh đã lưu';
+            const tags = Array.isArray(img.tags) ? img.tags : [];
+            const tagPills = tags.map(t => `<span class="pill" style="font-size: 9px; opacity: 0.85;">#${window.VisualizerApp.escapeHtml(t)}</span>`).join(' ');
+
+            return `
+                <div style="background: rgba(18, 10, 16, 0.85); border: 1px solid rgba(255, 77, 136, 0.25); border-radius: 8px; padding: 12px; display: flex; gap: 12px; margin-bottom: 8px;">
+                    <div style="width: 100px; height: 100px; min-width: 100px; border-radius: 6px; overflow: hidden; background: #000; cursor: pointer; border: 1px solid rgba(255, 255, 255, 0.1);" onclick="window.open('${fullUrl}', '_blank')">
+                        <img src="${imgSrc}" alt="Retrieved Image #${idx+1}" style="width: 100%; height: 100%; object-fit: cover; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.08)'" onmouseout="this.style.transform='scale(1)'" />
+                    </div>
+                    <div style="flex: 1; display: flex; flex-direction: column; justify-content: space-between;">
+                        <div>
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                                <div style="display: flex; align-items: center; gap: 6px;">
+                                    <span class="pill" style="font-size: 9.5px; opacity: 0.7;">#${idx + 1}</span>
+                                    <span style="font-size: 11px; color: var(--text-muted); font-family: monospace;">${img.image_id ? img.image_id.slice(0, 12) + '...' : ''}</span>
+                                </div>
+                                ${scoreBadge}
+                            </div>
+                            <div style="color: var(--text-primary); font-size: 12.5px; line-height: 1.5; margin-bottom: 6px; font-weight: 500;">
+                                ${window.VisualizerApp.escapeHtml(caption)}
+                            </div>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 4px;">
+                            <div style="display: flex; gap: 4px; flex-wrap: wrap;">
+                                ${tagPills}
+                            </div>
+                            <a href="${fullUrl}" target="_blank" style="font-size: 11px; color: #ff80aa; text-decoration: none; display: flex; align-items: center; gap: 3px;">
+                                <span>Xem ảnh gốc</span> ↗
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        return `
+            <div class="inspector-card" style="border-left: 3px solid #ff4d88; background: linear-gradient(135deg, rgba(255, 77, 136, 0.05), rgba(18, 10, 16, 0.5));">
+                <div class="inspector-card-title" style="justify-content: space-between;">
+                    <div style="display: flex; align-items: center; gap: 6px;">
+                        ${this.icon('image', { size: 14, color: '#ff4d88' })}
+                        <span style="color: #ff80aa; font-weight: 700;">${title} (${retrievedImages.length})</span>
+                    </div>
+                    <span class="pill" style="background: rgba(255, 77, 136, 0.2); color: #ff99bb; border-color: rgba(255, 77, 136, 0.4); font-size: 10px;">Qdrant image_memories</span>
+                </div>
+                ${cardsHtml}
+            </div>
+        `;
     },
 
     /**

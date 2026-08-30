@@ -13,51 +13,31 @@ from app.domain.interfaces.tracker import IPipelineTracker
 
 log = get_logger(__name__)
 
-VISION_GAMEPLAY_ANCHORS = {
-    # Echo, trang bị, vũ khí & chỉ số
-    "echo", "stats", "stat", "crit", "crit rate", "crit dmg", "chỉ số", "vũ khí", "weapon", "build",
-    "nâng cấp", "trang bị", "dòng phụ", "dòng chính", "dòng ẩn", "dòng crit", "dòng stat", "dòng bạo", "substat", "mainstat", "tỷ lệ bạo",
-    "sát thương bạo", "sát thương", "bạo kích", "tấn công", "phòng ngự", "kháng", "atk", "def", "hp",
-    "nạp", "hiệu quả nạp", "energy recharge", "er", "tốc độ nạp", "chấn", "vũ khí trấn", "sonata",
-    "set đồ", "set echo", "cost 1", "cost 3", "cost 4", "relic", "thánh di vật", "tuning", "tune",
-    # Nhân vật, kỹ năng & gacha
-    "cung mệnh", "chuỗi cộng hưởng", "resonance chain", "rc", "forte", "kỹ năng", "skill", "talent",
-    "c0", "c1", "c2", "c3", "c4", "c5", "c6", "s1", "s2", "s3", "s4", "s5", "s6", "gacha", "roll",
-    "lệch rate", "trúng rate", "bảo hiểm", "quay tướng", "pull", "khoe đồ", "khoe luck", "luck",
-    # Thẩm định & Đánh giá
-    "ngon không", "ngon ko", "ổn không", "ổn ko", "dùng được không", "dùng đc ko", "chọn cái nào",
-    "so sánh", "chấm điểm", "tạ không", "phế không", "đạt chuẩn chưa", "chuẩn chưa", "la hoàn",
-    "tháp", "tower", "toa độ", "toa", "hologram", "boss", "dps", "support", "healer", "sub dps"
+IMAGE_RETRIEVAL_ANCHORS = {
+    # Yêu cầu gửi lại / xem lại ảnh trong quá khứ (Visual Memory Reverse Search)
+    "gửi lại ảnh", "gửi ảnh", "xem lại ảnh", "tìm ảnh", "ảnh hồi trước", "ảnh cũ",
+    "bức ảnh", "tấm ảnh", "cho anh xem ảnh", "cho xem lại hình", "bức hình",
+    "ảnh con mèo", "ảnh đi chơi", "ảnh hôm nọ", "ảnh lúc trước", "cho anh xin lại cái ảnh",
+    "hình cũ", "gửi lại tấm hình", "tìm lại ảnh", "bức ảnh hôm bữa", "gửi cái ảnh",
+    "show me the picture", "send the image", "ảnh đợt trước", "tấm hình hôm nọ",
+    "ảnh chụp", "cho xem lại bức ảnh", "tìm bức hình", "ảnh đi du lịch", "ảnh du lịch"
 }
 
-VISION_MEME_ANCHORS = {
-    # Hài hước, ảnh chế, troll & internet slang
-    "meme", "hài", "ảnh chế", "buồn cười", "vui", "troll", "bựa", "dìm", "chúa hề", "tấu hề",
-    "tấu hài", "cười", "cười ỉa", "cười vcl", "cười vãi", "lmao", "kekw", "bruh", "dảk", "dark meme",
-    "shitpost", "cà khịa", "khịa", "gắt", "ảo thật", "độc lạ", "bất ổn", "wibu", "hội chứng", "ảo ma",
-    "vô tri", "ngáo", "ngố", "chế ảnh", "mặn", "hài hước", "cười đau bụng", "hề hước", "cười bò", "tấu"
+IMAGE_NOUNS = {"ảnh", "hình", "bức ảnh", "tấm ảnh", "bức hình", "tấm hình", "image", "photo", "picture"}
+IMAGE_RETRIEVAL_ACTIONS = {
+    "gửi", "gửi lại", "xem lại", "tìm lại", "tìm", "cho xem", "cho xin",
+    "hồi trước", "hôm nọ", "hôm bữa", "lúc trước", "cũ", "đợt trước", "ngày xưa",
+    "trước đây", "show", "send", "du lịch"
 }
 
-VISION_CODE_ANCHORS = {
-    # Lập trình & Debug lỗi
-    "code", "lỗi", "error", "bug", "log", "traceback", "exception", "terminal", "console", "cmd",
-    "powershell", "đoạn mã", "hàm", "function", "class", "script", "debug", "sửa lỗi", "chạy không được",
-    "không chạy", "syntax", "runtime", "compile", "build fail", "ide", "vscode", "stack trace", "output"
-}
-
-VISION_DOCUMENT_OCR_ANCHORS = {
-    # Đọc văn bản, hóa đơn, dịch thuật & OCR
-    "dịch", "translate", "chữ gì", "đọc hộ", "đọc giúp", "tài liệu", "hóa đơn", "bill", "văn bản",
-    "chữ này", "nghĩa là gì", "đoạn văn", "bài tập", "đề bài", "chữ viết tay", "tiếng nhật", "tiếng trung",
-    "tiếng anh", "kanji", "chữ hán", "hán tự", "biển báo", "bảng hiệu", "biên lai", "chứng từ"
-}
-
-VISION_ARTWORK_ANCHORS = {
-    # Tranh vẽ, Fanart, Cosplay & Phong cách
-    "art", "fanart", "cosplay", "ảnh vẽ", "tranh", "avatar", "avt", "vẽ", "sketch", "minh họa",
-    "illustration", "waifu", "husbando", "tạo hình", "trang phục", "outfit", "nét vẽ", "style",
-    "phối màu", "đẹp không", "xinh không", "dễ thương không", "kawaii", "bức tranh", "tranh vẽ"
-}
+def is_image_retrieval_query(text: str) -> bool:
+    if not text:
+        return False
+    lower = text.lower()
+    has_noun = any(n in lower for n in IMAGE_NOUNS)
+    has_action = any(a in lower for a in IMAGE_RETRIEVAL_ACTIONS)
+    has_anchor = any(kw in lower for kw in IMAGE_RETRIEVAL_ANCHORS)
+    return has_anchor or (has_noun and has_action)
 
 
 class IntentStage(PipelineStage):
@@ -185,48 +165,54 @@ class IntentStage(PipelineStage):
                 if user_hist:
                     prev_rewritten_query = user_hist[-1]
 
-            # 2. Execute Micro LLM Rewrite & Tri-State Routing (Sub-step LLM is recorded after root step)
+            # 2. Execute Micro LLM Rewrite & Multi-Intent Routing
+            rewrite_result = None
             if self.query_rewriter:
-                rewritten_query, rewrite_method, needs_vector_search, needs_web_search = await self.query_rewriter.rewrite(
+                rewrite_result = await self.query_rewriter.rewrite(
                     user_message=context.user_message,
                     cleaned_query=cleaned_query,
                     prev_rewritten_query=prev_rewritten_query,
                     needs_llm_rewrite=True,
                     intent_hint=None,
                 )
+                rewritten_query = rewrite_result.rewritten_query
+                rewrite_method = rewrite_result.method
+                needs_vector_search = rewrite_result.needs_vector_search
+                needs_web_search = rewrite_result.needs_web_search
+                llm_needs_image_retrieval = getattr(rewrite_result, "needs_image_retrieval", False)
             else:
                 rewritten_query = cleaned_query or context.user_message
                 rewrite_method = "FAST_PATH"
                 needs_vector_search = True
                 needs_web_search = False
+                llm_needs_image_retrieval = False
 
-            # 3. Determine intents based on LLM Router decisions & Multimodal Vision Anchors
+            # 3. Determine intents based on Fast-Path Anchors & LLM Knowledge Router
             matched_intents: List[ChatIntent] = []
-            if context.has_images:
-                msg_lower = (context.user_message or "").lower()
+            msg_lower = (context.user_message or "").lower()
+            is_retrieval = is_image_retrieval_query(msg_lower) or llm_needs_image_retrieval
 
-                if any(kw in msg_lower for kw in VISION_GAMEPLAY_ANCHORS):
-                    matched_intents.append(ChatIntent.GAMEPLAY_STATS_EVALUATION)
-                    matched_intents.append(ChatIntent.LORE)
+            if context.has_images:
+                matched_intents.append(ChatIntent.IMAGE_ANALYSIS)
+                matched_intents.append(ChatIntent.CONVERSATIONAL)
+
+                # Nếu người dùng vừa gửi ảnh mới vừa yêu cầu tìm/so sánh với ảnh cũ trong quá khứ
+                if is_retrieval:
+                    matched_intents.append(ChatIntent.RETRIEVE_PAST_IMAGE)
                     needs_vector_search = True
-                elif any(kw in msg_lower for kw in VISION_MEME_ANCHORS):
-                    matched_intents.append(ChatIntent.MEME_REACTION)
-                elif any(kw in msg_lower for kw in VISION_CODE_ANCHORS):
-                    matched_intents.append(ChatIntent.CODE_ANALYSIS)
-                    matched_intents.append(ChatIntent.KNOWLEDGE_OR_TASK)
-                elif any(kw in msg_lower for kw in VISION_DOCUMENT_OCR_ANCHORS):
-                    matched_intents.append(ChatIntent.DOCUMENT_OCR)
-                    matched_intents.append(ChatIntent.KNOWLEDGE_OR_TASK)
-                elif any(kw in msg_lower for kw in VISION_ARTWORK_ANCHORS):
-                    matched_intents.append(ChatIntent.ARTWORK_EVALUATION)
-                    matched_intents.append(ChatIntent.CONVERSATIONAL)
-                else:
-                    matched_intents.append(ChatIntent.IMAGE_ANALYSIS)
-                    matched_intents.append(ChatIntent.CONVERSATIONAL)
+
+                # Chỉ kích hoạt Lore nếu Router yêu cầu hoặc có câu hỏi lore cụ thể
+                if needs_vector_search and not is_retrieval:
+                    matched_intents.append(ChatIntent.LORE)
                 
                 routing_reason = f"Multimodal Vision Router: {[i.value for i in matched_intents]}"
             else:
-                if needs_vector_search:
+                if is_retrieval:
+                    matched_intents.append(ChatIntent.RETRIEVE_PAST_IMAGE)
+                    matched_intents.append(ChatIntent.CONVERSATIONAL)
+                    needs_vector_search = True
+                    routing_reason = "Multimodal Visual Memory Router: Retrieve past images from Qdrant 'image_memories'"
+                elif needs_vector_search:
                     matched_intents.append(ChatIntent.LORE)
                     matched_intents.append(ChatIntent.KNOWLEDGE_OR_TASK)
                 elif needs_web_search:
@@ -234,7 +220,9 @@ class IntentStage(PipelineStage):
                 else:
                     matched_intents.append(ChatIntent.CONVERSATIONAL)
 
-                if needs_vector_search and needs_web_search:
+                if ChatIntent.RETRIEVE_PAST_IMAGE in matched_intents:
+                    pass
+                elif needs_vector_search and needs_web_search:
                     routing_reason = "LLM Tri-State: Hybrid Search (Vector Lore + Direct Web Search)"
                 elif needs_vector_search:
                     routing_reason = "LLM Tri-State: Qdrant Vector Search (Game Lore)"
@@ -242,6 +230,8 @@ class IntentStage(PipelineStage):
                     routing_reason = "LLM Tri-State: Direct Web Search (External / Internet)"
                 else:
                     routing_reason = "LLM Tri-State: Code / Small Talk (0ms RAG Bypass)"
+
+            context.needs_image_retrieval = (ChatIntent.RETRIEVE_PAST_IMAGE in matched_intents)
 
             intent_result = IntentResult(
                 intents=matched_intents,

@@ -175,6 +175,16 @@ window.PipelineTreeEngine = {
                 return `${count} facts tri thức server`;
             }
         },
+        'image_memory_retrieval': {
+            type: 'rag',
+            icon: 'image',
+            title: (step) => step.title || '5.1.e [IMAGE MEMORY] Truy hồi Ký Ức Hình Ảnh (Qdrant Image Memories)',
+            subtitle: (step) => {
+                const count = step.data?.retrieved_images_count || step.data?.retrieved_images?.length || 0;
+                const topScore = step.data?.retrieved_images?.[0]?.score;
+                return topScore ? `${count} ảnh ký ức (Top: ${(topScore).toFixed(2)})` : `${count} ảnh ký ức`;
+            }
+        },
         'information_alignment_check': {
             type: 'alignment',
             icon: 'shield-check',

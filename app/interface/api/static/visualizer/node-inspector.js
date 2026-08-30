@@ -101,6 +101,9 @@ ${window.VisualizerApp.escapeHtml(userMessage.trim())}
                     case 'guild_memory_retrieval':
                         contentHtml = this.renderGuildMemoryRetrievalInspector(step);
                         break;
+                    case 'image_memory_retrieval':
+                        contentHtml = this.renderImageMemoryRetrievalInspector(step);
+                        break;
                     case 'information_alignment_check':
                     case 'alignment_assessment':
                         contentHtml = this.renderAlignmentInspector(step);
@@ -712,6 +715,41 @@ ${window.VisualizerApp.escapeHtml(userMessage.trim())}
         `;
     },
 
+    // ── STAGE 5.1.e: IMAGE MEMORY RETRIEVAL INSPECTOR ──
+    renderImageMemoryRetrievalInspector(step) {
+        const data = step.data || {};
+        const retrievedImages = data.retrieved_images || [];
+        const count = data.retrieved_images_count || retrievedImages.length;
+        const topScore = retrievedImages.length > 0 && retrievedImages[0].score !== undefined
+            ? (typeof retrievedImages[0].score === 'number' ? (retrievedImages[0].score).toFixed(2) : retrievedImages[0].score)
+            : '—';
+
+        const metrics = [
+            { label: 'Số Ảnh Ký Ức Tìm Thấy', value: count, icon: 'image', color: '#ff4d88' },
+            { label: 'Top Similarity Score', value: topScore, icon: 'zap', color: '#10b981', badge: 'Cos >= 0.68' },
+            { label: 'Bộ Sưu Tập Vector', value: 'image_memories', icon: 'database', color: '#38bdf8', small: true },
+            { label: 'Cơ Chế Phân Lập', value: 'User & Guild Scoped', icon: 'lock', color: '#a855f7' },
+        ];
+
+        const metricGridHtml = InspectorWidgets.renderMetricGrid(metrics);
+        const imagesCardHtml = InspectorWidgets.renderRetrievedImagesCard(retrievedImages, "Ký Ức Hình Ảnh Đã Truy Hồi Từ Qdrant");
+        const rawJsonHtml = InspectorWidgets.renderJsonViewer(data, "Raw Image Memory Retrieval Payload");
+
+        return `
+            <div class="inspector-panel">
+                <div class="inspector-header">
+                    <div class="inspector-title-group">
+                        <span class="inspector-badge badge-rag" style="background: rgba(255, 77, 136, 0.15); color: #ff80aa; border-color: rgba(255, 77, 136, 0.35);">Image Memory Retrieval</span>
+                        <h2>${window.VisualizerApp.escapeHtml(step.title || '5.1.e [IMAGE MEMORY] Truy hồi Ký Ức Hình Ảnh')}</h2>
+                    </div>
+                </div>
+                ${metricGridHtml}
+                ${imagesCardHtml}
+                ${rawJsonHtml}
+            </div>
+        `;
+    },
+
     // ── STAGE 5.2: CONTEXT ASSESSOR INSPECTOR ──
     renderAlignmentInspector(step) {
         const data = step.data || {};
@@ -1024,6 +1062,38 @@ ${window.VisualizerApp.escapeHtml(userMessage.trim())}
             </div>
         `).join('');
 
+        let attachedImagesHtml = '';
+        const attachedImgs = data.attached_images || data.attachedImages || (data.parsed_response && data.parsed_response.attached_images) || [];
+        if (Array.isArray(attachedImgs) && attachedImgs.length > 0) {
+            const imgPreviews = attachedImgs.map((url, i) => `
+                <div style="display: flex; align-items: center; gap: 10px; background: rgba(255, 77, 136, 0.1); border: 1px solid rgba(255, 77, 136, 0.3); border-radius: 6px; padding: 8px 12px; margin-bottom: 6px;">
+                    <div style="width: 48px; height: 48px; border-radius: 4px; overflow: hidden; background: #000; cursor: pointer;" onclick="window.open('${url}', '_blank')">
+                        <img src="${url}" alt="Attached #${i+1}" style="width: 100%; height: 100%; object-fit: cover;" />
+                    </div>
+                    <div style="flex: 1;">
+                        <div style="font-size: 11px; color: #ff80aa; font-weight: 600;">Tệp ảnh đính kèm #${i+1} (Discord AttachmentBuilder)</div>
+                        <div style="font-size: 11.5px; color: var(--text-primary); font-family: monospace;">${window.VisualizerApp.escapeHtml(url)}</div>
+                    </div>
+                    <a href="${url}" target="_blank" class="btn" style="padding: 4px 8px; font-size: 11px; color: #ff80aa;">
+                        Mở ảnh ↗
+                    </a>
+                </div>
+            `).join('');
+
+            attachedImagesHtml = `
+                <div class="inspector-card" style="border-left: 3px solid #ff4d88; background: linear-gradient(135deg, rgba(255, 77, 136, 0.08), rgba(20, 10, 15, 0.6)); margin-top: 12px;">
+                    <div class="inspector-card-title" style="justify-content: space-between;">
+                        <div style="display: flex; align-items: center; gap: 6px;">
+                            ${InspectorWidgets.icon('image', { size: 14, color: '#ff4d88' })}
+                            <span style="color: #ff80aa; font-weight: 700;">Tệp Ảnh Chisa Đính Kèm Gửi Trả Cho Senpai (${attachedImgs.length})</span>
+                        </div>
+                        <span class="pill" style="background: rgba(255, 77, 136, 0.2); color: #ff99bb; font-size: 10px;">Delivered to Discord/Web</span>
+                    </div>
+                    ${imgPreviews}
+                </div>
+            `;
+        }
+
         const rawJsonHtml = InspectorWidgets.renderJsonViewer(data, "Raw LLM Payload");
 
         return `
@@ -1036,6 +1106,7 @@ ${window.VisualizerApp.escapeHtml(userMessage.trim())}
                 </div>
                 ${metricGridHtml}
                 ${tokenBreakdownHtml}
+                ${attachedImagesHtml}
                 <div class="inspector-card" style="margin-top: 12px;">
                     <div class="tab-container">
                         <div class="tab-header">
@@ -1134,11 +1205,13 @@ ${window.VisualizerApp.escapeHtml(userMessage.trim())}
         const ext = Boolean(data.batch_memory_extraction_triggered);
         const sum = Boolean(data.auto_summarization_triggered);
         const top = Boolean(data.topic_summarization_triggered);
+        const vis = Boolean(data.visual_memory_ingestion_triggered);
 
         const metrics = [
             { label: 'Batch Fact Extractor', value: ext ? 'ĐÃ KÍCH HOẠT' : 'ĐANG CHỜ', icon: 'brain', color: ext ? '#10b981' : '#64748b', subtitle: 'Chu kỳ mỗi 3 lượt' },
             { label: 'Auto-Summarization', value: sum ? 'ĐÃ KÍCH HOẠT' : 'ĐANG CHỜ', icon: 'file-text', color: sum ? '#10b981' : '#64748b', subtitle: 'Chu kỳ mỗi 10 lượt' },
             { label: 'Topic Summarizer', value: top ? 'ĐÃ KÍCH HOẠT' : 'ĐANG CHỜ', icon: 'layers', color: top ? '#10b981' : '#64748b', subtitle: 'Chu kỳ mỗi 30 tin' },
+            { label: 'Visual Memory Ingest', value: vis ? 'ĐÃ KÍCH HOẠT' : 'KHÔNG CÓ ẢNH', icon: 'image', color: vis ? '#ff4d88' : '#64748b', subtitle: vis ? `${data.images_count || 1} ảnh lưu Qdrant` : 'Bỏ qua' },
             { label: 'Lượt tương tác / Queue', value: `#${data.interaction_count || 0}`, icon: 'activity', color: '#f59e0b', subtitle: 'Bình thường' },
         ];
 

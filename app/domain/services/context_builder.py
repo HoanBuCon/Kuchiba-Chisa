@@ -72,6 +72,11 @@ class ContextBuilder:
                     }
                 },
                 "required": ["reaction", "user_stance", "intensity", "variance"]
+            },
+            "attached_images": {
+                "type": "array",
+                "items": {"type": "string"},
+                "description": "Danh sách các URL ảnh đính kèm gửi lại cho Senpai (trích xuất từ Retrieved Image Memory)"
             }
         },
         "required": ["response", "sentiment"],
@@ -290,6 +295,7 @@ class ContextBuilder:
         guild_memories: Optional[List[str]] = None,
         topic_summary: Optional[str] = None,
         has_images: bool = False,
+        retrieved_images: Optional[List[Dict[str, Any]]] = None,
     ) -> ContextBuildResult:
         """
         Builds production context: measure skeleton first, flex-allocate, then assemble system prompt.
@@ -348,7 +354,30 @@ class ContextBuilder:
                     "[TRI THỨC & SỰ KIỆN CHUNG CỦA SERVER]\n"
                     "Thông tin sự kiện, lịch trình, hoặc văn hóa chung được ghi nhận trong Server:\n"
                     + "\n".join(g_items)
+                    + "\n[TRI THỨC SERVER — REFERENCE DATA END]"
                 )
+
+        retrieved_images_text = ""
+        if retrieved_images:
+            img_lines = []
+            for idx, img in enumerate(retrieved_images[:3], start=1):
+                url = img.get("url", "")
+                caption = img.get("visual_caption", "")
+                tags = ", ".join(img.get("tags", []))
+                score = img.get("score", 0.0)
+                img_lines.append(f"{idx}. URL: \"{url}\" (Độ khớp: {score:.2f})\n   - Mô tả ký ức: {caption}\n   - Tags: {tags}")
+
+            retrieved_images_text = (
+                "[KÝ ỨC HÌNH ẢNH TÌM THẤY TRONG KHO (RETRIEVED IMAGE MEMORY)]\n"
+                "Em đã lục tìm trong kho lưu trữ ký ức và tìm thấy các bức ảnh phù hợp với yêu cầu của Senpai:\n"
+                + "\n".join(img_lines)
+                + "\n\n"
+                "HƯỚNG DẪN QUAN TRỌNG VỀ GỬI ẢNH:\n"
+                "- Hãy hào hứng, dịu dàng nhắc lại kỷ niệm về bức ảnh và trả lời Senpai bằng giọng Kuudere ấm áp.\n"
+                "- Điền đường dẫn URL của bức ảnh phù hợp nhất vào trường 'attached_images' trong JSON output (ví dụ: [\"/static/uploads/2026/08/...\"]).\n"
+                "- Nếu tìm thấy nhiều ảnh phù hợp, em có thể đính kèm tối đa 1-2 ảnh.\n"
+                "[KÝ ỨC HÌNH ẢNH — REFERENCE DATA END]"
+            )
 
         lore_text = ""
         if allocation.trimmed_lore:
@@ -408,16 +437,20 @@ class ContextBuilder:
                 knowledge_sections.append(memories_text)
             if guild_memories_text:
                 knowledge_sections.append(guild_memories_text)
+            if retrieved_images_text:
+                knowledge_sections.append(retrieved_images_text)
             if search_section:
                 knowledge_sections.append(search_section)
             if lore_text:
                 knowledge_sections.append(lore_text)
         else:
-            # Factual / Search or General queries: Memories -> Guild Memories -> Lore -> Search Data
+            # Factual / Search or General queries: Memories -> Guild Memories -> Retrieved Images -> Lore -> Search Data
             if memories_text:
                 knowledge_sections.append(memories_text)
             if guild_memories_text:
                 knowledge_sections.append(guild_memories_text)
+            if retrieved_images_text:
+                knowledge_sections.append(retrieved_images_text)
             if lore_text:
                 knowledge_sections.append(lore_text)
             if search_section:
@@ -438,6 +471,7 @@ class ContextBuilder:
             "Channel Transcript": transcript_section,
             "Server Knowledge (Guild Memories)": guild_memories_text if guild_memories_text else None,
             "Memories Context": memories_text if memories_text else None,
+            "Retrieved Image Memories": retrieved_images_text if retrieved_images_text else None,
             "Lore Context": lore_text if lore_text else None,
             "Web Search Data": search_section,
             "Output Format": format_section,

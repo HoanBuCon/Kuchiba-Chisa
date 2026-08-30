@@ -209,7 +209,7 @@ async def test_unified_chat_engine_community_mode_execution():
         )
     ]
 
-    reply, updated_emotions, images_processed = await chat_engine.community_chat(
+    reply, updated_emotions, images_processed, attached_images = await chat_engine.community_chat(
         session=mock_session,
         channel_id="chan_123",
         user_id=user_id,

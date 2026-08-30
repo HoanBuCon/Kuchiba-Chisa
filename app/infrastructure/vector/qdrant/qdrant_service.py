@@ -36,12 +36,12 @@ def get_qdrant_client() -> AsyncQdrantClient:
 
 # ─── Collection Name Constants ────────────────────────────────────────────────
 
-# Production Pipeline collections
 COLLECTION_CHARACTER_LORE = "character_lore"
 COLLECTION_WORLD_LORE = "world_lore"
 COLLECTION_STORY_LORE = "story_lore"
 COLLECTION_MEMORIES = "memories"
 COLLECTION_GUILD_MEMORIES = "guild_memories"
+COLLECTION_IMAGE_MEMORIES = "image_memories"
 
 ALL_COLLECTIONS = [
     COLLECTION_CHARACTER_LORE,
@@ -49,6 +49,7 @@ ALL_COLLECTIONS = [
     COLLECTION_STORY_LORE,
     COLLECTION_MEMORIES,
     COLLECTION_GUILD_MEMORIES,
+    COLLECTION_IMAGE_MEMORIES,
 ]
 
 
@@ -181,6 +182,29 @@ class QdrantService(IVectorStore):
                 await self._client.create_payload_index(
                     collection_name=COLLECTION_GUILD_MEMORIES,
                     field_name="expires_at",
+                    field_schema=PST.INTEGER,
+                    wait=False
+                )
+            except Exception:
+                pass
+
+        # Ensure image_memories collection has indexes on user_id, guild_id, image_id, tags, created_at
+        if await self.collection_exists(COLLECTION_IMAGE_MEMORIES):
+            for f in ["user_id", "guild_id", "image_id", "tags"]:
+                try:
+                    await self._client.create_payload_index(
+                        collection_name=COLLECTION_IMAGE_MEMORIES,
+                        field_name=f,
+                        field_schema=PayloadSchemaType.KEYWORD,
+                        wait=False
+                    )
+                except Exception:
+                    pass
+            try:
+                from qdrant_client.http.models import PayloadSchemaType as PST
+                await self._client.create_payload_index(
+                    collection_name=COLLECTION_IMAGE_MEMORIES,
+                    field_name="created_at",
                     field_schema=PST.INTEGER,
                     wait=False
                 )

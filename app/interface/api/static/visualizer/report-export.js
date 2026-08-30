@@ -130,6 +130,21 @@ window.ReportExportEngine = {
                         md += `\n`;
                     }
                 }
+                else if (step.name === 'image_memory_retrieval') {
+                    const images = step.data?.retrieved_images || [];
+                    md += `*   **Bộ sưu tập:** \`Qdrant image_memories\`\n`;
+                    md += `*   **Số lượng ảnh tìm thấy:** \`${images.length}\`\n\n`;
+                    if (images.length > 0) {
+                        md += `#### 🖼️ Danh sách Ký Ức Hình Ảnh Đã Tìm Thấy:\n`;
+                        images.forEach((img, i) => {
+                            const caption = img.visual_caption || img.caption || 'Ký ức hình ảnh';
+                            const score = img.score !== undefined ? ` (Score: ${Number(img.score).toFixed(2)})` : '';
+                            const tags = Array.isArray(img.tags) ? ` [${img.tags.join(', ')}]` : '';
+                            md += `${i + 1}. **${caption}**${score}${tags} — URL: \`${img.url || '—'}\`\n`;
+                        });
+                        md += `\n`;
+                    }
+                }
                 else if (step.name === 'summarize_channel_topic') {
                     md += `*   **Kênh:** \`${step.data?.channel_id || '—'}\`\n`;
                     md += `*   **Số từ tóm tắt:** \`${step.data?.word_count || 0} từ\`\n\n`;
