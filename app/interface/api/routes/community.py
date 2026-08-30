@@ -92,9 +92,30 @@ async def community_chat_endpoint(
             status="success",
         )
 
+        emotion_caption = None
+        if updated_emotions and isinstance(updated_emotions, dict):
+            from app.domain.services.state_manager import StateManager
+            from app.domain.entities.emotion_state import EmotionState
+            try:
+                state_obj = EmotionState(
+                    user_id=request.user_id,
+                    trust=float(updated_emotions.get("trust", 0.5)),
+                    attachment=float(updated_emotions.get("attachment", 0.0)),
+                    joy=float(updated_emotions.get("joy", 0.4)),
+                    sadness=float(updated_emotions.get("sadness", 0.1)),
+                    irritation=float(updated_emotions.get("irritation", 0.1)),
+                    shyness=float(updated_emotions.get("shyness", 0.0)),
+                    curiosity=float(updated_emotions.get("curiosity", 0.2)),
+                    comfort=float(updated_emotions.get("comfort", 0.5)),
+                )
+                emotion_caption = StateManager.get_emotion_summary_caption(state_obj)
+            except Exception:
+                emotion_caption = None
+
         return CommunityChatResponse(
             response=reply_text or "Chisa chào mọi người ạ ~",
             emotions=updated_emotions or {},
+            emotion_caption=emotion_caption,
             execution_time_ms=duration_ms,
         )
 

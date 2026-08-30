@@ -147,3 +147,40 @@ def test_caption_baseline_calm():
     )
     caption = StateManager.get_emotion_summary_caption(state)
     assert "Kuudere điềm tĩnh" in caption
+
+
+def test_caption_irritation_never_leaks_chill():
+    # Even if comfort is 0.75, if irritation is 0.45 and attachment is low, Chisa MUST be annoyed, NOT chill
+    state = EmotionState(
+        user_id="test_user",
+        trust=0.60,
+        attachment=0.02,
+        joy=0.30,
+        sadness=0.10,
+        irritation=0.45,
+        shyness=0.05,
+        curiosity=0.25,
+        comfort=0.75
+    )
+    caption = StateManager.get_emotion_summary_caption(state)
+    assert "khó chịu" in caption
+    assert "thư thái" not in caption
+    assert "bình yên" not in caption
+    assert "Kuudere điềm tĩnh" not in caption
+
+
+def test_caption_pure_annoyance_with_high_trust():
+    # Irritation 0.75 with Trust 0.60 -> Must be angry/indignant
+    state = EmotionState(
+        user_id="test_user",
+        trust=0.60,
+        attachment=0.10,
+        joy=0.10,
+        sadness=0.10,
+        irritation=0.75,
+        shyness=0.0,
+        curiosity=0.10,
+        comfort=0.20
+    )
+    caption = StateManager.get_emotion_summary_caption(state)
+    assert "khó chịu" in caption or "bức xúc" in caption or "tức giận" in caption

@@ -20,5 +20,6 @@ class ChatResponse(BaseModel):
     response: str = Field(..., description="The generated response from Chisa")
     user_id: str = Field(..., description="Echoes back the user_id for tracking")
     emotions: dict | None = Field(default=None, description="Current emotional state of Chisa")
+    emotion_caption: Optional[str] = Field(default=None, description="Dynamic psychological summary caption of Chisa's emotion state")
     loop_thinking_activated: bool = Field(default=False, description="True if the Loop Thinking Agent was activated during this request")
 

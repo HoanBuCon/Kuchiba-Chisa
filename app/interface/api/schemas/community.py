@@ -27,5 +27,6 @@ class CommunityChatRequest(BaseModel):
 class CommunityChatResponse(BaseModel):
     response: str = Field(..., description="Chisa's reply in the community channel")
     emotions: Dict[str, Any] = Field(default_factory=dict, description="Updated emotion state with current speaker")
+    emotion_caption: Optional[str] = Field(default=None, description="Dynamic psychological summary caption")
     sentiment: Optional[Dict[str, Any]] = Field(default=None, description="Sentiment analysis of interaction")
     execution_time_ms: float = Field(default=0.0, description="Pipeline execution duration in milliseconds")
