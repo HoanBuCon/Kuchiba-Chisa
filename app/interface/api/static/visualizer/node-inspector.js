@@ -244,6 +244,48 @@ ${window.VisualizerApp.escapeHtml(userMessage.trim())}
             `;
         }
 
+        // Multimodal Vision Gallery Preview Card
+        let visionGalleryHtml = '';
+        if (data.has_images && data.processed_images && data.processed_images.length > 0) {
+            const imgCards = data.processed_images.map((img, idx) => {
+                const sizeKb = img.size_bytes ? (img.size_bytes / 1024).toFixed(1) + ' KB' : '';
+                const dim = img.width && img.height ? `${img.width}×${img.height}` : '';
+                const ephemBadge = img.is_ephemeral ? '<span class="pill" style="background: rgba(245, 158, 11, 0.2); color: #fbbf24; border-color: rgba(245, 158, 11, 0.4); font-size: 9px;">Ephemeral Ref</span>' : '<span class="pill" style="background: rgba(34, 197, 94, 0.2); color: #4ade80; border-color: rgba(34, 197, 94, 0.4); font-size: 9px;">Saved WebP</span>';
+                const imgSrc = img.thumbnail_url || img.thumbnail_data_uri || img.url || '';
+                const fullUrl = img.url || imgSrc;
+                return `
+                    <div style="background: rgba(14, 7, 15, 0.85); padding: 8px; border-radius: 6px; border: 1px solid rgba(255, 34, 62, 0.25); display: flex; flex-direction: column; gap: 6px;">
+                        <div style="position: relative; overflow: hidden; border-radius: 4px; aspect-ratio: 1; background: #000; cursor: pointer;" onclick="if('${fullUrl}'.startsWith('http') || '${fullUrl}'.startsWith('/')) { window.open('${fullUrl}', '_blank'); }">
+                            <img src="${imgSrc}" alt="Vision Input #${idx+1}" style="width: 100%; height: 100%; object-fit: cover; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'" />
+                        </div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; font-size: 10.5px; font-family: 'JetBrains Mono', monospace;">
+                            <span style="color: var(--text-secondary);">${dim}</span>
+                            <span style="color: var(--text-muted);">${sizeKb}</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span style="font-size: 10px; color: var(--text-muted);">#${idx+1}</span>
+                            ${ephemBadge}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            visionGalleryHtml = `
+                <div class="inspector-card" style="border-left: 3px solid #ff223e; background: linear-gradient(135deg, rgba(255, 34, 62, 0.08), rgba(18, 10, 20, 0.6)); margin-top: 12px;">
+                    <div class="inspector-card-title" style="justify-content: space-between;">
+                        <div style="display: flex; align-items: center; gap: 6px;">
+                            ${InspectorWidgets.icon('eye', { size: 14, color: '#ff223e' })}
+                            <span style="color: #ff758c; font-weight: 700;">Multimodal Vision Ingestion (Đã Nén WebP & Zero-EXIF)</span>
+                        </div>
+                        <span class="pill" style="background: rgba(255, 34, 62, 0.2); color: #ff99aa; border-color: rgba(255, 34, 62, 0.4); font-size: 10px;">${data.processed_images.length} ảnh</span>
+                    </div>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; margin-top: 10px;">
+                        ${imgCards}
+                    </div>
+                </div>
+            `;
+        }
+
         const rawJsonHtml = InspectorWidgets.renderJsonViewer(data, "Raw Initialization Payload");
 
         return `
@@ -255,6 +297,7 @@ ${window.VisualizerApp.escapeHtml(userMessage.trim())}
                     </div>
                 </div>
                 ${metricGridHtml}
+                ${visionGalleryHtml}
                 ${ambientMoodHtml}
                 ${topicSummaryHtml}
                 ${transcriptHtml}
@@ -878,11 +921,13 @@ ${window.VisualizerApp.escapeHtml(userMessage.trim())}
         const inTok = data.input_tokens || (tb ? tb.total_input : 0);
         const outTok = data.output_tokens || (tb ? tb.total_output : 0);
         const cotTok = data.reasoning_tokens || (tb ? tb.reasoning_cot : 0);
-        const totTok = data.total_tokens || (inTok + outTok + cotTok);
+        const visTok = data.vision_tokens || 0;
+        const totTok = data.total_tokens || (inTok + outTok + cotTok + visTok);
 
         const metrics = [
             { label: 'Mô hình LLM', value: data.model || 'Model', icon: 'bot', color: '#38bdf8', small: true },
             { label: 'Input Tokens', value: inTok.toLocaleString(), icon: 'coins', color: '#60a5fa' },
+            ...(visTok > 0 ? [{ label: 'Vision Tokens', value: visTok.toLocaleString(), icon: 'eye', color: '#ff758c' }] : []),
             { label: 'CoT Reasoning', value: cotTok > 0 ? cotTok.toLocaleString() : '0', icon: 'brain', color: '#c084fc' },
             { label: 'Output Tokens', value: outTok.toLocaleString(), icon: 'coins', color: '#34d399' },
             { label: 'Tổng Tokens', value: totTok.toLocaleString(), icon: 'coins', color: '#fbbf24' },

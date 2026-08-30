@@ -20,9 +20,9 @@ class CacheStage(PipelineStage):
 
     async def process(self, context: ChatContext) -> ChatContext:
         cache_key = None
-        is_lore_only = len(context.intents) == 1 and context.intents[0] == ChatIntent.LORE and not context.is_small_talk
+        is_lore_only = len(context.intents) == 1 and context.intents[0] == ChatIntent.LORE and not context.is_small_talk and not context.has_images
         
-        # Only cache if intent is exclusively LORE (no SYSTEM_ACTION or MEMORY)
+        # Only cache if intent is exclusively LORE (no SYSTEM_ACTION or MEMORY or Images)
         if is_lore_only:
             from app.shared.utils.fallback_detector import is_fallback_reply
             query_hash = hashlib.md5(context.cleaned_query.encode()).hexdigest()

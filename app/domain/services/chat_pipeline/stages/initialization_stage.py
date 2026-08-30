@@ -103,6 +103,24 @@ class InitializationStage(PipelineStage):
             "comfort": getattr(emotion, "comfort", 0.50),
         }
 
+        # 5. Process Image Inputs (if any) via ImageIngestionService
+        if context.images:
+            from app.domain.services.image_ingestion import ImageIngestionService
+            ingestion_service = ImageIngestionService()
+            save_to_disk = not context.is_ephemeral_reference
+            try:
+                processed_images = await ingestion_service.ingest_images(
+                    image_inputs=context.images,
+                    save_to_disk=save_to_disk,
+                    is_ephemeral=context.is_ephemeral_reference,
+                )
+                context.processed_images = processed_images
+                context.has_images = len(processed_images) > 0
+                context.images_processed = processed_images
+            except Exception as img_err:
+                log.error("Failed to process images in InitializationStage", error=str(img_err))
+                context.has_images = False
+
         # Update context
         context.user_uuid = user_uuid
         context.conv_id = conv_id
@@ -146,6 +164,21 @@ class InitializationStage(PipelineStage):
                     "ambient_mood": context.recent_social_trace,
                     "channel_transcript_preview": (context.channel_transcript[:300] + "...") if context.channel_transcript and len(context.channel_transcript) > 300 else context.channel_transcript,
                     "attachment_bonus_raw": round(attachment_bonus_raw, 4),
+                    "has_images": context.has_images,
+                    "images_count": len(context.processed_images),
+                    "processed_images": [
+                        {
+                            "image_id": img.get("image_id"),
+                            "url": img.get("url"),
+                            "thumbnail_url": img.get("thumbnail_url") or img.get("thumbnail_data_uri"),
+                            "thumbnail_data_uri": img.get("thumbnail_data_uri"),
+                            "width": img.get("width"),
+                            "height": img.get("height"),
+                            "size_bytes": img.get("size_bytes"),
+                            "is_ephemeral": img.get("is_ephemeral"),
+                        }
+                        for img in context.processed_images
+                    ],
                     "status": "success"
                 }
             )

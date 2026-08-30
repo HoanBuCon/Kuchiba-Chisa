@@ -73,11 +73,29 @@ class DeepSeekAdapter(BaseLLMAdapter):
         raise last_error or LLMError("Max retries exhausted")
 
     async def _call_deepseek(self, prompt: StructuredPrompt) -> LLMResponse:
-        messages = [
-            {"role": "system", "content": prompt.system},
-            *prompt.history,
-            {"role": "user", "content": prompt.user_message},
-        ]
+        if prompt.images:
+            user_content = [{"type": "text", "text": prompt.user_message}]
+            for img_item in prompt.images:
+                user_content.append({
+                    "type": "image_url",
+                    "image_url": {
+                        "url": img_item,
+                        "detail": "high"
+                    }
+                })
+            messages = [
+                {"role": "system", "content": prompt.system},
+                *prompt.history,
+                {"role": "user", "content": user_content},
+            ]
+            target_model = getattr(settings, "DEEPSEEK_VISION_MODEL", "deepseek-v4-flash-vision-exp")
+        else:
+            messages = [
+                {"role": "system", "content": prompt.system},
+                *prompt.history,
+                {"role": "user", "content": prompt.user_message},
+            ]
+            target_model = self._model
 
         url = f"{self._base_url}/chat/completions"
         headers = {
@@ -86,7 +104,7 @@ class DeepSeekAdapter(BaseLLMAdapter):
         }
         
         payload = {
-            "model": self._model,
+            "model": target_model,
             "messages": messages,
             "max_tokens": prompt.max_tokens or self._max_tokens,
             "temperature": prompt.temperature if prompt.temperature is not None else self._temperature,
@@ -162,7 +180,8 @@ class DeepSeekAdapter(BaseLLMAdapter):
             input_tokens=input_tokens,
             output_tokens=output_tokens,
             reasoning_tokens=reasoning_tokens,
-            model=self._model,
+            vision_tokens=len(prompt.images) * 384 if prompt.images else 0,
+            model=target_model,
             finish_reason=finish_reason,
             reasoning_content=reasoning_content,
         )

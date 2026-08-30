@@ -26,13 +26,30 @@ class PersistenceStage(PipelineStage):
 
         total_tokens = context.estimated_input_tokens + context.estimated_output_tokens
         user_rw = context.rewritten_query or context.cleaned_query or None
+
+        media_meta = None
+        if context.processed_images:
+            media_meta = [
+                {
+                    "image_id": img.get("image_id"),
+                    "url": img.get("url"),
+                    "thumbnail_url": img.get("thumbnail_url"),
+                    "width": img.get("width"),
+                    "height": img.get("height"),
+                    "size_bytes": img.get("size_bytes"),
+                    "is_ephemeral": img.get("is_ephemeral"),
+                }
+                for img in context.processed_images
+            ]
+
         await conv_repo.save_message(
             context.conv_id,
             context.user_uuid,
             "user",
             context.user_message,
             rewritten_content=user_rw,
-            is_success=True
+            is_success=True,
+            media_metadata=media_meta,
         )
         await conv_repo.save_message(
             context.conv_id,

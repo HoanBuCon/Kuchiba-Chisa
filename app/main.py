@@ -180,6 +180,10 @@ def create_app() -> FastAPI:
     if visualizer_static_dir.is_dir():
         app.mount("/static/visualizer", StaticFiles(directory=str(visualizer_static_dir)), name="visualizer_static")
 
+    uploads_static_dir = PROJECT_ROOT / "app" / "static" / "uploads"
+    uploads_static_dir.mkdir(parents=True, exist_ok=True)
+    app.mount("/static/uploads", StaticFiles(directory=str(uploads_static_dir)), name="uploads_static")
+
     return app
 
 

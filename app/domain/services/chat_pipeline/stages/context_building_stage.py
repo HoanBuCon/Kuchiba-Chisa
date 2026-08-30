@@ -18,6 +18,21 @@ class ContextBuildingStage(PipelineStage):
 
         context.final_user_message = context.user_message
 
+        # If has_images, apply XML sandboxing to protect against Visual Prompt Injections
+        user_msg_to_send = context.final_user_message
+        image_payloads = []
+        if context.has_images:
+            from app.shared.security.vision_security import VisualPromptDefense
+            user_msg_to_send = VisualPromptDefense.construct_sandboxed_prompt(
+                user_text=context.final_user_message,
+                image_count=len(context.processed_images),
+            )
+            image_payloads = [
+                img["base64_data_uri"]
+                for img in context.processed_images
+                if img.get("base64_data_uri")
+            ]
+
         budget_mode = BudgetMode.resolve(
             is_small_talk=context.is_small_talk,
             has_thinking_steps=len(context.rag_context.thinking_steps) > 0 if context.rag_context else False,
@@ -34,7 +49,7 @@ class ContextBuildingStage(PipelineStage):
             memories=memories,
             lore=lore_chunks,
             history=context.history,
-            user_message=context.final_user_message,
+            user_message=user_msg_to_send,
             intent_name=", ".join(intent_values),
             tool_result=context.tool_output_msg or "",
             conversation_summary=context.conversation_summary,
@@ -49,16 +64,32 @@ class ContextBuildingStage(PipelineStage):
             ambient_context=context.ambient_context,
             guild_memories=guild_memories,
             topic_summary=context.topic_summary,
+            has_images=context.has_images,
         )
         
         context.prompt = build_result.prompt
+        context.prompt.images = image_payloads
         context.budget_audit = build_result.audit
 
         # Dynamic Temperature Adjustment:
-        # 1. Fact-heavy / Web search / Thinking loop -> 0.3 (high precision, zero hallucination)
-        # 2. RAG lore / memory context -> 0.5 (balanced accuracy and character persona)
-        # 3. Small talk / casual conversation -> 0.8 (creative and lively roleplay)
-        if context.rag_context and (context.rag_context.thinking_steps or context.tool_output_msg):
+        # 1. Code Analysis / Document OCR -> 0.2 (extreme precision, zero hallucination)
+        # 2. Gameplay Stats Evaluation -> 0.3 (analytical, high precision)
+        # 3. Meme Reaction -> 0.7 (witty, playful roleplay)
+        # 4. General Vision Analysis / Artwork -> 0.4 (balanced precision and Kuudere charm)
+        # 5. Fact-heavy / Web search / Thinking loop -> 0.3
+        # 6. RAG lore / memory context -> 0.5
+        # 7. Small talk / casual conversation -> 0.8
+        if context.has_images:
+            from app.domain.models.intent_result import ChatIntent
+            if ChatIntent.CODE_ANALYSIS in context.intents or ChatIntent.DOCUMENT_OCR in context.intents:
+                context.prompt.temperature = 0.2
+            elif ChatIntent.MEME_REACTION in context.intents:
+                context.prompt.temperature = 0.7
+            elif ChatIntent.GAMEPLAY_STATS_EVALUATION in context.intents:
+                context.prompt.temperature = 0.3
+            else:
+                context.prompt.temperature = 0.4
+        elif context.rag_context and (context.rag_context.thinking_steps or context.tool_output_msg):
             context.prompt.temperature = 0.3
         elif lore_chunks or memories:
             context.prompt.temperature = 0.5

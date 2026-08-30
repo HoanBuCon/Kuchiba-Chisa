@@ -84,6 +84,7 @@ class IConversationRepository(Protocol):
         token_count: Optional[int] = None,
         is_success: bool = True,
         rewritten_content: Optional[str] = None,
+        media_metadata: Optional[Any] = None,
     ) -> None:
         """
         Persists a new message into STM.
