@@ -21,21 +21,35 @@ class SqlAlchemyEmotionRepository(IEmotionRepository):
         result = await self.session.execute(stmt)
         state_db = result.scalar_one_or_none()
         if not state_db:
-            state_db = EmotionStateModel(
-                user_id=user_id,
-                joy=0.10,        # Match default baseline settings
-                sadness=0.00,
-                trust=0.50,
-                attachment=0.00,
-                irritation=0.00,
-                shyness=0.00,
-                curiosity=0.20,
-                comfort=0.50,
-                updated_at=int(time.time() * 1000)
-            )
-            self.session.add(state_db)
-            await self.session.flush()
-            await self.session.refresh(state_db)
+            try:
+                state_db = EmotionStateModel(
+                    user_id=user_id,
+                    joy=0.10,        # Match default baseline settings
+                    sadness=0.00,
+                    trust=0.50,
+                    attachment=0.00,
+                    irritation=0.00,
+                    shyness=0.00,
+                    curiosity=0.20,
+                    comfort=0.50,
+                    updated_at=int(time.time() * 1000)
+                )
+                self.session.add(state_db)
+                await self.session.flush()
+                await self.session.refresh(state_db)
+            except Exception:
+                return EmotionStateEntity(
+                    user_id=user_id,
+                    joy=0.10,
+                    sadness=0.00,
+                    trust=0.50,
+                    attachment=0.00,
+                    irritation=0.00,
+                    shyness=0.00,
+                    curiosity=0.20,
+                    comfort=0.50,
+                    updated_at=int(time.time() * 1000)
+                )
         return EmotionStateEntity(
             user_id=state_db.user_id,
             joy=getattr(state_db, "joy", 0.10) or 0.10,

@@ -70,6 +70,8 @@ class ChatEngine:
     async def get_emotion_state(self, session: IDbSession, user_id: str) -> EmotionState:
         from app.shared.utils.user_identity import normalize_user_id
         user_uuid = normalize_user_id(user_id)
+        user_repo = self.user_repo_factory(session)
+        await user_repo.get_or_create_user(user_uuid)
         emotion_repo = self.emotion_repo_factory(session)
         return await emotion_repo.get_emotion_state(user_uuid)
 

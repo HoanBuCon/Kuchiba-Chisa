@@ -121,10 +121,32 @@ async def chat_endpoint(
             normalized_user_id=normalized_user_id,
             chat_engine=chat_engine
         )
+        
+        emotion_caption = None
+        if emotions and isinstance(emotions, dict):
+            from app.domain.services.state_manager import StateManager
+            from app.domain.entities.emotion_state import EmotionState
+            try:
+                state_obj = EmotionState(
+                    user_id=request.user_id,
+                    trust=float(emotions.get("trust", 0.5)),
+                    attachment=float(emotions.get("attachment", 0.0)),
+                    joy=float(emotions.get("joy", 0.4)),
+                    sadness=float(emotions.get("sadness", 0.1)),
+                    irritation=float(emotions.get("irritation", 0.1)),
+                    shyness=float(emotions.get("shyness", 0.0)),
+                    curiosity=float(emotions.get("curiosity", 0.2)),
+                    comfort=float(emotions.get("comfort", 0.5)),
+                )
+                emotion_caption = StateManager.get_emotion_summary_caption(state_obj)
+            except Exception:
+                emotion_caption = None
+
         return ChatResponse(
             response=reply_text,
             user_id=request.user_id,
             emotions=emotions,
+            emotion_caption=emotion_caption,
             loop_thinking_activated=loop_thinking_activated
         )
     except ChatEngineBusyError:
@@ -203,6 +225,27 @@ async def chat_stream_endpoint(
                     on_token=sse_on_token,
                 )
                 await session.commit()
+
+            emotion_caption = None
+            if emotions and isinstance(emotions, dict):
+                from app.domain.services.state_manager import StateManager
+                from app.domain.entities.emotion_state import EmotionState
+                try:
+                    state_obj = EmotionState(
+                        user_id=request.user_id,
+                        trust=float(emotions.get("trust", 0.5)),
+                        attachment=float(emotions.get("attachment", 0.0)),
+                        joy=float(emotions.get("joy", 0.4)),
+                        sadness=float(emotions.get("sadness", 0.1)),
+                        irritation=float(emotions.get("irritation", 0.1)),
+                        shyness=float(emotions.get("shyness", 0.0)),
+                        curiosity=float(emotions.get("curiosity", 0.2)),
+                        comfort=float(emotions.get("comfort", 0.5)),
+                    )
+                    emotion_caption = StateManager.get_emotion_summary_caption(state_obj)
+                except Exception:
+                    emotion_caption = None
+
             await queue.put({
                 "type": "complete",
                 "trace_id": trace_id,
@@ -210,6 +253,7 @@ async def chat_stream_endpoint(
                     "response": reply_text,
                     "user_id": request.user_id,
                     "emotions": emotions,
+                    "emotion_caption": emotion_caption,
                     "loop_thinking_activated": loop_thinking_activated,
                 },
             })
@@ -300,6 +344,7 @@ async def get_emotions(
     """Retrieves the current emotional state of Chisa for the frontend UI."""
     try:
         emotion = await chat_engine.get_emotion_state(session, normalize_user_id_str(user_id))
+        from app.domain.services.state_manager import StateManager
         return {
             "joy": emotion.joy,
             "sadness": emotion.sadness,
@@ -309,6 +354,7 @@ async def get_emotions(
             "shyness": getattr(emotion, "shyness", 0.0),
             "curiosity": getattr(emotion, "curiosity", 0.20),
             "comfort": getattr(emotion, "comfort", 0.50),
+            "caption": StateManager.get_emotion_summary_caption(emotion),
         }
     except Exception as e:
         log.error("Failed to fetch emotions", error=str(e), user_id=user_id)

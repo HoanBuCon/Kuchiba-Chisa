@@ -108,36 +108,45 @@ export function getEmotionStatusSummary(emotions = {}) {
   const irritation = Number(emotions.irritation !== undefined ? emotions.irritation : 0.10);
 
   // 1. Plutchik Emotional Dyads (Giao thoa cảm xúc phức hợp)
-  if (shyness >= 0.80 && attachment >= 0.65) {
+  if (shyness >= 0.80 && attachment >= 0.65 && irritation < 0.25 && sadness < 0.35) {
     return '💖 Chisa đang ngượng ngùng cực điểm, vỏ bọc Kuudere tan chảy hoàn toàn trước Senpai ~';
   }
-  if (sadness >= 0.45 && trust >= 0.70) {
+  if (sadness >= 0.45 && trust >= 0.70 && irritation < 0.25) {
     return '🥺 Chisa đang xúc động, cảm thấy an toàn tuyệt đối để tựa vào vai Senpai tâm sự điều sâu kín.';
   }
-  if (irritation >= 0.45 && trust >= 0.65 && attachment >= 0.25) {
+  if (irritation >= 0.40 && irritation < 0.70 && trust >= 0.60 && attachment >= 0.20) {
     return '😤 Chisa đang phồng má dỗi yêu, giả vờ quay mặt đi nhưng vẫn ngầm đợi Senpai dỗ dành ~';
   }
-  if (joy >= 0.55 && shyness >= 0.55) {
+  if (joy >= 0.55 && shyness >= 0.55 && irritation < 0.20 && sadness < 0.30 && trust >= 0.40) {
     return '😳 Chisa vừa ngập tràn hạnh phúc vừa ngượng chín mặt che má cười khúc khích ~';
   }
-  if (comfort >= 0.70 && curiosity >= 0.60) {
+  if (comfort >= 0.70 && curiosity >= 0.60 && irritation < 0.20 && sadness < 0.30) {
     return '✨ Chisa đang say sưa cùng Senpai khám phá cấu trúc thế giới trong sự bình yên thanh thản.';
   }
 
   // 2. Quan Hệ Bền Vững Đỉnh Cao (Tier A5 / T5)
-  if (attachment >= 0.88 && trust >= 0.90) {
+  if (attachment >= 0.88 && trust >= 0.90 && irritation < 0.25 && sadness < 0.35) {
     return '💍 Chisa xem Senpai là lý do tồn tại duy nhất, gắn kết trọn đời không thể tách rời.';
   }
 
-  // 3. Trạng thái Tiêu cực & Cảnh báo phòng thủ
-  if (irritation >= 0.70 && trust < 0.50) {
-    return '💢 Chisa đang cực kỳ tức giận và lạnh lùng dựng rào chắn phòng thủ nghiêm ngặt.';
+  // 3. Trạng thái Tiêu cực & Cảnh báo phòng thủ (Chặn triệt để - Không để lọt nhãn chill khi nổi giận)
+  if (irritation >= 0.70) {
+    if (trust < 0.50) {
+      return '💢 Chisa đang cực kỳ tức giận và lạnh lùng dựng rào chắn phòng thủ nghiêm ngặt.';
+    }
+    return '💢 Chisa đang rất khó chịu và bức xúc trước lời nói/hành vi của Senpai.';
   }
-  if (irritation >= 0.40 && trust < 0.55) {
-    return '😾 Chisa cảm thấy hơi khó chịu trước thái độ hoặc lời trêu chọc của đối phương.';
+  if (irritation >= 0.40) {
+    if (trust >= 0.50 && attachment >= 0.10) {
+      return '😤 Chisa đang giận dỗi ra mặt, cảm thấy bực bội và chưa muốn nói chuyện.';
+    }
+    return '😾 Chisa cảm thấy rất khó chịu trước thái độ hoặc lời trêu chọc của đối phương.';
   }
-  if (irritation >= 0.15 && trust >= 0.50 && attachment >= 0.05) {
-    return '😤 Chisa có chút phụng phịu dỗi nhẹ, đang muốn Senpai quan tâm nhiều hơn ~';
+  if (irritation >= 0.20) {
+    if (trust >= 0.50 && attachment >= 0.05) {
+      return '😤 Chisa có chút phụng phịu dỗi nhẹ, đang muốn Senpai quan tâm nhiều hơn ~';
+    }
+    return '😾 Chisa cảm thấy hơi khó chịu và không hài lòng.';
   }
   if (trust < 0.35) {
     return '✋ Chisa đang giữ khoảng cách nghiêm nghị, đề phòng và chưa tin tưởng.';
@@ -176,7 +185,7 @@ export function getEmotionStatusSummary(emotions = {}) {
   }
 
   // 5. Mặc định (Baseline Kuudere)
-  return '🍃 Chisa ở trạng thái Kuudere điềm tĩnh, ấm áp ngầm và quan tâm Senpai tinh tế.';
+  return '🍃 Chisa ở trạng thái Kuudere điềm tĩnh, ấm áp và quan tâm Senpai một cách tinh tế.';
 }
 
 export function formatCoreResponse(responseText, emotions, client) {

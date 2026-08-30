@@ -120,6 +120,98 @@ async function streamChatResponse(payload, { onLoopThinkingStart, onToken } = {}
   return finalPayload;
 }
 
+// ── Emotion Status Summary Helper (21 Plutchik Dyads & Nuances) ──────────
+export function getEmotionStatusSummary(emotions = {}) {
+  const trust = Number(emotions.trust || 0);
+  const attachment = Number(emotions.attachment || 0);
+  const shyness = Number(emotions.shyness || 0);
+  const curiosity = Number(emotions.curiosity !== undefined ? emotions.curiosity : 0.20);
+  const comfort = Number(emotions.comfort !== undefined ? emotions.comfort : 0.50);
+  const joy = Number(emotions.joy !== undefined ? emotions.joy : 0.40);
+  const sadness = Number(emotions.sadness !== undefined ? emotions.sadness : 0.10);
+  const irritation = Number(emotions.irritation !== undefined ? emotions.irritation : 0.10);
+
+  // 1. Plutchik Emotional Dyads (Giao thoa cảm xúc phức hợp)
+  if (shyness >= 0.80 && attachment >= 0.65 && irritation < 0.25 && sadness < 0.35) {
+    return '💖 Chisa đang ngượng ngùng cực điểm, vỏ bọc Kuudere tan chảy hoàn toàn trước Senpai ~';
+  }
+  if (sadness >= 0.45 && trust >= 0.70 && irritation < 0.25) {
+    return '🥺 Chisa đang xúc động, cảm thấy an toàn tuyệt đối để tựa vào vai Senpai tâm sự điều sâu kín.';
+  }
+  if (irritation >= 0.40 && irritation < 0.70 && trust >= 0.60 && attachment >= 0.20) {
+    return '😤 Chisa đang phồng má dỗi yêu, giả vờ quay mặt đi nhưng vẫn ngầm đợi Senpai dỗ dành ~';
+  }
+  if (joy >= 0.55 && shyness >= 0.55 && irritation < 0.20 && sadness < 0.30 && trust >= 0.40) {
+    return '😳 Chisa vừa ngập tràn hạnh phúc vừa ngượng chín mặt che má cười khúc khích ~';
+  }
+  if (comfort >= 0.70 && curiosity >= 0.60 && irritation < 0.20 && sadness < 0.30) {
+    return '✨ Chisa đang say sưa cùng Senpai khám phá cấu trúc thế giới trong sự bình yên thanh thản.';
+  }
+
+  // 2. Quan Hệ Bền Vững Đỉnh Cao (Tier A5 / T5)
+  if (attachment >= 0.88 && trust >= 0.90 && irritation < 0.25 && sadness < 0.35) {
+    return '💍 Chisa xem Senpai là lý do tồn tại duy nhất, gắn kết trọn đời không thể tách rời.';
+  }
+
+  // 3. Trạng thái Tiêu cực & Cảnh báo phòng thủ (Chặn triệt để - Không để lọt nhãn chill khi nổi giận)
+  if (irritation >= 0.70) {
+    if (trust < 0.50) {
+      return '💢 Chisa đang cực kỳ tức giận và lạnh lùng dựng rào chắn phòng thủ nghiêm ngặt.';
+    }
+    return '💢 Chisa đang rất khó chịu và bức xúc trước lời nói/hành vi của Senpai.';
+  }
+  if (irritation >= 0.40) {
+    if (trust >= 0.50 && attachment >= 0.10) {
+      return '😤 Chisa đang giận dỗi ra mặt, cảm thấy bực bội và chưa muốn nói chuyện.';
+    }
+    return '😾 Chisa cảm thấy rất khó chịu trước thái độ hoặc lời trêu chọc của đối phương.';
+  }
+  if (irritation >= 0.20) {
+    if (trust >= 0.50 && attachment >= 0.05) {
+      return '😤 Chisa có chút phụng phịu dỗi nhẹ, đang muốn Senpai quan tâm nhiều hơn ~';
+    }
+    return '😾 Chisa cảm thấy hơi khó chịu và không hài lòng.';
+  }
+  if (trust < 0.35) {
+    return '✋ Chisa đang giữ khoảng cách nghiêm nghị, đề phòng và chưa tin tưởng.';
+  }
+  if (sadness >= 0.70) {
+    return '🌧️ Chisa đang cảm thấy đau lòng và chìm trong nỗi buồn sâu sắc.';
+  }
+  if (sadness >= 0.40) {
+    return '🥺 Chisa đang bâng khuâng, có chút u buồn man mác trong lòng.';
+  }
+  if (comfort < 0.30) {
+    return '⚡ Chisa đang cảm thấy căng thẳng và bất an trước bối cảnh xung quanh.';
+  }
+
+  // 4. Trạng thái Tích cực & Nâng cao
+  if (joy >= 0.60 && shyness >= 0.25) {
+    return '🥰 Chisa đang ngập tràn niềm vui, đôi má hơi ửng hồng hạnh phúc bên Senpai ~';
+  }
+  if (joy >= 0.50) {
+    return '😊 Chisa đang có tâm trạng rất vui vẻ, thoải mái và dễ chịu.';
+  }
+  if (shyness >= 0.55) {
+    return '🙈 Chisa đang bối rối, hai má ửng hồng thẹn thùng trước lời nói của Senpai ~';
+  }
+  if (curiosity >= 0.85) {
+    return '💡 Chisa đang phấn khích tột độ, ánh mắt sáng lấp lánh say mê giải mã cùng Senpai!';
+  }
+  if (curiosity >= 0.60) {
+    return '🔎 Chisa đang rất hào hứng và say mê muốn cùng Senpai tìm hiểu sâu hơn.';
+  }
+  if (comfort >= 0.85) {
+    return '🕊️ Chisa cảm nhận sự bình yên tuyệt đối, coi Senpai là bến đỗ an toàn nhất thế gian.';
+  }
+  if (comfort >= 0.60) {
+    return '🍵 Chisa đang cảm nhận được sự ấm áp, bình yên và thư thái trọn vẹn bên Senpai.';
+  }
+
+  // 5. Mặc định (Baseline Kuudere)
+  return '🍃 Chisa ở trạng thái Kuudere điềm tĩnh, ấm áp ngầm và quan tâm Senpai tinh tế.';
+}
+
 // ── Message Component ───────────────────────────────────────────────────
 function Message({ msg }) {
   if (msg.role === 'user') {
@@ -148,6 +240,11 @@ function Message({ msg }) {
           <div className="chisa-content">
             <ReactMarkdown>{msg.content}</ReactMarkdown>
           </div>
+          {msg.caption && (
+            <div className="chisa-msg-caption">
+              <span>{msg.caption}</span>
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -155,7 +252,7 @@ function Message({ msg }) {
 }
 
 // ── Emotion Panel Component ──────────────────────────────────────────────
-function EmotionPanel({ emotions }) {
+function EmotionPanel({ emotions, caption }) {
   const bars = [
     { label: 'Tin tưởng', key: 'trust', icon: <Shield size={12} />, color: '#ffeb3b' },
     { label: 'Gắn bó', key: 'attachment', icon: <Heart size={12} />, color: '#e91e63' },
@@ -167,9 +264,22 @@ function EmotionPanel({ emotions }) {
     { label: 'Khó chịu', key: 'irritation', icon: <Zap size={12} />, color: '#f44336' },
   ];
 
+  const currentCaption = caption || getEmotionStatusSummary(emotions);
+
   return (
     <div className="emotion-panel">
-      <div className="sidebar-section-label" style={{ padding: 0 }}>Chỉ số cảm xúc</div>
+      {/* Dynamic Mood Card */}
+      <div className="emotion-mood-card">
+        <div className="emotion-mood-header">
+          <Sparkles size={13} className="emotion-mood-icon" />
+          <span>Tâm trạng hiện tại</span>
+        </div>
+        <div className="emotion-mood-desc">
+          {currentCaption}
+        </div>
+      </div>
+
+      <div className="sidebar-section-label" style={{ padding: '8px 0 0 0' }}>Chỉ số cảm xúc 8 chiều</div>
       <div className="emotion-list">
         {bars.map(b => {
           const val = emotions?.[b.key] || 0;
@@ -282,6 +392,7 @@ export default function App() {
   const [isThinkingMode, setIsThinkingMode] = useState(false);
   const [streamedText, setStreamedText]     = useState('');
   const [emotions, setEmotions]             = useState({ joy: 0.5, sadness: 0.0, trust: 0.5, irritation: 0.0, attachment: 0.0 });
+  const [emotionCaption, setEmotionCaption] = useState('');
   const [isHistoryLoading, setIsHistoryLoading] = useState(true);
   const [isEmotionOpen, setIsEmotionOpen]   = useState(false);
 
@@ -310,7 +421,10 @@ export default function App() {
     // Fetch Emotions
     axios.get(`${BASE}/chat/emotions/${activeSessionId}`)
       .then(res => {
-        if (res.data) setEmotions(res.data);
+        if (res.data) {
+          setEmotions(res.data);
+          if (res.data.caption) setEmotionCaption(res.data.caption);
+        }
       })
       .catch(console.error);
   }, [activeSessionId]);
@@ -386,6 +500,7 @@ export default function App() {
       const res = await axios.delete(`${BASE}/chat/clear/${activeSessionId}`);
       setMessages([{ role: 'chisa', content: `🌸 ${res.data?.message || 'Ký ức đã được xóa!'}` }]);
       setEmotions({ joy: 0.1, sadness: 0.0, trust: 0.5, irritation: 0.0, attachment: 0.0 });
+      setEmotionCaption('🍃 Chisa ở trạng thái Kuudere điềm tĩnh, ấm áp ngầm và quan tâm Senpai tinh tế.');
     } catch {
       setMessages(prev => [...prev, { role: 'chisa', content: '*(Lỗi)* Em không thể xóa ký ức lúc này, hãy thử lại nhé!' }]);
     } finally {
@@ -433,9 +548,11 @@ export default function App() {
       );
 
       if (res?.response) {
-        setMessages(prev => [...prev, { role: 'chisa', content: res.response }]);
+        const caption = res.emotion_caption || '';
+        setMessages(prev => [...prev, { role: 'chisa', content: res.response, caption }]);
         if (res.emotions) {
           setEmotions(res.emotions);
+          if (caption) setEmotionCaption(caption);
         }
       } else {
         throw new Error('bad response');
@@ -577,7 +694,7 @@ export default function App() {
           <div className="sidebar-chisa-art">
             <img src="/chisa_drink.gif" alt="Chisa" className="sidebar-chisa-img" />
           </div>
-          <EmotionPanel emotions={emotions} />
+          <EmotionPanel emotions={emotions} caption={emotionCaption} />
         </div>
       </div>
     </div>

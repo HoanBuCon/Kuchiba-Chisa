@@ -534,6 +534,19 @@ body {
   word-break: break-word;
 }
 
+.chisa-msg-caption {
+  margin-top: 8px;
+  padding-top: 6px;
+  border-top: 1px dashed rgba(229, 57, 53, 0.18);
+  font-size: 12px;
+  color: var(--text-secondary);
+  font-style: italic;
+  line-height: 1.4;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
 .chisa-avatar-img {
   width: 32px;
   height: 32px;
@@ -734,6 +747,40 @@ body {
   border-radius: var(--radius-sm);
   margin-top: 12px;
   border: 1px solid var(--border);
+}
+
+.emotion-mood-card {
+  background: linear-gradient(135deg, rgba(229, 57, 53, 0.12), rgba(186, 104, 200, 0.08));
+  border: 1px solid rgba(229, 57, 53, 0.25);
+  border-radius: var(--radius-md);
+  padding: 12px;
+  margin-bottom: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
+}
+
+.emotion-mood-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--red-light);
+}
+
+.emotion-mood-icon {
+  color: var(--red);
+}
+
+.emotion-mood-desc {
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--text-primary);
+  font-weight: 500;
 }
 
 .emotion-panel .sidebar-section-label {
