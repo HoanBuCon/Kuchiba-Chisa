@@ -27,6 +27,7 @@ class ChatContext:
     speaker_name: Optional[str] = None
     recent_community_messages: List[Any] = field(default_factory=list)
     channel_transcript: str = ""
+    topic_summary: Optional[str] = None
     recent_social_trace: Optional[Dict[str, Any]] = None
     ambient_context: Optional[str] = None
     

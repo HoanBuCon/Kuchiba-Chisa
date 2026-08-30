@@ -98,6 +98,9 @@ ${window.VisualizerApp.escapeHtml(userMessage.trim())}
                     case 'memory_retrieval':
                         contentHtml = this.renderMemoryRetrievalInspector(step);
                         break;
+                    case 'guild_memory_retrieval':
+                        contentHtml = this.renderGuildMemoryRetrievalInspector(step);
+                        break;
                     case 'information_alignment_check':
                     case 'alignment_assessment':
                         contentHtml = this.renderAlignmentInspector(step);
@@ -222,6 +225,23 @@ ${window.VisualizerApp.escapeHtml(userMessage.trim())}
             `;
         }
 
+        // Active Topic Summary Card
+        let topicSummaryHtml = '';
+        if (data.topic_summary) {
+            topicSummaryHtml = `
+                <div class="inspector-card" style="border-left: 3px solid #10b981; margin-top: 12px; background: linear-gradient(135deg, rgba(16, 185, 129, 0.08), rgba(10, 18, 15, 0.6));">
+                    <div class="inspector-card-title" style="justify-content: space-between;">
+                        <div style="display: flex; align-items: center; gap: 6px;">
+                            ${InspectorWidgets.icon('book-open', { size: 14, color: '#10b981' })}
+                            <span style="color: #6ee7b7; font-weight: 700;">Tóm Tắt Mạch Thảo Luận Kênh (Rolling Topic Summary)</span>
+                        </div>
+                        <span class="pill" style="background: rgba(16, 185, 129, 0.2); color: #a7f3d0; border-color: rgba(16, 185, 129, 0.4); font-size: 10px;">Sliding Window 30 msgs</span>
+                    </div>
+                    <div style="color: var(--text-primary); font-size: 12px; line-height: 1.6; margin-top: 6px; padding: 6px 0;">${window.VisualizerApp.escapeHtml(data.topic_summary)}</div>
+                </div>
+            `;
+        }
+
         const rawJsonHtml = InspectorWidgets.renderJsonViewer(data, "Raw Initialization Payload");
 
         return `
@@ -234,6 +254,7 @@ ${window.VisualizerApp.escapeHtml(userMessage.trim())}
                 </div>
                 ${metricGridHtml}
                 ${ambientMoodHtml}
+                ${topicSummaryHtml}
                 ${transcriptHtml}
                 ${emotionHtml}
                 ${rawJsonHtml}
@@ -603,6 +624,37 @@ ${window.VisualizerApp.escapeHtml(userMessage.trim())}
                     <div class="inspector-title-group">
                         <span class="inspector-badge badge-rag">Memory Retrieval</span>
                         <h2>${window.VisualizerApp.escapeHtml(step.title || '5.1.c [MEMORY] Truy hồi Ký ức')}</h2>
+                    </div>
+                </div>
+                ${metricGridHtml}
+                ${memCardsHtml}
+                ${rawJsonHtml}
+            </div>
+        `;
+    },
+
+    // ── STAGE 5.1.d: GUILD MEMORY RETRIEVAL INSPECTOR ──
+    renderGuildMemoryRetrievalInspector(step) {
+        const data = step.data || {};
+        const memories = data.guild_memories || [];
+
+        const metrics = [
+            { label: 'Tri thức / Sự kiện Server', value: data.guild_memories_count || memories.length, icon: 'database', color: '#f59e0b' },
+            { label: 'Server ID', value: data.guild_id ? `${data.guild_id.slice(0, 12)}...` : 'Guild Scope', icon: 'shield', color: '#38bdf8', small: true },
+            { label: 'Nguồn gọi', value: data.source || 'Knowledge Retrieval', icon: 'compass', color: '#10b981' },
+            { label: 'Cơ chế Phân lập', value: 'Guild Isolated', icon: 'lock', color: '#a855f7' },
+        ];
+
+        const metricGridHtml = InspectorWidgets.renderMetricGrid(metrics);
+        const memCardsHtml = memories.length ? InspectorWidgets.renderFactList(memories, "Danh Sách Tri Thức / Sự Kiện Server", "Không có sự kiện nào") : '';
+        const rawJsonHtml = InspectorWidgets.renderJsonViewer(data, "Raw Guild Memory Retrieval Payload");
+
+        return `
+            <div class="inspector-panel">
+                <div class="inspector-header">
+                    <div class="inspector-title-group">
+                        <span class="inspector-badge badge-rag" style="background: rgba(245, 158, 11, 0.15); color: #fbbf24; border-color: rgba(245, 158, 11, 0.35);">Guild Memory Retrieval</span>
+                        <h2>${window.VisualizerApp.escapeHtml(step.title || '5.1.d [GUILD MEMORY] Truy hồi Tri thức Server')}</h2>
                     </div>
                 </div>
                 ${metricGridHtml}
@@ -1031,12 +1083,13 @@ ${window.VisualizerApp.escapeHtml(userMessage.trim())}
         const data = step.data || {};
         const ext = Boolean(data.batch_memory_extraction_triggered);
         const sum = Boolean(data.auto_summarization_triggered);
+        const top = Boolean(data.topic_summarization_triggered);
 
         const metrics = [
-            { label: 'Batch Memory Extractor', value: ext ? 'ĐÃ KÍCH HOẠT' : 'ĐANG CHỜ', icon: 'brain', color: ext ? '#10b981' : '#64748b', subtitle: 'Chu kỳ mỗi 3 lượt' },
+            { label: 'Batch Fact Extractor', value: ext ? 'ĐÃ KÍCH HOẠT' : 'ĐANG CHỜ', icon: 'brain', color: ext ? '#10b981' : '#64748b', subtitle: 'Chu kỳ mỗi 3 lượt' },
             { label: 'Auto-Summarization', value: sum ? 'ĐÃ KÍCH HOẠT' : 'ĐANG CHỜ', icon: 'file-text', color: sum ? '#10b981' : '#64748b', subtitle: 'Chu kỳ mỗi 10 lượt' },
-            { label: 'Lượt tương tác hiện tại', value: `#${data.interaction_count || 0}`, icon: 'activity', color: '#f59e0b' },
-            { label: 'Trạng thái Queue', value: 'Bình thường', icon: 'server', color: '#38bdf8' },
+            { label: 'Topic Summarizer', value: top ? 'ĐÃ KÍCH HOẠT' : 'ĐANG CHỜ', icon: 'layers', color: top ? '#10b981' : '#64748b', subtitle: 'Chu kỳ mỗi 30 tin' },
+            { label: 'Lượt tương tác / Queue', value: `#${data.interaction_count || 0}`, icon: 'activity', color: '#f59e0b', subtitle: 'Bình thường' },
         ];
 
         const metricGridHtml = InspectorWidgets.renderMetricGrid(metrics);

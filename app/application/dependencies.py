@@ -7,6 +7,7 @@ from app.domain.interfaces.llm_provider import BaseLLMAdapter, StructuredPrompt,
 from app.domain.services.chat_engine import ChatEngine
 from app.domain.services.context_builder import ContextBuilder
 from app.domain.services.memory_extractor import MemoryExtractor
+from app.domain.services.community.topic_summarizer import CommunityTopicSummarizer
 from app.infrastructure.vector.qdrant.qdrant_service import qdrant_service
 from app.shared.utils.circuit_breaker import llm_circuit_breaker
 from typing import AsyncIterator
@@ -180,12 +181,14 @@ class AppContainer:
         # Instantiate RAG dependencies
         from app.domain.services.rag.pipeline import RAGPipeline
         from app.domain.services.rag.retriever_memory import MemoryRetriever
+        from app.domain.services.rag.retriever_guild_memory import GuildMemoryRetriever
         from app.domain.services.rag.retriever_lore import LoreRetriever
         from app.domain.services.rag.assessor import ContextAssessor
         from app.domain.services.rag.thinking_loop import ThinkingLoopAgent
         
         rag_pipeline = RAGPipeline(
             memory_retriever=MemoryRetriever(vector_store=qdrant_service),
+            guild_memory_retriever=GuildMemoryRetriever(vector_store=qdrant_service),
             lore_retriever=LoreRetriever(
                 vector_store=qdrant_service,
                 lore_parent_repo_factory=LoreParentRepository
@@ -261,6 +264,7 @@ class AppContainer:
             BackgroundTaskStage(
                 memory_extractor=self.memory_extractor,
                 unified_auto_summarize_callback=lambda uid, cid: engine_ref[0]._unified_auto_summarize(uid, cid),
+                topic_summarizer=CommunityTopicSummarizer(llm=self.llm, cache=redis_service),
                 pipeline_tracker=pipeline_tracker
             )
         ]

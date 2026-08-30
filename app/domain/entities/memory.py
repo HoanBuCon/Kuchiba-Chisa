@@ -34,6 +34,23 @@ class MemoryPayload(BaseModel):
     
     model_config = ConfigDict(extra="allow")
 
+
+class GuildMemoryPayload(BaseModel):
+    """
+    Strict typing for server-shared knowledge, events, and culture stored in Qdrant guild_memories.
+    """
+    guild_id: str
+    channel_id: Optional[str] = None
+    memory_type: str = "guild_event"  # "guild_event" | "guild_culture" | "guild_rule" | "guild_inside_joke"
+    memory_tier: MemoryTier = MemoryTier.PERSONAL
+    importance_score: float = Field(default=0.8, ge=0.0, le=1.0)
+    created_at: int = Field(default_factory=lambda: int(time.time()))
+    expires_at: Optional[int] = None
+    text_content: str
+    recorded_by_speaker: Optional[str] = None
+    
+    model_config = ConfigDict(extra="allow")
+
 @dataclass
 class MemoryMetadata:
     id: UUID
