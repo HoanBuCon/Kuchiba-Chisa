@@ -60,7 +60,7 @@
 
 - **[Phân Tích Cấu Trúc Hệ Thống (Detailed Architecture Analysis)](docs/PHAN_TICH_WORKSPACE_CHI_TIET.md)**: Tài liệu phân tích sâu chi tiết cấu trúc mã nguồn dự án sau refactor, thiết kế cơ sở dữ liệu PostgreSQL/Qdrant, mô hình lớp dịch vụ phẳng và luồng đi của dữ liệu.
 - **[Hướng Dẫn Khởi Chạy & Triển Khai (Startup & Deployment Guide)](docs/STARTUP_GUIDE.md)**: Hướng dẫn thiết lập môi trường, cấu hình `.env`, chạy database migration và khởi động máy chủ FastAPI/Discord bot.
-- **[Phiên dịch Luồng dữ liệu & Pipeline (Walkthrough)](docs/WALKTHROUGH.md)**: Khám phá chi tiết kiến trúc RAG, pipeline sinh văn bản của LLM, và thuật toán Cảm xúc Hệ Động Lực (DEHA).
+- **[Phiên dịch Luồng dữ liệu & Pipeline (Walkthrough)](docs/WALKTHROUGH.md)**: Khám phá chi tiết kiến trúc RAG, pipeline sinh văn bản của LLM, và thuật toán Cảm xúc Hệ Động Lực (RESONE / RESONA ENGINE).
 
 <br>
 

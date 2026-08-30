@@ -683,19 +683,27 @@ window.InspectorWidgets = {
         ];
 
         const rowsHtml = dimensions.map(dim => {
-            const bVal = before[dim.key] !== undefined ? Number(before[dim.key]).toFixed(2) : '—';
-            const aVal = after[dim.key] !== undefined ? Number(after[dim.key]).toFixed(2) : '—';
-            const dVal = delta[dim.key] !== undefined ? Number(delta[dim.key]) : null;
+            const b = before[dim.key];
+            const a = after[dim.key];
+            const d = delta[dim.key];
+
+            const bVal = b !== undefined && b !== null ? Number(b).toFixed(3) : '—';
+            const aVal = a !== undefined && a !== null ? Number(a).toFixed(3) : '—';
+            const dVal = d !== undefined && d !== null ? Number(d) : null;
             
-            let dHtml = '—';
+            let dHtml = '<span style="color: var(--text-muted); opacity: 0.6;">0.000</span>';
             if (dVal !== null) {
-                const sign = dVal > 0 ? '+' : '';
-                const dColor = dVal > 0 ? '#10b981' : (dVal < 0 ? '#ef4444' : 'var(--text-muted)');
-                dHtml = `<span style="color: ${dColor}; font-weight: 700;">${sign}${dVal.toFixed(2)}</span>`;
+                if (Math.abs(dVal) < 0.0001) {
+                    dHtml = `<span style="color: var(--text-muted); opacity: 0.6;">0.000</span>`;
+                } else {
+                    const sign = dVal > 0 ? '+' : '';
+                    const dColor = dVal > 0 ? '#10b981' : '#ef4444';
+                    dHtml = `<span style="color: ${dColor}; font-weight: 700;">${sign}${dVal.toFixed(3)}</span>`;
+                }
             }
 
             return `
-                <div style="display: grid; grid-template-columns: 110px 1fr 1fr 1fr; padding: 6px 8px; border-bottom: 1px solid var(--border-color); font-size: 12px; font-family: 'JetBrains Mono', monospace; align-items: center;">
+                <div style="display: grid; grid-template-columns: 140px 1fr 1fr 1fr; padding: 6px 8px; border-bottom: 1px solid var(--border-color); font-size: 12px; font-family: 'JetBrains Mono', monospace; align-items: center;">
                     <span style="color: ${dim.color}; font-weight: 600;">${dim.label}</span>
                     <span style="color: var(--text-secondary); text-align: center;">${bVal}</span>
                     <span style="color: var(--text-primary); font-weight: 700; text-align: center;">${aVal}</span>
@@ -712,7 +720,7 @@ window.InspectorWidgets = {
                         <span>Biến Động Cảm Xúc (Emotion Delta Telemetry)</span>
                     </div>
                 </div>
-                <div style="display: grid; grid-template-columns: 110px 1fr 1fr 1fr; padding: 6px 8px; background: rgba(8, 12, 20, 0.6); border-radius: var(--radius-xs); font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin-bottom: 4px;">
+                <div style="display: grid; grid-template-columns: 140px 1fr 1fr 1fr; padding: 6px 8px; background: rgba(8, 12, 20, 0.6); border-radius: var(--radius-xs); font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin-bottom: 4px;">
                     <span>Dimension</span>
                     <span style="text-align: center;">Trước</span>
                     <span style="text-align: center;">Sau</span>

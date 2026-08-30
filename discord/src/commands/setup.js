@@ -38,7 +38,11 @@ export const data = new SlashCommandBuilder()
       .setDescription('Hủy kích hoạt cho tất cả các kênh (chỉ dùng với action disable)')
       .setRequired(false),
   )
-  .setContexts(InteractionContextType.Guild);
+  .setContexts([
+    InteractionContextType.Guild,
+    InteractionContextType.BotDM,
+    InteractionContextType.PrivateChannel,
+  ]);
 
 function formatModeName(mode) {
   if (mode === 'community') return 'Cộng đồng (Community)';
@@ -289,6 +293,17 @@ async function enableChannels(client, guildId, channelIds, triggeredByUserId, mo
 }
 
 export async function execute(client, interaction) {
+  if (!interaction.guildId) {
+    await interaction.reply({
+      content:
+        '💬 **Tin nhắn riêng (DM) với Chisa luôn sẵn sàng!**\n' +
+        'Không gian trò chuyện trực tiếp (DM) đã được mặc định kích hoạt sẵn ở chế độ **Riêng tư 1-1 (Private Mode)**. Senpai có thể nhắn tin trực tiếp với em bất cứ lúc nào mà không cần dùng lệnh `/setup` nhé ~\n\n' +
+        '*(Lệnh `/setup` chỉ dùng để chỉ định và quản lý các kênh kết nối trong Server Discord)*',
+      ephemeral: true,
+    });
+    return;
+  }
+
   if (!isGuildModeratorOrAdmin(interaction.member)) {
     await interaction.reply({
       content: 'Chỉ Admin hoặc Moderator mới có quyền sử dụng lệnh này.',
@@ -375,6 +390,15 @@ export async function execute(client, interaction) {
 }
 
 export async function executePrefix(client, message, argsText) {
+  if (!message.guildId) {
+    await message.reply(
+      '💬 **Tin nhắn riêng (DM) với Chisa luôn sẵn sàng!**\n' +
+      'Không gian trò chuyện trực tiếp (DM) đã được mặc định kích hoạt sẵn ở chế độ **Riêng tư 1-1 (Private Mode)**. Senpai có thể nhắn tin trực tiếp với em bất cứ lúc nào mà không cần dùng lệnh `c!setup` nhé ~\n\n' +
+      '*(Lệnh `c!setup` chỉ dùng để chỉ định và quản lý các kênh kết nối trong Server Discord)*'
+    );
+    return;
+  }
+
   const { guildSettingsCache } = client.services;
   
   if (!isGuildModeratorOrAdmin(message.member)) {

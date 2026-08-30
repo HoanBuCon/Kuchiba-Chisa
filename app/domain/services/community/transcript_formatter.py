@@ -18,19 +18,42 @@ class ChannelTranscriptFormatter:
         "c!docs", "!ping", "!ban", "!kick", "!mute", "!clear", "!purge"
     }
 
+    SYSTEM_ANNOUNCEMENT_KEYWORDS = (
+        "đã thiết lập thành công",
+        "cổng kết nối tại các kênh",
+        "xin lỗi senpai, chisa không thể trả lời lúc này",
+        "bạn đang gửi quá nhanh",
+        "chisa chưa tạo được phản hồi",
+    )
+
+    @classmethod
+    def clean_message_content(cls, content: str) -> str:
+        """Strip emotion breakdown blocks and trailing codeblocks from past bot messages."""
+        if not content:
+            return ""
+        # 1. Remove **[Trạng thái Cảm xúc]** / **[Emotion State]** and everything after it
+        cleaned = re.sub(r"\*\*\[(?:Trạng thái Cảm xúc|Emotion State)\]\*\*[\s\S]*", "", content, flags=re.IGNORECASE)
+        # 2. Remove isolated emotion codeblocks
+        cleaned = re.sub(r"```[\s\S]*?(?:Tin tưởng|Trust|Attachment|Gắn bó|Hiếu kỳ|Bình yên)[\s\S]*?```", "", cleaned, flags=re.IGNORECASE)
+        return cleaned.strip()
+
     @classmethod
     def is_noise_or_command(cls, content: str) -> bool:
-        """Check if message is a bot command, bot invocation, or pure spam noise."""
+        """Check if message is a bot command, system notice, or pure spam noise."""
         if not content:
             return True
-        stripped = content.strip()
+        stripped = cls.clean_message_content(content).strip()
         if not stripped:
             return True
-            
+
+        lower = stripped.lower()
+        if any(keyword in lower for keyword in cls.SYSTEM_ANNOUNCEMENT_KEYWORDS):
+            return True
+
         first_word = stripped.split()[0].lower()
         if first_word in cls.KNOWN_BOT_COMMANDS:
             return True
-            
+
         # Check prefixes for commands with length > 1
         if any(stripped.startswith(prefix) for prefix in cls.BOT_COMMAND_PREFIXES) and len(stripped) > 1:
             # Exclude regular single-punctuation or emoji
@@ -39,19 +62,21 @@ class ChannelTranscriptFormatter:
 
         return False
 
-    @staticmethod
-    def format_message(msg: Any) -> str:
+    @classmethod
+    def format_message(cls, msg: Any) -> str:
         """Format a single message turn with timestamp, speaker and reply context."""
         if isinstance(msg, dict):
             created_at = msg.get("created_at")
             speaker_name = msg.get("speaker_name", "User")
             reply_to_speaker = msg.get("reply_to_speaker")
-            content = msg.get("content", "")
+            raw_content = msg.get("content", "")
         else:
             created_at = getattr(msg, "created_at", None)
             speaker_name = getattr(msg, "speaker_name", "User")
             reply_to_speaker = getattr(msg, "reply_to_speaker", None)
-            content = getattr(msg, "content", "")
+            raw_content = getattr(msg, "content", "")
+
+        content = cls.clean_message_content(raw_content)
 
         time_str = "Now"
         if created_at:
@@ -102,12 +127,13 @@ class ChannelTranscriptFormatter:
             if isinstance(m, dict):
                 speaker = m.get("speaker_name", "User")
                 reply_to = m.get("reply_to_speaker")
-                content = m.get("content", "").strip()
+                content = cls.clean_message_content(m.get("content", ""))
                 created_at = m.get("created_at")
             else:
                 speaker = getattr(m, "speaker_name", "User")
                 reply_to = getattr(m, "reply_to_speaker", None)
-                content = getattr(m, "content", "").strip()
+                content = cls.clean_message_content(getattr(m, "content", ""))
+                created_at = getattr(m, "created_at", None)
                 created_at = getattr(m, "created_at", None)
 
             time_str = "Now"

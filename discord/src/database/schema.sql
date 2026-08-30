@@ -58,6 +58,13 @@ ALTER TABLE guild_settings ADD COLUMN IF NOT EXISTS mode TEXT NOT NULL DEFAULT '
 CREATE UNIQUE INDEX IF NOT EXISTS idx_guild_settings_channel_unique ON guild_settings (chisa_channel_id);
 
 
+CREATE TABLE IF NOT EXISTS guild_clear_cutoffs (
+    discord_guild_id TEXT PRIMARY KEY,
+    cleared_at BIGINT NOT NULL,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+
 CREATE TABLE IF NOT EXISTS discord_interactions (
     id BIGSERIAL PRIMARY KEY,
     discord_user_id TEXT NOT NULL,

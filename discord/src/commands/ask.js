@@ -22,20 +22,38 @@ async function fetchRecentChannelMessages(channel, limit = 15) {
     return [];
   }
   try {
-    const fetched = await channel.messages.fetch({ limit });
+    const fetched = await channel.messages.fetch({ limit: limit * 2 });
     const sorted = Array.from(fetched.values()).sort((a, b) => a.createdTimestamp - b.createdTimestamp);
+    
+    // Check Temporal Clear Cutoff for this guild (messages sent on or before cutoff are discarded)
+    const cutoff = (channel.guildId && channel.client?.services?.guildClearCutoffCache?.get(channel.guildId)) || 0;
+
     return sorted
-      .map((m) => ({
-        message_id: m.id,
-        speaker_id: m.author.id,
-        speaker_name: m.member?.displayName || m.author.globalName || m.author.username,
-        content: m.content || '',
-        reply_to_speaker: m.reference ? m.mentions?.repliedUser?.username : null,
-        reply_to_content: null,
-        is_bot: m.author.bot,
-        created_at: new Date(m.createdTimestamp).toISOString(),
-      }))
-      .filter((m) => m.content.trim().length > 0);
+      .filter((m) => {
+        // Temporal Barrier: Exclude any messages sent at or before the clear cutoff timestamp
+        if (cutoff > 0 && m.createdTimestamp <= cutoff) return false;
+        // Exclude system messages, webhooks, and third-party bots/apps (keep only humans and Chisa)
+        if (m.system || m.webhookId) return false;
+        if (m.author?.bot && m.author.id !== channel.client?.user?.id) return false;
+        return Boolean(m.content && m.content.trim().length > 0);
+      })
+      .slice(-limit)
+      .map((m) => {
+        let text = m.cleanContent || m.content || '';
+        // Strip out Chisa's appended emotion breakdown block from past messages
+        text = text.replace(/\*\*\[(?:Trạng thái Cảm xúc|Emotion State)\]\*\*[\s\S]*/i, '').trim();
+        return {
+          message_id: m.id,
+          speaker_id: m.author.id,
+          speaker_name: m.member?.displayName || m.author.globalName || m.author.username,
+          content: text,
+          reply_to_speaker: m.reference ? m.mentions?.repliedUser?.username : null,
+          reply_to_content: null,
+          is_bot: m.author.bot,
+          created_at: new Date(m.createdTimestamp).toISOString(),
+        };
+      })
+      .filter((m) => m.content.length > 0);
   } catch {
     return [];
   }

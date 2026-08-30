@@ -30,3 +30,8 @@
 • `c!setup disable [kênh1] ...` : Tắt cổng chat tại một hoặc nhiều kênh.
 • `c!setup disable all` : Tắt toàn bộ cổng chat trên Server.
 • `c!setup list` : Xem danh sách các kênh đang kích hoạt.
+
+---
+
+> 💡 **Ghi chú về Tin nhắn riêng (DM):**
+> Không gian tin nhắn riêng trực tiếp (Direct Message) giữa bạn và Chisa luôn được kích hoạt sẵn ở chế độ **Riêng tư 1-1 (Private Mode)**, bạn có thể nhắn tin tâm sự trực tiếp bất cứ lúc nào mà không cần dùng lệnh `setup`!

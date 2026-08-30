@@ -42,6 +42,18 @@ class EmotionUpdateStage(PipelineStage):
         
         emotion_repo = self.emotion_repo_factory(context.session)
 
+        # Explicitly snapshot pre-update emotions to guarantee accurate telemetry
+        old_emotions = {
+            "joy": context.emotion.joy,
+            "sadness": context.emotion.sadness,
+            "trust": context.emotion.trust,
+            "irritation": context.emotion.irritation,
+            "attachment": context.emotion.attachment,
+            "shyness": getattr(context.emotion, "shyness", 0.0),
+            "curiosity": getattr(context.emotion, "curiosity", 0.20),
+            "comfort": getattr(context.emotion, "comfort", 0.50),
+        }
+
         delta = self.emotion_engine.update(
             context.emotion,
             sentiment_analysis=sentiment_analysis,
@@ -70,7 +82,8 @@ class EmotionUpdateStage(PipelineStage):
 
         if self.pipeline_tracker:
             self.pipeline_tracker.add_step("emotion_update", {
-                "old_emotions": context.current_emotions,
+                "old_emotions": old_emotions,
+                "previous_emotions": old_emotions,
                 "new_emotions": {
                     "joy": context.emotion.joy,
                     "sadness": context.emotion.sadness,

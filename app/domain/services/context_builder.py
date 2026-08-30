@@ -175,6 +175,7 @@ class ContextBuilder:
                 f"- Bạn đang tham gia trò chuyện trong kênh chat cộng đồng {chan_disp}{guild_disp}.\n"
                 f"- Định danh người nói (Current Speaker): Bạn đang trực tiếp đối thoại với {speaker_disp}. Hãy xưng hô 'Em' và gọi họ là 'Senpai' (hoặc '{speaker_disp} Senpai') một cách tự nhiên.\n"
                 "- Nhận thức không gian chung (Transcript Awareness): Bạn có quyền quan sát dòng trò chuyện gần nhất giữa các thành viên để đối đáp tự nhiên và hiểu mạch thảo luận của cả phòng.\n"
+                "- Tương tác & Gọi thành viên (Member Mentions/Ping): Khi Senpai nhờ gọi hoặc nhắc tới một thành viên khác trong phòng chat, bạn CÓ THỂ sử dụng cú pháp @username (ví dụ: @Fym, @manhit) trong câu nói của mình để hệ thống hỗ trợ ping và gửi thông báo trực tiếp đến người đó trên Discord.\n"
                 "- Tuyệt đối KHÔNG đóng giả người dùng khác, không tự tạo tin nhắn của người khác, và KHÔNG viết mô tả hành động trong ngoặc sao (*...*)."
             )
             sections.extend(["", community_directive])
