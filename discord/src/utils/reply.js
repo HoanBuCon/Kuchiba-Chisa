@@ -101,11 +101,11 @@ export function getEmotionStatusSummary(emotions = {}) {
   const trust = Number(emotions.trust || 0);
   const attachment = Number(emotions.attachment || 0);
   const shyness = Number(emotions.shyness || 0);
-  const curiosity = Number(emotions.curiosity !== undefined ? emotions.curiosity : 0.20);
+  const curiosity = Number(emotions.curiosity !== undefined ? emotions.curiosity : 0.10);
   const comfort = Number(emotions.comfort !== undefined ? emotions.comfort : 0.50);
-  const joy = Number(emotions.joy !== undefined ? emotions.joy : 0.40);
-  const sadness = Number(emotions.sadness !== undefined ? emotions.sadness : 0.10);
-  const irritation = Number(emotions.irritation !== undefined ? emotions.irritation : 0.10);
+  const joy = Number(emotions.joy !== undefined ? emotions.joy : 0.15);
+  const sadness = Number(emotions.sadness !== undefined ? emotions.sadness : 0.00);
+  const irritation = Number(emotions.irritation !== undefined ? emotions.irritation : 0.00);
 
   // 1. Plutchik Emotional Dyads (Giao thoa cảm xúc phức hợp)
   if (shyness >= 0.80 && attachment >= 0.65 && irritation < 0.25 && sadness < 0.35) {
@@ -137,13 +137,13 @@ export function getEmotionStatusSummary(emotions = {}) {
     return '💢 Chisa đang rất khó chịu và bức xúc trước lời nói/hành vi của Senpai.';
   }
   if (irritation >= 0.40) {
-    if (trust >= 0.50 && attachment >= 0.10) {
+    if (trust >= 0.50 && (attachment >= 0.05 || joy >= 0.30)) {
       return '😤 Chisa đang giận dỗi ra mặt, cảm thấy bực bội và chưa muốn nói chuyện.';
     }
     return '😾 Chisa cảm thấy rất khó chịu trước thái độ hoặc lời trêu chọc của đối phương.';
   }
   if (irritation >= 0.20) {
-    if (trust >= 0.50 && attachment >= 0.05) {
+    if (trust >= 0.40) {
       return '😤 Chisa có chút phụng phịu dỗi nhẹ, đang muốn Senpai quan tâm nhiều hơn ~';
     }
     return '😾 Chisa cảm thấy hơi khó chịu và không hài lòng.';

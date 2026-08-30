@@ -50,6 +50,14 @@ function formatModeName(mode) {
   return 'Riêng tư liên thông (Semi-Private)';
 }
 
+function createNoticeEmbed({ title, description, color = '#ffb6c1' }) {
+  return new EmbedBuilder()
+    .setTitle(title)
+    .setDescription(description)
+    .setColor(color)
+    .setTimestamp();
+}
+
 function createSetupEmbed(client, channelName, mode = 'semi-private') {
   if (mode === 'community') {
     return new EmbedBuilder()
@@ -99,84 +107,67 @@ function createSetupEmbed(client, channelName, mode = 'semi-private') {
     .setDescription(`Kênh **${channelName}** đã được thiết lập ở chế độ **Riêng tư Cô lập Tuyệt đối (Private)**!`)
     .addFields(
       { 
-        name: '🔒 Không gian Riêng tư Cô Lập 100%', 
-        value: 'Kênh này là một không gian hoàn toàn riêng biệt. Ký ức và cảm xúc tại kênh này được cô lập độc lập, hoàn toàn không bị ảnh hưởng bởi drama hay sự kiện ở các kênh khác trong server.' 
-      },
-      { 
-        name: '💬 Trò chuyện 1-1 trực tiếp', 
-        value: 'Nhắn tin trực tiếp với Chisa tự do mà không cần dùng lệnh `/ask` hay `c!ask`.' 
+        name: '🔒 Không gian 1-1 Cô lập Tuyệt đối', 
+        value: 'Kênh này hoạt động như một thế giới riêng tư hoàn toàn tách biệt với các kênh khác trong server.' 
       },
       { 
         name: '🤫 Tắt tự động phản hồi', 
         value: 'Thêm tiền tố `!` hoặc `c!` ở đầu tin nhắn nếu không muốn Chisa trả lời.' 
       }
     )
-    .setColor('#ffb6c1')
+    .setColor('#a29bfe')
     .setThumbnail(client.user.displayAvatarURL())
     .setTimestamp();
 }
 
-function parseChannelIds(args) {
+function parseChannelIds(channelArgs) {
   const channelIds = [];
   const invalidArgs = [];
-  
-  for (const arg of args) {
-    const match = arg.match(/^<#(\d+)>$/);
+
+  for (const arg of channelArgs) {
+    const match = arg.match(/^<#(\d+)>$/) || arg.match(/^(\d+)$/);
     if (match) {
       channelIds.push(match[1]);
-    } else if (/^\d+$/.test(arg)) {
-      channelIds.push(arg);
     } else {
       invalidArgs.push(arg);
     }
   }
-  return { channelIds, invalidArgs };
+
+  return { channelIds: [...new Set(channelIds)], invalidArgs };
 }
 
 async function disableAll(client, guildId) {
   const { logger, repositories, guildSettingsCache } = client.services;
   
-  const activeChannels = [];
-  for (const [chanId, setting] of guildSettingsCache.entries()) {
-    const gId = typeof setting === 'object' ? setting.guildId : setting;
-    if (gId === guildId) {
-      activeChannels.push(chanId);
-    }
-  }
-
-  if (activeChannels.length === 0) {
-    return {
-      replyText: 'Hiện tại server này không có kênh nào đang được kích hoạt cổng kết nối trực tiếp với Chisa.',
-      disabled: []
-    };
-  }
-
   try {
-    await repositories.guildSettings.disableAllChannels(guildId);
-    for (const chanId of activeChannels) {
-      guildSettingsCache.delete(chanId);
-      
-      // Notify the target channel itself
+    const disabledChannelIds = await repositories.guildSettings.disableAllChisaChannels(guildId);
+    for (const channelId of disabledChannelIds) {
+      guildSettingsCache.delete(channelId);
       try {
-        const chan = await client.channels.fetch(chanId);
+        const chan = await client.channels.fetch(channelId);
         if (chan?.isTextBased()) {
-          await chan.send('🌸 Cổng kết nối trực tiếp với Chisa tại kênh này đã được hủy.');
+          const embed = createNoticeEmbed({
+            title: '🌸 CỔNG KẾT NỐI ĐÃ ĐƯỢC HỦY',
+            description: 'Cổng kết nối trực tiếp với Chisa tại kênh này đã được hủy.',
+            color: '#95a5a6',
+          });
+          await chan.send({ embeds: [embed] });
         }
       } catch (err) {
-        logger.warn({ err, channelId: chanId }, 'Failed to send disabled notification to target channel during disable all');
+        logger.warn({ err, channelId }, 'Failed to send disabled notification to channel');
       }
     }
-    
-    logger.info({ guildId }, 'Disabled all direct chat channels for guild');
-    const listStr = activeChannels.map(id => `- <#${id}>`).join('\n');
+
     return {
-      replyText: `Đã hủy kích hoạt tất cả các cổng kết nối trực tiếp với Chisa trên server này:\n${listStr}`,
-      disabled: activeChannels
+      replyText: disabledChannelIds.length > 0
+        ? `Đã hủy kích hoạt thành công toàn bộ **${disabledChannelIds.length}** cổng kết nối tại Server này.`
+        : 'Server này hiện không có cổng kết nối nào đang kích hoạt.',
+      disabled: disabledChannelIds
     };
   } catch (error) {
-    logger.error({ err: error, guildId }, 'Failed to disable all direct chat channels');
+    logger.error({ err: error, guildId }, 'Failed to disable all channels');
     return {
-      replyText: 'Gặp lỗi khi hủy kích hoạt tất cả kênh trò chuyện trực tiếp.',
+      replyText: 'Gặp lỗi trong quá trình hủy kích hoạt tất cả các kênh.',
       disabled: []
     };
   }
@@ -200,11 +191,15 @@ async function disableChannels(client, guildId, channelIds) {
       guildSettingsCache.delete(channelId);
       disabled.push(channelId);
       
-      // Notify the target channel itself
       try {
         const chan = await client.channels.fetch(channelId);
         if (chan?.isTextBased()) {
-          await chan.send('🌸 Cổng kết nối trực tiếp với Chisa tại kênh này đã được hủy.');
+          const embed = createNoticeEmbed({
+            title: '🌸 CỔNG KẾT NỐI ĐÃ ĐƯỢC HỦY',
+            description: 'Cổng kết nối trực tiếp với Chisa tại kênh này đã được hủy.',
+            color: '#95a5a6',
+          });
+          await chan.send({ embeds: [embed] });
         }
       } catch (err) {
         logger.warn({ err, channelId }, 'Failed to send disabled notification to target channel');
@@ -263,7 +258,6 @@ async function enableChannels(client, guildId, channelIds, triggeredByUserId, mo
         enabled.push({ id: channelId, mode });
       }
 
-      // Send the fancy setup embed in the target channel itself
       const embed = createSetupEmbed(client, channel.name, mode);
       await channel.send({ embeds: [embed] });
     } catch (error) {
@@ -294,21 +288,24 @@ async function enableChannels(client, guildId, channelIds, triggeredByUserId, mo
 
 export async function execute(client, interaction) {
   if (!interaction.guildId) {
-    await interaction.reply({
-      content:
-        '💬 **Tin nhắn riêng (DM) với Chisa luôn sẵn sàng!**\n' +
+    const embed = createNoticeEmbed({
+      title: '💬 TIN NHẮN RIÊNG (DM) VỚI CHISA LUÔN SẴN SÀNG',
+      description:
         'Không gian trò chuyện trực tiếp (DM) đã được mặc định kích hoạt sẵn ở chế độ **Riêng tư 1-1 (Private Mode)**. Senpai có thể nhắn tin trực tiếp với em bất cứ lúc nào mà không cần dùng lệnh `/setup` nhé ~\n\n' +
         '*(Lệnh `/setup` chỉ dùng để chỉ định và quản lý các kênh kết nối trong Server Discord)*',
-      ephemeral: true,
+      color: '#ffb6c1',
     });
+    await interaction.reply({ embeds: [embed], ephemeral: true });
     return;
   }
 
   if (!isGuildModeratorOrAdmin(interaction.member)) {
-    await interaction.reply({
-      content: 'Chỉ Admin hoặc Moderator mới có quyền sử dụng lệnh này.',
-      ephemeral: true,
+    const embed = createNoticeEmbed({
+      title: '🚫 YÊU CẦU QUYỀN QUẢN TRỊ',
+      description: 'Chỉ Admin hoặc Moderator mới có quyền sử dụng lệnh này.',
+      color: '#e67e22',
     });
+    await interaction.reply({ embeds: [embed], ephemeral: true });
     return;
   }
 
@@ -330,46 +327,58 @@ export async function execute(client, interaction) {
     }
 
     if (activeChannels.length === 0) {
-      await interaction.reply({
-        content: 'Hiện tại server này không có kênh nào được thiết lập làm cổng kết nối trực tiếp với Chisa.',
-        ephemeral: true,
+      const embed = createNoticeEmbed({
+        title: '🌸 DANH SÁCH CỔNG KẾT NỐI',
+        description: 'Hiện tại server này không có kênh nào được thiết lập làm cổng kết nối trực tiếp với Chisa.',
+        color: '#95a5a6',
       });
+      await interaction.reply({ embeds: [embed], ephemeral: true });
       return;
     }
 
     const channelListStr = activeChannels.map((item) => `- <#${item.id}> (Chế độ: **${formatModeName(item.mode)}**)`).join('\n');
-    await interaction.reply({
-      content: `🌸 **Danh sách các cổng kết nối trực tiếp với Chisa:**\n${channelListStr}`,
-      ephemeral: true,
+    const embed = createNoticeEmbed({
+      title: '🌸 DANH SÁCH CÁC CỔNG KẾT NỐI TRỰC TIẾP VỚI CHISA',
+      description: channelListStr,
+      color: '#ba68c8',
     });
+    await interaction.reply({ embeds: [embed], ephemeral: true });
     return;
   }
 
   if (action === 'disable' && allOption) {
     await interaction.deferReply({ ephemeral: true });
     const res = await disableAll(client, guildId);
-    await interaction.editReply({
-      content: res.replyText,
+    const embed = createNoticeEmbed({
+      title: '🌸 KẾT QUẢ HỦY KÍCH HOẠT',
+      description: res.replyText,
+      color: '#95a5a6',
     });
+    await interaction.editReply({ embeds: [embed] });
     return;
   }
 
   const targetChannel = interaction.options.getChannel('channel') || interaction.channel;
   
   if (!targetChannel.isTextBased()) {
-    await interaction.reply({
-      content: 'Vui lòng chọn một kênh chat chữ (text channel) hợp lệ.',
-      ephemeral: true,
+    const embed = createNoticeEmbed({
+      title: '❌ KÊNH KHÔNG HỢP LỆ',
+      description: 'Vui lòng chọn một kênh chat chữ (text channel) hợp lệ.',
+      color: '#e74c3c',
     });
+    await interaction.reply({ embeds: [embed], ephemeral: true });
     return;
   }
 
   if (action === 'disable') {
     await interaction.deferReply({ ephemeral: true });
     const res = await disableChannels(client, guildId, [targetChannel.id]);
-    await interaction.editReply({
-      content: res.replyText,
+    const embed = createNoticeEmbed({
+      title: '🌸 KẾT QUẢ HỦY THIẾT LẬP KÊNH',
+      description: res.replyText,
+      color: '#95a5a6',
     });
+    await interaction.editReply({ embeds: [embed] });
     return;
   }
 
@@ -377,32 +386,45 @@ export async function execute(client, interaction) {
   if (action === 'enable') {
     await interaction.deferReply({ ephemeral: true });
     const res = await enableChannels(client, guildId, [targetChannel.id], interaction.user.id, mode);
-    await interaction.editReply({
-      content: res.replyText,
+    const embed = createNoticeEmbed({
+      title: '🌸 KẾT QUẢ THIẾT LẬP KÊNH',
+      description: res.replyText,
+      color: '#2ecc71',
     });
+    await interaction.editReply({ embeds: [embed] });
     return;
   }
 
-  await interaction.reply({
-    content: `Hành động không hợp lệ: ${action}`,
-    ephemeral: true,
+  const embed = createNoticeEmbed({
+    title: '❌ HÀNH ĐỘNG KHÔNG HỢP LỆ',
+    description: `Hành động không hợp lệ: ${action}`,
+    color: '#e74c3c',
   });
+  await interaction.reply({ embeds: [embed], ephemeral: true });
 }
 
 export async function executePrefix(client, message, argsText) {
   if (!message.guildId) {
-    await message.reply(
-      '💬 **Tin nhắn riêng (DM) với Chisa luôn sẵn sàng!**\n' +
-      'Không gian trò chuyện trực tiếp (DM) đã được mặc định kích hoạt sẵn ở chế độ **Riêng tư 1-1 (Private Mode)**. Senpai có thể nhắn tin trực tiếp với em bất cứ lúc nào mà không cần dùng lệnh `c!setup` nhé ~\n\n' +
-      '*(Lệnh `c!setup` chỉ dùng để chỉ định và quản lý các kênh kết nối trong Server Discord)*'
-    );
+    const embed = createNoticeEmbed({
+      title: '💬 TIN NHẮN RIÊNG (DM) VỚI CHISA LUÔN SẴN SÀNG',
+      description:
+        'Không gian trò chuyện trực tiếp (DM) đã được mặc định kích hoạt sẵn ở chế độ **Riêng tư 1-1 (Private Mode)**. Senpai có thể nhắn tin trực tiếp với em bất cứ lúc nào mà không cần dùng lệnh `c!setup` nhé ~\n\n' +
+        '*(Lệnh `c!setup` chỉ dùng để chỉ định và quản lý các kênh kết nối trong Server Discord)*',
+      color: '#ffb6c1',
+    });
+    await message.reply({ embeds: [embed] });
     return;
   }
 
   const { guildSettingsCache } = client.services;
   
   if (!isGuildModeratorOrAdmin(message.member)) {
-    await message.reply('Chỉ Admin hoặc Moderator mới có quyền sử dụng lệnh này.');
+    const embed = createNoticeEmbed({
+      title: '🚫 YÊU CẦU QUYỀN QUẢN TRỊ',
+      description: 'Chỉ Admin hoặc Moderator mới có quyền sử dụng lệnh này.',
+      color: '#e67e22',
+    });
+    await message.reply({ embeds: [embed] });
     return;
   }
 
@@ -423,19 +445,34 @@ export async function executePrefix(client, message, argsText) {
     }
 
     if (activeChannels.length === 0) {
-      await message.reply('Hiện tại server này không có kênh nào được thiết lập làm cổng kết nối trực tiếp với Chisa.');
+      const embed = createNoticeEmbed({
+        title: '🌸 DANH SÁCH CỔNG KẾT NỐI',
+        description: 'Hiện tại server này không có kênh nào được thiết lập làm cổng kết nối trực tiếp với Chisa.',
+        color: '#95a5a6',
+      });
+      await message.reply({ embeds: [embed] });
       return;
     }
 
     const channelListStr = activeChannels.map((item) => `- <#${item.id}> (Chế độ: **${formatModeName(item.mode)}**)`).join('\n');
-    await message.reply(`🌸 **Danh sách các cổng kết nối trực tiếp với Chisa:**\n${channelListStr}`);
+    const embed = createNoticeEmbed({
+      title: '🌸 DANH SÁCH CÁC CỔNG KẾT NỐI TRỰC TIẾP VỚI CHISA',
+      description: channelListStr,
+      color: '#ba68c8',
+    });
+    await message.reply({ embeds: [embed] });
     return;
   }
 
   // Case: c!setup disable all
   if (arg1 === 'disable' && arg2 === 'all') {
     const res = await disableAll(client, guildId);
-    await message.reply(res.replyText);
+    const embed = createNoticeEmbed({
+      title: '🌸 KẾT QUẢ HỦY KÍCH HOẠT',
+      description: res.replyText,
+      color: '#95a5a6',
+    });
+    await message.reply({ embeds: [embed] });
     return;
   }
 
@@ -447,7 +484,12 @@ export async function executePrefix(client, message, argsText) {
     if (channelArgs.length > 0) {
       const { channelIds, invalidArgs } = parseChannelIds(channelArgs);
       if (invalidArgs.length > 0) {
-        await message.reply(`Có đối số không phải kênh hợp lệ: ${invalidArgs.join(', ')}`);
+        const embed = createNoticeEmbed({
+          title: '❌ KÊNH KHÔNG HỢP LỆ',
+          description: `Có đối số không phải kênh hợp lệ: ${invalidArgs.join(', ')}`,
+          color: '#e74c3c',
+        });
+        await message.reply({ embeds: [embed] });
         return;
       }
       targetChannelIds = channelIds;
@@ -456,7 +498,12 @@ export async function executePrefix(client, message, argsText) {
     }
 
     const res = await disableChannels(client, guildId, targetChannelIds);
-    await message.reply(res.replyText);
+    const embed = createNoticeEmbed({
+      title: '🌸 KẾT QUẢ HỦY THIẾT LẬP KÊNH',
+      description: res.replyText,
+      color: '#95a5a6',
+    });
+    await message.reply({ embeds: [embed] });
     return;
   }
 
@@ -480,7 +527,20 @@ export async function executePrefix(client, message, argsText) {
   if (cleanArgs.length > 0) {
     const { channelIds, invalidArgs } = parseChannelIds(cleanArgs);
     if (invalidArgs.length > 0) {
-      await message.reply(`Cú pháp không hợp lệ. Sử dụng:\n- \`c!setup\` (Bật kênh này chế độ **Semi-Private** liên thông — mặc định)\n- \`c!setup community\` (Bật kênh này chế độ Community cộng đồng)\n- \`c!setup private\` (Bật kênh này chế độ Private cô lập)\n- \`c!setup <#kênh> [community/semi-private/private]\` (Bật kênh được tag)\n- \`c!setup disable\` (Tắt kênh này)\n- \`c!setup disable all\` (Tắt tất cả)\n- \`c!setup list\` (Xem danh sách các kênh)`);
+      const embed = createNoticeEmbed({
+        title: '❌ CÚ PHÁP LỆNH SETUP KHÔNG HỢP LỆ',
+        description:
+          'Sử dụng các cú pháp sau:\n' +
+          '• `c!setup` (Bật kênh này chế độ **Semi-Private** liên thông — mặc định)\n' +
+          '• `c!setup community` (Bật kênh này chế độ **Community** cộng đồng)\n' +
+          '• `c!setup private` (Bật kênh này chế độ **Private** cô lập)\n' +
+          '• `c!setup <#kênh> [community/semi-private/private]` (Bật kênh được tag)\n' +
+          '• `c!setup disable` (Tắt kênh này)\n' +
+          '• `c!setup disable all` (Tắt tất cả)\n' +
+          '• `c!setup list` (Xem danh sách các kênh)',
+        color: '#e74c3c',
+      });
+      await message.reply({ embeds: [embed] });
       return;
     }
     targetChannelIds = channelIds;
@@ -489,5 +549,10 @@ export async function executePrefix(client, message, argsText) {
   }
 
   const res = await enableChannels(client, guildId, targetChannelIds, message.author.id, mode);
-  await message.reply(res.replyText);
+  const embed = createNoticeEmbed({
+    title: '🌸 KẾT QUẢ THIẾT LẬP KÊNH',
+    description: res.replyText,
+    color: '#2ecc71',
+  });
+  await message.reply({ embeds: [embed] });
 }

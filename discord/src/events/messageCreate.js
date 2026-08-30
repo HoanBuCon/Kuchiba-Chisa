@@ -24,14 +24,15 @@ export async function execute(client, message) {
       const lowerContent = rawContent.toLowerCase();
       const prefix = (runner.prefix || 'c!').toLowerCase();
 
-      // If message starts with '!', 'c!', configured prefix, or is any prefix command, do not double-process
+      // Common bot command prefixes: c!, !, /, $, %, ++, ;;, -, ?, ., ~, &, >
+      const COMMON_BOT_PREFIXES = ['c!', '!', '/', '$', '%', '++', ';;', '-', '?', '.', '~', '&', '>'];
       if (
-        rawContent.startsWith('!') ||
-        lowerContent.startsWith('c!') ||
-        lowerContent.startsWith(prefix) ||
+        COMMON_BOT_PREFIXES.some((p) => lowerContent.startsWith(p)) ||
         runner.isPrefixCommand(message)
       ) {
-        return;
+        if (!rawContent.startsWith('...') && !rawContent.startsWith('?!')) {
+          return;
+        }
       }
 
       // In Community Mode: ONLY reply if user mentions Chisa or replies to Chisa's message

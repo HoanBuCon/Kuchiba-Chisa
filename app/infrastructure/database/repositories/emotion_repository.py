@@ -24,13 +24,13 @@ class SqlAlchemyEmotionRepository(IEmotionRepository):
             try:
                 state_db = EmotionStateModel(
                     user_id=user_id,
-                    joy=0.10,        # Match default baseline settings
+                    joy=0.15,        # Match default baseline settings
                     sadness=0.00,
                     trust=0.50,
                     attachment=0.00,
                     irritation=0.00,
                     shyness=0.00,
-                    curiosity=0.20,
+                    curiosity=0.10,
                     comfort=0.50,
                     updated_at=int(time.time() * 1000)
                 )
@@ -40,26 +40,26 @@ class SqlAlchemyEmotionRepository(IEmotionRepository):
             except Exception:
                 return EmotionStateEntity(
                     user_id=user_id,
-                    joy=0.10,
+                    joy=0.15,
                     sadness=0.00,
                     trust=0.50,
                     attachment=0.00,
                     irritation=0.00,
                     shyness=0.00,
-                    curiosity=0.20,
+                    curiosity=0.10,
                     comfort=0.50,
                     updated_at=int(time.time() * 1000)
                 )
         return EmotionStateEntity(
             user_id=state_db.user_id,
-            joy=getattr(state_db, "joy", 0.10) or 0.10,
-            sadness=getattr(state_db, "sadness", 0.00) or 0.00,
-            trust=getattr(state_db, "trust", 0.50) or 0.50,
-            attachment=getattr(state_db, "attachment", 0.00) or 0.00,
-            irritation=getattr(state_db, "irritation", 0.00) or 0.00,
-            shyness=getattr(state_db, "shyness", 0.00) or 0.00,
-            curiosity=getattr(state_db, "curiosity", 0.20) or 0.20,
-            comfort=getattr(state_db, "comfort", 0.50) or 0.50,
+            joy=float(state_db.joy) if getattr(state_db, "joy", None) is not None else 0.15,
+            sadness=float(state_db.sadness) if getattr(state_db, "sadness", None) is not None else 0.00,
+            trust=float(state_db.trust) if getattr(state_db, "trust", None) is not None else 0.50,
+            attachment=float(state_db.attachment) if getattr(state_db, "attachment", None) is not None else 0.00,
+            irritation=float(state_db.irritation) if getattr(state_db, "irritation", None) is not None else 0.00,
+            shyness=float(state_db.shyness) if getattr(state_db, "shyness", None) is not None else 0.00,
+            curiosity=float(state_db.curiosity) if getattr(state_db, "curiosity", None) is not None else 0.10,
+            comfort=float(state_db.comfort) if getattr(state_db, "comfort", None) is not None else 0.50,
             updated_at=state_db.updated_at
         )
 

@@ -107,6 +107,27 @@ async def test_channel_transcript_formatter_smart_compression():
     assert "<UserA>" in transcript
     assert "<UserB>" in transcript
 
+    # 3. Test filtering of other third-party bots and Chisa's own command announcements
+    bot_and_announcement_messages = [
+        {"speaker_name": "Carl-bot", "content": "Welcome @UserC to the server!", "is_bot": True, "created_at": "2026-08-30 20:01:00"},
+        {"speaker_name": "Midjourney", "content": "Image rendering complete.", "is_bot": True, "created_at": "2026-08-30 20:01:05"},
+        {"speaker_name": "Chisa", "content": "**NUKE SERVER THÀNH CÔNG!**\nToàn bộ Ký ức Cộng đồng đã dọn sạch.", "is_bot": True, "created_at": "2026-08-30 20:01:10"},
+        {"speaker_name": "Chisa", "content": "💥 **ĐÃ XÓA KÝ ỨC CÁ NHÂN CỦA BẠN!**", "is_bot": True, "created_at": "2026-08-30 20:01:15"},
+        {"speaker_name": "Chisa", "content": "Chào Senpai, em có thể giúp gì cho Senpai ạ?", "is_bot": True, "created_at": "2026-08-30 20:01:20"},
+        {"speaker_name": "UserC", "content": "Em thấy boss hôm nay thế nào?", "is_bot": False, "created_at": "2026-08-30 20:01:25"},
+    ]
+    coalesced_bot, stats_bot = ChannelTranscriptFormatter.compress_messages(bot_and_announcement_messages)
+    assert stats_bot["filtered_commands"] == 4  # Carl-bot, Midjourney, Chisa NUKE, Chisa Xóa Ký ức
+    assert stats_bot["compressed_count"] == 2   # 1 for Chisa conversational reply, 1 for UserC
+    
+    transcript_bot = ChannelTranscriptFormatter.format_transcript(bot_and_announcement_messages)
+    assert "Carl-bot" not in transcript_bot
+    assert "Midjourney" not in transcript_bot
+    assert "NUKE SERVER THÀNH CÔNG" not in transcript_bot
+    assert "ĐÃ XÓA KÝ ỨC" not in transcript_bot
+    assert "Chào Senpai, em có thể giúp gì cho Senpai ạ?" in transcript_bot
+    assert "Em thấy boss hôm nay thế nào?" in transcript_bot
+
 
 @pytest.mark.asyncio
 async def test_community_topic_summarizer():

@@ -43,6 +43,7 @@ class BackgroundTaskStage(PipelineStage):
                     channel_id=context.channel_id,
                     speaker_name=context.speaker_name,
                     is_community=context.is_community,
+                    trace_id=context.trace_id,
                 ),
                 name=f"memory_extract_batch:{context.user_id}",
             )
@@ -69,7 +70,8 @@ class BackgroundTaskStage(PipelineStage):
                         self.topic_summarizer.summarize_channel_topic(
                             channel_id=context.channel_id,
                             guild_id=str(context.guild_id or ""),
-                            messages=context.recent_community_messages
+                            messages=context.recent_community_messages,
+                            trace_id=context.trace_id,
                         ),
                         name=f"topic_summarize:{context.channel_id}",
                     )

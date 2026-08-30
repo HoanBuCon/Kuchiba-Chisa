@@ -11,19 +11,35 @@ class ChannelTranscriptFormatter:
     Features Smart Compression (bot command filtering, message coalescing, noise trimming).
     """
 
-    BOT_COMMAND_PREFIXES = ("!", "c!", "/", ".", "$", "%", "++", ";;", "-")
+    BOT_COMMAND_PREFIXES = ("c!", "!", "/", "$", "%", "++", ";;", "-", "?", ".", "~", "&", ">")
     KNOWN_BOT_COMMANDS = {
         "!play", "!skip", "!p", "!stop", "!queue", "!loop", "!nowplaying", "!np",
         "!rank", "!level", "!profile", "!daily", "!rep", "!help", "c!help", "c!setup",
-        "c!docs", "!ping", "!ban", "!kick", "!mute", "!clear", "!purge"
+        "c!docs", "!ping", "!ban", "!kick", "!mute", "!clear", "!purge", "m!help", "p!help"
     }
 
     SYSTEM_ANNOUNCEMENT_KEYWORDS = (
+        "nuke server",
+        "đã xóa ký ức",
+        "toàn bộ ký ức",
+        "chỉ số cảm xúc",
+        "mốc thời gian ngắt",
+        "cutoff",
+        "bảng hướng dẫn",
+        "hướng dẫn sử dụng",
+        "danh sách lệnh",
+        "thiết lập kênh",
         "đã thiết lập thành công",
         "cổng kết nối tại các kênh",
         "xin lỗi senpai, chisa không thể trả lời lúc này",
         "bạn đang gửi quá nhanh",
         "chisa chưa tạo được phản hồi",
+        "chisa sẽ xem toàn bộ server",
+        "dùng c!ask",
+        "dùng /ask",
+        "yêu cầu quyền quản trị",
+        "tùy chọn mode:",
+        "quyền admin/mod",
     )
 
     @classmethod
@@ -38,23 +54,34 @@ class ChannelTranscriptFormatter:
         return cleaned.strip()
 
     @classmethod
-    def is_noise_or_command(cls, content: str) -> bool:
-        """Check if message is a bot command, system notice, or pure spam noise."""
+    def is_noise_or_command(cls, content: str, is_bot: bool = False, speaker_name: str = "") -> bool:
+        """Check if message is a bot command, third-party bot message, system notice, or pure spam noise."""
         if not content:
             return True
         stripped = cls.clean_message_content(content).strip()
         if not stripped:
             return True
 
+        # 1. Exclude third-party bots completely (only allow human members or Chisa)
+        spk_lower = speaker_name.lower().strip() if speaker_name else ""
+        if is_bot and spk_lower not in ("chisa", "kuchiba chisa", "assistant"):
+            return True
+
         lower = stripped.lower()
+
+        # 2. Exclude system notices and command announcement templates of Chisa
         if any(keyword in lower for keyword in cls.SYSTEM_ANNOUNCEMENT_KEYWORDS):
+            return True
+
+        # 3. Exclude messages starting with command banner markers or emojis
+        if any(stripped.startswith(sym) for sym in ("💥", "🧹", "ℹ️", "⚙️", "🚫", "⏳", "❌", "☢️", "🔒", "🌐", "**NUKE", "**ĐÃ XÓA", "**BẢNG")):
             return True
 
         first_word = stripped.split()[0].lower()
         if first_word in cls.KNOWN_BOT_COMMANDS:
             return True
 
-        # Check prefixes for commands with length > 1
+        # 4. Check prefixes for user commands (e.g. c!clear, !play, /ask, $command)
         if any(stripped.startswith(prefix) for prefix in cls.BOT_COMMAND_PREFIXES) and len(stripped) > 1:
             # Exclude regular single-punctuation or emoji
             if not stripped.startswith("...") and not stripped.startswith("?!"):
@@ -107,8 +134,16 @@ class ChannelTranscriptFormatter:
         filtered_commands = 0
 
         for m in messages:
-            content = m.get("content", "") if isinstance(m, dict) else getattr(m, "content", "")
-            if cls.is_noise_or_command(content):
+            if isinstance(m, dict):
+                content = m.get("content", "")
+                is_bot = bool(m.get("is_bot", False))
+                speaker_name = m.get("speaker_name", "")
+            else:
+                content = getattr(m, "content", "")
+                is_bot = bool(getattr(m, "is_bot", False))
+                speaker_name = getattr(m, "speaker_name", "")
+
+            if cls.is_noise_or_command(content, is_bot=is_bot, speaker_name=speaker_name):
                 filtered_commands += 1
                 continue
             cleaned_msgs.append(m)

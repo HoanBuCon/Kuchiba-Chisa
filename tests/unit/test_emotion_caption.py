@@ -150,7 +150,7 @@ def test_caption_baseline_calm():
 
 
 def test_caption_irritation_never_leaks_chill():
-    # Even if comfort is 0.75, if irritation is 0.45 and attachment is low, Chisa MUST be annoyed, NOT chill
+    # Even if comfort is 0.75, if irritation is 0.45 and attachment is low, Chisa MUST be annoyed/pouting, NOT chill
     state = EmotionState(
         user_id="test_user",
         trust=0.60,
@@ -163,7 +163,7 @@ def test_caption_irritation_never_leaks_chill():
         comfort=0.75
     )
     caption = StateManager.get_emotion_summary_caption(state)
-    assert "khó chịu" in caption
+    assert "khó chịu" in caption or "bực bội" in caption or "giận dỗi" in caption
     assert "thư thái" not in caption
     assert "bình yên" not in caption
     assert "Kuudere điềm tĩnh" not in caption

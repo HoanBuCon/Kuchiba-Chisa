@@ -127,7 +127,22 @@ class ContextBuilder:
             '    "intensity": 0.1 đến 1.0 (cường độ tác động: 0.2 nhẹ nhàng/thoảng qua, 0.5 vừa phải, 0.9 sâu sắc/mãnh liệt),\n'
             '    "variance": -1.0 đến 1.0 (độ lệch sắc thái phụ trợ: âm nếu u buồn/triết lý bâng khuâng, dương nếu tươi sáng/hân hoan, 0 nếu cân bằng)\n'
             '  }\n'
-            "}"
+            "}\n\n"
+            "[HỆ QUY CHIẾU PHÂN LOẠI SENTIMENT (SCHEMA DEFINITIONS)]\n"
+            "- reaction (Phản ứng cảm xúc của Chisa trước đối thoại):\n"
+            "  + calm_warmth: Điềm tĩnh, ấm áp, trò chuyện thường nhật, an ủi nhẹ nhàng.\n"
+            "  + melancholic_care: Lắng nghe sâu sắc, đồng cảm trước nỗi buồn, sự thất vọng hoặc điều yếu lòng của Senpai.\n"
+            "  + playful_pout: Phụng phịu, hờn dỗi giả vờ trước lời trêu chọc, chọc ghẹo hài hước.\n"
+            "  + flustered_affection: Ngượng ngùng, bối rối đỏ mặt trước lời khen ngợi, tỏ tình ngọt ngào.\n"
+            "  + cheerful_joy: Hân hoan, rạng rỡ, tràn đầy năng lượng tích cực trước tin vui lớn.\n"
+            "  + guarded_cold: Lạnh lùng giữ khoảng cách khi bị xúc phạm, thô tục hoặc cố tình quấy rối quá trớn.\n"
+            "  + neutral: Khách quan, trung tính, trao đổi thông tin logic thuần túy.\n"
+            "- user_stance (Thái độ của Senpai trong lượt nói):\n"
+            "  + loving: Thể hiện tình cảm, quan tâm ngọt ngào, khen ngợi Chisa.\n"
+            "  + playful: Trêu đùa hài hước, bông đùa vui vẻ.\n"
+            "  + vulnerable: Tâm sự thật lòng, chia sẻ khó khăn, thất vọng hoặc nỗi buồn cá nhân.\n"
+            "  + neutral: Trò chuyện bình thường, hỏi đáp kiến thức.\n"
+            "  + hostile: Thô lỗ, khiêu khích tiêu cực, xúc phạm hoặc cố tình xâm phạm ranh giới."
         )
 
     @classmethod
@@ -343,6 +358,7 @@ class ContextBuilder:
             )
             system_parts.extend(["", summary_section])
 
+        topic_section = None
         if topic_summary and topic_summary.strip():
             topic_section = (
                 "[BỐI CẢNH THẢO LUẬN GẦN ĐÂY CỦA NHÓM]\n"
@@ -350,6 +366,7 @@ class ContextBuilder:
             )
             system_parts.extend(["", topic_section])
 
+        transcript_section = None
         if channel_transcript and channel_transcript.strip():
             transcript_section = (
                 "[DIỄN BIẾN ĐOẠN CHAT GẦN ĐÂY TRONG KÊNH]\n"
@@ -404,6 +421,9 @@ class ContextBuilder:
         components = {
             "System Skeleton (Persona)": system_skeleton,
             "Conversation Summary": summary_section,
+            "Community Topic Summary": topic_section,
+            "Channel Transcript": transcript_section,
+            "Server Knowledge (Guild Memories)": guild_memories_text if guild_memories_text else None,
             "Memories Context": memories_text if memories_text else None,
             "Lore Context": lore_text if lore_text else None,
             "Web Search Data": search_section,

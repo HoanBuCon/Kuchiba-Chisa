@@ -136,6 +136,15 @@ window.PipelineTreeEngine = {
             title: 'Stage 5: [RAG] Truy hồi Tri thức Đa tầng',
             subtitle: (step) => step.subtitle || 'Truy hồi Lore & Ký ức'
         },
+        'lore_retrieval': {
+            type: 'rag',
+            icon: 'book',
+            title: (step) => step.title || '5.1.a [VECTOR] Truy hồi Lore Qdrant (Parent-Child)',
+            subtitle: (step) => {
+                const count = step.data?.chunks_count || step.data?.chunks?.length || 0;
+                return `${count} lore chunks`;
+            }
+        },
         'web_search': {
             type: 'search',
             icon: 'globe',
@@ -146,6 +155,24 @@ window.PipelineTreeEngine = {
                 const hasDeep = !!step.data?.deep_page_url;
                 const deepTag = hasDeep ? ' + Deep Crawl' : '';
                 return q ? `"${q.slice(0, 24)}..." (${count} snippets${deepTag})` : `${count} kết quả${deepTag}`;
+            }
+        },
+        'memory_retrieval': {
+            type: 'rag',
+            icon: 'brain',
+            title: (step) => step.title || '5.1.c [MEMORY] Truy hồi Ký ức Dài hạn (Qdrant Memory)',
+            subtitle: (step) => {
+                const count = step.data?.memories_count || step.data?.memories?.length || 0;
+                return `${count} memories cá nhân`;
+            }
+        },
+        'guild_memory_retrieval': {
+            type: 'rag',
+            icon: 'database',
+            title: (step) => step.title || '5.1.d [GUILD MEMORY] Truy hồi Tri thức Server (Qdrant Guild)',
+            subtitle: (step) => {
+                const count = step.data?.guild_memories_count || step.data?.guild_memories?.length || 0;
+                return `${count} facts tri thức server`;
             }
         },
         'information_alignment_check': {
@@ -278,6 +305,12 @@ window.PipelineTreeEngine = {
             icon: 'file-text',
             title: '10.2 [BG] Tự động Tóm tắt Hội thoại',
             subtitle: () => 'Cập nhật Conversation Summary'
+        },
+        'summarize_channel_topic': {
+            type: 'memory',
+            icon: 'file-text',
+            title: '10.2 [BG] Tóm tắt Mạch Kênh Cộng đồng',
+            subtitle: (step) => step.subtitle || 'Cập nhật Topic Summary kênh'
         }
     },
 

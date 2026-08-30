@@ -1,4 +1,4 @@
-import { SlashCommandBuilder, InteractionContextType } from 'discord.js';
+import { SlashCommandBuilder, EmbedBuilder, InteractionContextType } from 'discord.js';
 import { DEFAULT_COMMANDS } from '../config/constants.js';
 import { replyWithChunks } from '../utils/reply.js';
 
@@ -17,6 +17,14 @@ export const data = new SlashCommandBuilder()
     InteractionContextType.PrivateChannel,
   ]);
 
+function createNoticeEmbed({ title, description, color = '#ffb6c1' }) {
+  return new EmbedBuilder()
+    .setTitle(title)
+    .setDescription(description)
+    .setColor(color)
+    .setTimestamp();
+}
+
 async function fetchRecentChannelMessages(channel, limit = 15) {
   if (!channel?.messages?.fetch) {
     return [];
@@ -27,15 +35,35 @@ async function fetchRecentChannelMessages(channel, limit = 15) {
     
     // Check Temporal Clear Cutoff for this guild (messages sent on or before cutoff are discarded)
     const cutoff = (channel.guildId && channel.client?.services?.guildClearCutoffCache?.get(channel.guildId)) || 0;
+    const prefixRunner = channel.client?.services?.prefixCommandRunner;
 
     return sorted
       .filter((m) => {
-        // Temporal Barrier: Exclude any messages sent at or before the clear cutoff timestamp
+        // 1. Temporal Barrier: Exclude any messages sent at or before the clear cutoff timestamp
         if (cutoff > 0 && m.createdTimestamp <= cutoff) return false;
-        // Exclude system messages, webhooks, and third-party bots/apps (keep only humans and Chisa)
+        
+        // 2. Exclude system messages, webhooks, and third-party bots completely
         if (m.system || m.webhookId) return false;
         if (m.author?.bot && m.author.id !== channel.client?.user?.id) return false;
-        return Boolean(m.content && m.content.trim().length > 0);
+
+        // 3. Exclude rich embed messages (all Chisa command notices, embeds & administrative cards)
+        if (m.embeds && m.embeds.length > 0) return false;
+
+        // 4. Exclude command invocations (dynamic prefix runner check or slash interactions)
+        if (prefixRunner && prefixRunner.isPrefixCommand(m)) return false;
+        if (m.interaction || m.interactionMetadata) return false;
+
+        const text = (m.cleanContent || m.content || '').trim();
+        if (!text) return false;
+
+        // 5. Exclude common bot command prefixes (c!, !, /, $, %, ++, ;;, -, ?, ., ~, &, >)
+        const COMMON_BOT_PREFIXES = ['c!', '!', '/', '$', '%', '++', ';;', '-', '?', '.', '~', '&', '>'];
+        const lower = text.toLowerCase();
+        if (COMMON_BOT_PREFIXES.some((p) => lower.startsWith(p)) && text.length > 1 && !text.startsWith('...') && !text.startsWith('?!')) {
+          return false;
+        }
+
+        return true;
       })
       .slice(-limit)
       .map((m) => {
@@ -67,10 +95,12 @@ export async function execute(client, interaction, discordUser) {
 
   if (!rate.allowed) {
     const waitSeconds = Math.ceil((rate.resetAt - Date.now()) / 1000);
-    await interaction.reply({
-      content: `Bạn đang gửi quá nhanh. Hãy chờ khoảng ${waitSeconds}s rồi thử lại.`,
-      ephemeral: true,
+    const embed = createNoticeEmbed({
+      title: '⏳ THAO TÁC QUÁ NHANH',
+      description: `Bạn đang gửi câu hỏi quá nhanh. Hãy chờ khoảng **${waitSeconds}s** rồi thử lại nhé.`,
+      color: '#e67e22',
     });
+    await interaction.reply({ embeds: [embed], ephemeral: true });
     return;
   }
 
@@ -122,12 +152,21 @@ export async function execute(client, interaction, discordUser) {
     if (error.status === 429 && error.payload && error.payload.detail) {
       logger.warn({ userId: interaction.user.id, interactionId }, 'Discord /ask blocked by 429 user lock');
       await repositories.interactions.pool.query('DELETE FROM discord_interactions WHERE id = $1', [interactionId]);
-      await interaction.editReply({ content: error.payload.detail });
+      const embed = createNoticeEmbed({
+        title: '🔒 HỆ THỐNG ĐANG BẬN',
+        description: error.payload.detail,
+        color: '#e67e22',
+      });
+      await interaction.editReply({ embeds: [embed] });
     } else {
       logger.error({ err: error, userId: interaction.user.id, interactionId }, 'Discord /ask failed');
       await repositories.interactions.pool.query('DELETE FROM discord_interactions WHERE id = $1', [interactionId]);
-      const message = 'Xin lỗi Senpai, Chisa không thể trả lời lúc này. Hãy thử lại sau ít phút.';
-      await interaction.editReply({ content: message });
+      const embed = createNoticeEmbed({
+        title: '🌸 THÔNG BÁO TỪ CHISA',
+        description: 'Xin lỗi Senpai, Chisa không thể trả lời lúc này. Hãy thử lại sau ít phút nhé.',
+        color: '#e74c3c',
+      });
+      await interaction.editReply({ embeds: [embed] });
     }
   }
 }
@@ -139,12 +178,23 @@ export async function executePrefix(client, message, question, discordUser) {
 
   if (!rate.allowed) {
     const waitSeconds = Math.ceil((rate.resetAt - Date.now()) / 1000);
-    await message.reply(`Bạn đang gửi quá nhanh. Hãy chờ khoảng ${waitSeconds}s rồi thử lại.`);
+    const embed = createNoticeEmbed({
+      title: '⏳ THAO TÁC QUÁ NHANH',
+      description: `Bạn đang gửi câu hỏi quá nhanh. Hãy chờ khoảng **${waitSeconds}s** rồi thử lại nhé.`,
+      color: '#e67e22',
+    });
+    await message.reply({ embeds: [embed] });
     return;
   }
 
   if (!question) {
-    await message.reply(`Dùng ${client.services.prefixCommandRunner?.prefix || 'c!'}ask <nội dung> để hỏi Chisa.`);
+    const prefix = client.services.prefixCommandRunner?.prefix || 'c!';
+    const embed = createNoticeEmbed({
+      title: '💬 HƯỚNG DẪN DÙNG LỆNH ASK',
+      description: `Dùng \`${prefix}ask <nội dung>\` để trò chuyện hoặc hỏi Chisa nhé Senpai.`,
+      color: '#ffb6c1',
+    });
+    await message.reply({ embeds: [embed] });
     return;
   }
 
@@ -199,11 +249,21 @@ export async function executePrefix(client, message, question, discordUser) {
     if (error.status === 429 && error.payload && error.payload.detail) {
       logger.warn({ userId: message.author.id, interactionId }, 'Discord prefix ask blocked by 429 user lock');
       await repositories.interactions.pool.query('DELETE FROM discord_interactions WHERE id = $1', [interactionId]);
-      await message.reply(error.payload.detail);
+      const embed = createNoticeEmbed({
+        title: '🔒 HỆ THỐNG ĐANG BẬN',
+        description: error.payload.detail,
+        color: '#e67e22',
+      });
+      await message.reply({ embeds: [embed] });
     } else {
       logger.error({ err: error, userId: message.author.id, interactionId }, 'Discord prefix ask failed');
       await repositories.interactions.pool.query('DELETE FROM discord_interactions WHERE id = $1', [interactionId]);
-      await message.reply('Xin lỗi Senpai, Chisa không thể trả lời lúc này. Hãy thử lại sau ít phút.');
+      const embed = createNoticeEmbed({
+        title: '🌸 THÔNG BÁO TỪ CHISA',
+        description: 'Xin lỗi Senpai, Chisa không thể trả lời lúc này. Hãy thử lại sau ít phút nhé.',
+        color: '#e74c3c',
+      });
+      await message.reply({ embeds: [embed] });
     }
   } finally {
     clearInterval(typingInterval);
