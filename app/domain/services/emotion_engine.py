@@ -165,13 +165,13 @@ class EmotionEngine:
 
     # ── RESONA ENGINE Baselines ──────────────────────────────────────────────
     BASELINES = {
-        "joy": 0.10,
+        "joy": 0.15,
         "sadness": 0.00,
         "trust": 0.50,
         "irritation": 0.00,
         "attachment": 0.00,
         "shyness": 0.00,
-        "curiosity": 0.20,
+        "curiosity": 0.10,
         "comfort": 0.50,
     }
     

@@ -384,7 +384,7 @@ class RAGPipeline:
                 depth=0,
                 category="stage_root",
                 title="Stage 5: [RAG] Truy hồi Tri thức Đa tầng",
-                subtitle=f"Vector Search · {len(lore_chunks)} lore chunks · {len(memories)} memories",
+                subtitle=f"Vector Search · {len(lore_chunks)} lore · {len(memories)} mems · {len(guild_memories)} guild",
                 data={
                     "mode": "VECTOR_SEARCH",
                     "should_retrieve": True,
@@ -395,6 +395,8 @@ class RAGPipeline:
                     "retrieved_lore_chunks": lore_chunks,
                     "lore_scoring_details": scoring_details,
                     "retrieved_memories": memories,
+                    "retrieved_guild_memories": guild_memories,
+                    "guild_memories_count": len(guild_memories),
                     "weights": {
                         "vector": RAGTuning.WEIGHT_VECTOR,
                         "keyword": RAGTuning.WEIGHT_KEYWORD,
@@ -407,6 +409,8 @@ class RAGPipeline:
                 context_pieces.append("[Retrieved Lore Chunks]:\n" + "\n".join(lore_chunks))
             if memories:
                 context_pieces.append("[Retrieved Memories]:\n" + "\n".join(memories))
+            if guild_memories:
+                context_pieces.append("[Retrieved Server Guild Memories]:\n" + "\n".join(guild_memories))
             retrieved_context_str = "\n\n".join(context_pieces) if context_pieces else "(No context retrieved)"
 
         else:
@@ -494,7 +498,8 @@ class RAGPipeline:
                 "search_target": search_target,
                 "lore_count": len(lore_chunks),
                 "memory_count": len(memories),
-                "has_rag_context": bool(lore_chunks or memories or web_search_1_res),
+                "guild_memory_count": len(guild_memories),
+                "has_rag_context": bool(lore_chunks or memories or guild_memories or web_search_1_res),
                 "generated_search_query": search_query,
                 "history_mode": history_mode,
                 "history": history_display,

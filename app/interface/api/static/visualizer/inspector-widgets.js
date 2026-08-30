@@ -288,6 +288,36 @@ window.InspectorWidgets = {
             });
         }
 
+        if (promptComponents && promptComponents["Server Knowledge (Guild Memories)"]) {
+            tabs.push({
+                id: 'tab-guild-memories',
+                label: 'Server Knowledge',
+                icon: 'database',
+                content: promptComponents["Server Knowledge (Guild Memories)"],
+                count: `${Math.round(promptComponents["Server Knowledge (Guild Memories)"].length / 2.5)} tok`
+            });
+        }
+
+        if (promptComponents && promptComponents["Community Topic Summary"]) {
+            tabs.push({
+                id: 'tab-topic-sum',
+                label: 'Topic Summary',
+                icon: 'book-open',
+                content: promptComponents["Community Topic Summary"],
+                count: `${Math.round(promptComponents["Community Topic Summary"].length / 2.5)} tok`
+            });
+        }
+
+        if (promptComponents && promptComponents["Channel Transcript"]) {
+            tabs.push({
+                id: 'tab-transcript',
+                label: 'Channel Transcript',
+                icon: 'messages-square',
+                content: promptComponents["Channel Transcript"],
+                count: `${Math.round(promptComponents["Channel Transcript"].length / 2.5)} tok`
+            });
+        }
+
         if (userMessage) {
             tabs.push({
                 id: 'tab-user',
@@ -366,6 +396,9 @@ window.InspectorWidgets = {
         let searchData = promptComponents["Web Search Data"] || null;
         let loreData = promptComponents["Lore Context"] || null;
         let memData = promptComponents["Memories Context"] || null;
+        let guildData = promptComponents["Server Knowledge (Guild Memories)"] || null;
+        let topicData = promptComponents["Community Topic Summary"] || null;
+        let transcriptData = promptComponents["Channel Transcript"] || null;
 
         if (systemPrompt && typeof systemPrompt === 'string') {
             if (!searchData && systemPrompt.includes("[SEARCH DATA — REFERENCE DATA START]")) {
@@ -383,9 +416,24 @@ window.InspectorWidgets = {
                 const end = systemPrompt.indexOf("[MEMORIES — REFERENCE DATA END]") + "[MEMORIES — REFERENCE DATA END]".length;
                 if (end > start) memData = systemPrompt.substring(start, end);
             }
+            if (!guildData && systemPrompt.includes("[TRI THỨC & SỰ KIỆN CHUNG CỦA SERVER]")) {
+                const start = systemPrompt.indexOf("[TRI THỨC & SỰ KIỆN CHUNG CỦA SERVER]");
+                const nextSection = systemPrompt.indexOf("\n\n[", start + 5);
+                guildData = nextSection > start ? systemPrompt.substring(start, nextSection) : systemPrompt.substring(start);
+            }
+            if (!topicData && systemPrompt.includes("[BỐI CẢNH THẢO LUẬN GẦN ĐÂY CỦA NHÓM]")) {
+                const start = systemPrompt.indexOf("[BỐI CẢNH THẢO LUẬN GẦN ĐÂY CỦA NHÓM]");
+                const nextSection = systemPrompt.indexOf("\n\n[", start + 5);
+                topicData = nextSection > start ? systemPrompt.substring(start, nextSection) : systemPrompt.substring(start);
+            }
+            if (!transcriptData && systemPrompt.includes("[DIỄN BIẾN ĐOẠN CHAT GẦN ĐÂY TRONG KÊNH]")) {
+                const start = systemPrompt.indexOf("[DIỄN BIẾN ĐOẠN CHAT GẦN ĐÂY TRONG KÊNH]");
+                const nextSection = systemPrompt.indexOf("\n\n[", start + 5);
+                transcriptData = nextSection > start ? systemPrompt.substring(start, nextSection) : systemPrompt.substring(start);
+            }
         }
 
-        if (!searchData && !loreData && !memData) return '';
+        if (!searchData && !loreData && !memData && !guildData && !topicData && !transcriptData) return '';
 
         const cards = [];
         if (searchData) {
@@ -426,13 +474,61 @@ window.InspectorWidgets = {
                     <div class="inspector-card-title" style="justify-content: space-between;">
                         <div style="display: flex; align-items: center; gap: 6px;">
                             ${this.icon('brain', { size: 14, color: '#e60026' })}
-                            <span>Ký Ức & Hồ Sơ Senpai (Memories Context)</span>
+                            <span>Ký Ức & Hồ Sơ Cá Nhân Senpai (Memories Context)</span>
                         </div>
                         <button class="btn" style="padding: 3px 8px; font-size: 11px;" onclick="InspectorWidgets.copyToClipboard(this.getAttribute('data-copy'), this)" data-copy="${this.escapeHtml(memData.trim())}">
                             ${this.icon('copy', { size: 12 })} <span>Sao chép</span>
                         </button>
                     </div>
                     <div class="json-block" style="max-height: 320px; white-space: pre-wrap; font-size: 12px; line-height: 1.6;">${this.escapeHtml(memData.trim())}</div>
+                </div>
+            `);
+        }
+        if (guildData) {
+            cards.push(`
+                <div class="inspector-card" style="border-left: 3px solid #f59e0b; background: linear-gradient(135deg, rgba(245, 158, 11, 0.06), rgba(18, 12, 8, 0.6));">
+                    <div class="inspector-card-title" style="justify-content: space-between;">
+                        <div style="display: flex; align-items: center; gap: 6px;">
+                            ${this.icon('database', { size: 14, color: '#f59e0b' })}
+                            <span style="color: #fbbf24; font-weight: 700;">Tri Thức & Sự Kiện Chung Server (Guild Memories Context)</span>
+                        </div>
+                        <button class="btn" style="padding: 3px 8px; font-size: 11px;" onclick="InspectorWidgets.copyToClipboard(this.getAttribute('data-copy'), this)" data-copy="${this.escapeHtml(guildData.trim())}">
+                            ${this.icon('copy', { size: 12 })} <span>Sao chép</span>
+                        </button>
+                    </div>
+                    <div class="json-block" style="max-height: 320px; white-space: pre-wrap; font-size: 12px; line-height: 1.6;">${this.escapeHtml(guildData.trim())}</div>
+                </div>
+            `);
+        }
+        if (topicData) {
+            cards.push(`
+                <div class="inspector-card" style="border-left: 3px solid #10b981; background: linear-gradient(135deg, rgba(16, 185, 129, 0.06), rgba(10, 18, 15, 0.6));">
+                    <div class="inspector-card-title" style="justify-content: space-between;">
+                        <div style="display: flex; align-items: center; gap: 6px;">
+                            ${this.icon('book-open', { size: 14, color: '#10b981' })}
+                            <span style="color: #6ee7b7; font-weight: 700;">Bối Cảnh Thảo Luận Gần Đây Của Kênh (Topic Summary)</span>
+                        </div>
+                        <button class="btn" style="padding: 3px 8px; font-size: 11px;" onclick="InspectorWidgets.copyToClipboard(this.getAttribute('data-copy'), this)" data-copy="${this.escapeHtml(topicData.trim())}">
+                            ${this.icon('copy', { size: 12 })} <span>Sao chép</span>
+                        </button>
+                    </div>
+                    <div class="json-block" style="max-height: 320px; white-space: pre-wrap; font-size: 12px; line-height: 1.6;">${this.escapeHtml(topicData.trim())}</div>
+                </div>
+            `);
+        }
+        if (transcriptData) {
+            cards.push(`
+                <div class="inspector-card" style="border-left: 3px solid #38bdf8; background: linear-gradient(135deg, rgba(56, 189, 248, 0.06), rgba(8, 15, 20, 0.6));">
+                    <div class="inspector-card-title" style="justify-content: space-between;">
+                        <div style="display: flex; align-items: center; gap: 6px;">
+                            ${this.icon('messages-square', { size: 14, color: '#38bdf8' })}
+                            <span style="color: #7dd3fc; font-weight: 700;">Diễn Biến Đoạn Chat Gần Đây Trong Kênh (Live Transcript)</span>
+                        </div>
+                        <button class="btn" style="padding: 3px 8px; font-size: 11px;" onclick="InspectorWidgets.copyToClipboard(this.getAttribute('data-copy'), this)" data-copy="${this.escapeHtml(transcriptData.trim())}">
+                            ${this.icon('copy', { size: 12 })} <span>Sao chép</span>
+                        </button>
+                    </div>
+                    <div class="json-block" style="max-height: 320px; white-space: pre-wrap; font-size: 12px; line-height: 1.6;">${this.escapeHtml(transcriptData.trim())}</div>
                 </div>
             `);
         }
@@ -467,18 +563,30 @@ window.InspectorWidgets = {
                 `;
             }
 
-            const content = f.content || f.text || f.fact || JSON.stringify(f);
+            const content = f.content || f.text || f.text_content || f.fact || JSON.stringify(f);
             const score = f.importance_score || f.score || f.importance;
             const scoreHtml = score !== undefined ? `<span class="pill pill-tokens" style="font-size: 9.5px;">Score: ${score}</span>` : '';
             const typeHtml = f.type ? `<span class="pill" style="font-size: 9.5px; color: #ffa4b2; border-color: rgba(255, 34, 62, 0.35); background: rgba(255, 34, 62, 0.12);">${this.escapeHtml(f.type)}</span>` : '';
             const statusHtml = f.status ? `<span class="pill" style="font-size: 9.5px; color: ${f.status === 'contradict' ? '#ff1133' : '#ffa4b2'}; border-color: rgba(255, 34, 62, 0.35); background: rgba(255, 34, 62, 0.12);">${this.escapeHtml(f.status)}</span>` : '';
+            const speakerHtml = f.recorded_by_speaker ? `<span class="pill" style="font-size: 9.5px; color: #38bdf8; border-color: rgba(56, 189, 248, 0.35); background: rgba(56, 189, 248, 0.12);">@${this.escapeHtml(f.recorded_by_speaker)}</span>` : '';
+            const collHtml = f.collection === 'guild_memories' ? `<span class="pill" style="font-size: 9.5px; color: #fbbf24; border-color: rgba(245, 158, 11, 0.35); background: rgba(245, 158, 11, 0.12);">Guild Scope</span>` : '';
+            
+            let expHtml = '';
+            if (f.expires_at) {
+                const expDate = new Date(f.expires_at * 1000);
+                const expStr = `Hết hạn: ${expDate.toLocaleDateString('vi-VN')}`;
+                expHtml = `<span class="pill" style="font-size: 9.5px; color: #fbbf24; border-color: rgba(245, 158, 11, 0.35); background: rgba(245, 158, 11, 0.12);">${this.escapeHtml(expStr)}</span>`;
+            }
 
             return `
                 <div style="background: rgba(14, 7, 10, 0.75); border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 8px 10px; margin-bottom: 6px; font-size: 12px; line-height: 1.5; border-left: 3px solid var(--red);">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
                         <span style="font-size: 10.5px; font-family: 'JetBrains Mono', monospace; color: var(--text-muted);">#${i + 1}</span>
-                        <div style="display: flex; gap: 4px;">
+                        <div style="display: flex; gap: 4px; flex-wrap: wrap;">
+                            ${collHtml}
+                            ${speakerHtml}
                             ${typeHtml}
+                            ${expHtml}
                             ${scoreHtml}
                             ${statusHtml}
                         </div>
@@ -664,6 +772,57 @@ window.InspectorWidgets = {
                     ${deepPagesHtml}
                 </div>
             ` : ''}
+        `;
+    },
+
+    /**
+     * 5.b Render Initial Emotion Baseline State (Used in Stage 1 Initialization)
+     */
+    renderInitialEmotionGrid(emotions = {}) {
+        if (!emotions || Object.keys(emotions).length === 0) return '';
+
+        const dimensions = [
+            { key: 'trust', label: 'Tin tưởng (Trust)', color: '#ff8597', default: 0.50 },
+            { key: 'attachment', label: 'Gắn bó (Attachment)', color: '#ff1133', default: 0.00 },
+            { key: 'comfort', label: 'Bình yên (Comfort)', color: '#e60026', default: 0.50 },
+            { key: 'joy', label: 'Vui vẻ (Joy)', color: '#ff4d66', default: 0.15 },
+            { key: 'curiosity', label: 'Hiếu kỳ (Curiosity)', color: '#ff3b56', default: 0.10 },
+            { key: 'shyness', label: 'Ngại ngùng (Shyness)', color: '#ff5c75', default: 0.00 },
+            { key: 'irritation', label: 'Khó chịu (Irritation)', color: '#ff223e', default: 0.00 },
+            { key: 'sadness', label: 'Buồn bã (Sadness)', color: '#b30c24', default: 0.00 },
+        ];
+
+        const cardsHtml = dimensions.map(dim => {
+            const val = emotions[dim.key] !== undefined && emotions[dim.key] !== null 
+                ? Number(emotions[dim.key]) 
+                : dim.default;
+            const pct = Math.round(val * 100);
+
+            return `
+                <div style="background: rgba(14, 7, 10, 0.75); border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 8px 10px; border-left: 3px solid ${dim.color};">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                        <span style="font-size: 11px; font-weight: 600; color: ${dim.color};">${dim.label}</span>
+                        <span style="font-size: 12px; font-weight: 700; font-family: 'JetBrains Mono', monospace; color: var(--text-primary);">${val.toFixed(2)}</span>
+                    </div>
+                    <div style="height: 4px; background: rgba(255,255,255,0.06); border-radius: 2px; overflow: hidden;">
+                        <div style="height: 100%; width: ${pct}%; background: ${dim.color}; border-radius: 2px;"></div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        return `
+            <div class="inspector-card" style="margin-top: 12px;">
+                <div class="inspector-card-title">
+                    <div style="display: flex; align-items: center; gap: 6px;">
+                        ${this.icon('heart', { size: 14, color: 'var(--red)' })}
+                        <span>Trạng Thái Cảm Xúc Khởi Đầu (Initial Emotion Baseline State)</span>
+                    </div>
+                </div>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 8px; margin-top: 6px;">
+                    ${cardsHtml}
+                </div>
+            </div>
         `;
     },
 

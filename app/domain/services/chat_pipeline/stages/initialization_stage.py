@@ -73,6 +73,7 @@ class InitializationStage(PipelineStage):
             # Synthesize transient ambient channels into current emotion state (preserving individual Trust & Attachment)
             AmbientMoodManager.synthesize_ambient_into_emotion(emotion, decayed_ambient)
             context.recent_social_trace = decayed_ambient
+            context.ambient_context = AmbientMoodManager.describe_ambient_mood(decayed_ambient)
 
             # Load rolling community topic summary from Redis if available
             if context.channel_id:
@@ -98,7 +99,7 @@ class InitializationStage(PipelineStage):
             "irritation": emotion.irritation,
             "attachment": emotion.attachment,
             "shyness": getattr(emotion, "shyness", 0.0),
-            "curiosity": getattr(emotion, "curiosity", 0.20),
+            "curiosity": getattr(emotion, "curiosity", 0.10),
             "comfort": getattr(emotion, "comfort", 0.50),
         }
 
@@ -113,6 +114,10 @@ class InitializationStage(PipelineStage):
         context.current_emotions = current_emotions
 
         if self.pipeline_tracker:
+            if not context.trace_id:
+                current_trace = self.pipeline_tracker.get_current_trace()
+                if current_trace:
+                    context.trace_id = current_trace.get("id")
             self.pipeline_tracker.add_step(
                 name="initialization",
                 stage_id="stage_1_init",

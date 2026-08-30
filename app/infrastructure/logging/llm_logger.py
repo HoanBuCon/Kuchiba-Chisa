@@ -291,6 +291,12 @@ async def log_llm_transaction(prompt: StructuredPrompt, response: LLMResponse) -
             is_main_chat = (purpose == "chat_response" or not purpose or purpose == "unknown")
 
             if is_main_chat:
+                parsed = response.parsed if isinstance(response.parsed, dict) else {}
+                sentiment_analysis = parsed.get("sentiment") or parsed.get("sentiment_analysis", {})
+                user_sentiment = parsed.get("user_sentiment", {})
+                chisa_sentiment = parsed.get("chisa_sentiment", {})
+                chisa_reply = parsed.get("response") or parsed.get("reply") or response.raw_content or ""
+
                 pipeline_tracker.add_step(
                     name="llm_generation",
                     stage_id="stage_7_llm",
@@ -309,6 +315,10 @@ async def log_llm_transaction(prompt: StructuredPrompt, response: LLMResponse) -
                         "finish_reason": response.finish_reason,
                         "raw_response": response.raw_content,
                         "parsed_response": response.parsed,
+                        "response_preview": (chisa_reply[:200] + "...") if len(chisa_reply) > 200 else chisa_reply,
+                        "sentiment": sentiment_analysis,
+                        "user_sentiment": user_sentiment,
+                        "chisa_sentiment": chisa_sentiment,
                         "purpose": purpose or "chat_response",
                         "purpose_label": purpose_label(purpose or "chat_response"),
                         "call_index": t_idx,
@@ -319,6 +329,7 @@ async def log_llm_transaction(prompt: StructuredPrompt, response: LLMResponse) -
                         "reasoning_content": response.reasoning_content,
                         "history": prompt.history,
                         "temperature": getattr(prompt, "temperature", 0.5),
+                        "status": "success"
                     }
                 )
             else:

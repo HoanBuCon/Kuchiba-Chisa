@@ -169,28 +169,4 @@ class LLMGenerationStage(PipelineStage):
         context.tool_res["user_sentiment"] = user_sentiment
         context.tool_res["chisa_sentiment"] = chisa_sentiment
 
-        # Emit Stage 7 telemetry to Visualizer
-        if self.pipeline_tracker:
-            self.pipeline_tracker.add_step(
-                name="llm_generation",
-                stage_id="stage_7_llm",
-                depth=0,
-                category="stage_root",
-                title="Stage 7: [LLM] Sinh Phản Hồi & Phân tích Cảm xúc",
-                subtitle=f"Model: {getattr(self.llm, '_model', 'unknown')} · {response.input_tokens}↑ {response.output_tokens}↓ tok",
-                data={
-                    "model": getattr(self.llm, "_model", "unknown"),
-                    "input_tokens": response.input_tokens,
-                    "output_tokens": response.output_tokens,
-                    "reasoning_tokens": len(response.reasoning_content.split()) * 1.3 if response.reasoning_content else 0,
-                    "finish_reason": response.finish_reason,
-                    "has_reasoning": bool(response.reasoning_content),
-                    "response_preview": (chisa_reply[:200] + "...") if len(chisa_reply) > 200 else chisa_reply,
-                    "sentiment": sentiment_analysis,
-                    "user_sentiment": user_sentiment,
-                    "chisa_sentiment": chisa_sentiment,
-                    "status": "success"
-                }
-            )
-
         return context

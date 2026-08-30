@@ -17,6 +17,7 @@ class ChatContext:
     user_id: str
     user_message: str
     on_token: Optional[Callable[[str], Any]] = None
+    trace_id: Optional[str] = None
 
     # Community Mode Extensions
     is_community: bool = False

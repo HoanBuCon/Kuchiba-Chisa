@@ -66,6 +66,7 @@ class CommunityTopicSummarizer:
         channel_id: str,
         guild_id: str,
         messages: List[Any],
+        trace_id: Optional[str] = None,
     ) -> Optional[str]:
         """
         Background execution: Calls LLM to summarize recent community discussion, merging with prior summary.
@@ -132,10 +133,66 @@ class CommunityTopicSummarizer:
                     ttl=self.SUMMARY_TTL_SECONDS
                 )
                 log.info("Community topic summary updated in Redis", channel_id=channel_id, summary_length=len(summary_text))
+                self._record_pipeline_step(
+                    status="success",
+                    topic_summary=summary_text,
+                    channel_id=channel_id,
+                    previous_summary=previous_summary,
+                    transcript_sample=formatted_transcript[:300],
+                    trace_id=trace_id
+                )
                 return summary_text
             else:
                 log.warning("Topic summarizer produced empty summary", channel_id=channel_id)
+                self._record_pipeline_step(
+                    status="empty",
+                    topic_summary="",
+                    channel_id=channel_id,
+                    previous_summary=previous_summary,
+                    transcript_sample=formatted_transcript[:300],
+                    trace_id=trace_id
+                )
                 return None
         except Exception as e:
             log.error("Failed to summarize community topic", channel_id=channel_id, error=str(e))
+            self._record_pipeline_step(
+                status="failed",
+                topic_summary="",
+                channel_id=channel_id,
+                previous_summary=previous_summary,
+                transcript_sample=formatted_transcript[:300],
+                trace_id=trace_id
+            )
             return None
+
+    def _record_pipeline_step(
+        self,
+        status: str,
+        topic_summary: str,
+        channel_id: str,
+        previous_summary: Optional[str] = None,
+        transcript_sample: str = "",
+        trace_id: Optional[str] = None
+    ) -> None:
+        try:
+            from app.infrastructure.logging.pipeline_tracker import pipeline_tracker
+            word_count = len(topic_summary.split()) if topic_summary else 0
+            pipeline_tracker.add_step(
+                name="summarize_channel_topic",
+                stage_id="stage_10_bg",
+                depth=1,
+                category="task",
+                title="10.2 [BG] Tóm tắt Mạch Kênh Cộng đồng",
+                subtitle=f"{word_count} từ tóm tắt ({status})",
+                trace_id=trace_id,
+                data={
+                    "status": status,
+                    "channel_id": channel_id,
+                    "topic_summary": topic_summary,
+                    "previous_summary": previous_summary,
+                    "transcript_sample": transcript_sample,
+                    "word_count": word_count,
+                }
+            )
+        except Exception:
+            pass

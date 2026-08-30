@@ -12,13 +12,13 @@ class EmotionState(Base):
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), primary_key=True, index=True, doc="The unique ID of the user")
     
     # Core Emotion Spectrum
-    joy = Column(Float, default=0.10, nullable=False)
+    joy = Column(Float, default=0.15, nullable=False)
     sadness = Column(Float, default=0.00, nullable=False)
     trust = Column(Float, default=0.50, nullable=False)
     attachment = Column(Float, default=0.00, nullable=False)
     irritation = Column(Float, default=0.00, nullable=False)
     shyness = Column(Float, default=0.00, nullable=False)
-    curiosity = Column(Float, default=0.20, nullable=False)
+    curiosity = Column(Float, default=0.10, nullable=False)
     comfort = Column(Float, default=0.50, nullable=False)
     
     # Unix timestamp for decay calculation

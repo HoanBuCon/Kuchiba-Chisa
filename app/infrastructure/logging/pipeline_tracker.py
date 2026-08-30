@@ -42,6 +42,7 @@ STEP_NAME_TO_STAGE_ID = {
     "rag_stage": "stage_5_rag",
     "lore_retrieval": "stage_5_rag",
     "memory_retrieval": "stage_5_rag",
+    "guild_memory_retrieval": "stage_5_rag",
     "web_search": "stage_5_rag",
     "information_alignment_check": "stage_5_rag",
     "alignment_assessment": "stage_5_rag",
@@ -57,6 +58,8 @@ STEP_NAME_TO_STAGE_ID = {
     "background_stage": "stage_10_bg",
     "memory_extraction": "stage_10_bg",
     "summarize_conversation_memory": "stage_10_bg",
+    "summarize_channel_topic": "stage_10_bg",
+    "community_topic_summarize": "stage_10_bg",
 }
 
 STAGE_ID_TO_ROOT_NAME = {
@@ -185,11 +188,19 @@ class PipelineTracker:
         title: Optional[str] = None,
         subtitle: Optional[str] = None,
         tokens: Optional[Dict[str, Any]] = None,
+        trace_id: Optional[str] = None,
         *args: Any,
         **kwargs: Any
     ):
         try:
-            trace = current_trace_var.get()
+            trace = None
+            if trace_id:
+                for t in self.history:
+                    if t.get("id") == trace_id:
+                        trace = t
+                        break
+            if not trace:
+                trace = current_trace_var.get()
             if not trace:
                 return None
             
@@ -209,6 +220,7 @@ class PipelineTracker:
                 elif name in (
                     "information_alignment_check", "alignment_assessment", "query_rewrite",
                     "thinking_loop_auto_satisfy", "web_search", "memory_extraction",
+                    "guild_memory_retrieval", "summarize_channel_topic", "community_topic_summarize",
                     "summarize_conversation_memory", "unified_auto_summarize", "auto_summarize"
                 ) or name.startswith("thinking_loop_cycle_"):
                     resolved_depth = 1

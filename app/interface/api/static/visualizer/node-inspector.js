@@ -130,6 +130,8 @@ ${window.VisualizerApp.escapeHtml(userMessage.trim())}
                         contentHtml = this.renderMemoryExtractionInspector(step);
                         break;
                     case 'summarize_conversation_memory':
+                    case 'summarize_channel_topic':
+                    case 'community_topic_summarize':
                         contentHtml = this.renderSummarizeInspector(step);
                         break;
                     default:
@@ -170,7 +172,7 @@ ${window.VisualizerApp.escapeHtml(userMessage.trim())}
         ];
 
         const metricGridHtml = InspectorWidgets.renderMetricGrid(metrics);
-        const emotionHtml = data.initial_emotions ? InspectorWidgets.renderEmotionComparison(data.initial_emotions, data.initial_emotions, {}, {}) : '';
+        const emotionHtml = data.initial_emotions ? InspectorWidgets.renderInitialEmotionGrid(data.initial_emotions) : '';
 
         // Ambient Mood Card
         let ambientMoodHtml = '';
@@ -473,18 +475,20 @@ ${window.VisualizerApp.escapeHtml(userMessage.trim())}
         const mode = data.mode || 'VECTOR_SEARCH';
         const loreChunks = data.retrieved_lore_chunks || [];
         const memories = data.retrieved_memories || [];
+        const guildMemories = data.retrieved_guild_memories || data.guild_memories || [];
         const entities = data.extracted_entities || [];
 
         const metrics = [
             { label: 'Chế độ RAG', value: mode, icon: 'database', color: mode === 'BYPASS' ? '#ff7043' : '#00f2fe', badge: mode },
             { label: 'Lore Chunks', value: loreChunks.length, icon: 'book-open', color: '#10b981' },
-            { label: 'Memories (STM/LTM)', value: memories.length, icon: 'brain', color: '#a855f7' },
-            { label: 'Entities Trích xuất', value: entities.length ? entities.join(', ') : 'None', icon: 'tag', color: '#f59e0b', small: true },
+            { label: 'Memories Cá nhân', value: memories.length, icon: 'brain', color: '#a855f7' },
+            { label: 'Tri thức Server', value: guildMemories.length, icon: 'shield', color: '#f59e0b' },
         ];
 
         const metricGridHtml = InspectorWidgets.renderMetricGrid(metrics);
         const loreCardsHtml = loreChunks.length ? InspectorWidgets.renderFactList(loreChunks, "Retrieved Lore Chunks", "Không có lore chunk") : '';
-        const memoryCardsHtml = memories.length ? InspectorWidgets.renderFactList(memories, "Retrieved Memories", "Không có memory") : '';
+        const memoryCardsHtml = memories.length ? InspectorWidgets.renderFactList(memories, "Retrieved Personal Memories", "Không có memory cá nhân") : '';
+        const guildCardsHtml = guildMemories.length ? InspectorWidgets.renderFactList(guildMemories, "Retrieved Server Knowledge (Guild Memories)", "Không có tri thức server") : '';
         const rawJsonHtml = InspectorWidgets.renderJsonViewer(data, "Raw RAG Retrieval Payload");
 
         return `
@@ -506,6 +510,7 @@ ${window.VisualizerApp.escapeHtml(userMessage.trim())}
                 ` : ''}
                 ${loreCardsHtml}
                 ${memoryCardsHtml}
+                ${guildCardsHtml}
                 ${rawJsonHtml}
             </div>
         `;
@@ -1142,10 +1147,14 @@ ${window.VisualizerApp.escapeHtml(userMessage.trim())}
     // ── STAGE 10.2: AUTO-SUMMARIZE INSPECTOR ──
     renderSummarizeInspector(step) {
         const data = step.data || {};
+        const isTopic = !!data.topic_summary || step.name === 'summarize_channel_topic' || step.name === 'community_topic_summarize';
+        const summaryContent = data.topic_summary || data.summary || '';
+        const taskTitle = isTopic ? 'Community Channel Topic Summarization' : 'Conversation Summarization';
 
         const metrics = [
-            { label: 'Tác vụ', value: 'Conversation Summarization', icon: 'file-text', color: '#f59e0b' },
+            { label: 'Tác vụ', value: taskTitle, icon: 'file-text', color: '#f59e0b', small: true },
             { label: 'Trạng thái', value: data.status || 'success', icon: 'zap', color: '#10b981' },
+            ...(data.word_count ? [{ label: 'Độ dài', value: `${data.word_count} từ`, icon: 'file-text', color: '#38bdf8' }] : [])
         ];
 
         const metricGridHtml = InspectorWidgets.renderMetricGrid(metrics);
@@ -1155,23 +1164,23 @@ ${window.VisualizerApp.escapeHtml(userMessage.trim())}
             <div class="inspector-panel">
                 <div class="inspector-header">
                     <div class="inspector-title-group">
-                        <span class="inspector-badge badge-memory">Stage 10.2: Auto-Summarize</span>
-                        <h2>${window.VisualizerApp.escapeHtml(step.title || '10.2 [BG] Tự động Tóm tắt Hội thoại')}</h2>
+                        <span class="inspector-badge badge-memory">${isTopic ? 'Stage 10.2: Community Topic Summary' : 'Stage 10.2: Auto-Summarize'}</span>
+                        <h2>${window.VisualizerApp.escapeHtml(step.title || (isTopic ? '10.2 [BG] Tóm tắt Mạch Kênh Cộng đồng' : '10.2 [BG] Tự động Tóm tắt Hội thoại'))}</h2>
                     </div>
                 </div>
                 ${metricGridHtml}
-                ${data.summary ? `
+                ${summaryContent ? `
                     <div class="inspector-card" style="border-left: 3px solid var(--accent-amber);">
                         <div class="inspector-card-title" style="justify-content: space-between;">
                             <div style="display: flex; align-items: center; gap: 6px;">
                                 ${InspectorWidgets.icon('file-text', { size: 14, color: 'var(--accent-amber)' })}
-                                <span>Bản Tóm tắt Hội thoại (Conversation Summary)</span>
+                                <span>${isTopic ? 'Bản Tóm tắt Mạch Kênh Cộng đồng (Topic Summary)' : 'Bản Tóm tắt Hội thoại (Conversation Summary)'}</span>
                             </div>
-                            <button class="btn" style="padding: 3px 8px; font-size: 11px;" onclick="InspectorWidgets.copyToClipboard(this.getAttribute('data-copy'), this)" data-copy="${window.VisualizerApp.escapeHtml((data.summary || '').trim())}">
+                            <button class="btn" style="padding: 3px 8px; font-size: 11px;" onclick="InspectorWidgets.copyToClipboard(this.getAttribute('data-copy'), this)" data-copy="${window.VisualizerApp.escapeHtml(summaryContent.trim())}">
                                 ${InspectorWidgets.icon('copy', { size: 11 })} <span>Sao chép</span>
                             </button>
                         </div>
-                        <div class="json-block" style="max-height: 280px; white-space: pre-wrap; font-size: 12px; line-height: 1.6;">${window.VisualizerApp.escapeHtml((data.summary || '').trim())}</div>
+                        <div class="json-block" style="max-height: 280px; white-space: pre-wrap; font-size: 12px; line-height: 1.6;">${window.VisualizerApp.escapeHtml(summaryContent.trim())}</div>
                     </div>
                 ` : ''}
                 ${rawJsonHtml}

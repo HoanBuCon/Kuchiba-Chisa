@@ -275,6 +275,7 @@ class MemoryExtractor:
         channel_id: Optional[str] = None,
         speaker_name: Optional[str] = None,
         is_community: bool = False,
+        trace_id: Optional[str] = None,
     ) -> None:
         """
         Batched background worker: Analyzes conversation window to extract multi-fact milestones,
@@ -460,8 +461,11 @@ class MemoryExtractor:
                             "content": content,
                             "importance_score": importance,
                             "status": "duplicate",
+                            "collection": target_collection,
                             "reconciliation_action": reconciliation_action,
-                            "conflicting_id": conflicting_memory_id
+                            "conflicting_id": conflicting_memory_id,
+                            "expires_at": expires_at,
+                            "recorded_by_speaker": speaker_name
                         })
                         continue
                     elif action == "CONTRADICT" and conflicting_id:
@@ -508,7 +512,9 @@ class MemoryExtractor:
                     "status": "extracted",
                     "collection": target_collection,
                     "reconciliation_action": reconciliation_action,
-                    "conflicting_id": conflicting_memory_id
+                    "conflicting_id": conflicting_memory_id,
+                    "expires_at": expires_at,
+                    "recorded_by_speaker": speaker_name
                 })
 
             # Record step to visualizer pipeline tracker
@@ -516,7 +522,8 @@ class MemoryExtractor:
                 status="extracted" if stored_facts else "skipped",
                 facts=stored_facts,
                 extracted_input_context=transcript,
-                raw_facts_count=len(extracted_facts)
+                raw_facts_count=len(extracted_facts),
+                trace_id=trace_id
             )
         except Exception as e:
             log.warning("Batch memory extraction failed", error=str(e))
@@ -526,7 +533,8 @@ class MemoryExtractor:
         status: str,
         facts: list[dict[str, Any]],
         extracted_input_context: str,
-        raw_facts_count: int = 0
+        raw_facts_count: int = 0,
+        trace_id: Optional[str] = None
     ) -> None:
         try:
             from app.infrastructure.logging.pipeline_tracker import pipeline_tracker
@@ -537,6 +545,7 @@ class MemoryExtractor:
                 category="task",
                 title="10.1 [BG] Trích xuất Ký ức (Batch 3 lượt)",
                 subtitle=f"{len(facts)} facts trích xuất",
+                trace_id=trace_id,
                 data={
                     "status": status,
                     "facts": facts,

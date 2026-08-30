@@ -162,8 +162,8 @@ class StateManager:
     def get_mood(cls, emotion: EmotionState) -> str:
         shyness_val = getattr(emotion, "shyness", 0.0)
         shyness = float(shyness_val) if shyness_val is not None else 0.0
-        curiosity_val = getattr(emotion, "curiosity", 0.20)
-        curiosity = float(curiosity_val) if curiosity_val is not None else 0.20
+        curiosity_val = getattr(emotion, "curiosity", 0.10)
+        curiosity = float(curiosity_val) if curiosity_val is not None else 0.10
         if emotion.irritation >= 0.40:
             return "Playful Pout" if (emotion.trust >= 0.60 and emotion.attachment >= 0.20) else "Annoyed"
         elif emotion.sadness >= 0.40:
@@ -182,14 +182,14 @@ class StateManager:
         Sinh dòng tóm tắt cảm xúc (1 câu duy nhất) phản ánh toàn diện
         Plutchik Dyads, các mốc 8 chiều cảm xúc và thang bậc quan hệ.
         """
-        trust = float(getattr(emotion, "trust", 0.0) or 0.0)
-        attachment = float(getattr(emotion, "attachment", 0.0) or 0.0)
-        shyness = float(getattr(emotion, "shyness", 0.0) or 0.0)
-        curiosity = float(getattr(emotion, "curiosity", 0.20) or 0.20)
-        comfort = float(getattr(emotion, "comfort", 0.50) or 0.50)
-        joy = float(getattr(emotion, "joy", 0.40) or 0.40)
-        sadness = float(getattr(emotion, "sadness", 0.10) or 0.10)
-        irritation = float(getattr(emotion, "irritation", 0.10) or 0.10)
+        trust = float(getattr(emotion, "trust", 0.50) if getattr(emotion, "trust", None) is not None else 0.50)
+        attachment = float(getattr(emotion, "attachment", 0.00) if getattr(emotion, "attachment", None) is not None else 0.00)
+        shyness = float(getattr(emotion, "shyness", 0.00) if getattr(emotion, "shyness", None) is not None else 0.00)
+        curiosity = float(getattr(emotion, "curiosity", 0.10) if getattr(emotion, "curiosity", None) is not None else 0.10)
+        comfort = float(getattr(emotion, "comfort", 0.50) if getattr(emotion, "comfort", None) is not None else 0.50)
+        joy = float(getattr(emotion, "joy", 0.15) if getattr(emotion, "joy", None) is not None else 0.15)
+        sadness = float(getattr(emotion, "sadness", 0.00) if getattr(emotion, "sadness", None) is not None else 0.00)
+        irritation = float(getattr(emotion, "irritation", 0.00) if getattr(emotion, "irritation", None) is not None else 0.00)
 
         # 1. Giao Thoa Cảm Xúc Hỗn Hợp Cấp Cao (Plutchik Dyads)
         if shyness >= 0.80 and attachment >= 0.65 and irritation < 0.25 and sadness < 0.35:
@@ -214,12 +214,12 @@ class StateManager:
             return "💢 Chisa đang rất khó chịu và bức xúc trước lời nói/hành vi của Senpai."
         
         if irritation >= 0.40:
-            if trust >= 0.50 and attachment >= 0.10:
+            if trust >= 0.50 and (attachment >= 0.05 or joy >= 0.30):
                 return "😤 Chisa đang giận dỗi ra mặt, cảm thấy bực bội và chưa muốn nói chuyện."
             return "😾 Chisa cảm thấy rất khó chịu trước thái độ hoặc lời trêu chọc của đối phương."
 
         if irritation >= 0.20:
-            if trust >= 0.50 and attachment >= 0.05:
+            if trust >= 0.40:
                 return "😤 Chisa có chút phụng phịu dỗi nhẹ, đang muốn Senpai quan tâm nhiều hơn ~"
             return "😾 Chisa cảm thấy hơi khó chịu và không hài lòng."
 
@@ -293,17 +293,17 @@ class StateManager:
             "(Thời gian chỉ là bối cảnh môi trường ngầm để tạo sắc thái tự nhiên, không biến câu trả lời thành lời nhắc nhở sinh hoạt máy móc nếu không phù hợp với chủ đề hội thoại).\n\n"
         )
 
-        trust = float(getattr(emotion, "trust", 0.0) or 0.0)
-        attachment = float(getattr(emotion, "attachment", 0.0) or 0.0)
-        shyness_val = getattr(emotion, "shyness", 0.0)
-        shyness = float(shyness_val) if shyness_val is not None else 0.0
-        curiosity_val = getattr(emotion, "curiosity", 0.20)
-        curiosity = float(curiosity_val) if curiosity_val is not None else 0.20
+        trust = float(getattr(emotion, "trust", 0.50) if getattr(emotion, "trust", None) is not None else 0.50)
+        attachment = float(getattr(emotion, "attachment", 0.00) if getattr(emotion, "attachment", None) is not None else 0.00)
+        shyness_val = getattr(emotion, "shyness", 0.00)
+        shyness = float(shyness_val) if shyness_val is not None else 0.00
+        curiosity_val = getattr(emotion, "curiosity", 0.10)
+        curiosity = float(curiosity_val) if curiosity_val is not None else 0.10
         comfort_val = getattr(emotion, "comfort", 0.50)
         comfort = float(comfort_val) if comfort_val is not None else 0.50
-        joy = float(getattr(emotion, "joy", 0.40) or 0.40)
-        sadness = float(getattr(emotion, "sadness", 0.10) or 0.10)
-        irritation = float(getattr(emotion, "irritation", 0.10) or 0.10)
+        joy = float(getattr(emotion, "joy", 0.15) if getattr(emotion, "joy", None) is not None else 0.15)
+        sadness = float(getattr(emotion, "sadness", 0.00) if getattr(emotion, "sadness", None) is not None else 0.00)
+        irritation = float(getattr(emotion, "irritation", 0.00) if getattr(emotion, "irritation", None) is not None else 0.00)
 
         # ── TẦNG 1: Plutchik Emotional Dyads (Giao thoa cảm xúc phức hợp) ──
         dyad = cls.get_emotional_dyad(emotion)
@@ -338,7 +338,7 @@ class StateManager:
                 )
 
         if irritation >= 0.40:
-            if trust >= 0.50 and attachment >= 0.10:
+            if trust >= 0.50 and (attachment >= 0.05 or joy >= 0.30):
                 return longing_prefix + circadian_block + (
                     "[EMOTIONAL DIRECTIVE: Pouting Frustration]\n"
                     "Chisa đang giận dỗi ra mặt, cảm thấy bực bội và chưa muốn mở lòng trò chuyện. "
@@ -352,7 +352,7 @@ class StateManager:
                 )
 
         if irritation >= 0.20:
-            if trust >= 0.50 and attachment >= 0.05:
+            if trust >= 0.40:
                 return longing_prefix + circadian_block + (
                     "[EMOTIONAL DIRECTIVE: Mild Playful Pout]\n"
                     "Chisa có chút phụng phịu dỗi nhẹ. Hãy trả lời hơi hờn mát một chút, tỏ vẻ phớt lờ nhưng ngầm lộ sự quan tâm "
@@ -455,8 +455,8 @@ class StateManager:
         attach_tier_name, _ = cls.get_attachment_tier(affection_val)
         shyness_val = getattr(emotion, "shyness", 0.0)
         shyness_label = cls.get_shyness_label(shyness_val if shyness_val is not None else 0.0)
-        curiosity_val = getattr(emotion, "curiosity", 0.20)
-        curiosity_label = cls.get_curiosity_label(curiosity_val if curiosity_val is not None else 0.20)
+        curiosity_val = getattr(emotion, "curiosity", 0.10)
+        curiosity_label = cls.get_curiosity_label(curiosity_val if curiosity_val is not None else 0.10)
         comfort_val = getattr(emotion, "comfort", 0.50)
         comfort_label = cls.get_comfort_label(comfort_val if comfort_val is not None else 0.50)
         
