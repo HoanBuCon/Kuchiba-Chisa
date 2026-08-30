@@ -163,7 +163,7 @@ class EmotionEngine:
     The caller must commit the session.
     """
 
-    # ── DEHA Baselines ──────────────────────────────────────────────
+    # ── RESONA ENGINE Baselines ──────────────────────────────────────────────
     BASELINES = {
         "joy": 0.10,
         "sadness": 0.00,
@@ -213,22 +213,22 @@ class EmotionEngine:
         chisa_flustered: bool = False,
     ) -> EmotionDelta:
         """
-        Apply emotion deltas based on DEHA 3.0 Dual-Flag Matrix (reaction, user_stance, intensity, variance)
-        with 100% backward compatibility for DEHA 2.0 (primary_emotion, valence, intensity) and legacy booleans.
+        Apply emotion deltas based on RESONA ENGINE 3.0 Dual-Flag Matrix (reaction, user_stance, intensity, variance)
+        with 100% backward compatibility for RESONA 2.0 (primary_emotion, valence, intensity) and legacy booleans.
         """
         # Ensure state has all 8 fields with safe baselines
         for key, val in self.BASELINES.items():
             if not hasattr(state, key) or getattr(state, key) is None:
                 setattr(state, key, val)
 
-        # 1. Resolve Inputs into Normalized DEHA 3.0 Variables
+        # 1. Resolve Inputs into Normalized RESONA ENGINE 3.0 Variables
         raw_reaction = reaction
         raw_stance = user_stance
         raw_intensity = intensity
         raw_variance = variance
 
         if sentiment_analysis and isinstance(sentiment_analysis, dict):
-            # Prefer DEHA 3.0 keys, fallback to DEHA 2.0 keys
+            # Prefer RESONA ENGINE 3.0 keys, fallback to RESONA 2.0 keys
             raw_reaction = sentiment_analysis.get("reaction") or sentiment_analysis.get("primary_emotion") or raw_reaction
             raw_stance = sentiment_analysis.get("user_stance") or raw_stance
             raw_intensity = sentiment_analysis.get("intensity") if raw_intensity is None else raw_intensity
@@ -515,7 +515,7 @@ class EmotionEngine:
         state.comfort = self._clamp(state.comfort + delta.comfort)
 
         log.debug(
-            "DEHA 3.0 EmotionEngine update applied",
+            "RESONA ENGINE 3.0 EmotionEngine update applied",
             reaction=eff_reaction,
             user_stance=eff_user_stance,
             intensity=f"{eff_intensity:.2f}",

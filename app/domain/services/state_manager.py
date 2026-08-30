@@ -176,6 +176,72 @@ class StateManager:
             return "Happy"
         return "Calm"
 
+    @classmethod
+    def get_emotion_summary_caption(cls, emotion: EmotionState) -> str:
+        """
+        Sinh dòng tóm tắt cảm xúc (1 câu duy nhất) phản ánh toàn diện
+        Plutchik Dyads, các mốc 8 chiều cảm xúc và thang bậc quan hệ.
+        """
+        trust = float(getattr(emotion, "trust", 0.0) or 0.0)
+        attachment = float(getattr(emotion, "attachment", 0.0) or 0.0)
+        shyness = float(getattr(emotion, "shyness", 0.0) or 0.0)
+        curiosity = float(getattr(emotion, "curiosity", 0.20) or 0.20)
+        comfort = float(getattr(emotion, "comfort", 0.50) or 0.50)
+        joy = float(getattr(emotion, "joy", 0.40) or 0.40)
+        sadness = float(getattr(emotion, "sadness", 0.10) or 0.10)
+        irritation = float(getattr(emotion, "irritation", 0.10) or 0.10)
+
+        # 1. Giao Thoa Cảm Xúc Hỗn Hợp Cấp Cao (Plutchik Dyads)
+        if shyness >= 0.80 and attachment >= 0.65:
+            return "💖 Chisa đang ngượng ngùng cực điểm, vỏ bọc Kuudere tan chảy hoàn toàn trước Senpai ~"
+        if sadness >= 0.45 and trust >= 0.70:
+            return "🥺 Chisa đang xúc động, cảm thấy an toàn tuyệt đối để tựa vào vai Senpai tâm sự điều sâu kín."
+        if irritation >= 0.45 and (trust >= 0.65 and attachment >= 0.25):
+            return "😤 Chisa đang phồng má dỗi yêu, giả vờ quay mặt đi nhưng vẫn ngầm đợi Senpai dỗ dành ~"
+        if joy >= 0.55 and shyness >= 0.55:
+            return "😳 Chisa vừa ngập tràn hạnh phúc vừa ngượng chín mặt che má cười khúc khích ~"
+        if comfort >= 0.70 and curiosity >= 0.60:
+            return "✨ Chisa đang say sưa cùng Senpai khám phá cấu trúc thế giới trong sự bình yên thanh thản."
+
+        # 2. Quan Hệ Bền Vững Đỉnh Cao (Tier A5 / T5)
+        if attachment >= 0.88 and trust >= 0.90:
+            return "💍 Chisa xem Senpai là lý do tồn tại duy nhất, gắn kết trọn đời không thể tách rời."
+
+        # 3. Trạng Thái Tiêu Cực & Cảnh Báo Phòng Thủ
+        if irritation >= 0.70 and trust < 0.50:
+            return "💢 Chisa đang cực kỳ tức giận và lạnh lùng dựng rào chắn phòng thủ nghiêm ngặt."
+        if irritation >= 0.40 and trust < 0.55:
+            return "😾 Chisa cảm thấy hơi khó chịu trước thái độ hoặc lời trêu chọc của đối phương."
+        if irritation >= 0.15 and (trust >= 0.50 and attachment >= 0.05):
+            return "😤 Chisa có chút phụng phịu dỗi nhẹ, đang muốn Senpai quan tâm nhiều hơn ~"
+        if trust < 0.35:
+            return "✋ Chisa đang giữ khoảng cách nghiêm nghị, đề phòng và chưa tin tưởng."
+        if sadness >= 0.70:
+            return "🌧️ Chisa đang cảm thấy đau lòng và chìm trong nỗi buồn sâu sắc."
+        if sadness >= 0.40:
+            return "🥺 Chisa đang bâng khuâng, có chút u buồn man mác trong lòng."
+        if comfort < 0.30:
+            return "⚡ Chisa đang cảm thấy căng thẳng và bất an trước bối cảnh xung quanh."
+
+        # 4. Trạng Thái Tích Cực & Sắc Thái Tình Cảm
+        if joy >= 0.60 and shyness >= 0.25:
+            return "🥰 Chisa đang ngập tràn niềm vui, đôi má hơi ửng hồng hạnh phúc bên Senpai ~"
+        if joy >= 0.50:
+            return "😊 Chisa đang có tâm trạng rất vui vẻ, thoải mái và dễ chịu."
+        if shyness >= 0.55:
+            return "🙈 Chisa đang bối rối, hai má ửng hồng thẹn thùng trước lời nói của Senpai ~"
+        if curiosity >= 0.85:
+            return "💡 Chisa đang phấn khích tột độ, ánh mắt sáng lấp lánh say mê giải mã cùng Senpai!"
+        if curiosity >= 0.60:
+            return "🔎 Chisa đang rất hào hứng và say mê muốn cùng Senpai tìm hiểu sâu hơn."
+        if comfort >= 0.85:
+            return "🕊️ Chisa cảm nhận sự bình yên tuyệt đối, coi Senpai là bến đỗ an toàn nhất thế gian."
+        if comfort >= 0.60:
+            return "🍵 Chisa đang cảm nhận được sự ấm áp, bình yên và thư thái trọn vẹn bên Senpai."
+
+        # 5. Mặc Định (Baseline Kuudere)
+        return "🍃 Chisa ở trạng thái Kuudere điềm tĩnh, ấm áp ngầm và quan tâm Senpai tinh tế."
+
     @staticmethod
     def humanize_absence(elapsed_hours: float) -> str:
         """Chuyển đổi số giờ vắng mặt thành cụm từ tự nhiên theo tâm lý học."""

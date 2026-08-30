@@ -134,4 +134,16 @@ export class CoreRagClient {
 
     return payload;
   }
+
+  async clearCommunityMemory({ guildId, scope = 'all', channelId, coreUserId } = {}) {
+    let queryParams = `scope=${encodeURIComponent(scope)}`;
+    if (channelId) queryParams += `&channel_id=${encodeURIComponent(channelId)}`;
+    if (coreUserId) queryParams += `&user_id=${encodeURIComponent(coreUserId)}`;
+    const url = this.buildUrl(`/api/v1/community/clear/${encodeURIComponent(guildId)}?${queryParams}`);
+    const payload = await this.requestJson(url, {
+      method: 'DELETE',
+    });
+
+    return payload;
+  }
 }

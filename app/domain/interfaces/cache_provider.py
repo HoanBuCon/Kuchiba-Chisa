@@ -27,6 +27,10 @@ class ICacheProvider(Protocol):
         """Deletes a key from cache."""
         ...
 
+    async def delete_pattern(self, pattern: str) -> int:
+        """Deletes all keys matching a glob pattern."""
+        ...
+
     async def exists(self, key: str) -> bool:
         """Checks if a key exists in cache."""
         ...

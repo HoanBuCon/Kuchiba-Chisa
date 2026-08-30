@@ -4,7 +4,7 @@ from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.application.dependencies import get_chat_engine
+from app.application.dependencies import get_chat_engine, get_clear_community_memory_use_case
 from app.domain.entities.community import CommunityMessage
 from app.domain.interfaces.llm_provider import LLMRateLimitError, LLMTimeoutError
 from app.domain.services.chat_engine import ChatEngine, ChatEngineBusyError
@@ -150,3 +150,34 @@ async def community_chat_endpoint(
             status_code=500,
             detail=f"Lỗi khi xử lý tin nhắn cộng đồng: {str(e)}",
         )
+
+
+@router.delete("/clear/{guild_id}")
+async def clear_community_memory_endpoint(
+    guild_id: str,
+    scope: str = "all",
+    channel_id: Optional[str] = None,
+    user_id: Optional[str] = None,
+    clear_use_case = Depends(get_clear_community_memory_use_case),
+) -> dict:
+    """
+    Clears collective community memory (guild_memories, topic summaries, ambient mood).
+    Supports scope='all' (server-wide) or scope='self' (user's community interactions).
+    """
+    try:
+        from app.application.dependencies import get_clear_community_memory_use_case
+        result = await clear_use_case.execute(
+            guild_id=guild_id,
+            scope=scope,
+            channel_id=channel_id,
+            user_id=user_id,
+        )
+        return {
+            "status": "success",
+            "message": f"Community memory cleared successfully for guild {guild_id} with scope '{scope}'.",
+            "details": result,
+        }
+    except Exception as e:
+        log.error("Failed to clear community memory", guild_id=guild_id, scope=scope, error=str(e))
+        raise HTTPException(status_code=500, detail=f"Could not clear community memory: {str(e)}")
+

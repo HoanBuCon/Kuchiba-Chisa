@@ -67,6 +67,18 @@ export async function execute(client, message) {
         }
       }
 
+      // Convert any other user mentions <@UserID> to clean @DisplayName
+      if (message.guild && message.mentions?.users?.size > 0) {
+        message.mentions.users.forEach((u) => {
+          if (u.id !== client.user?.id) {
+            const member = message.guild.members?.cache?.get(u.id);
+            const name = member?.displayName || u.globalName || u.username;
+            const userMentionRegex = new RegExp(`<@!?${u.id}>`, 'g');
+            rawContent = rawContent.replace(userMentionRegex, `@${name}`);
+          }
+        });
+      }
+
       if (!rawContent) {
         return;
       }

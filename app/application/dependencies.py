@@ -304,6 +304,15 @@ class AppContainer:
             vector_store=qdrant_service
         )
 
+    @cached_property
+    def clear_community_memory_use_case(self):
+        from app.application.usecases.clear_community_memory import ClearCommunityMemoryUseCase
+        from app.infrastructure.cache.redis.redis_service import RedisService
+        return ClearCommunityMemoryUseCase(
+            vector_store=qdrant_service,
+            cache_provider=RedisService()
+        )
+
 # Global container instance
 container = AppContainer()
 
@@ -315,6 +324,10 @@ def get_chat_engine() -> ChatEngine:
 def get_clear_user_memory_use_case():
     """FastAPI Dependency for injecting ClearUserMemoryUseCase."""
     return container.clear_user_memory_use_case
+
+def get_clear_community_memory_use_case():
+    """FastAPI Dependency for injecting ClearCommunityMemoryUseCase."""
+    return container.clear_community_memory_use_case
 
 async def get_vector_store():
     return qdrant_service

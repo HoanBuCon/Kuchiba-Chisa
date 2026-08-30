@@ -159,7 +159,7 @@ def test_circadian_context_cozy_evening():
         assert "ấm cúng" in directive or "buổi tối" in directive
 
 
-def test_deha_3_0_philosophical_loving_case():
+def test_resona_3_0_philosophical_loving_case():
     """
     Test case thực tế: Senpai hỏi 'Em có thấy thế giới này thật vô vị nếu thiếu em không?'
     LLM nhận định: reaction='flustered_affection', user_stance='loving', intensity=0.85, variance=-0.25.
@@ -202,7 +202,7 @@ def test_deha_3_0_philosophical_loving_case():
     assert state.sadness > 0.0
 
 
-def test_deha_3_0_pout_shield_protection():
+def test_resona_3_0_pout_shield_protection():
     """
     Test case: Senpai trêu chọc -> Chisa dỗi yêu (playful_pout).
     Kiểm tra: Irritation tăng nhẹ nhưng Trust được bảo vệ 100% qua Pout Shield.
@@ -231,7 +231,7 @@ def test_deha_3_0_pout_shield_protection():
     assert state.trust >= 0.70, f"Trust must NOT decrease under Pout Shield, got {state.trust}"
 
 
-def test_deha_3_0_soulmate_confiding():
+def test_resona_3_0_soulmate_confiding():
     """
     Test case: Senpai tâm sự yếu lòng -> Chisa lắng nghe đồng cảm (melancholic_care).
     Kiểm tra: Trust tăng mạnh và Comfort tăng.
@@ -260,7 +260,7 @@ def test_deha_3_0_soulmate_confiding():
     assert state.comfort > 0.55, "Comfort must increase when solace is given"
 
 
-def test_deha_3_1_vulgar_teasing_boundary_breach():
+def test_resona_3_1_vulgar_teasing_boundary_breach():
     """
     Test case thực tế người dùng báo cáo:
     User trêu cợt thô tục/khoe khoang phản cảm ("anh vừa đi chơi gái xong...").
@@ -308,7 +308,7 @@ def test_deha_3_1_vulgar_teasing_boundary_breach():
     assert StateManager.get_mood(state) == "Annoyed"
 
 
-def test_deha_3_1_affectionate_pout_new_thresholds():
+def test_resona_3_1_affectionate_pout_new_thresholds():
     """
     Kiểm tra ngưỡng Dỗi yêu mới: Cần CẢ trust >= 0.65 VÀ attachment >= 0.25.
     """
