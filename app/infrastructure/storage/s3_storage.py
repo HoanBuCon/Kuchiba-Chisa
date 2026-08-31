@@ -52,25 +52,19 @@ class S3ImageStorageProvider(IImageStorageProvider):
         image_id = uuid.uuid4().hex
 
         main_key = f"uploads/{prefix}/{image_id}.webp"
-        thumb_key = f"uploads/{prefix}/{image_id}_thumb.webp"
 
         # Construct public URL
         if self.public_domain:
             main_url = f"{self.public_domain}/{main_key}"
-            thumb_url = f"{self.public_domain}/{thumb_key}" if sanitized_result.get("thumbnail_bytes") else main_url
         elif self.endpoint_url:
             main_url = f"{self.endpoint_url.rstrip('/')}/{self.bucket_name}/{main_key}"
-            thumb_url = f"{self.endpoint_url.rstrip('/')}/{self.bucket_name}/{thumb_key}" if sanitized_result.get("thumbnail_bytes") else main_url
         else:
             main_url = f"https://{self.bucket_name}.s3.{self.region_name}.amazonaws.com/{main_key}"
-            thumb_url = f"https://{self.bucket_name}.s3.{self.region_name}.amazonaws.com/{thumb_key}" if sanitized_result.get("thumbnail_bytes") else main_url
 
         try:
             # Upload via boto3 if available
             import asyncio
             await asyncio.to_thread(self._upload_s3_sync, main_key, sanitized_result["sanitized_bytes"], "image/webp")
-            if sanitized_result.get("thumbnail_bytes"):
-                await asyncio.to_thread(self._upload_s3_sync, thumb_key, sanitized_result["thumbnail_bytes"], "image/webp")
         except ImportError:
             log.warning("boto3 is not installed; running in S3 URL generation mode (mock / dry-run)")
         except Exception as ex:
@@ -79,9 +73,7 @@ class S3ImageStorageProvider(IImageStorageProvider):
         return {
             "image_id": image_id,
             "local_path": None,
-            "thumbnail_path": None,
             "url": main_url,
-            "thumbnail_url": thumb_url,
             "width": sanitized_result["width"],
             "height": sanitized_result["height"],
             "size_bytes": sanitized_result["size_bytes"],

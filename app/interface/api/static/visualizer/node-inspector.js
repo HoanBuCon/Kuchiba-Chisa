@@ -254,7 +254,7 @@ ${window.VisualizerApp.escapeHtml(userMessage.trim())}
                 const sizeKb = img.size_bytes ? (img.size_bytes / 1024).toFixed(1) + ' KB' : '';
                 const dim = img.width && img.height ? `${img.width}×${img.height}` : '';
                 const ephemBadge = img.is_ephemeral ? '<span class="pill" style="background: rgba(245, 158, 11, 0.2); color: #fbbf24; border-color: rgba(245, 158, 11, 0.4); font-size: 9px;">Ephemeral Ref</span>' : '<span class="pill" style="background: rgba(34, 197, 94, 0.2); color: #4ade80; border-color: rgba(34, 197, 94, 0.4); font-size: 9px;">Saved WebP</span>';
-                const imgSrc = img.thumbnail_url || img.thumbnail_data_uri || img.url || '';
+                const imgSrc = img.url || img.base64_data_uri || '';
                 const fullUrl = img.url || imgSrc;
                 return `
                     <div style="background: rgba(14, 7, 15, 0.85); padding: 8px; border-radius: 6px; border: 1px solid rgba(255, 34, 62, 0.25); display: flex; flex-direction: column; gap: 6px;">

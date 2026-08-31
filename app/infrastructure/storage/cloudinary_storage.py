@@ -73,9 +73,7 @@ class CloudinaryImageStorageProvider(IImageStorageProvider):
         return {
             "image_id": image_id,
             "local_path": None,
-            "thumbnail_path": None,
             "url": main_url,
-            "thumbnail_url": thumb_url,
             "width": sanitized_result["width"],
             "height": sanitized_result["height"],
             "size_bytes": sanitized_result["size_bytes"],
