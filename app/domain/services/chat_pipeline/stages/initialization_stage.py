@@ -72,7 +72,20 @@ class InitializationStage(PipelineStage):
                 context.channel_transcript = ChannelTranscriptFormatter.format_transcript(context.recent_community_messages)
         else:
             history = await conv_repo.get_recent_history(user_uuid, conv_id, limit=40)
-            summary = await conv_repo.get_latest_summary(user_uuid, conv_id)
+            # Read summary from Redis cache first (~0.2ms)
+            summary = None
+            if self.cache_provider:
+                try:
+                    summary = await self.cache_provider.get(f"chisa:user:{user_uuid}:summary")
+                except Exception:
+                    pass
+            if not summary:
+                summary = await conv_repo.get_latest_summary(user_uuid, conv_id)
+                if summary and self.cache_provider:
+                    try:
+                        await self.cache_provider.set(f"chisa:user:{user_uuid}:summary", summary, ttl=7 * 24 * 3600)
+                    except Exception:
+                        pass
 
         # 4. Server-Level Holistic Ambient Emotion Dynamics (Continuous Exponential Decay)
         is_server_shared = (

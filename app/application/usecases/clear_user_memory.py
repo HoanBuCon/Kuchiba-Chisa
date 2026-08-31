@@ -43,12 +43,14 @@ class ClearUserMemoryUseCase:
             await self.emotion_repo_factory(session).delete_all_for_user(user_uuid)
             await self.user_repo_factory(session).delete_all_for_user(user_uuid)
             
-        # 2. Redis State Cache Invalidation
+        # 2. Redis State & Summary Cache Invalidation
         if self.cache_provider:
             from app.domain.services.user_state_cache import UserStateCache
             await UserStateCache.invalidate(self.cache_provider, user_uuid)
+            await self.cache_provider.delete(f"chisa:user:{user_uuid}:summary")
             if canonical_user_id != str(user_uuid):
                 await UserStateCache.invalidate(self.cache_provider, canonical_user_id)
+                await self.cache_provider.delete(f"chisa:user:{canonical_user_id}:summary")
 
         # 3. Qdrant deletes via vector store
         from app.infrastructure.vector.qdrant.qdrant_service import COLLECTION_MEMORIES
