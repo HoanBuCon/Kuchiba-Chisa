@@ -362,3 +362,63 @@ async def test_hybrid_image_input_and_image_retrieval_scenario():
     assert ChatIntent.RETRIEVE_PAST_IMAGE in res_ctx.intents
     assert res_ctx.needs_image_retrieval is True
     assert res_ctx.needs_vector_search is True
+
+
+def test_context_builder_zero_contamination_schema_isolation():
+    """Kiểm tra phân lập tuyệt đối Zero Contamination giữa luồng Text và luồng Vision."""
+    # 1. Text-Only mode (không ảnh, không retrieval)
+    pure_text_schema = ContextBuilder.get_response_schema(has_images=False, has_retrieved_images=False)
+    assert "response" in pure_text_schema["properties"]
+    assert "sentiment" in pure_text_schema["properties"]
+    assert "image_tags" not in pure_text_schema["properties"]
+    assert "visual_caption" not in pure_text_schema["properties"]
+    assert "attached_images" not in pure_text_schema["properties"]
+
+    # 2. Past Image Retrieval mode (không có ảnh đính kèm, nhưng tìm thấy ảnh cũ)
+    retrieval_schema = ContextBuilder.get_response_schema(has_images=False, has_retrieved_images=True)
+    assert "attached_images" in retrieval_schema["properties"]
+    assert "image_tags" not in retrieval_schema["properties"]
+    assert "visual_caption" not in retrieval_schema["properties"]
+
+    # 3. Multimodal Vision mode (có ảnh đính kèm)
+    vision_schema = ContextBuilder.get_response_schema(has_images=True, has_retrieved_images=False)
+    assert "image_tags" in vision_schema["properties"]
+    assert "visual_caption" in vision_schema["properties"]
+    assert "attached_images" in vision_schema["properties"]
+
+
+@pytest.mark.asyncio
+async def test_llm_generation_stage_vision_auto_tagging_extraction():
+    """Kiểm tra Stage 7 trích xuất image_tags và visual_caption từ output của Vision LLM."""
+    mock_llm = MagicMock()
+    mock_llm.generate = AsyncMock(return_value=LLMResponse(
+        raw_content='{"response": "Bé mèo này xinh xắn quá nha Senpai~", "sentiment": {"reaction": "playful_pout", "user_stance": "loving", "intensity": 0.6, "variance": 0.2}, "image_tags": ["mèo", "thú cưng", "đáng yêu"], "visual_caption": "Bé mèo lông xù màu trắng đang cuộn tròn trên bàn làm việc."}',
+        parsed={
+            "response": "Bé mèo này xinh xắn quá nha Senpai~",
+            "sentiment": {
+                "reaction": "playful_pout",
+                "user_stance": "loving",
+                "intensity": 0.6,
+                "variance": 0.2
+            },
+            "image_tags": ["mèo", "thú cưng", "đáng yêu"],
+            "visual_caption": "Bé mèo lông xù màu trắng đang cuộn tròn trên bàn làm việc."
+        },
+        input_tokens=150,
+        output_tokens=80,
+    ))
+
+    stage = LLMGenerationStage(llm=mock_llm)
+
+    ctx = ChatContext(
+        session=MagicMock(),
+        user_id="user_123",
+        user_message="Em xem bé mèo này thế nào",
+        has_images=True,
+        prompt=StructuredPrompt(system="sys", history=[], user_message="msg", response_schema={})
+    )
+
+    res_ctx = await stage.process(ctx)
+
+    assert res_ctx.image_tags == ["mèo", "thú cưng", "đáng yêu"]
+    assert res_ctx.visual_caption == "Bé mèo lông xù màu trắng đang cuộn tròn trên bàn làm việc."

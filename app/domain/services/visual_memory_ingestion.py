@@ -54,9 +54,12 @@ class VisualMemoryIngestionWorker:
         guild_id: Optional[str] = None,
         channel_id: Optional[str] = None,
         is_ephemeral: bool = False,
+        llm_image_tags: Optional[List[str]] = None,
+        llm_visual_caption: Optional[str] = None,
     ) -> int:
         """
         Indexes all permanent processed images into Qdrant 'image_memories'.
+        Prioritizes tags and visual captions generated directly by the Vision LLM (0ms latency).
         Returns number of successfully ingested image memories.
         """
         if is_ephemeral or not processed_images:
@@ -66,31 +69,43 @@ class VisualMemoryIngestionWorker:
         cleaned_user_msg = (user_message or "").strip()
         cleaned_chisa_reply = (chisa_reply or "").strip()
 
-        # Extract semantic tags
+        # Extract semantic tags: prioritize LLM tags and combine with heuristic fallback
         combined_text = f"{cleaned_user_msg} {cleaned_chisa_reply}".lower()
-        extracted_tags: List[str] = []
+        fallback_tags: List[str] = []
         for tag_name, keywords in _TAG_PATTERNS.items():
             if any(kw in combined_text for kw in keywords):
-                extracted_tags.append(tag_name)
+                fallback_tags.append(tag_name)
+
+        final_tags: List[str] = []
+        if llm_image_tags:
+            for t in llm_image_tags:
+                clean_t = str(t).strip().lower()
+                if clean_t and clean_t not in final_tags:
+                    final_tags.append(clean_t)
+        for t in fallback_tags:
+            if t not in final_tags:
+                final_tags.append(t)
 
         for img in processed_images:
             image_id = img.get("image_id")
             if not image_id or img.get("is_ephemeral"):
                 continue
 
-            # Build descriptive visual caption
-            caption_parts = []
-            if cleaned_user_msg:
-                caption_parts.append(f"Bối cảnh người dùng: {cleaned_user_msg}")
-            if cleaned_chisa_reply:
-                # Take first 250 characters of Chisa's analytical response
-                summary_reply = cleaned_chisa_reply[:250].replace("\n", " ")
-                caption_parts.append(f"Mô tả và nhận xét của Chisa: {summary_reply}")
-
-            visual_caption = " | ".join(caption_parts) if caption_parts else "Hình ảnh được lưu trữ trong kho ký ức."
+            # Build descriptive visual caption: prioritize LLM caption
+            if llm_visual_caption and llm_visual_caption.strip():
+                visual_caption = llm_visual_caption.strip()
+            else:
+                caption_parts = []
+                if cleaned_user_msg:
+                    caption_parts.append(f"Bối cảnh người dùng: {cleaned_user_msg}")
+                if cleaned_chisa_reply:
+                    # Take first 250 characters of Chisa's analytical response
+                    summary_reply = cleaned_chisa_reply[:250].replace("\n", " ")
+                    caption_parts.append(f"Mô tả và nhận xét của Chisa: {summary_reply}")
+                visual_caption = " | ".join(caption_parts) if caption_parts else "Hình ảnh được lưu trữ trong kho ký ức."
 
             # Text to embed
-            tags_str = ", ".join(extracted_tags) if extracted_tags else "hình ảnh, ký ức"
+            tags_str = ", ".join(final_tags) if final_tags else "hình ảnh, ký ức"
             text_to_embed = f"{visual_caption} | Tags: {tags_str} | Bối cảnh: {cleaned_user_msg}"
 
             try:
@@ -110,7 +125,7 @@ class VisualMemoryIngestionWorker:
                     thumbnail_url=img.get("thumbnail_url"),
                     local_path=img.get("local_path"),
                     visual_caption=visual_caption,
-                    tags=extracted_tags,
+                    tags=final_tags,
                     user_context_hint=cleaned_user_msg[:200] if cleaned_user_msg else None,
                     chisa_comment_hint=cleaned_chisa_reply[:200] if cleaned_chisa_reply else None,
                     created_at=int(time.time()),

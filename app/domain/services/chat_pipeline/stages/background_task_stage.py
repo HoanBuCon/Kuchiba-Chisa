@@ -97,6 +97,8 @@ class BackgroundTaskStage(PipelineStage):
                         guild_id=context.guild_id,
                         channel_id=context.channel_id,
                         is_ephemeral=context.is_ephemeral_reference,
+                        llm_image_tags=context.image_tags,
+                        llm_visual_caption=context.visual_caption,
                     ),
                     name=f"visual_memory_ingest:{context.user_id}",
                 )
