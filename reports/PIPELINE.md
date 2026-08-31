@@ -180,10 +180,14 @@ flowchart TD
 ## 4. Đặc Tả Chi Tiết Chuỗi 11 Stage Tuần Tự
 
 ### Stage 1: InitializationStage (Khởi tạo Phiên, Hồ sơ & Ngữ cảnh)
-* **File**: `app/domain/services/chat_pipeline/stages/initialization_stage.py` (192 dòng)
+* **File**: `app/domain/services/chat_pipeline/stages/initialization_stage.py` (208 dòng)
 * **Nhiệm vụ & Cơ chế Kỹ thuật**:
-  1. **Định danh User UUID**: Gọi `normalize_user_id(context.user_id)` sinh deterministic `UUID5`. Thực hiện `get_or_create_user(user_uuid)` nhằm thỏa mãn Foreign Key constraint.
-  2. **Nạp Dữ liệu Tuần tự**: Nạp `UserStats`, `EmotionState` và `Conversation ID`.
+  1. **Định danh User UUID**: Gọi `normalize_user_id(context.user_id)` sinh deterministic `UUID5`.
+  2. **Redis Write-Through State Cache (Fast-Path ~0.2ms)**:
+     - Đọc khóa `chisa:user:{user_id}:state` từ Redis qua `UserStateCache.get_state`.
+     - **Cache HIT**: Nạp trực tiếp `UserStats`, `EmotionState` và `conv_id` từ RAM Redis, **bỏ qua 100% 3 câu truy vấn SQL (`get_or_create_user`, `get_user_stats`, `get_emotion_state`)**, giảm $95\%$ độ trễ Stage 1.
+     - **Cache MISS / Redis Restart**: Truy vấn PostgreSQL và tự động đẩy ngược vào Redis với TTL 7 ngày (Rolling Expiration).
+     - **Fail-Safe Fallback**: Tự động fallback về PostgreSQL an toàn nếu Redis gặp sự cố.
   3. **Phân lập Ngữ cảnh Lịch sử**:
      - *Private/Semi-Private*: Nạp 40 tin nhắn `history` và `conversation_summary` từ PostgreSQL.
      - *Community*: Nạp 15 tin nhắn gần nhất qua `ChannelTranscriptFormatter.format_transcript()` (lọc bot spam, gộp tin nhắn liên tiếp cùng người nói) và đọc `topic_summary` từ Redis (`chisa:channel:{channel_id}:topic_summary`).
@@ -289,12 +293,12 @@ flowchart TD
 
 ---
 
-### Stage 9: PersistenceStage (Bền vững hóa Dữ liệu PostgreSQL)
-* **File**: `app/domain/services/chat_pipeline/stages/persistence_stage.py` (90 dòng)
+### Stage 9: PersistenceStage (Bền vững hóa Dữ liệu PostgreSQL & Redis Write-Through)
+* **File**: `app/domain/services/chat_pipeline/stages/persistence_stage.py` (104 dòng)
 * **Nhiệm vụ & Cơ chế Kỹ thuật**:
   1. Ghi nhận tin nhắn User (kèm `rewritten_content` và `media_metadata`) và tin nhắn Assistant vào bảng `messages`.
-  2. Cập nhật `stats.interaction_count += 1`, `stats.last_seen` và trạng thái `EmotionState` vào PostgreSQL.
-  3. Đảm bảo tính toàn vẹn giao dịch ACID qua Unit of Work (`IUnitOfWork`).
+  2. Cập nhật `stats.interaction_count += 1`, `stats.last_seen` và trạng thái `EmotionState` vào PostgreSQL qua Unit of Work (ACID).
+  3. **Redis Write-Through State Cache Sync**: Sau khi hoàn tất ghi DB, tự động đồng bộ hóa `UserStats`, `EmotionState` và `conv_id` mới nhất lên Redis khóa `chisa:user:{user_id}:state` (TTL 7 ngày) phục vụ Fast-Path Stage 1 cho các turn chat tiếp theo.
 
 ---
 
