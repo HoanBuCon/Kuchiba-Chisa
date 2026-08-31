@@ -151,7 +151,6 @@ export async function execute(client, message) {
 
         await askCommand.executePrefix(client, message, rawContent, discordUser, {
           images: directImages,
-          isEphemeralReference,
         });
       }
     }
