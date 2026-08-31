@@ -146,12 +146,13 @@ flowchart TD
 
     S9_Lore --> S10
 
-    subgraph S10_BG ["Stage 10: Background Tasks (Async Unblocked)"]
-        S10["Khởi chạy Tác vụ Nền (BackgroundTaskManager.spawn)"]
-        S10 --> BG1["10.1 Batch Fact Extractor (Chu kỳ 3 lượt - N % 3 == 0)<br/>Single Batched Conflict Reconciliation (CONTRADICT/DUPLICATE)"]
-        S10 --> BG2["10.2 Pure Narrative Auto-Summarizer (Chu kỳ 10 lượt - N % 10 == 0)<br/>Nén 80-120 từ · Lọc sạch debug cảm xúc · Đồng bộ Redis & Postgres"]
-        S10 --> BG3["10.3 Community Topic Summarizer (Chu kỳ 30 tin - N % 30 == 0)<br/>3-Tier Synthesis · Lọc rác 2 tầng · Redis Rolling Buffer (Max 60, Overlap 10)"]
-        S10 --> BG4["10.4 Visual Memory Ingestion (Kích hoạt khi có ảnh)<br/>Vector Embed WebP sạch vào Qdrant 'image_memories'"]
+    subgraph S10_Stage ["Stage 10: BackgroundTaskStage (Khởi chạy Tác vụ Nền)"]
+        S10["Lên lịch tác vụ qua BackgroundTaskManager"]
+        S10 -. "spawn async (không block chat)" .-> BG_Pool["Async Background Worker Pool"]
+        BG_Pool --> BG1["10.1 Batch Fact Extractor (Chu kỳ 3 lượt · Single Batched Reconcile)"]
+        BG_Pool --> BG2["10.2 Pure Narrative Auto-Summarizer (Chu kỳ 10 lượt · 80-120 từ · Redis & SQL)"]
+        BG_Pool --> BG3["10.3 Community Topic Summarizer (Chu kỳ 30 tin · 3-Tier · Redis Buffer)"]
+        BG_Pool --> BG4["10.4 Visual Memory Ingestion (Kích hoạt khi có ảnh · Qdrant)"]
     end
 
     S10 --> Outbound["Trả phản hồi về Discord Client / Web API"]
