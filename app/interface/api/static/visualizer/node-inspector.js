@@ -170,12 +170,30 @@ ${window.VisualizerApp.escapeHtml(userMessage.trim())}
         const metrics = [
             { label: 'Chế độ Không gian', value: isComm ? 'Community (Group)' : (data.channel_name ? 'Semi-Private / Private' : '1-on-1 Direct'), icon: isComm ? 'users' : 'user', color: isComm ? '#c084fc' : '#ff758c' },
             { label: 'Người nói (Speaker)', value: speaker, icon: 'user-check', color: '#38bdf8' },
-            { label: 'Kênh / Server', value: channel, icon: 'message-square', color: '#34d399' },
+            { label: 'User State Cache', value: data.state_cache_hit ? 'CACHE HIT (~0.2ms)' : (data.state_cache_hit === false ? 'SQL LOAD (Postgres)' : (channel)), icon: 'zap', color: data.state_cache_hit ? '#10b981' : '#38bdf8', badge: data.state_cache_hit ? 'Redis L1' : 'PostgreSQL' },
             { label: 'Lượt tương tác', value: data.turn_index ? `#${data.turn_index}` : `${data.interaction_count || 0} turns`, icon: 'activity', color: '#ff223e' },
         ];
 
         const metricGridHtml = InspectorWidgets.renderMetricGrid(metrics);
         const emotionHtml = data.initial_emotions ? InspectorWidgets.renderInitialEmotionGrid(data.initial_emotions) : '';
+
+        // Private Conversation Summary Card
+        let privateSummaryHtml = '';
+        if (!isComm && (data.summary_preview || data.has_summary)) {
+            const summaryText = data.summary_preview || data.conversation_summary || '';
+            privateSummaryHtml = `
+                <div class="inspector-card" style="border-left: 3px solid #a855f7; margin-top: 12px; background: linear-gradient(135deg, rgba(168, 85, 247, 0.08), rgba(15, 10, 20, 0.6));">
+                    <div class="inspector-card-title" style="justify-content: space-between;">
+                        <div style="display: flex; align-items: center; gap: 6px;">
+                            ${InspectorWidgets.icon('book-open', { size: 14, color: '#a855f7' })}
+                            <span style="color: #c084fc; font-weight: 700;">Tóm Tắt Hội Thoại 1-on-1 (Private Conversation Summary)</span>
+                        </div>
+                        <span class="pill" style="background: rgba(168, 85, 247, 0.2); color: #e9d5ff; border-color: rgba(168, 85, 247, 0.4); font-size: 10px;">PostgreSQL & Redis Cache</span>
+                    </div>
+                    <div style="color: var(--text-primary); font-size: 12px; line-height: 1.6; margin-top: 6px; padding: 6px 0;">${window.VisualizerApp.escapeHtml(summaryText)}</div>
+                </div>
+            `;
+        }
 
         // Ambient Mood Card
         let ambientMoodHtml = '';
@@ -302,6 +320,7 @@ ${window.VisualizerApp.escapeHtml(userMessage.trim())}
                 ${metricGridHtml}
                 ${visionGalleryHtml}
                 ${ambientMoodHtml}
+                ${privateSummaryHtml}
                 ${topicSummaryHtml}
                 ${transcriptHtml}
                 ${emotionHtml}
@@ -1032,12 +1051,14 @@ ${window.VisualizerApp.escapeHtml(userMessage.trim())}
         const data = step.data || {};
         const totalTokens = data.total_estimated_tokens || data.estimated_tokens || 0;
         const sysPrompt = data.system_prompt || data.system || '';
+        const hasSummary = Boolean(data.conversation_summary || data.summary);
+        const historyCount = data.history_count || (data.history ? data.history.length : 0);
 
         const metrics = [
-            { label: 'Tổng Token Dự kiến', value: `${totalTokens} tok`, icon: 'coins', color: '#f59e0b' },
-            { label: 'Chế độ Ngân sách', value: data.budget_mode || 'RAG', icon: 'terminal', color: '#38bdf8' },
+            { label: 'Tổng Token Ước tính', value: `${totalTokens} tok`, icon: 'coins', color: '#f59e0b', badge: data.budget_mode || 'RAG' },
+            { label: 'Cửa Sổ Lịch Sử', value: `${historyCount} tin nhắn`, icon: 'history', color: '#10b981', badge: hasSummary ? 'Hybrid Anchor' : 'Sliding Window' },
             { label: 'Persona Trait', value: data.persona_trait_type || 'STANDARD', icon: 'user', color: '#f43f5e' },
-            { label: 'History Messages', value: data.history_count || (data.history ? data.history.length : 0), icon: 'history', color: '#10b981' },
+            { label: 'Ngân Sách Ceiling', value: `${data.effective_ceiling || 4000} tok`, icon: 'shield', color: '#38bdf8', small: true },
         ];
 
         const metricGridHtml = InspectorWidgets.renderMetricGrid(metrics);
@@ -1293,9 +1314,9 @@ ${window.VisualizerApp.escapeHtml(userMessage.trim())}
         const data = step.data || {};
 
         const metrics = [
-            { label: 'Database', value: 'PostgreSQL', icon: 'hard-drive', color: '#38bdf8', badge: 'SQLAlchemy' },
-            { label: 'Turn Index', value: data.turn_index || '—', icon: 'activity', color: '#f59e0b' },
-            { label: 'User ID', value: data.user_id ? `${data.user_id.slice(0, 12)}...` : 'User', icon: 'user', small: true },
+            { label: 'Database Lưu Trữ', value: 'PostgreSQL', icon: 'hard-drive', color: '#38bdf8', badge: 'SQLAlchemy' },
+            { label: 'Write-Through Cache', value: 'ĐÃ ĐỒNG BỘ', icon: 'zap', color: '#10b981', badge: 'Redis L1 (7 Days)' },
+            { label: 'Turn Index', value: data.turn_index ? `#${data.turn_index}` : '—', icon: 'activity', color: '#f59e0b' },
             { label: 'Trạng thái Lưu', value: 'Thành công', icon: 'check', color: '#10b981' },
         ];
 
@@ -1379,17 +1400,23 @@ ${window.VisualizerApp.escapeHtml(userMessage.trim())}
         `;
     },
 
-    // ── STAGE 10.2: AUTO-SUMMARIZE INSPECTOR ──
+    // ── STAGE 10.2 / 10.3: AUTO-SUMMARIZE INSPECTOR ──
     renderSummarizeInspector(step) {
         const data = step.data || {};
         const isTopic = !!data.topic_summary || step.name === 'summarize_channel_topic' || step.name === 'community_topic_summarize';
         const summaryContent = data.topic_summary || data.summary || '';
-        const taskTitle = isTopic ? 'Community Channel Topic Summarization' : 'Conversation Summarization';
+        const taskTitle = isTopic ? 'Community Channel Topic Summarization (3-Tier)' : 'Pure Narrative Auto-Summarization';
 
-        const metrics = [
-            { label: 'Tác vụ', value: taskTitle, icon: 'file-text', color: '#f59e0b', small: true },
-            { label: 'Trạng thái', value: data.status || 'success', icon: 'zap', color: '#10b981' },
-            ...(data.word_count ? [{ label: 'Độ dài', value: `${data.word_count} từ`, icon: 'file-text', color: '#38bdf8' }] : [])
+        const metrics = isTopic ? [
+            { label: 'Tác vụ Tóm tắt', value: 'Community Topic (3-Tier Synthesis)', icon: 'layers', color: '#10b981' },
+            { label: 'Hàng Đợi Lưu Trữ', value: 'Redis Rolling Buffer', icon: 'database', color: '#38bdf8', badge: 'Max 60 · Overlap 10' },
+            { label: 'Chu kỳ Kích hoạt', value: 'Mỗi 30 tin nhắn', icon: 'activity', color: '#f59e0b' },
+            { label: 'Độ dài Bản Tóm tắt', value: `${data.word_count || '50-80'} từ`, icon: 'file-text', color: '#a855f7' },
+        ] : [
+            { label: 'Tác vụ Tóm tắt', value: 'Pure Narrative Auto-Summarizer', icon: 'file-text', color: '#a855f7' },
+            { label: 'Ngân Sách Độ Dài', value: '80 - 120 từ', icon: 'align-left', color: '#10b981', badge: 'Chống Bloat' },
+            { label: 'Chu kỳ Kích hoạt', value: 'Mỗi 10 lượt (N % 10 == 0)', icon: 'activity', color: '#f59e0b' },
+            { label: 'Đồng Bộ Cache', value: 'PostgreSQL & Redis', icon: 'zap', color: '#38bdf8', badge: 'TTL 7 ngày' },
         ];
 
         const metricGridHtml = InspectorWidgets.renderMetricGrid(metrics);
@@ -1399,8 +1426,8 @@ ${window.VisualizerApp.escapeHtml(userMessage.trim())}
             <div class="inspector-panel">
                 <div class="inspector-header">
                     <div class="inspector-title-group">
-                        <span class="inspector-badge badge-memory">${isTopic ? 'Stage 10.2: Community Topic Summary' : 'Stage 10.2: Auto-Summarize'}</span>
-                        <h2>${window.VisualizerApp.escapeHtml(step.title || (isTopic ? '10.2 [BG] Tóm tắt Mạch Kênh Cộng đồng' : '10.2 [BG] Tự động Tóm tắt Hội thoại'))}</h2>
+                        <span class="inspector-badge badge-memory">${isTopic ? 'Stage 10.3: Community Topic Summary' : 'Stage 10.2: Pure Narrative Auto-Summarize'}</span>
+                        <h2>${window.VisualizerApp.escapeHtml(step.title || (isTopic ? '10.3 [BG] Tóm tắt Mạch Kênh Cộng đồng (3-Tier)' : '10.2 [BG] Tự động Tóm tắt Hội thoại Riêng tư'))}</h2>
                     </div>
                 </div>
                 ${metricGridHtml}
@@ -1409,7 +1436,7 @@ ${window.VisualizerApp.escapeHtml(userMessage.trim())}
                         <div class="inspector-card-title" style="justify-content: space-between;">
                             <div style="display: flex; align-items: center; gap: 6px;">
                                 ${InspectorWidgets.icon('file-text', { size: 14, color: 'var(--accent-amber)' })}
-                                <span>${isTopic ? 'Bản Tóm tắt Mạch Kênh Cộng đồng (Topic Summary)' : 'Bản Tóm tắt Hội thoại (Conversation Summary)'}</span>
+                                <span>${isTopic ? 'Bản Tóm tắt Mạch Kênh Cộng đồng (Rolling Topic Summary)' : 'Bản Tóm tắt Hội thoại 1-on-1 (Private Conversation Summary)'}</span>
                             </div>
                             <button class="btn" style="padding: 3px 8px; font-size: 11px;" onclick="InspectorWidgets.copyToClipboard(this.getAttribute('data-copy'), this)" data-copy="${window.VisualizerApp.escapeHtml(summaryContent.trim())}">
                                 ${InspectorWidgets.icon('copy', { size: 11 })} <span>Sao chép</span>
