@@ -47,65 +47,62 @@ export async function execute(client, message) {
         });
       }
 
-      let isEphemeralReference = false;
+      // 2. Extract referenced message context & images (if user replies to another message)
+      let repliesToBot = false;
+      let refImages = [];
+      let refAuthorName = null;
+      let refContent = null;
+
+      if (message.reference) {
+        try {
+          const refMsg = await message.fetchReference();
+          if (refMsg) {
+            const botId = client.user?.id;
+            if (botId && refMsg.author?.id === botId) {
+              repliesToBot = true;
+            }
+            const authorMember = message.guild?.members?.cache?.get(refMsg.author?.id);
+            refAuthorName = authorMember?.displayName || refMsg.author?.globalName || refMsg.author?.username || (repliesToBot ? 'Chisa' : 'Thành viên');
+            refContent = refMsg.content?.trim() || '';
+
+            if (refMsg.attachments && refMsg.attachments.size > 0) {
+              refMsg.attachments.forEach((att) => {
+                const ct = (att.contentType || '').toLowerCase();
+                const isImg = ct.startsWith('image/') || /\.(png|jpe?g|webp|gif)$/i.test(att.name || '');
+                if (isImg && att.url) {
+                  refImages.push(att.url);
+                }
+              });
+            }
+          }
+        } catch {
+          // Ignore fetch reference error
+        }
+      }
 
       // In Community Mode: ONLY reply if user mentions Chisa or replies to Chisa's message
       if (isCommunityMode) {
         const botId = client.user?.id;
         const mentionsBot = botId ? message.mentions.users.has(botId) : false;
 
-        let repliesToBot = false;
-        let refImages = [];
-        let refAuthorName = null;
-        let refContent = null;
-
-        if (message.reference) {
-          try {
-            const refMsg = await message.fetchReference();
-            if (refMsg) {
-              if (botId && refMsg.author?.id === botId) {
-                repliesToBot = true;
-              } else {
-                // User is replying to another user's message in the community channel
-                const authorMember = message.guild?.members?.cache?.get(refMsg.author?.id);
-                refAuthorName = authorMember?.displayName || refMsg.author?.globalName || refMsg.author?.username || 'Thành viên';
-                refContent = refMsg.content?.trim() || '';
-
-                if (refMsg.attachments && refMsg.attachments.size > 0) {
-                  refMsg.attachments.forEach((att) => {
-                    const ct = (att.contentType || '').toLowerCase();
-                    const isImg = ct.startsWith('image/') || /\.(png|jpe?g|webp|gif)$/i.test(att.name || '');
-                    if (isImg && att.url) {
-                      refImages.push(att.url);
-                    }
-                  });
-                }
-              }
-            }
-          } catch {
-            // Ignore fetch error
-          }
-        }
-
         if (!mentionsBot && !repliesToBot) {
           // Do not reply in community mode if not mentioned or replied to Chisa
           return;
-        }
-
-        // Community Reply Reference: If user replied to another member's image and tagged Chisa
-        if (refImages.length > 0 && directImages.length === 0) {
-          directImages.push(...refImages);
-          isEphemeralReference = true;
-          if (refAuthorName) {
-            const refPrefix = `[Đang trả lời ảnh của @${refAuthorName}${refContent ? `: "${refContent}"` : ''}] `;
-            rawContent = rawContent ? `${refPrefix}${rawContent}` : `${refPrefix}Em hãy xem và phân tích bức ảnh này giúp Senpai nhé.`;
-          }
         }
 
         // Clean @bot mention tag from rawContent for clean prompt
         if (botId) {
           const mentionRegex = new RegExp(`<@!?${botId}>`, 'g');
           rawContent = rawContent.replace(mentionRegex, '').trim();
+        }
+      }
+
+      // Attach referenced images if current message has no direct attachments
+      if (refImages.length > 0 && directImages.length === 0) {
+        directImages.push(...refImages);
+        if (refAuthorName) {
+          const refPrefix = `[Đang trả lời ảnh của @${refAuthorName}${refContent ? `: "${refContent}"` : ''}] `;
+          rawContent = rawContent ? `${refPrefix}${rawContent}` : `${refPrefix}Em hãy xem và phân tích bức ảnh này giúp Senpai nhé.`;
         }
       }
 

@@ -107,12 +107,11 @@ class InitializationStage(PipelineStage):
         if context.images:
             from app.domain.services.image_ingestion import ImageIngestionService
             ingestion_service = ImageIngestionService()
-            save_to_disk = not context.is_ephemeral_reference
             try:
                 processed_images = await ingestion_service.ingest_images(
                     image_inputs=context.images,
-                    save_to_disk=save_to_disk,
-                    is_ephemeral=context.is_ephemeral_reference,
+                    save_to_disk=True,
+                    is_ephemeral=False,
                 )
                 context.processed_images = processed_images
                 context.has_images = len(processed_images) > 0

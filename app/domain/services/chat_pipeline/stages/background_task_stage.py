@@ -78,8 +78,8 @@ class BackgroundTaskStage(PipelineStage):
             except Exception as ts_err:
                 log.warning("Failed to trigger community topic summarization", error=str(ts_err))
 
-        # Trigger background visual memory ingestion when permanent images are uploaded
-        triggered_visual_ingest = bool(context.processed_images and not context.is_ephemeral_reference)
+        # Trigger background visual memory ingestion when images are uploaded/referenced
+        triggered_visual_ingest = bool(context.processed_images)
         if triggered_visual_ingest:
             try:
                 from app.domain.services.visual_memory_ingestion import VisualMemoryIngestionWorker
@@ -96,7 +96,7 @@ class BackgroundTaskStage(PipelineStage):
                         conversation_id=str(context.conv_id) if context.conv_id else None,
                         guild_id=context.guild_id,
                         channel_id=context.channel_id,
-                        is_ephemeral=context.is_ephemeral_reference,
+                        is_ephemeral=False,
                         llm_image_tags=context.image_tags,
                         llm_visual_caption=context.visual_caption,
                     ),
