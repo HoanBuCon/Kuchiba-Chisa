@@ -153,7 +153,7 @@ class QueryRewriter:
         raw_user_query = strip_platform_mentions(user_message.strip()) or user_message.strip()
         if prev_rewritten_query:
             prev_clamped = " ".join(prev_rewritten_query.strip().split()[:60])
-            user_input = f'Ngữ cảnh câu trước: "{prev_clamped}"\nCâu hỏi hiện tại: "{raw_user_query}"'
+            user_input = f'Ngữ cảnh câu trước / thảo luận gần đây: "{prev_clamped}"\nCâu hỏi hiện tại: "{raw_user_query}"'
         else:
             prev_clamped = "None"
             user_input = f'Câu hỏi hiện tại: "{raw_user_query}"'

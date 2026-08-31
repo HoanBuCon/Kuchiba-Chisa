@@ -241,3 +241,58 @@ async def test_unified_chat_engine_community_mode_execution():
     mock_emotion_repo.update_emotion.assert_awaited_once()
     mock_user_repo.update_stats.assert_awaited_once()
     mock_conv_repo.save_message.assert_awaited()
+
+
+@pytest.mark.asyncio
+async def test_intent_stage_community_mode_context_chaining():
+    """Kiểm tra IntentStage tự động trích xuất ngữ cảnh từ channel_transcript để Micro LLM giải mã đại từ trong Community Mode."""
+    from app.domain.services.chat_pipeline.stages.intent_stage import IntentStage
+    from app.domain.services.rag.query_rewriter import QueryRewriter, RewriteResult
+
+    mock_classifier = MagicMock()
+    mock_classifier.is_small_talk_hybrid = AsyncMock(return_value=(False, "Knowledge query"))
+    mock_classifier.detect_persona_trait = AsyncMock(return_value=None)
+
+    mock_embedder = MagicMock()
+    mock_embedder.embed_text = AsyncMock(return_value=[0.1] * 384)
+
+    mock_rewriter = MagicMock()
+    captured_kwargs = {}
+
+    async def mock_rewrite(**kwargs):
+        captured_kwargs.update(kwargs)
+        return RewriteResult(
+            rewritten_query="Vũ khí của tướng quân Jiyan Wuthering Waves",
+            method="LLM_FLASH",
+            needs_vector_search=True,
+            needs_web_search=False,
+            needs_image_retrieval=False,
+        )
+
+    mock_rewriter.rewrite = mock_rewrite
+
+    intent_stage = IntentStage(
+        intent_classifier=mock_classifier,
+        embedder=mock_embedder,
+        query_rewriter=mock_rewriter,
+        conv_repo_factory=None,
+    )
+
+    context = ChatContext(
+        session=MagicMock(),
+        user_id="user_123",
+        is_community=True,
+        channel_id="chan_999",
+        guild_id="guild_888",
+        speaker_name="Hoan",
+        user_message="Vũ khí của anh ấy tên là gì em?",
+        channel_transcript="[13:00] <picuc>: Jiyan cầm kiếm gì đánh đau nhất anh em?\n[13:01] <Golden Wind>: Kiếm Verdant Summit đó",
+    )
+
+    res_ctx = await intent_stage.process(context)
+
+    assert res_ctx.rewritten_query == "Vũ khí của tướng quân Jiyan Wuthering Waves"
+    assert res_ctx.rewrite_method == "LLM_FLASH"
+    assert captured_kwargs.get("prev_rewritten_query") is not None
+    assert "Jiyan cầm kiếm gì" in captured_kwargs["prev_rewritten_query"]
+    assert "Verdant Summit" in captured_kwargs["prev_rewritten_query"]

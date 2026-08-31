@@ -147,23 +147,45 @@ class IntentStage(PipelineStage):
             if self.pipeline_tracker:
                 self.pipeline_tracker.add_step("intent_classification", stage_tracker_data)
 
-            # 1. Retrieve previous user rewritten query from SQL (1-Turn Context Chaining)
+            # 1. Retrieve previous context (Direct Mode: SQL 1-Turn Context Chaining | Community Mode: Channel Transcript Chaining)
             prev_rewritten_query = None
-            if self.conv_repo_factory and context.session and context.conv_id and context.user_uuid:
-                try:
-                    conv_repo = self.conv_repo_factory(context.session)
-                    prev_rewritten_query = await conv_repo.get_last_user_rewritten_query(
-                        user_id=context.user_uuid,
-                        conversation_id=context.conv_id
-                    )
-                except Exception as e:
-                    log.warning("Failed to fetch last rewritten query from SQL", error=str(e))
+            if not context.is_community:
+                # Private Mode: Look up user 1-on-1 SQL history
+                if self.conv_repo_factory and context.session and context.conv_id and context.user_uuid:
+                    try:
+                        conv_repo = self.conv_repo_factory(context.session)
+                        prev_rewritten_query = await conv_repo.get_last_user_rewritten_query(
+                            user_id=context.user_uuid,
+                            conversation_id=context.conv_id
+                        )
+                    except Exception as e:
+                        log.warning("Failed to fetch last rewritten query from SQL", error=str(e))
 
-            # Fallback to history if SQL didn't have it
-            if not prev_rewritten_query and context.history:
-                user_hist = [h["content"] for h in context.history if h.get("role") == "user"]
-                if user_hist:
-                    prev_rewritten_query = user_hist[-1]
+                # Fallback to history if SQL didn't have it
+                if not prev_rewritten_query and context.history:
+                    user_hist = [h["content"] for h in context.history if h.get("role") == "user"]
+                    if user_hist:
+                        prev_rewritten_query = user_hist[-1]
+            else:
+                # Community Mode: Extract latest 1-2 meaningful discussion lines from channel transcript or topic summary
+                if context.channel_transcript:
+                    lines = [l.strip() for l in context.channel_transcript.strip().split("\n") if l.strip()]
+                    if lines:
+                        meaningful_lines = []
+                        for line in reversed(lines):
+                            parts = line.split(">: ", 1)
+                            body = parts[1] if len(parts) > 1 else line
+                            if is_meaningful_query(body):
+                                meaningful_lines.append(line)
+                            if len(meaningful_lines) >= 2:
+                                break
+                        if meaningful_lines:
+                            meaningful_lines.reverse()
+                            prev_rewritten_query = " | ".join(meaningful_lines)
+                        else:
+                            prev_rewritten_query = " | ".join(lines[-2:])
+                elif context.topic_summary:
+                    prev_rewritten_query = context.topic_summary
 
             # 2. Execute Micro LLM Rewrite & Multi-Intent Routing
             rewrite_result = None
