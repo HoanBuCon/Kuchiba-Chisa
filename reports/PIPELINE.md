@@ -321,7 +321,11 @@ flowchart TD
   2. **11.2 Unified Auto-Summarization (Chu kỳ 10 lượt - $N \% 10 == 0$)**: Tải tóm tắt cũ + 20 tin nhắn gần nhất, gọi LLM nén thành narrative summary mới lưu vào `conversations.summary` trong PostgreSQL.
   3. **11.3 Community Channel Topic Summarizer (Chu kỳ 30 tin - $N \% 30 == 0$)**:
      - Duy trì **Redis Rolling Message Buffer** (`chisa:channel:{channel_id}:rolling_buffer`, tối đa 60 tin, TTL 7 ngày) tự động gom tích lũy toàn bộ các đoạn chat trôi và các lượt hỏi đáp Chisa qua từng turn.
-     - Đến chu kỳ 30 lượt, `CommunityTopicSummarizer` nạp toàn bộ 30-50 tin nhắn tích lũy trong Rolling Buffer, làm sạch qua `ChannelTranscriptFormatter` và nén thành bản tóm tắt mạch lạc $50 - 80\text{ từ}$ lưu vào Redis `chisa:channel:{channel_id}:topic_summary`.
+     - **Cấu trúc Tổng hợp 3 Tầng (3-Tier Synthesis Prompt)** nạp vào LLM DeepSeek Flash:
+       1. *Bản Tóm tắt Chu kỳ Trước (Previous Topic Summary)* từ Redis.
+       2. *Hàng đợi Lịch sử Tích lũy (Accumulated History Buffer)*: Toàn bộ diễn biến thảo luận các turn trước trong chu kỳ (tối đa 800 tokens).
+       3. *Bối cảnh Kênh Tức thời (Live Recent Context)*: 15 tin nhắn nóng hổi nhất hiện tại từ Discord (tối đa 600 tokens).
+     - Nén thành bản tóm tắt mạch lạc $50 - 80\text{ từ}$ lưu vào Redis `chisa:channel:{channel_id}:topic_summary`.
      - Tự động tỉa buffer giữ lại 10 tin nhắn gần nhất làm vùng đệm tiếp nối (rolling overlap).
   4. **11.4 Visual Memory Ingestion (Kích hoạt khi có ảnh đính kèm)**: `VisualMemoryIngestionWorker` lấy visual tags và caption từ Stage 7, tạo vector embedding và upsert vào Qdrant collection `image_memories`.
 
