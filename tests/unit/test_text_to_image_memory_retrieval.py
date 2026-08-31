@@ -5,6 +5,7 @@ Location: tests/unit/test_text_to_image_memory_retrieval.py
 
 import pytest
 import time
+import asyncio
 from unittest.mock import AsyncMock, MagicMock, patch
 
 from app.domain.entities.image_memory import ImageMemoryPayload, RetrievedImageMemory
@@ -422,3 +423,56 @@ async def test_llm_generation_stage_vision_auto_tagging_extraction():
 
     assert res_ctx.image_tags == ["mèo", "thú cưng", "đáng yêu"]
     assert res_ctx.visual_caption == "Bé mèo lông xù màu trắng đang cuộn tròn trên bàn làm việc."
+
+
+@pytest.mark.asyncio
+async def test_image_memory_retriever_self_healing_prunes_missing_files():
+    """Kiểm tra ImageMemoryRetriever tự động phát hiện file đã bị xóa trên disk và self-heal dọn dẹp Qdrant."""
+    mock_vector_store = MagicMock()
+    mock_client = AsyncMock()
+    mock_vector_store._client = mock_client
+
+    # Giả lập Qdrant trả về 2 kết quả: 1 file còn tồn tại, 1 file ma (đã bị xóa trên disk)
+    mock_hit_existing = MagicMock()
+    mock_hit_existing.id = "point_1"
+    mock_hit_existing.score = 0.85
+    mock_hit_existing.payload = {
+        "image_id": "img_1",
+        "url": "/static/uploads/2026/08/existing.webp",
+        "local_path": __file__,  # File test này chắc chắn tồn tại trên disk
+        "visual_caption": "File hợp lệ",
+        "tags": ["test"],
+        "user_id": "user_1",
+        "created_at": 1700000000,
+    }
+
+    mock_hit_ghost = MagicMock()
+    mock_hit_ghost.id = "point_ghost"
+    mock_hit_ghost.score = 0.88
+    mock_hit_ghost.payload = {
+        "image_id": "img_ghost",
+        "url": "/static/uploads/2026/08/deleted_file.webp",
+        "local_path": "d:/non_existent_folder/deleted_by_lru.webp",  # File không tồn tại
+        "visual_caption": "File ma đã bị xóa bởi LRU Quota",
+        "tags": ["ghost"],
+        "user_id": "user_1",
+        "created_at": 1700000000,
+    }
+
+    mock_client.search.return_value = [mock_hit_ghost, mock_hit_existing]
+    mock_client.delete = AsyncMock()
+
+    retriever = ImageMemoryRetriever(vector_store=mock_vector_store)
+    results = await retriever.retrieve_image_memories(
+        query_vector=[0.1] * 384,
+        user_id="user_1",
+        is_community=False,
+    )
+
+    # 1. File ma phải bị loại bỏ hoàn toàn khỏi kết quả trả về cho LLM / User
+    assert len(results) == 1
+    assert results[0].image_id == "img_1"
+
+    # 2. Điểm point_ghost phải được gửi lệnh xóa khỏi Qdrant
+    await asyncio.sleep(0.05)  # Chờ background async task
+    mock_client.delete.assert_called_once()
