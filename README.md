@@ -53,7 +53,7 @@
 
 ---
 
-## 2. Sơ Đồ Luồng Dữ Liệu Toàn Cảnh (Chat Pipeline 3.0)
+## 🗺️ Sơ Đồ Luồng Dữ Liệu Toàn Cảnh (Chat Pipeline 3.0)
 
 ```mermaid
 flowchart TD
