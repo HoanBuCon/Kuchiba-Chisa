@@ -109,37 +109,54 @@ class CommunityTopicSummarizer:
 
             if messages:
                 for m in messages:
+                    raw_content = m.get("content", "") if isinstance(m, dict) else getattr(m, "content", "")
+                    is_bot = bool(m.get("is_bot", False)) if isinstance(m, dict) else bool(getattr(m, "is_bot", False))
+                    speaker_name = m.get("speaker_name", "") if isinstance(m, dict) else getattr(m, "speaker_name", "")
+
+                    # 1. Pre-filter bot commands, third-party bots, and spam noise
+                    if ChannelTranscriptFormatter.is_noise_or_command(raw_content, is_bot=is_bot, speaker_name=speaker_name):
+                        continue
+
                     sig = _msg_sig(m)
                     if sig[1] and sig not in seen_sigs:
+                        clean_content = ChannelTranscriptFormatter.clean_message_content(raw_content)
+                        if not clean_content:
+                            continue
                         if isinstance(m, dict):
                             buffer.append({
                                 "speaker_name": m.get("speaker_name", "User"),
-                                "content": m.get("content", ""),
-                                "is_bot": bool(m.get("is_bot", False)),
+                                "content": clean_content,
+                                "is_bot": is_bot,
                                 "created_at": m.get("created_at"),
                                 "reply_to_speaker": m.get("reply_to_speaker"),
                             })
                         else:
                             buffer.append({
                                 "speaker_name": getattr(m, "speaker_name", "User"),
-                                "content": getattr(m, "content", ""),
-                                "is_bot": bool(getattr(m, "is_bot", False)),
+                                "content": clean_content,
+                                "is_bot": is_bot,
                                 "created_at": getattr(m, "created_at", None),
                                 "reply_to_speaker": getattr(m, "reply_to_speaker", None),
                             })
                         seen_sigs.add(sig)
 
             if current_user_turn and current_user_turn.get("content"):
-                sig = _msg_sig(current_user_turn)
-                if sig not in seen_sigs:
-                    buffer.append(current_user_turn)
-                    seen_sigs.add(sig)
+                user_content = current_user_turn.get("content", "")
+                if not ChannelTranscriptFormatter.is_noise_or_command(user_content, is_bot=False, speaker_name=current_user_turn.get("speaker_name", "User")):
+                    sig = _msg_sig(current_user_turn)
+                    if sig not in seen_sigs:
+                        buffer.append(current_user_turn)
+                        seen_sigs.add(sig)
 
             if current_assistant_turn and current_assistant_turn.get("content"):
-                sig = _msg_sig(current_assistant_turn)
-                if sig not in seen_sigs:
-                    buffer.append(current_assistant_turn)
-                    seen_sigs.add(sig)
+                asst_content = ChannelTranscriptFormatter.clean_message_content(current_assistant_turn.get("content", ""))
+                if asst_content:
+                    asst_turn = dict(current_assistant_turn)
+                    asst_turn["content"] = asst_content
+                    sig = _msg_sig(asst_turn)
+                    if sig not in seen_sigs:
+                        buffer.append(asst_turn)
+                        seen_sigs.add(sig)
 
             if len(buffer) > self.BUFFER_MAX_MESSAGES:
                 buffer = buffer[-self.BUFFER_MAX_MESSAGES:]
