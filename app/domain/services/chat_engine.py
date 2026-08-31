@@ -70,10 +70,28 @@ class ChatEngine:
     async def get_emotion_state(self, session: IDbSession, user_id: str) -> EmotionState:
         from app.shared.utils.user_identity import normalize_user_id
         user_uuid = normalize_user_id(user_id)
+        
+        # 1. Check Redis State Cache (~0.2ms)
+        if self.cache_provider:
+            from app.domain.services.user_state_cache import UserStateCache
+            cached_state = await UserStateCache.get_state(self.cache_provider, user_uuid)
+            if cached_state:
+                _, emotion, _ = cached_state
+                return emotion
+
+        # 2. Cache MISS -> Fallback to PostgreSQL
         user_repo = self.user_repo_factory(session)
         await user_repo.get_or_create_user(user_uuid)
         emotion_repo = self.emotion_repo_factory(session)
-        return await emotion_repo.get_emotion_state(user_uuid)
+        emotion = await emotion_repo.get_emotion_state(user_uuid)
+        
+        # Write-Through to Redis Cache
+        if self.cache_provider:
+            stats = await user_repo.get_user_stats(user_uuid)
+            from app.domain.services.user_state_cache import UserStateCache
+            await UserStateCache.set_state(self.cache_provider, user_uuid, stats, emotion)
+
+        return emotion
 
     async def get_history(self, session: IDbSession, user_id: str, limit: int = 50) -> list[dict[str, str]]:
         from app.shared.utils.user_identity import normalize_user_id

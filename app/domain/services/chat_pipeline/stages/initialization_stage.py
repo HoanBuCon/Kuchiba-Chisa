@@ -39,15 +39,31 @@ class InitializationStage(PipelineStage):
         emotion_repo = self.emotion_repo_factory(context.session)
         conv_repo = self.conv_repo_factory(context.session)
         
-        # 1. Ensure user exists first (FK constraint)
-        await user_repo.get_or_create_user(user_uuid)
+        # 1. Try reading User State from Redis Cache (~0.2ms)
+        from app.domain.services.user_state_cache import UserStateCache
+        cached_state = None
+        if self.cache_provider:
+            cached_state = await UserStateCache.get_state(self.cache_provider, user_uuid)
 
-        # 2. Sequentialize independent user stats, emotion state, and conversation ID reads (SQLAlchemy session is not thread-safe)
-        stats = await user_repo.get_user_stats(user_uuid)
-        emotion = await emotion_repo.get_emotion_state(user_uuid)
-        conv_id = await conv_repo.get_or_create_conversation(user_uuid)
+        if cached_state:
+            stats, emotion, conv_id = cached_state
+            if not conv_id:
+                conv_id = await conv_repo.get_or_create_conversation(user_uuid)
+            is_state_cached = True
+            log.debug("User state loaded from Redis cache", user_id=str(user_uuid))
+        else:
+            # Cache MISS -> Ensure user exists first, then sequentialize reads from SQL
+            await user_repo.get_or_create_user(user_uuid)
+            stats = await user_repo.get_user_stats(user_uuid)
+            emotion = await emotion_repo.get_emotion_state(user_uuid)
+            conv_id = await conv_repo.get_or_create_conversation(user_uuid)
+            is_state_cached = False
+            
+            # Fire-and-forget write to Redis
+            if self.cache_provider:
+                await UserStateCache.set_state(self.cache_provider, user_uuid, stats, emotion, conv_id)
 
-        # 3. Sequentialize conversation history and summary reads
+        # 2. Sequentialize conversation history and summary reads
         if context.is_community:
             history = []
             summary = None
@@ -152,6 +168,7 @@ class InitializationStage(PipelineStage):
                     "conv_id": str(conv_id) if conv_id else None,
                     "turn_index": question_idx,
                     "interaction_count": stats.interaction_count,
+                    "state_cache_hit": is_state_cached,
                     "history_count": len(history),
                     "has_summary": bool(summary),
                     "summary_preview": (summary[:200] + "...") if summary and len(summary) > 200 else summary,
