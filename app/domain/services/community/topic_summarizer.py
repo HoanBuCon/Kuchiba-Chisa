@@ -156,52 +156,73 @@ class CommunityTopicSummarizer:
         trace_id: Optional[str] = None,
     ) -> Optional[str]:
         """
-        Background execution: Calls LLM to summarize accumulated rolling discussion buffer, merging with prior summary.
+        Background execution: Calls LLM to summarize channel topic with 3-tier context:
+        1. Previous Topic Summary (Redis)
+        2. Accumulated History Buffer (Redis Rolling Buffer)
+        3. Live Recent Channel Messages (15 raw Discord messages)
         """
         rolling_buffer = await self.get_rolling_buffer(channel_id)
-        effective_messages = rolling_buffer if rolling_buffer else (messages or [])
+        live_messages = messages or []
 
-        if not effective_messages:
+        if not rolling_buffer and not live_messages:
             return None
 
-        log.info(
-            "Starting community topic summarization with rolling buffer...",
-            channel_id=channel_id,
-            guild_id=guild_id,
-            message_count=len(effective_messages),
-        )
-        formatted_transcript = ChannelTranscriptFormatter.format_transcript(
-            messages=effective_messages,
-            max_tokens=1200,
+        # Separate older history from newest live messages to avoid redundant duplication in prompt
+        live_count = len(live_messages) if live_messages else 0
+        if rolling_buffer and live_count > 0 and len(rolling_buffer) > live_count:
+            older_history_messages = rolling_buffer[:-live_count]
+        elif rolling_buffer and not live_messages:
+            older_history_messages = rolling_buffer
+        else:
+            older_history_messages = []
+
+        # 1. Format Live Recent Transcript (Hot Context)
+        formatted_live_transcript = ChannelTranscriptFormatter.format_transcript(
+            messages=live_messages if live_messages else rolling_buffer,
+            max_tokens=600,
             use_smart_compression=True
         )
 
-        if not formatted_transcript:
+        # 2. Format Accumulated History Buffer (Deep Context)
+        formatted_history_transcript = ""
+        if older_history_messages:
+            formatted_history_transcript = ChannelTranscriptFormatter.format_transcript(
+                messages=older_history_messages,
+                max_tokens=800,
+                use_smart_compression=True
+            )
+
+        if not formatted_live_transcript and not formatted_history_transcript:
             return None
 
+        # 3. Fetch Previous Summary from Redis
         previous_summary = await self.get_topic_summary(channel_id)
 
+        # Build 3-Tier User Message Sections
+        sections = []
         if previous_summary:
-            system_prompt = (
-                "You are a Community Topic Summarizer for an anime AI Companion (Kuchiba Chisa) in a Discord Server.\n"
-                "Your job is to UPDATE the rolling channel discussion summary by integrating new conversation messages into the previous summary.\n\n"
-                "CRITICAL RULES:\n"
-                "1. Output a standalone, concise narrative in Vietnamese (50-80 words) describing: what members are discussing, shared gaming/life events, or group plans.\n"
-                "2. Retain important ongoing context from the previous summary while prioritizing newest discussions.\n"
-                "3. Do not include individual timestamps or roleplay metadata. Focus on group topics.\n"
-                "Return valid JSON matching schema: {\"topic_summary\": \"...\"}"
-            )
-            user_message = f"Previous summary:\n{previous_summary}\n\nNew recent channel messages:\n{formatted_transcript}"
-        else:
-            system_prompt = (
-                "You are a Community Topic Summarizer for an anime AI Companion (Kuchiba Chisa) in a Discord Server.\n"
-                "Analyze the channel discussion transcript and provide a concise narrative summary in Vietnamese (50-80 words).\n\n"
-                "CRITICAL RULES:\n"
-                "1. Summarize the key topics members are discussing, any ongoing banter, game matches, or server plans.\n"
-                "2. Output must be a clear, standalone paragraph in Vietnamese.\n"
-                "Return valid JSON matching schema: {\"topic_summary\": \"...\"}"
-            )
-            user_message = f"Channel messages transcript:\n{formatted_transcript}"
+            sections.append(f"1. Previous topic summary (Bản tóm tắt chu kỳ trước):\n{previous_summary}")
+
+        if formatted_history_transcript:
+            sections.append(f"2. Accumulated channel history buffer (Lịch sử các đoạn thảo luận trước đó trong chu kỳ):\n{formatted_history_transcript}")
+
+        if formatted_live_transcript:
+            sections.append(f"3. Live recent channel context (Diễn biến 15 tin nhắn nóng hổi nhất hiện tại):\n{formatted_live_transcript}")
+
+        user_message = "\n\n".join(sections)
+
+        system_prompt = (
+            "You are a Community Topic Summarizer for an anime AI Companion (Kuchiba Chisa) in a Discord Server.\n"
+            "Your job is to synthesize a complete rolling channel discussion summary by integrating:\n"
+            "1. The previous topic summary (if available).\n"
+            "2. The accumulated history buffer of past discussions in this cycle.\n"
+            "3. The latest live recent channel messages.\n\n"
+            "CRITICAL RULES:\n"
+            "1. Output a standalone, concise narrative in Vietnamese (50-80 words) describing: what members are discussing, shared gaming/life events, or group plans.\n"
+            "2. Synthesize ongoing context across history while prioritizing the newest live discussions.\n"
+            "3. Do not include individual timestamps or roleplay metadata. Focus on group topics.\n"
+            "Return valid JSON matching schema: {\"topic_summary\": \"...\"}"
+        )
 
         prompt = StructuredPrompt(
             system=system_prompt,
@@ -233,35 +254,38 @@ class CommunityTopicSummarizer:
                     trimmed = rolling_buffer[-self.BUFFER_OVERLAP_MESSAGES:]
                     await self.cache.set_json(self._buffer_key(channel_id), trimmed, ttl=self.SUMMARY_TTL_SECONDS)
 
+                sample_transcript = (formatted_live_transcript or formatted_history_transcript)[:300]
                 log.info("Community topic summary updated in Redis", channel_id=channel_id, summary_length=len(summary_text))
                 self._record_pipeline_step(
                     status="success",
                     topic_summary=summary_text,
                     channel_id=channel_id,
                     previous_summary=previous_summary,
-                    transcript_sample=formatted_transcript[:300],
+                    transcript_sample=sample_transcript,
                     trace_id=trace_id
                 )
                 return summary_text
             else:
+                sample_transcript = (formatted_live_transcript or formatted_history_transcript)[:300]
                 log.warning("Topic summarizer produced empty summary", channel_id=channel_id)
                 self._record_pipeline_step(
                     status="empty",
                     topic_summary="",
                     channel_id=channel_id,
                     previous_summary=previous_summary,
-                    transcript_sample=formatted_transcript[:300],
+                    transcript_sample=sample_transcript,
                     trace_id=trace_id
                 )
                 return None
         except Exception as e:
+            sample_transcript = (formatted_live_transcript or formatted_history_transcript)[:300] if 'formatted_live_transcript' in locals() else ""
             log.error("Failed to summarize community topic", channel_id=channel_id, error=str(e))
             self._record_pipeline_step(
                 status="failed",
                 topic_summary="",
                 channel_id=channel_id,
                 previous_summary=previous_summary,
-                transcript_sample=formatted_transcript[:300],
+                transcript_sample=sample_transcript,
                 trace_id=trace_id
             )
             return None
