@@ -65,19 +65,11 @@ class ImageIngestionService:
                 sanitized_result = await ImageSanitizer.sanitize_image(
                     raw_data=raw_bytes,
                     target_max_dim=1536,
-                    generate_thumbnail=True,
                 )
 
-                # 2. Base64 Data URI for LLM Vision Payload & Lightweight Thumbnail Preview
+                # 2. Base64 Data URI for LLM Vision Payload
                 b64_str = base64.b64encode(sanitized_result["sanitized_bytes"]).decode("utf-8")
                 data_uri = f"data:{sanitized_result['mime_type']};base64,{b64_str}"
-
-                thumb_b64 = (
-                    base64.b64encode(sanitized_result["thumbnail_bytes"]).decode("utf-8")
-                    if sanitized_result.get("thumbnail_bytes")
-                    else b64_str
-                )
-                thumb_data_uri = f"data:image/webp;base64,{thumb_b64}"
 
                 # 3. Local Storage Management (if save_to_disk is enabled)
                 if save_to_disk:
@@ -86,18 +78,14 @@ class ImageIngestionService:
                         is_ephemeral=is_ephemeral,
                     )
                     stored_meta["base64_data_uri"] = data_uri
-                    stored_meta["thumbnail_data_uri"] = thumb_data_uri
                     stored_meta["raw_input"] = item_str if len(item_str) < 500 else item_str[:100] + "..."
                     processed_images.append(stored_meta)
                 else:
-                    # In-memory only (e.g. temporary un-saved community reply references)
+                    # In-memory only (e.g. temporary un-saved references)
                     processed_images.append({
                         "image_id": f"ephemeral_{idx}",
                         "local_path": None,
-                        "thumbnail_path": None,
-                        "url": thumb_data_uri,
-                        "thumbnail_url": thumb_data_uri,
-                        "thumbnail_data_uri": thumb_data_uri,
+                        "url": data_uri,
                         "width": sanitized_result["width"],
                         "height": sanitized_result["height"],
                         "size_bytes": sanitized_result["size_bytes"],

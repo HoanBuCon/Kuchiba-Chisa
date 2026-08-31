@@ -203,4 +203,19 @@ class LLMGenerationStage(PipelineStage):
 
         context.attached_images = [img for img in attached_images if isinstance(img, str) and img.strip()]
 
+        # Extract visual tags & caption directly from Vision LLM output (0ms added latency auto-tagging)
+        if context.has_images:
+            raw_tags = response.parsed.get("image_tags") or []
+            if isinstance(raw_tags, str):
+                raw_tags = [t.strip() for t in raw_tags.split(",") if t.strip()]
+            elif isinstance(raw_tags, list):
+                raw_tags = [str(t).strip() for t in raw_tags if str(t).strip()]
+            else:
+                raw_tags = []
+            context.image_tags = raw_tags
+
+            raw_caption = response.parsed.get("visual_caption")
+            if isinstance(raw_caption, str) and raw_caption.strip():
+                context.visual_caption = raw_caption.strip()
+
         return context

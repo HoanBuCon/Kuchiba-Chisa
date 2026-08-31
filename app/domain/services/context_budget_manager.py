@@ -170,6 +170,7 @@ class ContextBudgetManager:
         history: list[dict[str, str]],
         token_budget: int,
         min_turns: int,
+        max_messages: int | None = None,
     ) -> tuple[list[dict[str, str]], int]:
         if not history:
             return [], 0
@@ -177,6 +178,8 @@ class ContextBudgetManager:
         kept: list[dict[str, str]] = []
         used = 0
         for msg in reversed(history):
+            if max_messages is not None and len(kept) >= max_messages:
+                break
             msg_tokens = TokenEstimator.estimate(msg.get("content", "")) + cls.MSG_OVERHEAD
             if used + msg_tokens <= token_budget or len(kept) < min_messages:
                 kept.insert(0, msg)
@@ -195,6 +198,7 @@ class ContextBudgetManager:
         lore_chunks: list[str],
         memories: list[Any],
         history: list[dict[str, str]],
+        max_history_messages: int | None = None,
     ) -> int:
         if section == "summary":
             if not conversation_summary:
@@ -209,7 +213,12 @@ class ContextBudgetManager:
         if section == "memory":
             return sum(TokenEstimator.estimate(cls._memory_text(m)) for m in memories)
         if section == "history":
-            return TokenEstimator.estimate_messages(history, cls.MSG_OVERHEAD)
+            target_history = (
+                history[-max_history_messages:]
+                if max_history_messages and len(history) > max_history_messages
+                else history
+            )
+            return TokenEstimator.estimate_messages(target_history, cls.MSG_OVERHEAD)
         return 0
 
     @classmethod
@@ -247,6 +256,7 @@ class ContextBudgetManager:
         conversation_summary: str | None = None,
         tool_result: str = "",
         intent_name: str = "",
+        interaction_count: int = 0,
     ) -> BudgetAllocation:
         settings = cls._settings()
         total_budget = cls._total_for_mode(mode)
@@ -281,9 +291,15 @@ class ContextBudgetManager:
                         flex_pool += target
                         reallocated_from.append(section)
 
-        # When summary exists, reduce history budget, freed tokens go to flex pool
-        # (lore/memory/search get more budget since history has been compressed into summary)
+        # Hybrid Anchor Window for History when Summary exists:
+        # Avoid pulling redundant old messages that were already merged into summary.
+        # Summarize interval is 10 turns. We keep turns after last summary + 2 safety overlap turns.
+        max_history_messages: int | None = None
         if conversation_summary and conversation_summary.strip():
+            turns_since_summary = interaction_count % 10 if interaction_count > 0 else 0
+            safety_overlap_turns = 2
+            max_history_messages = max(4, (turns_since_summary + safety_overlap_turns) * 2)
+
             h_min, h_target, h_max = caps["history"]
             reduction = int(h_target * 0.35)
             caps["history"] = (
@@ -311,6 +327,7 @@ class ContextBudgetManager:
                 lore_chunks=lore_chunks,
                 memories=memories,
                 history=history,
+                max_history_messages=max_history_messages,
             )
             if need <= 0:
                 continue
@@ -330,6 +347,7 @@ class ContextBudgetManager:
                 lore_chunks=lore_chunks,
                 memories=memories,
                 history=history,
+                max_history_messages=max_history_messages,
             )
             if need <= 0:
                 continue
@@ -385,7 +403,10 @@ class ContextBudgetManager:
 
         history_grant = grants["history"]
         trimmed_history, history_used = cls._fit_history(
-            history, history_grant, history_min_turns
+            history,
+            history_grant,
+            history_min_turns,
+            max_messages=max_history_messages,
         )
         if len(trimmed_history) < len(history):
             trimmed_sections.append("history")

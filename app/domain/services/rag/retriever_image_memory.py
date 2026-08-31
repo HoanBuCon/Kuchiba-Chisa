@@ -4,9 +4,11 @@ Location: app/domain/services/rag/retriever_image_memory.py
 """
 
 from __future__ import annotations
+import os
 import time
+import asyncio
 from typing import List, Dict, Any, Optional
-from qdrant_client.http.models import Filter, FieldCondition, MatchValue
+from qdrant_client.http.models import Filter, FieldCondition, MatchValue, PointIdsList
 
 from app.domain.entities.image_memory import RetrievedImageMemory
 from app.domain.interfaces.vector_store import IVectorStore
@@ -19,11 +21,22 @@ log = get_logger(__name__)
 class ImageMemoryRetriever:
     """
     Retrieves and ranks multimodal visual memories from Qdrant 'image_memories'.
-    Enforces strict user isolation and guild privacy filtering.
+    Enforces strict user isolation, guild privacy filtering, and self-healing orphan cleanup.
     """
 
     def __init__(self, vector_store: IVectorStore) -> None:
         self.vector_store = vector_store
+
+    async def _delete_orphan_points(self, qdrant_client: Any, point_ids: List[str]) -> None:
+        """Deletes dangling/orphan points from Qdrant collection 'image_memories'."""
+        try:
+            await qdrant_client.delete(
+                collection_name=COLLECTION_IMAGE_MEMORIES,
+                points_selector=PointIdsList(points=point_ids),
+            )
+            log.info("Successfully pruned orphan image memory points from Qdrant", count=len(point_ids))
+        except Exception as err:
+            log.warning("Failed to prune orphan image memory points", error=str(err))
 
     async def retrieve_image_memories(
         self,
@@ -37,6 +50,7 @@ class ImageMemoryRetriever:
         """
         Retrieves matching visual memories from Qdrant.
         Filters by user_id in DM, or guild_id/user_id in Community channels.
+        Automatically verifies physical file existence and self-heals pruned files.
         """
         if not query_vector:
             return []
@@ -79,14 +93,24 @@ class ImageMemoryRetriever:
             return []
 
         retrieved: List[RetrievedImageMemory] = []
+        orphan_point_ids: List[str] = []
+
         for hit in results:
             payload = hit.payload or {}
+            local_path = payload.get("local_path")
+
+            # Self-Healing Check: If image was stored locally but file was pruned by LRU quota / deleted
+            if local_path and not os.path.exists(local_path):
+                log.warning("Pruned/Orphan image memory detected, skipping and queuing for self-healing deletion", image_id=payload.get("image_id"), local_path=local_path)
+                orphan_point_ids.append(str(hit.id))
+                continue
+
             retrieved.append(
                 RetrievedImageMemory(
                     image_id=str(payload.get("image_id", hit.id)),
                     url=payload.get("url", ""),
                     thumbnail_url=payload.get("thumbnail_url"),
-                    local_path=payload.get("local_path"),
+                    local_path=local_path,
                     visual_caption=payload.get("visual_caption", ""),
                     tags=payload.get("tags", []),
                     user_id=payload.get("user_id", str(user_id)),
@@ -94,6 +118,12 @@ class ImageMemoryRetriever:
                     score=round(float(hit.score), 4),
                     created_at=int(payload.get("created_at", time.time())),
                 )
+            )
+
+        # Asynchronously clean up orphan points from Qdrant in background
+        if orphan_point_ids and qdrant_client:
+            asyncio.create_task(
+                self._delete_orphan_points(qdrant_client, orphan_point_ids)
             )
 
         # Sort by similarity score descending

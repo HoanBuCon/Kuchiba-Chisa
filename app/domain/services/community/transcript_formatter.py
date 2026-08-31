@@ -90,6 +90,35 @@ class ChannelTranscriptFormatter:
         return False
 
     @classmethod
+    def _format_timestamp(cls, created_at: Any) -> str:
+        """Parse datetime or ISO string and convert to Vietnam Local Time (UTC+7, %H:%M)."""
+        if not created_at:
+            return "Now"
+        from datetime import datetime, timezone, timedelta
+        vn_tz = timezone(timedelta(hours=7))
+        try:
+            if isinstance(created_at, datetime):
+                if created_at.tzinfo is not None:
+                    dt = created_at.astimezone(vn_tz)
+                    return dt.strftime("%H:%M")
+                else:
+                    return created_at.strftime("%H:%M")
+            elif isinstance(created_at, str):
+                s = created_at.strip()
+                if s.endswith("Z"):
+                    s = s[:-1] + "+00:00"
+                if "T" in s or (" " in s and "-" in s):
+                    dt = datetime.fromisoformat(s)
+                    if dt.tzinfo is not None:
+                        dt = dt.astimezone(vn_tz)
+                    return dt.strftime("%H:%M")
+                elif ":" in s:
+                    return s[:5] if len(s) >= 5 else s
+        except Exception:
+            pass
+        return "Now"
+
+    @classmethod
     def format_message(cls, msg: Any) -> str:
         """Format a single message turn with timestamp, speaker and reply context."""
         if isinstance(msg, dict):
@@ -104,14 +133,7 @@ class ChannelTranscriptFormatter:
             raw_content = getattr(msg, "content", "")
 
         content = cls.clean_message_content(raw_content)
-
-        time_str = "Now"
-        if created_at:
-            if hasattr(created_at, "strftime"):
-                time_str = created_at.strftime("%H:%M")
-            elif isinstance(created_at, str):
-                time_str = created_at[-8:-3] if len(created_at) >= 8 and ":" in created_at else created_at[:5]
-
+        time_str = cls._format_timestamp(created_at)
         speaker_tag = f"<{speaker_name}>"
 
         reply_info = ""
@@ -169,14 +191,8 @@ class ChannelTranscriptFormatter:
                 reply_to = getattr(m, "reply_to_speaker", None)
                 content = cls.clean_message_content(getattr(m, "content", ""))
                 created_at = getattr(m, "created_at", None)
-                created_at = getattr(m, "created_at", None)
 
-            time_str = "Now"
-            if created_at:
-                if hasattr(created_at, "strftime"):
-                    time_str = created_at.strftime("%H:%M")
-                elif isinstance(created_at, str):
-                    time_str = created_at[-8:-3] if len(created_at) >= 8 and ":" in created_at else created_at[:5]
+            time_str = cls._format_timestamp(created_at)
 
             # If same speaker and same reply target, merge content
             if speaker == curr_speaker and reply_to == curr_reply:

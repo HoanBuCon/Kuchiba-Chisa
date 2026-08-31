@@ -213,14 +213,13 @@ class ImageSanitizer:
         cls,
         raw_data: bytes,
         target_max_dim: int = 1536,
-        generate_thumbnail: bool = True,
     ) -> Dict[str, Any]:
         """
         Synchronous processing running in threadpool:
         1. Validates magic bytes & dimensions.
         2. Re-encodes pure pixel array to strip 100% EXIF & malicious payloads.
         3. Normalizes dimensions to reduce LLM tokens & VPS RAM usage.
-        4. Generates a compact 300px thumbnail.
+        4. Exports optimized clean WebP.
         """
         cls.verify_magic_bytes(raw_data)
 
@@ -276,20 +275,6 @@ class ImageSanitizer:
                 )
                 sanitized_bytes = out_buffer.getvalue()
 
-                # Generate 300px thumbnail
-                thumb_bytes = None
-                thumb_dims = (0, 0)
-                if generate_thumbnail:
-                    thumb_max = 300
-                    thumb_scale = thumb_max / float(max(new_w, new_h)) if max(new_w, new_h) > thumb_max else 1.0
-                    tw = max(1, int(new_w * thumb_scale))
-                    th = max(1, int(new_h * thumb_scale))
-                    thumb_img = clean_canvas.resize((tw, th), Image.Resampling.LANCZOS)
-                    thumb_buffer = io.BytesIO()
-                    thumb_img.save(thumb_buffer, format="WEBP", quality=75, method=4, exif=b"")
-                    thumb_bytes = thumb_buffer.getvalue()
-                    thumb_dims = (tw, th)
-
                 return {
                     "sanitized_bytes": sanitized_bytes,
                     "format": "webp",
@@ -297,10 +282,6 @@ class ImageSanitizer:
                     "width": new_w,
                     "height": new_h,
                     "size_bytes": len(sanitized_bytes),
-                    "thumbnail_bytes": thumb_bytes,
-                    "thumbnail_width": thumb_dims[0],
-                    "thumbnail_height": thumb_dims[1],
-                    "thumbnail_size_bytes": len(thumb_bytes) if thumb_bytes else 0,
                 }
 
         except Image.DecompressionBombError:
@@ -315,14 +296,14 @@ class ImageSanitizer:
         cls,
         raw_data: bytes,
         target_max_dim: int = 1536,
-        generate_thumbnail: bool = True,
     ) -> Dict[str, Any]:
-        """Non-blocking async wrapper running in threadpool."""
+        """
+        Asynchronously delegates image processing to worker thread.
+        """
         return await asyncio.to_thread(
             cls.process_image_sync,
             raw_data,
             target_max_dim,
-            generate_thumbnail,
         )
 
 
@@ -330,36 +311,37 @@ from app.domain.interfaces.image_storage import IImageStorageProvider
 
 
 # =====================================================================
-# 3. SECURE STORAGE MANAGER: PATH TRAVERSAL & LRU QUOTA DEFENSE
+# 3. LOCAL FILE SYSTEM STORAGE & LRU QUOTA ENFORCER
 # =====================================================================
-class SecureImageStorage(IImageStorageProvider):
-    """Manages ephemeral/permanent image storage with Path Traversal and LRU Quota defense."""
+class LocalStorageManager(IImageStorageProvider):
+    """
+    Manages local WebP files on VPS with date-partitioned paths and LRU eviction.
+    """
 
     def __init__(
         self,
         base_storage_dir: Optional[Path] = None,
-        max_storage_mb: int = MAX_STORAGE_MB_DEFAULT,
         base_url: str = "/static/uploads",
-    ):
+        max_storage_mb: int = 1024,
+    ) -> None:
         if base_storage_dir is None:
-            # Default to app/static/uploads
             project_root = Path(__file__).resolve().parent.parent.parent
             self.storage_dir = (project_root / "static" / "uploads").resolve()
         else:
             self.storage_dir = base_storage_dir.resolve()
 
+        self.base_url = base_url.rstrip("/")
         self.max_storage_mb = max_storage_mb
-        self.base_url = (base_url or "/static/uploads").rstrip("/")
         self.storage_dir.mkdir(parents=True, exist_ok=True)
 
     async def save_sanitized_image(
         self,
         sanitized_result: Dict[str, Any],
-        is_ephemeral: bool = False,
         sub_dir: Optional[str] = None,
+        is_ephemeral: bool = False,
     ) -> Dict[str, Any]:
         """
-        Saves full-size and thumbnail WebP to disk partitioned by YYYY/MM.
+        Saves full-size WebP to disk partitioned by YYYY/MM.
         Returns complete metadata dictionary with local relative URLs.
         """
         now = datetime.now()
@@ -369,32 +351,24 @@ class SecureImageStorage(IImageStorageProvider):
 
         image_id = uuid.uuid4().hex
         main_filename = f"{image_id}.webp"
-        thumb_filename = f"{image_id}_thumb.webp"
-
         main_path = (target_dir / main_filename).resolve()
-        thumb_path = (target_dir / thumb_filename).resolve()
 
         # Path Traversal Check
-        if not main_path.is_relative_to(self.storage_dir) or not thumb_path.is_relative_to(self.storage_dir):
+        if not main_path.is_relative_to(self.storage_dir):
             raise VisionSecurityError("Path traversal anomaly detected")
 
         # Async write to disk
         await asyncio.to_thread(main_path.write_bytes, sanitized_result["sanitized_bytes"])
-        if sanitized_result.get("thumbnail_bytes"):
-            await asyncio.to_thread(thumb_path.write_bytes, sanitized_result["thumbnail_bytes"])
 
         # Check and enforce LRU Quota in background
         asyncio.create_task(self.enforce_lru_quota())
 
         rel_main_url = f"{self.base_url}/{sub_dir_name}/{main_filename}"
-        rel_thumb_url = f"{self.base_url}/{sub_dir_name}/{thumb_filename}" if sanitized_result.get("thumbnail_bytes") else rel_main_url
 
         return {
             "image_id": image_id,
             "local_path": str(main_path),
-            "thumbnail_path": str(thumb_path) if sanitized_result.get("thumbnail_bytes") else None,
             "url": rel_main_url,
-            "thumbnail_url": rel_thumb_url,
             "width": sanitized_result["width"],
             "height": sanitized_result["height"],
             "size_bytes": sanitized_result["size_bytes"],
@@ -463,6 +437,7 @@ class SecureImageStorage(IImageStorageProvider):
                     pass
 
             log.info("LRU Image Storage Quota enforced", freed_mb=round(freed_bytes / (1024 * 1024), 2))
+SecureImageStorage = LocalStorageManager
 
 
 # =====================================================================

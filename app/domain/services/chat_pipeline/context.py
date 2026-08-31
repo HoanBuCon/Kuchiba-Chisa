@@ -107,6 +107,8 @@ class ChatContext:
     needs_image_retrieval: bool = False
     retrieved_images: List[Dict[str, Any]] = field(default_factory=list)
     attached_images: List[str] = field(default_factory=list)
+    image_tags: List[str] = field(default_factory=list)
+    visual_caption: Optional[str] = None
 
     # Final Result
     updated_emotions: Dict[str, float] = field(default_factory=dict)

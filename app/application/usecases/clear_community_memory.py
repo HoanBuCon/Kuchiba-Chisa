@@ -59,9 +59,11 @@ class ClearCommunityMemoryUseCase:
 
                 try:
                     deleted_count = await self.cache_provider.delete_pattern("chisa:channel:*:topic_summary")
+                    await self.cache_provider.delete_pattern("chisa:channel:*:rolling_buffer")
+                    await self.cache_provider.delete_pattern("chisa:channel:*:msg_count")
                     cleared_details["topic_summaries_cleared"] = deleted_count
                 except Exception as e:
-                    log.warning("Could not clear Redis topic summaries", error=str(e))
+                    log.warning("Could not clear Redis topic summaries or rolling buffers", error=str(e))
 
             log.info("Server-wide community memory cleared", guild_id=guild_id)
         else:

@@ -82,6 +82,86 @@ class ContextBuilder:
         "required": ["response", "sentiment"],
     }
 
+    @classmethod
+    def get_response_schema(cls, has_images: bool = False, has_retrieved_images: bool = False) -> Dict[str, Any]:
+        """
+        Dynamically constructs the strict JSON response schema.
+        - Text-only (Zero Contamination): pure {response, sentiment}.
+        - Past Image Retrieval: conditionally adds {attached_images}.
+        - Multimodal Vision: conditionally adds {image_tags, visual_caption} for 0ms latency auto-tagging.
+        """
+        props = {
+            "response": {"type": "string"},
+            "sentiment": {
+                "type": "object",
+                "properties": {
+                    "reaction": {
+                        "type": "string",
+                        "enum": [
+                            "calm_warmth",
+                            "flustered_affection",
+                            "playful_pout",
+                            "melancholic_care",
+                            "cheerful_joy",
+                            "guarded_cold",
+                            "neutral"
+                        ],
+                        "description": "Dominant emotional reaction of Chisa"
+                    },
+                    "user_stance": {
+                        "type": "string",
+                        "enum": [
+                            "loving",
+                            "playful",
+                            "vulnerable",
+                            "neutral",
+                            "hostile"
+                        ],
+                        "description": "Perceived attitude and intention of Senpai toward Chisa"
+                    },
+                    "intensity": {
+                        "type": "number",
+                        "minimum": 0.0,
+                        "maximum": 1.0,
+                        "description": "Emotional intensity: 0.1 (fleeting/mild) to 0.9 (deep/intense)"
+                    },
+                    "variance": {
+                        "type": "number",
+                        "minimum": -1.0,
+                        "maximum": 1.0,
+                        "description": "Nuance variance: -1.0 (melancholic/philosophical) to +1.0 (bright/joyful), 0.0 (neutral balance)"
+                    }
+                },
+                "required": ["reaction", "user_stance", "intensity", "variance"]
+            }
+        }
+
+        # Conditionally inject attached_images schema if user has images or past retrieved images
+        if has_retrieved_images or has_images:
+            props["attached_images"] = {
+                "type": "array",
+                "items": {"type": "string"},
+                "description": "Danh sách các URL ảnh đính kèm gửi lại cho Senpai (trích xuất từ Retrieved Image Memory)"
+            }
+
+        # In Multimodal Vision mode: enable 0ms zero-cost metadata auto-tagging by Vision LLM
+        if has_images:
+            props["image_tags"] = {
+                "type": "array",
+                "items": {"type": "string"},
+                "description": "Các từ khóa/nhãn chủ đề thị giác ngắn gọn miêu tả nội dung ảnh (ví dụ: ['mèo', 'thú cưng', 'dễ thương'] hoặc ['biển', 'hoàng hôn', 'kỷ niệm'])"
+            }
+            props["visual_caption"] = {
+                "type": "string",
+                "description": "Bản tóm tắt thị giác súc tích (1-2 câu) miêu tả các chi tiết và bối cảnh xuất hiện trong bức ảnh để lưu vào kho ký ức."
+            }
+
+        return {
+            "type": "object",
+            "properties": props,
+            "required": ["response", "sentiment"]
+        }
+
     SEARCH_INSTRUCTIONS = (
         "HƯỚNG DẪN QUAN TRỌNG: Hãy trả lời Senpai một cách tự nhiên bằng giọng điệu Kuudere của em. "
         "Tuyệt đối KHÔNG sử dụng các câu chuyển tiếp máy móc, rập khuôn hoặc tự phủ nhận (ví dụ: CẤM DÙNG 'Theo kết quả em tìm kiếm...', 'Dưới đây là kết quả...', 'Theo thông tin trên mạng...', 'Em vừa tra cứu...', 'Em không biết chi tiết...'). "
@@ -296,6 +376,7 @@ class ContextBuilder:
         topic_summary: Optional[str] = None,
         has_images: bool = False,
         retrieved_images: Optional[List[Dict[str, Any]]] = None,
+        interaction_count: int = 0,
     ) -> ContextBuildResult:
         """
         Builds production context: measure skeleton first, flex-allocate, then assemble system prompt.
@@ -326,6 +407,7 @@ class ContextBuilder:
             conversation_summary=conversation_summary,
             tool_result=tool_result,
             intent_name=intent_name,
+            interaction_count=interaction_count,
         )
 
         memories_text = ""
@@ -487,11 +569,16 @@ class ContextBuilder:
             else user_message
         )
 
+        schema_to_use = self.get_response_schema(
+            has_images=has_images,
+            has_retrieved_images=bool(retrieved_images)
+        )
+
         prompt = StructuredPrompt(
             system=system_prompt,
             history=allocation.trimmed_history,
             user_message=effective_user_message,
-            response_schema=self.RESPONSE_SCHEMA,
+            response_schema=schema_to_use,
             retrieved_memories=allocation.trimmed_memories,
             retrieved_lore=allocation.trimmed_lore,
             rag_decisions={

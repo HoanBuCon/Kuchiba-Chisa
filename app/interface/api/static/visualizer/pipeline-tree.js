@@ -51,15 +51,27 @@ window.PipelineTreeEngine = {
                 const method = step.data?.rewrite_method || 'LLM_FLASH';
                 const needsVec = step.data?.needs_vector_search !== false;
                 const needsWeb = Boolean(step.data?.needs_web_search);
-                let routeTag = 'Code / Task (0ms Bypass)';
-                if (needsWeb && !needsVec) {
+                const needsImg = Boolean(step.data?.needs_image_retrieval);
+
+                let routeTag = '0ms Bypass';
+                if (needsImg) {
+                    routeTag = 'Truy ngược ảnh Qdrant';
+                } else if (needsWeb && !needsVec) {
                     routeTag = 'Direct Web Search';
                 } else if (needsVec && needsWeb) {
-                    routeTag = 'Vector + Web Search';
+                    routeTag = 'Vector Lore + Web';
                 } else if (needsVec) {
                     routeTag = 'Tra cứu Qdrant Lore';
                 }
-                return `[${method}] · ${routeTag}${traitTag}`;
+
+                let lookbackTag = '';
+                if (step.data?.context_chaining_source === 'COMMUNITY_CHANNEL_TRANSCRIPT') {
+                    lookbackTag = ' · Community Lookback';
+                } else if (step.data?.context_chaining_source === 'SQL_DIRECT_HISTORY') {
+                    lookbackTag = ' · Direct Lookback';
+                }
+
+                return `[${method}] · ${routeTag}${lookbackTag}${traitTag}`;
             }
         },
         'intent_stage': {
@@ -277,22 +289,23 @@ window.PipelineTreeEngine = {
             type: 'persistence',
             icon: 'hard-drive',
             title: 'Stage 9: [PERSIST] Lưu trữ Dữ liệu Bền vững',
-            subtitle: (step) => `Lưu tin nhắn SQL · Turn #${step.data?.turn_index || '—'}`
+            subtitle: (step) => `Lưu tin nhắn SQL · Sync Redis State · Turn #${step.data?.turn_index || '—'}`
         },
         'persistence_stage': {
             type: 'persistence',
             icon: 'hard-drive',
             title: 'Stage 9: [PERSIST] Lưu trữ Dữ liệu Bền vững',
-            subtitle: () => 'Lưu tin nhắn vào PostgreSQL & Cập nhật Last Seen'
+            subtitle: () => 'Lưu tin nhắn vào PostgreSQL & Sync Redis State'
         },
         'background_tasks': {
             type: 'background',
             icon: 'server',
             title: 'Stage 10: [BACKGROUND] Tác vụ Nền Tự động',
             subtitle: (step) => {
-                const ext = step.data?.batch_memory_extraction_triggered ? 'Fact Extractor: ON' : 'Fact Extractor: OFF';
-                const sum = step.data?.auto_summarization_triggered ? 'Auto-Summary: ON' : 'Auto-Summary: OFF';
-                return `${ext} · ${sum}`;
+                const ext = step.data?.batch_memory_extraction_triggered ? 'Fact: ON' : 'Fact: OFF';
+                const sum = step.data?.auto_summarization_triggered ? 'Summary: ON' : 'Summary: OFF';
+                const top = step.data?.topic_summarization_triggered ? 'Topic: ON' : 'Topic: OFF';
+                return `${ext} · ${sum} · ${top}`;
             }
         },
         'background_stage': {
@@ -313,14 +326,20 @@ window.PipelineTreeEngine = {
         'summarize_conversation_memory': {
             type: 'memory',
             icon: 'file-text',
-            title: '10.2 [BG] Tự động Tóm tắt Hội thoại',
-            subtitle: () => 'Cập nhật Conversation Summary'
+            title: '10.2 [BG] Tự động Tóm tắt Hội thoại Riêng tư',
+            subtitle: () => 'Cập nhật Summary (80-120 từ) & Sync Redis Cache'
         },
         'summarize_channel_topic': {
             type: 'memory',
-            icon: 'file-text',
-            title: '10.2 [BG] Tóm tắt Mạch Kênh Cộng đồng',
-            subtitle: (step) => step.subtitle || 'Cập nhật Topic Summary kênh'
+            icon: 'layers',
+            title: '10.3 [BG] Tóm tắt Mạch Kênh Cộng đồng (3-Tier)',
+            subtitle: (step) => step.subtitle || '3-Tier Synthesis · Redis Rolling Buffer'
+        },
+        'community_topic_summarize': {
+            type: 'memory',
+            icon: 'layers',
+            title: '10.3 [BG] Tóm tắt Mạch Kênh Cộng đồng (3-Tier)',
+            subtitle: () => '3-Tier Synthesis · Redis Rolling Buffer'
         }
     },
 

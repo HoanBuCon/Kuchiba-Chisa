@@ -4,20 +4,23 @@ from app.domain.interfaces.session import IDbSession
 from app.domain.services.chat_pipeline.stage import PipelineStage
 from app.domain.services.chat_pipeline.context import ChatContext
 from app.domain.interfaces.repositories import IUserRepository, IConversationRepository
+from app.domain.interfaces.cache_provider import ICacheProvider
 from app.domain.interfaces.tracker import IPipelineTracker
 
 class PersistenceStage(PipelineStage):
     """
-    Stage 9: Save messages to Postgres and update user stats.
+    Stage 9: Save messages to Postgres and update user stats with Redis Write-Through State Cache.
     """
     def __init__(
         self,
         user_repo_factory: Callable[[IDbSession], IUserRepository],
         conv_repo_factory: Callable[[IDbSession], IConversationRepository],
+        cache_provider: Optional[ICacheProvider] = None,
         pipeline_tracker: Optional[IPipelineTracker] = None
     ):
         self.user_repo_factory = user_repo_factory
         self.conv_repo_factory = conv_repo_factory
+        self.cache_provider = cache_provider
         self.pipeline_tracker = pipeline_tracker
 
     async def process(self, context: ChatContext) -> ChatContext:
@@ -63,6 +66,17 @@ class PersistenceStage(PipelineStage):
         context.stats.interaction_count += 1
         context.stats.last_seen = int(time.time() * 1000)
         await user_repo.update_stats(context.stats)
+
+        # Write-Through to Redis State Cache
+        if self.cache_provider and context.user_uuid and context.stats and context.emotion:
+            from app.domain.services.user_state_cache import UserStateCache
+            await UserStateCache.set_state(
+                self.cache_provider,
+                context.user_uuid,
+                context.stats,
+                context.emotion,
+                context.conv_id
+            )
 
         if self.pipeline_tracker:
             self.pipeline_tracker.add_step(

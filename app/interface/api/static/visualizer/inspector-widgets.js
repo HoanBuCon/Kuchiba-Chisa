@@ -567,7 +567,7 @@ window.InspectorWidgets = {
         }
 
         const cardsHtml = retrievedImages.map((img, idx) => {
-            const imgSrc = img.thumbnail_url || img.thumbnail_data_uri || img.url || '';
+            const imgSrc = img.url || img.base64_data_uri || '';
             const fullUrl = img.url || imgSrc;
             const score = typeof img.score === 'number' ? (img.score).toFixed(2) : (img.score || '—');
             const scoreBadge = `<span class="pill" style="font-size: 10px; background: rgba(255, 77, 136, 0.2); color: #ff80aa; border-color: rgba(255, 77, 136, 0.4);">Score: ${score}</span>`;

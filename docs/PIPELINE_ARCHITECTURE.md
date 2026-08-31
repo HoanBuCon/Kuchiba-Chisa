@@ -3,6 +3,7 @@
 > **Tài liệu Kỹ thuật & Đặc tả Luồng Thực thi (Technical Architecture & Pipeline Execution Specification)**  
 > **Dự án**: Kuchiba Chisa — AI Companion & Game Knowledge Assistant (Wuthering Waves)  
 > **Phiên bản Pipeline**: 3.0 (Hỗ trợ Đa Chế Độ & Multimodal Vision Memory)  
+> **Xác minh Codebase**: $100\%$ đối chiếu mã nguồn thực tế (`app/domain/services/chat_pipeline/`, `app/application/dependencies.py`, `chat_engine.py`)  
 > **Thời gian cập nhật**: 31/08/2026
 
 ---

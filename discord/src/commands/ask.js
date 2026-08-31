@@ -76,12 +76,22 @@ async function fetchRecentChannelMessages(channel, limit = 15) {
         let text = m.cleanContent || m.content || '';
         // Strip out Chisa's appended emotion breakdown block from past messages
         text = text.replace(/\*\*\[(?:Trạng thái Cảm xúc|Emotion State)\]\*\*[\s\S]*/i, '').trim();
+
+        let replyToSpeaker = null;
+        if (m.reference) {
+          const repliedUser = m.mentions?.repliedUser;
+          if (repliedUser) {
+            const member = m.guild?.members?.cache?.get(repliedUser.id);
+            replyToSpeaker = member?.displayName || repliedUser.globalName || repliedUser.username;
+          }
+        }
+
         return {
           message_id: m.id,
           speaker_id: m.author.id,
           speaker_name: m.member?.displayName || m.author.globalName || m.author.username,
           content: text,
-          reply_to_speaker: m.reference ? m.mentions?.repliedUser?.username : null,
+          reply_to_speaker: replyToSpeaker,
           reply_to_content: null,
           is_bot: m.author.bot,
           created_at: new Date(m.createdTimestamp).toISOString(),

@@ -258,6 +258,7 @@ class AppContainer:
             PersistenceStage(
                 user_repo_factory=SqlAlchemyUserRepository,
                 conv_repo_factory=SqlAlchemyConversationRepository,
+                cache_provider=redis_service,
                 pipeline_tracker=pipeline_tracker
             ),
             CacheUpdateStage(
@@ -297,13 +298,15 @@ class AppContainer:
         from app.infrastructure.database.repositories.emotion_repository import SqlAlchemyEmotionRepository
         from app.infrastructure.database.repositories.conversation_repository import SqlAlchemyConversationRepository
         from app.infrastructure.database.uow import UnitOfWork
+        from app.infrastructure.cache.redis.redis_service import redis_service
         
         return ClearUserMemoryUseCase(
             uow_factory=UnitOfWork,
             user_repo_factory=SqlAlchemyUserRepository,
             emotion_repo_factory=SqlAlchemyEmotionRepository,
             conv_repo_factory=SqlAlchemyConversationRepository,
-            vector_store=qdrant_service
+            vector_store=qdrant_service,
+            cache_provider=redis_service
         )
 
     @cached_property

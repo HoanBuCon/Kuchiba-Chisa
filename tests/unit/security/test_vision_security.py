@@ -61,7 +61,6 @@ async def test_exif_metadata_completely_stripped():
         assert res["width"] == 200
         assert res["height"] == 200
         assert res["mime_type"] == "image/webp"
-        assert res["thumbnail_bytes"] is not None
 
 
 def test_visual_prompt_sandboxing():
