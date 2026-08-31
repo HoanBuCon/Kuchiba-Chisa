@@ -55,6 +55,21 @@ def test_channel_transcript_formatter():
     assert "[01:17] <Chisa>: Dạ em vote quán ramen miso cay ở ngã tư nhé ~" in formatted
 
 
+def test_channel_transcript_formatter_utc_to_vn_timezone_conversion():
+    """Kiểm tra ChannelTranscriptFormatter tự động đổi chuỗi ISO UTC (từ Discord) sang giờ Việt Nam (UTC+7)."""
+    # 05:21 UTC -> 12:21 VN (UTC+7)
+    messages = [
+        {
+            "message_id": "msg_utc_1",
+            "speaker_name": "Senpai",
+            "content": "Chào Chisa buổi trưa nhé",
+            "created_at": "2026-08-31T05:21:40.000Z",
+        }
+    ]
+    formatted = ChannelTranscriptFormatter.format_transcript(messages, max_tokens=500)
+    assert "[12:21] <Senpai>: Chào Chisa buổi trưa nhé" in formatted
+
+
 def test_channel_transcript_formatter_token_truncation():
     now = datetime.now()
     # Generate 50 long messages
