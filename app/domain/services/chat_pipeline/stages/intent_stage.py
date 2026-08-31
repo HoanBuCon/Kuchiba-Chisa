@@ -121,9 +121,13 @@ class IntentStage(PipelineStage):
                     "confidence": 1.0,
                     "routing_method": "HYBRID_SMALL_TALK",
                     "semantic_scores": {"SMALL_TALK": 1.0},
+                    "needs_image_retrieval": False,
                     "persona_trait_type": persona_trait,
                     "rag_triggered": False,
-                    "routing_reason": f"Hardcore Hybrid Small Talk: {st_reason}"
+                    "routing_reason": f"Hardcore Hybrid Small Talk: {st_reason}",
+                    "prev_context": None,
+                    "context_chaining_source": "NONE",
+                    "is_community": context.is_community,
                 })
 
         # ── BRANCH 2: Knowledge / Task / Out-of-Lore / Code (LLM Rewriter & Tri-State Router) ──
@@ -272,15 +276,28 @@ class IntentStage(PipelineStage):
             context.persona_trait_type = persona_trait
 
             # 5. Update Stage 2 tracker step data with finalized rewrite & routing outcomes
+            context_source = "NONE"
+            if prev_rewritten_query:
+                if context.is_community and context.channel_transcript:
+                    context_source = "COMMUNITY_CHANNEL_TRANSCRIPT"
+                elif context.is_community and context.topic_summary:
+                    context_source = "COMMUNITY_TOPIC_SUMMARY"
+                else:
+                    context_source = "SQL_DIRECT_HISTORY"
+
             stage_tracker_data.update({
                 "intents": intent_values,
                 "rewritten_query": rewritten_query,
                 "rewrite_method": rewrite_method,
                 "needs_vector_search": needs_vector_search,
                 "needs_web_search": needs_web_search,
+                "needs_image_retrieval": context.needs_image_retrieval,
                 "rag_triggered": rag_triggered,
                 "persona_trait_type": persona_trait,
-                "routing_reason": routing_reason
+                "routing_reason": routing_reason,
+                "prev_context": prev_rewritten_query,
+                "context_chaining_source": context_source,
+                "is_community": context.is_community,
             })
 
         log.info(

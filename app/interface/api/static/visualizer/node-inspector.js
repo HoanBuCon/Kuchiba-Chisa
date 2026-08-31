@@ -317,28 +317,198 @@ ${window.VisualizerApp.escapeHtml(userMessage.trim())}
         const isSmallTalk = data.is_small_talk || data.routing_method === 'HYBRID_SMALL_TALK' || data.routing_method === 'L1_SMALL_TALK';
         const rwMethod = data.rewrite_method || (isSmallTalk ? 'BYPASS' : 'LLM_FLASH');
         const isLlmRewrite = rwMethod === 'LLM_FLASH';
+        const isCommunity = Boolean(data.is_community);
+
+        const needsVec = Boolean(data.needs_vector_search);
+        const needsWeb = Boolean(data.needs_web_search);
+        const needsImg = Boolean(data.needs_image_retrieval);
 
         let ragTarget = '0ms Bypass';
         let ragColor = '#996e77';
-        if (data.needs_vector_search && data.needs_web_search) {
+        if (needsVec && needsWeb) {
             ragTarget = 'Hybrid (Lore + Web)';
             ragColor = '#ffa4b2';
-        } else if (data.needs_vector_search) {
-            ragTarget = 'Qdrant Lore';
+        } else if (needsImg) {
+            ragTarget = 'Visual Memory (Ảnh Qdrant)';
+            ragColor = '#ff77aa';
+        } else if (needsVec) {
+            ragTarget = 'Qdrant Lore & Memory';
             ragColor = '#ff4d66';
-        } else if (data.needs_web_search) {
-            ragTarget = 'Web Search';
-            ragColor = '#ff5c75';
+        } else if (needsWeb) {
+            ragTarget = 'Internet Web Search';
+            ragColor = '#38bdf8';
         }
 
         const metrics = [
             { label: 'Phân loại Ý định', value: intents.length ? intents.join(', ') : 'None', icon: 'compass', color: '#ffa4b2' },
-            { label: 'Đích đến RAG', value: ragTarget, icon: 'database', color: ragColor, badge: data.routing_method || 'LLM_ROUTER' },
-            { label: 'Cơ chế Viết lại', value: rwMethod, icon: isLlmRewrite ? 'sparkles' : 'zap', color: isLlmRewrite ? '#ff5c75' : '#ff223e', badge: isLlmRewrite ? 'Micro LLM' : 'Fast Path' },
-            { label: 'Persona Trait', value: data.persona_trait_type || 'STANDARD', icon: 'user', color: '#ff223e' },
+            { label: 'Đích đến Tri thức', value: ragTarget, icon: 'database', color: ragColor, badge: data.routing_method || 'LLM_ROUTER' },
+            { label: 'Cơ chế Viết lại', value: rwMethod, icon: isLlmRewrite ? 'sparkles' : 'zap', color: isLlmRewrite ? '#fbbf24' : '#34d399', badge: isLlmRewrite ? 'Micro LLM Flash' : 'Fast Path (0ms)' },
+            { label: 'Môi trường Chat', value: isCommunity ? '🌐 Community Group' : '🔒 Private 1-on-1', icon: isCommunity ? 'users' : 'user', color: isCommunity ? '#60a5fa' : '#a78bfa' },
         ];
 
         const metricGridHtml = InspectorWidgets.renderMetricGrid(metrics);
+
+        // 1. Tri-State Knowledge Routing Signals
+        const routingSignalsHtml = `
+            <div class="inspector-card" style="border-left: 3px solid #ff4d66;">
+                <div class="inspector-card-title" style="justify-content: space-between;">
+                    <div style="display: flex; align-items: center; gap: 6px;">
+                        ${InspectorWidgets.icon('compass', { size: 14, color: '#ff4d66' })}
+                        <span>Ma Trận Định Tuyến Tri Thức 3 Cờ (Tri-State Decision Signals)</span>
+                    </div>
+                    <span class="pill" style="font-size: 9.5px; background: rgba(255, 77, 102, 0.15); color: #ff8095;">Tri-State Knowledge Router</span>
+                </div>
+
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 8px; margin-top: 10px;">
+                    <!-- Signal 1: Vector Lore -->
+                    <div style="padding: 10px; border-radius: 6px; background: ${needsVec ? 'rgba(255, 77, 102, 0.12)' : 'rgba(255, 255, 255, 0.02)'}; border: 1px solid ${needsVec ? 'rgba(255, 77, 102, 0.4)' : 'rgba(255, 255, 255, 0.06)'}; display: flex; flex-direction: column; gap: 4px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span style="font-size: 11px; font-weight: 700; color: ${needsVec ? '#ff8095' : 'var(--text-muted)'};">1. Qdrant Vector Lore</span>
+                            <span class="pill" style="font-size: 9px; background: ${needsVec ? 'rgba(255, 77, 102, 0.25)' : 'rgba(100, 116, 139, 0.2)'}; color: ${needsVec ? '#ff99aa' : '#94a3b8'};">${needsVec ? 'ACTIVE' : 'OFF'}</span>
+                        </div>
+                        <div style="font-size: 10.5px; color: var(--text-secondary); line-height: 1.35;">Tra cứu Lore game Wuthering Waves & Ký ức cá nhân.</div>
+                    </div>
+
+                    <!-- Signal 2: Web Search -->
+                    <div style="padding: 10px; border-radius: 6px; background: ${needsWeb ? 'rgba(56, 189, 248, 0.12)' : 'rgba(255, 255, 255, 0.02)'}; border: 1px solid ${needsWeb ? 'rgba(56, 189, 248, 0.4)' : 'rgba(255, 255, 255, 0.06)'}; display: flex; flex-direction: column; gap: 4px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span style="font-size: 11px; font-weight: 700; color: ${needsWeb ? '#38bdf8' : 'var(--text-muted)'};">2. Realtime Web Search</span>
+                            <span class="pill" style="font-size: 9px; background: ${needsWeb ? 'rgba(56, 189, 248, 0.25)' : 'rgba(100, 116, 139, 0.2)'}; color: ${needsWeb ? '#7dd3fc' : '#94a3b8'};">${needsWeb ? 'ACTIVE' : 'OFF'}</span>
+                        </div>
+                        <div style="font-size: 10.5px; color: var(--text-secondary); line-height: 1.35;">Tra cứu tin tức ngoài đời thực, sự kiện mới & web data.</div>
+                    </div>
+
+                    <!-- Signal 3: Visual Image Memories -->
+                    <div style="padding: 10px; border-radius: 6px; background: ${needsImg ? 'rgba(236, 72, 153, 0.12)' : 'rgba(255, 255, 255, 0.02)'}; border: 1px solid ${needsImg ? 'rgba(236, 72, 153, 0.4)' : 'rgba(255, 255, 255, 0.06)'}; display: flex; flex-direction: column; gap: 4px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span style="font-size: 11px; font-weight: 700; color: ${needsImg ? '#ec4899' : 'var(--text-muted)'};">3. Visual Memory Search</span>
+                            <span class="pill" style="font-size: 9px; background: ${needsImg ? 'rgba(236, 72, 153, 0.25)' : 'rgba(100, 116, 139, 0.2)'}; color: ${needsImg ? '#f472b6' : '#94a3b8'};">${needsImg ? 'ACTIVE' : 'OFF'}</span>
+                        </div>
+                        <div style="font-size: 10.5px; color: var(--text-secondary); line-height: 1.35;">Truy ngược ảnh quá khứ từ kho ảnh Qdrant.</div>
+                    </div>
+                </div>
+
+                ${data.routing_reason ? `
+                    <div style="font-size: 11.5px; color: var(--text-secondary); margin-top: 10px; padding: 6px 10px; background: rgba(0, 0, 0, 0.35); border-radius: 4px; border: 1px dashed rgba(255, 255, 255, 0.08);">
+                        <strong style="color: var(--text-primary);">Lý do định tuyến:</strong> ${window.VisualizerApp.escapeHtml(data.routing_reason)}
+                    </div>
+                ` : ''}
+            </div>
+        `;
+
+        // 2. Context Chaining / Lookback Inspector Card
+        let contextChainingHtml = '';
+        const prevCtx = (data.prev_context || '').trim();
+        const ctxSource = data.context_chaining_source || 'NONE';
+
+        let badgeSourceText = '⚡ Standalone Query (Không phụ thuộc câu trước)';
+        let badgeSourceBg = 'rgba(100, 116, 139, 0.15)';
+        let badgeSourceColor = '#94a3b8';
+        let badgeBorder = 'rgba(100, 116, 139, 0.3)';
+
+        if (ctxSource === 'COMMUNITY_CHANNEL_TRANSCRIPT') {
+            badgeSourceText = '🌐 Community Channel Transcript Chaining';
+            badgeSourceBg = 'rgba(59, 130, 246, 0.15)';
+            badgeSourceColor = '#60a5fa';
+            badgeBorder = 'rgba(59, 130, 246, 0.4)';
+        } else if (ctxSource === 'COMMUNITY_TOPIC_SUMMARY') {
+            badgeSourceText = '🌐 Community Topic Summary Chaining';
+            badgeSourceBg = 'rgba(139, 92, 246, 0.15)';
+            badgeSourceColor = '#c084fc';
+            badgeBorder = 'rgba(139, 92, 246, 0.4)';
+        } else if (ctxSource === 'SQL_DIRECT_HISTORY') {
+            badgeSourceText = '🔒 SQL 1-Turn Knowledge-Aware Lookback (Direct Chat)';
+            badgeSourceBg = 'rgba(16, 185, 129, 0.15)';
+            badgeSourceColor = '#34d399';
+            badgeBorder = 'rgba(16, 185, 129, 0.4)';
+        }
+
+        contextChainingHtml = `
+            <div class="inspector-card" style="border-left: 3px solid #60a5fa;">
+                <div class="inspector-card-title" style="justify-content: space-between;">
+                    <div style="display: flex; align-items: center; gap: 6px;">
+                        ${InspectorWidgets.icon('message-square', { size: 14, color: '#60a5fa' })}
+                        <span>Hồi Tưởng & Nối Ngữ Cảnh (Conversational Context Chaining)</span>
+                    </div>
+                    <span class="pill" style="font-size: 9.5px; background: ${badgeSourceBg}; color: ${badgeSourceColor}; border-color: ${badgeBorder};">
+                        ${badgeSourceText}
+                    </span>
+                </div>
+
+                <div style="margin-top: 8px;">
+                    ${prevCtx ? `
+                        <div style="padding: 8px 12px; background: rgba(15, 23, 42, 0.65); border-radius: var(--radius-sm); border: 1px solid rgba(59, 130, 246, 0.25);">
+                            <div style="font-size: 10px; font-weight: 700; color: #60a5fa; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">
+                                Ngữ cảnh thảo luận câu trước đã nạp vào Micro LLM:
+                            </div>
+                            <div style="font-size: 12px; line-height: 1.5; color: #e2e8f0; font-family: 'JetBrains Mono', monospace;">
+                                "${window.VisualizerApp.escapeHtml(prevCtx)}"
+                            </div>
+                        </div>
+                        <div style="font-size: 11px; color: var(--text-muted); margin-top: 6px;">
+                            💡 <em>Micro LLM sử dụng ngữ cảnh này để giải mã chính xác các đại từ thay thế ('anh ấy', 'cô ấy', 'vũ khí đó') ngay cả khi user không bấm Reply.</em>
+                        </div>
+                    ` : `
+                        <div style="padding: 8px 12px; background: rgba(255, 255, 255, 0.02); border-radius: var(--radius-sm); border: 1px dashed rgba(255, 255, 255, 0.08); font-size: 11.5px; color: var(--text-muted);">
+                            Câu hỏi độc lập, không yêu cầu hồi tưởng thực thể từ các lượt chat trước.
+                        </div>
+                    `}
+                </div>
+            </div>
+        `;
+
+        // 3. Query Transformation Card
+        const transformHtml = `
+            <div class="inspector-card" style="border-left: 3px solid ${isLlmRewrite ? 'var(--accent-amber)' : 'var(--accent-emerald)'};">
+                <div class="inspector-card-title" style="justify-content: space-between;">
+                    <div style="display: flex; align-items: center; gap: 6px;">
+                        ${InspectorWidgets.icon('refresh-cw', { size: 14, color: isLlmRewrite ? 'var(--accent-amber)' : 'var(--accent-emerald)' })}
+                        <span>Biến Đổi & Viết Lại Truy Vấn (Query Transformation Flow)</span>
+                    </div>
+                    <span class="pill" style="background: ${isLlmRewrite ? 'rgba(245, 158, 11, 0.12)' : 'rgba(16, 185, 129, 0.12)'}; color: ${isLlmRewrite ? '#fbbf24' : '#34d399'}; border-color: ${isLlmRewrite ? 'rgba(245, 158, 11, 0.3)' : 'rgba(16, 185, 129, 0.3)'};">
+                        ${isLlmRewrite ? 'DeepSeek Flash Micro-Rewriter' : '0ms Direct Fast-Path'}
+                    </span>
+                </div>
+
+                <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 8px;">
+                    ${isLlmRewrite ? `
+                        <div style="padding: 8px 12px; background: rgba(8, 12, 20, 0.6); border-radius: var(--radius-sm); border-left: 3px solid #64748b;">
+                            <div style="font-size: 10.5px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 3px;">
+                                Câu Hỏi Ban Đầu Của User (Original Input)
+                            </div>
+                            <div style="font-size: 12.5px; line-height: 1.5; color: var(--text-primary);">
+                                ${window.VisualizerApp.escapeHtml((data.user_message || data.cleaned_query || '').trim())}
+                            </div>
+                        </div>
+
+                        <div style="display: flex; justify-content: center; align-items: center; color: var(--accent-amber); font-size: 11px; gap: 6px; margin: -2px 0;">
+                            ${InspectorWidgets.icon('arrow-down', { size: 12, color: 'var(--accent-amber)' })}
+                            <span>Giải mã thực thể & Tối ưu hóa Vector Embedding</span>
+                        </div>
+
+                        <div style="padding: 8px 12px; background: rgba(245, 158, 11, 0.06); border-radius: var(--radius-sm); border-left: 3px solid var(--accent-amber);">
+                            <div style="font-size: 10.5px; font-weight: 700; color: #fbbf24; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 3px; display: flex; justify-content: space-between;">
+                                <span>Truy Vấn Độc Lập Sau Khi Viết Lại (Rewritten RAG Query)</span>
+                                <span class="pill" style="font-size: 9.5px; background: rgba(245, 158, 11, 0.15); color: #fbbf24;">Optimized</span>
+                            </div>
+                            <div style="font-size: 13.5px; font-weight: 600; line-height: 1.5; color: #fde68a;">
+                                ${window.VisualizerApp.escapeHtml((data.rewritten_query || data.cleaned_query || '').trim())}
+                            </div>
+                        </div>
+                    ` : `
+                        <div style="padding: 8px 12px; background: rgba(16, 185, 129, 0.06); border-radius: var(--radius-sm); border-left: 3px solid var(--accent-emerald);">
+                            <div style="font-size: 10.5px; font-weight: 700; color: #34d399; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 3px; display: flex; justify-content: space-between;">
+                                <span>Truy Vấn Trực Tiếp (0ms Latency · 0 Token LLM Bypass)</span>
+                                <span class="pill" style="font-size: 9.5px; background: rgba(16, 185, 129, 0.15); color: #34d399;">Bypass</span>
+                            </div>
+                            <div style="font-size: 13.5px; font-weight: 600; line-height: 1.5; color: #a7f3d0;">
+                                ${window.VisualizerApp.escapeHtml((data.rewritten_query || data.user_message || '').trim())}
+                            </div>
+                        </div>
+                    `}
+                </div>
+            </div>
+        `;
 
         let subLlmHtml = '';
         if (data.llm_rewrite_telemetry) {
@@ -369,62 +539,9 @@ ${window.VisualizerApp.escapeHtml(userMessage.trim())}
                     </div>
                 </div>
                 ${metricGridHtml}
-
-                <div class="inspector-card" style="border-left: 3px solid ${isLlmRewrite ? 'var(--accent-amber)' : 'var(--accent-emerald)'};">
-                    <div class="inspector-card-title" style="justify-content: space-between;">
-                        <div style="display: flex; align-items: center; gap: 6px;">
-                            ${InspectorWidgets.icon('refresh-cw', { size: 14, color: isLlmRewrite ? 'var(--accent-amber)' : 'var(--accent-emerald)' })}
-                            <span>Xử Lý & Viết Lại Truy Vấn (Query Transformation)</span>
-                        </div>
-                        <span class="pill" style="background: ${isLlmRewrite ? 'rgba(245, 158, 11, 0.12)' : 'rgba(16, 185, 129, 0.12)'}; color: ${isLlmRewrite ? '#fbbf24' : '#34d399'}; border-color: ${isLlmRewrite ? 'rgba(245, 158, 11, 0.3)' : 'rgba(16, 185, 129, 0.3)'};">
-                            ${isLlmRewrite ? 'Micro LLM Flash Router' : '0ms Direct Bypass'}
-                        </span>
-                    </div>
-
-                    <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 8px;">
-                        ${isLlmRewrite ? `
-                            <div style="padding: 8px 12px; background: rgba(8, 12, 20, 0.6); border-radius: var(--radius-sm); border-left: 3px solid #64748b;">
-                                <div style="font-size: 10.5px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 3px;">
-                                    Câu Hỏi Ban Đầu Của Senpai (Original User Message)
-                                </div>
-                                <div style="font-size: 12.5px; line-height: 1.5; color: var(--text-primary);">
-                                    ${window.VisualizerApp.escapeHtml((data.user_message || data.cleaned_query || '').trim())}
-                                </div>
-                            </div>
-
-                            <div style="padding: 8px 12px; background: rgba(245, 158, 11, 0.06); border-radius: var(--radius-sm); border-left: 3px solid var(--accent-amber);">
-                                <div style="font-size: 10.5px; font-weight: 700; color: #fbbf24; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 3px; display: flex; justify-content: space-between;">
-                                    <span>Truy Vấn Tối Ưu RAG (LLM Rewritten Query)</span>
-                                    <span class="pill" style="font-size: 9.5px; background: rgba(245, 158, 11, 0.15); color: #fbbf24;">DeepSeek Flash</span>
-                                </div>
-                                <div style="font-size: 13.5px; font-weight: 600; line-height: 1.5; color: #fde68a;">
-                                    ${window.VisualizerApp.escapeHtml((data.rewritten_query || data.cleaned_query || '').trim())}
-                                </div>
-                                ${data.routing_reason ? `
-                                    <div style="font-size: 11px; color: var(--text-secondary); margin-top: 6px; padding-top: 5px; border-top: 1px dashed rgba(255,255,255,0.08);">
-                                        <strong>Định tuyến:</strong> ${window.VisualizerApp.escapeHtml(data.routing_reason)}
-                                    </div>
-                                ` : ''}
-                            </div>
-                        ` : `
-                            <div style="padding: 8px 12px; background: rgba(16, 185, 129, 0.06); border-radius: var(--radius-sm); border-left: 3px solid var(--accent-emerald);">
-                                <div style="font-size: 10.5px; font-weight: 700; color: #34d399; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 3px; display: flex; justify-content: space-between;">
-                                    <span>Truy Vấn Trực Tiếp (0ms Latency · Không tốn Token LLM)</span>
-                                    <span class="pill" style="font-size: 9.5px; background: rgba(16, 185, 129, 0.15); color: #34d399;">Bypass</span>
-                                </div>
-                                <div style="font-size: 13.5px; font-weight: 600; line-height: 1.5; color: #a7f3d0;">
-                                    ${window.VisualizerApp.escapeHtml((data.rewritten_query || data.user_message || '').trim())}
-                                </div>
-                                ${data.routing_reason ? `
-                                    <div style="font-size: 11px; color: var(--text-secondary); margin-top: 6px; padding-top: 5px; border-top: 1px dashed rgba(255,255,255,0.08);">
-                                        <strong>Lý do:</strong> ${window.VisualizerApp.escapeHtml(data.routing_reason)}
-                                    </div>
-                                ` : ''}
-                            </div>
-                        `}
-                    </div>
-                </div>
-
+                ${routingSignalsHtml}
+                ${contextChainingHtml}
+                ${transformHtml}
                 ${subLlmHtml}
                 ${rawJsonHtml}
             </div>

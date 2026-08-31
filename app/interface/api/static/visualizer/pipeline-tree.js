@@ -51,15 +51,27 @@ window.PipelineTreeEngine = {
                 const method = step.data?.rewrite_method || 'LLM_FLASH';
                 const needsVec = step.data?.needs_vector_search !== false;
                 const needsWeb = Boolean(step.data?.needs_web_search);
-                let routeTag = 'Code / Task (0ms Bypass)';
-                if (needsWeb && !needsVec) {
+                const needsImg = Boolean(step.data?.needs_image_retrieval);
+
+                let routeTag = '0ms Bypass';
+                if (needsImg) {
+                    routeTag = 'Truy ngược ảnh Qdrant';
+                } else if (needsWeb && !needsVec) {
                     routeTag = 'Direct Web Search';
                 } else if (needsVec && needsWeb) {
-                    routeTag = 'Vector + Web Search';
+                    routeTag = 'Vector Lore + Web';
                 } else if (needsVec) {
                     routeTag = 'Tra cứu Qdrant Lore';
                 }
-                return `[${method}] · ${routeTag}${traitTag}`;
+
+                let lookbackTag = '';
+                if (step.data?.context_chaining_source === 'COMMUNITY_CHANNEL_TRANSCRIPT') {
+                    lookbackTag = ' · Community Lookback';
+                } else if (step.data?.context_chaining_source === 'SQL_DIRECT_HISTORY') {
+                    lookbackTag = ' · Direct Lookback';
+                }
+
+                return `[${method}] · ${routeTag}${lookbackTag}${traitTag}`;
             }
         },
         'intent_stage': {
