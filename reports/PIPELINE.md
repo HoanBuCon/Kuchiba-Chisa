@@ -188,25 +188,26 @@ flowchart TD
 
 ---
 
-### Stage 4: ToolRoutingStage (Thực thi Công cụ Thời gian thực)
+### Stage 4: ToolRoutingStage (Định Tuyến Công Cụ & Thao Tác Hệ Thống)
 * **File**: `app/domain/services/chat_pipeline/stages/tool_routing_stage.py` & `app/domain/services/tool_router.py`
 * **Nhiệm vụ**:
-  1. Nếu `needs_web_search = True` hoặc Intent là `SEARCH_WEB`: Gọi API tìm kiếm DuckDuckGo / Bing lấy dữ liệu mới nhất.
-  2. Xử lý các công cụ bổ trợ: Tra cứu ngày giờ hiện tại, tính toán biểu thức số học.
-  3. Đóng gói kết quả đầu ra vào `context.tool_output_msg`.
+  1. **Thực thi Công cụ Hệ thống Trực tiếp**: Xử lý các yêu cầu thao tác dữ liệu nội bộ như xuất báo cáo tình cảm (`emotion_report`), tóm tắt hội thoại thủ công (`conversation_summarizer`), xem ngày giờ hệ thống.
+  2. **Ủy Quyền Tìm Kiếm Web (Web Search Delegation)**: Nếu Tool Router phát hiện yêu cầu tìm kiếm thông tin ngoài đời thực (`web_search`), Stage 4 **không chạy tìm kiếm độc lập** mà ủy quyền sang **Stage 5 (RAGStage)** bằng cách bật cờ `context.needs_web_search = True`. Cơ chế này giúp gom toàn bộ tri thức (Lore + Ký ức + Web) vào một luồng đánh giá RAG và Thinking Loop duy nhất, loại bỏ trùng lặp và giảm $50\%$ độ trễ.
+  3. Đóng gói kết quả đầu ra của công cụ hệ thống vào `context.tool_output_msg`.
 
 ---
 
-### Stage 5: RAGStage & ContextAssessor (Truy xuất Tri thức Đa nguồn)
+### Stage 5: RAGStage & ContextAssessor (Truy Xuất Tri Thức Đa Nguồn & Web Search)
 * **File**: `app/domain/services/chat_pipeline/stages/rag_stage.py` & `app/domain/services/rag/pipeline.py`
 * **Nhiệm vụ**:
-  1. **Truy xuất Song song (`asyncio.gather`) trên 4 Collection Qdrant**:
-     - `character_lore`, `world_lore`, `story_lore`: Tri thức bách khoa game Wuthering Waves.
+  1. **Thực thi Web Search & Deep Crawler (Node 5.1.b)**: Nếu `needs_web_search = True`, Stage 5 trực tiếp gọi `web_search_tool` (DuckDuckGo Search & Deep Crawler) để cào dữ liệu web thời gian thực, có thể chạy song song với Vector Database (`asyncio.gather`).
+  2. **Truy xuất Song song trên 4 Collection Qdrant (Node 5.1.a / c / d / e)**:
+     - `character_lore`, `world_lore`, `story_lore`: Tri thức bách khoa game Wuthering Waves (Parent-Child windowed retrieval).
      - `memories`: Ký ức cá nhân giữa Chisa và người dùng (`user_id`).
      - `guild_memories` *(Chỉ chạy ở Community Mode)*: Sự kiện và văn hóa của Server (`guild_id`).
      - `image_memories` *(Khi có `needs_image_retrieval`)*: Truy vết các bức ảnh đã lưu trong quá khứ.
-  2. **Hybrid Scoring & Recency Decay**: Kết hợp Vector Cosine Similarity ($80\%$), Keyword Overlap ($10\%$) và Entity Boost ($10\%$) kèm suy giảm thời gian Ebbinghaus.
-  3. **ContextAssessor**: Thẩm định độ căn chỉnh dữ liệu, đảm bảo Chisa chỉ trả lời dựa trên sự thật, chống ảo giác (hallucination).
+  3. **Hybrid Scoring & Recency Decay**: Kết hợp Vector Cosine Similarity ($80\%$), Keyword Overlap ($10\%$) và Entity Boost ($10\%$) kèm suy giảm thời gian Ebbinghaus.
+  4. **ContextAssessor & Thinking Loop Vòng 2**: Thẩm định xem dữ liệu từ Lore / Web có đủ $>80\%$ để trả lời chính xác không. Nếu thiếu dữ liệu, kích hoạt `ThinkingLoopAgent` tìm kiếm vòng lặp thích ứng để bổ sung dữ kiện.
 
 ---
 
