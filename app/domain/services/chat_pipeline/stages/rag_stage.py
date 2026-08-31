@@ -40,11 +40,14 @@ class RAGStage(PipelineStage):
             is_small_talk=context.is_small_talk,
             conversation_summary=context.conversation_summary,
             conversation_id=str(context.conv_id) if context.conv_id else None,
+            guild_id=context.guild_id,
+            channel_id=context.channel_id,
             needs_vector_search=context.needs_vector_search,
             needs_web_search=context.needs_web_search,
         )
         
         context.rag_context = rag_context
+        context.retrieved_images = getattr(rag_context, "retrieved_images", [])
         
         # If the RAG process yielded a tool output message, we can override or merge it.
         # Following the old ChatEngine logic:

@@ -24,36 +24,66 @@ export async function execute(client, message) {
       const lowerContent = rawContent.toLowerCase();
       const prefix = (runner.prefix || 'c!').toLowerCase();
 
-      // If message starts with '!', 'c!', configured prefix, or is any prefix command, do not double-process
+      // Common bot command prefixes: c!, !, /, $, %, ++, ;;, -, ?, ., ~, &, >
+      const COMMON_BOT_PREFIXES = ['c!', '!', '/', '$', '%', '++', ';;', '-', '?', '.', '~', '&', '>'];
       if (
-        rawContent.startsWith('!') ||
-        lowerContent.startsWith('c!') ||
-        lowerContent.startsWith(prefix) ||
+        COMMON_BOT_PREFIXES.some((p) => lowerContent.startsWith(p)) ||
         runner.isPrefixCommand(message)
       ) {
-        return;
+        if (!rawContent.startsWith('...') && !rawContent.startsWith('?!')) {
+          return;
+        }
+      }
+
+      // 1. Extract direct valid image attachments
+      const directImages = [];
+      if (message.attachments && message.attachments.size > 0) {
+        message.attachments.forEach((att) => {
+          const ct = (att.contentType || '').toLowerCase();
+          const isImg = ct.startsWith('image/') || /\.(png|jpe?g|webp|gif)$/i.test(att.name || '');
+          if (isImg && att.url) {
+            directImages.push(att.url);
+          }
+        });
+      }
+
+      // 2. Extract referenced message context & images (if user replies to another message)
+      let repliesToBot = false;
+      let refImages = [];
+      let refAuthorName = null;
+      let refContent = null;
+
+      if (message.reference) {
+        try {
+          const refMsg = await message.fetchReference();
+          if (refMsg) {
+            const botId = client.user?.id;
+            if (botId && refMsg.author?.id === botId) {
+              repliesToBot = true;
+            }
+            const authorMember = message.guild?.members?.cache?.get(refMsg.author?.id);
+            refAuthorName = authorMember?.displayName || refMsg.author?.globalName || refMsg.author?.username || (repliesToBot ? 'Chisa' : 'Thành viên');
+            refContent = refMsg.content?.trim() || '';
+
+            if (refMsg.attachments && refMsg.attachments.size > 0) {
+              refMsg.attachments.forEach((att) => {
+                const ct = (att.contentType || '').toLowerCase();
+                const isImg = ct.startsWith('image/') || /\.(png|jpe?g|webp|gif)$/i.test(att.name || '');
+                if (isImg && att.url) {
+                  refImages.push(att.url);
+                }
+              });
+            }
+          }
+        } catch {
+          // Ignore fetch reference error
+        }
       }
 
       // In Community Mode: ONLY reply if user mentions Chisa or replies to Chisa's message
       if (isCommunityMode) {
         const botId = client.user?.id;
         const mentionsBot = botId ? message.mentions.users.has(botId) : false;
-
-        let repliesToBot = false;
-        if (message.reference && botId) {
-          if (message.mentions?.repliedUser?.id === botId) {
-            repliesToBot = true;
-          } else {
-            try {
-              const refMsg = await message.fetchReference();
-              if (refMsg?.author?.id === botId) {
-                repliesToBot = true;
-              }
-            } catch {
-              // Ignore fetch error
-            }
-          }
-        }
 
         if (!mentionsBot && !repliesToBot) {
           // Do not reply in community mode if not mentioned or replied to Chisa
@@ -67,8 +97,34 @@ export async function execute(client, message) {
         }
       }
 
+      // Attach referenced images if current message has no direct attachments
+      if (refImages.length > 0 && directImages.length === 0) {
+        directImages.push(...refImages);
+        if (refAuthorName) {
+          const refPrefix = `[Đang trả lời ảnh của @${refAuthorName}${refContent ? `: "${refContent}"` : ''}] `;
+          rawContent = rawContent ? `${refPrefix}${rawContent}` : `${refPrefix}Em hãy xem và phân tích bức ảnh này giúp Senpai nhé.`;
+        }
+      }
+
+      // Convert any other user mentions <@UserID> to clean @DisplayName
+      if (message.guild && message.mentions?.users?.size > 0) {
+        message.mentions.users.forEach((u) => {
+          if (u.id !== client.user?.id) {
+            const member = message.guild.members?.cache?.get(u.id);
+            const name = member?.displayName || u.globalName || u.username;
+            const userMentionRegex = new RegExp(`<@!?${u.id}>`, 'g');
+            rawContent = rawContent.replace(userMentionRegex, `@${name}`);
+          }
+        });
+      }
+
+      // If user sent image without text, provide a natural default query
       if (!rawContent) {
-        return;
+        if (directImages.length > 0) {
+          rawContent = 'Em hãy xem và phân tích bức ảnh này giúp Senpai nhé.';
+        } else {
+          return;
+        }
       }
 
       // Process as a natural conversation query directly to Chisa
@@ -93,7 +149,9 @@ export async function execute(client, message) {
           discordUserTag: message.author.tag ?? message.author.username,
         });
 
-        await askCommand.executePrefix(client, message, rawContent, discordUser);
+        await askCommand.executePrefix(client, message, rawContent, discordUser, {
+          images: directImages,
+        });
       }
     }
   } catch (error) {

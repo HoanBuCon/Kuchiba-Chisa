@@ -7,11 +7,14 @@ class ScoredMemory(BaseModel):
     memory_type: str
     memory_tier: str
     final_score: float
+    metadata: Dict[str, Any] = {}
     components: Dict[str, float]
 
 class RAGContext(BaseModel):
     lore_chunks: List[str]
     memories: List[str]
+    guild_memories: List[str] = []
+    retrieved_images: List[Dict[str, Any]] = []
     tool_output_msg: str = ""
     is_aligned: bool = True
     alignment_reason: str = ""

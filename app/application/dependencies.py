@@ -7,6 +7,7 @@ from app.domain.interfaces.llm_provider import BaseLLMAdapter, StructuredPrompt,
 from app.domain.services.chat_engine import ChatEngine
 from app.domain.services.context_builder import ContextBuilder
 from app.domain.services.memory_extractor import MemoryExtractor
+from app.domain.services.community.topic_summarizer import CommunityTopicSummarizer
 from app.infrastructure.vector.qdrant.qdrant_service import qdrant_service
 from app.shared.utils.circuit_breaker import llm_circuit_breaker
 from typing import AsyncIterator
@@ -180,12 +181,16 @@ class AppContainer:
         # Instantiate RAG dependencies
         from app.domain.services.rag.pipeline import RAGPipeline
         from app.domain.services.rag.retriever_memory import MemoryRetriever
+        from app.domain.services.rag.retriever_guild_memory import GuildMemoryRetriever
+        from app.domain.services.rag.retriever_image_memory import ImageMemoryRetriever
         from app.domain.services.rag.retriever_lore import LoreRetriever
         from app.domain.services.rag.assessor import ContextAssessor
         from app.domain.services.rag.thinking_loop import ThinkingLoopAgent
         
         rag_pipeline = RAGPipeline(
             memory_retriever=MemoryRetriever(vector_store=qdrant_service),
+            guild_memory_retriever=GuildMemoryRetriever(vector_store=qdrant_service),
+            image_memory_retriever=ImageMemoryRetriever(vector_store=qdrant_service),
             lore_retriever=LoreRetriever(
                 vector_store=qdrant_service,
                 lore_parent_repo_factory=LoreParentRepository
@@ -253,6 +258,7 @@ class AppContainer:
             PersistenceStage(
                 user_repo_factory=SqlAlchemyUserRepository,
                 conv_repo_factory=SqlAlchemyConversationRepository,
+                cache_provider=redis_service,
                 pipeline_tracker=pipeline_tracker
             ),
             CacheUpdateStage(
@@ -261,6 +267,7 @@ class AppContainer:
             BackgroundTaskStage(
                 memory_extractor=self.memory_extractor,
                 unified_auto_summarize_callback=lambda uid, cid: engine_ref[0]._unified_auto_summarize(uid, cid),
+                topic_summarizer=CommunityTopicSummarizer(llm=self.llm, cache=redis_service),
                 pipeline_tracker=pipeline_tracker
             )
         ]
@@ -291,13 +298,24 @@ class AppContainer:
         from app.infrastructure.database.repositories.emotion_repository import SqlAlchemyEmotionRepository
         from app.infrastructure.database.repositories.conversation_repository import SqlAlchemyConversationRepository
         from app.infrastructure.database.uow import UnitOfWork
+        from app.infrastructure.cache.redis.redis_service import redis_service
         
         return ClearUserMemoryUseCase(
             uow_factory=UnitOfWork,
             user_repo_factory=SqlAlchemyUserRepository,
             emotion_repo_factory=SqlAlchemyEmotionRepository,
             conv_repo_factory=SqlAlchemyConversationRepository,
-            vector_store=qdrant_service
+            vector_store=qdrant_service,
+            cache_provider=redis_service
+        )
+
+    @cached_property
+    def clear_community_memory_use_case(self):
+        from app.application.usecases.clear_community_memory import ClearCommunityMemoryUseCase
+        from app.infrastructure.cache.redis.redis_service import RedisService
+        return ClearCommunityMemoryUseCase(
+            vector_store=qdrant_service,
+            cache_provider=RedisService()
         )
 
 # Global container instance
@@ -311,6 +329,10 @@ def get_chat_engine() -> ChatEngine:
 def get_clear_user_memory_use_case():
     """FastAPI Dependency for injecting ClearUserMemoryUseCase."""
     return container.clear_user_memory_use_case
+
+def get_clear_community_memory_use_case():
+    """FastAPI Dependency for injecting ClearCommunityMemoryUseCase."""
+    return container.clear_community_memory_use_case
 
 async def get_vector_store():
     return qdrant_service

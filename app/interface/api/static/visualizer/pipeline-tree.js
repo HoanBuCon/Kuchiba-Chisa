@@ -51,15 +51,27 @@ window.PipelineTreeEngine = {
                 const method = step.data?.rewrite_method || 'LLM_FLASH';
                 const needsVec = step.data?.needs_vector_search !== false;
                 const needsWeb = Boolean(step.data?.needs_web_search);
-                let routeTag = 'Code / Task (0ms Bypass)';
-                if (needsWeb && !needsVec) {
+                const needsImg = Boolean(step.data?.needs_image_retrieval);
+
+                let routeTag = '0ms Bypass';
+                if (needsImg) {
+                    routeTag = 'Truy ngược ảnh Qdrant';
+                } else if (needsWeb && !needsVec) {
                     routeTag = 'Direct Web Search';
                 } else if (needsVec && needsWeb) {
-                    routeTag = 'Vector + Web Search';
+                    routeTag = 'Vector Lore + Web';
                 } else if (needsVec) {
                     routeTag = 'Tra cứu Qdrant Lore';
                 }
-                return `[${method}] · ${routeTag}${traitTag}`;
+
+                let lookbackTag = '';
+                if (step.data?.context_chaining_source === 'COMMUNITY_CHANNEL_TRANSCRIPT') {
+                    lookbackTag = ' · Community Lookback';
+                } else if (step.data?.context_chaining_source === 'SQL_DIRECT_HISTORY') {
+                    lookbackTag = ' · Direct Lookback';
+                }
+
+                return `[${method}] · ${routeTag}${lookbackTag}${traitTag}`;
             }
         },
         'intent_stage': {
@@ -136,6 +148,15 @@ window.PipelineTreeEngine = {
             title: 'Stage 5: [RAG] Truy hồi Tri thức Đa tầng',
             subtitle: (step) => step.subtitle || 'Truy hồi Lore & Ký ức'
         },
+        'lore_retrieval': {
+            type: 'rag',
+            icon: 'book',
+            title: (step) => step.title || '5.1.a [VECTOR] Truy hồi Lore Qdrant (Parent-Child)',
+            subtitle: (step) => {
+                const count = step.data?.chunks_count || step.data?.chunks?.length || 0;
+                return `${count} lore chunks`;
+            }
+        },
         'web_search': {
             type: 'search',
             icon: 'globe',
@@ -146,6 +167,34 @@ window.PipelineTreeEngine = {
                 const hasDeep = !!step.data?.deep_page_url;
                 const deepTag = hasDeep ? ' + Deep Crawl' : '';
                 return q ? `"${q.slice(0, 24)}..." (${count} snippets${deepTag})` : `${count} kết quả${deepTag}`;
+            }
+        },
+        'memory_retrieval': {
+            type: 'rag',
+            icon: 'brain',
+            title: (step) => step.title || '5.1.c [MEMORY] Truy hồi Ký ức Dài hạn (Qdrant Memory)',
+            subtitle: (step) => {
+                const count = step.data?.memories_count || step.data?.memories?.length || 0;
+                return `${count} memories cá nhân`;
+            }
+        },
+        'guild_memory_retrieval': {
+            type: 'rag',
+            icon: 'database',
+            title: (step) => step.title || '5.1.d [GUILD MEMORY] Truy hồi Tri thức Server (Qdrant Guild)',
+            subtitle: (step) => {
+                const count = step.data?.guild_memories_count || step.data?.guild_memories?.length || 0;
+                return `${count} facts tri thức server`;
+            }
+        },
+        'image_memory_retrieval': {
+            type: 'rag',
+            icon: 'image',
+            title: (step) => step.title || '5.1.e [IMAGE MEMORY] Truy hồi Ký Ức Hình Ảnh (Qdrant Image Memories)',
+            subtitle: (step) => {
+                const count = step.data?.retrieved_images_count || step.data?.retrieved_images?.length || 0;
+                const topScore = step.data?.retrieved_images?.[0]?.score;
+                return topScore ? `${count} ảnh ký ức (Top: ${(topScore).toFixed(2)})` : `${count} ảnh ký ức`;
             }
         },
         'information_alignment_check': {
@@ -240,22 +289,23 @@ window.PipelineTreeEngine = {
             type: 'persistence',
             icon: 'hard-drive',
             title: 'Stage 9: [PERSIST] Lưu trữ Dữ liệu Bền vững',
-            subtitle: (step) => `Lưu tin nhắn SQL · Turn #${step.data?.turn_index || '—'}`
+            subtitle: (step) => `Lưu tin nhắn SQL · Sync Redis State · Turn #${step.data?.turn_index || '—'}`
         },
         'persistence_stage': {
             type: 'persistence',
             icon: 'hard-drive',
             title: 'Stage 9: [PERSIST] Lưu trữ Dữ liệu Bền vững',
-            subtitle: () => 'Lưu tin nhắn vào PostgreSQL & Cập nhật Last Seen'
+            subtitle: () => 'Lưu tin nhắn vào PostgreSQL & Sync Redis State'
         },
         'background_tasks': {
             type: 'background',
             icon: 'server',
             title: 'Stage 10: [BACKGROUND] Tác vụ Nền Tự động',
             subtitle: (step) => {
-                const ext = step.data?.batch_memory_extraction_triggered ? 'Fact Extractor: ON' : 'Fact Extractor: OFF';
-                const sum = step.data?.auto_summarization_triggered ? 'Auto-Summary: ON' : 'Auto-Summary: OFF';
-                return `${ext} · ${sum}`;
+                const ext = step.data?.batch_memory_extraction_triggered ? 'Fact: ON' : 'Fact: OFF';
+                const sum = step.data?.auto_summarization_triggered ? 'Summary: ON' : 'Summary: OFF';
+                const top = step.data?.topic_summarization_triggered ? 'Topic: ON' : 'Topic: OFF';
+                return `${ext} · ${sum} · ${top}`;
             }
         },
         'background_stage': {
@@ -276,8 +326,20 @@ window.PipelineTreeEngine = {
         'summarize_conversation_memory': {
             type: 'memory',
             icon: 'file-text',
-            title: '10.2 [BG] Tự động Tóm tắt Hội thoại',
-            subtitle: () => 'Cập nhật Conversation Summary'
+            title: '10.2 [BG] Tự động Tóm tắt Hội thoại Riêng tư',
+            subtitle: () => 'Cập nhật Summary (80-120 từ) & Sync Redis Cache'
+        },
+        'summarize_channel_topic': {
+            type: 'memory',
+            icon: 'layers',
+            title: '10.3 [BG] Tóm tắt Mạch Kênh Cộng đồng (3-Tier)',
+            subtitle: (step) => step.subtitle || '3-Tier Synthesis · Redis Rolling Buffer'
+        },
+        'community_topic_summarize': {
+            type: 'memory',
+            icon: 'layers',
+            title: '10.3 [BG] Tóm tắt Mạch Kênh Cộng đồng (3-Tier)',
+            subtitle: () => '3-Tier Synthesis · Redis Rolling Buffer'
         }
     },
 

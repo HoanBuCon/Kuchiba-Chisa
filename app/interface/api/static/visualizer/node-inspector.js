@@ -98,6 +98,12 @@ ${window.VisualizerApp.escapeHtml(userMessage.trim())}
                     case 'memory_retrieval':
                         contentHtml = this.renderMemoryRetrievalInspector(step);
                         break;
+                    case 'guild_memory_retrieval':
+                        contentHtml = this.renderGuildMemoryRetrievalInspector(step);
+                        break;
+                    case 'image_memory_retrieval':
+                        contentHtml = this.renderImageMemoryRetrievalInspector(step);
+                        break;
                     case 'information_alignment_check':
                     case 'alignment_assessment':
                         contentHtml = this.renderAlignmentInspector(step);
@@ -127,6 +133,8 @@ ${window.VisualizerApp.escapeHtml(userMessage.trim())}
                         contentHtml = this.renderMemoryExtractionInspector(step);
                         break;
                     case 'summarize_conversation_memory':
+                    case 'summarize_channel_topic':
+                    case 'community_topic_summarize':
                         contentHtml = this.renderSummarizeInspector(step);
                         break;
                     default:
@@ -162,12 +170,30 @@ ${window.VisualizerApp.escapeHtml(userMessage.trim())}
         const metrics = [
             { label: 'Chế độ Không gian', value: isComm ? 'Community (Group)' : (data.channel_name ? 'Semi-Private / Private' : '1-on-1 Direct'), icon: isComm ? 'users' : 'user', color: isComm ? '#c084fc' : '#ff758c' },
             { label: 'Người nói (Speaker)', value: speaker, icon: 'user-check', color: '#38bdf8' },
-            { label: 'Kênh / Server', value: channel, icon: 'message-square', color: '#34d399' },
+            { label: 'User State Cache', value: data.state_cache_hit ? 'CACHE HIT (~0.2ms)' : (data.state_cache_hit === false ? 'SQL LOAD (Postgres)' : (channel)), icon: 'zap', color: data.state_cache_hit ? '#10b981' : '#38bdf8', badge: data.state_cache_hit ? 'Redis L1' : 'PostgreSQL' },
             { label: 'Lượt tương tác', value: data.turn_index ? `#${data.turn_index}` : `${data.interaction_count || 0} turns`, icon: 'activity', color: '#ff223e' },
         ];
 
         const metricGridHtml = InspectorWidgets.renderMetricGrid(metrics);
-        const emotionHtml = data.initial_emotions ? InspectorWidgets.renderEmotionComparison(data.initial_emotions, data.initial_emotions, {}, {}) : '';
+        const emotionHtml = data.initial_emotions ? InspectorWidgets.renderInitialEmotionGrid(data.initial_emotions) : '';
+
+        // Private Conversation Summary Card
+        let privateSummaryHtml = '';
+        if (!isComm && (data.summary_preview || data.has_summary)) {
+            const summaryText = data.summary_preview || data.conversation_summary || '';
+            privateSummaryHtml = `
+                <div class="inspector-card" style="border-left: 3px solid #a855f7; margin-top: 12px; background: linear-gradient(135deg, rgba(168, 85, 247, 0.08), rgba(15, 10, 20, 0.6));">
+                    <div class="inspector-card-title" style="justify-content: space-between;">
+                        <div style="display: flex; align-items: center; gap: 6px;">
+                            ${InspectorWidgets.icon('book-open', { size: 14, color: '#a855f7' })}
+                            <span style="color: #c084fc; font-weight: 700;">Tóm Tắt Hội Thoại 1-on-1 (Private Conversation Summary)</span>
+                        </div>
+                        <span class="pill" style="background: rgba(168, 85, 247, 0.2); color: #e9d5ff; border-color: rgba(168, 85, 247, 0.4); font-size: 10px;">PostgreSQL & Redis Cache</span>
+                    </div>
+                    <div style="color: var(--text-primary); font-size: 12px; line-height: 1.6; margin-top: 6px; padding: 6px 0;">${window.VisualizerApp.escapeHtml(summaryText)}</div>
+                </div>
+            `;
+        }
 
         // Ambient Mood Card
         let ambientMoodHtml = '';
@@ -222,6 +248,65 @@ ${window.VisualizerApp.escapeHtml(userMessage.trim())}
             `;
         }
 
+        // Active Topic Summary Card
+        let topicSummaryHtml = '';
+        if (data.topic_summary) {
+            topicSummaryHtml = `
+                <div class="inspector-card" style="border-left: 3px solid #10b981; margin-top: 12px; background: linear-gradient(135deg, rgba(16, 185, 129, 0.08), rgba(10, 18, 15, 0.6));">
+                    <div class="inspector-card-title" style="justify-content: space-between;">
+                        <div style="display: flex; align-items: center; gap: 6px;">
+                            ${InspectorWidgets.icon('book-open', { size: 14, color: '#10b981' })}
+                            <span style="color: #6ee7b7; font-weight: 700;">Tóm Tắt Mạch Thảo Luận Kênh (Rolling Topic Summary)</span>
+                        </div>
+                        <span class="pill" style="background: rgba(16, 185, 129, 0.2); color: #a7f3d0; border-color: rgba(16, 185, 129, 0.4); font-size: 10px;">Sliding Window 30 msgs</span>
+                    </div>
+                    <div style="color: var(--text-primary); font-size: 12px; line-height: 1.6; margin-top: 6px; padding: 6px 0;">${window.VisualizerApp.escapeHtml(data.topic_summary)}</div>
+                </div>
+            `;
+        }
+
+        // Multimodal Vision Gallery Preview Card
+        let visionGalleryHtml = '';
+        if (data.has_images && data.processed_images && data.processed_images.length > 0) {
+            const imgCards = data.processed_images.map((img, idx) => {
+                const sizeKb = img.size_bytes ? (img.size_bytes / 1024).toFixed(1) + ' KB' : '';
+                const dim = img.width && img.height ? `${img.width}×${img.height}` : '';
+                const ephemBadge = img.is_ephemeral ? '<span class="pill" style="background: rgba(245, 158, 11, 0.2); color: #fbbf24; border-color: rgba(245, 158, 11, 0.4); font-size: 9px;">Ephemeral Ref</span>' : '<span class="pill" style="background: rgba(34, 197, 94, 0.2); color: #4ade80; border-color: rgba(34, 197, 94, 0.4); font-size: 9px;">Saved WebP</span>';
+                const imgSrc = img.url || img.base64_data_uri || '';
+                const fullUrl = img.url || imgSrc;
+                return `
+                    <div style="background: rgba(14, 7, 15, 0.85); padding: 8px; border-radius: 6px; border: 1px solid rgba(255, 34, 62, 0.25); display: flex; flex-direction: column; gap: 6px;">
+                        <div style="position: relative; overflow: hidden; border-radius: 4px; aspect-ratio: 1; background: #000; cursor: pointer;" onclick="if('${fullUrl}'.startsWith('http') || '${fullUrl}'.startsWith('/')) { window.open('${fullUrl}', '_blank'); }">
+                            <img src="${imgSrc}" alt="Vision Input #${idx+1}" style="width: 100%; height: 100%; object-fit: cover; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'" />
+                        </div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; font-size: 10.5px; font-family: 'JetBrains Mono', monospace;">
+                            <span style="color: var(--text-secondary);">${dim}</span>
+                            <span style="color: var(--text-muted);">${sizeKb}</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span style="font-size: 10px; color: var(--text-muted);">#${idx+1}</span>
+                            ${ephemBadge}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            visionGalleryHtml = `
+                <div class="inspector-card" style="border-left: 3px solid #ff223e; background: linear-gradient(135deg, rgba(255, 34, 62, 0.08), rgba(18, 10, 20, 0.6)); margin-top: 12px;">
+                    <div class="inspector-card-title" style="justify-content: space-between;">
+                        <div style="display: flex; align-items: center; gap: 6px;">
+                            ${InspectorWidgets.icon('eye', { size: 14, color: '#ff223e' })}
+                            <span style="color: #ff758c; font-weight: 700;">Multimodal Vision Ingestion (Đã Nén WebP & Zero-EXIF)</span>
+                        </div>
+                        <span class="pill" style="background: rgba(255, 34, 62, 0.2); color: #ff99aa; border-color: rgba(255, 34, 62, 0.4); font-size: 10px;">${data.processed_images.length} ảnh</span>
+                    </div>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; margin-top: 10px;">
+                        ${imgCards}
+                    </div>
+                </div>
+            `;
+        }
+
         const rawJsonHtml = InspectorWidgets.renderJsonViewer(data, "Raw Initialization Payload");
 
         return `
@@ -233,7 +318,10 @@ ${window.VisualizerApp.escapeHtml(userMessage.trim())}
                     </div>
                 </div>
                 ${metricGridHtml}
+                ${visionGalleryHtml}
                 ${ambientMoodHtml}
+                ${privateSummaryHtml}
+                ${topicSummaryHtml}
                 ${transcriptHtml}
                 ${emotionHtml}
                 ${rawJsonHtml}
@@ -248,28 +336,198 @@ ${window.VisualizerApp.escapeHtml(userMessage.trim())}
         const isSmallTalk = data.is_small_talk || data.routing_method === 'HYBRID_SMALL_TALK' || data.routing_method === 'L1_SMALL_TALK';
         const rwMethod = data.rewrite_method || (isSmallTalk ? 'BYPASS' : 'LLM_FLASH');
         const isLlmRewrite = rwMethod === 'LLM_FLASH';
+        const isCommunity = Boolean(data.is_community);
+
+        const needsVec = Boolean(data.needs_vector_search);
+        const needsWeb = Boolean(data.needs_web_search);
+        const needsImg = Boolean(data.needs_image_retrieval);
 
         let ragTarget = '0ms Bypass';
         let ragColor = '#996e77';
-        if (data.needs_vector_search && data.needs_web_search) {
+        if (needsVec && needsWeb) {
             ragTarget = 'Hybrid (Lore + Web)';
             ragColor = '#ffa4b2';
-        } else if (data.needs_vector_search) {
-            ragTarget = 'Qdrant Lore';
+        } else if (needsImg) {
+            ragTarget = 'Visual Memory (Ảnh Qdrant)';
+            ragColor = '#ff77aa';
+        } else if (needsVec) {
+            ragTarget = 'Qdrant Lore & Memory';
             ragColor = '#ff4d66';
-        } else if (data.needs_web_search) {
-            ragTarget = 'Web Search';
-            ragColor = '#ff5c75';
+        } else if (needsWeb) {
+            ragTarget = 'Internet Web Search';
+            ragColor = '#38bdf8';
         }
 
         const metrics = [
             { label: 'Phân loại Ý định', value: intents.length ? intents.join(', ') : 'None', icon: 'compass', color: '#ffa4b2' },
-            { label: 'Đích đến RAG', value: ragTarget, icon: 'database', color: ragColor, badge: data.routing_method || 'LLM_ROUTER' },
-            { label: 'Cơ chế Viết lại', value: rwMethod, icon: isLlmRewrite ? 'sparkles' : 'zap', color: isLlmRewrite ? '#ff5c75' : '#ff223e', badge: isLlmRewrite ? 'Micro LLM' : 'Fast Path' },
-            { label: 'Persona Trait', value: data.persona_trait_type || 'STANDARD', icon: 'user', color: '#ff223e' },
+            { label: 'Đích đến Tri thức', value: ragTarget, icon: 'database', color: ragColor, badge: data.routing_method || 'LLM_ROUTER' },
+            { label: 'Cơ chế Viết lại', value: rwMethod, icon: isLlmRewrite ? 'sparkles' : 'zap', color: isLlmRewrite ? '#fbbf24' : '#34d399', badge: isLlmRewrite ? 'Micro LLM Flash' : 'Fast Path (0ms)' },
+            { label: 'Môi trường Chat', value: isCommunity ? '🌐 Community Group' : '🔒 Private 1-on-1', icon: isCommunity ? 'users' : 'user', color: isCommunity ? '#60a5fa' : '#a78bfa' },
         ];
 
         const metricGridHtml = InspectorWidgets.renderMetricGrid(metrics);
+
+        // 1. Tri-State Knowledge Routing Signals
+        const routingSignalsHtml = `
+            <div class="inspector-card" style="border-left: 3px solid #ff4d66;">
+                <div class="inspector-card-title" style="justify-content: space-between;">
+                    <div style="display: flex; align-items: center; gap: 6px;">
+                        ${InspectorWidgets.icon('compass', { size: 14, color: '#ff4d66' })}
+                        <span>Ma Trận Định Tuyến Tri Thức 3 Cờ (Tri-State Decision Signals)</span>
+                    </div>
+                    <span class="pill" style="font-size: 9.5px; background: rgba(255, 77, 102, 0.15); color: #ff8095;">Tri-State Knowledge Router</span>
+                </div>
+
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 8px; margin-top: 10px;">
+                    <!-- Signal 1: Vector Lore -->
+                    <div style="padding: 10px; border-radius: 6px; background: ${needsVec ? 'rgba(255, 77, 102, 0.12)' : 'rgba(255, 255, 255, 0.02)'}; border: 1px solid ${needsVec ? 'rgba(255, 77, 102, 0.4)' : 'rgba(255, 255, 255, 0.06)'}; display: flex; flex-direction: column; gap: 4px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span style="font-size: 11px; font-weight: 700; color: ${needsVec ? '#ff8095' : 'var(--text-muted)'};">1. Qdrant Vector Lore</span>
+                            <span class="pill" style="font-size: 9px; background: ${needsVec ? 'rgba(255, 77, 102, 0.25)' : 'rgba(100, 116, 139, 0.2)'}; color: ${needsVec ? '#ff99aa' : '#94a3b8'};">${needsVec ? 'ACTIVE' : 'OFF'}</span>
+                        </div>
+                        <div style="font-size: 10.5px; color: var(--text-secondary); line-height: 1.35;">Tra cứu Lore game Wuthering Waves & Ký ức cá nhân.</div>
+                    </div>
+
+                    <!-- Signal 2: Web Search -->
+                    <div style="padding: 10px; border-radius: 6px; background: ${needsWeb ? 'rgba(56, 189, 248, 0.12)' : 'rgba(255, 255, 255, 0.02)'}; border: 1px solid ${needsWeb ? 'rgba(56, 189, 248, 0.4)' : 'rgba(255, 255, 255, 0.06)'}; display: flex; flex-direction: column; gap: 4px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span style="font-size: 11px; font-weight: 700; color: ${needsWeb ? '#38bdf8' : 'var(--text-muted)'};">2. Realtime Web Search</span>
+                            <span class="pill" style="font-size: 9px; background: ${needsWeb ? 'rgba(56, 189, 248, 0.25)' : 'rgba(100, 116, 139, 0.2)'}; color: ${needsWeb ? '#7dd3fc' : '#94a3b8'};">${needsWeb ? 'ACTIVE' : 'OFF'}</span>
+                        </div>
+                        <div style="font-size: 10.5px; color: var(--text-secondary); line-height: 1.35;">Tra cứu tin tức ngoài đời thực, sự kiện mới & web data.</div>
+                    </div>
+
+                    <!-- Signal 3: Visual Image Memories -->
+                    <div style="padding: 10px; border-radius: 6px; background: ${needsImg ? 'rgba(236, 72, 153, 0.12)' : 'rgba(255, 255, 255, 0.02)'}; border: 1px solid ${needsImg ? 'rgba(236, 72, 153, 0.4)' : 'rgba(255, 255, 255, 0.06)'}; display: flex; flex-direction: column; gap: 4px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span style="font-size: 11px; font-weight: 700; color: ${needsImg ? '#ec4899' : 'var(--text-muted)'};">3. Visual Memory Search</span>
+                            <span class="pill" style="font-size: 9px; background: ${needsImg ? 'rgba(236, 72, 153, 0.25)' : 'rgba(100, 116, 139, 0.2)'}; color: ${needsImg ? '#f472b6' : '#94a3b8'};">${needsImg ? 'ACTIVE' : 'OFF'}</span>
+                        </div>
+                        <div style="font-size: 10.5px; color: var(--text-secondary); line-height: 1.35;">Truy ngược ảnh quá khứ từ kho ảnh Qdrant.</div>
+                    </div>
+                </div>
+
+                ${data.routing_reason ? `
+                    <div style="font-size: 11.5px; color: var(--text-secondary); margin-top: 10px; padding: 6px 10px; background: rgba(0, 0, 0, 0.35); border-radius: 4px; border: 1px dashed rgba(255, 255, 255, 0.08);">
+                        <strong style="color: var(--text-primary);">Lý do định tuyến:</strong> ${window.VisualizerApp.escapeHtml(data.routing_reason)}
+                    </div>
+                ` : ''}
+            </div>
+        `;
+
+        // 2. Context Chaining / Lookback Inspector Card
+        let contextChainingHtml = '';
+        const prevCtx = (data.prev_context || '').trim();
+        const ctxSource = data.context_chaining_source || 'NONE';
+
+        let badgeSourceText = '⚡ Standalone Query (Không phụ thuộc câu trước)';
+        let badgeSourceBg = 'rgba(100, 116, 139, 0.15)';
+        let badgeSourceColor = '#94a3b8';
+        let badgeBorder = 'rgba(100, 116, 139, 0.3)';
+
+        if (ctxSource === 'COMMUNITY_CHANNEL_TRANSCRIPT') {
+            badgeSourceText = '🌐 Community Channel Transcript Chaining';
+            badgeSourceBg = 'rgba(59, 130, 246, 0.15)';
+            badgeSourceColor = '#60a5fa';
+            badgeBorder = 'rgba(59, 130, 246, 0.4)';
+        } else if (ctxSource === 'COMMUNITY_TOPIC_SUMMARY') {
+            badgeSourceText = '🌐 Community Topic Summary Chaining';
+            badgeSourceBg = 'rgba(139, 92, 246, 0.15)';
+            badgeSourceColor = '#c084fc';
+            badgeBorder = 'rgba(139, 92, 246, 0.4)';
+        } else if (ctxSource === 'SQL_DIRECT_HISTORY') {
+            badgeSourceText = '🔒 SQL 1-Turn Knowledge-Aware Lookback (Direct Chat)';
+            badgeSourceBg = 'rgba(16, 185, 129, 0.15)';
+            badgeSourceColor = '#34d399';
+            badgeBorder = 'rgba(16, 185, 129, 0.4)';
+        }
+
+        contextChainingHtml = `
+            <div class="inspector-card" style="border-left: 3px solid #60a5fa;">
+                <div class="inspector-card-title" style="justify-content: space-between;">
+                    <div style="display: flex; align-items: center; gap: 6px;">
+                        ${InspectorWidgets.icon('message-square', { size: 14, color: '#60a5fa' })}
+                        <span>Hồi Tưởng & Nối Ngữ Cảnh (Conversational Context Chaining)</span>
+                    </div>
+                    <span class="pill" style="font-size: 9.5px; background: ${badgeSourceBg}; color: ${badgeSourceColor}; border-color: ${badgeBorder};">
+                        ${badgeSourceText}
+                    </span>
+                </div>
+
+                <div style="margin-top: 8px;">
+                    ${prevCtx ? `
+                        <div style="padding: 8px 12px; background: rgba(15, 23, 42, 0.65); border-radius: var(--radius-sm); border: 1px solid rgba(59, 130, 246, 0.25);">
+                            <div style="font-size: 10px; font-weight: 700; color: #60a5fa; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">
+                                Ngữ cảnh thảo luận câu trước đã nạp vào Micro LLM:
+                            </div>
+                            <div style="font-size: 12px; line-height: 1.5; color: #e2e8f0; font-family: 'JetBrains Mono', monospace;">
+                                "${window.VisualizerApp.escapeHtml(prevCtx)}"
+                            </div>
+                        </div>
+                        <div style="font-size: 11px; color: var(--text-muted); margin-top: 6px;">
+                            💡 <em>Micro LLM sử dụng ngữ cảnh này để giải mã chính xác các đại từ thay thế ('anh ấy', 'cô ấy', 'vũ khí đó') ngay cả khi user không bấm Reply.</em>
+                        </div>
+                    ` : `
+                        <div style="padding: 8px 12px; background: rgba(255, 255, 255, 0.02); border-radius: var(--radius-sm); border: 1px dashed rgba(255, 255, 255, 0.08); font-size: 11.5px; color: var(--text-muted);">
+                            Câu hỏi độc lập, không yêu cầu hồi tưởng thực thể từ các lượt chat trước.
+                        </div>
+                    `}
+                </div>
+            </div>
+        `;
+
+        // 3. Query Transformation Card
+        const transformHtml = `
+            <div class="inspector-card" style="border-left: 3px solid ${isLlmRewrite ? 'var(--accent-amber)' : 'var(--accent-emerald)'};">
+                <div class="inspector-card-title" style="justify-content: space-between;">
+                    <div style="display: flex; align-items: center; gap: 6px;">
+                        ${InspectorWidgets.icon('refresh-cw', { size: 14, color: isLlmRewrite ? 'var(--accent-amber)' : 'var(--accent-emerald)' })}
+                        <span>Biến Đổi & Viết Lại Truy Vấn (Query Transformation Flow)</span>
+                    </div>
+                    <span class="pill" style="background: ${isLlmRewrite ? 'rgba(245, 158, 11, 0.12)' : 'rgba(16, 185, 129, 0.12)'}; color: ${isLlmRewrite ? '#fbbf24' : '#34d399'}; border-color: ${isLlmRewrite ? 'rgba(245, 158, 11, 0.3)' : 'rgba(16, 185, 129, 0.3)'};">
+                        ${isLlmRewrite ? 'DeepSeek Flash Micro-Rewriter' : '0ms Direct Fast-Path'}
+                    </span>
+                </div>
+
+                <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 8px;">
+                    ${isLlmRewrite ? `
+                        <div style="padding: 8px 12px; background: rgba(8, 12, 20, 0.6); border-radius: var(--radius-sm); border-left: 3px solid #64748b;">
+                            <div style="font-size: 10.5px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 3px;">
+                                Câu Hỏi Ban Đầu Của User (Original Input)
+                            </div>
+                            <div style="font-size: 12.5px; line-height: 1.5; color: var(--text-primary);">
+                                ${window.VisualizerApp.escapeHtml((data.user_message || data.cleaned_query || '').trim())}
+                            </div>
+                        </div>
+
+                        <div style="display: flex; justify-content: center; align-items: center; color: var(--accent-amber); font-size: 11px; gap: 6px; margin: -2px 0;">
+                            ${InspectorWidgets.icon('arrow-down', { size: 12, color: 'var(--accent-amber)' })}
+                            <span>Giải mã thực thể & Tối ưu hóa Vector Embedding</span>
+                        </div>
+
+                        <div style="padding: 8px 12px; background: rgba(245, 158, 11, 0.06); border-radius: var(--radius-sm); border-left: 3px solid var(--accent-amber);">
+                            <div style="font-size: 10.5px; font-weight: 700; color: #fbbf24; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 3px; display: flex; justify-content: space-between;">
+                                <span>Truy Vấn Độc Lập Sau Khi Viết Lại (Rewritten RAG Query)</span>
+                                <span class="pill" style="font-size: 9.5px; background: rgba(245, 158, 11, 0.15); color: #fbbf24;">Optimized</span>
+                            </div>
+                            <div style="font-size: 13.5px; font-weight: 600; line-height: 1.5; color: #fde68a;">
+                                ${window.VisualizerApp.escapeHtml((data.rewritten_query || data.cleaned_query || '').trim())}
+                            </div>
+                        </div>
+                    ` : `
+                        <div style="padding: 8px 12px; background: rgba(16, 185, 129, 0.06); border-radius: var(--radius-sm); border-left: 3px solid var(--accent-emerald);">
+                            <div style="font-size: 10.5px; font-weight: 700; color: #34d399; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 3px; display: flex; justify-content: space-between;">
+                                <span>Truy Vấn Trực Tiếp (0ms Latency · 0 Token LLM Bypass)</span>
+                                <span class="pill" style="font-size: 9.5px; background: rgba(16, 185, 129, 0.15); color: #34d399;">Bypass</span>
+                            </div>
+                            <div style="font-size: 13.5px; font-weight: 600; line-height: 1.5; color: #a7f3d0;">
+                                ${window.VisualizerApp.escapeHtml((data.rewritten_query || data.user_message || '').trim())}
+                            </div>
+                        </div>
+                    `}
+                </div>
+            </div>
+        `;
 
         let subLlmHtml = '';
         if (data.llm_rewrite_telemetry) {
@@ -300,62 +558,9 @@ ${window.VisualizerApp.escapeHtml(userMessage.trim())}
                     </div>
                 </div>
                 ${metricGridHtml}
-
-                <div class="inspector-card" style="border-left: 3px solid ${isLlmRewrite ? 'var(--accent-amber)' : 'var(--accent-emerald)'};">
-                    <div class="inspector-card-title" style="justify-content: space-between;">
-                        <div style="display: flex; align-items: center; gap: 6px;">
-                            ${InspectorWidgets.icon('refresh-cw', { size: 14, color: isLlmRewrite ? 'var(--accent-amber)' : 'var(--accent-emerald)' })}
-                            <span>Xử Lý & Viết Lại Truy Vấn (Query Transformation)</span>
-                        </div>
-                        <span class="pill" style="background: ${isLlmRewrite ? 'rgba(245, 158, 11, 0.12)' : 'rgba(16, 185, 129, 0.12)'}; color: ${isLlmRewrite ? '#fbbf24' : '#34d399'}; border-color: ${isLlmRewrite ? 'rgba(245, 158, 11, 0.3)' : 'rgba(16, 185, 129, 0.3)'};">
-                            ${isLlmRewrite ? 'Micro LLM Flash Router' : '0ms Direct Bypass'}
-                        </span>
-                    </div>
-
-                    <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 8px;">
-                        ${isLlmRewrite ? `
-                            <div style="padding: 8px 12px; background: rgba(8, 12, 20, 0.6); border-radius: var(--radius-sm); border-left: 3px solid #64748b;">
-                                <div style="font-size: 10.5px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 3px;">
-                                    Câu Hỏi Ban Đầu Của Senpai (Original User Message)
-                                </div>
-                                <div style="font-size: 12.5px; line-height: 1.5; color: var(--text-primary);">
-                                    ${window.VisualizerApp.escapeHtml((data.user_message || data.cleaned_query || '').trim())}
-                                </div>
-                            </div>
-
-                            <div style="padding: 8px 12px; background: rgba(245, 158, 11, 0.06); border-radius: var(--radius-sm); border-left: 3px solid var(--accent-amber);">
-                                <div style="font-size: 10.5px; font-weight: 700; color: #fbbf24; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 3px; display: flex; justify-content: space-between;">
-                                    <span>Truy Vấn Tối Ưu RAG (LLM Rewritten Query)</span>
-                                    <span class="pill" style="font-size: 9.5px; background: rgba(245, 158, 11, 0.15); color: #fbbf24;">DeepSeek Flash</span>
-                                </div>
-                                <div style="font-size: 13.5px; font-weight: 600; line-height: 1.5; color: #fde68a;">
-                                    ${window.VisualizerApp.escapeHtml((data.rewritten_query || data.cleaned_query || '').trim())}
-                                </div>
-                                ${data.routing_reason ? `
-                                    <div style="font-size: 11px; color: var(--text-secondary); margin-top: 6px; padding-top: 5px; border-top: 1px dashed rgba(255,255,255,0.08);">
-                                        <strong>Định tuyến:</strong> ${window.VisualizerApp.escapeHtml(data.routing_reason)}
-                                    </div>
-                                ` : ''}
-                            </div>
-                        ` : `
-                            <div style="padding: 8px 12px; background: rgba(16, 185, 129, 0.06); border-radius: var(--radius-sm); border-left: 3px solid var(--accent-emerald);">
-                                <div style="font-size: 10.5px; font-weight: 700; color: #34d399; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 3px; display: flex; justify-content: space-between;">
-                                    <span>Truy Vấn Trực Tiếp (0ms Latency · Không tốn Token LLM)</span>
-                                    <span class="pill" style="font-size: 9.5px; background: rgba(16, 185, 129, 0.15); color: #34d399;">Bypass</span>
-                                </div>
-                                <div style="font-size: 13.5px; font-weight: 600; line-height: 1.5; color: #a7f3d0;">
-                                    ${window.VisualizerApp.escapeHtml((data.rewritten_query || data.user_message || '').trim())}
-                                </div>
-                                ${data.routing_reason ? `
-                                    <div style="font-size: 11px; color: var(--text-secondary); margin-top: 6px; padding-top: 5px; border-top: 1px dashed rgba(255,255,255,0.08);">
-                                        <strong>Lý do:</strong> ${window.VisualizerApp.escapeHtml(data.routing_reason)}
-                                    </div>
-                                ` : ''}
-                            </div>
-                        `}
-                    </div>
-                </div>
-
+                ${routingSignalsHtml}
+                ${contextChainingHtml}
+                ${transformHtml}
                 ${subLlmHtml}
                 ${rawJsonHtml}
             </div>
@@ -452,18 +657,20 @@ ${window.VisualizerApp.escapeHtml(userMessage.trim())}
         const mode = data.mode || 'VECTOR_SEARCH';
         const loreChunks = data.retrieved_lore_chunks || [];
         const memories = data.retrieved_memories || [];
+        const guildMemories = data.retrieved_guild_memories || data.guild_memories || [];
         const entities = data.extracted_entities || [];
 
         const metrics = [
             { label: 'Chế độ RAG', value: mode, icon: 'database', color: mode === 'BYPASS' ? '#ff7043' : '#00f2fe', badge: mode },
             { label: 'Lore Chunks', value: loreChunks.length, icon: 'book-open', color: '#10b981' },
-            { label: 'Memories (STM/LTM)', value: memories.length, icon: 'brain', color: '#a855f7' },
-            { label: 'Entities Trích xuất', value: entities.length ? entities.join(', ') : 'None', icon: 'tag', color: '#f59e0b', small: true },
+            { label: 'Memories Cá nhân', value: memories.length, icon: 'brain', color: '#a855f7' },
+            { label: 'Tri thức Server', value: guildMemories.length, icon: 'shield', color: '#f59e0b' },
         ];
 
         const metricGridHtml = InspectorWidgets.renderMetricGrid(metrics);
         const loreCardsHtml = loreChunks.length ? InspectorWidgets.renderFactList(loreChunks, "Retrieved Lore Chunks", "Không có lore chunk") : '';
-        const memoryCardsHtml = memories.length ? InspectorWidgets.renderFactList(memories, "Retrieved Memories", "Không có memory") : '';
+        const memoryCardsHtml = memories.length ? InspectorWidgets.renderFactList(memories, "Retrieved Personal Memories", "Không có memory cá nhân") : '';
+        const guildCardsHtml = guildMemories.length ? InspectorWidgets.renderFactList(guildMemories, "Retrieved Server Knowledge (Guild Memories)", "Không có tri thức server") : '';
         const rawJsonHtml = InspectorWidgets.renderJsonViewer(data, "Raw RAG Retrieval Payload");
 
         return `
@@ -485,6 +692,7 @@ ${window.VisualizerApp.escapeHtml(userMessage.trim())}
                 ` : ''}
                 ${loreCardsHtml}
                 ${memoryCardsHtml}
+                ${guildCardsHtml}
                 ${rawJsonHtml}
             </div>
         `;
@@ -607,6 +815,72 @@ ${window.VisualizerApp.escapeHtml(userMessage.trim())}
                 </div>
                 ${metricGridHtml}
                 ${memCardsHtml}
+                ${rawJsonHtml}
+            </div>
+        `;
+    },
+
+    // ── STAGE 5.1.d: GUILD MEMORY RETRIEVAL INSPECTOR ──
+    renderGuildMemoryRetrievalInspector(step) {
+        const data = step.data || {};
+        const memories = data.guild_memories || [];
+
+        const metrics = [
+            { label: 'Tri thức / Sự kiện Server', value: data.guild_memories_count || memories.length, icon: 'database', color: '#f59e0b' },
+            { label: 'Server ID', value: data.guild_id ? `${data.guild_id.slice(0, 12)}...` : 'Guild Scope', icon: 'shield', color: '#38bdf8', small: true },
+            { label: 'Nguồn gọi', value: data.source || 'Knowledge Retrieval', icon: 'compass', color: '#10b981' },
+            { label: 'Cơ chế Phân lập', value: 'Guild Isolated', icon: 'lock', color: '#a855f7' },
+        ];
+
+        const metricGridHtml = InspectorWidgets.renderMetricGrid(metrics);
+        const memCardsHtml = memories.length ? InspectorWidgets.renderFactList(memories, "Danh Sách Tri Thức / Sự Kiện Server", "Không có sự kiện nào") : '';
+        const rawJsonHtml = InspectorWidgets.renderJsonViewer(data, "Raw Guild Memory Retrieval Payload");
+
+        return `
+            <div class="inspector-panel">
+                <div class="inspector-header">
+                    <div class="inspector-title-group">
+                        <span class="inspector-badge badge-rag" style="background: rgba(245, 158, 11, 0.15); color: #fbbf24; border-color: rgba(245, 158, 11, 0.35);">Guild Memory Retrieval</span>
+                        <h2>${window.VisualizerApp.escapeHtml(step.title || '5.1.d [GUILD MEMORY] Truy hồi Tri thức Server')}</h2>
+                    </div>
+                </div>
+                ${metricGridHtml}
+                ${memCardsHtml}
+                ${rawJsonHtml}
+            </div>
+        `;
+    },
+
+    // ── STAGE 5.1.e: IMAGE MEMORY RETRIEVAL INSPECTOR ──
+    renderImageMemoryRetrievalInspector(step) {
+        const data = step.data || {};
+        const retrievedImages = data.retrieved_images || [];
+        const count = data.retrieved_images_count || retrievedImages.length;
+        const topScore = retrievedImages.length > 0 && retrievedImages[0].score !== undefined
+            ? (typeof retrievedImages[0].score === 'number' ? (retrievedImages[0].score).toFixed(2) : retrievedImages[0].score)
+            : '—';
+
+        const metrics = [
+            { label: 'Số Ảnh Ký Ức Tìm Thấy', value: count, icon: 'image', color: '#ff4d88' },
+            { label: 'Top Similarity Score', value: topScore, icon: 'zap', color: '#10b981', badge: 'Cos >= 0.68' },
+            { label: 'Bộ Sưu Tập Vector', value: 'image_memories', icon: 'database', color: '#38bdf8', small: true },
+            { label: 'Cơ Chế Phân Lập', value: 'User & Guild Scoped', icon: 'lock', color: '#a855f7' },
+        ];
+
+        const metricGridHtml = InspectorWidgets.renderMetricGrid(metrics);
+        const imagesCardHtml = InspectorWidgets.renderRetrievedImagesCard(retrievedImages, "Ký Ức Hình Ảnh Đã Truy Hồi Từ Qdrant");
+        const rawJsonHtml = InspectorWidgets.renderJsonViewer(data, "Raw Image Memory Retrieval Payload");
+
+        return `
+            <div class="inspector-panel">
+                <div class="inspector-header">
+                    <div class="inspector-title-group">
+                        <span class="inspector-badge badge-rag" style="background: rgba(255, 77, 136, 0.15); color: #ff80aa; border-color: rgba(255, 77, 136, 0.35);">Image Memory Retrieval</span>
+                        <h2>${window.VisualizerApp.escapeHtml(step.title || '5.1.e [IMAGE MEMORY] Truy hồi Ký Ức Hình Ảnh')}</h2>
+                    </div>
+                </div>
+                ${metricGridHtml}
+                ${imagesCardHtml}
                 ${rawJsonHtml}
             </div>
         `;
@@ -777,12 +1051,14 @@ ${window.VisualizerApp.escapeHtml(userMessage.trim())}
         const data = step.data || {};
         const totalTokens = data.total_estimated_tokens || data.estimated_tokens || 0;
         const sysPrompt = data.system_prompt || data.system || '';
+        const hasSummary = Boolean(data.conversation_summary || data.summary);
+        const historyCount = data.history_count || (data.history ? data.history.length : 0);
 
         const metrics = [
-            { label: 'Tổng Token Dự kiến', value: `${totalTokens} tok`, icon: 'coins', color: '#f59e0b' },
-            { label: 'Chế độ Ngân sách', value: data.budget_mode || 'RAG', icon: 'terminal', color: '#38bdf8' },
+            { label: 'Tổng Token Ước tính', value: `${totalTokens} tok`, icon: 'coins', color: '#f59e0b', badge: data.budget_mode || 'RAG' },
+            { label: 'Cửa Sổ Lịch Sử', value: `${historyCount} tin nhắn`, icon: 'history', color: '#10b981', badge: hasSummary ? 'Hybrid Anchor' : 'Sliding Window' },
             { label: 'Persona Trait', value: data.persona_trait_type || 'STANDARD', icon: 'user', color: '#f43f5e' },
-            { label: 'History Messages', value: data.history_count || (data.history ? data.history.length : 0), icon: 'history', color: '#10b981' },
+            { label: 'Ngân Sách Ceiling', value: `${data.effective_ceiling || 4000} tok`, icon: 'shield', color: '#38bdf8', small: true },
         ];
 
         const metricGridHtml = InspectorWidgets.renderMetricGrid(metrics);
@@ -821,11 +1097,13 @@ ${window.VisualizerApp.escapeHtml(userMessage.trim())}
         const inTok = data.input_tokens || (tb ? tb.total_input : 0);
         const outTok = data.output_tokens || (tb ? tb.total_output : 0);
         const cotTok = data.reasoning_tokens || (tb ? tb.reasoning_cot : 0);
-        const totTok = data.total_tokens || (inTok + outTok + cotTok);
+        const visTok = data.vision_tokens || 0;
+        const totTok = data.total_tokens || (inTok + outTok + cotTok + visTok);
 
         const metrics = [
             { label: 'Mô hình LLM', value: data.model || 'Model', icon: 'bot', color: '#38bdf8', small: true },
             { label: 'Input Tokens', value: inTok.toLocaleString(), icon: 'coins', color: '#60a5fa' },
+            ...(visTok > 0 ? [{ label: 'Vision Tokens', value: visTok.toLocaleString(), icon: 'eye', color: '#ff758c' }] : []),
             { label: 'CoT Reasoning', value: cotTok > 0 ? cotTok.toLocaleString() : '0', icon: 'brain', color: '#c084fc' },
             { label: 'Output Tokens', value: outTok.toLocaleString(), icon: 'coins', color: '#34d399' },
             { label: 'Tổng Tokens', value: totTok.toLocaleString(), icon: 'coins', color: '#fbbf24' },
@@ -922,6 +1200,38 @@ ${window.VisualizerApp.escapeHtml(userMessage.trim())}
             </div>
         `).join('');
 
+        let attachedImagesHtml = '';
+        const attachedImgs = data.attached_images || data.attachedImages || (data.parsed_response && data.parsed_response.attached_images) || [];
+        if (Array.isArray(attachedImgs) && attachedImgs.length > 0) {
+            const imgPreviews = attachedImgs.map((url, i) => `
+                <div style="display: flex; align-items: center; gap: 10px; background: rgba(255, 77, 136, 0.1); border: 1px solid rgba(255, 77, 136, 0.3); border-radius: 6px; padding: 8px 12px; margin-bottom: 6px;">
+                    <div style="width: 48px; height: 48px; border-radius: 4px; overflow: hidden; background: #000; cursor: pointer;" onclick="window.open('${url}', '_blank')">
+                        <img src="${url}" alt="Attached #${i+1}" style="width: 100%; height: 100%; object-fit: cover;" />
+                    </div>
+                    <div style="flex: 1;">
+                        <div style="font-size: 11px; color: #ff80aa; font-weight: 600;">Tệp ảnh đính kèm #${i+1} (Discord AttachmentBuilder)</div>
+                        <div style="font-size: 11.5px; color: var(--text-primary); font-family: monospace;">${window.VisualizerApp.escapeHtml(url)}</div>
+                    </div>
+                    <a href="${url}" target="_blank" class="btn" style="padding: 4px 8px; font-size: 11px; color: #ff80aa;">
+                        Mở ảnh ↗
+                    </a>
+                </div>
+            `).join('');
+
+            attachedImagesHtml = `
+                <div class="inspector-card" style="border-left: 3px solid #ff4d88; background: linear-gradient(135deg, rgba(255, 77, 136, 0.08), rgba(20, 10, 15, 0.6)); margin-top: 12px;">
+                    <div class="inspector-card-title" style="justify-content: space-between;">
+                        <div style="display: flex; align-items: center; gap: 6px;">
+                            ${InspectorWidgets.icon('image', { size: 14, color: '#ff4d88' })}
+                            <span style="color: #ff80aa; font-weight: 700;">Tệp Ảnh Chisa Đính Kèm Gửi Trả Cho Senpai (${attachedImgs.length})</span>
+                        </div>
+                        <span class="pill" style="background: rgba(255, 77, 136, 0.2); color: #ff99bb; font-size: 10px;">Delivered to Discord/Web</span>
+                    </div>
+                    ${imgPreviews}
+                </div>
+            `;
+        }
+
         const rawJsonHtml = InspectorWidgets.renderJsonViewer(data, "Raw LLM Payload");
 
         return `
@@ -934,6 +1244,7 @@ ${window.VisualizerApp.escapeHtml(userMessage.trim())}
                 </div>
                 ${metricGridHtml}
                 ${tokenBreakdownHtml}
+                ${attachedImagesHtml}
                 <div class="inspector-card" style="margin-top: 12px;">
                     <div class="tab-container">
                         <div class="tab-header">
@@ -1003,9 +1314,9 @@ ${window.VisualizerApp.escapeHtml(userMessage.trim())}
         const data = step.data || {};
 
         const metrics = [
-            { label: 'Database', value: 'PostgreSQL', icon: 'hard-drive', color: '#38bdf8', badge: 'SQLAlchemy' },
-            { label: 'Turn Index', value: data.turn_index || '—', icon: 'activity', color: '#f59e0b' },
-            { label: 'User ID', value: data.user_id ? `${data.user_id.slice(0, 12)}...` : 'User', icon: 'user', small: true },
+            { label: 'Database Lưu Trữ', value: 'PostgreSQL', icon: 'hard-drive', color: '#38bdf8', badge: 'SQLAlchemy' },
+            { label: 'Write-Through Cache', value: 'ĐÃ ĐỒNG BỘ', icon: 'zap', color: '#10b981', badge: 'Redis L1 (7 Days)' },
+            { label: 'Turn Index', value: data.turn_index ? `#${data.turn_index}` : '—', icon: 'activity', color: '#f59e0b' },
             { label: 'Trạng thái Lưu', value: 'Thành công', icon: 'check', color: '#10b981' },
         ];
 
@@ -1031,12 +1342,15 @@ ${window.VisualizerApp.escapeHtml(userMessage.trim())}
         const data = step.data || {};
         const ext = Boolean(data.batch_memory_extraction_triggered);
         const sum = Boolean(data.auto_summarization_triggered);
+        const top = Boolean(data.topic_summarization_triggered);
+        const vis = Boolean(data.visual_memory_ingestion_triggered);
 
         const metrics = [
-            { label: 'Batch Memory Extractor', value: ext ? 'ĐÃ KÍCH HOẠT' : 'ĐANG CHỜ', icon: 'brain', color: ext ? '#10b981' : '#64748b', subtitle: 'Chu kỳ mỗi 3 lượt' },
+            { label: 'Batch Fact Extractor', value: ext ? 'ĐÃ KÍCH HOẠT' : 'ĐANG CHỜ', icon: 'brain', color: ext ? '#10b981' : '#64748b', subtitle: 'Chu kỳ mỗi 3 lượt' },
             { label: 'Auto-Summarization', value: sum ? 'ĐÃ KÍCH HOẠT' : 'ĐANG CHỜ', icon: 'file-text', color: sum ? '#10b981' : '#64748b', subtitle: 'Chu kỳ mỗi 10 lượt' },
-            { label: 'Lượt tương tác hiện tại', value: `#${data.interaction_count || 0}`, icon: 'activity', color: '#f59e0b' },
-            { label: 'Trạng thái Queue', value: 'Bình thường', icon: 'server', color: '#38bdf8' },
+            { label: 'Topic Summarizer', value: top ? 'ĐÃ KÍCH HOẠT' : 'ĐANG CHỜ', icon: 'layers', color: top ? '#10b981' : '#64748b', subtitle: 'Chu kỳ mỗi 30 tin' },
+            { label: 'Visual Memory Ingest', value: vis ? 'ĐÃ KÍCH HOẠT' : 'KHÔNG CÓ ẢNH', icon: 'image', color: vis ? '#ff4d88' : '#64748b', subtitle: vis ? `${data.images_count || 1} ảnh lưu Qdrant` : 'Bỏ qua' },
+            { label: 'Lượt tương tác / Queue', value: `#${data.interaction_count || 0}`, icon: 'activity', color: '#f59e0b', subtitle: 'Bình thường' },
         ];
 
         const metricGridHtml = InspectorWidgets.renderMetricGrid(metrics);
@@ -1086,13 +1400,23 @@ ${window.VisualizerApp.escapeHtml(userMessage.trim())}
         `;
     },
 
-    // ── STAGE 10.2: AUTO-SUMMARIZE INSPECTOR ──
+    // ── STAGE 10.2 / 10.3: AUTO-SUMMARIZE INSPECTOR ──
     renderSummarizeInspector(step) {
         const data = step.data || {};
+        const isTopic = !!data.topic_summary || step.name === 'summarize_channel_topic' || step.name === 'community_topic_summarize';
+        const summaryContent = data.topic_summary || data.summary || '';
+        const taskTitle = isTopic ? 'Community Channel Topic Summarization (3-Tier)' : 'Pure Narrative Auto-Summarization';
 
-        const metrics = [
-            { label: 'Tác vụ', value: 'Conversation Summarization', icon: 'file-text', color: '#f59e0b' },
-            { label: 'Trạng thái', value: data.status || 'success', icon: 'zap', color: '#10b981' },
+        const metrics = isTopic ? [
+            { label: 'Tác vụ Tóm tắt', value: 'Community Topic (3-Tier Synthesis)', icon: 'layers', color: '#10b981' },
+            { label: 'Hàng Đợi Lưu Trữ', value: 'Redis Rolling Buffer', icon: 'database', color: '#38bdf8', badge: 'Max 60 · Overlap 10' },
+            { label: 'Chu kỳ Kích hoạt', value: 'Mỗi 30 tin nhắn', icon: 'activity', color: '#f59e0b' },
+            { label: 'Độ dài Bản Tóm tắt', value: `${data.word_count || '50-80'} từ`, icon: 'file-text', color: '#a855f7' },
+        ] : [
+            { label: 'Tác vụ Tóm tắt', value: 'Pure Narrative Auto-Summarizer', icon: 'file-text', color: '#a855f7' },
+            { label: 'Ngân Sách Độ Dài', value: '80 - 120 từ', icon: 'align-left', color: '#10b981', badge: 'Chống Bloat' },
+            { label: 'Chu kỳ Kích hoạt', value: 'Mỗi 10 lượt (N % 10 == 0)', icon: 'activity', color: '#f59e0b' },
+            { label: 'Đồng Bộ Cache', value: 'PostgreSQL & Redis', icon: 'zap', color: '#38bdf8', badge: 'TTL 7 ngày' },
         ];
 
         const metricGridHtml = InspectorWidgets.renderMetricGrid(metrics);
@@ -1102,23 +1426,23 @@ ${window.VisualizerApp.escapeHtml(userMessage.trim())}
             <div class="inspector-panel">
                 <div class="inspector-header">
                     <div class="inspector-title-group">
-                        <span class="inspector-badge badge-memory">Stage 10.2: Auto-Summarize</span>
-                        <h2>${window.VisualizerApp.escapeHtml(step.title || '10.2 [BG] Tự động Tóm tắt Hội thoại')}</h2>
+                        <span class="inspector-badge badge-memory">${isTopic ? 'Stage 10.3: Community Topic Summary' : 'Stage 10.2: Pure Narrative Auto-Summarize'}</span>
+                        <h2>${window.VisualizerApp.escapeHtml(step.title || (isTopic ? '10.3 [BG] Tóm tắt Mạch Kênh Cộng đồng (3-Tier)' : '10.2 [BG] Tự động Tóm tắt Hội thoại Riêng tư'))}</h2>
                     </div>
                 </div>
                 ${metricGridHtml}
-                ${data.summary ? `
+                ${summaryContent ? `
                     <div class="inspector-card" style="border-left: 3px solid var(--accent-amber);">
                         <div class="inspector-card-title" style="justify-content: space-between;">
                             <div style="display: flex; align-items: center; gap: 6px;">
                                 ${InspectorWidgets.icon('file-text', { size: 14, color: 'var(--accent-amber)' })}
-                                <span>Bản Tóm tắt Hội thoại (Conversation Summary)</span>
+                                <span>${isTopic ? 'Bản Tóm tắt Mạch Kênh Cộng đồng (Rolling Topic Summary)' : 'Bản Tóm tắt Hội thoại 1-on-1 (Private Conversation Summary)'}</span>
                             </div>
-                            <button class="btn" style="padding: 3px 8px; font-size: 11px;" onclick="InspectorWidgets.copyToClipboard(this.getAttribute('data-copy'), this)" data-copy="${window.VisualizerApp.escapeHtml((data.summary || '').trim())}">
+                            <button class="btn" style="padding: 3px 8px; font-size: 11px;" onclick="InspectorWidgets.copyToClipboard(this.getAttribute('data-copy'), this)" data-copy="${window.VisualizerApp.escapeHtml(summaryContent.trim())}">
                                 ${InspectorWidgets.icon('copy', { size: 11 })} <span>Sao chép</span>
                             </button>
                         </div>
-                        <div class="json-block" style="max-height: 280px; white-space: pre-wrap; font-size: 12px; line-height: 1.6;">${window.VisualizerApp.escapeHtml((data.summary || '').trim())}</div>
+                        <div class="json-block" style="max-height: 280px; white-space: pre-wrap; font-size: 12px; line-height: 1.6;">${window.VisualizerApp.escapeHtml(summaryContent.trim())}</div>
                     </div>
                 ` : ''}
                 ${rawJsonHtml}

@@ -17,6 +17,7 @@ class ChatContext:
     user_id: str
     user_message: str
     on_token: Optional[Callable[[str], Any]] = None
+    trace_id: Optional[str] = None
 
     # Community Mode Extensions
     is_community: bool = False
@@ -27,6 +28,7 @@ class ChatContext:
     speaker_name: Optional[str] = None
     recent_community_messages: List[Any] = field(default_factory=list)
     channel_transcript: str = ""
+    topic_summary: Optional[str] = None
     recent_social_trace: Optional[Dict[str, Any]] = None
     ambient_context: Optional[str] = None
     
@@ -95,5 +97,19 @@ class ChatContext:
     estimated_input_tokens: int = 0
     estimated_output_tokens: int = 0
     
+    # Multimodal Vision & Reverse Image Retrieval Extensions
+    images: List[str] = field(default_factory=list)
+    processed_images: List[Dict[str, Any]] = field(default_factory=list)
+    has_images: bool = False
+    is_ephemeral_reference: bool = False
+    image_analysis_summary: Optional[str] = None
+    vision_failed: bool = False
+    needs_image_retrieval: bool = False
+    retrieved_images: List[Dict[str, Any]] = field(default_factory=list)
+    attached_images: List[str] = field(default_factory=list)
+    image_tags: List[str] = field(default_factory=list)
+    visual_caption: Optional[str] = None
+
     # Final Result
     updated_emotions: Dict[str, float] = field(default_factory=dict)
+    images_processed: List[Dict[str, Any]] = field(default_factory=list)

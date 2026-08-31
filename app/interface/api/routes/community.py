@@ -4,7 +4,7 @@ from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.application.dependencies import get_chat_engine
+from app.application.dependencies import get_chat_engine, get_clear_community_memory_use_case
 from app.domain.entities.community import CommunityMessage
 from app.domain.interfaces.llm_provider import LLMRateLimitError, LLMTimeoutError
 from app.domain.services.chat_engine import ChatEngine, ChatEngineBusyError
@@ -71,7 +71,7 @@ async def community_chat_endpoint(
     )
 
     try:
-        reply_text, updated_emotions = await chat_engine.community_chat(
+        reply_text, updated_emotions, images_processed, attached_images = await chat_engine.community_chat(
             session=session,
             channel_id=request.channel_id,
             user_id=request.user_id,
@@ -81,6 +81,8 @@ async def community_chat_endpoint(
             guild_id=request.guild_id,
             guild_name=request.guild_name,
             recent_messages=domain_messages,
+            images=request.images,
+            is_ephemeral_reference=bool(request.is_ephemeral_reference),
         )
 
         await session.commit()
@@ -92,10 +94,33 @@ async def community_chat_endpoint(
             status="success",
         )
 
+        emotion_caption = None
+        if updated_emotions and isinstance(updated_emotions, dict):
+            from app.domain.services.state_manager import StateManager
+            from app.domain.entities.emotion import EmotionState
+            try:
+                state_obj = EmotionState(
+                    user_id=request.user_id,
+                    trust=float(updated_emotions.get("trust", 0.50)),
+                    attachment=float(updated_emotions.get("attachment", 0.00)),
+                    joy=float(updated_emotions.get("joy", 0.15)),
+                    sadness=float(updated_emotions.get("sadness", 0.00)),
+                    irritation=float(updated_emotions.get("irritation", 0.00)),
+                    shyness=float(updated_emotions.get("shyness", 0.00)),
+                    curiosity=float(updated_emotions.get("curiosity", 0.10)),
+                    comfort=float(updated_emotions.get("comfort", 0.50)),
+                )
+                emotion_caption = StateManager.get_emotion_summary_caption(state_obj)
+            except Exception as e:
+                log.warning("Failed to generate emotion caption", error=str(e))
+
         return CommunityChatResponse(
             response=reply_text or "Chisa chào mọi người ạ ~",
             emotions=updated_emotions or {},
+            emotion_caption=emotion_caption,
             execution_time_ms=duration_ms,
+            images_processed=images_processed,
+            attached_images=attached_images,
         )
 
     except ChatEngineBusyError:
@@ -150,3 +175,34 @@ async def community_chat_endpoint(
             status_code=500,
             detail=f"Lỗi khi xử lý tin nhắn cộng đồng: {str(e)}",
         )
+
+
+@router.delete("/clear/{guild_id}")
+async def clear_community_memory_endpoint(
+    guild_id: str,
+    scope: str = "all",
+    channel_id: Optional[str] = None,
+    user_id: Optional[str] = None,
+    clear_use_case = Depends(get_clear_community_memory_use_case),
+) -> dict:
+    """
+    Clears collective community memory (guild_memories, topic summaries, ambient mood).
+    Supports scope='all' (server-wide) or scope='self' (user's community interactions).
+    """
+    try:
+        from app.application.dependencies import get_clear_community_memory_use_case
+        result = await clear_use_case.execute(
+            guild_id=guild_id,
+            scope=scope,
+            channel_id=channel_id,
+            user_id=user_id,
+        )
+        return {
+            "status": "success",
+            "message": f"Community memory cleared successfully for guild {guild_id} with scope '{scope}'.",
+            "details": result,
+        }
+    except Exception as e:
+        log.error("Failed to clear community memory", guild_id=guild_id, scope=scope, error=str(e))
+        raise HTTPException(status_code=500, detail=f"Could not clear community memory: {str(e)}")
+

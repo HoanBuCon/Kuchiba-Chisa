@@ -7,7 +7,9 @@ from app.domain.interfaces.embedding_provider import IEmbeddingProvider
 from app.domain.interfaces.llm_provider import BaseLLMAdapter
 from app.domain.services.rag.base import RAGContext
 from app.domain.services.rag.retriever_memory import MemoryRetriever
+from app.domain.services.rag.retriever_guild_memory import GuildMemoryRetriever
 from app.domain.services.rag.retriever_lore import LoreRetriever
+from app.domain.services.rag.retriever_image_memory import ImageMemoryRetriever
 from app.domain.services.rag.assessor import ContextAssessor
 from app.domain.services.rag.thinking_loop import ThinkingLoopAgent
 from app.domain.services.rag.entity_resolver import EntityResolver
@@ -25,6 +27,8 @@ class RAGPipeline:
         self,
         memory_retriever: Optional[MemoryRetriever] = None,
         lore_retriever: Optional[LoreRetriever] = None,
+        guild_memory_retriever: Optional[GuildMemoryRetriever] = None,
+        image_memory_retriever: Optional[ImageMemoryRetriever] = None,
         assessor: Optional[ContextAssessor] = None,
         thinking_loop_agent: Optional[ThinkingLoopAgent] = None,
         pipeline_tracker: Optional[IPipelineTracker] = None,
@@ -39,6 +43,11 @@ class RAGPipeline:
             raise ValueError("lore_retriever is required")
         else:
             self.lore_retriever = lore_retriever
+            
+        self.guild_memory_retriever = guild_memory_retriever
+        self.image_memory_retriever = image_memory_retriever or (
+            ImageMemoryRetriever(memory_retriever.vector_store) if memory_retriever else None
+        )
             
         if assessor is None:
             self.assessor = ContextAssessor()
@@ -84,6 +93,8 @@ class RAGPipeline:
         is_small_talk: bool = False,
         conversation_summary: str = None,
         conversation_id: Optional[str] = None,
+        guild_id: Optional[str] = None,
+        channel_id: Optional[str] = None,
         needs_vector_search: bool = True,
         needs_web_search: bool = False,
     ) -> RAGContext:
@@ -92,10 +103,12 @@ class RAGPipeline:
         """
         lore_scored = []
         memories = []
+        guild_memories = []
+        retrieved_images = []
         lore_chunks = []
         queried_lore_cols = []
         intent_strs = self._normalize_intents(intents)
-        has_knowledge_intent = ("LORE" in intent_strs or "MEMORY" in intent_strs or "OTHER" in intent_strs or "KNOWLEDGE_OR_TASK" in intent_strs)
+        has_knowledge_intent = ("LORE" in intent_strs or "MEMORY" in intent_strs or "OTHER" in intent_strs or "KNOWLEDGE_OR_TASK" in intent_strs or "RETRIEVE_PAST_IMAGE" in intent_strs)
         
         is_hybrid_search_mode = bool(needs_web_search and needs_vector_search and not is_small_talk)
         is_web_search_mode = bool(needs_web_search and not needs_vector_search and not is_small_talk)
@@ -119,7 +132,7 @@ class RAGPipeline:
 
         # Helper coroutine: Execute Qdrant Vector Lore & Memory Retrieval
         async def _fetch_vector_lore_and_memory():
-            nonlocal lore_scored, memories, lore_chunks, queried_lore_cols, extracted, expanded, scoring_details
+            nonlocal lore_scored, memories, guild_memories, retrieved_images, lore_chunks, queried_lore_cols, extracted, expanded, scoring_details
             if not query_vector:
                 return
 
@@ -148,7 +161,7 @@ class RAGPipeline:
                         )
                     )
 
-            if "MEMORY" in intent_strs:
+            if "MEMORY" in intent_strs or "KNOWLEDGE_OR_TASK" in intent_strs or "OTHER" in intent_strs or "LORE" in intent_strs:
                 active_intents.append("MEMORY")
                 retrieval_tasks.append(
                     self.memory_retriever.retrieve_memories(
@@ -159,6 +172,32 @@ class RAGPipeline:
                         current_emotion=current_emotions,
                         limit=10,
                         top_k=RAGTuning.TOP_K
+                    )
+                )
+
+                if self.guild_memory_retriever and guild_id and not guild_id.startswith("CHANNEL_") and guild_id != "DM":
+                    active_intents.append("GUILD_MEMORY")
+                    retrieval_tasks.append(
+                        self.guild_memory_retriever.retrieve_guild_memories(
+                            collection="guild_memories",
+                            query_vector=query_vector,
+                            guild_id=str(guild_id),
+                            channel_id=str(channel_id) if channel_id else None,
+                            limit=10,
+                            top_k=RAGTuning.TOP_K
+                        )
+                    )
+
+            if "RETRIEVE_PAST_IMAGE" in intent_strs and self.image_memory_retriever and query_vector:
+                active_intents.append("IMAGE_MEMORY")
+                retrieval_tasks.append(
+                    self.image_memory_retriever.retrieve_image_memories(
+                        query_vector=query_vector,
+                        user_id=user_id,
+                        guild_id=guild_id,
+                        is_community=bool(guild_id and not str(guild_id).startswith("CHANNEL_") and guild_id != "DM"),
+                        limit=5,
+                        score_threshold=0.68,
                     )
                 )
 
@@ -174,7 +213,7 @@ class RAGPipeline:
 
                     # Fair Multi-Collection Fusion (RRF + Normalized Score Fusion)
                     collection_buckets: Dict[str, List[Tuple[str, float, dict]]] = {}
-                    for intent_type, col_name, retrieved_data in zip(active_intents, queried_lore_cols, results):
+                    for intent_type, col_name, retrieved_data in zip(active_intents, queried_lore_cols + ["guild_memories"] * (len(active_intents) - len(queried_lore_cols)), results):
                         if isinstance(retrieved_data, Exception):
                             log.warning("Retrieval sub-task failed", error=str(retrieved_data), collection=col_name)
                             continue
@@ -182,6 +221,16 @@ class RAGPipeline:
                             for m in retrieved_data:
                                 if m.text_content and m.text_content not in memories:
                                     memories.append(m.text_content)
+                        elif intent_type == "GUILD_MEMORY":
+                            for m in retrieved_data:
+                                if m.text_content and m.text_content not in guild_memories:
+                                    guild_memories.append(m.text_content)
+                        elif intent_type == "IMAGE_MEMORY":
+                            for img_mem in retrieved_data:
+                                if hasattr(img_mem, "model_dump"):
+                                    retrieved_images.append(img_mem.model_dump())
+                                elif isinstance(img_mem, dict):
+                                    retrieved_images.append(img_mem)
                         else:
                             if col_name not in collection_buckets:
                                 collection_buckets[col_name] = []
@@ -209,12 +258,14 @@ class RAGPipeline:
                     lore_chunks = [x[0] for x in lore_scored[:RAGTuning.TOP_K]]
                     if len(memories) > RAGTuning.TOP_K:
                         memories = memories[:RAGTuning.TOP_K]
+                    if len(guild_memories) > RAGTuning.TOP_K:
+                        guild_memories = guild_memories[:RAGTuning.TOP_K]
                 except Exception as ex:
                     log.error("Failed to retrieve data from Qdrant vector database", error=str(ex))
 
             scoring_details = [x[2] for x in lore_scored[:RAGTuning.TOP_K] if len(x) > 2 and x[2]]
 
-            # Emit sub-nodes 5.1.a and 5.1.c
+            # Emit sub-nodes 5.1.a, 5.1.c, 5.1.d, 5.1.e
             if lore_chunks:
                 self.pipeline_tracker.add_step(
                     name="lore_retrieval",
@@ -249,6 +300,37 @@ class RAGPipeline:
                         "source": "knowledge_retrieval_round_1",
                         "memories_count": len(memories),
                         "memories": memories,
+                    }
+                )
+
+            if guild_memories:
+                self.pipeline_tracker.add_step(
+                    name="guild_memory_retrieval",
+                    stage_id="stage_5_rag",
+                    depth=1,
+                    category="retrieval",
+                    title="5.1.d [GUILD MEMORY] Truy hồi Tri thức Server (Qdrant Guild)",
+                    subtitle=f"Đã tìm thấy {len(guild_memories)} tri thức / sự kiện chung của Server",
+                    data={
+                        "source": "knowledge_retrieval_round_1",
+                        "guild_id": str(guild_id),
+                        "guild_memories_count": len(guild_memories),
+                        "guild_memories": guild_memories,
+                    }
+                )
+
+            if retrieved_images:
+                self.pipeline_tracker.add_step(
+                    name="image_memory_retrieval",
+                    stage_id="stage_5_rag",
+                    depth=1,
+                    category="retrieval",
+                    title="5.1.e [IMAGE MEMORY] Truy hồi Ký Ức Hình Ảnh (Qdrant Image Memories)",
+                    subtitle=f"Đã tìm thấy {len(retrieved_images)} ảnh phù hợp (Top Score: {retrieved_images[0].get('score', 0):.2f})",
+                    data={
+                        "source": "knowledge_retrieval_round_1",
+                        "retrieved_images_count": len(retrieved_images),
+                        "retrieved_images": retrieved_images,
                     }
                 )
 
@@ -342,7 +424,7 @@ class RAGPipeline:
                 depth=0,
                 category="stage_root",
                 title="Stage 5: [RAG] Truy hồi Tri thức Đa tầng",
-                subtitle=f"Vector Search · {len(lore_chunks)} lore chunks · {len(memories)} memories",
+                subtitle=f"Vector Search · {len(lore_chunks)} lore · {len(memories)} mems · {len(guild_memories)} guild",
                 data={
                     "mode": "VECTOR_SEARCH",
                     "should_retrieve": True,
@@ -353,6 +435,8 @@ class RAGPipeline:
                     "retrieved_lore_chunks": lore_chunks,
                     "lore_scoring_details": scoring_details,
                     "retrieved_memories": memories,
+                    "retrieved_guild_memories": guild_memories,
+                    "guild_memories_count": len(guild_memories),
                     "weights": {
                         "vector": RAGTuning.WEIGHT_VECTOR,
                         "keyword": RAGTuning.WEIGHT_KEYWORD,
@@ -365,6 +449,8 @@ class RAGPipeline:
                 context_pieces.append("[Retrieved Lore Chunks]:\n" + "\n".join(lore_chunks))
             if memories:
                 context_pieces.append("[Retrieved Memories]:\n" + "\n".join(memories))
+            if guild_memories:
+                context_pieces.append("[Retrieved Server Guild Memories]:\n" + "\n".join(guild_memories))
             retrieved_context_str = "\n\n".join(context_pieces) if context_pieces else "(No context retrieved)"
 
         else:
@@ -452,7 +538,8 @@ class RAGPipeline:
                 "search_target": search_target,
                 "lore_count": len(lore_chunks),
                 "memory_count": len(memories),
-                "has_rag_context": bool(lore_chunks or memories or web_search_1_res),
+                "guild_memory_count": len(guild_memories),
+                "has_rag_context": bool(lore_chunks or memories or guild_memories or web_search_1_res),
                 "generated_search_query": search_query,
                 "history_mode": history_mode,
                 "history": history_display,
@@ -536,6 +623,8 @@ class RAGPipeline:
         return RAGContext(
             lore_chunks=lore_chunks if use_lore else [],
             memories=memories,
+            guild_memories=guild_memories,
+            retrieved_images=retrieved_images,
             tool_output_msg=tool_output_msg,
             is_aligned=is_aligned,
             alignment_reason=alignment_reason,

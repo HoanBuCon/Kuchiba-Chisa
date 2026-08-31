@@ -70,7 +70,7 @@ export class CoreRagClient {
     throw lastError;
   }
 
-  async ask({ coreUserId, message, username, channelName, guildName } = {}) {
+  async ask({ coreUserId, message, username, channelName, guildName, images = [], isEphemeralReference = false } = {}) {
     const url = this.buildUrl(this.chatPath);
     const payload = await this.requestJson(url, {
       method: 'POST',
@@ -81,6 +81,8 @@ export class CoreRagClient {
         username,
         channel_name: channelName,
         guild_name: guildName,
+        images,
+        is_ephemeral_reference: isEphemeralReference,
       }),
     });
 
@@ -88,6 +90,8 @@ export class CoreRagClient {
       response: payload.response ?? '',
       emotions: payload.emotions ?? null,
       loopThinkingActivated: payload.loop_thinking_activated ?? false,
+      imagesProcessed: payload.images_processed ?? [],
+      attachedImages: payload.attached_images ?? [],
       raw: payload,
     };
   }
@@ -101,6 +105,8 @@ export class CoreRagClient {
     username,
     message,
     recentMessages = [],
+    images = [],
+    isEphemeralReference = false,
   } = {}) {
     const url = this.buildUrl('/api/v1/community/chat');
     const payload = await this.requestJson(url, {
@@ -114,6 +120,8 @@ export class CoreRagClient {
         username,
         message,
         recent_messages: recentMessages,
+        images,
+        is_ephemeral_reference: isEphemeralReference,
       }),
     });
 
@@ -121,6 +129,8 @@ export class CoreRagClient {
       response: payload.response ?? '',
       emotions: payload.emotions ?? null,
       sentiment: payload.sentiment ?? null,
+      imagesProcessed: payload.images_processed ?? [],
+      attachedImages: payload.attached_images ?? [],
       raw: payload,
     };
   }
@@ -128,6 +138,18 @@ export class CoreRagClient {
   async clearMemory(coreUserId) {
     const path = this.clearPathTemplate.replace('{user_id}', encodeURIComponent(coreUserId));
     const url = this.buildUrl(path);
+    const payload = await this.requestJson(url, {
+      method: 'DELETE',
+    });
+
+    return payload;
+  }
+
+  async clearCommunityMemory({ guildId, scope = 'all', channelId, coreUserId } = {}) {
+    let queryParams = `scope=${encodeURIComponent(scope)}`;
+    if (channelId) queryParams += `&channel_id=${encodeURIComponent(channelId)}`;
+    if (coreUserId) queryParams += `&user_id=${encodeURIComponent(coreUserId)}`;
+    const url = this.buildUrl(`/api/v1/community/clear/${encodeURIComponent(guildId)}?${queryParams}`);
     const payload = await this.requestJson(url, {
       method: 'DELETE',
     });

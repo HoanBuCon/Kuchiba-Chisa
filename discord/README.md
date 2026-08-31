@@ -52,10 +52,10 @@ discord/
 | Slash Command | Prefix Command | Mô tả |
 |---|---|---|
 | `/ask <nội dung>` | `c!ask <nội dung>` | Trò chuyện, hỏi đáp lore hoặc tâm sự cùng Chisa |
-| `/clear [self/all]` | `c!clear [self/all]` | Xóa bộ nhớ ngắn hạn & dài hạn (bản thân hoặc toàn server) |
-| `/setup <enable/disable/list>` | `c!setup ...` | Thiết lập kênh chat trực tiếp không cần gõ lệnh (Admin/Mod) |
-| `/docs` | `c!docs` | Xem tài liệu chi tiết về hệ thống cảm xúc & quan hệ 8 chiều (RESONA Engine) |
-| `/about` | `c!about` | Xem hồ sơ nhân vật, Forte và công nghệ AI tích hợp |
+| `/clear [mode] [scope]` | `c!clear [mode] [scope]` | Xóa bộ nhớ & làm mới ngữ cảnh (`community / private / nuke`, `self / all`) |
+| `/setup [action] [mode]` | `c!setup [mode] ...` | Thiết lập 3 chế độ không gian kênh: `community`, `semi-private`, `private` (Admin/Mod) |
+| `/docs` | `c!docs` | Xem tài liệu chi tiết về hệ thống cảm xúc RESONA 3.1 & Khí sắc Server |
+| `/about` | `c!about` | Xem hồ sơ nhân vật, Forte và công nghệ AI Multi-Memory 3.0 tích hợp |
 | `/help` | `c!help` | Bảng điều khiển hướng dẫn tương tác & danh sách lệnh |
 
 ## 🚀 Cài đặt & Khởi chạy Local

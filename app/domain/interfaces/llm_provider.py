@@ -14,6 +14,7 @@ class StructuredPrompt(BaseModel):
     history: list[dict[str, str]]  # [{"role": "user"|"assistant", "content": "..."}]
     user_message: str
     response_schema: dict[str, Any]  # JSON schema for enforced output
+    images: list[str] = []           # List of Base64 Data URIs or image URLs for Multimodal Vision
     max_tokens: Optional[int] = None
     temperature: Optional[float] = None
     retrieved_memories: list[Any] = []
@@ -28,6 +29,7 @@ class LLMResponse(BaseModel):
     input_tokens: int = 0
     output_tokens: int = 0
     reasoning_tokens: int = 0
+    vision_tokens: int = 0
     model: str = ""
     finish_reason: str = ""
     reasoning_content: str | None = None

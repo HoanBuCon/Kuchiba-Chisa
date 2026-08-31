@@ -94,6 +94,64 @@ window.ReportExportEngine = {
                         md += `#### 📜 Final System Prompt:\n\`\`\`text\n${step.data.system_prompt}\n\`\`\`\n\n`;
                     }
                 }
+                else if (step.name === 'initialization' || step.name === 'init_stage') {
+                    const isComm = step.data?.is_community;
+                    md += `*   **Chế độ:** \`${isComm ? 'COMMUNITY (Group Chat)' : 'DIRECT (1-on-1 DM)'}\`\n`;
+                    if (isComm) {
+                        md += `*   **Kênh / Server:** \`#${step.data?.channel_name || 'community'}\` | Server: \`${step.data?.guild_name || 'Discord'}\`\n`;
+                        md += `*   **Người nói (Speaker):** \`${step.data?.speaker_name || 'Thành viên'}\`\n`;
+                    }
+                    md += `*   **Lượt tương tác:** #${step.data?.turn_index || 1} (${step.data?.interaction_count || 0} turns)\n\n`;
+
+                    if (step.data?.ambient_mood && typeof step.data.ambient_mood === 'object') {
+                        const amb = step.data.ambient_mood;
+                        md += `#### ☁️ Khí Sắc Môi Trường Server (Ambient Mood - Exponential Decay):\n`;
+                        md += `| Joy | Sadness | Irritation | Comfort | Curiosity | Shyness |\n| :---: | :---: | :---: | :---: | :---: | :---: |\n`;
+                        md += `| **${amb.joy !== undefined ? Number(amb.joy).toFixed(2) : '—'}** | **${amb.sadness !== undefined ? Number(amb.sadness).toFixed(2) : '—'}** | **${amb.irritation !== undefined ? Number(amb.irritation).toFixed(2) : '—'}** | **${amb.comfort !== undefined ? Number(amb.comfort).toFixed(2) : '—'}** | **${amb.curiosity !== undefined ? Number(amb.curiosity).toFixed(2) : '—'}** | **${amb.shyness !== undefined ? Number(amb.shyness).toFixed(2) : '—'}** |\n\n`;
+                    }
+                    if (step.data?.topic_summary) {
+                        md += `#### 📜 Tóm Tắt Mạch Kênh Gần Đây (Rolling Topic Summary):\n\`\`\`text\n${step.data.topic_summary}\n\`\`\`\n\n`;
+                    }
+                    if (step.data?.channel_transcript_preview) {
+                        md += `#### 💬 Live Transcript Kênh Gần Nhất:\n\`\`\`text\n${step.data.channel_transcript_preview}\n\`\`\`\n\n`;
+                    }
+                }
+                else if (step.name === 'guild_memory_retrieval') {
+                    const facts = step.data?.guild_memories || [];
+                    md += `*   **Server ID:** \`${step.data?.guild_id || 'Guild Scope'}\`\n`;
+                    md += `*   **Số lượng Facts Server:** \`${facts.length}\`\n\n`;
+                    if (facts.length > 0) {
+                        md += `#### 🏛️ Danh sách Tri Thức & Sự Kiện Server:\n`;
+                        facts.forEach((f, i) => {
+                            const text = typeof f === 'string' ? f : (f.text_content || f.content || JSON.stringify(f));
+                            const speaker = f.recorded_by_speaker ? ` [@${f.recorded_by_speaker}]` : '';
+                            md += `${i + 1}. ${speaker} ${text}\n`;
+                        });
+                        md += `\n`;
+                    }
+                }
+                else if (step.name === 'image_memory_retrieval') {
+                    const images = step.data?.retrieved_images || [];
+                    md += `*   **Bộ sưu tập:** \`Qdrant image_memories\`\n`;
+                    md += `*   **Số lượng ảnh tìm thấy:** \`${images.length}\`\n\n`;
+                    if (images.length > 0) {
+                        md += `#### 🖼️ Danh sách Ký Ức Hình Ảnh Đã Tìm Thấy:\n`;
+                        images.forEach((img, i) => {
+                            const caption = img.visual_caption || img.caption || 'Ký ức hình ảnh';
+                            const score = img.score !== undefined ? ` (Score: ${Number(img.score).toFixed(2)})` : '';
+                            const tags = Array.isArray(img.tags) ? ` [${img.tags.join(', ')}]` : '';
+                            md += `${i + 1}. **${caption}**${score}${tags} — URL: \`${img.url || '—'}\`\n`;
+                        });
+                        md += `\n`;
+                    }
+                }
+                else if (step.name === 'summarize_channel_topic') {
+                    md += `*   **Kênh:** \`${step.data?.channel_id || '—'}\`\n`;
+                    md += `*   **Số từ tóm tắt:** \`${step.data?.word_count || 0} từ\`\n\n`;
+                    if (step.data?.topic_summary) {
+                        md += `#### 📑 Bản Tóm Tắt Mạch Thảo Luận Kênh (Topic Summary):\n\`\`\`text\n${step.data.topic_summary}\n\`\`\`\n\n`;
+                    }
+                }
                 else if (step.name === 'memory_extraction') {
                     const facts = step.data?.facts || [];
                     md += `*   **Trạng thái:** \`${step.data?.status || 'N/A'}\`\n`;
@@ -104,12 +162,14 @@ window.ReportExportEngine = {
                             const imp = f.importance_score !== undefined ? `${Math.round(f.importance_score * 100)}%` : '70%';
                             const recon = f.reconciliation_action || 'NONE';
                             const confStr = f.conflicting_id ? ` (Override ID: ${f.conflicting_id})` : '';
-                            md += `${i + 1}. **[${f.type || 'fact'}]** "${f.content}"\n   * Độ quan trọng: ⭐ ${imp} | Lưu: \`${f.status || 'extracted'}\` | Đối soát: \`${recon}\`${confStr}\n`;
+                            const speakerTag = f.recorded_by_speaker ? ` [@${f.recorded_by_speaker}]` : '';
+                            const expTag = f.expires_at ? ` [Hết hạn: ${new Date(f.expires_at * 1000).toLocaleDateString('vi-VN')}]` : '';
+                            md += `${i + 1}. **[${f.type || 'fact'}]**${speakerTag}${expTag} "${f.content}"\n   * Độ quan trọng: ⭐ ${imp} | Collection: \`${f.collection || 'memories'}\` | Lưu: \`${f.status || 'extracted'}\` | Đối soát: \`${recon}\`${confStr}\n`;
                         });
                         md += `\n`;
                     }
                     if (step.data?.extracted_input_context) {
-                        md += `#### 💬 Ngữ cảnh 3 cặp hội thoại đưa vào trích xuất:\n\`\`\`text\n${step.data.extracted_input_context}\n\`\`\`\n\n`;
+                        md += `#### 💬 Ngữ cảnh hội thoại đưa vào trích xuất:\n\`\`\`text\n${step.data.extracted_input_context}\n\`\`\`\n\n`;
                     }
                 }
                 else {

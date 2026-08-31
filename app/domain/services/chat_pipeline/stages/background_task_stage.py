@@ -2,6 +2,7 @@ from typing import Callable, Coroutine, Any, Optional
 from app.domain.services.chat_pipeline.stage import PipelineStage
 from app.domain.services.chat_pipeline.context import ChatContext
 from app.domain.services.memory_extractor import MemoryExtractor
+from app.domain.services.community.topic_summarizer import CommunityTopicSummarizer
 from app.domain.interfaces.tracker import IPipelineTracker
 from app.shared.utils.background_tasks import BackgroundTaskManager
 from app.shared.utils.logger import get_logger
@@ -10,21 +11,24 @@ log = get_logger(__name__)
 
 class BackgroundTaskStage(PipelineStage):
     """
-    Stage 10: Spawn background tasks for memory extraction and period summarization.
+    Stage 10: Spawn background tasks for memory extraction, periodic summarization, and community topic tracking.
     """
     def __init__(
         self,
         memory_extractor: MemoryExtractor,
         unified_auto_summarize_callback: Callable[[str, str], Coroutine[Any, Any, None]],
+        topic_summarizer: Optional[CommunityTopicSummarizer] = None,
         pipeline_tracker: Optional[IPipelineTracker] = None
     ):
         self.memory_extractor = memory_extractor
         self.unified_auto_summarize_callback = unified_auto_summarize_callback
+        self.topic_summarizer = topic_summarizer
         self.pipeline_tracker = pipeline_tracker
 
     async def process(self, context: ChatContext) -> ChatContext:
         triggered_extract = bool(context.stats and context.stats.interaction_count > 0 and context.stats.interaction_count % 3 == 0)
         triggered_summary = bool(context.stats and context.stats.interaction_count > 0 and context.stats.interaction_count % 10 == 0)
+        triggered_topic_summary = False
 
         # Trigger batched background fact extraction every 3 interaction turns (batch of 3 pairs + 2 context msgs)
         if triggered_extract:
@@ -35,6 +39,11 @@ class BackgroundTaskStage(PipelineStage):
                     history=context.history,
                     current_user_message=context.user_message,
                     current_assistant_reply=context.chisa_reply,
+                    guild_id=context.guild_id,
+                    channel_id=context.channel_id,
+                    speaker_name=context.speaker_name,
+                    is_community=context.is_community,
+                    trace_id=context.trace_id,
                 ),
                 name=f"memory_extract_batch:{context.user_id}",
             )
@@ -51,9 +60,77 @@ class BackgroundTaskStage(PipelineStage):
                 name=f"unified_auto_summarize:{context.user_id}",
             )
 
+        # Periodically trigger community topic summarization in community channels (every 30 messages)
+        if context.is_community and context.channel_id and self.topic_summarizer:
+            try:
+                # 1. Accumulate new messages and current turn into Redis Rolling Buffer
+                current_user_turn = {
+                    "speaker_name": context.speaker_name or "User",
+                    "content": context.user_message,
+                    "is_bot": False,
+                    "created_at": "Now",
+                }
+                current_assistant_turn = {
+                    "speaker_name": "Chisa",
+                    "content": context.chisa_reply,
+                    "is_bot": True,
+                    "created_at": "Now",
+                }
+                await self.topic_summarizer.append_messages(
+                    channel_id=context.channel_id,
+                    messages=context.recent_community_messages or [],
+                    current_user_turn=current_user_turn,
+                    current_assistant_turn=current_assistant_turn,
+                )
+
+                # 2. Check interval and spawn background summarization with rolling buffer
+                msg_count = await self.topic_summarizer.increment_message_count(context.channel_id)
+                if msg_count > 0 and msg_count % self.topic_summarizer.SUMMARIZE_INTERVAL == 0:
+                    triggered_topic_summary = True
+                    BackgroundTaskManager.spawn(
+                        self.topic_summarizer.summarize_channel_topic(
+                            channel_id=context.channel_id,
+                            guild_id=str(context.guild_id or ""),
+                            messages=context.recent_community_messages,
+                            trace_id=context.trace_id,
+                        ),
+                        name=f"topic_summarize:{context.channel_id}",
+                    )
+            except Exception as ts_err:
+                log.warning("Failed to trigger community topic summarization", error=str(ts_err))
+
+        # Trigger background visual memory ingestion when images are uploaded/referenced
+        triggered_visual_ingest = bool(context.processed_images)
+        if triggered_visual_ingest:
+            try:
+                from app.domain.services.visual_memory_ingestion import VisualMemoryIngestionWorker
+                visual_worker = VisualMemoryIngestionWorker(
+                    vector_store=self.memory_extractor.vector_store,
+                    embedder=self.memory_extractor.embedder,
+                )
+                BackgroundTaskManager.spawn(
+                    visual_worker.ingest_image_memories(
+                        user_id=context.user_id,
+                        user_message=context.user_message,
+                        chisa_reply=context.chisa_reply,
+                        processed_images=context.processed_images,
+                        conversation_id=str(context.conv_id) if context.conv_id else None,
+                        guild_id=context.guild_id,
+                        channel_id=context.channel_id,
+                        is_ephemeral=False,
+                        llm_image_tags=context.image_tags,
+                        llm_visual_caption=context.visual_caption,
+                    ),
+                    name=f"visual_memory_ingest:{context.user_id}",
+                )
+            except Exception as vm_err:
+                log.warning("Failed to trigger visual memory ingestion", error=str(vm_err))
+
         if self.pipeline_tracker:
-            extract_desc = "Kích hoạt" if triggered_extract else "Bỏ qua (chờ chu kỳ 3 lượt)"
-            summary_desc = "Kích hoạt" if triggered_summary else "Bỏ qua (chờ chu kỳ 10 lượt)"
+            extract_desc = "Kích hoạt" if triggered_extract else "Bỏ qua (chu kỳ 3 lượt)"
+            summary_desc = "Kích hoạt" if triggered_summary else "Bỏ qua (chu kỳ 10 lượt)"
+            topic_desc = "Kích hoạt" if triggered_topic_summary else "Bỏ qua (chu kỳ 30 tin)"
+            vision_desc = "Kích hoạt (Lưu Ký Ức Thị Giác)" if triggered_visual_ingest else "Không có ảnh mới"
             self.pipeline_tracker.add_step(
                 name="background_tasks",
                 stage_id="stage_10_bg",
@@ -61,17 +138,19 @@ class BackgroundTaskStage(PipelineStage):
                 category="stage_root",
                 status="success",
                 title="Stage 10: [BACKGROUND] Tác vụ Nền Tự động",
-                subtitle=f"Batch Memories ({extract_desc}) · Auto-Summarize ({summary_desc})",
+                subtitle=f"Batch Facts ({extract_desc}) · Summarize ({summary_desc}) · Vision ({vision_desc})",
                 data={
                     "interaction_count": getattr(context.stats, 'interaction_count', 0),
                     "batch_memory_extraction_triggered": triggered_extract,
                     "batch_memory_interval": 3,
                     "auto_summarization_triggered": triggered_summary,
                     "auto_summary_interval": 10,
-                    "status": "success"
+                    "topic_summarization_triggered": triggered_topic_summary,
+                    "topic_summarization_interval": 30,
+                    "visual_memory_ingestion_triggered": triggered_visual_ingest,
+                    "images_count": len(context.processed_images),
                 }
             )
             
         log.info("ChatPipeline cycle complete", user_id=context.user_id)
         return context
-

@@ -39,15 +39,31 @@ class InitializationStage(PipelineStage):
         emotion_repo = self.emotion_repo_factory(context.session)
         conv_repo = self.conv_repo_factory(context.session)
         
-        # 1. Ensure user exists first (FK constraint)
-        await user_repo.get_or_create_user(user_uuid)
+        # 1. Try reading User State from Redis Cache (~0.2ms)
+        from app.domain.services.user_state_cache import UserStateCache
+        cached_state = None
+        if self.cache_provider:
+            cached_state = await UserStateCache.get_state(self.cache_provider, user_uuid)
 
-        # 2. Sequentialize independent user stats, emotion state, and conversation ID reads (SQLAlchemy session is not thread-safe)
-        stats = await user_repo.get_user_stats(user_uuid)
-        emotion = await emotion_repo.get_emotion_state(user_uuid)
-        conv_id = await conv_repo.get_or_create_conversation(user_uuid)
+        if cached_state:
+            stats, emotion, conv_id = cached_state
+            if not conv_id:
+                conv_id = await conv_repo.get_or_create_conversation(user_uuid)
+            is_state_cached = True
+            log.debug("User state loaded from Redis cache", user_id=str(user_uuid))
+        else:
+            # Cache MISS -> Ensure user exists first, then sequentialize reads from SQL
+            await user_repo.get_or_create_user(user_uuid)
+            stats = await user_repo.get_user_stats(user_uuid)
+            emotion = await emotion_repo.get_emotion_state(user_uuid)
+            conv_id = await conv_repo.get_or_create_conversation(user_uuid)
+            is_state_cached = False
+            
+            # Fire-and-forget write to Redis
+            if self.cache_provider:
+                await UserStateCache.set_state(self.cache_provider, user_uuid, stats, emotion, conv_id)
 
-        # 3. Sequentialize conversation history and summary reads
+        # 2. Sequentialize conversation history and summary reads
         if context.is_community:
             history = []
             summary = None
@@ -56,7 +72,20 @@ class InitializationStage(PipelineStage):
                 context.channel_transcript = ChannelTranscriptFormatter.format_transcript(context.recent_community_messages)
         else:
             history = await conv_repo.get_recent_history(user_uuid, conv_id, limit=40)
-            summary = await conv_repo.get_latest_summary(user_uuid, conv_id)
+            # Read summary from Redis cache first (~0.2ms)
+            summary = None
+            if self.cache_provider:
+                try:
+                    summary = await self.cache_provider.get(f"chisa:user:{user_uuid}:summary")
+                except Exception:
+                    pass
+            if not summary:
+                summary = await conv_repo.get_latest_summary(user_uuid, conv_id)
+                if summary and self.cache_provider:
+                    try:
+                        await self.cache_provider.set(f"chisa:user:{user_uuid}:summary", summary, ttl=7 * 24 * 3600)
+                    except Exception:
+                        pass
 
         # 4. Server-Level Holistic Ambient Emotion Dynamics (Continuous Exponential Decay)
         is_server_shared = (
@@ -73,6 +102,17 @@ class InitializationStage(PipelineStage):
             # Synthesize transient ambient channels into current emotion state (preserving individual Trust & Attachment)
             AmbientMoodManager.synthesize_ambient_into_emotion(emotion, decayed_ambient)
             context.recent_social_trace = decayed_ambient
+            context.ambient_context = AmbientMoodManager.describe_ambient_mood(decayed_ambient)
+
+            # Load rolling community topic summary from Redis if available
+            if context.channel_id:
+                try:
+                    summary_key = f"chisa:channel:{context.channel_id}:topic_summary"
+                    stored_summary = await self.cache_provider.get(summary_key)
+                    if stored_summary:
+                        context.topic_summary = stored_summary.strip()
+                except Exception as ts_err:
+                    log.warning("Failed to load topic summary in InitializationStage", error=str(ts_err))
 
         # Initialize ContextVars for request-scoped logging
         question_idx = len([m for m in history if m.get("role") == "user"]) + 1
@@ -88,9 +128,26 @@ class InitializationStage(PipelineStage):
             "irritation": emotion.irritation,
             "attachment": emotion.attachment,
             "shyness": getattr(emotion, "shyness", 0.0),
-            "curiosity": getattr(emotion, "curiosity", 0.20),
+            "curiosity": getattr(emotion, "curiosity", 0.10),
             "comfort": getattr(emotion, "comfort", 0.50),
         }
+
+        # 5. Process Image Inputs (if any) via ImageIngestionService
+        if context.images:
+            from app.domain.services.image_ingestion import ImageIngestionService
+            ingestion_service = ImageIngestionService()
+            try:
+                processed_images = await ingestion_service.ingest_images(
+                    image_inputs=context.images,
+                    save_to_disk=True,
+                    is_ephemeral=False,
+                )
+                context.processed_images = processed_images
+                context.has_images = len(processed_images) > 0
+                context.images_processed = processed_images
+            except Exception as img_err:
+                log.error("Failed to process images in InitializationStage", error=str(img_err))
+                context.has_images = False
 
         # Update context
         context.user_uuid = user_uuid
@@ -103,6 +160,10 @@ class InitializationStage(PipelineStage):
         context.current_emotions = current_emotions
 
         if self.pipeline_tracker:
+            if not context.trace_id:
+                current_trace = self.pipeline_tracker.get_current_trace()
+                if current_trace:
+                    context.trace_id = current_trace.get("id")
             self.pipeline_tracker.add_step(
                 name="initialization",
                 stage_id="stage_1_init",
@@ -120,15 +181,33 @@ class InitializationStage(PipelineStage):
                     "conv_id": str(conv_id) if conv_id else None,
                     "turn_index": question_idx,
                     "interaction_count": stats.interaction_count,
+                    "state_cache_hit": is_state_cached,
                     "history_count": len(history),
                     "has_summary": bool(summary),
                     "summary_preview": (summary[:200] + "...") if summary and len(summary) > 200 else summary,
+                    "topic_summary": context.topic_summary,
+                    "topic_summary_preview": (context.topic_summary[:200] + "...") if context.topic_summary and len(context.topic_summary) > 200 else context.topic_summary,
                     "current_emotions": current_emotions,
                     "initial_emotions": current_emotions,
                     "baseline_emotions": current_emotions,
                     "ambient_mood": context.recent_social_trace,
                     "channel_transcript_preview": (context.channel_transcript[:300] + "...") if context.channel_transcript and len(context.channel_transcript) > 300 else context.channel_transcript,
                     "attachment_bonus_raw": round(attachment_bonus_raw, 4),
+                    "has_images": context.has_images,
+                    "images_count": len(context.processed_images),
+                    "processed_images": [
+                        {
+                            "image_id": img.get("image_id"),
+                            "url": img.get("url"),
+                            "thumbnail_url": img.get("thumbnail_url") or img.get("thumbnail_data_uri"),
+                            "thumbnail_data_uri": img.get("thumbnail_data_uri"),
+                            "width": img.get("width"),
+                            "height": img.get("height"),
+                            "size_bytes": img.get("size_bytes"),
+                            "is_ephemeral": img.get("is_ephemeral"),
+                        }
+                        for img in context.processed_images
+                    ],
                     "status": "success"
                 }
             )

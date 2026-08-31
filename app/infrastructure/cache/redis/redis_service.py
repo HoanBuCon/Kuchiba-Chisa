@@ -85,6 +85,16 @@ class RedisService(ICacheProvider):
     async def delete(self, key: str) -> None:
         await self._client.delete(key)
 
+    async def delete_pattern(self, pattern: str) -> int:
+        deleted = 0
+        try:
+            async for key in self._client.scan_iter(match=pattern, count=100):
+                await self._client.delete(key)
+                deleted += 1
+        except Exception as e:
+            log.warning("Failed to delete pattern in Redis", pattern=pattern, error=str(e))
+        return deleted
+
     async def exists(self, key: str) -> bool:
         result = await self._client.exists(key)
         return bool(result)

@@ -1,5 +1,5 @@
 from typing import Any, Dict, List, Optional
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 
 class CommunityMessageIn(BaseModel):
@@ -20,12 +20,29 @@ class CommunityChatRequest(BaseModel):
     guild_name: Optional[str] = Field(default=None, description="Name of the guild/server")
     user_id: str = Field(..., description="Current speaker Discord User ID")
     username: str = Field(..., description="Current speaker display name / username")
-    message: str = Field(..., description="User message addressing Chisa")
+    message: Optional[str] = Field(default="", description="User message addressing Chisa")
     recent_messages: List[CommunityMessageIn] = Field(default_factory=list, description="Recent channel transcript")
+    images: Optional[List[str]] = Field(default_factory=list, description="Optional list of image URLs or Base64 Data URIs")
+    is_ephemeral_reference: Optional[bool] = Field(default=False, description="True if images are from referenced community messages without permanent saving")
+
+    @model_validator(mode="after")
+    def validate_message_or_images(self) -> "CommunityChatRequest":
+        msg = (self.message or "").strip()
+        has_imgs = bool(self.images and len(self.images) > 0)
+        if not msg and not has_imgs:
+            raise ValueError("Message cannot be empty when no images are attached.")
+        if not msg and has_imgs:
+            self.message = "Em hãy xem và phân tích bức ảnh này giúp Senpai nhé."
+        else:
+            self.message = msg
+        return self
 
 
 class CommunityChatResponse(BaseModel):
     response: str = Field(..., description="Chisa's reply in the community channel")
     emotions: Dict[str, Any] = Field(default_factory=dict, description="Updated emotion state with current speaker")
+    emotion_caption: Optional[str] = Field(default=None, description="Dynamic psychological summary caption")
     sentiment: Optional[Dict[str, Any]] = Field(default=None, description="Sentiment analysis of interaction")
     execution_time_ms: float = Field(default=0.0, description="Pipeline execution duration in milliseconds")
+    images_processed: Optional[List[Dict[str, Any]]] = Field(default_factory=list, description="Metadata of processed images")
+    attached_images: Optional[List[str]] = Field(default_factory=list, description="List of retrieved image URLs attached in response")

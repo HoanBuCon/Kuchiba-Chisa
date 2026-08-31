@@ -288,6 +288,36 @@ window.InspectorWidgets = {
             });
         }
 
+        if (promptComponents && promptComponents["Server Knowledge (Guild Memories)"]) {
+            tabs.push({
+                id: 'tab-guild-memories',
+                label: 'Server Knowledge',
+                icon: 'database',
+                content: promptComponents["Server Knowledge (Guild Memories)"],
+                count: `${Math.round(promptComponents["Server Knowledge (Guild Memories)"].length / 2.5)} tok`
+            });
+        }
+
+        if (promptComponents && promptComponents["Community Topic Summary"]) {
+            tabs.push({
+                id: 'tab-topic-sum',
+                label: 'Topic Summary',
+                icon: 'book-open',
+                content: promptComponents["Community Topic Summary"],
+                count: `${Math.round(promptComponents["Community Topic Summary"].length / 2.5)} tok`
+            });
+        }
+
+        if (promptComponents && promptComponents["Channel Transcript"]) {
+            tabs.push({
+                id: 'tab-transcript',
+                label: 'Channel Transcript',
+                icon: 'messages-square',
+                content: promptComponents["Channel Transcript"],
+                count: `${Math.round(promptComponents["Channel Transcript"].length / 2.5)} tok`
+            });
+        }
+
         if (userMessage) {
             tabs.push({
                 id: 'tab-user',
@@ -366,6 +396,10 @@ window.InspectorWidgets = {
         let searchData = promptComponents["Web Search Data"] || null;
         let loreData = promptComponents["Lore Context"] || null;
         let memData = promptComponents["Memories Context"] || null;
+        let guildData = promptComponents["Server Knowledge (Guild Memories)"] || null;
+        let imageMemData = promptComponents["Retrieved Image Memories"] || null;
+        let topicData = promptComponents["Community Topic Summary"] || null;
+        let transcriptData = promptComponents["Channel Transcript"] || null;
 
         if (systemPrompt && typeof systemPrompt === 'string') {
             if (!searchData && systemPrompt.includes("[SEARCH DATA — REFERENCE DATA START]")) {
@@ -383,9 +417,29 @@ window.InspectorWidgets = {
                 const end = systemPrompt.indexOf("[MEMORIES — REFERENCE DATA END]") + "[MEMORIES — REFERENCE DATA END]".length;
                 if (end > start) memData = systemPrompt.substring(start, end);
             }
+            if (!guildData && systemPrompt.includes("[TRI THỨC & SỰ KIỆN CHUNG CỦA SERVER]")) {
+                const start = systemPrompt.indexOf("[TRI THỨC & SỰ KIỆN CHUNG CỦA SERVER]");
+                const nextSection = systemPrompt.indexOf("\n\n[", start + 5);
+                guildData = nextSection > start ? systemPrompt.substring(start, nextSection) : systemPrompt.substring(start);
+            }
+            if (!imageMemData && systemPrompt.includes("[KÝ ỨC HÌNH ẢNH TÌM THẤY TRONG KHO")) {
+                const start = systemPrompt.indexOf("[KÝ ỨC HÌNH ẢNH TÌM THẤY TRONG KHO");
+                const nextSection = systemPrompt.indexOf("\n\n[", start + 5);
+                imageMemData = nextSection > start ? systemPrompt.substring(start, nextSection) : systemPrompt.substring(start);
+            }
+            if (!topicData && systemPrompt.includes("[BỐI CẢNH THẢO LUẬN GẦN ĐÂY CỦA NHÓM]")) {
+                const start = systemPrompt.indexOf("[BỐI CẢNH THẢO LUẬN GẦN ĐÂY CỦA NHÓM]");
+                const nextSection = systemPrompt.indexOf("\n\n[", start + 5);
+                topicData = nextSection > start ? systemPrompt.substring(start, nextSection) : systemPrompt.substring(start);
+            }
+            if (!transcriptData && systemPrompt.includes("[DIỄN BIẾN ĐOẠN CHAT GẦN ĐÂY TRONG KÊNH]")) {
+                const start = systemPrompt.indexOf("[DIỄN BIẾN ĐOẠN CHAT GẦN ĐÂY TRONG KÊNH]");
+                const nextSection = systemPrompt.indexOf("\n\n[", start + 5);
+                transcriptData = nextSection > start ? systemPrompt.substring(start, nextSection) : systemPrompt.substring(start);
+            }
         }
 
-        if (!searchData && !loreData && !memData) return '';
+        if (!searchData && !loreData && !memData && !guildData && !imageMemData && !topicData && !transcriptData) return '';
 
         const cards = [];
         if (searchData) {
@@ -426,7 +480,7 @@ window.InspectorWidgets = {
                     <div class="inspector-card-title" style="justify-content: space-between;">
                         <div style="display: flex; align-items: center; gap: 6px;">
                             ${this.icon('brain', { size: 14, color: '#e60026' })}
-                            <span>Ký Ức & Hồ Sơ Senpai (Memories Context)</span>
+                            <span>Ký Ức & Hồ Sơ Cá Nhân Senpai (Memories Context)</span>
                         </div>
                         <button class="btn" style="padding: 3px 8px; font-size: 11px;" onclick="InspectorWidgets.copyToClipboard(this.getAttribute('data-copy'), this)" data-copy="${this.escapeHtml(memData.trim())}">
                             ${this.icon('copy', { size: 12 })} <span>Sao chép</span>
@@ -436,8 +490,134 @@ window.InspectorWidgets = {
                 </div>
             `);
         }
+        if (guildData) {
+            cards.push(`
+                <div class="inspector-card" style="border-left: 3px solid #f59e0b; background: linear-gradient(135deg, rgba(245, 158, 11, 0.06), rgba(18, 12, 8, 0.6));">
+                    <div class="inspector-card-title" style="justify-content: space-between;">
+                        <div style="display: flex; align-items: center; gap: 6px;">
+                            ${this.icon('database', { size: 14, color: '#f59e0b' })}
+                            <span style="color: #fbbf24; font-weight: 700;">Tri Thức & Sự Kiện Chung Server (Guild Memories Context)</span>
+                        </div>
+                        <button class="btn" style="padding: 3px 8px; font-size: 11px;" onclick="InspectorWidgets.copyToClipboard(this.getAttribute('data-copy'), this)" data-copy="${this.escapeHtml(guildData.trim())}">
+                            ${this.icon('copy', { size: 12 })} <span>Sao chép</span>
+                        </button>
+                    </div>
+                    <div class="json-block" style="max-height: 320px; white-space: pre-wrap; font-size: 12px; line-height: 1.6;">${this.escapeHtml(guildData.trim())}</div>
+                </div>
+            `);
+        }
+        if (imageMemData) {
+            cards.push(`
+                <div class="inspector-card" style="border-left: 3px solid #ff4d88; background: linear-gradient(135deg, rgba(255, 77, 136, 0.08), rgba(20, 10, 15, 0.6));">
+                    <div class="inspector-card-title" style="justify-content: space-between;">
+                        <div style="display: flex; align-items: center; gap: 6px;">
+                            ${this.icon('image', { size: 14, color: '#ff4d88' })}
+                            <span style="color: #ff80aa; font-weight: 700;">Ký Ức Hình Ảnh Đã Tìm Thấy (Retrieved Image Memories Context)</span>
+                        </div>
+                        <button class="btn" style="padding: 3px 8px; font-size: 11px;" onclick="InspectorWidgets.copyToClipboard(this.getAttribute('data-copy'), this)" data-copy="${this.escapeHtml(imageMemData.trim())}">
+                            ${this.icon('copy', { size: 12 })} <span>Sao chép</span>
+                        </button>
+                    </div>
+                    <div class="json-block" style="max-height: 320px; white-space: pre-wrap; font-size: 12px; line-height: 1.6;">${this.escapeHtml(imageMemData.trim())}</div>
+                </div>
+            `);
+        }
+        if (topicData) {
+            cards.push(`
+                <div class="inspector-card" style="border-left: 3px solid #10b981; background: linear-gradient(135deg, rgba(16, 185, 129, 0.06), rgba(10, 18, 15, 0.6));">
+                    <div class="inspector-card-title" style="justify-content: space-between;">
+                        <div style="display: flex; align-items: center; gap: 6px;">
+                            ${this.icon('book-open', { size: 14, color: '#10b981' })}
+                            <span style="color: #6ee7b7; font-weight: 700;">Bối Cảnh Thảo Luận Gần Đây Của Kênh (Topic Summary)</span>
+                        </div>
+                        <button class="btn" style="padding: 3px 8px; font-size: 11px;" onclick="InspectorWidgets.copyToClipboard(this.getAttribute('data-copy'), this)" data-copy="${this.escapeHtml(topicData.trim())}">
+                            ${this.icon('copy', { size: 12 })} <span>Sao chép</span>
+                        </button>
+                    </div>
+                    <div class="json-block" style="max-height: 320px; white-space: pre-wrap; font-size: 12px; line-height: 1.6;">${this.escapeHtml(topicData.trim())}</div>
+                </div>
+            `);
+        }
+        if (transcriptData) {
+            cards.push(`
+                <div class="inspector-card" style="border-left: 3px solid #38bdf8; background: linear-gradient(135deg, rgba(56, 189, 248, 0.06), rgba(8, 15, 20, 0.6));">
+                    <div class="inspector-card-title" style="justify-content: space-between;">
+                        <div style="display: flex; align-items: center; gap: 6px;">
+                            ${this.icon('messages-square', { size: 14, color: '#38bdf8' })}
+                            <span style="color: #7dd3fc; font-weight: 700;">Diễn Biến Đoạn Chat Gần Đây Trong Kênh (Live Transcript)</span>
+                        </div>
+                        <button class="btn" style="padding: 3px 8px; font-size: 11px;" onclick="InspectorWidgets.copyToClipboard(this.getAttribute('data-copy'), this)" data-copy="${this.escapeHtml(transcriptData.trim())}">
+                            ${this.icon('copy', { size: 12 })} <span>Sao chép</span>
+                        </button>
+                    </div>
+                    <div class="json-block" style="max-height: 320px; white-space: pre-wrap; font-size: 12px; line-height: 1.6;">${this.escapeHtml(transcriptData.trim())}</div>
+                </div>
+            `);
+        }
 
         return cards.join('');
+    },
+
+    /**
+     * Render Interactive Retrieved Images Gallery Card for Stage 5.1.e and Stage 7
+     */
+    renderRetrievedImagesCard(retrievedImages = [], title = "Danh Sách Ký Ức Hình Ảnh Đã Tìm Thấy (Retrieved Image Memories)") {
+        if (!Array.isArray(retrievedImages) || retrievedImages.length === 0) {
+            return '';
+        }
+
+        const cardsHtml = retrievedImages.map((img, idx) => {
+            const imgSrc = img.url || img.base64_data_uri || '';
+            const fullUrl = img.url || imgSrc;
+            const score = typeof img.score === 'number' ? (img.score).toFixed(2) : (img.score || '—');
+            const scoreBadge = `<span class="pill" style="font-size: 10px; background: rgba(255, 77, 136, 0.2); color: #ff80aa; border-color: rgba(255, 77, 136, 0.4);">Score: ${score}</span>`;
+            const caption = img.visual_caption || img.caption || 'Ký ức hình ảnh đã lưu';
+            const tags = Array.isArray(img.tags) ? img.tags : [];
+            const tagPills = tags.map(t => `<span class="pill" style="font-size: 9px; opacity: 0.85;">#${window.VisualizerApp.escapeHtml(t)}</span>`).join(' ');
+
+            return `
+                <div style="background: rgba(18, 10, 16, 0.85); border: 1px solid rgba(255, 77, 136, 0.25); border-radius: 8px; padding: 12px; display: flex; gap: 12px; margin-bottom: 8px;">
+                    <div style="width: 100px; height: 100px; min-width: 100px; border-radius: 6px; overflow: hidden; background: #000; cursor: pointer; border: 1px solid rgba(255, 255, 255, 0.1);" onclick="window.open('${fullUrl}', '_blank')">
+                        <img src="${imgSrc}" alt="Retrieved Image #${idx+1}" style="width: 100%; height: 100%; object-fit: cover; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.08)'" onmouseout="this.style.transform='scale(1)'" />
+                    </div>
+                    <div style="flex: 1; display: flex; flex-direction: column; justify-content: space-between;">
+                        <div>
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                                <div style="display: flex; align-items: center; gap: 6px;">
+                                    <span class="pill" style="font-size: 9.5px; opacity: 0.7;">#${idx + 1}</span>
+                                    <span style="font-size: 11px; color: var(--text-muted); font-family: monospace;">${img.image_id ? img.image_id.slice(0, 12) + '...' : ''}</span>
+                                </div>
+                                ${scoreBadge}
+                            </div>
+                            <div style="color: var(--text-primary); font-size: 12.5px; line-height: 1.5; margin-bottom: 6px; font-weight: 500;">
+                                ${window.VisualizerApp.escapeHtml(caption)}
+                            </div>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 4px;">
+                            <div style="display: flex; gap: 4px; flex-wrap: wrap;">
+                                ${tagPills}
+                            </div>
+                            <a href="${fullUrl}" target="_blank" style="font-size: 11px; color: #ff80aa; text-decoration: none; display: flex; align-items: center; gap: 3px;">
+                                <span>Xem ảnh gốc</span> ↗
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        return `
+            <div class="inspector-card" style="border-left: 3px solid #ff4d88; background: linear-gradient(135deg, rgba(255, 77, 136, 0.05), rgba(18, 10, 16, 0.5));">
+                <div class="inspector-card-title" style="justify-content: space-between;">
+                    <div style="display: flex; align-items: center; gap: 6px;">
+                        ${this.icon('image', { size: 14, color: '#ff4d88' })}
+                        <span style="color: #ff80aa; font-weight: 700;">${title} (${retrievedImages.length})</span>
+                    </div>
+                    <span class="pill" style="background: rgba(255, 77, 136, 0.2); color: #ff99bb; border-color: rgba(255, 77, 136, 0.4); font-size: 10px;">Qdrant image_memories</span>
+                </div>
+                ${cardsHtml}
+            </div>
+        `;
     },
 
     /**
@@ -467,18 +647,30 @@ window.InspectorWidgets = {
                 `;
             }
 
-            const content = f.content || f.text || f.fact || JSON.stringify(f);
+            const content = f.content || f.text || f.text_content || f.fact || JSON.stringify(f);
             const score = f.importance_score || f.score || f.importance;
             const scoreHtml = score !== undefined ? `<span class="pill pill-tokens" style="font-size: 9.5px;">Score: ${score}</span>` : '';
             const typeHtml = f.type ? `<span class="pill" style="font-size: 9.5px; color: #ffa4b2; border-color: rgba(255, 34, 62, 0.35); background: rgba(255, 34, 62, 0.12);">${this.escapeHtml(f.type)}</span>` : '';
             const statusHtml = f.status ? `<span class="pill" style="font-size: 9.5px; color: ${f.status === 'contradict' ? '#ff1133' : '#ffa4b2'}; border-color: rgba(255, 34, 62, 0.35); background: rgba(255, 34, 62, 0.12);">${this.escapeHtml(f.status)}</span>` : '';
+            const speakerHtml = f.recorded_by_speaker ? `<span class="pill" style="font-size: 9.5px; color: #38bdf8; border-color: rgba(56, 189, 248, 0.35); background: rgba(56, 189, 248, 0.12);">@${this.escapeHtml(f.recorded_by_speaker)}</span>` : '';
+            const collHtml = f.collection === 'guild_memories' ? `<span class="pill" style="font-size: 9.5px; color: #fbbf24; border-color: rgba(245, 158, 11, 0.35); background: rgba(245, 158, 11, 0.12);">Guild Scope</span>` : '';
+            
+            let expHtml = '';
+            if (f.expires_at) {
+                const expDate = new Date(f.expires_at * 1000);
+                const expStr = `Hết hạn: ${expDate.toLocaleDateString('vi-VN')}`;
+                expHtml = `<span class="pill" style="font-size: 9.5px; color: #fbbf24; border-color: rgba(245, 158, 11, 0.35); background: rgba(245, 158, 11, 0.12);">${this.escapeHtml(expStr)}</span>`;
+            }
 
             return `
                 <div style="background: rgba(14, 7, 10, 0.75); border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 8px 10px; margin-bottom: 6px; font-size: 12px; line-height: 1.5; border-left: 3px solid var(--red);">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
                         <span style="font-size: 10.5px; font-family: 'JetBrains Mono', monospace; color: var(--text-muted);">#${i + 1}</span>
-                        <div style="display: flex; gap: 4px;">
+                        <div style="display: flex; gap: 4px; flex-wrap: wrap;">
+                            ${collHtml}
+                            ${speakerHtml}
                             ${typeHtml}
+                            ${expHtml}
                             ${scoreHtml}
                             ${statusHtml}
                         </div>
@@ -668,6 +860,57 @@ window.InspectorWidgets = {
     },
 
     /**
+     * 5.b Render Initial Emotion Baseline State (Used in Stage 1 Initialization)
+     */
+    renderInitialEmotionGrid(emotions = {}) {
+        if (!emotions || Object.keys(emotions).length === 0) return '';
+
+        const dimensions = [
+            { key: 'trust', label: 'Tin tưởng (Trust)', color: '#ff8597', default: 0.50 },
+            { key: 'attachment', label: 'Gắn bó (Attachment)', color: '#ff1133', default: 0.00 },
+            { key: 'comfort', label: 'Bình yên (Comfort)', color: '#e60026', default: 0.50 },
+            { key: 'joy', label: 'Vui vẻ (Joy)', color: '#ff4d66', default: 0.15 },
+            { key: 'curiosity', label: 'Hiếu kỳ (Curiosity)', color: '#ff3b56', default: 0.10 },
+            { key: 'shyness', label: 'Ngại ngùng (Shyness)', color: '#ff5c75', default: 0.00 },
+            { key: 'irritation', label: 'Khó chịu (Irritation)', color: '#ff223e', default: 0.00 },
+            { key: 'sadness', label: 'Buồn bã (Sadness)', color: '#b30c24', default: 0.00 },
+        ];
+
+        const cardsHtml = dimensions.map(dim => {
+            const val = emotions[dim.key] !== undefined && emotions[dim.key] !== null 
+                ? Number(emotions[dim.key]) 
+                : dim.default;
+            const pct = Math.round(val * 100);
+
+            return `
+                <div style="background: rgba(14, 7, 10, 0.75); border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 8px 10px; border-left: 3px solid ${dim.color};">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                        <span style="font-size: 11px; font-weight: 600; color: ${dim.color};">${dim.label}</span>
+                        <span style="font-size: 12px; font-weight: 700; font-family: 'JetBrains Mono', monospace; color: var(--text-primary);">${val.toFixed(2)}</span>
+                    </div>
+                    <div style="height: 4px; background: rgba(255,255,255,0.06); border-radius: 2px; overflow: hidden;">
+                        <div style="height: 100%; width: ${pct}%; background: ${dim.color}; border-radius: 2px;"></div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        return `
+            <div class="inspector-card" style="margin-top: 12px;">
+                <div class="inspector-card-title">
+                    <div style="display: flex; align-items: center; gap: 6px;">
+                        ${this.icon('heart', { size: 14, color: 'var(--red)' })}
+                        <span>Trạng Thái Cảm Xúc Khởi Đầu (Initial Emotion Baseline State)</span>
+                    </div>
+                </div>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 8px; margin-top: 6px;">
+                    ${cardsHtml}
+                </div>
+            </div>
+        `;
+    },
+
+    /**
      * 6. Render Emotion Comparison Card
      */
     renderEmotionComparison(before = {}, after = {}, delta = {}) {
@@ -683,19 +926,27 @@ window.InspectorWidgets = {
         ];
 
         const rowsHtml = dimensions.map(dim => {
-            const bVal = before[dim.key] !== undefined ? Number(before[dim.key]).toFixed(2) : '—';
-            const aVal = after[dim.key] !== undefined ? Number(after[dim.key]).toFixed(2) : '—';
-            const dVal = delta[dim.key] !== undefined ? Number(delta[dim.key]) : null;
+            const b = before[dim.key];
+            const a = after[dim.key];
+            const d = delta[dim.key];
+
+            const bVal = b !== undefined && b !== null ? Number(b).toFixed(3) : '—';
+            const aVal = a !== undefined && a !== null ? Number(a).toFixed(3) : '—';
+            const dVal = d !== undefined && d !== null ? Number(d) : null;
             
-            let dHtml = '—';
+            let dHtml = '<span style="color: var(--text-muted); opacity: 0.6;">0.000</span>';
             if (dVal !== null) {
-                const sign = dVal > 0 ? '+' : '';
-                const dColor = dVal > 0 ? '#10b981' : (dVal < 0 ? '#ef4444' : 'var(--text-muted)');
-                dHtml = `<span style="color: ${dColor}; font-weight: 700;">${sign}${dVal.toFixed(2)}</span>`;
+                if (Math.abs(dVal) < 0.0001) {
+                    dHtml = `<span style="color: var(--text-muted); opacity: 0.6;">0.000</span>`;
+                } else {
+                    const sign = dVal > 0 ? '+' : '';
+                    const dColor = dVal > 0 ? '#10b981' : '#ef4444';
+                    dHtml = `<span style="color: ${dColor}; font-weight: 700;">${sign}${dVal.toFixed(3)}</span>`;
+                }
             }
 
             return `
-                <div style="display: grid; grid-template-columns: 110px 1fr 1fr 1fr; padding: 6px 8px; border-bottom: 1px solid var(--border-color); font-size: 12px; font-family: 'JetBrains Mono', monospace; align-items: center;">
+                <div style="display: grid; grid-template-columns: 140px 1fr 1fr 1fr; padding: 6px 8px; border-bottom: 1px solid var(--border-color); font-size: 12px; font-family: 'JetBrains Mono', monospace; align-items: center;">
                     <span style="color: ${dim.color}; font-weight: 600;">${dim.label}</span>
                     <span style="color: var(--text-secondary); text-align: center;">${bVal}</span>
                     <span style="color: var(--text-primary); font-weight: 700; text-align: center;">${aVal}</span>
@@ -712,7 +963,7 @@ window.InspectorWidgets = {
                         <span>Biến Động Cảm Xúc (Emotion Delta Telemetry)</span>
                     </div>
                 </div>
-                <div style="display: grid; grid-template-columns: 110px 1fr 1fr 1fr; padding: 6px 8px; background: rgba(8, 12, 20, 0.6); border-radius: var(--radius-xs); font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin-bottom: 4px;">
+                <div style="display: grid; grid-template-columns: 140px 1fr 1fr 1fr; padding: 6px 8px; background: rgba(8, 12, 20, 0.6); border-radius: var(--radius-xs); font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin-bottom: 4px;">
                     <span>Dimension</span>
                     <span style="text-align: center;">Trước</span>
                     <span style="text-align: center;">Sau</span>

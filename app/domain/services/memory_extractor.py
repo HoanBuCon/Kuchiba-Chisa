@@ -3,7 +3,7 @@ import time
 from typing import Any, Optional
 from app.domain.interfaces.llm_provider import BaseLLMAdapter, StructuredPrompt
 from app.domain.interfaces.embedding_provider import IEmbeddingProvider
-from app.domain.entities.memory import MemoryPayload
+from app.domain.entities.memory import MemoryPayload, GuildMemoryPayload
 from app.domain.interfaces.vector_store import IVectorStore
 from app.shared.utils.logger import get_logger
 
@@ -12,6 +12,7 @@ log = get_logger(__name__)
 class MemoryExtractor:
     """
     Background worker that extracts long-term facts/preferences from user messages and stores them.
+    Supports both Individual memories (memories collection) and Guild memories (guild_memories collection).
     """
     def __init__(self, llm: BaseLLMAdapter, embedder: IEmbeddingProvider, vector_store: IVectorStore):
         self.llm = llm
@@ -22,7 +23,7 @@ class MemoryExtractor:
             "properties": {
                 "type": {
                     "type": "string",
-                    "enum": ["user_fact", "shared_story", "none"]
+                    "enum": ["user_fact", "shared_story", "guild_event", "guild_culture", "none"]
                 },
                 "content": {"type": "string"},
                 "importance_score": {
@@ -43,13 +44,17 @@ class MemoryExtractor:
                         "properties": {
                             "type": {
                                 "type": "string",
-                                "enum": ["user_fact", "shared_story"]
+                                "enum": ["user_fact", "shared_story", "guild_event", "guild_culture"]
                             },
                             "content": {"type": "string"},
                             "importance_score": {
                                 "type": "number",
                                 "minimum": 0.1,
                                 "maximum": 1.0
+                            },
+                            "expires_at": {
+                                "type": "integer",
+                                "description": "Optional epoch timestamp when this event ends/expires (if applicable)"
                             }
                         },
                         "required": ["type", "content"]
@@ -266,52 +271,51 @@ class MemoryExtractor:
         history: list[dict[str, str]],
         current_user_message: str,
         current_assistant_reply: str,
+        guild_id: Optional[str] = None,
+        channel_id: Optional[str] = None,
+        speaker_name: Optional[str] = None,
+        is_community: bool = False,
+        trace_id: Optional[str] = None,
     ) -> None:
         """
-        Batched background worker: Analyzes a 3-pair conversation window (+ 2 preceding user messages)
-        to extract multi-fact milestones, preferences, or nicknames, and saves them to Vector DB.
+        Batched background worker: Analyzes conversation window to extract multi-fact milestones,
+        personal preferences, server-shared events, or guild culture, and stores them in Qdrant.
         """
+        has_guild = bool(guild_id and not guild_id.startswith("CHANNEL_") and guild_id != "DM")
+        
         system_prompt = (
-            "You are a Precision Long-Term Memory Extractor for an AI Companion application.\n"
-            "Your mission is to extract persistent, meaningful long-term facts from the 3-turn conversation snippet between Senpai (User) and Chisa (AI Companion).\n\n"
-            "TWO ALLOWED MEMORY TYPES:\n"
-            "1. 'user_fact' (Information about Senpai):\n"
-            "   - Real-world life: Job applications, career, studies, exams, location/city, family, pets, health.\n"
+            "You are a Precision Long-Term Memory Extractor for an AI Companion application (Kuchiba Chisa).\n"
+            "Your mission is to extract persistent, meaningful facts from the conversation snippet.\n\n"
+            "ALLOWED MEMORY TYPES:\n"
+            "1. 'user_fact' (Personal information about the speaker):\n"
+            "   - Real-world life: Job, career, studies, exams, city/location, family, pets, health.\n"
             "   - Personal tastes & habits: Favorite foods, drinks, music, games, hobbies, recurring routines.\n"
-            "   - Source: Stated directly by Senpai.\n"
-            "2. 'shared_story' (Collaborative Milestones between Senpai and Chisa):\n"
-            "   - Nickname assignments: Custom nicknames newly established by Chisa for Senpai (or vice-versa), e.g. 'Mèo Lười'. (NOT default 'Senpai - em').\n"
-            "   - Mutual promises: Concrete actionable commitments made for future events (e.g. 'Chisa hứa sẽ làm bánh kem tặng Senpai khi Senpai đỗ Viettel').\n"
-            "   - Memorable shared milestones: Meaningful agreements or shared moments explicitly acknowledged by both.\n\n"
-            "STRICT REJECTION RULES (RETURN {\"facts\": []}):\n"
-            "- ROLEPLAY JOKES & TEASES: Ignore all playful banter, flirtatious jokes, hypothetical teases (e.g., 'em đủ tuổi chưa' -> 'em đủ tuổi apply rồi nha' is a pure joke, DO NOT extract).\n"
-            "- DEFAULT PERSONA TRAITS: DO NOT extract built-in persona habits ('Chisa xưng em gọi Senpai', 'Chisa thích phân tích cấu trúc', 'Chisa là AI companion').\n"
-            "- SOCIAL PLEASANTRIES: DO NOT extract greetings ('chào em'), generic well-wishes ('chúc may mắn'), or fleeting moods ('hôm nay đói bụng').\n\n"
+            "2. 'shared_story' (Milestones & Agreements between Speaker and Chisa):\n"
+            "   - Custom nicknames assigned between Chisa and the speaker (NOT default 'Senpai - em').\n"
+            "   - Actionable mutual promises and commitments for future events.\n"
+            + (
+                "3. 'guild_event' (Server-wide Schedules, Tournaments, Meetups, Gaming Sessions):\n"
+                "   - Concrete events or schedules planned for members in this server (e.g. 'Tối thứ 7 lúc 20h server tổ chức giải Valorant').\n"
+                "   - Optionally provide 'expires_at' (epoch timestamp) if a clear date/time is mentioned.\n"
+                "4. 'guild_culture' (Server Inside Jokes, Member Nicknames, Server Customs):\n"
+                "   - Inside jokes, group traditions, member reputations, or channel rules acknowledged by the group.\n\n"
+                if has_guild else "\n"
+            )
+            + "STRICT REJECTION RULES (RETURN {\"facts\": []}):\n"
+            "- ROLEPLAY JOKES & BANTER: Ignore fleeting teases or superficial sarcasm.\n"
+            "- DEFAULT PERSONA TRAITS: DO NOT extract built-in persona habits ('Chisa xưng em', 'Chisa là AI companion').\n"
+            "- SOCIAL PLEASANTRIES: DO NOT extract simple greetings or fleeting moods ('hôm nay đói bụng').\n\n"
             "FEW-SHOT EXAMPLES:\n"
-            "Example 1 (User Fact & Joke Filter):\n"
-            "  Senpai: 'chào em' | Chisa: 'Chào Senpai~'\n"
-            "  Senpai: 'anh sắp apply viettel software rồi' | Chisa: 'Oa Viettel Software xịn lắm nha! Chúc Senpai may mắn~'\n"
-            "  Senpai: 'em đủ tuổi apply cùng anh chưa?' | Chisa: 'Em đủ tuổi apply rồi nha, đùa chứ chúc Senpai thành công!'\n"
-            "  -> Output: {\"facts\": [\n"
-            "       {\"type\": \"user_fact\", \"content\": \"Senpai đang chuẩn bị nộp hồ sơ (apply) vào Viettel Software\", \"importance_score\": 0.9}\n"
-            "     ]}\n\n"
-            "Example 2 (Nickname Assignment):\n"
-            "  Senpai: 'em đặt cho anh một biệt danh đi' | Chisa: 'Từ nay em sẽ gọi Senpai là \"Mèo Lười\" nha~'\n"
-            "  Senpai: 'haha biệt danh dễ thương đấy'\n"
-            "  -> Output: {\"facts\": [\n"
-            "       {\"type\": \"shared_story\", \"content\": \"Chisa đã đặt biệt danh cho Senpai là 'Mèo Lười'\", \"importance_score\": 0.85}\n"
-            "     ]}\n\n"
-            "Example 3 (Mutual Promise):\n"
-            "  Senpai: 'khi nào anh đỗ phỏng vấn thì sao?' | Chisa: 'Em hứa sẽ làm tặng Senpai một bài thơ mừng công đặc biệt nha!'\n"
-            "  Senpai: 'nhớ giữ lời hứa nhé'\n"
-            "  -> Output: {\"facts\": [\n"
-            "       {\"type\": \"shared_story\", \"content\": \"Chisa đã hứa sẽ làm tặng Senpai một bài thơ mừng công đặc biệt khi Senpai đỗ phỏng vấn\", \"importance_score\": 0.85}\n"
-            "     ]}\n\n"
-            "Example 4 (Pure Banter / Small talk):\n"
-            "  Senpai: 'Chisa em là con mèo hay con cáo?' | Chisa: 'Em là Kuchiba Chisa của Senpai đó nha~'\n"
-            "  Senpai: 'Haha đáng yêu thế'\n"
-            "  -> Output: {\"facts\": []}\n\n"
-            "Return valid JSON matching schema: {\"facts\": [{\"type\": \"...\", \"content\": \"...\", \"importance_score\": ...}]}"
+            "Example 1 (User Fact):\n"
+            "  Senpai: 'anh sắp apply Viettel Software rồi' | Chisa: 'Oa xịn quá! Chúc Senpai may mắn nha~'\n"
+            "  -> Output: {\"facts\": [{\"type\": \"user_fact\", \"content\": \"Senpai đang chuẩn bị nộp hồ sơ (apply) vào Viettel Software\", \"importance_score\": 0.9}]}\n\n"
+            + (
+                "Example 2 (Guild Event):\n"
+                "  Member: 'Tối thứ 7 tuần này 20h server mình làm giải custom Valorant nha anh em' | Chisa: 'Nghe hào hứng quá, Chisa sẽ cổ vũ cho mọi người nha~'\n"
+                "  -> Output: {\"facts\": [{\"type\": \"guild_event\", \"content\": \"Server tổ chức giải đấu Custom Valorant vào tối thứ 7 lúc 20:00\", \"importance_score\": 0.85}]}\n\n"
+                if has_guild else ""
+            )
+            + "Return valid JSON matching schema: {\"facts\": [{\"type\": \"...\", \"content\": \"...\", \"importance_score\": ...}]}"
         )
 
         transcript = self.build_batch_transcript(history, current_user_message, current_assistant_reply)
@@ -335,14 +339,21 @@ class MemoryExtractor:
             
             # Step 1: Filter and validate extracted facts with strict quality guards
             valid_facts = []
+            allowed_types = ["user_fact", "shared_story"]
+            if has_guild:
+                allowed_types.extend(["guild_event", "guild_culture"])
+
             for fact in extracted_facts:
                 if not isinstance(fact, dict):
                     continue
                 fact_type = fact.get("type")
+                if fact_type in ("important_facts", "preferences", "relationship", "fact", "core_facts"):
+                    fact_type = "user_fact"
                 content = (fact.get("content") or "").strip()
                 importance = float(fact.get("importance_score", 0.7))
+                expires_at = fact.get("expires_at")
 
-                if fact_type not in ["user_fact", "shared_story"]:
+                if fact_type not in allowed_types:
                     continue
 
                 if len(content) < 8:
@@ -353,7 +364,7 @@ class MemoryExtractor:
                     log.debug("Dropped low-importance memory fact", content=content, importance=importance)
                     continue
 
-                # Filter out meta persona definitions (e.g. speech habit definitions)
+                # Filter out meta persona definitions
                 content_lower = content.lower()
                 if "xưng em" in content_lower or "chisa là companion" in content_lower or "chisa là ai" in content_lower:
                     log.info("Dropped meta-persona noise fact", content=content)
@@ -363,6 +374,7 @@ class MemoryExtractor:
                     "type": fact_type,
                     "content": content,
                     "importance_score": importance,
+                    "expires_at": expires_at
                 })
 
             if not valid_facts:
@@ -381,16 +393,29 @@ class MemoryExtractor:
 
             for idx, fact in enumerate(valid_facts):
                 content = fact["content"]
-                log.info("Batch extracted memory fact", type=fact["type"], content=content, importance=fact["importance_score"], user_id=user_id)
+                fact_type = fact["type"]
+                log.info("Batch extracted memory fact", type=fact_type, content=content, importance=fact["importance_score"], user_id=user_id)
                 vector = await self.embedder.embed_text(content, prefix="passage: ")
-                existing = await self.vector_store.search_by_user(
-                    collection="memories",
-                    query_vector=vector,
-                    user_id=user_id,
-                    conversation_id=conversation_id,
-                    limit=3,
-                    score_threshold=0.70
-                )
+                
+                # Search candidates based on scope
+                if fact_type in ["guild_event", "guild_culture"] and has_guild:
+                    existing = await self.vector_store.search_guild_memories(
+                        collection="guild_memories",
+                        query_vector=vector,
+                        guild_id=str(guild_id),
+                        limit=3,
+                        score_threshold=0.70
+                    )
+                else:
+                    existing = await self.vector_store.search_by_user(
+                        collection="memories",
+                        query_vector=vector,
+                        user_id=user_id,
+                        conversation_id=conversation_id,
+                        limit=3,
+                        score_threshold=0.70
+                    )
+
                 fact_candidate_pairs.append({
                     "fact": fact,
                     "vector": vector,
@@ -418,9 +443,11 @@ class MemoryExtractor:
                 content = fact["content"]
                 fact_type = fact["type"]
                 importance = fact["importance_score"]
+                expires_at = fact.get("expires_at")
 
                 reconciliation_action = "NONE"
                 conflicting_memory_id = None
+                target_collection = "guild_memories" if fact_type in ["guild_event", "guild_culture"] and has_guild else "memories"
 
                 if existing and idx in reconcile_results:
                     action, conflicting_id = reconcile_results[idx]
@@ -428,35 +455,51 @@ class MemoryExtractor:
                     conflicting_memory_id = conflicting_id
 
                     if action == "DUPLICATE":
-                        log.info("Skipped duplicate memory", content=content)
+                        log.info("Skipped duplicate memory", content=content, collection=target_collection)
                         stored_facts.append({
                             "type": fact_type,
                             "content": content,
                             "importance_score": importance,
                             "status": "duplicate",
+                            "collection": target_collection,
                             "reconciliation_action": reconciliation_action,
-                            "conflicting_id": conflicting_memory_id
+                            "conflicting_id": conflicting_memory_id,
+                            "expires_at": expires_at,
+                            "recorded_by_speaker": speaker_name
                         })
                         continue
                     elif action == "CONTRADICT" and conflicting_id:
-                        log.info("Memory conflict resolved — deleting superseded memory", old_id=conflicting_id, new_content=content)
+                        log.info("Memory conflict resolved — deleting superseded memory", old_id=conflicting_id, new_content=content, collection=target_collection)
                         try:
-                            await self.vector_store.delete_points(collection="memories", ids=[conflicting_id])
+                            await self.vector_store.delete_points(collection=target_collection, ids=[conflicting_id])
                         except Exception as del_err:
                             log.warning("Failed to delete conflicting memory point", id=conflicting_id, error=str(del_err))
 
                 point_id = str(uuid.uuid4())
-                payload = MemoryPayload(
-                    user_id=user_id,
-                    conversation_id=conversation_id,
-                    memory_type=fact_type,
-                    importance_score=importance,
-                    created_at=int(time.time()),
-                    text_content=content,
-                )
+
+                if target_collection == "guild_memories":
+                    payload = GuildMemoryPayload(
+                        guild_id=str(guild_id),
+                        channel_id=str(channel_id) if channel_id else None,
+                        memory_type=fact_type,
+                        importance_score=importance,
+                        created_at=int(time.time()),
+                        expires_at=expires_at,
+                        text_content=content,
+                        recorded_by_speaker=speaker_name,
+                    )
+                else:
+                    payload = MemoryPayload(
+                        user_id=user_id,
+                        conversation_id=conversation_id,
+                        memory_type=fact_type,
+                        importance_score=importance,
+                        created_at=int(time.time()),
+                        text_content=content,
+                    )
 
                 await self.vector_store.upsert_memory(
-                    collection="memories",
+                    collection=target_collection,
                     point_id=point_id,
                     vector=vector,
                     payload=payload
@@ -467,8 +510,11 @@ class MemoryExtractor:
                     "content": content,
                     "importance_score": importance,
                     "status": "extracted",
+                    "collection": target_collection,
                     "reconciliation_action": reconciliation_action,
-                    "conflicting_id": conflicting_memory_id
+                    "conflicting_id": conflicting_memory_id,
+                    "expires_at": expires_at,
+                    "recorded_by_speaker": speaker_name
                 })
 
             # Record step to visualizer pipeline tracker
@@ -476,7 +522,8 @@ class MemoryExtractor:
                 status="extracted" if stored_facts else "skipped",
                 facts=stored_facts,
                 extracted_input_context=transcript,
-                raw_facts_count=len(extracted_facts)
+                raw_facts_count=len(extracted_facts),
+                trace_id=trace_id
             )
         except Exception as e:
             log.warning("Batch memory extraction failed", error=str(e))
@@ -486,7 +533,8 @@ class MemoryExtractor:
         status: str,
         facts: list[dict[str, Any]],
         extracted_input_context: str,
-        raw_facts_count: int = 0
+        raw_facts_count: int = 0,
+        trace_id: Optional[str] = None
     ) -> None:
         try:
             from app.infrastructure.logging.pipeline_tracker import pipeline_tracker
@@ -497,6 +545,7 @@ class MemoryExtractor:
                 category="task",
                 title="10.1 [BG] Trích xuất Ký ức (Batch 3 lượt)",
                 subtitle=f"{len(facts)} facts trích xuất",
+                trace_id=trace_id,
                 data={
                     "status": status,
                     "facts": facts,

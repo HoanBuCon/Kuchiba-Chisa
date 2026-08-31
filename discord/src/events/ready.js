@@ -33,6 +33,21 @@ export async function execute(client) {
     client.services.guildSettingsCache = new Map();
   }
 
+  // Load guild clear cutoffs cache (Temporal Clear Barrier)
+  try {
+    const cutoffs = await client.services.repositories.guildSettings.getAllClearCutoffs();
+    client.services.guildClearCutoffCache = new Map();
+    for (const row of cutoffs) {
+      if (row.discord_guild_id) {
+        client.services.guildClearCutoffCache.set(row.discord_guild_id, Number(row.cleared_at));
+      }
+    }
+    logger.info({ count: client.services.guildClearCutoffCache.size }, 'Guild clear cutoffs loaded');
+  } catch (error) {
+    logger.warn({ err: error }, 'Failed to load guild clear cutoffs, initialized empty');
+    client.services.guildClearCutoffCache = new Map();
+  }
+
   // Auto-sync Slash Commands with Discord API on startup
   try {
     const commands = [];

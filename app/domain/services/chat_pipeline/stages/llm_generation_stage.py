@@ -94,7 +94,26 @@ class LLMGenerationStage(PipelineStage):
             if error_to_raise:
                 raise error_to_raise
         else:
-            response = await self.llm.generate(context.prompt)
+            try:
+                response = await self.llm.generate(context.prompt)
+            except Exception as gen_err:
+                if context.has_images:
+                    log.warning(
+                        "Vision LLM call encountered an issue, activating In-Character Kuudere Resilience Fallback",
+                        error=str(gen_err),
+                        user_id=context.user_id,
+                    )
+                    context.vision_failed = True
+                    # Create fallback prompt: strip images and inject in-character explanation
+                    fallback_prompt = context.prompt.model_copy(deep=True)
+                    fallback_prompt.images = []
+                    fallback_prompt.system += (
+                        "\n\n[HỆ THỐNG THỊ GIÁC: Tạm thời không thể tải hoặc phân tích bức ảnh này do lỗi đường truyền mạng. "
+                        "Hãy để Chisa ứng biến tự nhiên theo phong thái Kuudere (ví dụ: 'Mạng của Học viện Startorch đang hơi chập chờn / Mắt Forte của em bị nhiễu sóng nên em chưa nhìn rõ ảnh Senpai vừa gửi, Senpai có thể miêu tả sơ qua hoặc lát gửi lại cho em xem nha~') và trả lời câu hỏi của Senpai bình thường.]"
+                    )
+                    response = await self.llm.generate(fallback_prompt)
+                else:
+                    raise gen_err
 
         chisa_reply = response.parsed.get("response")
         
@@ -169,28 +188,34 @@ class LLMGenerationStage(PipelineStage):
         context.tool_res["user_sentiment"] = user_sentiment
         context.tool_res["chisa_sentiment"] = chisa_sentiment
 
-        # Emit Stage 7 telemetry to Visualizer
-        if self.pipeline_tracker:
-            self.pipeline_tracker.add_step(
-                name="llm_generation",
-                stage_id="stage_7_llm",
-                depth=0,
-                category="stage_root",
-                title="Stage 7: [LLM] Sinh Phản Hồi & Phân tích Cảm xúc",
-                subtitle=f"Model: {getattr(self.llm, '_model', 'unknown')} · {response.input_tokens}↑ {response.output_tokens}↓ tok",
-                data={
-                    "model": getattr(self.llm, "_model", "unknown"),
-                    "input_tokens": response.input_tokens,
-                    "output_tokens": response.output_tokens,
-                    "reasoning_tokens": len(response.reasoning_content.split()) * 1.3 if response.reasoning_content else 0,
-                    "finish_reason": response.finish_reason,
-                    "has_reasoning": bool(response.reasoning_content),
-                    "response_preview": (chisa_reply[:200] + "...") if len(chisa_reply) > 200 else chisa_reply,
-                    "sentiment": sentiment_analysis,
-                    "user_sentiment": user_sentiment,
-                    "chisa_sentiment": chisa_sentiment,
-                    "status": "success"
-                }
-            )
+        # Extract attached images from LLM output with safety fallback
+        attached_images = response.parsed.get("attached_images") or []
+        if isinstance(attached_images, str):
+            attached_images = [attached_images]
+        elif not isinstance(attached_images, list):
+            attached_images = []
+
+        # Fallback: if retrieved_images exists and is high confidence (score >= 0.68) but LLM forgot to populate attached_images
+        if not attached_images and context.retrieved_images:
+            top_retrieved = context.retrieved_images[0]
+            if top_retrieved.get("score", 0.0) >= 0.68 and top_retrieved.get("url"):
+                attached_images = [top_retrieved["url"]]
+
+        context.attached_images = [img for img in attached_images if isinstance(img, str) and img.strip()]
+
+        # Extract visual tags & caption directly from Vision LLM output (0ms added latency auto-tagging)
+        if context.has_images:
+            raw_tags = response.parsed.get("image_tags") or []
+            if isinstance(raw_tags, str):
+                raw_tags = [t.strip() for t in raw_tags.split(",") if t.strip()]
+            elif isinstance(raw_tags, list):
+                raw_tags = [str(t).strip() for t in raw_tags if str(t).strip()]
+            else:
+                raw_tags = []
+            context.image_tags = raw_tags
+
+            raw_caption = response.parsed.get("visual_caption")
+            if isinstance(raw_caption, str) and raw_caption.strip():
+                context.visual_caption = raw_caption.strip()
 
         return context

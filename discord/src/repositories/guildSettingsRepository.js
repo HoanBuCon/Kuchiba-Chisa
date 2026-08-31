@@ -33,4 +33,33 @@ export class GuildSettingsRepository {
     const res = await this.pool.query("SELECT discord_guild_id, chisa_channel_id, COALESCE(mode, 'private') AS mode FROM guild_settings");
     return res.rows;
   }
+
+  async setClearCutoff(guildId, timestampMs) {
+    await this.pool.query(
+      `CREATE TABLE IF NOT EXISTS guild_clear_cutoffs (
+         discord_guild_id TEXT PRIMARY KEY,
+         cleared_at BIGINT NOT NULL,
+         updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+       )`
+    );
+    await this.pool.query(
+      `INSERT INTO guild_clear_cutoffs (discord_guild_id, cleared_at, updated_at)
+       VALUES ($1, $2, NOW())
+       ON CONFLICT (discord_guild_id)
+       DO UPDATE SET cleared_at = $2, updated_at = NOW()`,
+      [guildId, timestampMs]
+    );
+  }
+
+  async getAllClearCutoffs() {
+    await this.pool.query(
+      `CREATE TABLE IF NOT EXISTS guild_clear_cutoffs (
+         discord_guild_id TEXT PRIMARY KEY,
+         cleared_at BIGINT NOT NULL,
+         updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+       )`
+    );
+    const res = await this.pool.query("SELECT discord_guild_id, cleared_at FROM guild_clear_cutoffs");
+    return res.rows;
+  }
 }

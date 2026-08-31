@@ -57,10 +57,15 @@ data/*.db
 reports/
 scratch/
 
+
 # Ingestion Data
 data/raw_wiki/
 data/clean_wiki/
 data/chunks/
 data/canonical/
 data/ingestion_report.md
+
+# User Uploaded Media / Multimodal Vision Images
+app/static/uploads/*
+!app/static/uploads/.gitkeep
 

@@ -51,15 +51,26 @@ def _start_chat_trace(request: ChatRequest, username: str | None) -> str:
     )
 
 
-async def _run_chat_request(session: AsyncSession, message: str, original_user_id: str, normalized_user_id: str, chat_engine: ChatEngine, on_token: Optional[Callable[[str], Any]] = None) -> tuple[str, dict, bool]:
+async def _run_chat_request(
+    session: AsyncSession,
+    message: str,
+    original_user_id: str,
+    normalized_user_id: str,
+    chat_engine: ChatEngine,
+    on_token: Optional[Callable[[str], Any]] = None,
+    images: Optional[list[str]] = None,
+    is_ephemeral_reference: bool = False,
+) -> tuple[str, dict, bool, list, list]:
     from app.infrastructure.logging.pipeline_tracker import pipeline_tracker
 
     try:
-        reply_text, emotions = await chat_engine.chat(
+        reply_text, emotions, images_processed, attached_images = await chat_engine.chat(
             session=session,
             user_id=normalized_user_id,
             user_message=message,
             on_token=on_token,
+            images=images,
+            is_ephemeral_reference=is_ephemeral_reference,
         )
         loop_thinking_activated = pipeline_tracker.get_loop_thinking_activated()
 
@@ -68,7 +79,7 @@ async def _run_chat_request(session: AsyncSession, message: str, original_user_i
             emotions=emotions,
             status="success",
         )
-        return reply_text, emotions, loop_thinking_activated
+        return reply_text, emotions, loop_thinking_activated, images_processed, attached_images
     except LLMRateLimitError:
         fallback_text = "Chisa đang hơi bận một chút, Senpai chờ em thêm lát nữa nhé."
         fallback_emotions = None
@@ -78,7 +89,7 @@ async def _run_chat_request(session: AsyncSession, message: str, original_user_i
             status="success",
             error=None,
         )
-        return fallback_text, fallback_emotions, False
+        return fallback_text, fallback_emotions, False, [], []
     except (LLMTimeoutError, LLMInvalidResponseError, CircuitBreakerError) as llm_err:
         fallback_text = "Chisa hơi mệt một chút, Senpai nhắn lại sau nhé ~"
         fallback_emotions = None
@@ -89,7 +100,7 @@ async def _run_chat_request(session: AsyncSession, message: str, original_user_i
             status="success",
             error=str(llm_err),
         )
-        return fallback_text, fallback_emotions, False
+        return fallback_text, fallback_emotions, False, [], []
     except Exception as error:
         pipeline_tracker.end_trace(
             status="failed",
@@ -109,23 +120,49 @@ async def chat_endpoint(
     Requires user_id to correctly scope STM, emotions, and RAG contexts.
     """
     username, normalized_user_id = _prepare_chat_context(request, http_request)
-    log.info("Received chat request", user_id=request.user_id, normalized_user_id=normalized_user_id)
+    log.info("Received chat request", user_id=request.user_id, normalized_user_id=normalized_user_id, has_images=bool(request.images))
 
     _start_chat_trace(request, username)
 
     try:
-        reply_text, emotions, loop_thinking_activated = await _run_chat_request(
+        reply_text, emotions, loop_thinking_activated, images_processed, attached_images = await _run_chat_request(
             session=session, 
             message=request.message,
             original_user_id=request.user_id,
             normalized_user_id=normalized_user_id,
-            chat_engine=chat_engine
+            chat_engine=chat_engine,
+            images=request.images,
+            is_ephemeral_reference=bool(request.is_ephemeral_reference),
         )
+        
+        emotion_caption = None
+        if emotions and isinstance(emotions, dict):
+            from app.domain.services.state_manager import StateManager
+            from app.domain.entities.emotion import EmotionState
+            try:
+                state_obj = EmotionState(
+                    user_id=request.user_id,
+                    trust=float(emotions.get("trust", 0.50)),
+                    attachment=float(emotions.get("attachment", 0.00)),
+                    joy=float(emotions.get("joy", 0.15)),
+                    sadness=float(emotions.get("sadness", 0.00)),
+                    irritation=float(emotions.get("irritation", 0.00)),
+                    shyness=float(emotions.get("shyness", 0.00)),
+                    curiosity=float(emotions.get("curiosity", 0.10)),
+                    comfort=float(emotions.get("comfort", 0.50)),
+                )
+                emotion_caption = StateManager.get_emotion_summary_caption(state_obj)
+            except Exception as e:
+                log.warning("Failed to generate emotion caption", error=str(e))
+
         return ChatResponse(
             response=reply_text,
             user_id=request.user_id,
             emotions=emotions,
-            loop_thinking_activated=loop_thinking_activated
+            emotion_caption=emotion_caption,
+            loop_thinking_activated=loop_thinking_activated,
+            images_processed=images_processed,
+            attached_images=attached_images,
         )
     except ChatEngineBusyError:
         raise HTTPException(
@@ -194,15 +231,38 @@ async def chat_stream_endpoint(
                     pass
 
             async with AsyncSessionFactory() as session:
-                reply_text, emotions, loop_thinking_activated = await _run_chat_request(
+                reply_text, emotions, loop_thinking_activated, images_processed, attached_images = await _run_chat_request(
                     session=session,
                     message=request.message,
                     original_user_id=request.user_id,
                     normalized_user_id=normalized_user_id,
                     chat_engine=chat_engine,
                     on_token=sse_on_token,
+                    images=request.images,
+                    is_ephemeral_reference=bool(request.is_ephemeral_reference),
                 )
                 await session.commit()
+
+            emotion_caption = None
+            if emotions and isinstance(emotions, dict):
+                from app.domain.services.state_manager import StateManager
+                from app.domain.entities.emotion import EmotionState
+                try:
+                    state_obj = EmotionState(
+                        user_id=request.user_id,
+                        trust=float(emotions.get("trust", 0.50)),
+                        attachment=float(emotions.get("attachment", 0.00)),
+                        joy=float(emotions.get("joy", 0.15)),
+                        sadness=float(emotions.get("sadness", 0.00)),
+                        irritation=float(emotions.get("irritation", 0.00)),
+                        shyness=float(emotions.get("shyness", 0.00)),
+                        curiosity=float(emotions.get("curiosity", 0.10)),
+                        comfort=float(emotions.get("comfort", 0.50)),
+                    )
+                    emotion_caption = StateManager.get_emotion_summary_caption(state_obj)
+                except Exception:
+                    emotion_caption = None
+
             await queue.put({
                 "type": "complete",
                 "trace_id": trace_id,
@@ -210,7 +270,10 @@ async def chat_stream_endpoint(
                     "response": reply_text,
                     "user_id": request.user_id,
                     "emotions": emotions,
+                    "emotion_caption": emotion_caption,
                     "loop_thinking_activated": loop_thinking_activated,
+                    "images_processed": images_processed,
+                    "attached_images": attached_images,
                 },
             })
         except asyncio.CancelledError:
@@ -300,6 +363,7 @@ async def get_emotions(
     """Retrieves the current emotional state of Chisa for the frontend UI."""
     try:
         emotion = await chat_engine.get_emotion_state(session, normalize_user_id_str(user_id))
+        from app.domain.services.state_manager import StateManager
         return {
             "joy": emotion.joy,
             "sadness": emotion.sadness,
@@ -309,6 +373,7 @@ async def get_emotions(
             "shyness": getattr(emotion, "shyness", 0.0),
             "curiosity": getattr(emotion, "curiosity", 0.20),
             "comfort": getattr(emotion, "comfort", 0.50),
+            "caption": StateManager.get_emotion_summary_caption(emotion),
         }
     except Exception as e:
         log.error("Failed to fetch emotions", error=str(e), user_id=user_id)

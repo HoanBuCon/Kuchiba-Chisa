@@ -72,10 +72,95 @@ class ContextBuilder:
                     }
                 },
                 "required": ["reaction", "user_stance", "intensity", "variance"]
+            },
+            "attached_images": {
+                "type": "array",
+                "items": {"type": "string"},
+                "description": "Danh sách các URL ảnh đính kèm gửi lại cho Senpai (trích xuất từ Retrieved Image Memory)"
             }
         },
         "required": ["response", "sentiment"],
     }
+
+    @classmethod
+    def get_response_schema(cls, has_images: bool = False, has_retrieved_images: bool = False) -> Dict[str, Any]:
+        """
+        Dynamically constructs the strict JSON response schema.
+        - Text-only (Zero Contamination): pure {response, sentiment}.
+        - Past Image Retrieval: conditionally adds {attached_images}.
+        - Multimodal Vision: conditionally adds {image_tags, visual_caption} for 0ms latency auto-tagging.
+        """
+        props = {
+            "response": {"type": "string"},
+            "sentiment": {
+                "type": "object",
+                "properties": {
+                    "reaction": {
+                        "type": "string",
+                        "enum": [
+                            "calm_warmth",
+                            "flustered_affection",
+                            "playful_pout",
+                            "melancholic_care",
+                            "cheerful_joy",
+                            "guarded_cold",
+                            "neutral"
+                        ],
+                        "description": "Dominant emotional reaction of Chisa"
+                    },
+                    "user_stance": {
+                        "type": "string",
+                        "enum": [
+                            "loving",
+                            "playful",
+                            "vulnerable",
+                            "neutral",
+                            "hostile"
+                        ],
+                        "description": "Perceived attitude and intention of Senpai toward Chisa"
+                    },
+                    "intensity": {
+                        "type": "number",
+                        "minimum": 0.0,
+                        "maximum": 1.0,
+                        "description": "Emotional intensity: 0.1 (fleeting/mild) to 0.9 (deep/intense)"
+                    },
+                    "variance": {
+                        "type": "number",
+                        "minimum": -1.0,
+                        "maximum": 1.0,
+                        "description": "Nuance variance: -1.0 (melancholic/philosophical) to +1.0 (bright/joyful), 0.0 (neutral balance)"
+                    }
+                },
+                "required": ["reaction", "user_stance", "intensity", "variance"]
+            }
+        }
+
+        # Conditionally inject attached_images schema if user has images or past retrieved images
+        if has_retrieved_images or has_images:
+            props["attached_images"] = {
+                "type": "array",
+                "items": {"type": "string"},
+                "description": "Danh sách các URL ảnh đính kèm gửi lại cho Senpai (trích xuất từ Retrieved Image Memory)"
+            }
+
+        # In Multimodal Vision mode: enable 0ms zero-cost metadata auto-tagging by Vision LLM
+        if has_images:
+            props["image_tags"] = {
+                "type": "array",
+                "items": {"type": "string"},
+                "description": "Các từ khóa/nhãn chủ đề thị giác ngắn gọn miêu tả nội dung ảnh (ví dụ: ['mèo', 'thú cưng', 'dễ thương'] hoặc ['biển', 'hoàng hôn', 'kỷ niệm'])"
+            }
+            props["visual_caption"] = {
+                "type": "string",
+                "description": "Bản tóm tắt thị giác súc tích (1-2 câu) miêu tả các chi tiết và bối cảnh xuất hiện trong bức ảnh để lưu vào kho ký ức."
+            }
+
+        return {
+            "type": "object",
+            "properties": props,
+            "required": ["response", "sentiment"]
+        }
 
     SEARCH_INSTRUCTIONS = (
         "HƯỚNG DẪN QUAN TRỌNG: Hãy trả lời Senpai một cách tự nhiên bằng giọng điệu Kuudere của em. "
@@ -127,7 +212,22 @@ class ContextBuilder:
             '    "intensity": 0.1 đến 1.0 (cường độ tác động: 0.2 nhẹ nhàng/thoảng qua, 0.5 vừa phải, 0.9 sâu sắc/mãnh liệt),\n'
             '    "variance": -1.0 đến 1.0 (độ lệch sắc thái phụ trợ: âm nếu u buồn/triết lý bâng khuâng, dương nếu tươi sáng/hân hoan, 0 nếu cân bằng)\n'
             '  }\n'
-            "}"
+            "}\n\n"
+            "[HỆ QUY CHIẾU PHÂN LOẠI SENTIMENT (SCHEMA DEFINITIONS)]\n"
+            "- reaction (Phản ứng cảm xúc của Chisa trước đối thoại):\n"
+            "  + calm_warmth: Điềm tĩnh, ấm áp, trò chuyện thường nhật, an ủi nhẹ nhàng.\n"
+            "  + melancholic_care: Lắng nghe sâu sắc, đồng cảm trước nỗi buồn, sự thất vọng hoặc điều yếu lòng của Senpai.\n"
+            "  + playful_pout: Phụng phịu, hờn dỗi giả vờ trước lời trêu chọc, chọc ghẹo hài hước.\n"
+            "  + flustered_affection: Ngượng ngùng, bối rối đỏ mặt trước lời khen ngợi, tỏ tình ngọt ngào.\n"
+            "  + cheerful_joy: Hân hoan, rạng rỡ, tràn đầy năng lượng tích cực trước tin vui lớn.\n"
+            "  + guarded_cold: Lạnh lùng giữ khoảng cách khi bị xúc phạm, thô tục hoặc cố tình quấy rối quá trớn.\n"
+            "  + neutral: Khách quan, trung tính, trao đổi thông tin logic thuần túy.\n"
+            "- user_stance (Thái độ của Senpai trong lượt nói):\n"
+            "  + loving: Thể hiện tình cảm, quan tâm ngọt ngào, khen ngợi Chisa.\n"
+            "  + playful: Trêu đùa hài hước, bông đùa vui vẻ.\n"
+            "  + vulnerable: Tâm sự thật lòng, chia sẻ khó khăn, thất vọng hoặc nỗi buồn cá nhân.\n"
+            "  + neutral: Trò chuyện bình thường, hỏi đáp kiến thức.\n"
+            "  + hostile: Thô lỗ, khiêu khích tiêu cực, xúc phạm hoặc cố tình xâm phạm ranh giới."
         )
 
     @classmethod
@@ -141,6 +241,7 @@ class ContextBuilder:
         channel_name: Optional[str] = None,
         guild_name: Optional[str] = None,
         ambient_context: Optional[str] = None,
+        has_images: bool = False,
     ) -> str:
         elapsed_hours = 0.0
         if emotion.updated_at and emotion.updated_at > 0:
@@ -157,6 +258,16 @@ class ContextBuilder:
         ]
         if traits_snippet and traits_snippet.strip():
             sections.append(traits_snippet.strip())
+
+        if has_images:
+            from app.shared.security.vision_security import VisualPromptDefense
+            vision_directive = (
+                "[MULTIMODAL FORTE: EYE OF UNRAVELING (THẤU THỊ CẤU TRÚC VẠN VẬT)]\n"
+                "- Senpai vừa gửi hình ảnh. Hãy vận dụng năng lực thấu thị chi tiết của Mutant Resonator hệ Havoc để quan sát tỉ mỉ.\n"
+                "- Đưa ra nhận xét sắc bén, thông minh về các chỉ số game / chi tiết đời sống / meme theo phong thái Kuudere điềm đạm, ấm áp.\n\n"
+                f"{VisualPromptDefense.SYSTEM_VISION_ANCHOR}"
+            )
+            sections.extend(["", vision_directive])
 
         if ambient_context and ambient_context.strip():
             ambient_section = (
@@ -175,6 +286,7 @@ class ContextBuilder:
                 f"- Bạn đang tham gia trò chuyện trong kênh chat cộng đồng {chan_disp}{guild_disp}.\n"
                 f"- Định danh người nói (Current Speaker): Bạn đang trực tiếp đối thoại với {speaker_disp}. Hãy xưng hô 'Em' và gọi họ là 'Senpai' (hoặc '{speaker_disp} Senpai') một cách tự nhiên.\n"
                 "- Nhận thức không gian chung (Transcript Awareness): Bạn có quyền quan sát dòng trò chuyện gần nhất giữa các thành viên để đối đáp tự nhiên và hiểu mạch thảo luận của cả phòng.\n"
+                "- Tương tác & Gọi thành viên (Member Mentions/Ping): Khi Senpai nhờ gọi hoặc nhắc tới một thành viên khác trong phòng chat, bạn CÓ THỂ sử dụng cú pháp @username (ví dụ: @Fym, @manhit) trong câu nói của mình để hệ thống hỗ trợ ping và gửi thông báo trực tiếp đến người đó trên Discord.\n"
                 "- Tuyệt đối KHÔNG đóng giả người dùng khác, không tự tạo tin nhắn của người khác, và KHÔNG viết mô tả hành động trong ngoặc sao (*...*)."
             )
             sections.extend(["", community_directive])
@@ -260,6 +372,11 @@ class ContextBuilder:
         guild_name: Optional[str] = None,
         channel_transcript: Optional[str] = None,
         ambient_context: Optional[str] = None,
+        guild_memories: Optional[List[str]] = None,
+        topic_summary: Optional[str] = None,
+        has_images: bool = False,
+        retrieved_images: Optional[List[Dict[str, Any]]] = None,
+        interaction_count: int = 0,
     ) -> ContextBuildResult:
         """
         Builds production context: measure skeleton first, flex-allocate, then assemble system prompt.
@@ -275,6 +392,7 @@ class ContextBuilder:
             channel_name=channel_name,
             guild_name=guild_name,
             ambient_context=ambient_context,
+            has_images=has_images,
         )
         format_section = self.build_format_section()
         skeleton_tokens = TokenEstimator.estimate(system_skeleton) + TokenEstimator.estimate(format_section)
@@ -289,6 +407,7 @@ class ContextBuilder:
             conversation_summary=conversation_summary,
             tool_result=tool_result,
             intent_name=intent_name,
+            interaction_count=interaction_count,
         )
 
         memories_text = ""
@@ -302,6 +421,44 @@ class ContextBuilder:
                 "[MEMORIES — REFERENCE DATA START]\n"
                 + "\n".join(mem_items)
                 + "\n[MEMORIES — REFERENCE DATA END]"
+            )
+
+        guild_memories_text = ""
+        if guild_memories:
+            u_guild_mem = self._u_curve_sort(guild_memories)
+            g_items = [
+                f"- {m.text_content if hasattr(m, 'text_content') else str(m)}"
+                for m in u_guild_mem
+                if m and str(m).strip()
+            ]
+            if g_items:
+                guild_memories_text = (
+                    "[TRI THỨC & SỰ KIỆN CHUNG CỦA SERVER]\n"
+                    "Thông tin sự kiện, lịch trình, hoặc văn hóa chung được ghi nhận trong Server:\n"
+                    + "\n".join(g_items)
+                    + "\n[TRI THỨC SERVER — REFERENCE DATA END]"
+                )
+
+        retrieved_images_text = ""
+        if retrieved_images:
+            img_lines = []
+            for idx, img in enumerate(retrieved_images[:3], start=1):
+                url = img.get("url", "")
+                caption = img.get("visual_caption", "")
+                tags = ", ".join(img.get("tags", []))
+                score = img.get("score", 0.0)
+                img_lines.append(f"{idx}. URL: \"{url}\" (Độ khớp: {score:.2f})\n   - Mô tả ký ức: {caption}\n   - Tags: {tags}")
+
+            retrieved_images_text = (
+                "[KÝ ỨC HÌNH ẢNH TÌM THẤY TRONG KHO (RETRIEVED IMAGE MEMORY)]\n"
+                "Em đã lục tìm trong kho lưu trữ ký ức và tìm thấy các bức ảnh phù hợp với yêu cầu của Senpai:\n"
+                + "\n".join(img_lines)
+                + "\n\n"
+                "HƯỚNG DẪN QUAN TRỌNG VỀ GỬI ẢNH:\n"
+                "- Hãy hào hứng, dịu dàng nhắc lại kỷ niệm về bức ảnh và trả lời Senpai bằng giọng Kuudere ấm áp.\n"
+                "- Điền đường dẫn URL của bức ảnh phù hợp nhất vào trường 'attached_images' trong JSON output (ví dụ: [\"/static/uploads/2026/08/...\"]).\n"
+                "- Nếu tìm thấy nhiều ảnh phù hợp, em có thể đính kèm tối đa 1-2 ảnh.\n"
+                "[KÝ ỨC HÌNH ẢNH — REFERENCE DATA END]"
             )
 
         lore_text = ""
@@ -325,6 +482,15 @@ class ContextBuilder:
             )
             system_parts.extend(["", summary_section])
 
+        topic_section = None
+        if topic_summary and topic_summary.strip():
+            topic_section = (
+                "[BỐI CẢNH THẢO LUẬN GẦN ĐÂY CỦA NHÓM]\n"
+                f"{topic_summary.strip()}"
+            )
+            system_parts.extend(["", topic_section])
+
+        transcript_section = None
         if channel_transcript and channel_transcript.strip():
             transcript_section = (
                 "[DIỄN BIẾN ĐOẠN CHAT GẦN ĐÂY TRONG KÊNH]\n"
@@ -351,14 +517,22 @@ class ContextBuilder:
             # Secondary/Contextual info first, Primary Lore knowledge closest to output format
             if memories_text:
                 knowledge_sections.append(memories_text)
+            if guild_memories_text:
+                knowledge_sections.append(guild_memories_text)
+            if retrieved_images_text:
+                knowledge_sections.append(retrieved_images_text)
             if search_section:
                 knowledge_sections.append(search_section)
             if lore_text:
                 knowledge_sections.append(lore_text)
         else:
-            # Factual / Search or General queries: Memories -> Lore -> Search Data
+            # Factual / Search or General queries: Memories -> Guild Memories -> Retrieved Images -> Lore -> Search Data
             if memories_text:
                 knowledge_sections.append(memories_text)
+            if guild_memories_text:
+                knowledge_sections.append(guild_memories_text)
+            if retrieved_images_text:
+                knowledge_sections.append(retrieved_images_text)
             if lore_text:
                 knowledge_sections.append(lore_text)
             if search_section:
@@ -375,7 +549,11 @@ class ContextBuilder:
         components = {
             "System Skeleton (Persona)": system_skeleton,
             "Conversation Summary": summary_section,
+            "Community Topic Summary": topic_section,
+            "Channel Transcript": transcript_section,
+            "Server Knowledge (Guild Memories)": guild_memories_text if guild_memories_text else None,
             "Memories Context": memories_text if memories_text else None,
+            "Retrieved Image Memories": retrieved_images_text if retrieved_images_text else None,
             "Lore Context": lore_text if lore_text else None,
             "Web Search Data": search_section,
             "Output Format": format_section,
@@ -391,11 +569,16 @@ class ContextBuilder:
             else user_message
         )
 
+        schema_to_use = self.get_response_schema(
+            has_images=has_images,
+            has_retrieved_images=bool(retrieved_images)
+        )
+
         prompt = StructuredPrompt(
             system=system_prompt,
             history=allocation.trimmed_history,
             user_message=effective_user_message,
-            response_schema=self.RESPONSE_SCHEMA,
+            response_schema=schema_to_use,
             retrieved_memories=allocation.trimmed_memories,
             retrieved_lore=allocation.trimmed_lore,
             rag_decisions={

@@ -67,11 +67,30 @@ class Settings(BaseSettings):
     # ── LLM — DeepSeek ──────────────────────────────────────────
     DEEPSEEK_API_KEY: Optional[str] = None
     DEEPSEEK_MODEL: str = "deepseek-v4-flash"
+    DEEPSEEK_VISION_MODEL: str = "deepseek-v4-flash-vision-exp"
     DEEPSEEK_MAX_TOKENS: int = 8192
     DEEPSEEK_TEMPERATURE: float = Field(default=0.8, ge=0.0, le=2.0)
     DEEPSEEK_TIMEOUT: int = 60
     DEEPSEEK_BASE_URL: str = "https://api.deepseek.com"
     DEEP_THINKING: bool = True
+    VISION_MAX_IMAGES: int = 4
+    VISION_STORAGE_MAX_MB: int = 1024
+    VISION_STORAGE_BACKEND: str = "local"  # "local" | "s3" | "r2" | "minio" | "cloudinary"
+    VISION_LOCAL_STORAGE_DIR: str = "app/static/uploads"
+    VISION_STORAGE_BASE_URL: str = "/static/uploads"
+
+    # ── S3 / Cloudflare R2 / MinIO Object Storage (Optional) ───
+    VISION_S3_BUCKET: Optional[str] = None
+    VISION_S3_REGION: str = "auto"
+    VISION_S3_ENDPOINT_URL: Optional[str] = None  # e.g. https://<account_id>.r2.cloudflarestorage.com or MinIO URL
+    VISION_S3_ACCESS_KEY: Optional[str] = None
+    VISION_S3_SECRET_KEY: Optional[str] = None
+    VISION_S3_PUBLIC_DOMAIN: Optional[str] = None  # e.g. https://cdn.mysite.com
+
+    # ── Cloudinary Image Hosting (Optional) ────────────────────
+    CLOUDINARY_CLOUD_NAME: Optional[str] = None
+    CLOUDINARY_API_KEY: Optional[str] = None
+    CLOUDINARY_API_SECRET: Optional[str] = None
 
     # ── Embeddings & Semantic Router ───────────────────────────
     OPENAI_API_KEY: Optional[str] = None
