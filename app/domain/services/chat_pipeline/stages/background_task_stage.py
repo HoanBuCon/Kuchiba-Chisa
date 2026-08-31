@@ -63,6 +63,27 @@ class BackgroundTaskStage(PipelineStage):
         # Periodically trigger community topic summarization in community channels (every 30 messages)
         if context.is_community and context.channel_id and self.topic_summarizer:
             try:
+                # 1. Accumulate new messages and current turn into Redis Rolling Buffer
+                current_user_turn = {
+                    "speaker_name": context.speaker_name or "User",
+                    "content": context.user_message,
+                    "is_bot": False,
+                    "created_at": "Now",
+                }
+                current_assistant_turn = {
+                    "speaker_name": "Chisa",
+                    "content": context.chisa_reply,
+                    "is_bot": True,
+                    "created_at": "Now",
+                }
+                await self.topic_summarizer.append_messages(
+                    channel_id=context.channel_id,
+                    messages=context.recent_community_messages or [],
+                    current_user_turn=current_user_turn,
+                    current_assistant_turn=current_assistant_turn,
+                )
+
+                # 2. Check interval and spawn background summarization with rolling buffer
                 msg_count = await self.topic_summarizer.increment_message_count(context.channel_id)
                 if msg_count > 0 and msg_count % self.topic_summarizer.SUMMARIZE_INTERVAL == 0:
                     triggered_topic_summary = True

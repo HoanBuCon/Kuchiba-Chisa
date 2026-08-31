@@ -15,6 +15,8 @@ class CommunityTopicSummarizer:
     """
 
     SUMMARY_TTL_SECONDS = 7 * 24 * 3600  # 7 days
+    BUFFER_MAX_MESSAGES = 60
+    BUFFER_OVERLAP_MESSAGES = 10
     SUMMARIZE_INTERVAL = 30
 
     def __init__(self, llm: BaseLLMAdapter, cache: ICacheProvider):
@@ -36,6 +38,9 @@ class CommunityTopicSummarizer:
 
     def _summary_key(self, channel_id: str) -> str:
         return f"chisa:channel:{channel_id}:topic_summary"
+
+    def _buffer_key(self, channel_id: str) -> str:
+        return f"chisa:channel:{channel_id}:rolling_buffer"
 
     async def increment_message_count(self, channel_id: str) -> int:
         """Increment message counter for the channel in Redis."""
@@ -61,23 +66,113 @@ class CommunityTopicSummarizer:
             log.warning("Failed to fetch channel topic summary from Redis", channel_id=channel_id, error=str(e))
             return None
 
+    async def get_rolling_buffer(self, channel_id: str) -> List[Dict[str, Any]]:
+        """Fetch accumulated rolling message buffer from Redis."""
+        if not channel_id:
+            return []
+        try:
+            buf = await self.cache.get_json(self._buffer_key(channel_id))
+            return buf if isinstance(buf, list) else []
+        except Exception as e:
+            log.warning("Failed to fetch channel rolling buffer from Redis", channel_id=channel_id, error=str(e))
+            return []
+
+    async def append_messages(
+        self,
+        channel_id: str,
+        messages: Optional[List[Any]] = None,
+        current_user_turn: Optional[Dict[str, Any]] = None,
+        current_assistant_turn: Optional[Dict[str, Any]] = None,
+    ) -> None:
+        """
+        Appends new channel messages and the current conversation turn to the Redis Rolling Buffer.
+        Deduplicates messages and caps buffer to BUFFER_MAX_MESSAGES.
+        """
+        if not channel_id:
+            return
+
+        try:
+            buffer: List[Dict[str, Any]] = await self.get_rolling_buffer(channel_id)
+
+            def _msg_sig(m: Any) -> tuple:
+                if isinstance(m, dict):
+                    spk = m.get("speaker_name", "")
+                    content = (m.get("content", "") or "").strip()
+                    created = str(m.get("created_at", ""))
+                    return (spk, content, created)
+                spk = getattr(m, "speaker_name", "")
+                content = (getattr(m, "content", "") or "").strip()
+                created = str(getattr(m, "created_at", ""))
+                return (spk, content, created)
+
+            seen_sigs = set(_msg_sig(m) for m in buffer)
+
+            if messages:
+                for m in messages:
+                    sig = _msg_sig(m)
+                    if sig[1] and sig not in seen_sigs:
+                        if isinstance(m, dict):
+                            buffer.append({
+                                "speaker_name": m.get("speaker_name", "User"),
+                                "content": m.get("content", ""),
+                                "is_bot": bool(m.get("is_bot", False)),
+                                "created_at": m.get("created_at"),
+                                "reply_to_speaker": m.get("reply_to_speaker"),
+                            })
+                        else:
+                            buffer.append({
+                                "speaker_name": getattr(m, "speaker_name", "User"),
+                                "content": getattr(m, "content", ""),
+                                "is_bot": bool(getattr(m, "is_bot", False)),
+                                "created_at": getattr(m, "created_at", None),
+                                "reply_to_speaker": getattr(m, "reply_to_speaker", None),
+                            })
+                        seen_sigs.add(sig)
+
+            if current_user_turn and current_user_turn.get("content"):
+                sig = _msg_sig(current_user_turn)
+                if sig not in seen_sigs:
+                    buffer.append(current_user_turn)
+                    seen_sigs.add(sig)
+
+            if current_assistant_turn and current_assistant_turn.get("content"):
+                sig = _msg_sig(current_assistant_turn)
+                if sig not in seen_sigs:
+                    buffer.append(current_assistant_turn)
+                    seen_sigs.add(sig)
+
+            if len(buffer) > self.BUFFER_MAX_MESSAGES:
+                buffer = buffer[-self.BUFFER_MAX_MESSAGES:]
+
+            await self.cache.set_json(self._buffer_key(channel_id), buffer, ttl=self.SUMMARY_TTL_SECONDS)
+        except Exception as e:
+            log.warning("Failed to append messages to Redis rolling buffer", channel_id=channel_id, error=str(e))
+
     async def summarize_channel_topic(
         self,
         channel_id: str,
         guild_id: str,
-        messages: List[Any],
+        messages: Optional[List[Any]] = None,
         trace_id: Optional[str] = None,
     ) -> Optional[str]:
         """
-        Background execution: Calls LLM to summarize recent community discussion, merging with prior summary.
+        Background execution: Calls LLM to summarize accumulated rolling discussion buffer, merging with prior summary.
         """
-        if not messages:
+        rolling_buffer = await self.get_rolling_buffer(channel_id)
+        effective_messages = rolling_buffer if rolling_buffer else (messages or [])
+
+        if not effective_messages:
             return None
 
-        log.info("Starting community topic summarization...", channel_id=channel_id, guild_id=guild_id)
+        log.info(
+            "Starting community topic summarization with rolling buffer...",
+            channel_id=channel_id,
+            guild_id=guild_id,
+            message_count=len(effective_messages),
+        )
         formatted_transcript = ChannelTranscriptFormatter.format_transcript(
-            messages=messages,
-            max_tokens=1000,
+            messages=effective_messages,
+            max_tokens=1200,
             use_smart_compression=True
         )
 
@@ -132,6 +227,12 @@ class CommunityTopicSummarizer:
                     summary_text,
                     ttl=self.SUMMARY_TTL_SECONDS
                 )
+                
+                # Trim rolling buffer to retain last BUFFER_OVERLAP_MESSAGES for subsequent continuity
+                if rolling_buffer and len(rolling_buffer) > self.BUFFER_OVERLAP_MESSAGES:
+                    trimmed = rolling_buffer[-self.BUFFER_OVERLAP_MESSAGES:]
+                    await self.cache.set_json(self._buffer_key(channel_id), trimmed, ttl=self.SUMMARY_TTL_SECONDS)
+
                 log.info("Community topic summary updated in Redis", channel_id=channel_id, summary_length=len(summary_text))
                 self._record_pipeline_step(
                     status="success",
