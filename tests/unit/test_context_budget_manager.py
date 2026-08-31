@@ -136,4 +136,60 @@ def test_summary_trimmed_when_too_long():
     assert TokenEstimator.estimate(allocation.trimmed_summary or "") < TokenEstimator.estimate(long_summary)
 
 
+def test_hybrid_anchor_window_when_summary_exists():
+    # 20 short messages (10 turns)
+    short_history = [
+        {"role": "user" if i % 2 == 0 else "assistant", "content": f"msg {i}"}
+        for i in range(20)
+    ]
+    summary_text = "Tóm tắt từ câu 0 đến câu 18..."
+
+    # Case 1: At interaction 11 (1 turn since turn-10 summary)
+    # Expected messages kept: max(4, (1 + 2) * 2) = 6 messages (recent 3 turns: msgs 14, 15, 16, 17, 18, 19)
+    alloc_turn_11 = ContextBudgetManager.allocate(
+        mode=BudgetMode.RAG,
+        system_fixed_tokens=1815,
+        user_message="câu 11 nè em",
+        lore_chunks=[],
+        memories=[],
+        history=short_history,
+        conversation_summary=summary_text,
+        interaction_count=11,
+    )
+    assert len(alloc_turn_11.trimmed_history) == 6
+    assert alloc_turn_11.trimmed_history[-1]["content"] == "msg 19"
+    assert alloc_turn_11.trimmed_history[0]["content"] == "msg 14"
+
+    # Case 2: At interaction 10 (just generated summary for turns 1-10)
+    # Expected messages kept: max(4, (0 + 2) * 2) = 4 messages (2 safety overlap turns: msgs 16, 17, 18, 19)
+    alloc_turn_10 = ContextBudgetManager.allocate(
+        mode=BudgetMode.RAG,
+        system_fixed_tokens=1815,
+        user_message="câu 10",
+        lore_chunks=[],
+        memories=[],
+        history=short_history,
+        conversation_summary=summary_text,
+        interaction_count=10,
+    )
+    assert len(alloc_turn_10.trimmed_history) == 4
+    assert alloc_turn_10.trimmed_history[-1]["content"] == "msg 19"
+    assert alloc_turn_10.trimmed_history[0]["content"] == "msg 16"
+
+    # Case 3: Without summary (early in conversation, e.g. interaction 5)
+    # Without summary, no anchor window limit is enforced -> all short messages fitting within budget are kept
+    alloc_no_summary = ContextBudgetManager.allocate(
+        mode=BudgetMode.RAG,
+        system_fixed_tokens=1815,
+        user_message="câu hỏi đầu",
+        lore_chunks=[],
+        memories=[],
+        history=short_history,
+        conversation_summary=None,
+        interaction_count=5,
+    )
+    assert len(alloc_no_summary.trimmed_history) == 20
+
+
+
 

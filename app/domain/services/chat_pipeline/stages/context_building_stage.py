@@ -66,6 +66,7 @@ class ContextBuildingStage(PipelineStage):
             topic_summary=context.topic_summary,
             has_images=context.has_images,
             retrieved_images=context.retrieved_images,
+            interaction_count=getattr(context.stats, "interaction_count", 0) if context.stats else 0,
         )
         
         context.prompt = build_result.prompt

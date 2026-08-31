@@ -376,6 +376,7 @@ class ContextBuilder:
         topic_summary: Optional[str] = None,
         has_images: bool = False,
         retrieved_images: Optional[List[Dict[str, Any]]] = None,
+        interaction_count: int = 0,
     ) -> ContextBuildResult:
         """
         Builds production context: measure skeleton first, flex-allocate, then assemble system prompt.
@@ -406,6 +407,7 @@ class ContextBuilder:
             conversation_summary=conversation_summary,
             tool_result=tool_result,
             intent_name=intent_name,
+            interaction_count=interaction_count,
         )
 
         memories_text = ""
