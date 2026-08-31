@@ -70,23 +70,28 @@ flowchart TD
     end
 
     subgraph S4_Tools ["Stage 4: ToolRoutingStage"]
-        S4["Thực thi Công cụ Thời gian thực"] --> S4_Exec["Web Search (DuckDuckGo/Bing) / Calculator / DateTime"]
+        S4["Kiểm tra System Actions & Tools"] --> S4_Check{"Phân loại Công cụ"}
+        S4_Check -- "Web Search" --> S4_Delegate["Ủy quyền sang Stage 5<br/>(Bật cờ needs_web_search = True)"]
+        S4_Check -- "Công cụ Hệ thống" --> S4_Exec["Thực thi Nội bộ: Emotion Report / Manual Summarizer"]
         S4_Exec --> S4_Res["Lưu Tool Result vào Context"]
     end
 
+    S4_Delegate --> S5
     S4_Res --> S5
 
     subgraph S5_RAG ["Stage 5: RAGStage & ContextAssessor"]
         S5["Truy xuất Đa nguồn Song song (asyncio.gather)"]
-        S5 --> R1[("Qdrant: 'character_lore' / 'world_lore' / 'story_lore'")]
-        S5 --> R2[("Qdrant: 'memories' (Personal Facts)")]
-        S5 --> R3[("Qdrant: 'guild_memories' (Server Facts)")]
-        S5 --> R4[("Qdrant: 'image_memories' (Reverse Image)")]
-        R1 & R2 & R3 & R4 --> S5_Rank["Hybrid Scorer + Recency Decay + U-curve Sort"]
-        S5_Rank --> S5_Audit["ContextAssessor (Thẩm định căn chỉnh dữ liệu)"]
+        S5 --> R1[("5.1.a Qdrant: 'character_lore' / 'world_lore'")]
+        S5 --> R2[("5.1.b [SEARCH] DuckDuckGo & Deep Crawler<br/>(Thực thi Web Search khi needs_web_search)")]
+        S5 --> R3[("5.1.c Qdrant: 'memories' (Personal Facts)")]
+        S5 --> R4[("5.1.d Qdrant: 'guild_memories' (Server Facts)")]
+        S5 --> R5[("5.1.e Qdrant: 'image_memories' (Reverse Image)")]
+        R1 & R2 & R3 & R4 & R5 --> S5_Rank["Hybrid Scorer + Recency Decay + U-curve Sort"]
+        S5_Rank --> S5_Audit["5.2 ContextAssessor (Thẩm định căn chỉnh dữ liệu)"]
+        S5_Audit -- "Thiếu dữ kiện (<80%)" --> S5_Loop["5.3 Thinking Loop Agent<br/>(Tìm kiếm Web / Vector Thích ứng Vòng 2)"]
+        S5_Audit -- "Đủ căn cứ" --> S6
+        S5_Loop --> S6
     end
-
-    S5_Audit --> S6
 
     subgraph S6_Prompt ["Stage 6: ContextBuildingStage & BudgetManager"]
         S6["Lắp ráp StructuredPrompt"]
