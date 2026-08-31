@@ -177,10 +177,20 @@ flowchart TD
 
 ## 📜 Tài liệu Hệ thống & Báo cáo Kiến trúc
 
-- **[Báo Cáo Toàn Diện Kiến Trúc Chat Pipeline 3.0 (reports/PIPELINE.md)](reports/PIPELINE.md)**: Đặc tả chi tiết $100\%$ toàn bộ 10 Canonical Stages, cơ chế 3 chế độ chat, Hybrid Anchor Window, Write-Through State Cache, và hệ thống Auto-Summarizer 3 tầng.
-- **[Kế Hoạch Tích Hợp Ký Ức Thị Giác & Multimodal Vision (reports/UNIFIED_MULTIMODAL_VISION_AND_MEMORY_PLAN.md)](reports/UNIFIED_MULTIMODAL_VISION_AND_MEMORY_PLAN.md)**: Thiết kế kỹ thuật chi tiết cho tính năng đọc ảnh và Text-to-Image Reverse Retrieval.
-- **[Phân Tích Cấu Trúc Hệ Thống (Detailed Architecture Analysis)](docs/PHAN_TICH_WORKSPACE_CHI_TIET.md)**: Tài liệu phân tích sâu chi tiết cấu trúc mã nguồn dự án, thiết kế cơ sở dữ liệu PostgreSQL/Qdrant và mô hình lớp dịch vụ.
-- **[Hướng Dẫn Khởi Chạy & Triển Khai (Startup & Deployment Guide)](docs/STARTUP_GUIDE.md)**: Hướng dẫn thiết lập môi trường, cấu hình `.env`, chạy database migration và khởi động máy chủ FastAPI/Discord bot.
+### 📚 Tài liệu Vận hành & Phát triển (`docs/`)
+- **[Kiến Trúc Chat Pipeline 3.0 (docs/PIPELINE_ARCHITECTURE.md)](docs/PIPELINE_ARCHITECTURE.md)**: Đặc tả chi tiết $100\%$ toàn bộ 10 Canonical Stages, cơ chế 3 chế độ chat, Hybrid Anchor Window, Write-Through State Cache, và hệ thống Auto-Summarizer 3 tầng.
+- **[Ký Ức Thị Giác & Multimodal Vision (docs/MULTIMODAL_VISION_AND_MEMORY.md)](docs/MULTIMODAL_VISION_AND_MEMORY.md)**: Thiết kế kỹ thuật chi tiết cho tính năng đọc ảnh, phòng vệ SSRF/Pixel Bomb và Text-to-Image Reverse Retrieval.
+- **[Hệ Thống Cảm Xúc Động 8 Chiều (docs/HE_THONG_CAM_XUC_8_CHIEU.md)](docs/HE_THONG_CAM_XUC_8_CHIEU.md)**: Mô hình tâm lý học nhận thức đa tầng, RESONA Engine 3.0, ma trận tương hỗ 7 Archetypes $\times$ 5 Stances và phân rã cảm xúc môi trường.
+- **[Hướng Dẫn Khởi Chạy & Triển Khai (docs/STARTUP_GUIDE.md)](docs/STARTUP_GUIDE.md)**: Hướng dẫn thiết lập môi trường Docker, cấu hình `.env`, chạy Alembic migration và khởi động máy chủ FastAPI/Discord bot.
+- **[Hướng Dẫn Nạp Dữ Liệu Lore RAG (docs/INGESTION_GUIDE.md)](docs/INGESTION_GUIDE.md)**: Quy trình Ingestion dữ liệu Wiki Wuthering Waves, Semantic Chunking, Parent-Child Hydration và Qdrant Vector indexing.
+- **[Phân Tích Cấu Trúc Hệ Thống (docs/PHAN_TICH_WORKSPACE_CHI_TIET.md)](docs/PHAN_TICH_WORKSPACE_CHI_TIET.md)**: Tài liệu phân tích sâu chi tiết cấu trúc mã nguồn dự án, thiết kế cơ sở dữ liệu PostgreSQL/Qdrant và mô hình Clean Architecture.
+- **[Phiên Dịch Luồng Dữ Liệu (docs/WALKTHROUGH.md)](docs/WALKTHROUGH.md)**: Khám phá toàn cảnh luồng đi của dữ liệu từ Discord Gateway qua 10 Stages của Pipeline đến phản hồi LLM.
+
+### 🔬 Báo cáo Nghiên cứu & Đề xuất Nâng cấp (`reports/`)
+- **[Báo Cáo Toàn Diện Chat Pipeline (reports/PIPELINE.md)](reports/PIPELINE.md)**: Báo cáo kỹ thuật gốc đối chiếu mã nguồn thực tế và phân tích 10 Canonical Stages vs 11 Python Filter Classes.
+- **[Kế Hoạch Nâng Cấp Multi-Memory 3.0 (reports/MULTI_MEMORY_3.0_INTEGRATION_PLAN.md)](reports/MULTI_MEMORY_3.0_INTEGRATION_PLAN.md)**: Đề xuất tích hợp Qdrant `guild_memories`, lọc fact xung đột và Topic Summarizer.
+- **[Đề Xuất Nâng Cấp Emotion Engine DEHA 3.0 (reports/DEHA_3.0_EMOTION_ENGINE_UPGRADE_PROPOSAL.md)](reports/DEHA_3.0_EMOTION_ENGINE_UPGRADE_PROPOSAL.md)**: Thiết kế ma trận cảm xúc 2 cờ `reaction` $\times$ `user_stance`.
+- **[Kế Hoạch Text-to-Image Memory Retrieval (reports/TEXT_TO_IMAGE_MEMORY_RETRIEVAL_PLAN.md)](reports/TEXT_TO_IMAGE_MEMORY_RETRIEVAL_PLAN.md)**: Thiết kế chi tiết luồng truy vấn và gửi ảnh trả lại Discord.
 
 <br>
 
