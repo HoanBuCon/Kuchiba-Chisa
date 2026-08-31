@@ -1,23 +1,28 @@
+import asyncio
+import contextvars
+import datetime
 import json
 import time
 import uuid
-import datetime
-import asyncio
-import contextvars
-from typing import Any, Dict, List, Set, Callable, Optional
+from collections.abc import Awaitable, Callable
+from typing import Any, cast
 
 from app.shared.utils.logger import get_logger
 
 log = get_logger(__name__)
 
 # Request-scoped trace variable
-current_trace_var: contextvars.ContextVar[Dict[str, Any]] = contextvars.ContextVar("current_trace_var", default={})
+current_trace_var: contextvars.ContextVar[dict[str, Any] | None] = contextvars.ContextVar(
+    "current_trace_var",
+    default=None,
+)
 
 REDIS_PUBSUB_CHANNEL = "chisa:pipeline_events"
 REDIS_HISTORY_KEY = "chisa:pipeline_history"
 
 
 from enum import Enum
+
 
 class StepCategory(str, Enum):
     STAGE_ROOT = "stage_root"           # Node gốc của 1 trong 10 giai đoạn
@@ -79,13 +84,14 @@ STAGE_ID_TO_ROOT_NAME = {
 class PipelineTracker:
     def __init__(self, max_history: int = 100):
         self.max_history = max_history
-        self.history: List[Dict[str, Any]] = []
-        self.listeners: Set[Callable[[Dict[str, Any]], Any]] = set()
-        self._pending_tasks: Set[asyncio.Task] = set()
+        self.history: list[dict[str, Any]] = []
+        self.listeners: set[Callable[[dict[str, Any]], Any]] = set()
+        self._pending_tasks: set[asyncio.Task[Any]] = set()
         self._subscriber_task: Any = None
+        self._redis_broadcast_ready = False
         self.instance_id: str = str(uuid.uuid4())
 
-    def _notify_listeners(self, event: Dict[str, Any], broadcast_redis: bool = True):
+    def _notify_listeners(self, event: dict[str, Any], broadcast_redis: bool = True):
         # 1. Notify local in-process listeners
         for listener in list(self.listeners):
             try:
@@ -94,24 +100,41 @@ class PipelineTracker:
                 pass
 
         # 2. Broadcast to Redis Pub/Sub across multi-worker processes
-        if broadcast_redis:
+        if broadcast_redis and self._redis_broadcast_ready:
             try:
                 event["_publisher_id"] = self.instance_id
                 loop = asyncio.get_running_loop()
                 if loop.is_running():
                     task = loop.create_task(self._publish_redis_event(event))
-                    self._pending_tasks.add(task)
-                    task.add_done_callback(self._pending_tasks.discard)
+                    self._track_task(task)
             except RuntimeError:
                 pass  # Event loop not running
 
+    def _track_task(self, task: asyncio.Task[Any]) -> None:
+        """Track a best-effort observability task under its owning event loop."""
+        self._discard_completed_or_closed_tasks()
+        self._pending_tasks.add(task)
+        task.add_done_callback(self._pending_tasks.discard)
+
+    def _discard_completed_or_closed_tasks(self) -> None:
+        """Remove tasks that cannot produce another observable result."""
+        for task in tuple(self._pending_tasks):
+            if task.done() or task.get_loop().is_closed():
+                self._pending_tasks.discard(task)
+
     async def flush(self):
         """Awaits all pending background tasks (e.g. before loop shutdown in tests)."""
-        if self._pending_tasks:
-            tasks = list(self._pending_tasks)
+        self._discard_completed_or_closed_tasks()
+        current_loop = asyncio.get_running_loop()
+        tasks = [
+            task
+            for task in self._pending_tasks
+            if task.get_loop() is current_loop and not task.done()
+        ]
+        if tasks:
             await asyncio.gather(*tasks, return_exceptions=True)
 
-    async def _publish_redis_event(self, event: Dict[str, Any]):
+    async def _publish_redis_event(self, event: dict[str, Any]):
         try:
             from app.infrastructure.cache.redis.redis_service import get_redis_client
             redis = get_redis_client()
@@ -129,6 +152,7 @@ class PipelineTracker:
             redis = get_redis_client()
             pubsub = redis.pubsub()
             await pubsub.subscribe(REDIS_PUBSUB_CHANNEL)
+            self._redis_broadcast_ready = True
             log.info("PipelineTracker Redis Pub/Sub subscriber started ✓")
             
             async for message in pubsub.listen():
@@ -143,11 +167,21 @@ class PipelineTracker:
                     except Exception:
                         pass
         except Exception as e:
+            self._redis_broadcast_ready = False
             log.warning("Failed to start PipelineTracker Redis subscriber", error=str(e))
 
-    def start_trace(self, user_id: str, message: str, pipeline: str, source: str = "web", username: str = None, channel_name: str = None, guild_name: str = None) -> str:
+    def start_trace(
+        self,
+        user_id: str,
+        message: str,
+        pipeline: str,
+        source: str | None = "web",
+        username: str | None = None,
+        channel_name: str | None = None,
+        guild_name: str | None = None,
+    ) -> str:
         trace_id = str(uuid.uuid4())
-        trace = {
+        trace: dict[str, Any] = {
             "id": trace_id,
             "user_id": user_id,
             "username": username,
@@ -172,23 +206,23 @@ class PipelineTracker:
         current_trace_var.set(trace)
         return trace_id
 
-    def get_current_trace(self) -> Dict[str, Any]:
-        return current_trace_var.get()
+    def get_current_trace(self) -> dict[str, Any]:
+        return current_trace_var.get() or {}
 
     def add_step(
         self,
         name: str,
-        data: Dict[str, Any],
-        stage_id: Optional[str] = None,
-        parent_step_id: Optional[str] = None,
-        depth: Optional[int] = None,
-        category: Optional[str] = None,
-        duration_ms: Optional[float] = None,
-        status: Optional[str] = None,
-        title: Optional[str] = None,
-        subtitle: Optional[str] = None,
-        tokens: Optional[Dict[str, Any]] = None,
-        trace_id: Optional[str] = None,
+        data: dict[str, Any],
+        stage_id: str | None = None,
+        parent_step_id: str | None = None,
+        depth: int | None = None,
+        category: str | None = None,
+        duration_ms: float | None = None,
+        status: str | None = None,
+        title: str | None = None,
+        subtitle: str | None = None,
+        tokens: dict[str, Any] | None = None,
+        trace_id: str | None = None,
         *args: Any,
         **kwargs: Any
     ):
@@ -200,7 +234,7 @@ class PipelineTracker:
                         trace = t
                         break
             if not trace:
-                trace = current_trace_var.get()
+                trace = current_trace_var.get() or {}
             if not trace:
                 return None
             
@@ -273,7 +307,7 @@ class PipelineTracker:
                 "subtitle": resolved_subtitle,
                 "status": resolved_status,
                 "duration_ms": resolved_duration_ms,
-                "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+                "timestamp": datetime.datetime.now(datetime.UTC).isoformat(),
                 "tokens": resolved_tokens,
                 "data": data
             }
@@ -292,9 +326,9 @@ class PipelineTracker:
                 trace["total_reasoning_tokens"] = trace.get("total_reasoning_tokens", 0) + reason_tok
                 trace["total_tokens"] = trace.get("total_tokens", 0) + tot_tok
             elif name == "llm_generation" and "data" in step:
-                in_tok = step["data"].get("input_tokens", 0)
-                out_tok = step["data"].get("output_tokens", 0)
-                reason_tok = step["data"].get("reasoning_tokens", 0)
+                in_tok = data.get("input_tokens", 0)
+                out_tok = data.get("output_tokens", 0)
+                reason_tok = data.get("reasoning_tokens", 0)
                 
                 trace["total_input_tokens"] = trace.get("total_input_tokens", 0) + in_tok
                 trace["total_output_tokens"] = trace.get("total_output_tokens", 0) + out_tok
@@ -318,11 +352,11 @@ class PipelineTracker:
     def start_stage(
         self,
         stage_id: str,
-        name: Optional[str] = None,
-        title: Optional[str] = None,
-        subtitle: Optional[str] = None,
-        data: Optional[Dict[str, Any]] = None
-    ) -> Optional[Dict[str, Any]]:
+        name: str | None = None,
+        title: str | None = None,
+        subtitle: str | None = None,
+        data: dict[str, Any] | None = None
+    ) -> dict[str, Any] | None:
         """Helper to emit a top-level canonical Stage Root node (depth 0)."""
         actual_name = name or STAGE_ID_TO_ROOT_NAME.get(stage_id, stage_id)
         payload = data or {}
@@ -339,14 +373,14 @@ class PipelineTracker:
     def add_sub_step(
         self,
         name: str,
-        data: Dict[str, Any],
-        parent_step_id: Optional[str] = None,
+        data: dict[str, Any],
+        parent_step_id: str | None = None,
         depth: int = 1,
-        stage_id: Optional[str] = None,
-        category: Optional[str] = None,
-        title: Optional[str] = None,
-        subtitle: Optional[str] = None
-    ) -> Optional[Dict[str, Any]]:
+        stage_id: str | None = None,
+        category: str | None = None,
+        title: str | None = None,
+        subtitle: str | None = None
+    ) -> dict[str, Any] | None:
         """Helper to emit a hierarchical child / sub-action node."""
         return self.add_step(
             name=name,
@@ -360,9 +394,15 @@ class PipelineTracker:
         )
 
 
-    def end_trace(self, response_text: str = "", emotions: Dict[str, float] = None, status: str = "success", error: str = None) -> Dict[str, Any]:
+    def end_trace(
+        self,
+        response_text: str = "",
+        emotions: dict[str, float] | None = None,
+        status: str = "success",
+        error: str | None = None,
+    ) -> dict[str, Any]:
         try:
-            trace = current_trace_var.get()
+            trace = current_trace_var.get() or {}
             if not trace:
                 return {}
 
@@ -383,15 +423,15 @@ class PipelineTracker:
             if len(self.history) > self.max_history:
                 self.history.pop(0)
 
-            # Persist to Redis history list asynchronously
-            try:
-                loop = asyncio.get_running_loop()
-                if loop.is_running():
-                    task = loop.create_task(self._push_history_redis(trace))
-                    self._pending_tasks.add(task)
-                    task.add_done_callback(self._pending_tasks.discard)
-            except RuntimeError:
-                pass
+            # Persist to Redis history only after the tracker has a ready Redis lifecycle.
+            if self._redis_broadcast_ready:
+                try:
+                    loop = asyncio.get_running_loop()
+                    if loop.is_running():
+                        task = loop.create_task(self._push_history_redis(trace))
+                        self._track_task(task)
+                except RuntimeError:
+                    pass
 
             # Notify listeners (e.g. SSE/WebSocket subscribers)
             self._notify_listeners({
@@ -406,27 +446,28 @@ class PipelineTracker:
         except Exception:
             return {}
 
-    async def _push_history_redis(self, trace: Dict[str, Any]):
+    async def _push_history_redis(self, trace: dict[str, Any]):
         try:
             from app.infrastructure.cache.redis.redis_service import get_redis_client
             redis = get_redis_client()
-            await redis.lpush(REDIS_HISTORY_KEY, json.dumps(trace, default=str))
-            await redis.ltrim(REDIS_HISTORY_KEY, 0, self.max_history - 1)
+            history_entry = json.dumps(trace, default=str)
+            await cast(Awaitable[int], redis.lpush(REDIS_HISTORY_KEY, history_entry))
+            await cast(Awaitable[str], redis.ltrim(REDIS_HISTORY_KEY, 0, self.max_history - 1))
         except Exception:
             pass
 
-    def get_traces(self) -> List[Dict[str, Any]]:
+    def get_traces(self) -> list[dict[str, Any]]:
         return self.history
 
     def get_loop_thinking_activated(self) -> bool:
         """Returns whether loop thinking was activated during the current trace."""
-        trace = current_trace_var.get()
+        trace = current_trace_var.get() or {}
         return bool(trace.get("loop_thinking_activated", False))
 
-    def register_listener(self, listener: Callable[[Dict[str, Any]], Any]):
+    def register_listener(self, listener: Callable[[dict[str, Any]], Any]):
         self.listeners.add(listener)
 
-    def unregister_listener(self, listener: Callable[[Dict[str, Any]], Any]):
+    def unregister_listener(self, listener: Callable[[dict[str, Any]], Any]):
         self.listeners.discard(listener)
 
 # Global singleton

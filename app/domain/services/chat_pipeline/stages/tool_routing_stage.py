@@ -1,13 +1,14 @@
-from app.domain.services.chat_pipeline.stage import PipelineStage
-from app.domain.services.chat_pipeline.context import ChatContext
-from app.domain.services.tool_router import LLMToolRouter
-from app.domain.services.intent_classifier import ChatIntent
+from collections.abc import Awaitable, Callable
+
 from app.domain.interfaces.cache_provider import ICacheProvider
 from app.domain.interfaces.repositories import IConversationRepository, IEmotionRepository
 from app.domain.interfaces.session import IDbSession
-from typing import Callable, Awaitable
-from app.shared.utils.logger import get_logger
 from app.domain.interfaces.tracker import IPipelineTracker
+from app.domain.services.chat_pipeline.context import ChatContext
+from app.domain.services.chat_pipeline.stage import PipelineStage
+from app.domain.services.intent_classifier import ChatIntent
+from app.domain.services.tool_router import LLMToolRouter
+from app.shared.utils.logger import get_logger
 
 log = get_logger(__name__)
 
@@ -22,7 +23,7 @@ class ToolRoutingStage(PipelineStage):
         conv_repo_factory: Callable[[IDbSession], IConversationRepository],
         emotion_repo_factory: Callable[[IDbSession], IEmotionRepository],
         pipeline_tracker: IPipelineTracker,
-        routing_logger_callback: Callable[..., Awaitable[None]] = None
+        routing_logger_callback: Callable[..., Awaitable[None]] | None = None,
     ):
         self.tool_router = tool_router
         self.cache = cache

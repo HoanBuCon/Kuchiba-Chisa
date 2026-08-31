@@ -186,10 +186,11 @@ async def test_holistic_multi_user_server_emotion_resonance():
     # But Chisa's ambient irritation is reflected from the server atmosphere
     assert result_context_b.emotion.irritation >= 0.40
 
-    # StateManager automatically activates Affectionate Pout with Senpai!
+    # A high-irritation server ambient state cannot be reclassified as an affectionate dyad.
+    # The personal relationship remains intact, but the response mood stays guarded/playful.
     dyad_b = StateManager.get_emotional_dyad(result_context_b.emotion)
-    assert dyad_b is not None
-    assert dyad_b[0] == "Affectionate Pout"
+    assert dyad_b is None
+    assert StateManager.get_mood(result_context_b.emotion) == "Playful Pout"
 
     # Step 3: User C (Stranger with low trust = 0.20) enters
     user_c_uuid = uuid4()

@@ -49,6 +49,12 @@ class IntentClassifier:
         "nhiều", "hết", "sức"
     }
 
+    # A first-person disclosure can become a consented memory candidate downstream.
+    # It must not be discarded by the small-talk semantic shortcut before typed routing.
+    _PERSONAL_DISCLOSURE_PATTERN = re.compile(
+        r"\b(?:tôi|mình|tớ|anh|chị)\s+(?:đang|vừa|đã|sẽ|có)\b", re.IGNORECASE
+    )
+
     # Small talk regex patterns for greetings + pronouns + affection combinations
     _SMALL_TALK_PATTERNS = [
         r"^(haha|hihi|hehe|hí hí|kaka|kkk|lol|lmao|vui quá|buồn cười quá|hài quá|dạ|vâng|chuẩn|ừ|ừm|ok|okay)(\s+(vui|quá|đi|nhỉ|thật|vãi|luôn|nhé|nha|à|á|ơi|lắm|ghê|đấy|đó))*[!\.\?\s]*$",
@@ -222,6 +228,9 @@ class IntentClassifier:
         }
         if any(iw in msg_lower for iw in info_words):
             return True, "Interrogative / Knowledge / Search marker detected"
+
+        if cls._PERSONAL_DISCLOSURE_PATTERN.search(msg_clean):
+            return True, "First-person disclosure requires downstream typed routing"
 
         # Guard 3: Known Wiki / Game Lore Entities (trừ persona bot)
         if entity_resolver:

@@ -19,7 +19,9 @@ class LLMGenerationStage(PipelineStage):
     def __init__(
         self,
         llm: BaseLLMAdapter,
-        llm_logger_callback: Callable[[StructuredPrompt, LLMResponse], Awaitable[None]] = None,
+        llm_logger_callback: (
+            Callable[[StructuredPrompt, LLMResponse], Awaitable[None]] | None
+        ) = None,
         pipeline_tracker: Optional[IPipelineTracker] = None
     ):
         self.llm = llm
@@ -28,13 +30,17 @@ class LLMGenerationStage(PipelineStage):
 
     async def process(self, context: ChatContext) -> ChatContext:
         if context.is_cached_answer:
-            if context.on_token and context.response_text:
-                for token in context.response_text:
+            if context.on_token and context.chisa_reply:
+                for token in context.chisa_reply:
                     if asyncio.iscoroutinefunction(context.on_token):
                         await context.on_token(token)
                     else:
                         context.on_token(token)
             return context
+
+        prompt = context.prompt
+        if prompt is None:
+            raise RuntimeError("LLMGenerationStage requires a prompt from ContextBuildingStage.")
             
         log.info("Generating response with structured LLM")
         llm_call_purpose.set("chat_response")
@@ -47,7 +53,7 @@ class LLMGenerationStage(PipelineStage):
             error_to_raise = None
             
             try:
-                async for chunk in self.llm.stream(context.prompt):
+                async for chunk in self.llm.stream(prompt):
                     raw_chunks.append(chunk)
                     parsed_token = parser.feed(chunk)
                     if parsed_token:
@@ -57,14 +63,14 @@ class LLMGenerationStage(PipelineStage):
                             context.on_token(parsed_token)
                 
                 raw_response = "".join(raw_chunks)
-                parsed = await self.llm.validate_response(raw_response, context.prompt.response_schema)
+                parsed = await self.llm.validate_response(raw_response, prompt.response_schema)
             except Exception as e:
                 error_to_raise = e
             
             est_input = (
-                TokenEstimator.estimate(context.prompt.system)
-                + TokenEstimator.estimate_messages(context.prompt.history)
-                + TokenEstimator.estimate(context.prompt.user_message)
+                TokenEstimator.estimate(prompt.system)
+                + TokenEstimator.estimate_messages(prompt.history)
+                + TokenEstimator.estimate(prompt.user_message)
             )
             est_output = TokenEstimator.estimate(raw_response)
 
@@ -80,14 +86,14 @@ class LLMGenerationStage(PipelineStage):
                 parsed=parsed,
                 input_tokens=est_input,
                 output_tokens=est_output,
-                model=self.llm._model,
+                model=getattr(self.llm, "_model", "unknown"),
                 finish_reason="stop",
                 reasoning_content=reasoning_content,
             )
 
             try:
                 if self.llm_logger_callback:
-                    await self.llm_logger_callback(context.prompt, response)
+                    await self.llm_logger_callback(prompt, response)
             except Exception as log_ex:
                 log.warning("Failed to log streaming transaction", error=str(log_ex))
                 
@@ -95,7 +101,7 @@ class LLMGenerationStage(PipelineStage):
                 raise error_to_raise
         else:
             try:
-                response = await self.llm.generate(context.prompt)
+                response = await self.llm.generate(prompt)
             except Exception as gen_err:
                 if context.has_images:
                     log.warning(
@@ -105,7 +111,7 @@ class LLMGenerationStage(PipelineStage):
                     )
                     context.vision_failed = True
                     # Create fallback prompt: strip images and inject in-character explanation
-                    fallback_prompt = context.prompt.model_copy(deep=True)
+                    fallback_prompt = prompt.model_copy(deep=True)
                     fallback_prompt.images = []
                     fallback_prompt.system += (
                         "\n\n[HỆ THỐNG THỊ GIÁC: Tạm thời không thể tải hoặc phân tích bức ảnh này do lỗi đường truyền mạng. "

@@ -1,31 +1,20 @@
-import sys
-import os
-from pathlib import Path
-
-# Ensure project root is in sys.path for direct CLI execution
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
-if str(PROJECT_ROOT) not in sys.path:
-    sys.path.insert(0, str(PROJECT_ROOT))
-
-# Safe UTF-8 console output on Windows
-if sys.platform == "win32" and hasattr(sys.stdout, "reconfigure"):
-    try:
-        sys.stdout.reconfigure(encoding="utf-8")
-    except Exception:
-        pass
+import asyncio
+import uuid
+from typing import Any
 
 import pytest
-import asyncio
-from typing import List, Dict, Any
 
 from app.application.dependencies import container
-from app.infrastructure.database.engine import AsyncSessionFactory
-from app.domain.services.rag.entity_sync import sync_entities_dictionary
+from app.domain.entities.lore import LoreParent, LorePayload
 from app.domain.services.rag.entity_resolver import EntityResolver
+from app.domain.services.rag.entity_sync import sync_entities_dictionary
+from app.domain.services.rag.retriever_lore import LoreRetriever
 from app.domain.tuning.rag import RAGTuning
+from app.infrastructure.database.engine import AsyncSessionFactory
+from app.infrastructure.database.models.lore_parent import LoreParentModel
+from app.infrastructure.database.repositories.lore_parent import LoreParentRepository
 
-
-
+pytestmark = pytest.mark.asyncio(loop_scope="session")
 
 LORE_TEST_CASES = [
     # ── Group 1: Character Identity & Background (4 cases) ───────────────────
@@ -57,7 +46,6 @@ LORE_TEST_CASES = [
         "expected_entities": ["Kuchiba Chisa", "Overclocking"],
         "expected_keywords": ["quá tải", "tần số", "thực tại", "biến dị"],
     },
-
     # ── Group 2: Forte, Combat & Weapon Mechanics (4 cases) ───────────────────
     {
         "id": "TC05",
@@ -87,7 +75,6 @@ LORE_TEST_CASES = [
         "expected_entities": ["Kuchiba Chisa"],
         "expected_keywords": ["logic", "cấu trúc", "phân tích", "vạn vật"],
     },
-
     # ── Group 3: Relationships & Emotional Bonds (4 cases) ────────────────────
     {
         "id": "TC09",
@@ -117,7 +104,6 @@ LORE_TEST_CASES = [
         "expected_entities": ["Kuchiba Chisa", "Rover"],
         "expected_keywords": ["Tsundere", "dịu dàng", "lễ phép", "Senpai"],
     },
-
     # ── Group 4: Storyline, Quests & The Loop (4 cases) ───────────────────────
     {
         "id": "TC13",
@@ -147,7 +133,6 @@ LORE_TEST_CASES = [
         "expected_entities": ["Sonoro Sphere", "Kuchiba Chisa"],
         "expected_keywords": ["Sonoro Sphere", "Honami", "cô độc", "ký ức"],
     },
-
     # ── Group 5: World Lore, Factions & Environment (4 cases) ─────────────────
     {
         "id": "TC17",
@@ -180,16 +165,72 @@ LORE_TEST_CASES = [
 ]
 
 
-@pytest.fixture(scope="session", autouse=True)
-def setup_knowledge_graph():
-    """Ensure entity dictionary is built and resolver is loaded before running tests."""
-    sync_entities_dictionary()
-    container.entity_resolver.load()
+@pytest.fixture(scope="module", autouse=True)
+async def isolated_lore_corpus(isolated_postgres, isolated_vector_store, test_embedder):
+    """Seed a real PostgreSQL parent corpus and Qdrant child corpus in the isolated stack."""
+    del isolated_postgres
+    fixture_namespace = uuid.UUID("00000000-0000-0000-0000-000000000901")
+
+    async with AsyncSessionFactory() as session:
+        for index, test_case in enumerate(LORE_TEST_CASES, start=1):
+            parent_id = uuid.uuid5(fixture_namespace, test_case["id"])
+            text_content = f"{test_case['query']}\n{' | '.join(test_case['expected_keywords'])}"
+            parent = LoreParent(
+                id=parent_id,
+                page_id=90000 + index,
+                page_title=f"OPS-01 {test_case['id']}",
+                heading=test_case["category"],
+                markdown=f"# {test_case['category']}\n\n{text_content}",
+                source_file="ops01-isolated-lore-fixture.md",
+                revision_id=1,
+                section_id=f"ops01-{test_case['id']}",
+                heading_path=test_case["category"],
+                section_depth=2,
+            )
+            await session.merge(LoreParentModel.from_domain(parent))
+
+            collection = (
+                "character_lore" if index <= 8 else "story_lore" if index <= 16 else "world_lore"
+            )
+            payload = LorePayload(
+                parent_id=str(parent_id),
+                section_id=parent.section_id,
+                page_id=parent.page_id,
+                source_file=parent.source_file or "ops01-isolated-lore-fixture.md",
+                chunk_index=0,
+                text_content=text_content,
+                heading_path=parent.heading_path,
+                section_depth=parent.section_depth,
+                canonical_name=test_case["expected_entities"][0],
+                entities=test_case["expected_entities"],
+            )
+            vector = await test_embedder.embed_text(text_content, prefix="passage: ")
+            await isolated_vector_store.upsert_lore(
+                collection=collection,
+                point_id=str(uuid.uuid5(fixture_namespace, f"point-{test_case['id']}")),
+                vector=vector,
+                payload=payload,
+            )
+        await session.commit()
+
+
+@pytest.fixture
+def isolated_lore_retriever(isolated_vector_store):
+    return LoreRetriever(
+        vector_store=isolated_vector_store,
+        lore_parent_repo_factory=LoreParentRepository,
+    )
 
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("tc", LORE_TEST_CASES, ids=[tc["id"] for tc in LORE_TEST_CASES])
-async def test_lore_metadata_retrieval_case(tc: Dict[str, Any]):
+async def test_lore_metadata_retrieval_case(
+    tc: dict[str, Any],
+    isolated_entity_resolver: EntityResolver,
+    isolated_lore_corpus: None,
+    isolated_lore_retriever: LoreRetriever,
+    test_embedder: Any,
+):
     """
     Tests that each of the 20 Lore test cases:
     1. Triggers Entity Extraction & Graph Expansion from query.
@@ -202,7 +243,8 @@ async def test_lore_metadata_retrieval_case(tc: Dict[str, Any]):
     expected_kw = tc["expected_keywords"]
 
     # 1. Entity Resolver Verification
-    resolver: EntityResolver = container.entity_resolver
+    del isolated_lore_corpus
+    resolver = isolated_entity_resolver
     extracted = resolver.extract_entities(query)
     expanded = resolver.expand_entities(extracted)
 
@@ -213,30 +255,27 @@ async def test_lore_metadata_retrieval_case(tc: Dict[str, Any]):
     )
 
     # 2. Multi-Signal RAG Metadata-Hybrid Retrieval across lore collections
-    embedder = container.embedder
-    rag_stage = container.chat_engine.pipeline.stages[4]
-    rag_pipeline = rag_stage.rag_pipeline
-    lore_retriever = rag_pipeline.lore_retriever
-
-    q_vec = await embedder.embed_text(query)
+    q_vec = await test_embedder.embed_text(query)
 
     retrieved_lore_chunks = []
     async with AsyncSessionFactory() as session:
         for col in ["character_lore", "world_lore", "story_lore"]:
-            chunks = await lore_retriever.retrieve_lore_parent_child(
+            chunks = await isolated_lore_retriever.retrieve_lore_parent_child(
                 collection=col,
                 query_vector=q_vec,
                 session=session,
                 query_text=query,
                 top_k=RAGTuning.TOP_K,
                 score_threshold=RAGTuning.SCORE_THRESHOLD,
-                entities_filter=list(expanded) if expanded else None
+                entities_filter=list(expanded) if expanded else None,
             )
             for item in chunks:
                 retrieved_lore_chunks.append(item[0])
 
     # 3. Assertions on Retrieved Lore
-    assert len(retrieved_lore_chunks) > 0, f"[{tc['id']}] No lore chunks retrieved for query: '{query}'"
+    assert (
+        len(retrieved_lore_chunks) > 0
+    ), f"[{tc['id']}] No lore chunks retrieved for query: '{query}'"
 
     all_retrieved_text = " ".join(retrieved_lore_chunks).lower()
 
@@ -286,7 +325,7 @@ async def run_all_tests_cli():
                     query_text=q,
                     top_k=RAGTuning.TOP_K,
                     score_threshold=RAGTuning.SCORE_THRESHOLD,
-                    entities_filter=list(expanded) if expanded else None
+                    entities_filter=list(expanded) if expanded else None,
                 )
                 for item in chunks:
                     retrieved_chunks.append(item[0])
@@ -302,14 +341,17 @@ async def run_all_tests_cli():
         else:
             failed += 1
 
-        print(f"[{cid}] [{cat:^28}] {status} | Chunks: {len(retrieved_chunks)} | Matched KWs: {matched_kw} | Extracted: {list(extracted)}")
+        print(f"[{cid}] [{cat:^28}] {status} | Chunks: {len(retrieved_chunks)}")
+        print(f"     Matched KWs: {matched_kw} | Extracted: {list(extracted)}")
         if status == "[FAIL]":
             print(f"     Query: {q}")
             print(f"     Expected Ents: {expected_ents} (Extracted: {extracted})")
             print(f"     Expected KWs: {expected_kw}")
 
     print("=" * 80)
-    print(f"[SUMMARY] {passed}/20 PASSED | {failed}/20 FAILED | Success Rate: {(passed/20)*100:.1f}%")
+    print(
+        f"[SUMMARY] {passed}/20 PASSED | {failed}/20 FAILED | Success Rate: {(passed/20)*100:.1f}%"
+    )
     print("=" * 80)
 
 

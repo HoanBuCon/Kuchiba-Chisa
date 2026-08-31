@@ -8,13 +8,19 @@ class ContextBuildingStage(PipelineStage):
     """
     Stage 5: Build final system prompt and manage context budget.
     """
-    def __init__(self, context_builder: ContextBuilder, pipeline_tracker: IPipelineTracker = None):
+    def __init__(
+        self, context_builder: ContextBuilder, pipeline_tracker: IPipelineTracker | None = None
+    ):
         self.context_builder = context_builder
         self.pipeline_tracker = pipeline_tracker
 
     async def process(self, context: ChatContext) -> ChatContext:
         if context.is_cached_answer:
             return context
+
+        emotion = context.emotion
+        if emotion is None:
+            raise RuntimeError("ContextBuildingStage requires initialized emotion state.")
 
         context.final_user_message = context.user_message
 
@@ -44,7 +50,7 @@ class ContextBuildingStage(PipelineStage):
         intent_values = [i.value for i in context.intents]
 
         build_result = self.context_builder.build(
-            emotion=context.emotion,
+            emotion=emotion,
             attachment_bonus=0.0,
             memories=memories,
             lore=lore_chunks,

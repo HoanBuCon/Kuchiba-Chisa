@@ -1,0 +1,13 @@
+.git
+.venv
+venv
+.pytest_cache
+.mypy_cache
+__pycache__
+*.py[cod]
+*.log
+.coverage
+htmlcov
+reports
+logs
+discord/node_modules

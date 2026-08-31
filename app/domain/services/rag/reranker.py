@@ -142,7 +142,7 @@ class HybridMemoryScorer:
         now: int,
         importance: float = 0.7,
         memory_type: str = "user_fact",
-        last_accessed_at: int = None
+        last_accessed_at: int | None = None
     ) -> float:
         """
         Adaptive Ebbinghaus Time-Decay Scoring:

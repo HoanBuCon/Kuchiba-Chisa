@@ -17,10 +17,16 @@ Modules:
     generic_chunker  — H2/H3 hierarchy & sliding window paragraph chunker
 """
 
+from typing import TYPE_CHECKING
+
 from app.infrastructure.ingestion.chunkers.base import BaseChunker
 from app.infrastructure.ingestion.chunkers.dialogue_chunker import DialogueChunker
 from app.infrastructure.ingestion.chunkers.generic_chunker import GenericChunker
 from app.infrastructure.ingestion.chunkers.table_inliner import TableInlinerChunker
+
+if TYPE_CHECKING:
+    from app.infrastructure.ingestion.models.canonical_page import CanonicalPage, CanonicalSection
+    from app.infrastructure.ingestion.models.chunk_model import Chunk
 
 __all__ = [
     "BaseChunker",

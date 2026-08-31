@@ -1,5 +1,8 @@
 from __future__ import annotations
+
 from typing import AsyncGenerator
+
+from sqlalchemy import text
 from sqlalchemy.ext.asyncio import (
     AsyncEngine,
     AsyncSession,
@@ -7,7 +10,8 @@ from sqlalchemy.ext.asyncio import (
     create_async_engine,
 )
 from sqlalchemy.orm import DeclarativeBase
-from sqlalchemy import text
+from sqlalchemy.pool import NullPool
+
 from app.config.settings import settings
 from app.infrastructure.logging.logger import get_logger
 
@@ -15,16 +19,22 @@ log = get_logger(__name__)
 
 # ─── SQLAlchemy Async Engine ──────────────────────────────────────────────────
 
-engine: AsyncEngine = create_async_engine(
-    settings.DATABASE_URL,
-    echo=False,          # Disable SQL query logging to prevent UnicodeEncodeError on Windows
-    echo_pool=False,
-    pool_size=20,
-    max_overflow=40,
-    pool_timeout=30,
-    pool_pre_ping=True,            # Verify connections before use
-    pool_recycle=1800,             # Recycle connections every 30 minutes
-)
+_engine_options: dict[str, object] = {
+    "echo": False,
+    "echo_pool": False,
+    "pool_pre_ping": True,
+}
+if settings.is_test:
+    _engine_options["poolclass"] = NullPool
+else:
+    _engine_options.update(
+        pool_size=20,
+        max_overflow=40,
+        pool_timeout=30,
+        pool_recycle=1800,
+    )
+
+engine: AsyncEngine = create_async_engine(settings.DATABASE_URL, **_engine_options)
 
 # ─── Session Factory ──────────────────────────────────────────────────────────
 
@@ -88,16 +98,6 @@ async def connect_database() -> None:
     healthy = await check_database_health()
     if healthy:
         log.info("PostgreSQL connection established")
-        # Ensure new emotion columns exist safely
-        try:
-            async with AsyncSessionFactory() as session:
-                await session.execute(text("ALTER TABLE emotion_state ADD COLUMN IF NOT EXISTS shyness FLOAT DEFAULT 0.0;"))
-                await session.execute(text("ALTER TABLE emotion_state ADD COLUMN IF NOT EXISTS curiosity FLOAT DEFAULT 0.20;"))
-                await session.execute(text("ALTER TABLE emotion_state ADD COLUMN IF NOT EXISTS comfort FLOAT DEFAULT 0.50;"))
-                await session.commit()
-                log.info("Emotion schema auto-migration verified ✓")
-        except Exception as e:
-            log.warning("Emotion schema auto-migration check skipped or failed", error=str(e))
     else:
         raise RuntimeError("PostgreSQL health check failed on startup")
 

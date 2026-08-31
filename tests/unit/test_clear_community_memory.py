@@ -1,5 +1,7 @@
+from unittest.mock import AsyncMock, call
+
 import pytest
-from unittest.mock import AsyncMock, MagicMock
+
 from app.application.usecases.clear_community_memory import ClearCommunityMemoryUseCase
 
 
@@ -24,7 +26,13 @@ async def test_clear_community_memory_all_scope():
 
     vector_store.delete_by_guild.assert_awaited_once_with("guild_memories", "123456789")
     cache_provider.delete.assert_awaited_once_with("chisa:guild:123456789:ambient_mood")
-    cache_provider.delete_pattern.assert_awaited_once_with("chisa:channel:*:topic_summary")
+    cache_provider.delete_pattern.assert_has_awaits(
+        [
+            call("chisa:channel:*:topic_summary"),
+            call("chisa:channel:*:rolling_buffer"),
+            call("chisa:channel:*:msg_count"),
+        ]
+    )
 
 
 @pytest.mark.asyncio

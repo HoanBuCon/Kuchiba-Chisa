@@ -1,12 +1,16 @@
 from __future__ import annotations
+
 import uuid
 from datetime import datetime, timezone
-from typing import Optional, List
-from sqlalchemy.ext.asyncio import AsyncSession
+from typing import Any, Optional
+
 from sqlalchemy import select
-from app.infrastructure.database.models.conversation import Conversation as ConversationModel
-from app.infrastructure.database.models.message import Message as MessageModel, MessageRole as MessageRoleModel
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.domain.interfaces.repositories import IConversationRepository
+from app.infrastructure.database.models.conversation import Conversation as ConversationModel
+from app.infrastructure.database.models.message import Message as MessageModel
+from app.infrastructure.database.models.message import MessageRole as MessageRoleModel
 
 
 class SqlAlchemyConversationRepository(IConversationRepository):
@@ -98,7 +102,7 @@ class SqlAlchemyConversationRepository(IConversationRepository):
 
     async def get_recent_history(
         self, user_id: uuid.UUID, conversation_id: uuid.UUID, limit: int = 15
-    ) -> List[dict[str, str]]:
+    ) -> list[dict[str, str]]:
         stmt = (
             select(MessageModel)
             .where(

@@ -171,7 +171,7 @@ class LoreRetriever:
         scored_candidates.sort(key=lambda x: x[1], reverse=True)
 
         seen_parents = set()
-        lore_chunks = []
+        lore_chunks: list[tuple[str, float, dict[str, Any]]] = []
         accumulated_tokens = 0
         
         # Collect parent IDs to fetch from DB
@@ -186,7 +186,7 @@ class LoreRetriever:
                     pass
 
         # Fetch parents if repo factory and session are provided
-        parent_docs = {}
+        parent_docs: dict[str, str] = {}
         if self.lore_parent_repo_factory and session and parent_ids_to_fetch:
             try:
                 repo = self.lore_parent_repo_factory(session)

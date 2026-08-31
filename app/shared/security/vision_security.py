@@ -4,6 +4,7 @@ Location: app/shared/security/vision_security.py
 """
 
 from __future__ import annotations
+
 import asyncio
 import io
 import ipaddress
@@ -11,9 +12,10 @@ import os
 import socket
 import time
 import uuid
+from contextlib import suppress
 from datetime import datetime
 from pathlib import Path
-from typing import Optional, Tuple, Dict, Any, List
+from typing import Any
 from urllib.parse import urlparse
 
 import httpx
@@ -110,7 +112,7 @@ class SecureImageFetcher:
             return True
 
     @classmethod
-    async def validate_url_and_resolve_ip(cls, url: str) -> Tuple[str, str]:
+    async def validate_url_and_resolve_ip(cls, url: str) -> tuple[str, str]:
         parsed = urlparse(url)
         if parsed.scheme not in ("https", "http"):
             raise SSRFViolationError("Scheme must be HTTP or HTTPS")
@@ -152,7 +154,7 @@ class SecureImageFetcher:
         return hostname, resolved_ip
 
     @classmethod
-    async def fetch_image(cls, url: str, http_client: Optional[httpx.AsyncClient] = None) -> bytes:
+    async def fetch_image(cls, url: str, http_client: httpx.AsyncClient | None = None) -> bytes:
         await cls.validate_url_and_resolve_ip(url)
 
         own_client = False
@@ -213,7 +215,7 @@ class ImageSanitizer:
         cls,
         raw_data: bytes,
         target_max_dim: int = 1536,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Synchronous processing running in threadpool:
         1. Validates magic bytes & dimensions.
@@ -225,7 +227,8 @@ class ImageSanitizer:
 
         try:
             with Image.open(io.BytesIO(raw_data)) as img:
-                width, height = img.size
+                image: Image.Image = img
+                width, height = image.size
                 if width > MAX_IMAGE_WIDTH or height > MAX_IMAGE_HEIGHT:
                     raise ImageValidationError(f"Image dimension ({width}x{height}) exceeds limit ({MAX_IMAGE_WIDTH}x{MAX_IMAGE_HEIGHT})")
 
@@ -233,21 +236,21 @@ class ImageSanitizer:
                     raise ImageValidationError(f"Image pixel count exceeds safety threshold of {MAX_IMAGE_PIXELS_ALLOWED}")
 
                 # Auto-orient based on EXIF orientation tag before dropping it
-                try:
-                    img = ImageOps.exif_transpose(img)
-                except Exception:
-                    pass
+                with suppress(Exception):
+                    image = ImageOps.exif_transpose(image)
 
                 # Handle Animated GIF/WebP: extract first frame
-                if getattr(img, "is_animated", False):
-                    img.seek(0)
+                if getattr(image, "is_animated", False):
+                    image.seek(0)
 
                 # Pure Pixel Extraction: Convert to standard RGB/RGBA canvas
-                if img.mode in ("RGBA", "LA") or (img.mode == "P" and "transparency" in img.info):
-                    converted_img = img.convert("RGBA")
+                if image.mode in ("RGBA", "LA") or (
+                    image.mode == "P" and "transparency" in image.info
+                ):
+                    converted_img: Image.Image = image.convert("RGBA")
                     output_mode = "RGBA"
                 else:
-                    converted_img = img.convert("RGB")
+                    converted_img = image.convert("RGB")
                     output_mode = "RGB"
 
                 # Smart Resizing (Downscale if larger than target_max_dim)
@@ -296,7 +299,7 @@ class ImageSanitizer:
         cls,
         raw_data: bytes,
         target_max_dim: int = 1536,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Asynchronously delegates image processing to worker thread.
         """
@@ -320,7 +323,7 @@ class LocalStorageManager(IImageStorageProvider):
 
     def __init__(
         self,
-        base_storage_dir: Optional[Path] = None,
+        base_storage_dir: Path | None = None,
         base_url: str = "/static/uploads",
         max_storage_mb: int = 1024,
     ) -> None:
@@ -336,10 +339,10 @@ class LocalStorageManager(IImageStorageProvider):
 
     async def save_sanitized_image(
         self,
-        sanitized_result: Dict[str, Any],
-        sub_dir: Optional[str] = None,
+        sanitized_result: dict[str, Any],
         is_ephemeral: bool = False,
-    ) -> Dict[str, Any]:
+        sub_dir: str | None = None,
+    ) -> dict[str, Any]:
         """
         Saves full-size WebP to disk partitioned by YYYY/MM.
         Returns complete metadata dictionary with local relative URLs.
@@ -404,7 +407,7 @@ class LocalStorageManager(IImageStorageProvider):
         if not self.storage_dir.exists():
             return
 
-        all_files: List[Tuple[Path, float, int]] = []
+        all_files: list[tuple[Path, float, int]] = []
         total_bytes = 0
 
         for root, _, files in os.walk(self.storage_dir):

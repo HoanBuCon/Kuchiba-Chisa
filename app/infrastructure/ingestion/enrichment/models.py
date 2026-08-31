@@ -5,7 +5,7 @@ Defines structured schemas enforced via instructor for LLM/SLM extraction.
 """
 
 from __future__ import annotations
-from typing import List, Optional
+
 from pydantic import BaseModel, ConfigDict, Field
 
 
@@ -13,8 +13,25 @@ class QuestLoreSummary(BaseModel):
     """Structured summary of a story quest or lore-heavy narrative page."""
 
     summary: str = Field(..., description="High-level narrative summary of the quest or event.")
-    key_events: List[str] = Field(default_factory=list, description="Chronological key plot points.")
-    characters_involved: List[str] = Field(default_factory=list, description="List of Resonators or key NPCs featured.")
-    lore_significance: Optional[str] = Field(None, description="Worldbuilding or lore significance in Wuthering Waves.")
+    key_events: list[str] = Field(
+        default_factory=list, description="Chronological key plot points."
+    )
+    characters_involved: list[str] = Field(
+        default_factory=list, description="List of Resonators or key NPCs featured."
+    )
+    lore_significance: str | None = Field(
+        None, description="Worldbuilding or lore significance in Wuthering Waves."
+    )
+
+    model_config = ConfigDict(extra="ignore")
+
+
+class EntityRelationshipExtract(BaseModel):
+    """A directed relationship extracted from an approved lore document."""
+
+    source_entity: str = Field(..., min_length=1)
+    target_entity: str = Field(..., min_length=1)
+    relationship_type: str = Field(..., min_length=1)
+    description: str | None = None
 
     model_config = ConfigDict(extra="ignore")

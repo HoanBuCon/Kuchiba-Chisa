@@ -18,22 +18,22 @@ async def test_sota_semantic_router_production_upgrades():
     print("TESTING SOTA PRODUCTION UPGRADES IN SEMANTIC ROUTER")
     print("=" * 80)
 
-    # 1. Zero-Entity Combat & Mechanics Lore
+    # 1. Knowledge gateway: detailed lore classification occurs in IntentStage after rewrite.
     q_parry = "Làm sao để parry khi quái mắt đỏ?"
     res_parry = await classifier.classify(q_parry)
     print(f"  • Combat Zero-Entity : \"{q_parry}\" -> Intents={res_parry.intents}, Conf={res_parry.confidence*100:.1f}%, Scores={res_parry.semantic_scores}")
-    assert ChatIntent.LORE in res_parry.intents
+    assert res_parry.intents == [ChatIntent.KNOWLEDGE_OR_TASK]
 
     q_element = "Có bao nhiêu thuộc tính nguyên tố và khắc chế nhau thế nào?"
     res_element = await classifier.classify(q_element)
     print(f"  • Elements Counter   : \"{q_element}\" -> Intents={res_element.intents}, Conf={res_element.confidence*100:.1f}%")
-    assert ChatIntent.LORE in res_element.intents
+    assert res_element.intents == [ChatIntent.KNOWLEDGE_OR_TASK]
 
-    # 2. Multi-Label Dual Intent (Memory + Conversational Empathy)
+    # 2. The gateway preserves non-small-talk requests for downstream typed routing.
     q_hybrid = "Anh đang chuẩn bị mở một quán trà nhỏ ở Hà Nội, vừa vui vừa lo"
     res_hybrid = await classifier.classify(q_hybrid)
     print(f"  • Dual-Intent Query  : \"{q_hybrid}\" -> Intents={res_hybrid.intents}, Scores={res_hybrid.semantic_scores}")
-    assert ChatIntent.MEMORY in res_hybrid.intents or ChatIntent.CONVERSATIONAL in res_hybrid.intents
+    assert res_hybrid.intents == [ChatIntent.KNOWLEDGE_OR_TASK]
 
     # 3. Contextual Intent Momentum
     q_short = "Tại sao lại như vậy?"

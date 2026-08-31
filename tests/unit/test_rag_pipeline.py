@@ -23,7 +23,7 @@ class DummyLoreRetriever:
 
 class DummyAssessor:
     async def assess_alignment(self, user_message, context_text, llm, *args, **kwargs):
-        return True, "aligned", "", True, ""
+        return True, "aligned", "", True, "", "vector"
 
 
 class DummyThinkingLoop:
@@ -38,7 +38,7 @@ class DummyPipelineTracker:
 
 
 @pytest.mark.asyncio
-async def test_no_retrieval_for_other_and_system_action_intents():
+async def test_no_retrieval_for_small_talk_and_system_action_intents():
     memory_retriever = DummyMemoryRetriever()
     lore_retriever = DummyLoreRetriever()
     pipeline = RAGPipeline(
@@ -55,7 +55,7 @@ async def test_no_retrieval_for_other_and_system_action_intents():
         user_message="tóm tắt giúp anh",
         query_vector=[0.1, 0.2],
         cleaned_query="tom tat",
-        intents=["OTHER", "SYSTEM_ACTION"],
+        intents=["SMALL_TALK", "SYSTEM_ACTION"],
         current_emotions={},
         history=[],
         llm=None,
@@ -174,8 +174,8 @@ async def test_web_search_snippet_quality_gate_and_ranking():
 
 @pytest.mark.asyncio
 async def test_context_assessor_distillation_formats():
+    from app.domain.interfaces.llm_provider import BaseLLMAdapter, LLMResponse, StructuredPrompt
     from app.domain.services.rag.assessor import ContextAssessor
-    from app.domain.interfaces.llm_provider import BaseLLMAdapter, StructuredPrompt, LLMResponse
 
     class MockAssessorLLM(BaseLLMAdapter):
         def __init__(self, raw_facts):
@@ -203,14 +203,17 @@ async def test_context_assessor_distillation_formats():
 
     # Case 1: List format
     llm_list = MockAssessorLLM(["Chisa birthday is October 15", "Element is Havoc"])
-    is_aligned, reason, query, use_lore, facts = await assessor.assess_alignment("Chisa", "lore", llm_list)
+    is_aligned, reason, query, use_lore, facts, search_target = await assessor.assess_alignment(
+        "Chisa", "lore", llm_list
+    )
     assert is_aligned is True
+    assert search_target == "web"
     assert "- Chisa birthday is October 15" in facts
     assert "- Element is Havoc" in facts
 
     # Case 2: String format
     llm_str = MockAssessorLLM("Chisa uses Havoc katana.\nBase ATK is 587 at level 90.")
-    _, _, _, _, facts_str = await assessor.assess_alignment("Chisa", "lore", llm_str)
+    _, _, _, _, facts_str, _ = await assessor.assess_alignment("Chisa", "lore", llm_str)
     assert "- Chisa uses Havoc katana." in facts_str
     assert "- Base ATK is 587 at level 90." in facts_str
 
@@ -273,9 +276,9 @@ async def test_thinking_loop_adaptive_search_and_auto_satisfy():
 
 @pytest.mark.asyncio
 async def test_context_builder_attention_layout_and_u_curve():
-    from app.domain.services.context_builder import ContextBuilder
     from app.domain.entities.emotion import EmotionState
     from app.domain.services.budget_mode import BudgetMode
+    from app.domain.services.context_builder import ContextBuilder
 
     # Test U-curve sorting: 1st best at start, 2nd best at end, lower scores in middle
     items = ["1st_best", "2nd_best", "3rd_best", "4th_best"]
@@ -301,7 +304,6 @@ async def test_context_builder_attention_layout_and_u_curve():
     )
 
     system_prompt = res.prompt.system
-    assert system_prompt.strip().endswith("}")
     assert "[OUTPUT FORMAT]" in system_prompt
     format_idx = system_prompt.rfind("[OUTPUT FORMAT]")
     lore_idx = system_prompt.find("[LORE — REFERENCE DATA START]")

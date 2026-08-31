@@ -1,17 +1,20 @@
 from __future__ import annotations
+
 import asyncio
+from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
-from typing import AsyncIterator
 from pathlib import Path
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+
 from app.config.settings import settings
-from app.infrastructure.logging.logger import configure_logging, get_logger
-from app.infrastructure.database.engine import connect_database, disconnect_database
 from app.infrastructure.cache.redis.redis_service import redis_service
+from app.infrastructure.database.engine import connect_database, disconnect_database
+from app.infrastructure.logging.logger import configure_logging, get_logger
 from app.infrastructure.vector.qdrant.qdrant_service import qdrant_service
-from app.interface.api.routes import health, chat, visualizer, community
+from app.interface.api.routes import chat, community, health
 from app.interface.middlewares.rate_limiter import RateLimitMiddleware
 from app.shared.utils.background_tasks import BackgroundTaskManager
 
@@ -24,6 +27,7 @@ ASSETS_DIR = PROJECT_ROOT / "assets"
 
 
 # ─── Application Lifespan ────────────────────────────────────────────────────
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
@@ -49,6 +53,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     if redis_ok:
         log.info("Redis connection verified ✓")
         from app.infrastructure.logging.pipeline_tracker import pipeline_tracker
+
         asyncio.create_task(pipeline_tracker.start_redis_subscriber())
     else:
         startup_errors.append("Redis: health check failed")
@@ -94,7 +99,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     try:
         from app.application.dependencies import container
         from app.domain.services.rag.entity_sync import sync_entities_dictionary
-        
+
         # 1. Sync & Load Entity Knowledge Graph
         sync_entities_dictionary()
         if hasattr(container, "entity_resolver") and container.entity_resolver:
@@ -122,15 +127,17 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     await disconnect_database()
     await redis_service.disconnect()
     await qdrant_service.disconnect()
-    
+
     from app.application.dependencies import container
+
     if "http_client" in container.__dict__:
         await container.http_client.aclose()
-        
+
     log.info("Chisa API shutdown complete")
 
 
 # ─── FastAPI Application ──────────────────────────────────────────────────────
+
 
 def create_app() -> FastAPI:
     app = FastAPI(
@@ -146,8 +153,14 @@ def create_app() -> FastAPI:
     # ── CORS ─────────────────────────────────────────────────────────
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["http://localhost:5173", "http://127.0.0.1:5173",
-                       "http://localhost:5174", "http://127.0.0.1:5174"] if settings.is_dev else [],
+        allow_origins=[
+            "http://localhost:5173",
+            "http://127.0.0.1:5173",
+            "http://localhost:5174",
+            "http://127.0.0.1:5174",
+        ]
+        if settings.is_dev
+        else [],
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
@@ -158,15 +171,20 @@ def create_app() -> FastAPI:
 
     # ── Routes ───────────────────────────────────────────────────
     app.include_router(health.router, tags=["System"])
-    
-    # Phase 3+ routes:
+
+    # Public API routes.
     app.include_router(chat.router, prefix="/api/v1", tags=["Chat"])
     app.include_router(community.router, prefix="/api/v1", tags=["Community"])
-    app.include_router(visualizer.router, tags=["Visualizer"])
+    # Security boundary (TD-002, SEC-API-007): pipeline traces may contain
+    # prompts, conversation data, and model internals. The legacy visualizer
+    # is intentionally not mounted until its authenticated, redacted admin
+    # replacement is available.
     # app.include_router(users.router, prefix="/api/v1", tags=["Users"])
-    
+
     try:
-        from app.interface.api.routes import admin_ingestion
+        from importlib import import_module
+
+        admin_ingestion = import_module("app.interface.api.routes.admin_ingestion")
         app.include_router(admin_ingestion.router, prefix="/api/v1")
     except ImportError:
         pass
@@ -174,15 +192,15 @@ def create_app() -> FastAPI:
     if ASSETS_DIR.is_dir():
         app.mount("/assets", StaticFiles(directory=str(ASSETS_DIR)), name="assets")
     else:
-        log.warning("Assets directory not found; /assets static route disabled", path=str(ASSETS_DIR))
-
-    visualizer_static_dir = PROJECT_ROOT / "app" / "interface" / "api" / "static" / "visualizer"
-    if visualizer_static_dir.is_dir():
-        app.mount("/static/visualizer", StaticFiles(directory=str(visualizer_static_dir)), name="visualizer_static")
+        log.warning(
+            "Assets directory not found; /assets static route disabled", path=str(ASSETS_DIR)
+        )
 
     uploads_static_dir = PROJECT_ROOT / "app" / "static" / "uploads"
     uploads_static_dir.mkdir(parents=True, exist_ok=True)
-    app.mount("/static/uploads", StaticFiles(directory=str(uploads_static_dir)), name="uploads_static")
+    app.mount(
+        "/static/uploads", StaticFiles(directory=str(uploads_static_dir)), name="uploads_static"
+    )
 
     return app
 
@@ -192,8 +210,10 @@ app = create_app()
 
 # ─── Entry Point ─────────────────────────────────────────────────────────────
 
+
 def start() -> None:
     import uvicorn
+
     uvicorn.run(
         "app.main:app",
         host=settings.APP_HOST,

@@ -16,9 +16,9 @@ Features:
 
 from __future__ import annotations
 
-import os
+from collections.abc import Generator, Iterable
 from pathlib import Path
-from typing import Generator, Iterable, Optional, Union
+from typing import Any
 
 import structlog
 
@@ -45,7 +45,7 @@ class CanonicalWriter:
 
     def __init__(
         self,
-        filepath: Union[str, Path] = DEFAULT_CANONICAL_PATH,
+        filepath: str | Path = DEFAULT_CANONICAL_PATH,
         mode: str = "a",
     ):
         """
@@ -112,7 +112,7 @@ class CanonicalWriter:
 
 def write_canonical_stream(
     pages: Iterable[CanonicalPage],
-    filepath: Union[str, Path] = DEFAULT_CANONICAL_PATH,
+    filepath: str | Path = DEFAULT_CANONICAL_PATH,
     mode: str = "w",
 ) -> int:
     """
@@ -131,7 +131,7 @@ def write_canonical_stream(
 
 
 def read_canonical_stream(
-    filepath: Union[str, Path] = DEFAULT_CANONICAL_PATH,
+    filepath: str | Path = DEFAULT_CANONICAL_PATH,
 ) -> Generator[CanonicalPage, None, None]:
     """
     Streaming reader yielding CanonicalPage instances from canonical.jsonl.

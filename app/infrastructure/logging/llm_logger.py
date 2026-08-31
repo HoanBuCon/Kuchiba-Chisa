@@ -247,8 +247,9 @@ def compute_token_breakdown(prompt: StructuredPrompt, response: LLMResponse) -> 
     user_tokens = TokenEstimator.estimate(user_text)
 
     reasoning_tokens = getattr(response, "reasoning_tokens", 0) or 0
-    if not reasoning_tokens and getattr(response, "reasoning_content", None):
-        reasoning_tokens = TokenEstimator.estimate(response.reasoning_content)
+    reasoning_content = getattr(response, "reasoning_content", None)
+    if not reasoning_tokens and isinstance(reasoning_content, str):
+        reasoning_tokens = TokenEstimator.estimate(reasoning_content)
 
     output_tokens = response.output_tokens or TokenEstimator.estimate(response.raw_content or "")
     total_input = response.input_tokens or (total_system_tokens + history_tokens + user_tokens)

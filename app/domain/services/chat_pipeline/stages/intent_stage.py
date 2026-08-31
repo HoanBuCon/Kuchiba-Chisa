@@ -1,34 +1,85 @@
-from typing import Callable, Optional
-from app.domain.services.chat_pipeline.stage import PipelineStage
+from collections.abc import Callable
+
+from app.domain.interfaces.embedding_provider import IEmbeddingProvider
+from app.domain.interfaces.repositories import IConversationRepository
+from app.domain.interfaces.session import IDbSession
+from app.domain.interfaces.tracker import IPipelineTracker
+from app.domain.models.intent_result import ChatIntent, IntentResult
 from app.domain.services.chat_pipeline.context import ChatContext
-from app.domain.models.intent_result import IntentResult, ChatIntent
+from app.domain.services.chat_pipeline.stage import PipelineStage
 from app.domain.services.intent_classifier import IntentClassifier
 from app.domain.services.rag.query_rewriter import QueryRewriter
-from app.domain.interfaces.embedding_provider import IEmbeddingProvider
-from app.domain.interfaces.session import IDbSession
-from app.domain.interfaces.repositories import IConversationRepository
-from app.shared.utils.query_cleaner import clean_query_for_rag, is_meaningful_query
 from app.shared.utils.logger import get_logger
-from app.domain.interfaces.tracker import IPipelineTracker
+from app.shared.utils.query_cleaner import clean_query_for_rag, is_meaningful_query
 
 log = get_logger(__name__)
 
 IMAGE_RETRIEVAL_ANCHORS = {
     # Yêu cầu gửi lại / xem lại ảnh trong quá khứ (Visual Memory Reverse Search)
-    "gửi lại ảnh", "gửi ảnh", "xem lại ảnh", "tìm ảnh", "ảnh hồi trước", "ảnh cũ",
-    "bức ảnh", "tấm ảnh", "cho anh xem ảnh", "cho xem lại hình", "bức hình",
-    "ảnh con mèo", "ảnh đi chơi", "ảnh hôm nọ", "ảnh lúc trước", "cho anh xin lại cái ảnh",
-    "hình cũ", "gửi lại tấm hình", "tìm lại ảnh", "bức ảnh hôm bữa", "gửi cái ảnh",
-    "show me the picture", "send the image", "ảnh đợt trước", "tấm hình hôm nọ",
-    "ảnh chụp", "cho xem lại bức ảnh", "tìm bức hình", "ảnh đi du lịch", "ảnh du lịch"
+    "gửi lại ảnh",
+    "gửi ảnh",
+    "xem lại ảnh",
+    "tìm ảnh",
+    "ảnh hồi trước",
+    "ảnh cũ",
+    "bức ảnh",
+    "tấm ảnh",
+    "cho anh xem ảnh",
+    "cho xem lại hình",
+    "bức hình",
+    "ảnh con mèo",
+    "ảnh đi chơi",
+    "ảnh hôm nọ",
+    "ảnh lúc trước",
+    "cho anh xin lại cái ảnh",
+    "hình cũ",
+    "gửi lại tấm hình",
+    "tìm lại ảnh",
+    "bức ảnh hôm bữa",
+    "gửi cái ảnh",
+    "show me the picture",
+    "send the image",
+    "ảnh đợt trước",
+    "tấm hình hôm nọ",
+    "ảnh chụp",
+    "cho xem lại bức ảnh",
+    "tìm bức hình",
+    "ảnh đi du lịch",
+    "ảnh du lịch",
 }
 
-IMAGE_NOUNS = {"ảnh", "hình", "bức ảnh", "tấm ảnh", "bức hình", "tấm hình", "image", "photo", "picture"}
-IMAGE_RETRIEVAL_ACTIONS = {
-    "gửi", "gửi lại", "xem lại", "tìm lại", "tìm", "cho xem", "cho xin",
-    "hồi trước", "hôm nọ", "hôm bữa", "lúc trước", "cũ", "đợt trước", "ngày xưa",
-    "trước đây", "show", "send", "du lịch"
+IMAGE_NOUNS = {
+    "ảnh",
+    "hình",
+    "bức ảnh",
+    "tấm ảnh",
+    "bức hình",
+    "tấm hình",
+    "image",
+    "photo",
+    "picture",
 }
+IMAGE_RETRIEVAL_ACTIONS = {
+    "gửi",
+    "gửi lại",
+    "xem lại",
+    "tìm lại",
+    "tìm",
+    "cho xem",
+    "cho xin",
+    "hồi trước",
+    "hôm nọ",
+    "hôm bữa",
+    "lúc trước",
+    "cũ",
+    "đợt trước",
+    "ngày xưa",
+    "trước đây",
+    "show",
+    "send",
+    "du lịch",
+}
+
 
 def is_image_retrieval_query(text: str) -> bool:
     if not text:
@@ -45,13 +96,14 @@ class IntentStage(PipelineStage):
     Stage 2: Classify intent, perform Tiered Query Rewrite (Fast-Path / Micro LLM Rewrite),
     and embed the final aligned query vector for RAG.
     """
+
     def __init__(
         self,
         intent_classifier: IntentClassifier,
         embedder: IEmbeddingProvider,
-        query_rewriter: Optional[QueryRewriter] = None,
-        conv_repo_factory: Optional[Callable[[IDbSession], IConversationRepository]] = None,
-        pipeline_tracker: Optional[IPipelineTracker] = None,
+        query_rewriter: QueryRewriter | None = None,
+        conv_repo_factory: Callable[[IDbSession], IConversationRepository] | None = None,
+        pipeline_tracker: IPipelineTracker | None = None,
     ):
         self.intent_classifier = intent_classifier
         self.embedder = embedder
@@ -64,20 +116,29 @@ class IntentStage(PipelineStage):
             is_st = False
             st_reason = "Multimodal Vision Input Active (Bypass Small Talk Fast Path)"
         else:
-            is_st, st_reason = await self.intent_classifier.is_small_talk_hybrid(context.user_message)
-        
+            is_st, st_reason = await self.intent_classifier.is_small_talk_hybrid(
+                context.user_message
+            )
+
         query_vector = None
         cleaned_query = ""
         rewritten_query = context.user_message
         rewrite_method = "BYPASS"
         needs_vector_search = False
         needs_web_search = False
-        intent_result: Optional[IntentResult] = None
+        intent_result: IntentResult | None = None
 
         if not is_st and not context.has_images:
             cleaned_query = clean_query_for_rag(context.user_message)
             if not is_meaningful_query(cleaned_query):
-                log.info("Intent post-clean guard: query cleaned down to non-meaningful content -> Small Talk", original=context.user_message, cleaned=cleaned_query)
+                log.info(
+                    (
+                        "Intent post-clean guard: query cleaned down to non-meaningful "
+                        "content -> Small Talk"
+                    ),
+                    original=context.user_message,
+                    cleaned=cleaned_query,
+                )
                 is_st = True
                 st_reason = "Non-meaningful query guard (Bypass RAG)"
                 cleaned_query = ""
@@ -90,7 +151,7 @@ class IntentStage(PipelineStage):
                 routing_method="HYBRID_SMALL_TALK",
                 query_vector=None,
                 semantic_scores={"SMALL_TALK": 1.0},
-                routing_reason=f"Hardcore Hybrid Small Talk: {st_reason}"
+                routing_reason=f"Hardcore Hybrid Small Talk: {st_reason}",
             )
             context.is_small_talk = True
             rewritten_query = context.user_message
@@ -100,35 +161,42 @@ class IntentStage(PipelineStage):
 
             # Optionally embed text for long-term memory retrieval
             try:
-                query_vector = await self.embedder.embed_text(context.user_message, prefix="query: ")
+                query_vector = await self.embedder.embed_text(
+                    context.user_message, prefix="query: "
+                )
                 intent_result.query_vector = query_vector
             except Exception as ex:
                 log.debug("Small talk memory embedding skipped", error=str(ex))
 
             # Detect Chisa Persona Trait (Personality vs Profile vs None)
-            persona_trait = await self.intent_classifier.detect_persona_trait(context.user_message, query_vector=query_vector)
+            persona_trait = await self.intent_classifier.detect_persona_trait(
+                context.user_message, query_vector=query_vector
+            )
             context.persona_trait_type = persona_trait
 
             if self.pipeline_tracker:
-                self.pipeline_tracker.add_step("intent_classification", {
-                    "user_message": context.user_message,
-                    "is_small_talk": True,
-                    "intents": ["SMALL_TALK"],
-                    "rewritten_query": context.user_message,
-                    "rewrite_method": "BYPASS",
-                    "needs_vector_search": False,
-                    "needs_web_search": False,
-                    "confidence": 1.0,
-                    "routing_method": "HYBRID_SMALL_TALK",
-                    "semantic_scores": {"SMALL_TALK": 1.0},
-                    "needs_image_retrieval": False,
-                    "persona_trait_type": persona_trait,
-                    "rag_triggered": False,
-                    "routing_reason": f"Hardcore Hybrid Small Talk: {st_reason}",
-                    "prev_context": None,
-                    "context_chaining_source": "NONE",
-                    "is_community": context.is_community,
-                })
+                self.pipeline_tracker.add_step(
+                    "intent_classification",
+                    {
+                        "user_message": context.user_message,
+                        "is_small_talk": True,
+                        "intents": ["SMALL_TALK"],
+                        "rewritten_query": context.user_message,
+                        "rewrite_method": "BYPASS",
+                        "needs_vector_search": False,
+                        "needs_web_search": False,
+                        "confidence": 1.0,
+                        "routing_method": "HYBRID_SMALL_TALK",
+                        "semantic_scores": {"SMALL_TALK": 1.0},
+                        "needs_image_retrieval": False,
+                        "persona_trait_type": persona_trait,
+                        "rag_triggered": False,
+                        "routing_reason": f"Hardcore Hybrid Small Talk: {st_reason}",
+                        "prev_context": None,
+                        "context_chaining_source": "NONE",
+                        "is_community": context.is_community,
+                    },
+                )
 
         # ── BRANCH 2: Knowledge / Task / Out-of-Lore / Code (LLM Rewriter & Tri-State Router) ──
         else:
@@ -146,7 +214,7 @@ class IntentStage(PipelineStage):
                 "rag_triggered": False,
                 "confidence": 1.0,
                 "routing_method": "LLM_ROUTER",
-                "routing_reason": "Knowledge / Task Query ➔ Handover to Micro LLM Rewriter"
+                "routing_reason": "Knowledge / Task Query ➔ Handover to Micro LLM Rewriter",
             }
             if self.pipeline_tracker:
                 self.pipeline_tracker.add_step("intent_classification", stage_tracker_data)
@@ -155,12 +223,16 @@ class IntentStage(PipelineStage):
             prev_rewritten_query = None
             if not context.is_community:
                 # Private Mode: Look up user 1-on-1 SQL history
-                if self.conv_repo_factory and context.session and context.conv_id and context.user_uuid:
+                if (
+                    self.conv_repo_factory
+                    and context.session
+                    and context.conv_id
+                    and context.user_uuid
+                ):
                     try:
                         conv_repo = self.conv_repo_factory(context.session)
                         prev_rewritten_query = await conv_repo.get_last_user_rewritten_query(
-                            user_id=context.user_uuid,
-                            conversation_id=context.conv_id
+                            user_id=context.user_uuid, conversation_id=context.conv_id
                         )
                     except Exception as e:
                         log.warning("Failed to fetch last rewritten query from SQL", error=str(e))
@@ -173,7 +245,11 @@ class IntentStage(PipelineStage):
             else:
                 # Community Mode: Extract latest 1-2 meaningful discussion lines from channel transcript or topic summary
                 if context.channel_transcript:
-                    lines = [l.strip() for l in context.channel_transcript.strip().split("\n") if l.strip()]
+                    lines = [
+                        transcript_line.strip()
+                        for transcript_line in context.channel_transcript.strip().split("\n")
+                        if transcript_line.strip()
+                    ]
                     if lines:
                         meaningful_lines = []
                         for line in reversed(lines):
@@ -214,7 +290,7 @@ class IntentStage(PipelineStage):
                 llm_needs_image_retrieval = False
 
             # 3. Determine intents based on Fast-Path Anchors & LLM Knowledge Router
-            matched_intents: List[ChatIntent] = []
+            matched_intents: list[ChatIntent] = []
             msg_lower = (context.user_message or "").lower()
             is_retrieval = is_image_retrieval_query(msg_lower) or llm_needs_image_retrieval
 
@@ -230,7 +306,7 @@ class IntentStage(PipelineStage):
                 # Chỉ kích hoạt Lore nếu Router yêu cầu hoặc có câu hỏi lore cụ thể
                 if needs_vector_search and not is_retrieval:
                     matched_intents.append(ChatIntent.LORE)
-                
+
                 routing_reason = f"Multimodal Vision Router: {[i.value for i in matched_intents]}"
             else:
                 if is_retrieval:
@@ -249,7 +325,9 @@ class IntentStage(PipelineStage):
                 if ChatIntent.RETRIEVE_PAST_IMAGE in matched_intents:
                     pass
                 elif needs_vector_search and needs_web_search:
-                    routing_reason = "LLM Tri-State: Hybrid Search (Vector Lore + Direct Web Search)"
+                    routing_reason = (
+                        "LLM Tri-State: Hybrid Search (Vector Lore + Direct Web Search)"
+                    )
                 elif needs_vector_search:
                     routing_reason = "LLM Tri-State: Qdrant Vector Search (Game Lore)"
                 elif needs_web_search:
@@ -257,22 +335,27 @@ class IntentStage(PipelineStage):
                 else:
                     routing_reason = "LLM Tri-State: Code / Small Talk (0ms RAG Bypass)"
 
-            context.needs_image_retrieval = (ChatIntent.RETRIEVE_PAST_IMAGE in matched_intents)
+            context.needs_image_retrieval = ChatIntent.RETRIEVE_PAST_IMAGE in matched_intents
 
             intent_result = IntentResult(
                 intents=matched_intents,
                 confidence=1.0,
                 routing_method="LLM_ROUTER",
                 query_vector=query_vector,
-                semantic_scores={"LORE": 1.0 if needs_vector_search else 0.0, "WEB": 1.0 if needs_web_search else 0.0},
-                routing_reason=routing_reason
+                semantic_scores={
+                    "LORE": 1.0 if needs_vector_search else 0.0,
+                    "WEB": 1.0 if needs_web_search else 0.0,
+                },
+                routing_reason=routing_reason,
             )
 
             intent_values = [i.value for i in intent_result.intents]
             rag_triggered = bool(needs_vector_search or needs_web_search)
 
             # Detect Chisa Persona Trait (Personality vs Profile vs None)
-            persona_trait = await self.intent_classifier.detect_persona_trait(context.user_message, query_vector=query_vector)
+            persona_trait = await self.intent_classifier.detect_persona_trait(
+                context.user_message, query_vector=query_vector
+            )
             context.persona_trait_type = persona_trait
 
             # 5. Update Stage 2 tracker step data with finalized rewrite & routing outcomes
@@ -285,20 +368,22 @@ class IntentStage(PipelineStage):
                 else:
                     context_source = "SQL_DIRECT_HISTORY"
 
-            stage_tracker_data.update({
-                "intents": intent_values,
-                "rewritten_query": rewritten_query,
-                "rewrite_method": rewrite_method,
-                "needs_vector_search": needs_vector_search,
-                "needs_web_search": needs_web_search,
-                "needs_image_retrieval": context.needs_image_retrieval,
-                "rag_triggered": rag_triggered,
-                "persona_trait_type": persona_trait,
-                "routing_reason": routing_reason,
-                "prev_context": prev_rewritten_query,
-                "context_chaining_source": context_source,
-                "is_community": context.is_community,
-            })
+            stage_tracker_data.update(
+                {
+                    "intents": intent_values,
+                    "rewritten_query": rewritten_query,
+                    "rewrite_method": rewrite_method,
+                    "needs_vector_search": needs_vector_search,
+                    "needs_web_search": needs_web_search,
+                    "needs_image_retrieval": context.needs_image_retrieval,
+                    "rag_triggered": rag_triggered,
+                    "persona_trait_type": persona_trait,
+                    "routing_reason": routing_reason,
+                    "prev_context": prev_rewritten_query,
+                    "context_chaining_source": context_source,
+                    "is_community": context.is_community,
+                }
+            )
 
         log.info(
             "Production query classified and routed",
@@ -309,7 +394,7 @@ class IntentStage(PipelineStage):
             rewritten_query=rewritten_query,
             needs_vector_search=needs_vector_search,
             needs_web_search=needs_web_search,
-            user_id=context.user_id
+            user_id=context.user_id,
         )
 
         context.intent_result = intent_result

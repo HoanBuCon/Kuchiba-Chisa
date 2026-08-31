@@ -18,7 +18,8 @@ Key Responsibilities:
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, Sequence, Union
+from collections.abc import Sequence
+from typing import Any
 
 import structlog
 
@@ -59,7 +60,7 @@ class QdrantSyncManager:
     Manager for batch vector upserts and atomic page-level deletions in Qdrant.
     """
 
-    def __init__(self, service: Optional[Any] = None):
+    def __init__(self, service: Any | None = None):
         """
         Initialize QdrantSyncManager.
 
@@ -68,7 +69,11 @@ class QdrantSyncManager:
         """
         self.service = service or qdrant_service
 
-    async def delete_page_chunks(self, page_id: int, collections: Optional[Sequence[str]] = None) -> None:
+    async def delete_page_chunks(
+        self,
+        page_id: int,
+        collections: Sequence[str] | None = None,
+    ) -> None:
         """
         Atomic Page Deletion: Delete all existing chunks for page_id across collections.
 
@@ -94,7 +99,7 @@ class QdrantSyncManager:
 
     async def upsert_chunk_batch(
         self,
-        chunks_with_vectors: List[Tuple[Chunk, List[float]]],
+        chunks_with_vectors: list[tuple[Chunk, list[float]]],
     ) -> int:
         """
         Batch upsert chunks and vectors to Qdrant.
@@ -112,7 +117,7 @@ class QdrantSyncManager:
             return 0
 
         # Group chunks by page_id and target collection
-        page_ids_seen: set[Tuple[str, int]] = set()
+        page_ids_seen: set[tuple[str, int]] = set()
         upsert_count = 0
 
         for chunk, vector in chunks_with_vectors:
@@ -132,7 +137,7 @@ class QdrantSyncManager:
             sec_ref = chunk.section_id or str(chunk.page_id)
             parent_uuid = str(uuid.uuid5(uuid.NAMESPACE_URL, f"parent:{sec_ref}"))
 
-            payload: Dict[str, Any] = {
+            payload: dict[str, Any] = {
                 "parent_id": parent_uuid,
                 "page_id": chunk.page_id,
                 "section_id": chunk.section_id or "",
@@ -165,7 +170,7 @@ class QdrantSyncManager:
         logger.info("qdrant_batch_upsert_complete", total_chunks=upsert_count)
         return upsert_count
 
-    async def sync_orphan_deletions(self, orphan_page_ids: List[int]) -> int:
+    async def sync_orphan_deletions(self, orphan_page_ids: list[int]) -> int:
         """
         Purge all chunks from Qdrant for deleted wiki pages across all collections.
 

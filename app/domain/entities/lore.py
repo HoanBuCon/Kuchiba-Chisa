@@ -1,5 +1,7 @@
-from typing import List, Optional
+from datetime import datetime
+
 from pydantic import BaseModel, ConfigDict, Field
+
 
 class LorePayload(BaseModel):
     """
@@ -8,32 +10,42 @@ class LorePayload(BaseModel):
     """
     # Structural Identity
     parent_id: str = Field(..., description="UUID of the parent document. Used to fetch parent text.")
-    section_id: Optional[str] = Field(None, description="Unique section ID, e.g., '1024-H2-01-H3-02'")
+    section_id: str | None = Field(None, description="Unique section ID, e.g., '1024-H2-01-H3-02'")
     page_id: int = Field(..., description="ID of the Wiki page. Used to prevent orphans during updates.")
     source_file: str = Field(..., description="Original markdown file name (e.g., 'breaking_the_loop.md')")
     chunk_index: int = Field(default=0, description="Sequential index of this child chunk")
     text_content: str = Field(..., description="The actual text content of the child chunk for vector matching")
 
     # Hierarchy Metadata
-    heading_path: Optional[str] = Field(None, description="Hierarchical heading path, e.g., 'Characters > Kuchiba Chisa > Forte Circuit'")
-    section_depth: Optional[int] = Field(None, description="Depth level of heading (2 for H2, 3 for H3)")
+    heading_path: str | None = Field(
+        None,
+        description=(
+            "Hierarchical heading path, e.g., 'Characters > Kuchiba Chisa > Forte Circuit'"
+        ),
+    )
+    section_depth: int | None = Field(
+        None, description="Depth level of heading (2 for H2, 3 for H3)"
+    )
 
     # Entity Metadata
-    canonical_name: Optional[str] = Field(None, description="Canonical name of primary entity")
-    entity_id: Optional[str] = Field(None, description="Unique entity ID in dictionary")
-    entity_type: Optional[str] = Field(None, description="Entity classification: 'CHARACTER', 'WEAPON', 'WORLD', 'STORY'")
-    entities: List[str] = Field(
+    canonical_name: str | None = Field(None, description="Canonical name of primary entity")
+    entity_id: str | None = Field(None, description="Unique entity ID in dictionary")
+    entity_type: str | None = Field(
+        None,
+        description="Entity classification: 'CHARACTER', 'WEAPON', 'WORLD', 'STORY'",
+    )
+    entities: list[str] = Field(
         default_factory=list, 
-        description="Canonical names of entities present in this chunk. Used for Qdrant filtering."
+        description="Canonical names of entities present in this chunk. Used for Qdrant filtering.",
     )
 
     # Domain Filters (Optional, used for hard cross-filtering)
-    region: Optional[str] = Field(None, description="e.g., 'Septimont'")
-    faction: Optional[str] = Field(None, description="e.g., 'Huanglong'")
-    quest: Optional[str] = Field(None, description="e.g., 'Breaking the Loop'")
-    source_type: Optional[str] = Field(None, description="e.g., 'Quest', 'Voice Line', 'Item'")
-    game_version: Optional[str] = Field(None, description="e.g., '2.8'")
-    page_type: Optional[str] = Field(None, description="e.g., 'Character', 'Weapon', 'Lore'")
+    region: str | None = Field(None, description="e.g., 'Septimont'")
+    faction: str | None = Field(None, description="e.g., 'Huanglong'")
+    quest: str | None = Field(None, description="e.g., 'Breaking the Loop'")
+    source_type: str | None = Field(None, description="e.g., 'Quest', 'Voice Line', 'Item'")
+    game_version: str | None = Field(None, description="e.g., '2.8'")
+    page_type: str | None = Field(None, description="e.g., 'Character', 'Weapon', 'Lore'")
     
     # Schema Governance
     schema_version: int = Field(default=3, description="Integer version for backward compatibility tracking")
@@ -44,6 +56,7 @@ class LorePayload(BaseModel):
 import uuid
 from dataclasses import dataclass
 
+
 @dataclass
 class LoreParent:
     """
@@ -53,12 +66,12 @@ class LoreParent:
     id: uuid.UUID
     page_id: int
     page_title: str
-    heading: Optional[str]
+    heading: str | None
     markdown: str
-    source_file: Optional[str]
+    source_file: str | None
     revision_id: int
-    section_id: Optional[str] = None
-    heading_path: Optional[str] = None
-    section_depth: Optional[int] = None
-    created_at: Optional[any] = None
-    updated_at: Optional[any] = None
+    section_id: str | None = None
+    heading_path: str | None = None
+    section_depth: int | None = None
+    created_at: datetime | None = None
+    updated_at: datetime | None = None

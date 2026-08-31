@@ -17,7 +17,7 @@ class EmotionUpdateStage(PipelineStage):
         emotion_engine: EmotionEngine,
         emotion_repo_factory: Callable[[IDbSession], IEmotionRepository],
         cache_provider: Optional[ICacheProvider] = None,
-        pipeline_tracker: IPipelineTracker = None
+        pipeline_tracker: IPipelineTracker | None = None,
     ):
         self.emotion_engine = emotion_engine
         self.emotion_repo_factory = emotion_repo_factory
@@ -25,6 +25,10 @@ class EmotionUpdateStage(PipelineStage):
         self.pipeline_tracker = pipeline_tracker
 
     async def process(self, context: ChatContext) -> ChatContext:
+        emotion = context.emotion
+        if emotion is None:
+            raise RuntimeError("EmotionUpdateStage requires initialized emotion state.")
+
         tool_res = context.tool_res or {}
         sentiment_analysis = tool_res.get("sentiment") or tool_res.get("sentiment_analysis", {})
         user_sentiment = tool_res.get("user_sentiment", {})
@@ -44,18 +48,18 @@ class EmotionUpdateStage(PipelineStage):
 
         # Explicitly snapshot pre-update emotions to guarantee accurate telemetry
         old_emotions = {
-            "joy": context.emotion.joy,
-            "sadness": context.emotion.sadness,
-            "trust": context.emotion.trust,
-            "irritation": context.emotion.irritation,
-            "attachment": context.emotion.attachment,
-            "shyness": getattr(context.emotion, "shyness", 0.0),
-            "curiosity": getattr(context.emotion, "curiosity", 0.20),
-            "comfort": getattr(context.emotion, "comfort", 0.50),
+            "joy": emotion.joy,
+            "sadness": emotion.sadness,
+            "trust": emotion.trust,
+            "irritation": emotion.irritation,
+            "attachment": emotion.attachment,
+            "shyness": getattr(emotion, "shyness", 0.0),
+            "curiosity": getattr(emotion, "curiosity", 0.20),
+            "comfort": getattr(emotion, "comfort", 0.50),
         }
 
         delta = self.emotion_engine.update(
-            context.emotion,
+            emotion,
             sentiment_analysis=sentiment_analysis,
             is_positive=is_positive,
             is_negative=is_negative,
@@ -66,17 +70,17 @@ class EmotionUpdateStage(PipelineStage):
             chisa_annoyed=chisa_annoyed,
             chisa_flustered=chisa_flustered
         )
-        await emotion_repo.update_emotion(context.emotion)
+        await emotion_repo.update_emotion(emotion)
 
         # Sync Server-Level Ambient Mood in shared server environments
         is_server_shared = (
             bool(context.guild_id)
-            and not context.guild_id.startswith("CHANNEL_")
+            and not (context.guild_id or "").startswith("CHANNEL_")
             and context.guild_id != "DM"
         )
         if is_server_shared and self.cache_provider:
             from app.domain.services.community.ambient_manager import AmbientMoodManager
-            ambient_snapshot = AmbientMoodManager.extract_ambient_snapshot(context.emotion)
+            ambient_snapshot = AmbientMoodManager.extract_ambient_snapshot(emotion)
             cache_key = f"chisa:guild:{context.guild_id}:ambient_mood"
             await self.cache_provider.set_json(cache_key, ambient_snapshot, ttl=7200)
 
@@ -85,14 +89,14 @@ class EmotionUpdateStage(PipelineStage):
                 "old_emotions": old_emotions,
                 "previous_emotions": old_emotions,
                 "new_emotions": {
-                    "joy": context.emotion.joy,
-                    "sadness": context.emotion.sadness,
-                    "trust": context.emotion.trust,
-                    "irritation": context.emotion.irritation,
-                    "attachment": context.emotion.attachment,
-                    "shyness": getattr(context.emotion, "shyness", 0.0),
-                    "curiosity": getattr(context.emotion, "curiosity", 0.20),
-                    "comfort": getattr(context.emotion, "comfort", 0.50),
+                    "joy": emotion.joy,
+                    "sadness": emotion.sadness,
+                    "trust": emotion.trust,
+                    "irritation": emotion.irritation,
+                    "attachment": emotion.attachment,
+                    "shyness": getattr(emotion, "shyness", 0.0),
+                    "curiosity": getattr(emotion, "curiosity", 0.20),
+                    "comfort": getattr(emotion, "comfort", 0.50),
                 },
                 "delta": {
                     "joy": delta.joy,
@@ -134,14 +138,14 @@ class EmotionUpdateStage(PipelineStage):
             })
 
         context.updated_emotions = {
-            "joy": context.emotion.joy,
-            "sadness": context.emotion.sadness,
-            "trust": context.emotion.trust,
-            "irritation": context.emotion.irritation,
-            "attachment": context.emotion.attachment,
-            "shyness": getattr(context.emotion, "shyness", 0.0),
-            "curiosity": getattr(context.emotion, "curiosity", 0.20),
-            "comfort": getattr(context.emotion, "comfort", 0.50),
+            "joy": emotion.joy,
+            "sadness": emotion.sadness,
+            "trust": emotion.trust,
+            "irritation": emotion.irritation,
+            "attachment": emotion.attachment,
+            "shyness": getattr(emotion, "shyness", 0.0),
+            "curiosity": getattr(emotion, "curiosity", 0.20),
+            "comfort": getattr(emotion, "comfort", 0.50),
         }
 
         return context

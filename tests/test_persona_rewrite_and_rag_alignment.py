@@ -128,16 +128,15 @@ def test_meaningful_query_lookback():
     print("  ✓ PASS: Bộ lọc Knowledge-Aware Lookback phân biệt chính xác câu cảm thán!")
 
 
-async def test_end_to_end_chisa_ability_chat():
+async def test_end_to_end_chisa_ability_chat(test_chat_engine):
     print("\n" + "=" * 80)
     print("🧪 [TEST 5] Kiểm tra End-to-End ChatEngine: 'vậy em có năng lực gì'")
     print("=" * 80)
 
-    from app.application.dependencies import container
     from app.infrastructure.database.engine import AsyncSessionFactory
     from app.infrastructure.logging.pipeline_tracker import pipeline_tracker
 
-    chat_engine = container.chat_engine
+    chat_engine = test_chat_engine
     import uuid
     user_id = f"test_user_{uuid.uuid4().hex[:8]}"
     query = "vậy em có năng lực gì"
@@ -150,7 +149,7 @@ async def test_end_to_end_chisa_ability_chat():
     )
 
     async with AsyncSessionFactory() as session:
-        reply, emotions = await chat_engine.chat(
+        reply, emotions, _, _ = await chat_engine.chat(
             session=session,
             user_id=user_id,
             user_message=query

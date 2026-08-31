@@ -1,13 +1,11 @@
 from __future__ import annotations
 
 import uuid
-from typing import Protocol, List, Optional
 from datetime import datetime
+from typing import Any, Protocol
 
-from app.domain.entities.user import User, UserStats
 from app.domain.entities.emotion import EmotionState
-from app.domain.entities.conversation import Conversation
-from app.domain.entities.message import Message
+from app.domain.entities.user import User, UserStats
 
 
 class IUserRepository(Protocol):
@@ -81,10 +79,10 @@ class IConversationRepository(Protocol):
         user_id: uuid.UUID,
         role: str,
         content: str,
-        token_count: Optional[int] = None,
+        token_count: int | None = None,
         is_success: bool = True,
-        rewritten_content: Optional[str] = None,
-        media_metadata: Optional[Any] = None,
+        rewritten_content: str | None = None,
+        media_metadata: Any | None = None,
     ) -> None:
         """
         Persists a new message into STM.
@@ -93,7 +91,7 @@ class IConversationRepository(Protocol):
 
     async def get_last_user_rewritten_query(
         self, user_id: uuid.UUID, conversation_id: uuid.UUID
-    ) -> Optional[str]:
+    ) -> str | None:
         """
         Retrieves the rewritten_content (or original content) of the most recent user message.
         """
@@ -101,7 +99,7 @@ class IConversationRepository(Protocol):
 
     async def get_recent_history(
         self, user_id: uuid.UUID, conversation_id: uuid.UUID, limit: int = 15
-    ) -> List[dict[str, str]]:
+    ) -> list[dict[str, str]]:
         """
         Retrieves the recent messages in a conversation as a list of dicts (oldest first).
         """
@@ -109,7 +107,7 @@ class IConversationRepository(Protocol):
 
     async def get_latest_summary(
         self, user_id: uuid.UUID, conversation_id: uuid.UUID
-    ) -> Optional[str]:
+    ) -> str | None:
         """
         Retrieves the latest summary string for a conversation if available.
         """
@@ -131,18 +129,19 @@ class IConversationRepository(Protocol):
 
 from app.domain.entities.lore import LoreParent
 
+
 class ILoreParentRepository(Protocol):
     """
     Domain adapter port for storing and retrieving full parent lore documents.
     """
 
-    async def get_parent(self, parent_id: uuid.UUID) -> Optional[LoreParent]:
+    async def get_parent(self, parent_id: uuid.UUID) -> LoreParent | None:
         """
         Retrieves a single parent document by its UUID.
         """
         ...
 
-    async def get_parents_batch(self, parent_ids: List[uuid.UUID]) -> List[LoreParent]:
+    async def get_parents_batch(self, parent_ids: list[uuid.UUID]) -> list[LoreParent]:
         """
         Retrieves multiple parent documents efficiently.
         """
@@ -156,26 +155,28 @@ class ILoreParentRepository(Protocol):
 
 
 class IChunkStateRepository(Protocol):
-    async def get_chunk_state(self, chunk_id: uuid.UUID) -> Optional[dict]:
+    async def get_chunk_state(self, chunk_id: uuid.UUID) -> dict | None:
         ...
     async def check_hash_exists(self, chunk_hash: str) -> bool:
         ...
         
 class IEntityRepository(Protocol):
-    async def get_all_entities(self) -> List[dict]:
+    async def get_all_entities(self) -> list[dict]:
         ...
-    async def get_latest_update_timestamp(self) -> Optional[datetime]:
+    async def get_latest_update_timestamp(self) -> datetime | None:
         ...
 
 class IAliasRepository(Protocol):
-    async def get_all_aliases(self) -> List[dict]:
+    async def get_all_aliases(self) -> list[dict]:
         ...
 
 class IPipelineJobRepository(Protocol):
     async def create_job(self, stage: str, worker: str) -> uuid.UUID:
         ...
         
-    async def update_job_status(self, job_id: uuid.UUID, status: str, error: Optional[str] = None) -> None:
+    async def update_job_status(
+        self, job_id: uuid.UUID, status: str, error: str | None = None
+    ) -> None:
         ...
         
     async def log_event(self, job_id: uuid.UUID, event_type: str, details: dict) -> None:

@@ -1,4 +1,5 @@
-from typing import Tuple
+from typing import Any
+
 from app.domain.interfaces.llm_provider import BaseLLMAdapter, StructuredPrompt
 from app.shared.utils.logger import get_logger
 
@@ -14,9 +15,9 @@ class ContextAssessor:
         user_message: str,
         context_text: str,
         llm: BaseLLMAdapter,
-        history: list = None,
-        conversation_summary: str = None,
-    ) -> Tuple[bool, str, str, bool]:
+        history: list[dict[str, Any]] | None = None,
+        conversation_summary: str | None = None,
+    ) -> tuple[bool, str, str, bool, str, str]:
         import json
         # Prefer summary (compact) over raw history to save tokens.
         # Fallback to last 4 raw messages if no summary exists yet.

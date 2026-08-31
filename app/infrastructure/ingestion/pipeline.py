@@ -307,7 +307,7 @@ class MasterIngestionPipeline:
                 print(f"[!] Error: {self.canonical_path} does not exist!")
                 return []
             from app.infrastructure.ingestion.canonical import read_canonical_stream
-            pages = read_canonical_stream(self.canonical_path)
+            pages = list(read_canonical_stream(self.canonical_path))
 
         all_chunks: List[Chunk] = []
         for page in pages:
@@ -325,7 +325,7 @@ class MasterIngestionPipeline:
         print(f"[+] Chunking completed: {len(all_chunks)} chunks written to {self.chunks_path}")
         return all_chunks
 
-    async def stage_5b_ingest(self, chunks: Optional[List[Chunk]] = None) -> Tuple[int, int]:
+    async def stage_5b_ingest(self, chunks: list[Chunk] | None = None) -> tuple[int, int]:
         """Stage 5b: Upsert embeddings to Qdrant & Parent sections to PostgreSQL."""
         print("\n=======================================================")
         print("🚀 STAGE 5B: INGESTION TO QDRANT & POSTGRESQL")

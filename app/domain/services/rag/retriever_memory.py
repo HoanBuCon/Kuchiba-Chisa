@@ -1,5 +1,4 @@
 import time
-from typing import List, Dict, Optional
 from app.domain.interfaces.vector_store import IVectorStore
 from app.domain.services.rag.base import ScoredMemory
 from app.domain.services.rag.reranker import HybridMemoryScorer
@@ -14,20 +13,20 @@ class MemoryRetriever:
     """
     Retrieves and ranks user memories from Qdrant using Hybrid Scoring.
     """
-    def __init__(self, vector_store: IVectorStore, scorer: Optional[HybridMemoryScorer] = None):
+    def __init__(self, vector_store: IVectorStore, scorer: HybridMemoryScorer | None = None):
         self.vector_store = vector_store
         self.scorer = scorer or HybridMemoryScorer()
 
     async def retrieve_memories(
         self,
         collection: str,
-        query_vector: List[float],
+        query_vector: list[float],
         user_id: str,
-        conversation_id: Optional[str] = None,
-        current_emotion: Dict[str, float] = None,
+        conversation_id: str | None = None,
+        current_emotion: dict[str, float] | None = None,
         limit: int = 15,
         top_k: int = RAGTuning.TOP_K
-    ) -> List[ScoredMemory]:
+    ) -> list[ScoredMemory]:
         try:
             candidates = await self.vector_store.search_by_user(
                 collection=collection,

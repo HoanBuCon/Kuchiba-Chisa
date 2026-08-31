@@ -132,12 +132,12 @@ class QueryRewriter:
         """
         Main rewrite method.
         Returns:
-            RewriteResult: (rewritten_query, method, needs_vector_search, needs_web_search, needs_image_retrieval, vision_sub_intent)
+            RewriteResult: rewritten query and retrieval-routing decisions.
         """
         # 1. Base cleaned query
         base_query = cleaned_query or clean_query_for_rag(user_message)
         if not base_query:
-            return RewriteResult(user_message, "FAST_PATH", False, False, False, "NONE")
+            return RewriteResult(user_message, "FAST_PATH", False, False, False)
 
         is_code = is_obvious_code_or_technical_query(user_message)
 
@@ -146,7 +146,7 @@ class QueryRewriter:
             enriched = enrich_query_with_entities(base_query, self.entity_resolver, intent_hint=intent_hint)
             # Default vector search to True for lore/memory unless it's obvious code
             needs_vec = not is_code
-            return RewriteResult(enriched, "FAST_PATH", needs_vec, False, False, "NONE")
+            return RewriteResult(enriched, "FAST_PATH", needs_vec, False, False)
 
         # 3. LLM Micro-Rewrite (DeepSeek V4 Flash) with context chaining or persona disambiguation
         # Strip platform tags (<@1512944169310748682>) so LLM receives clean user semantic context

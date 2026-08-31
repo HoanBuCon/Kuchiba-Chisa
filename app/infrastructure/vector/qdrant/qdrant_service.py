@@ -90,15 +90,15 @@ class QdrantService(IVectorStore):
     ) -> None:
         try:
             info = await self._client.get_collection(name)
-            existing_dim = None
             vectors_config = info.config.params.vectors
-            if hasattr(vectors_config, "size"):
+            existing_dim: int | None
+            if isinstance(vectors_config, VectorParams):
                 existing_dim = vectors_config.size
-            elif hasattr(vectors_config, "vectors") and hasattr(vectors_config.vectors, "size"):
-                existing_dim = vectors_config.vectors.size
             elif isinstance(vectors_config, dict) and len(vectors_config) > 0:
                 first_val = list(vectors_config.values())[0]
-                existing_dim = getattr(first_val, "size", None)
+                existing_dim = first_val.size
+            else:
+                existing_dim = None
             
             if existing_dim is not None and existing_dim != vector_size:
                 log.warning("Qdrant collection dimension mismatch, recreating", collection=name, expected=vector_size, found=existing_dim)
@@ -263,7 +263,7 @@ class QdrantService(IVectorStore):
             # Filter out critical tier
             prunable = [p for p in points if p.payload and p.payload.get("memory_tier") != MemoryTier.CRITICAL.value]
             # Sort by importance ascending (lowest first)
-            prunable.sort(key=lambda x: x.payload.get("importance_score", 1.0))
+            prunable.sort(key=lambda point: (point.payload or {}).get("importance_score", 1.0))
             
             if prunable and num_to_delete > 0:
                 to_delete = prunable[:num_to_delete]

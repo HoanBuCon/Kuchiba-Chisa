@@ -28,7 +28,14 @@ class QdrantUpsertStage(IPipelineStage[QdrantUpsertInput, List[ProcessingChunk]]
         log.info("Starting QdrantUpsertStage", job_id=job_id, chunks=len(input_data.chunks))
         start_time = time.perf_counter()
         
-        to_upsert = [c for c in input_data.chunks if c.is_valid and not c.skip_embedding and c.vector is not None]
+        to_upsert = [
+            chunk
+            for chunk in input_data.chunks
+            if chunk.is_valid
+            and not chunk.skip_embedding
+            and chunk.vector is not None
+            and chunk.payload is not None
+        ]
         items_processed = 0
         items_failed = 0
         
@@ -50,11 +57,15 @@ class QdrantUpsertStage(IPipelineStage[QdrantUpsertInput, List[ProcessingChunk]]
                     # Assuming upsert_lore can be called sequentially or we use an upsert_lore_batch
                     # For now, we simulate calling upsert_lore sequentially or if the provider supports batching.
                     for chunk in batch:
+                        vector = chunk.vector
+                        payload = chunk.payload
+                        if vector is None or payload is None:
+                            raise ValueError("Validated chunk is missing vector or payload")
                         await self.vector_store.upsert_lore(
                             collection=input_data.collection_name,
                             point_id=str(chunk.chunk_id),
-                            vector=chunk.vector,
-                            payload=chunk.payload.model_dump(exclude_none=True)
+                            vector=vector,
+                            payload=payload.model_dump(exclude_none=True),
                         )
                     items_processed += len(batch)
                 except Exception as e:

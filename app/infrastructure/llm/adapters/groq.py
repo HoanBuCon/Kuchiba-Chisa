@@ -1,11 +1,15 @@
 from __future__ import annotations
+
 import asyncio
 import json
-from typing import Any, AsyncIterator
+from collections.abc import AsyncIterator
+from typing import Any, cast
+
 from groq import AsyncGroq
+from groq.types.chat import ChatCompletionMessageParam
+
 from app.config.settings import settings
 from app.config.tuning.llm import LLMTuning
-from app.infrastructure.logging.logger import get_logger
 from app.domain.interfaces.llm_provider import (
     BaseLLMAdapter,
     LLMError,
@@ -16,6 +20,7 @@ from app.domain.interfaces.llm_provider import (
     LLMTokenOverflowError,
     StructuredPrompt,
 )
+from app.infrastructure.logging.logger import get_logger
 
 log = get_logger(__name__)
 
@@ -33,6 +38,23 @@ class GroqAdapter(BaseLLMAdapter):
 
     _MAX_RETRIES = LLMTuning.ADAPTER_MAX_RETRIES
     _BASE_BACKOFF = LLMTuning.ADAPTER_BASE_BACKOFF_STANDARD  # seconds
+
+    @staticmethod
+    def _build_messages(prompt: StructuredPrompt) -> list[ChatCompletionMessageParam]:
+        """Convert the internal prompt contract to Groq's typed message union."""
+        messages: list[ChatCompletionMessageParam] = [
+            cast(ChatCompletionMessageParam, {"role": "system", "content": prompt.system})
+        ]
+        for message in prompt.history:
+            role = message.get("role")
+            content = message.get("content")
+            if role not in {"system", "user", "assistant"} or not isinstance(content, str):
+                raise LLMInvalidResponseError("Unsupported message in Groq conversation history")
+            messages.append(cast(ChatCompletionMessageParam, {"role": role, "content": content}))
+        messages.append(
+            cast(ChatCompletionMessageParam, {"role": "user", "content": prompt.user_message})
+        )
+        return messages
 
     def __init__(self) -> None:
         self._client = AsyncGroq(
@@ -87,16 +109,12 @@ class GroqAdapter(BaseLLMAdapter):
     async def _call_groq(self, prompt: StructuredPrompt) -> LLMResponse:
         """Internal Groq API call — STUB implementation."""
         # TODO (Phase 4): Build full message list, call Groq, validate JSON
-        messages = [
-            {"role": "system", "content": prompt.system},
-            *prompt.history,
-            {"role": "user", "content": prompt.user_message},
-        ]
+        messages = self._build_messages(prompt)
 
         try:
             response = await self._client.chat.completions.create(
                 model=self._model,
-                messages=messages,  # type: ignore[arg-type]
+                messages=messages,
                 max_tokens=prompt.max_tokens or self._max_tokens,
                 temperature=prompt.temperature if prompt.temperature is not None else self._temperature,
                 response_format={"type": "json_object"},
@@ -126,7 +144,7 @@ class GroqAdapter(BaseLLMAdapter):
                     reasoning_content = raw[s_idx:e_idx].strip()
 
         parsed = {}
-        error_to_raise = None
+        error_to_raise: Exception | None = None
 
         if finish_reason == "length":
             error_to_raise = LLMTokenOverflowError()
@@ -164,15 +182,11 @@ class GroqAdapter(BaseLLMAdapter):
         """
         Streams structured prompt response from Groq.
         """
-        messages = [
-            {"role": "system", "content": prompt.system},
-            *prompt.history,
-            {"role": "user", "content": prompt.user_message},
-        ]
+        messages = self._build_messages(prompt)
         try:
             response_stream = await self._client.chat.completions.create(
                 model=self._model,
-                messages=messages,  # type: ignore[arg-type]
+                messages=messages,
                 max_tokens=prompt.max_tokens or self._max_tokens,
                 temperature=prompt.temperature if prompt.temperature is not None else self._temperature,
                 response_format={"type": "json_object"},

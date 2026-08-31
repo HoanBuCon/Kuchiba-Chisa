@@ -1,18 +1,26 @@
 import asyncio
 import json
-from typing import Callable, Optional, Any, Annotated
-from fastapi import APIRouter, Depends, HTTPException, Request, Path, Query
+from collections.abc import Callable
+from contextlib import suppress
+from typing import Annotated, Any
+
+from fastapi import APIRouter, Depends, HTTPException, Path, Query, Request
 from fastapi.responses import StreamingResponse
-from sqlalchemy.ext.asyncio import AsyncSession
-from app.infrastructure.database.engine import get_db_session
-from app.interface.api.schemas.chat import ChatRequest, ChatResponse
-from app.domain.services.chat_engine import ChatEngine, ChatEngineBusyError
-from app.domain.interfaces.llm_provider import LLMRateLimitError, LLMTimeoutError, LLMInvalidResponseError
-from app.infrastructure.logging.logger import get_logger
-from app.shared.utils.user_identity import normalize_user_id, normalize_user_id_str
 from sqlalchemy.exc import SQLAlchemyError
-from app.shared.utils.circuit_breaker import CircuitBreakerError
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.application.dependencies import get_chat_engine, get_clear_user_memory_use_case
+from app.domain.interfaces.llm_provider import (
+    LLMInvalidResponseError,
+    LLMRateLimitError,
+    LLMTimeoutError,
+)
+from app.domain.services.chat_engine import ChatEngine, ChatEngineBusyError
+from app.infrastructure.database.engine import get_db_session
+from app.infrastructure.logging.logger import get_logger
+from app.interface.api.schemas.chat import ChatRequest, ChatResponse
+from app.shared.utils.circuit_breaker import CircuitBreakerError
+from app.shared.utils.user_identity import normalize_user_id, normalize_user_id_str
 
 log = get_logger(__name__)
 
@@ -26,7 +34,7 @@ def _sse_event(event_type: str, data: dict) -> str:
 def _prepare_chat_context(request: ChatRequest, http_request: Request) -> tuple[str, str]:
     """Sets up clean log flag, determines username, and normalizes user_id."""
     from app.infrastructure.logging.llm_logger import enable_clean_log
-    
+
     is_test = http_request.headers.get("X-Enable-Clean-Log") == "true"
     enable_clean_log.set(is_test)
 
@@ -37,12 +45,13 @@ def _prepare_chat_context(request: ChatRequest, http_request: Request) -> tuple[
 
 UserIdPath = Annotated[str, Path(min_length=1, max_length=128, pattern=r"^[a-zA-Z0-9_\-\:]+$")]
 
-def _start_chat_trace(request: ChatRequest, username: str | None) -> str:
+
+def _start_chat_trace(request: ChatRequest, username: str | None, message: str) -> str:
     from app.infrastructure.logging.pipeline_tracker import pipeline_tracker
 
     return pipeline_tracker.start_trace(
         user_id=request.user_id,
-        message=request.message,
+        message=message,
         pipeline="production",
         source=request.source,
         username=username,
@@ -57,10 +66,10 @@ async def _run_chat_request(
     original_user_id: str,
     normalized_user_id: str,
     chat_engine: ChatEngine,
-    on_token: Optional[Callable[[str], Any]] = None,
-    images: Optional[list[str]] = None,
+    on_token: Callable[[str], Any] | None = None,
+    images: list[str] | None = None,
     is_ephemeral_reference: bool = False,
-) -> tuple[str, dict, bool, list, list]:
+) -> tuple[str, dict[str, Any] | None, bool, list, list]:
     from app.infrastructure.logging.pipeline_tracker import pipeline_tracker
 
     try:
@@ -93,7 +102,12 @@ async def _run_chat_request(
     except (LLMTimeoutError, LLMInvalidResponseError, CircuitBreakerError) as llm_err:
         fallback_text = "Chisa hơi mệt một chút, Senpai nhắn lại sau nhé ~"
         fallback_emotions = None
-        log.warning("LLM error, returning fallback", error=str(llm_err), user_id=original_user_id, normalized_user_id=normalized_user_id)
+        log.warning(
+            "LLM error, returning fallback",
+            error=str(llm_err),
+            user_id=original_user_id,
+            normalized_user_id=normalized_user_id,
+        )
         pipeline_tracker.end_trace(
             response_text=fallback_text,
             emotions=fallback_emotions,
@@ -108,40 +122,54 @@ async def _run_chat_request(
         )
         raise
 
+
 @router.post("/chat", response_model=ChatResponse)
 async def chat_endpoint(
     request: ChatRequest,
     http_request: Request,
     session: AsyncSession = Depends(get_db_session),
-    chat_engine: ChatEngine = Depends(get_chat_engine)
+    chat_engine: ChatEngine = Depends(get_chat_engine),
 ) -> ChatResponse:
     """
     Primary endpoint for User <-> AI interactions.
     Requires user_id to correctly scope STM, emotions, and RAG contexts.
     """
     username, normalized_user_id = _prepare_chat_context(request, http_request)
-    log.info("Received chat request", user_id=request.user_id, normalized_user_id=normalized_user_id, has_images=bool(request.images))
+    message = request.message or ""
+    log.info(
+        "Received chat request",
+        user_id=request.user_id,
+        normalized_user_id=normalized_user_id,
+        has_images=bool(request.images),
+    )
 
-    _start_chat_trace(request, username)
+    _start_chat_trace(request, username, message)
 
     try:
-        reply_text, emotions, loop_thinking_activated, images_processed, attached_images = await _run_chat_request(
-            session=session, 
-            message=request.message,
+        (
+            reply_text,
+            emotions,
+            loop_thinking_activated,
+            images_processed,
+            attached_images,
+        ) = await _run_chat_request(
+            session=session,
+            message=message,
             original_user_id=request.user_id,
             normalized_user_id=normalized_user_id,
             chat_engine=chat_engine,
             images=request.images,
             is_ephemeral_reference=bool(request.is_ephemeral_reference),
         )
-        
+
         emotion_caption = None
         if emotions and isinstance(emotions, dict):
-            from app.domain.services.state_manager import StateManager
             from app.domain.entities.emotion import EmotionState
+            from app.domain.services.state_manager import StateManager
+
             try:
                 state_obj = EmotionState(
-                    user_id=request.user_id,
+                    user_id=normalize_user_id(request.user_id),
                     trust=float(emotions.get("trust", 0.50)),
                     attachment=float(emotions.get("attachment", 0.00)),
                     joy=float(emotions.get("joy", 0.15)),
@@ -167,27 +195,31 @@ async def chat_endpoint(
     except ChatEngineBusyError:
         raise HTTPException(
             status_code=429,
-            detail="Chisa đang xử lý tin nhắn trước đó, Senpai chờ em thêm lát nữa nhé~"
-        )
+            detail="Chisa đang xử lý tin nhắn trước đó, Senpai chờ em thêm lát nữa nhé~",
+        ) from None
     except SQLAlchemyError as db_err:
-        log.error("Database connection or operation failed", error=str(db_err), user_id=request.user_id)
-        raise HTTPException(status_code=503, detail="Service temporarily unavailable")
+        log.error(
+            "Database connection or operation failed", error=str(db_err), user_id=request.user_id
+        )
+        raise HTTPException(status_code=503, detail="Service temporarily unavailable") from db_err
     except Exception as e:
-        log.error("Chat orchestration failed", error=str(e), error_type=type(e).__name__, user_id=request.user_id)
+        log.error(
+            "Chat orchestration failed",
+            error=str(e),
+            error_type=type(e).__name__,
+            user_id=request.user_id,
+        )
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.post("/chat/stream")
 async def chat_stream_endpoint(
-    request: ChatRequest,
-    http_request: Request,
-    chat_engine: ChatEngine = Depends(get_chat_engine)
+    request: ChatRequest, http_request: Request, chat_engine: ChatEngine = Depends(get_chat_engine)
 ):
     """SSE stream for realtime loop-thinking updates — web clients only."""
-    from app.infrastructure.logging.llm_logger import enable_clean_log
-    from app.infrastructure.logging.pipeline_tracker import pipeline_tracker
-    from app.infrastructure.database.engine import AsyncSessionFactory
     from app.config.settings import settings
+    from app.infrastructure.database.engine import AsyncSessionFactory
+    from app.infrastructure.logging.pipeline_tracker import pipeline_tracker
     from app.shared.utils.background_tasks import BackgroundTaskManager
 
     if request.source and request.source != "web":
@@ -197,9 +229,14 @@ async def chat_stream_endpoint(
         )
 
     username, normalized_user_id = _prepare_chat_context(request, http_request)
-    log.info("Received chat stream request", user_id=request.user_id, normalized_user_id=normalized_user_id)
+    message = request.message or ""
+    log.info(
+        "Received chat stream request",
+        user_id=request.user_id,
+        normalized_user_id=normalized_user_id,
+    )
 
-    trace_id = _start_chat_trace(request, username)
+    trace_id = _start_chat_trace(request, username, message)
     queue: asyncio.Queue[dict] = asyncio.Queue(maxsize=settings.SSE_MAX_QUEUE_SIZE)
     loop_event_sent = False
 
@@ -224,16 +261,23 @@ async def chat_stream_endpoint(
 
     async def runner():
         try:
+
             async def sse_on_token(token: str):
-                try:
-                    queue.put_nowait({"type": "token", "trace_id": trace_id, "data": {"token": token}})
-                except asyncio.QueueFull:
-                    pass
+                with suppress(asyncio.QueueFull):
+                    queue.put_nowait(
+                        {"type": "token", "trace_id": trace_id, "data": {"token": token}}
+                    )
 
             async with AsyncSessionFactory() as session:
-                reply_text, emotions, loop_thinking_activated, images_processed, attached_images = await _run_chat_request(
+                (
+                    reply_text,
+                    emotions,
+                    loop_thinking_activated,
+                    images_processed,
+                    attached_images,
+                ) = await _run_chat_request(
                     session=session,
-                    message=request.message,
+                    message=message,
                     original_user_id=request.user_id,
                     normalized_user_id=normalized_user_id,
                     chat_engine=chat_engine,
@@ -245,11 +289,12 @@ async def chat_stream_endpoint(
 
             emotion_caption = None
             if emotions and isinstance(emotions, dict):
-                from app.domain.services.state_manager import StateManager
                 from app.domain.entities.emotion import EmotionState
+                from app.domain.services.state_manager import StateManager
+
                 try:
                     state_obj = EmotionState(
-                        user_id=request.user_id,
+                        user_id=normalize_user_id(request.user_id),
                         trust=float(emotions.get("trust", 0.50)),
                         attachment=float(emotions.get("attachment", 0.00)),
                         joy=float(emotions.get("joy", 0.15)),
@@ -263,64 +308,67 @@ async def chat_stream_endpoint(
                 except Exception:
                     emotion_caption = None
 
-            await queue.put({
-                "type": "complete",
-                "trace_id": trace_id,
-                "data": {
-                    "response": reply_text,
-                    "user_id": request.user_id,
-                    "emotions": emotions,
-                    "emotion_caption": emotion_caption,
-                    "loop_thinking_activated": loop_thinking_activated,
-                    "images_processed": images_processed,
-                    "attached_images": attached_images,
-                },
-            })
+            await queue.put(
+                {
+                    "type": "complete",
+                    "trace_id": trace_id,
+                    "data": {
+                        "response": reply_text,
+                        "user_id": request.user_id,
+                        "emotions": emotions,
+                        "emotion_caption": emotion_caption,
+                        "loop_thinking_activated": loop_thinking_activated,
+                        "images_processed": images_processed,
+                        "attached_images": attached_images,
+                    },
+                }
+            )
         except asyncio.CancelledError:
             raise
         except SQLAlchemyError as db_err:
-            log.error("SSE database connection or operation failed", error=str(db_err), user_id=request.user_id)
-            try:
-                queue.put_nowait({
-                    "type": "error",
-                    "trace_id": trace_id,
-                    "data": {
-                        "message": "Service temporarily unavailable",
-                        "error": "ServiceUnavailable"
-                    },
-                })
-            except asyncio.QueueFull:
-                pass
+            log.error(
+                "SSE database connection or operation failed",
+                error=str(db_err),
+                user_id=request.user_id,
+            )
+            with suppress(asyncio.QueueFull):
+                queue.put_nowait(
+                    {
+                        "type": "error",
+                        "trace_id": trace_id,
+                        "data": {
+                            "message": "Service temporarily unavailable",
+                            "error": "ServiceUnavailable",
+                        },
+                    }
+                )
         except Exception as error:
             log.error("SSE chat orchestration failed", error=str(error), user_id=request.user_id)
-            try:
-                queue.put_nowait({
-                    "type": "error",
-                    "trace_id": trace_id,
-                    "data": {
-                        "message": "Internal server error during chat generation",
-                        "error": str(error),
-                    },
-                })
-            except asyncio.QueueFull:
-                pass
+            with suppress(asyncio.QueueFull):
+                queue.put_nowait(
+                    {
+                        "type": "error",
+                        "trace_id": trace_id,
+                        "data": {
+                            "message": "Internal server error during chat generation",
+                            "error": str(error),
+                        },
+                    }
+                )
 
     async def run_with_timeout():
         try:
             await asyncio.wait_for(runner(), timeout=settings.SSE_TIMEOUT)
-        except asyncio.TimeoutError:
+        except TimeoutError:
             log.warning("SSE runner timed out", user_id=request.user_id)
-            try:
-                queue.put_nowait({
-                    "type": "error",
-                    "trace_id": trace_id,
-                    "data": {
-                        "message": "Request timed out",
-                        "error": "TimeoutError"
+            with suppress(asyncio.QueueFull):
+                queue.put_nowait(
+                    {
+                        "type": "error",
+                        "trace_id": trace_id,
+                        "data": {"message": "Request timed out", "error": "TimeoutError"},
                     }
-                })
-            except asyncio.QueueFull:
-                pass
+                )
         except asyncio.CancelledError:
             pass
 
@@ -358,12 +406,13 @@ async def chat_stream_endpoint(
 async def get_emotions(
     user_id: UserIdPath,
     session: AsyncSession = Depends(get_db_session),
-    chat_engine: ChatEngine = Depends(get_chat_engine)
+    chat_engine: ChatEngine = Depends(get_chat_engine),
 ) -> dict:
     """Retrieves the current emotional state of Chisa for the frontend UI."""
     try:
         emotion = await chat_engine.get_emotion_state(session, normalize_user_id_str(user_id))
         from app.domain.services.state_manager import StateManager
+
         return {
             "joy": emotion.joy,
             "sadness": emotion.sadness,
@@ -385,7 +434,7 @@ async def get_chat_history(
     user_id: UserIdPath,
     limit: int = Query(50, ge=1, le=100),
     session: AsyncSession = Depends(get_db_session),
-    chat_engine: ChatEngine = Depends(get_chat_engine)
+    chat_engine: ChatEngine = Depends(get_chat_engine),
 ) -> dict:
     """Retrieves recent conversation history to prepopulate the frontend."""
     try:
@@ -400,7 +449,7 @@ async def get_chat_history(
 async def clear_user_memory(
     user_id: UserIdPath,
     session: AsyncSession = Depends(get_db_session),
-    clear_use_case = Depends(get_clear_user_memory_use_case)
+    clear_use_case=Depends(get_clear_user_memory_use_case),
 ) -> dict:
     """
     Wipes all conversation memory (STM + LTM) and resets emotion/stats for a user.
@@ -408,7 +457,10 @@ async def clear_user_memory(
     """
     try:
         await clear_use_case.execute(session, user_id)
-        return {"status": "ok", "message": "Tất cả ký ức đã được xóa. Chisa sẽ gặp lại Senpai như lần đầu tiên!"}
+        return {
+            "status": "ok",
+            "message": "Tất cả ký ức đã được xóa. Chisa sẽ gặp lại Senpai như lần đầu tiên!",
+        }
     except Exception as e:
         log.error("Failed to clear user memory", error=str(e), user_id=user_id)
         raise HTTPException(status_code=500, detail=f"Could not clear user memory: {str(e)}")

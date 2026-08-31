@@ -1,17 +1,19 @@
 from __future__ import annotations
-from dataclasses import dataclass
-from typing import List, Dict
+
 import json
 import time
-from app.domain.interfaces.llm_provider import StructuredPrompt
-from app.domain.entities.emotion import EmotionState
-from app.domain.services.state_manager import StateManager
-from app.domain.services.persona_loader import persona_loader
-from app.domain.services.context_budget_manager import ContextBudgetManager, BudgetAudit
-from app.domain.services.budget_mode import BudgetMode
-from app.shared.utils.token_estimator import TokenEstimator
+from dataclasses import dataclass
+from typing import Any, Optional
+
 from app.config.settings import settings
+from app.domain.entities.emotion import EmotionState
+from app.domain.interfaces.llm_provider import StructuredPrompt
+from app.domain.services.budget_mode import BudgetMode
+from app.domain.services.context_budget_manager import BudgetAudit, ContextBudgetManager
+from app.domain.services.persona_loader import persona_loader
+from app.domain.services.state_manager import StateManager
 from app.shared.utils.logger import get_logger
+from app.shared.utils.token_estimator import TokenEstimator
 
 log = get_logger(__name__)
 
@@ -20,7 +22,7 @@ log = get_logger(__name__)
 class ContextBuildResult:
     prompt: StructuredPrompt
     audit: BudgetAudit
-    components: Dict[str, str | None] = None
+    components: dict[str, str | None] | None = None
 
 
 class ContextBuilder:
@@ -83,7 +85,11 @@ class ContextBuilder:
     }
 
     @classmethod
-    def get_response_schema(cls, has_images: bool = False, has_retrieved_images: bool = False) -> Dict[str, Any]:
+    def get_response_schema(
+        cls,
+        has_images: bool = False,
+        has_retrieved_images: bool = False,
+    ) -> dict[str, Any]:
         """
         Dynamically constructs the strict JSON response schema.
         - Text-only (Zero Contamination): pure {response, sentiment}.
@@ -295,7 +301,7 @@ class ContextBuilder:
         return "\n".join(sections)
 
     @classmethod
-    def _format_history_for_budget(cls, history: List[Dict[str, str]]) -> list[dict[str, str]]:
+    def _format_history_for_budget(cls, history: list[dict[str, str]]) -> list[dict[str, str]]:
         formatted_history = []
         for turn in history:
             role = turn.get("role", "user")
@@ -315,7 +321,7 @@ class ContextBuilder:
         return formatted_history
 
     @staticmethod
-    def _is_sequential_narrative(items: List[Any]) -> bool:
+    def _is_sequential_narrative(items: list[Any]) -> bool:
         """Detects if chunks represent a consecutive sequence of story/dialogue parts."""
         if len(items) <= 1:
             return False
@@ -332,7 +338,7 @@ class ContextBuilder:
         return False
 
     @classmethod
-    def _u_curve_sort(cls, items: List[Any]) -> List[Any]:
+    def _u_curve_sort(cls, items: list[Any]) -> list[Any]:
         """
         U-Shaped Attention Sorting:
         Arranges sorted items (from most relevant to least relevant) such that
@@ -344,7 +350,7 @@ class ContextBuilder:
             return items
         
         left_side = []
-        right_side = []
+        right_side: list[Any] = []
         for idx, item in enumerate(items):
             if idx % 2 == 0:
                 left_side.append(item)
@@ -356,9 +362,9 @@ class ContextBuilder:
         self,
         emotion: EmotionState,
         attachment_bonus: float,
-        memories: List[str],
-        lore: List[str],
-        history: List[Dict[str, str]],
+        memories: list[str],
+        lore: list[str],
+        history: list[dict[str, str]],
         user_message: str,
         intent_name: str,
         tool_result: str = "",
@@ -372,10 +378,10 @@ class ContextBuilder:
         guild_name: Optional[str] = None,
         channel_transcript: Optional[str] = None,
         ambient_context: Optional[str] = None,
-        guild_memories: Optional[List[str]] = None,
+        guild_memories: list[str] | None = None,
         topic_summary: Optional[str] = None,
         has_images: bool = False,
-        retrieved_images: Optional[List[Dict[str, Any]]] = None,
+        retrieved_images: list[dict[str, Any]] | None = None,
         interaction_count: int = 0,
     ) -> ContextBuildResult:
         """

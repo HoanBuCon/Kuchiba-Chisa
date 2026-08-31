@@ -1,6 +1,11 @@
-from sqlalchemy import Column, Float, BigInteger, ForeignKey
+import uuid
+
+from sqlalchemy import BigInteger, Float, ForeignKey
 from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.orm import Mapped, mapped_column
+
 from app.infrastructure.database.models.base import Base
+
 
 class EmotionState(Base):
     """
@@ -9,17 +14,27 @@ class EmotionState(Base):
     """
     __tablename__ = "emotion_state"
 
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), primary_key=True, index=True, doc="The unique ID of the user")
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        primary_key=True,
+        index=True,
+        doc="The unique ID of the user",
+    )
     
     # Core Emotion Spectrum
-    joy = Column(Float, default=0.15, nullable=False)
-    sadness = Column(Float, default=0.00, nullable=False)
-    trust = Column(Float, default=0.50, nullable=False)
-    attachment = Column(Float, default=0.00, nullable=False)
-    irritation = Column(Float, default=0.00, nullable=False)
-    shyness = Column(Float, default=0.00, nullable=False)
-    curiosity = Column(Float, default=0.10, nullable=False)
-    comfort = Column(Float, default=0.50, nullable=False)
+    joy: Mapped[float] = mapped_column(Float, default=0.15, nullable=False)
+    sadness: Mapped[float] = mapped_column(Float, default=0.00, nullable=False)
+    trust: Mapped[float] = mapped_column(Float, default=0.50, nullable=False)
+    attachment: Mapped[float] = mapped_column(Float, default=0.00, nullable=False)
+    irritation: Mapped[float] = mapped_column(Float, default=0.00, nullable=False)
+    shyness: Mapped[float] = mapped_column(Float, default=0.00, nullable=False)
+    curiosity: Mapped[float] = mapped_column(Float, default=0.10, nullable=False)
+    comfort: Mapped[float] = mapped_column(Float, default=0.50, nullable=False)
     
     # Unix timestamp for decay calculation
-    updated_at = Column(BigInteger, nullable=False, doc="Unix timestamp in milliseconds")
+    updated_at: Mapped[int] = mapped_column(
+        BigInteger,
+        nullable=False,
+        doc="Unix timestamp in milliseconds",
+    )

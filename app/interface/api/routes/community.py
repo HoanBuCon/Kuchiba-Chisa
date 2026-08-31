@@ -1,6 +1,7 @@
 import time
 from datetime import datetime
 from typing import Optional
+
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -11,6 +12,7 @@ from app.domain.services.chat_engine import ChatEngine, ChatEngineBusyError
 from app.infrastructure.database.engine import get_db_session
 from app.infrastructure.logging.logger import get_logger
 from app.interface.api.schemas.community import CommunityChatRequest, CommunityChatResponse
+from app.shared.utils.user_identity import normalize_user_id
 
 log = get_logger(__name__)
 
@@ -58,11 +60,12 @@ async def community_chat_endpoint(
         )
 
     t0 = time.time()
+    message = request.message or ""
     from app.infrastructure.logging.pipeline_tracker import pipeline_tracker
 
     pipeline_tracker.start_trace(
         user_id=request.user_id,
-        message=request.message,
+        message=message,
         pipeline="community",
         source="discord_community",
         username=request.username,
@@ -71,11 +74,16 @@ async def community_chat_endpoint(
     )
 
     try:
-        reply_text, updated_emotions, images_processed, attached_images = await chat_engine.community_chat(
+        (
+            reply_text,
+            updated_emotions,
+            images_processed,
+            attached_images,
+        ) = await chat_engine.community_chat(
             session=session,
             channel_id=request.channel_id,
             user_id=request.user_id,
-            user_message=request.message,
+            user_message=message,
             speaker_name=request.username,
             channel_name=request.channel_name,
             guild_id=request.guild_id,
@@ -96,11 +104,12 @@ async def community_chat_endpoint(
 
         emotion_caption = None
         if updated_emotions and isinstance(updated_emotions, dict):
-            from app.domain.services.state_manager import StateManager
             from app.domain.entities.emotion import EmotionState
+            from app.domain.services.state_manager import StateManager
+
             try:
                 state_obj = EmotionState(
-                    user_id=request.user_id,
+                    user_id=normalize_user_id(request.user_id),
                     trust=float(updated_emotions.get("trust", 0.50)),
                     attachment=float(updated_emotions.get("attachment", 0.00)),
                     joy=float(updated_emotions.get("joy", 0.15)),
@@ -135,7 +144,9 @@ async def community_chat_endpoint(
             detail="Chisa đang xử lý tin nhắn trước đó của bạn, vui lòng chờ một nhịp nhé!",
         )
     except LLMRateLimitError:
-        log.warning("Community chat rate limited", channel_id=request.channel_id, user_id=request.user_id)
+        log.warning(
+            "Community chat rate limited", channel_id=request.channel_id, user_id=request.user_id
+        )
         fallback = "Kênh chat đang sôi nổi quá, mọi người đợi Chisa một nhịp xíu nhé!"
         pipeline_tracker.end_trace(
             response_text=fallback,
@@ -163,7 +174,12 @@ async def community_chat_endpoint(
             execution_time_ms=round((time.time() - t0) * 1000, 2),
         )
     except Exception as e:
-        log.error("Community chat failed", error=str(e), channel_id=request.channel_id, user_id=request.user_id)
+        log.error(
+            "Community chat failed",
+            error=str(e),
+            channel_id=request.channel_id,
+            user_id=request.user_id,
+        )
         pipeline_tracker.end_trace(
             response_text=f"Lỗi: {str(e)}",
             emotions={},
@@ -181,9 +197,9 @@ async def community_chat_endpoint(
 async def clear_community_memory_endpoint(
     guild_id: str,
     scope: str = "all",
-    channel_id: Optional[str] = None,
-    user_id: Optional[str] = None,
-    clear_use_case = Depends(get_clear_community_memory_use_case),
+    channel_id: str | None = None,
+    user_id: str | None = None,
+    clear_use_case=Depends(get_clear_community_memory_use_case),
 ) -> dict:
     """
     Clears collective community memory (guild_memories, topic summaries, ambient mood).
@@ -191,6 +207,7 @@ async def clear_community_memory_endpoint(
     """
     try:
         from app.application.dependencies import get_clear_community_memory_use_case
+
         result = await clear_use_case.execute(
             guild_id=guild_id,
             scope=scope,
@@ -205,4 +222,3 @@ async def clear_community_memory_endpoint(
     except Exception as e:
         log.error("Failed to clear community memory", guild_id=guild_id, scope=scope, error=str(e))
         raise HTTPException(status_code=500, detail=f"Could not clear community memory: {str(e)}")
-

@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 import json
-from typing import Any, Optional, TypeVar
+from collections.abc import Awaitable
+from typing import Any, Optional, TypeVar, cast
 
 import redis.asyncio as aioredis
 
@@ -103,17 +104,17 @@ class RedisService(ICacheProvider):
         await self._client.expire(key, ttl)
 
     async def incr(self, key: str) -> int:
-        return await self._client.incr(key)  # type: ignore[return-value]
+        return await cast(Awaitable[int], self._client.incr(key))
 
     # ── List (Short-Term Memory) ───────────────────────────────────
     async def lpush(self, key: str, *values: str) -> int:
-        return await self._client.lpush(key, *values)  # type: ignore[return-value]
+        return await cast(Awaitable[int], self._client.lpush(key, *values))
 
     async def lrange(self, key: str, start: int, stop: int) -> list[str]:
-        return await self._client.lrange(key, start, stop)  # type: ignore[return-value]
+        return await cast(Awaitable[list[str]], self._client.lrange(key, start, stop))
 
     async def ltrim(self, key: str, start: int, stop: int) -> None:
-        await self._client.ltrim(key, start, stop)
+        await cast(Awaitable[str], self._client.ltrim(key, start, stop))
 
     # ── Distributed Lock (Safe Token-based with Lua Script) ────────
     _RELEASE_LOCK_LUA = """
@@ -146,7 +147,9 @@ class RedisService(ICacheProvider):
         """
         try:
             if token:
-                res = await self._client.eval(self._RELEASE_LOCK_LUA, 1, lock_key, token)
+                res = await cast(
+                    Awaitable[Any], self._client.eval(self._RELEASE_LOCK_LUA, 1, lock_key, token)
+                )
                 return bool(res)
             else:
                 await self._client.delete(lock_key)

@@ -1,9 +1,11 @@
 import uuid
 from datetime import datetime
-from sqlalchemy import Column, String, Integer, DateTime, Boolean, Text, ForeignKey
-from sqlalchemy.dialects.postgresql import UUID
-from app.infrastructure.database.models.base import Base
 
+from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String, Text
+from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.orm import Mapped, mapped_column
+
+from app.infrastructure.database.models.base import Base
 
 
 class WikiSyncStateModel(Base):
@@ -34,16 +36,16 @@ class ChunkStateModel(Base):
 class PipelineJobModel(Base):
     __tablename__ = "pipeline_jobs"
     
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    stage = Column(String, nullable=False)
-    worker = Column(String, nullable=True)
-    status = Column(String, nullable=False)
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    stage: Mapped[str] = mapped_column(String, nullable=False)
+    worker: Mapped[str | None] = mapped_column(String, nullable=True)
+    status: Mapped[str] = mapped_column(String, nullable=False)
     started_at = Column(DateTime, default=datetime.utcnow)
     finished_at = Column(DateTime, nullable=True)
     elapsed_ms = Column(Integer, nullable=True)
     retry_count = Column(Integer, default=0)
     statistics = Column(Text, nullable=True) # JSON payload
-    error_message = Column(Text, nullable=True)
+    error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
 
 class PipelineEventModel(Base):
     __tablename__ = "pipeline_events"
@@ -68,6 +70,7 @@ class IngestionMetricModel(Base):
     total_duration_ms = Column(Integer, default=0)
 
 from sqlalchemy.orm import relationship
+
 
 class EntityModel(Base):
     __tablename__ = "entities"

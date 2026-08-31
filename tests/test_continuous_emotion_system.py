@@ -12,7 +12,6 @@ sys.path.insert(0, os.path.abspath("."))
 from app.domain.entities.emotion import EmotionState
 from app.domain.services.emotion_engine import EmotionEngine
 from app.domain.services.state_manager import StateManager
-from app.application.dependencies import container
 from app.infrastructure.database.engine import AsyncSessionFactory
 
 
@@ -85,26 +84,42 @@ def test_7_emotional_archetypes():
 
     # 2. playful_pout: Tăng nhẹ Irritation nhưng KHÔNG giảm Trust
     s2 = EmotionState(user_id=uuid.uuid4(), joy=0.2, trust=0.8, irritation=0.0)
-    d2 = engine.update(s2, sentiment_analysis={"intensity": 0.7, "valence": 0.0, "primary_emotion": "playful_pout"})
+    engine.update(
+        s2,
+        sentiment_analysis={"intensity": 0.7, "valence": 0.0, "primary_emotion": "playful_pout"},
+    )
     print(f"  2. playful_pout -> Irritation={s2.irritation:.3f}, Trust={s2.trust:.3f} (Giữ nguyên Trust)")
     assert s2.irritation > 0
     assert s2.trust >= 0.79  # Trust không bị phạt
 
     # 3. melancholic_care: Tăng Trust do đồng cảm sâu sắc
     s3 = EmotionState(user_id=uuid.uuid4(), sadness=0.0, trust=0.6)
-    d3 = engine.update(s3, sentiment_analysis={"intensity": 0.8, "valence": -0.3, "primary_emotion": "melancholic_care"})
+    engine.update(
+        s3,
+        sentiment_analysis={
+            "intensity": 0.8,
+            "valence": -0.3,
+            "primary_emotion": "melancholic_care",
+        },
+    )
     print(f"  3. melancholic_care -> Sadness={s3.sadness:.3f}, Trust={s3.trust:.3f} (Đồng cảm xây dựng niềm tin)")
     assert s3.trust >= 0.60
 
     # 4. cheerful_joy: Tăng vọt Joy
     s4 = EmotionState(user_id=uuid.uuid4(), joy=0.1, sadness=0.3)
-    d4 = engine.update(s4, sentiment_analysis={"intensity": 0.9, "valence": 0.9, "primary_emotion": "cheerful_joy"})
+    engine.update(
+        s4,
+        sentiment_analysis={"intensity": 0.9, "valence": 0.9, "primary_emotion": "cheerful_joy"},
+    )
     print(f"  4. cheerful_joy -> Joy={s4.joy:.3f}, Sadness={s4.sadness:.3f} (Joy đè bẹp Sadness)")
     assert s4.joy > 0.25
 
     # 5. guarded_cold: Tụt Trust & Attachment
     s5 = EmotionState(user_id=uuid.uuid4(), trust=0.7, attachment=0.5, irritation=0.0)
-    d5 = engine.update(s5, sentiment_analysis={"intensity": 0.9, "valence": -0.9, "primary_emotion": "guarded_cold"})
+    engine.update(
+        s5,
+        sentiment_analysis={"intensity": 0.9, "valence": -0.9, "primary_emotion": "guarded_cold"},
+    )
     print(f"  5. guarded_cold -> Trust={s5.trust:.3f}, Irritation={s5.irritation:.3f} (Tụt niềm tin mạnh)")
     assert s5.trust < 0.60
     assert s5.irritation > 0.15
@@ -122,7 +137,8 @@ def test_behavioral_directives_in_state_manager():
     prompt_happy = StateManager.format_state(s_happy)
     print(f"  • Prompt khi Happy:\n{prompt_happy}\n")
     assert "[BEHAVIORAL DIRECTIVE]" in prompt_happy
-    assert "ngọt ngào" in prompt_happy or "hạnh phúc" in prompt_happy
+    assert "Cheerful & Bright" in prompt_happy
+    assert "vui vẻ" in prompt_happy
 
     # Annoyed state
     s_annoyed = EmotionState(user_id=uuid.uuid4(), irritation=0.6, trust=0.4, joy=0.0)
@@ -134,16 +150,16 @@ def test_behavioral_directives_in_state_manager():
     print("  ✓ PASS: Behavioral Directives được tiêm chính xác vào Prompt!")
 
 
-async def test_end_to_end_continuous_emotion_chat():
+async def test_end_to_end_continuous_emotion_chat(test_chat_engine):
     print("\n" + "=" * 80)
     print("🚀 TEST 5: END-TO-END CHAT ENGINE CYCLE WITH CONTINUOUS EMOTION")
     print("=" * 80)
 
-    chat_engine = container.chat_engine
+    chat_engine = test_chat_engine
     user_id = f"test_continuous_user_{uuid.uuid4().hex[:6]}"
 
     async with AsyncSessionFactory() as session:
-        reply_text, emotions = await chat_engine.chat(
+        reply_text, emotions, _, _ = await chat_engine.chat(
             session=session,
             user_id=user_id,
             user_message="em Chisa ơi, hôm nay anh mệt quá, em có thể vỗ về anh một chút được không?"
