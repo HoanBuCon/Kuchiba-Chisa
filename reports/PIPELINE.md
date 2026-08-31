@@ -318,7 +318,10 @@ flowchart TD
      - `CONTRADICT`: Xóa point cũ khỏi Qdrant, chèn point mới.
      - `DUPLICATE`: Bỏ qua không lưu trùng.
      - `KEEP_BOTH`: Chèn fact mới vào Qdrant (`memories` hoặc `guild_memories`).
-  2. **11.2 Unified Auto-Summarization (Chu kỳ 10 lượt - $N \% 10 == 0$)**: Tải tóm tắt cũ + 20 tin nhắn gần nhất, gọi LLM nén thành narrative summary mới lưu vào `conversations.summary` trong PostgreSQL.
+  2. **11.2 Pure Narrative Auto-Summarization (Chu kỳ 10 lượt - $N \% 10 == 0$)**:
+     - Lọc sạch rác cảm xúc kỹ thuật và debug codeblock qua `ChannelTranscriptFormatter.clean_message_content()`.
+     - Gọi LLM DeepSeek Flash nén narrative summary cô đọng **$80 - 120\text{ từ}$ tiếng Việt** (chống phình to summary).
+     - Lưu đồng thời vào PostgreSQL `conversations.summary` và đồng bộ **Redis Summary Cache** (`chisa:user:{user_id}:summary`, TTL 7 ngày) phục vụ Fast-Path Stage 1 ($0.2\text{ms}$).
   3. **11.3 Community Channel Topic Summarizer (Chu kỳ 30 tin - $N \% 30 == 0$)**:
      - Duy trì **Redis Rolling Message Buffer** (`chisa:channel:{channel_id}:rolling_buffer`, tối đa 60 tin, TTL 7 ngày) tự động gom tích lũy toàn bộ các đoạn chat trôi và các lượt hỏi đáp Chisa qua từng turn.
      - **Cấu trúc Tổng hợp 3 Tầng (3-Tier Synthesis Prompt)** nạp vào LLM DeepSeek Flash:
