@@ -93,12 +93,13 @@ async def test_summarize_channel_topic_uses_rolling_buffer_and_trims():
     for i in range(15):
         await summarizer.append_messages(
             channel_id=channel_id,
+            guild_id=guild_id,
             messages=[{"speaker_name": f"User_{i}", "content": f"Bàn luận chiến thuật trận {i}", "created_at": f"1{i}:00"}],
             current_user_turn={"speaker_name": f"User_{i}", "content": f"Câu hỏi {i}", "created_at": f"1{i}:01"},
             current_assistant_turn={"speaker_name": "Chisa", "content": f"Phản hồi {i}", "created_at": f"1{i}:01"}
         )
 
-    buffer_before = await summarizer.get_rolling_buffer(channel_id)
+    buffer_before = await summarizer.get_rolling_buffer(channel_id, guild_id)
     assert len(buffer_before) > 15
 
     # Run summarize
@@ -111,9 +112,9 @@ async def test_summarize_channel_topic_uses_rolling_buffer_and_trims():
     assert "săn Boss" in summary_result
 
     # Verify summary saved in Redis
-    saved_summary = await summarizer.get_topic_summary(channel_id)
+    saved_summary = await summarizer.get_topic_summary(channel_id, guild_id)
     assert saved_summary == summary_result
 
     # Verify rolling buffer is trimmed to overlap size (10 messages)
-    buffer_after = await summarizer.get_rolling_buffer(channel_id)
+    buffer_after = await summarizer.get_rolling_buffer(channel_id, guild_id)
     assert len(buffer_after) == summarizer.BUFFER_OVERLAP_MESSAGES

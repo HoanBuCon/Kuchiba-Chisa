@@ -1,7 +1,9 @@
 import uuid
 
 import pytest
+from pydantic import ValidationError
 
+from app.application.ingestion.errors import QdrantIngestionAcknowledgementError
 from app.application.ingestion.stages.qdrant_upsert_stage import (
     QdrantUpsertInput,
     QdrantUpsertStage,
@@ -11,9 +13,10 @@ from app.domain.entities.lore import LorePayload
 
 
 class FakeVectorStore:
-    def __init__(self) -> None:
+    def __init__(self, fail_point_id: str | None = None) -> None:
         self.deleted_pages: list[tuple[str, int]] = []
         self.upserted: list[tuple[str, str, list[float], dict[str, object]]] = []
+        self.fail_point_id = fail_point_id
 
     async def delete_lore_by_page(self, collection: str, page_id: int) -> None:
         self.deleted_pages.append((collection, page_id))
@@ -25,6 +28,8 @@ class FakeVectorStore:
         vector: list[float],
         payload: dict[str, object],
     ) -> None:
+        if point_id == self.fail_point_id:
+            raise RuntimeError("Qdrant unavailable")
         self.upserted.append((collection, point_id, vector, payload))
 
 
@@ -69,12 +74,52 @@ async def test_upsert_stage_only_writes_complete_embedded_chunks() -> None:
 
     result = await stage.execute(
         uuid.uuid4(),
-        QdrantUpsertInput(chunks=[valid_chunk, missing_payload, missing_vector]),
+        QdrantUpsertInput(
+            chunks=[valid_chunk, missing_payload, missing_vector],
+            staging_collection="character_lore__test_v1",
+        ),
     )
 
-    assert store.deleted_pages == [("character_lore", 42)]
+    assert store.deleted_pages == []
     assert len(store.upserted) == 1
+    assert store.upserted[0][0] == "character_lore__test_v1"
     assert store.upserted[0][1] == str(valid_chunk.chunk_id)
     assert result.metrics.items_processed == 1
     assert result.metrics.items_skipped == 2
     assert jobs.events[0][1] == "QdrantUpsertComplete"
+
+
+def test_upsert_stage_rejects_active_or_unversioned_targets() -> None:
+    with pytest.raises(ValidationError):
+        QdrantUpsertInput(chunks=[], staging_collection="character_lore")
+    with pytest.raises(ValidationError):
+        QdrantUpsertInput(chunks=[], staging_collection="character_lore__active")
+
+
+@pytest.mark.asyncio
+async def test_upsert_stage_fails_on_unacknowledged_write_without_invalidating_chunks() -> None:
+    payload = LorePayload(
+        parent_id=str(uuid.uuid4()),
+        page_id=42,
+        source_file="chisa.md",
+        text_content="Test lore",
+    )
+    chunk = make_chunk(vector=[0.1, 0.2], payload=payload)
+    store = FakeVectorStore(fail_point_id=str(chunk.chunk_id))
+    jobs = FakePipelineJobRepository()
+    stage = QdrantUpsertStage(store, jobs)
+
+    with pytest.raises(QdrantIngestionAcknowledgementError) as error:
+        await stage.execute(
+            uuid.uuid4(),
+            QdrantUpsertInput(
+                chunks=[chunk],
+                staging_collection="character_lore__retry_v1",
+            ),
+        )
+
+    assert error.value.acknowledged_count == 0
+    assert chunk.is_valid is True
+    assert chunk.validation_errors == []
+    assert store.deleted_pages == []
+    assert jobs.events[0][1] == "QdrantUpsertUnacknowledged"

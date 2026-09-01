@@ -1,0 +1,48 @@
+--- Logging error ---
+Traceback (most recent call last):
+  File "D:\Python\Lib\logging\__init__.py", line 1113, in emit
+    stream.write(msg + self.terminator)
+ValueError: I/O operation on closed file.
+Call stack:
+  File "D:\Python\Lib\asyncio\base_events.py", line 1811, in call_exception_handler
+    self.default_exception_handler(context)
+  File "D:\Python\Lib\asyncio\base_events.py", line 1785, in default_exception_handler
+    logger.error('\n'.join(log_lines), exc_info=exc_info)
+Message: "Task was destroyed but it is pending!\ntask: <Task pending name='Task-714' coro=<PipelineTracker._publish_redis_event() running at D:\\Hoc_Tap\\Code\\Du_An_Ca_Nhan\\Chisa_bot\\kuchiba_chisa\\app\\infrastructure\\logging\\pipeline_tracker.py:140> wait_for=<_OverlappedFuture cancelled> cb=[set.discard()]>"
+Arguments: ()
+--- Logging error ---
+Traceback (most recent call last):
+  File "D:\Python\Lib\logging\__init__.py", line 1113, in emit
+    stream.write(msg + self.terminator)
+ValueError: I/O operation on closed file.
+Call stack:
+  File "D:\Python\Lib\asyncio\base_events.py", line 1811, in call_exception_handler
+    self.default_exception_handler(context)
+  File "D:\Python\Lib\asyncio\base_events.py", line 1785, in default_exception_handler
+    logger.error('\n'.join(log_lines), exc_info=exc_info)
+Message: "Task was destroyed but it is pending!\ntask: <Task pending name='Task-715' coro=<PipelineTracker._publish_redis_event() running at D:\\Hoc_Tap\\Code\\Du_An_Ca_Nhan\\Chisa_bot\\kuchiba_chisa\\app\\infrastructure\\logging\\pipeline_tracker.py:140> wait_for=<_OverlappedFuture cancelled> cb=[set.discard()]>"
+Arguments: ()
+--- Logging error ---
+Traceback (most recent call last):
+  File "D:\Python\Lib\logging\__init__.py", line 1113, in emit
+    stream.write(msg + self.terminator)
+ValueError: I/O operation on closed file.
+Call stack:
+  File "D:\Python\Lib\asyncio\base_events.py", line 1811, in call_exception_handler
+    self.default_exception_handler(context)
+  File "D:\Python\Lib\asyncio\base_events.py", line 1785, in default_exception_handler
+    logger.error('\n'.join(log_lines), exc_info=exc_info)
+Message: "Task was destroyed but it is pending!\ntask: <Task pending name='Task-716' coro=<PipelineTracker._publish_redis_event() running at D:\\Hoc_Tap\\Code\\Du_An_Ca_Nhan\\Chisa_bot\\kuchiba_chisa\\app\\infrastructure\\logging\\pipeline_tracker.py:140> wait_for=<_OverlappedFuture cancelled> cb=[set.discard()]>"
+Arguments: ()
+--- Logging error ---
+Traceback (most recent call last):
+  File "D:\Python\Lib\logging\__init__.py", line 1113, in emit
+    stream.write(msg + self.terminator)
+ValueError: I/O operation on closed file.
+Call stack:
+  File "D:\Python\Lib\asyncio\base_events.py", line 1811, in call_exception_handler
+    self.default_exception_handler(context)
+  File "D:\Python\Lib\asyncio\base_events.py", line 1785, in default_exception_handler
+    logger.error('\n'.join(log_lines), exc_info=exc_info)
+Message: "Task was destroyed but it is pending!\ntask: <Task pending name='Task-717' coro=<PipelineTracker._publish_redis_event() running at D:\\Hoc_Tap\\Code\\Du_An_Ca_Nhan\\Chisa_bot\\kuchiba_chisa\\app\\infrastructure\\logging\\pipeline_tracker.py:140> wait_for=<_OverlappedFuture cancelled> cb=[set.discard()]>"
+Arguments: ()

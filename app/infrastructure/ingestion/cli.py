@@ -248,8 +248,13 @@ def process_chunks_cmd(input_path: Path, output_path: Path, target_size: int) ->
     default=Path("data/ingestion.sqlite"),
     help="Path to ingestion.sqlite DB.",
 )
-def sync_qdrant_cmd(input_path: Path, db_path: Path) -> None:
-    """Embed chunks and sync vectors to Qdrant & SQLite state DB."""
+@click.option(
+    "--staging-version",
+    required=True,
+    help="Physical corpus version; retry the same version after an unacknowledged write.",
+)
+def sync_qdrant_cmd(input_path: Path, db_path: Path, staging_version: str) -> None:
+    """Embed chunks and stage acknowledged vectors before any alias promotion."""
     click.echo(f"[+] Syncing Qdrant & SQLite from: {input_path}")
 
     # Read chunks
@@ -269,15 +274,15 @@ def sync_qdrant_cmd(input_path: Path, db_path: Path) -> None:
     # Instantiate state DB
     state_db = IngestionStateDB(db_path)
 
-    # Initialize FastEmbed embedding adapter
+    # Initialize FastEmbed embedding adapter. A missing model must fail the
+    # command; synthetic vectors would falsely mark a corpus as ingested.
     try:
         from app.infrastructure.embeddings.fastembed_adapter import FastEmbedAdapter
 
         embedder = FastEmbedAdapter()
         click.echo("  [OK] Initialized FastEmbed model.")
     except Exception as exc:
-        click.echo(f"[!] FastEmbed initialization fallback: {exc}")
-        embedder = None
+        raise click.ClickException("FastEmbed initialization failed; no data was staged") from exc
 
     async def _async_sync() -> None:
         sync_manager = QdrantSyncManager()
@@ -285,17 +290,26 @@ def sync_qdrant_cmd(input_path: Path, db_path: Path) -> None:
 
         # Generate vectors
         texts_to_embed = [f"{c.context_prefix}\n{c.text_content}" for c in chunks]
-        if embedder:
-            vectors = await embedder.embed_batch(texts_to_embed, prefix="passage: ")
-        else:
-            # Synthetic 384-dim dummy vector for testing if FastEmbed model missing
-            vectors = [[0.01] * 384 for _ in chunks]
+        vectors = await embedder.embed_batch(texts_to_embed, prefix="passage: ")
+        if len(vectors) != len(chunks):
+            raise RuntimeError(
+                "Embedding provider returned a vector count that does not match "
+                "the staged chunk count"
+            )
 
-        for chunk, vector in zip(chunks, vectors):
+        for chunk, vector in zip(chunks, vectors, strict=True):
             chunks_with_vectors.append((chunk, vector))
 
-        # Batch upsert to Qdrant
-        upserted_count = await sync_manager.upsert_chunk_batch(chunks_with_vectors)
+        target_collections = await sync_manager.prepare_staging_targets(
+            chunks,
+            staging_version=staging_version,
+        )
+        upserted_count = await sync_manager.upsert_chunk_batch(
+            chunks_with_vectors,
+            target_collections=target_collections,
+        )
+        if upserted_count != len(chunks):
+            raise RuntimeError("Qdrant acknowledgement count does not match the staged chunk count")
 
         # Update SQLite State DB
         page_chunks_count: dict[int, int] = {}
@@ -319,7 +333,7 @@ def sync_qdrant_cmd(input_path: Path, db_path: Path) -> None:
             )
             state_db.upsert_page_state(rec)
 
-        click.echo(f"[SUCCESS] Successfully upserted {upserted_count} points to Qdrant.")
+        click.echo(f"[SUCCESS] Staged and acknowledged {upserted_count} Qdrant points.")
         click.echo(
             f"[SUCCESS] Updated {len(page_chunks_count)} pages in SQLite state DB ({db_path})."
         )

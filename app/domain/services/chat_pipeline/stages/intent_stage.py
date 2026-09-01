@@ -14,6 +14,11 @@ from app.shared.utils.query_cleaner import clean_query_for_rag, is_meaningful_qu
 
 log = get_logger(__name__)
 
+
+class QueryEmbeddingUnavailableError(RuntimeError):
+    """Raised when a routed vector query cannot produce a usable embedding."""
+
+
 IMAGE_RETRIEVAL_ANCHORS = {
     # Yêu cầu gửi lại / xem lại ảnh trong quá khứ (Visual Memory Reverse Search)
     "gửi lại ảnh",
@@ -110,6 +115,15 @@ class IntentStage(PipelineStage):
         self.query_rewriter = query_rewriter
         self.conv_repo_factory = conv_repo_factory
         self.pipeline_tracker = pipeline_tracker
+
+    async def _embed_rewritten_vector_query(self, rewritten_query: str) -> list[float]:
+        """Embed the canonical rewritten query or fail before vector retrieval can be skipped."""
+        query_vector = await self.embedder.embed_text(rewritten_query, prefix="query: ")
+        if not query_vector:
+            raise QueryEmbeddingUnavailableError(
+                "Vector retrieval was requested but the rewritten query has no embedding"
+            )
+        return query_vector
 
     async def process(self, context: ChatContext) -> ChatContext:
         if context.has_images:
@@ -336,6 +350,9 @@ class IntentStage(PipelineStage):
                     routing_reason = "LLM Tri-State: Code / Small Talk (0ms RAG Bypass)"
 
             context.needs_image_retrieval = ChatIntent.RETRIEVE_PAST_IMAGE in matched_intents
+
+            if needs_vector_search:
+                query_vector = await self._embed_rewritten_vector_query(rewritten_query)
 
             intent_result = IntentResult(
                 intents=matched_intents,

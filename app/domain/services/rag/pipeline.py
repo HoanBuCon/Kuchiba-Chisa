@@ -19,6 +19,11 @@ from app.shared.utils.logger import get_logger
 
 log = get_logger(__name__)
 
+
+class VectorQueryInvariantError(ValueError):
+    """Raised when a routed vector search reaches retrieval without an embedding."""
+
+
 class RAGPipeline:
     """
     Coordinates the entire RAG pipeline E2E including memory/lore retrieval,
@@ -119,6 +124,11 @@ class RAGPipeline:
             and not is_web_search_mode
             and not is_hybrid_search_mode
         )
+
+        if needs_vector_search and not is_small_talk and has_knowledge_intent and not query_vector:
+            raise VectorQueryInvariantError(
+                "Vector retrieval was requested without a query embedding"
+            )
 
         lore_collections = ["character_lore", "world_lore", "story_lore"]
         extracted = set()

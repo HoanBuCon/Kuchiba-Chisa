@@ -5,6 +5,7 @@ from datetime import datetime
 from typing import Any, Protocol
 
 from app.domain.entities.emotion import EmotionState
+from app.domain.entities.lore import LoreParent
 from app.domain.entities.user import User, UserStats
 
 
@@ -127,7 +128,9 @@ class IConversationRepository(Protocol):
         """
         ...
 
-from app.domain.entities.lore import LoreParent
+    async def get_image_ids_for_user(self, user_id: uuid.UUID) -> list[str]:
+        """Return image object IDs referenced only by this user's messages."""
+        ...
 
 
 class ILoreParentRepository(Protocol):
@@ -159,7 +162,8 @@ class IChunkStateRepository(Protocol):
         ...
     async def check_hash_exists(self, chunk_hash: str) -> bool:
         ...
-        
+
+
 class IEntityRepository(Protocol):
     async def get_all_entities(self) -> list[dict]:
         ...
@@ -168,6 +172,21 @@ class IEntityRepository(Protocol):
 
 class IAliasRepository(Protocol):
     async def get_all_aliases(self) -> list[dict]:
+        ...
+
+
+class IErasureJobRepository(Protocol):
+    async def create(self, subject_hash: str) -> Any:
+        ...
+
+    async def finish(
+        self,
+        job_id: uuid.UUID,
+        *,
+        status: str,
+        store_results: dict[str, str],
+        error_code: str | None = None,
+    ) -> None:
         ...
 
 class IPipelineJobRepository(Protocol):

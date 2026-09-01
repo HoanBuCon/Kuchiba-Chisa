@@ -176,13 +176,15 @@ def test_cli_end_to_end():
             "scratch/test_cli/chunks.jsonl",
             "--db",
             "scratch/test_cli/ingestion.sqlite",
+            "--staging-version",
+            "cli_test",
         ],
     )
     if res_sync.exit_code != 0:
         print(f"res_sync output: {res_sync.output}")
         print(f"res_sync exception: {res_sync.exception}")
     assert res_sync.exit_code == 0
-    assert "Successfully upserted" in res_sync.output
+    assert "Staged and acknowledged" in res_sync.output
 
     # 5. cleanup-orphans command
     res_clean = runner.invoke(

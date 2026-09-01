@@ -124,7 +124,13 @@ class InitializationStage(PipelineStage):
             # Load rolling community topic summary from Redis if available
             if context.channel_id:
                 try:
-                    summary_key = f"chisa:channel:{context.channel_id}:topic_summary"
+                    from app.domain.services.community.topic_summarizer import (
+                        CommunityTopicSummarizer,
+                    )
+
+                    summary_key = CommunityTopicSummarizer.summary_cache_key(
+                        context.channel_id, context.guild_id
+                    )
                     stored_summary = await self.cache_provider.get(summary_key)
                     if stored_summary:
                         context.topic_summary = stored_summary.strip()

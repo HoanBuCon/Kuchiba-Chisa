@@ -1,101 +1,117 @@
+"""Authenticated, tenant-scoped community chat routes."""
+
+from __future__ import annotations
+
 import time
 from datetime import datetime
-from typing import Optional
+from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.application.dependencies import get_chat_engine, get_clear_community_memory_use_case
+from app.application.security.authorization import AuthorizationError, AuthorizationPolicy
 from app.domain.entities.community import CommunityMessage
 from app.domain.interfaces.llm_provider import LLMRateLimitError, LLMTimeoutError
 from app.domain.services.chat_engine import ChatEngine, ChatEngineBusyError
+from app.domain.value_objects.principal import PrincipalContext
 from app.infrastructure.database.engine import get_db_session
 from app.infrastructure.logging.logger import get_logger
+from app.interface.api.dependencies.security import CurrentPrincipal, require_scope
 from app.interface.api.schemas.community import CommunityChatRequest, CommunityChatResponse
 from app.shared.utils.user_identity import normalize_user_id
 
 log = get_logger(__name__)
-
 router = APIRouter(prefix="/community", tags=["community"])
+
+
+def _trusted_community_context(principal: PrincipalContext) -> tuple[str, str, str]:
+    """Returns actor, tenant, and channel strictly from a workload credential."""
+    AuthorizationPolicy.require_source(principal, "discord")
+    return (
+        principal.subject_id,
+        AuthorizationPolicy.tenant_id_or_deny(principal),
+        AuthorizationPolicy.channel_id_or_deny(principal),
+    )
+
+
+def _domain_messages(request: CommunityChatRequest) -> list[CommunityMessage]:
+    """Converts transcript content without granting it identity authority."""
+    messages: list[CommunityMessage] = []
+    for message in request.recent_messages:
+        try:
+            created_at = (
+                datetime.fromisoformat(message.created_at) if message.created_at else datetime.now()
+            )
+        except ValueError:
+            created_at = datetime.now()
+        messages.append(
+            CommunityMessage(
+                message_id=message.message_id,
+                speaker_id=message.speaker_id,
+                speaker_name=message.speaker_name,
+                content=message.content,
+                created_at=created_at,
+                reply_to_speaker=message.reply_to_speaker,
+                reply_to_content=message.reply_to_content,
+                is_bot=message.is_bot,
+            )
+        )
+    return messages
 
 
 @router.post("/chat", response_model=CommunityChatResponse)
 async def community_chat_endpoint(
     request: CommunityChatRequest,
+    principal: Annotated[PrincipalContext, Depends(require_scope("community:write"))],
     session: AsyncSession = Depends(get_db_session),
     chat_engine: ChatEngine = Depends(get_chat_engine),
 ) -> CommunityChatResponse:
-    """
-    Multi-user community channel chat endpoint.
-    Processes multi-speaker dialogue context through the unified 10-stage RAG pipeline.
-    """
+    """Process tenant-scoped Discord community chat from a workload JWT."""
+    try:
+        actor_id, guild_id, channel_id = _trusted_community_context(principal)
+    except AuthorizationError as error:
+        raise HTTPException(status_code=403, detail="Access denied") from error
+
+    username = principal.display_name or "Discord user"
     log.info(
         "Processing community chat request",
-        channel_id=request.channel_id,
-        user_id=request.user_id,
-        username=request.username,
+        channel_id=channel_id,
+        user_id=actor_id,
         recent_count=len(request.recent_messages),
     )
-
-    domain_messages = []
-    for msg in request.recent_messages:
-        created_dt = datetime.now()
-        if msg.created_at:
-            try:
-                created_dt = datetime.fromisoformat(msg.created_at)
-            except Exception:
-                created_dt = datetime.now()
-
-        domain_messages.append(
-            CommunityMessage(
-                message_id=msg.message_id,
-                speaker_id=msg.speaker_id,
-                speaker_name=msg.speaker_name,
-                content=msg.content,
-                created_at=created_dt,
-                reply_to_speaker=msg.reply_to_speaker,
-                reply_to_content=msg.reply_to_content,
-                is_bot=msg.is_bot,
-            )
-        )
-
-    t0 = time.time()
-    message = request.message or ""
     from app.infrastructure.logging.pipeline_tracker import pipeline_tracker
 
+    message = request.message or ""
     pipeline_tracker.start_trace(
-        user_id=request.user_id,
+        user_id=actor_id,
         message=message,
         pipeline="community",
-        source="discord_community",
-        username=request.username,
-        channel_name=request.channel_name,
-        guild_name=request.guild_name,
+        source=principal.source,
+        username=username,
+        channel_name=channel_id,
+        guild_name=guild_id,
     )
+    started_at = time.time()
 
     try:
-        (
-            reply_text,
-            updated_emotions,
-            images_processed,
-            attached_images,
-        ) = await chat_engine.community_chat(
-            session=session,
-            channel_id=request.channel_id,
-            user_id=request.user_id,
-            user_message=message,
-            speaker_name=request.username,
-            channel_name=request.channel_name,
-            guild_id=request.guild_id,
-            guild_name=request.guild_name,
-            recent_messages=domain_messages,
-            images=request.images,
-            is_ephemeral_reference=bool(request.is_ephemeral_reference),
+        reply_text, updated_emotions, images_processed, attached_images = (
+            await chat_engine.community_chat(
+                session=session,
+                channel_id=channel_id,
+                user_id=actor_id,
+                user_message=message,
+                speaker_name=username,
+                channel_name=channel_id,
+                guild_id=guild_id,
+                guild_name=guild_id,
+                recent_messages=_domain_messages(request),
+                images=request.images,
+                is_ephemeral_reference=bool(request.is_ephemeral_reference),
+            )
         )
-
         await session.commit()
-        duration_ms = round((time.time() - t0) * 1000, 2)
-
         pipeline_tracker.end_trace(
             response_text=reply_text,
             emotions=updated_emotions,
@@ -103,122 +119,127 @@ async def community_chat_endpoint(
         )
 
         emotion_caption = None
-        if updated_emotions and isinstance(updated_emotions, dict):
+        if updated_emotions:
             from app.domain.entities.emotion import EmotionState
             from app.domain.services.state_manager import StateManager
 
             try:
-                state_obj = EmotionState(
-                    user_id=normalize_user_id(request.user_id),
-                    trust=float(updated_emotions.get("trust", 0.50)),
-                    attachment=float(updated_emotions.get("attachment", 0.00)),
-                    joy=float(updated_emotions.get("joy", 0.15)),
-                    sadness=float(updated_emotions.get("sadness", 0.00)),
-                    irritation=float(updated_emotions.get("irritation", 0.00)),
-                    shyness=float(updated_emotions.get("shyness", 0.00)),
-                    curiosity=float(updated_emotions.get("curiosity", 0.10)),
-                    comfort=float(updated_emotions.get("comfort", 0.50)),
+                emotion_caption = StateManager.get_emotion_summary_caption(
+                    EmotionState(
+                        user_id=normalize_user_id(actor_id),
+                        trust=float(updated_emotions.get("trust", 0.50)),
+                        attachment=float(updated_emotions.get("attachment", 0.00)),
+                        joy=float(updated_emotions.get("joy", 0.15)),
+                        sadness=float(updated_emotions.get("sadness", 0.00)),
+                        irritation=float(updated_emotions.get("irritation", 0.00)),
+                        shyness=float(updated_emotions.get("shyness", 0.00)),
+                        curiosity=float(updated_emotions.get("curiosity", 0.10)),
+                        comfort=float(updated_emotions.get("comfort", 0.50)),
+                    )
                 )
-                emotion_caption = StateManager.get_emotion_summary_caption(state_obj)
-            except Exception as e:
-                log.warning("Failed to generate emotion caption", error=str(e))
+            except (TypeError, ValueError) as error:
+                log.warning("Failed to generate emotion caption", error_type=type(error).__name__)
 
         return CommunityChatResponse(
-            response=reply_text or "Chisa chào mọi người ạ ~",
+            response=reply_text or "Chisa is ready to help.",
             emotions=updated_emotions or {},
             emotion_caption=emotion_caption,
-            execution_time_ms=duration_ms,
+            execution_time_ms=round((time.time() - started_at) * 1000, 2),
             images_processed=images_processed,
             attached_images=attached_images,
         )
-
-    except ChatEngineBusyError:
-        pipeline_tracker.end_trace(
-            response_text="Chisa đang xử lý tin nhắn trước đó của bạn, vui lòng chờ một nhịp nhé!",
-            emotions={},
-            status="error",
-            error="ChatEngineBusyError",
-        )
-        raise HTTPException(
-            status_code=429,
-            detail="Chisa đang xử lý tin nhắn trước đó của bạn, vui lòng chờ một nhịp nhé!",
-        )
+    except ChatEngineBusyError as error:
+        pipeline_tracker.end_trace(response_text="Busy", emotions={}, status="error", error="busy")
+        raise HTTPException(status_code=429, detail="Chat is busy; try again shortly") from error
     except LLMRateLimitError:
-        log.warning(
-            "Community chat rate limited", channel_id=request.channel_id, user_id=request.user_id
-        )
-        fallback = "Kênh chat đang sôi nổi quá, mọi người đợi Chisa một nhịp xíu nhé!"
+        fallback = "The community chat is busy; please try again shortly."
         pipeline_tracker.end_trace(
-            response_text=fallback,
-            emotions={},
-            status="success",
-            error="LLMRateLimitError",
+            response_text=fallback, emotions={}, status="success", error="llm_rate_limited"
         )
         return CommunityChatResponse(
             response=fallback,
-            emotions={},
-            execution_time_ms=round((time.time() - t0) * 1000, 2),
+            execution_time_ms=round((time.time() - started_at) * 1000, 2),
         )
     except LLMTimeoutError:
-        log.error("Community chat timeout", channel_id=request.channel_id, user_id=request.user_id)
-        fallback = "Chisa đang xử lý nhiều dữ liệu cùng lúc nên hơi chậm một chút, mọi người nhắn lại giúp em nha."
+        fallback = "The community chat timed out; please try again shortly."
         pipeline_tracker.end_trace(
-            response_text=fallback,
-            emotions={},
-            status="success",
-            error="LLMTimeoutError",
+            response_text=fallback, emotions={}, status="success", error="llm_timeout"
         )
         return CommunityChatResponse(
             response=fallback,
-            emotions={},
-            execution_time_ms=round((time.time() - t0) * 1000, 2),
+            execution_time_ms=round((time.time() - started_at) * 1000, 2),
         )
-    except Exception as e:
+    except Exception as error:
         log.error(
             "Community chat failed",
-            error=str(e),
-            channel_id=request.channel_id,
-            user_id=request.user_id,
+            error_type=type(error).__name__,
+            channel_id=channel_id,
+            user_id=actor_id,
         )
         pipeline_tracker.end_trace(
-            response_text=f"Lỗi: {str(e)}",
+            response_text="Community chat failed",
             emotions={},
             status="error",
-            error=str(e),
+            error=type(error).__name__,
         )
         await session.rollback()
         raise HTTPException(
-            status_code=500,
-            detail=f"Lỗi khi xử lý tin nhắn cộng đồng: {str(e)}",
-        )
+            status_code=500, detail="Community chat is temporarily unavailable"
+        ) from error
 
 
-@router.delete("/clear/{guild_id}")
+@router.delete("/clear/{guild_id}", response_model=None)
 async def clear_community_memory_endpoint(
     guild_id: str,
-    scope: str = "all",
+    principal: CurrentPrincipal,
+    scope: Literal["all", "self"] = "all",
     channel_id: str | None = None,
     user_id: str | None = None,
+    session: AsyncSession = Depends(get_db_session),
     clear_use_case=Depends(get_clear_community_memory_use_case),
-) -> dict:
-    """
-    Clears collective community memory (guild_memories, topic summaries, ambient mood).
-    Supports scope='all' (server-wide) or scope='self' (user's community interactions).
-    """
+) -> dict | JSONResponse:
+    """Clear only resources authorized by the verified Discord tenant context."""
+    del channel_id, user_id  # Client query values are never identity authority.
     try:
-        from app.application.dependencies import get_clear_community_memory_use_case
+        AuthorizationPolicy.require_source(principal, "discord")
+        AuthorizationPolicy.require_tenant(principal, guild_id)
+        if scope == "all":
+            AuthorizationPolicy.require_scope(principal, "community:clear:any")
+            trusted_channel_id = None
+            trusted_user_id = None
+        else:
+            AuthorizationPolicy.require_scope(principal, "community:clear:self")
+            trusted_channel_id = AuthorizationPolicy.channel_id_or_deny(principal)
+            trusted_user_id = principal.subject_id
 
         result = await clear_use_case.execute(
+            session=session,
             guild_id=guild_id,
             scope=scope,
-            channel_id=channel_id,
-            user_id=user_id,
+            channel_id=trusted_channel_id,
+            user_id=trusted_user_id,
         )
+        if result["status"] != "completed":
+            return JSONResponse(
+                status_code=202,
+                content={
+                    "status": "pending_retry",
+                    "erasure_job_id": result["job_id"],
+                    "message": "Community erasure is pending retry.",
+                },
+            )
         return {
             "status": "success",
-            "message": f"Community memory cleared successfully for guild {guild_id} with scope '{scope}'.",
-            "details": result,
+            "erasure_job_id": result["job_id"],
+            "message": "Community memory cleared.",
         }
-    except Exception as e:
-        log.error("Failed to clear community memory", guild_id=guild_id, scope=scope, error=str(e))
-        raise HTTPException(status_code=500, detail=f"Could not clear community memory: {str(e)}")
+    except AuthorizationError as error:
+        raise HTTPException(status_code=403, detail="Access denied") from error
+    except Exception as error:
+        log.error(
+            "Failed to clear community memory",
+            guild_id=guild_id,
+            scope=scope,
+            error_type=type(error).__name__,
+        )
+        raise HTTPException(status_code=500, detail="Could not clear community memory") from error

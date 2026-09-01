@@ -14,8 +14,9 @@ from app.infrastructure.cache.redis.redis_service import redis_service
 from app.infrastructure.database.engine import connect_database, disconnect_database
 from app.infrastructure.logging.logger import configure_logging, get_logger
 from app.infrastructure.vector.qdrant.qdrant_service import qdrant_service
-from app.interface.api.routes import chat, community, health
+from app.interface.api.routes import auth, chat, community, health
 from app.interface.middlewares.rate_limiter import RateLimitMiddleware
+from app.interface.middlewares.request_body_limit import RequestBodyLimitMiddleware
 from app.shared.utils.background_tasks import BackgroundTaskManager
 
 # Configure logging before anything else
@@ -60,11 +61,9 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         log.error("Redis startup health check failed")
 
     # Qdrant
-    qdrant_ok = await qdrant_service.health_check()
+    qdrant_ok = await qdrant_service.health_check(require_active_collections=True)
     if qdrant_ok:
-        log.info("Qdrant connection verified ✓")
-        # Initialize collections (idempotent)
-        await qdrant_service.initialize_all_collections()
+        log.info("Qdrant connection and active collection aliases verified ✓")
     else:
         startup_errors.append("Qdrant: health check failed")
         log.error("Qdrant startup health check failed")
@@ -110,10 +109,6 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         if hasattr(container, "embedder") and container.embedder:
             await container.embedder.embed_text("Chisa warm-up")
             log.info("FastEmbed model pre-warmed into memory ✓")
-
-        # 3. Ensure Qdrant payload indexes for sub-5ms filtering
-        if qdrant_ok:
-            await qdrant_service.ensure_payload_indexes()
 
     except Exception as warmup_err:
         log.warning("Warm-up routine warning", error=str(warmup_err))
@@ -168,9 +163,11 @@ def create_app() -> FastAPI:
 
     # ── Rate Limiting ────────────────────────────────────────────────
     app.add_middleware(RateLimitMiddleware)
+    app.add_middleware(RequestBodyLimitMiddleware)
 
     # ── Routes ───────────────────────────────────────────────────
     app.include_router(health.router, tags=["System"])
+    app.include_router(auth.router, prefix="/api/v1")
 
     # Public API routes.
     app.include_router(chat.router, prefix="/api/v1", tags=["Chat"])

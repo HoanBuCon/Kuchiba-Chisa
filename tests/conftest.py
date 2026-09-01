@@ -11,7 +11,14 @@ from typing import Any
 import pytest
 import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
-from qdrant_client.http.models import Distance, VectorParams
+from qdrant_client.http.models import (
+    CreateAlias,
+    CreateAliasOperation,
+    DeleteAlias,
+    DeleteAliasOperation,
+    Distance,
+    VectorParams,
+)
 from sqlalchemy import text
 
 # ── Force test environment before any app imports ───────────────────
@@ -25,6 +32,9 @@ os.environ.setdefault("CELERY_RESULT_BACKEND", "redis://localhost:56379/14")
 os.environ.setdefault("QDRANT_URL", "http://localhost:16333")
 os.environ.setdefault("GROQ_API_KEY", "test_groq_key_placeholder")
 os.environ.setdefault("JWT_SECRET", "test_jwt_secret_that_is_long_enough_for_validation")
+os.environ.setdefault(
+    "DISCORD_WORKLOAD_JWT_SECRET", "test_discord_workload_secret_that_is_long_enough"
+)
 os.environ.setdefault("SECRET_KEY", "test_secret_key_that_is_long_enough_for_validation")
 
 from app.config.settings import invalidate_settings_cache  # noqa: E402
@@ -251,7 +261,11 @@ async def isolated_vector_store() -> AsyncIterator[Any]:
     """Create only missing collections in the disposable Qdrant test endpoint."""
     _assert_isolated_test_endpoints()
     from app.config.settings import settings
-    from app.infrastructure.vector.qdrant.qdrant_service import ALL_COLLECTIONS, qdrant_service
+    from app.infrastructure.vector.qdrant.qdrant_service import (
+        ALL_COLLECTIONS,
+        active_collection_alias,
+        qdrant_service,
+    )
 
     for collection in ALL_COLLECTIONS:
         try:
@@ -272,6 +286,29 @@ async def isolated_vector_store() -> AsyncIterator[Any]:
                 f"Isolated Qdrant collection {collection!r} has dimension {dimension}; "
                 f"expected {settings.QDRANT_EMBEDDING_DIM}. Recreate the disposable test stack."
             )
+
+    aliases_response = await qdrant_service._client.get_aliases()
+    existing_aliases = {
+        alias.alias_name: alias.collection_name for alias in aliases_response.aliases
+    }
+    alias_operations: list[CreateAliasOperation | DeleteAliasOperation] = []
+    for collection in ALL_COLLECTIONS:
+        alias_name = active_collection_alias(collection)
+        if existing_aliases.get(alias_name) == collection:
+            continue
+        if alias_name in existing_aliases:
+            alias_operations.append(
+                DeleteAliasOperation(delete_alias=DeleteAlias(alias_name=alias_name))
+            )
+        alias_operations.append(
+            CreateAliasOperation(
+                create_alias=CreateAlias(collection_name=collection, alias_name=alias_name)
+            )
+        )
+    if alias_operations:
+        await qdrant_service._client.update_collection_aliases(
+            change_aliases_operations=alias_operations
+        )
     yield qdrant_service
 
 

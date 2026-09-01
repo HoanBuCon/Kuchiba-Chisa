@@ -1,6 +1,9 @@
 from typing import Any
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, model_validator
+
+from app.application.security.input_limits import InputLimitPolicy
+from app.config.settings import settings
 
 
 def _empty_strings() -> list[str]:
@@ -12,18 +15,18 @@ def _empty_image_metadata() -> list[dict[str, Any]]:
 
 
 class ChatRequest(BaseModel):
-    user_id: str = Field(
-        ...,
-        min_length=1,
-        max_length=128,
-        pattern=r"^[a-zA-Z0-9_\-\:]+$",
-        description="The unique identifier for the user (e.g. discord:12345 or web:user_id)",
-    )
+    """Untrusted chat content only; identity comes from ``PrincipalContext``."""
+
+    model_config = ConfigDict(extra="forbid")
+
     message: str | None = Field(
-        default="", max_length=4000, description="The message text from the user"
+        default="",
+        max_length=settings.CHAT_MAX_MESSAGE_CHARS,
+        description="The message text from the user",
     )
     images: list[str] | None = Field(
         default_factory=_empty_strings,
+        max_length=settings.VISION_MAX_IMAGES,
         description="Optional list of image URLs or Base64 Data URIs",
     )
     is_ephemeral_reference: bool | None = Field(
@@ -32,23 +35,9 @@ class ChatRequest(BaseModel):
             "True if images are from referenced community messages without permanent saving"
         ),
     )
-    source: str | None = Field(
-        default="web",
-        max_length=64,
-        description="The origin source of the request ('web' or 'discord')",
-    )
-    username: str | None = Field(
-        default=None, max_length=64, description="Optional username of the sender"
-    )
-    channel_name: str | None = Field(
-        default=None, max_length=64, description="Optional channel name (if discord)"
-    )
-    guild_name: str | None = Field(
-        default=None, max_length=64, description="Optional guild name/server name (if discord)"
-    )
-
     @model_validator(mode="after")
     def validate_message_or_images(self) -> "ChatRequest":
+        InputLimitPolicy.validate_images(self.images)
         msg = (self.message or "").strip()
         has_imgs = bool(self.images and len(self.images) > 0)
         if not msg and not has_imgs:

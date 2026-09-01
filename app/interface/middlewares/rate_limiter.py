@@ -1,130 +1,250 @@
-"""
-Redis-backed rate limiting middleware for FastAPI.
+"""Trusted-principal token-bucket rate limiting for expensive API routes."""
 
-Uses a sliding window counter per user_id (or IP fallback) to enforce
-request rate limits. Prevents LLM API quota exhaustion from spam.
-"""
 from __future__ import annotations
+
+import asyncio
+import hashlib
+import ipaddress
 import time
+from dataclasses import dataclass
+
 from fastapi import Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 from starlette.responses import JSONResponse
+from starlette.types import ASGIApp
+
 from app.config.settings import settings
+from app.domain.value_objects.principal import PrincipalContext
 from app.infrastructure.cache.redis.redis_service import redis_service
 from app.infrastructure.logging.logger import get_logger
+from app.infrastructure.security.jwt_authenticator import AuthenticationError, jwt_authenticator
 
 log = get_logger(__name__)
 
 
+@dataclass(slots=True)
+class _LocalBucket:
+    tokens: float
+    updated_at: float
+
+
 class RateLimitMiddleware(BaseHTTPMiddleware):
-    """
-    Per-user rate limiter using Redis counters with sliding window.
-    Only applies to /api/v1/chat endpoints (the expensive LLM-calling paths).
-    Health checks and static assets are exempt.
+    """Enforces a Redis token bucket keyed only by a verified principal.
+
+    Redis is the distributed authority. If it is unavailable, a bounded,
+    process-local token bucket preserves abuse protection rather than allowing
+    unlimited traffic. Forwarded identity and IP headers are intentionally not
+    accepted as rate-limit identities.
     """
 
-    # Paths that trigger rate limiting (prefix match)
-    RATE_LIMITED_PREFIXES = ("/api/v1/chat",)
-    USER_ID_HEADER = "X-User-ID"
+    RATE_LIMITED_PREFIXES = ("/api/v1/chat", "/api/v1/community")
+    ANONYMOUS_SESSION_PATH = "/api/v1/auth/anonymous-session"
+
+    def __init__(self, app: ASGIApp) -> None:
+        super().__init__(app)
+        self._local_buckets: dict[str, _LocalBucket] = {}
+        self._local_lock = asyncio.Lock()
+        self._trusted_proxy_networks = self._parse_trusted_proxy_networks()
 
     async def dispatch(
         self, request: Request, call_next: RequestResponseEndpoint
     ) -> Response:
-        # Only rate-limit specific paths
         path = request.url.path
+        if path == self.ANONYMOUS_SESSION_PATH:
+            client_ip = self._trusted_client_ip(request)
+            allowed, _, reset_at = await self._check_anonymous_session_rate(client_ip)
+            if not allowed:
+                return self._limited_response(reset_at)
+            return await call_next(request)
+
         if not any(path.startswith(prefix) for prefix in self.RATE_LIMITED_PREFIXES):
             return await call_next(request)
 
-        # Never consume request.body() here. BaseHTTPMiddleware forwards the
-        # request downstream, where FastAPI must still be able to parse it.
-        user_key = self._extract_user_key(request)
+        try:
+            principal = jwt_authenticator.authenticate_bearer(request.headers.get("Authorization"))
+        except AuthenticationError:
+            return JSONResponse(
+                status_code=401,
+                content={"detail": "Authentication required"},
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+        request.state.principal = principal
 
-        # Check rate limit
-        allowed, remaining, reset_at = await self._check_rate(user_key)
+        client_ip = self._trusted_client_ip(request)
+        anomaly_allowed, _, anomaly_reset_at = await self._check_ip_anomaly(client_ip)
+        if not anomaly_allowed:
+            return self._limited_response(anomaly_reset_at)
 
+        allowed, remaining, reset_at = await self._check_rate(principal, request.method, path)
         if not allowed:
             retry_after = max(1, int(reset_at - time.time()))
             log.warning(
                 "Rate limit exceeded",
-                user_key=user_key,
-                path=path,
+                principal_id=principal.subject_id,
+                tenant_id=principal.tenant_id,
+                route=path,
                 retry_after=retry_after,
             )
-            return JSONResponse(
-                status_code=429,
-                content={
-                    "detail": "Rate limit exceeded. Chisa cần nghỉ ngơi một chút, Senpai thử lại sau nhé~",
-                    "retry_after": retry_after,
-                },
-                headers={
-                    "Retry-After": str(retry_after),
-                    "X-RateLimit-Remaining": "0",
-                    "X-RateLimit-Reset": str(int(reset_at)),
-                },
-            )
+            return self._limited_response(reset_at)
 
         response = await call_next(request)
-
-        # Add rate limit headers to successful responses
         response.headers["X-RateLimit-Remaining"] = str(remaining)
         response.headers["X-RateLimit-Reset"] = str(int(reset_at))
         response.headers["X-RateLimit-Limit"] = str(settings.RATE_LIMIT_PER_MINUTE)
-
         return response
 
-    @classmethod
-    def _extract_user_key(cls, request: Request) -> str:
+    @staticmethod
+    def _limited_response(reset_at: float) -> JSONResponse:
+        retry_after = max(1, int(reset_at - time.time()))
+        return JSONResponse(
+            status_code=429,
+            content={"detail": "Rate limit exceeded", "retry_after": retry_after},
+            headers={
+                "Retry-After": str(retry_after),
+                "X-RateLimit-Remaining": "0",
+                "X-RateLimit-Reset": str(int(reset_at)),
+            },
+        )
+
+    @staticmethod
+    def _rate_limit_key(principal: PrincipalContext, method: str, path: str) -> str:
+        route = RateLimitMiddleware._route_bucket(method, path)
+        raw_key = "|".join(
+            (principal.subject_id, principal.tenant_id or "-", route)
+        )
+        digest = hashlib.sha256(raw_key.encode("utf-8")).hexdigest()
+        return f"chisa:ratelimit:v2:{digest}"
+
+    @staticmethod
+    def _ip_anomaly_key(client_ip: str) -> str:
+        """Return the independent, privacy-preserving IP anomaly bucket key.
+
+        The primary quota is intentionally scoped to principal, tenant, and
+        route.  This secondary bucket must *not* include a principal so a
+        caller cannot evade the network-level control by rotating otherwise
+        valid anonymous sessions or workload subjects.
         """
-        Return a stable rate-limit key without reading the request body.
+        raw_key = "|".join(("ip", client_ip))
+        digest = hashlib.sha256(raw_key.encode("utf-8")).hexdigest()
+        return f"chisa:ratelimit:ip:v1:{digest}"
 
-        Clients should send ``X-User-ID`` for a per-user quota. Requests from
-        legacy clients are safely limited by their forwarded/client IP until
-        they are updated. This intentionally avoids consuming the ASGI request
-        stream before FastAPI validates the payload.
-        """
-        user_id = request.headers.get(cls.USER_ID_HEADER)
-        if user_id:
-            return f"uid:{user_id}"
+    @staticmethod
+    def _anonymous_session_key(client_ip: str) -> str:
+        """Pre-auth exception: only a trusted network address is available."""
+        digest = hashlib.sha256(f"anonymous-session|{client_ip}".encode()).hexdigest()
+        return f"chisa:ratelimit:anonymous-session:v1:{digest}"
 
-        # Use the first address when a trusted proxy supplies X-Forwarded-For.
-        forwarded = request.headers.get("X-Forwarded-For")
-        if forwarded:
-            ip = forwarded.split(",")[0].strip()
-        else:
-            ip = request.client.host if request.client else "unknown"
+    @staticmethod
+    def _parse_trusted_proxy_networks() -> tuple[
+        ipaddress.IPv4Network | ipaddress.IPv6Network, ...
+    ]:
+        values = (value.strip() for value in settings.TRUSTED_PROXY_CIDRS.split(","))
+        return tuple(ipaddress.ip_network(value, strict=False) for value in values if value)
 
-        return f"ip:{ip}"
+    def _trusted_client_ip(self, request: Request) -> str:
+        peer_ip = request.client.host if request.client else "unknown"
+        try:
+            peer_address = ipaddress.ip_address(peer_ip)
+        except ValueError:
+            return peer_ip
+        if not any(peer_address in network for network in self._trusted_proxy_networks):
+            return peer_ip
+        forwarded = request.headers.get("X-Forwarded-For", "")
+        candidate = forwarded.split(",", maxsplit=1)[0].strip()
+        try:
+            return str(ipaddress.ip_address(candidate))
+        except ValueError:
+            return peer_ip
+
+    @staticmethod
+    def _route_bucket(method: str, path: str) -> str:
+        """Collapse path parameters so they cannot create quota bypass keys."""
+        if path.startswith("/api/v1/chat/history/"):
+            return "GET:chat.history"
+        if path.startswith("/api/v1/chat/emotions/"):
+            return "GET:chat.emotions"
+        if path.startswith("/api/v1/chat/clear/"):
+            return "DELETE:chat.clear"
+        if path == "/api/v1/chat/stream":
+            return "POST:chat.stream"
+        if path == "/api/v1/chat":
+            return "POST:chat"
+        if path.startswith("/api/v1/community/clear/"):
+            return "DELETE:community.clear"
+        if path == "/api/v1/community/chat":
+            return "POST:community.chat"
+        return f"{method.upper()}:{path}"
 
     async def _check_rate(
-        self, user_key: str
+        self, principal: PrincipalContext, method: str, path: str
     ) -> tuple[bool, int, float]:
-        """
-        Check if the user is within rate limits using Redis counter.
-
-        Returns:
-            (allowed, remaining_requests, reset_timestamp)
-        """
+        key = self._rate_limit_key(principal, method, path)
+        capacity = settings.RATE_LIMIT_PER_MINUTE
         now = time.time()
-        window_seconds = 60
-        max_requests = settings.RATE_LIMIT_PER_MINUTE
-
-        # Use minute-bucket key for simple fixed window
-        bucket = int(now // window_seconds)
-        redis_key = f"chisa:ratelimit:{user_key}:{bucket}"
-        reset_at = (bucket + 1) * window_seconds
-
         try:
-            count = await redis_service.incr(redis_key)
+            allowed, remaining, retry_after = await redis_service.consume_token_bucket(
+                key=key,
+                capacity=capacity,
+                refill_period_seconds=60,
+                now=now,
+            )
+            return allowed, remaining, now + retry_after
+        except Exception as error:
+            log.warning(
+                "Redis rate limit unavailable; using bounded local limiter",
+                error_type=type(error).__name__,
+            )
+            return await self._check_local_bucket(key, capacity, now)
 
-            # Set expiry on first increment (new bucket)
-            if count == 1:
-                await redis_service.expire(redis_key, window_seconds + 5)
+    async def _check_ip_anomaly(self, client_ip: str) -> tuple[bool, int, float]:
+        return await self._check_bucket(
+            self._ip_anomaly_key(client_ip),
+            settings.RATE_LIMIT_IP_ANOMALY_PER_MINUTE,
+        )
 
-            remaining = max(0, max_requests - count)
-            allowed = count <= max_requests
+    async def _check_anonymous_session_rate(self, client_ip: str) -> tuple[bool, int, float]:
+        return await self._check_bucket(
+            self._anonymous_session_key(client_ip),
+            settings.ANONYMOUS_SESSION_RATE_LIMIT_PER_MINUTE,
+        )
 
-            return allowed, remaining, reset_at
-        except Exception as e:
-            # If Redis is down, allow the request (fail-open)
-            log.warning("Rate limit check failed, allowing request", error=str(e))
-            return True, max_requests, reset_at
+    async def _check_bucket(self, key: str, capacity: int) -> tuple[bool, int, float]:
+        now = time.time()
+        try:
+            allowed, remaining, retry_after = await redis_service.consume_token_bucket(
+                key=key,
+                capacity=capacity,
+                refill_period_seconds=60,
+                now=now,
+            )
+            return allowed, remaining, now + retry_after
+        except Exception as error:
+            log.warning(
+                "Redis rate limit unavailable; using bounded local limiter",
+                error_type=type(error).__name__,
+            )
+            return await self._check_local_bucket(key, capacity, now)
+
+    async def _check_local_bucket(
+        self, key: str, capacity: int, now: float
+    ) -> tuple[bool, int, float]:
+        refill_rate = capacity / 60.0
+        async with self._local_lock:
+            bucket = self._local_buckets.get(key)
+            if bucket is None:
+                if len(self._local_buckets) >= settings.RATE_LIMIT_LOCAL_FALLBACK_MAX_KEYS:
+                    oldest_key = min(
+                        self._local_buckets, key=lambda item: self._local_buckets[item].updated_at
+                    )
+                    self._local_buckets.pop(oldest_key, None)
+                bucket = _LocalBucket(tokens=float(capacity), updated_at=now)
+                self._local_buckets[key] = bucket
+
+            elapsed = max(0.0, now - bucket.updated_at)
+            bucket.tokens = min(float(capacity), bucket.tokens + elapsed * refill_rate)
+            bucket.updated_at = now
+            if bucket.tokens < 1:
+                retry_after = (1 - bucket.tokens) / refill_rate
+                return False, 0, now + retry_after
+            bucket.tokens -= 1
+            return True, int(bucket.tokens), now

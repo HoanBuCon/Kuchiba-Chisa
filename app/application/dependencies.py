@@ -340,27 +340,38 @@ class AppContainer:
         from app.infrastructure.database.repositories.emotion_repository import (
             SqlAlchemyEmotionRepository,
         )
+        from app.infrastructure.database.repositories.erasure_job_repository import (
+            ErasureJobRepository,
+        )
         from app.infrastructure.database.repositories.user_repository import (
             SqlAlchemyUserRepository,
         )
         from app.infrastructure.database.uow import UnitOfWork
-        
+        from app.infrastructure.storage.factory import get_image_storage_provider
+
         return ClearUserMemoryUseCase(
             uow_factory=UnitOfWork,
             user_repo_factory=SqlAlchemyUserRepository,
             emotion_repo_factory=SqlAlchemyEmotionRepository,
             conv_repo_factory=SqlAlchemyConversationRepository,
+            erasure_repo_factory=ErasureJobRepository,
             vector_store=qdrant_service,
-            cache_provider=redis_service
+            cache_provider=redis_service,
+            image_storage=get_image_storage_provider(),
         )
 
     @cached_property
     def clear_community_memory_use_case(self):
         from app.application.usecases.clear_community_memory import ClearCommunityMemoryUseCase
         from app.infrastructure.cache.redis.redis_service import RedisService
+        from app.infrastructure.database.repositories.erasure_job_repository import (
+            ErasureJobRepository,
+        )
+
         return ClearCommunityMemoryUseCase(
             vector_store=qdrant_service,
-            cache_provider=RedisService()
+            cache_provider=RedisService(),
+            erasure_repo_factory=ErasureJobRepository,
         )
 
 # Global container instance

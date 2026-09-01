@@ -4,10 +4,13 @@ Location: app/domain/services/image_ingestion.py
 """
 
 from __future__ import annotations
+
 import base64
+import binascii
 import re
-from typing import List, Dict, Any, Optional
+
 import httpx
+from typing import Any
 
 from app.domain.interfaces.image_storage import IImageStorageProvider
 from app.infrastructure.logging.logger import get_logger
@@ -30,18 +33,18 @@ class ImageIngestionService:
 
     def __init__(
         self,
-        storage: Optional[IImageStorageProvider] = None,
-        http_client: Optional[httpx.AsyncClient] = None,
+        storage: IImageStorageProvider | None = None,
+        http_client: httpx.AsyncClient | None = None,
     ) -> None:
         self.storage = storage or get_image_storage_provider()
         self.http_client = http_client
 
     async def ingest_images(
         self,
-        image_inputs: List[str],
+        image_inputs: list[str],
         save_to_disk: bool = True,
         is_ephemeral: bool = False,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         Ingests a list of image inputs (either HTTP URLs or Base64 Data URIs).
         Returns a list of processed image metadata objects.
@@ -49,7 +52,7 @@ class ImageIngestionService:
         if not image_inputs:
             return []
 
-        processed_images: List[Dict[str, Any]] = []
+        processed_images: list[dict[str, Any]] = []
 
         for idx, item in enumerate(image_inputs):
             item_str = str(item).strip()
@@ -78,7 +81,9 @@ class ImageIngestionService:
                         is_ephemeral=is_ephemeral,
                     )
                     stored_meta["base64_data_uri"] = data_uri
-                    stored_meta["raw_input"] = item_str if len(item_str) < 500 else item_str[:100] + "..."
+                    stored_meta["raw_input"] = (
+                        item_str if len(item_str) < 500 else item_str[:100] + "..."
+                    )
                     processed_images.append(stored_meta)
                 else:
                     # In-memory only (e.g. temporary un-saved references)
@@ -95,7 +100,11 @@ class ImageIngestionService:
                     })
 
             except VisionSecurityError as sec_err:
-                log.warning("Image ingestion security violation", error=str(sec_err), item_index=idx)
+                log.warning(
+                    "Image ingestion security violation",
+                    error=str(sec_err),
+                    item_index=idx,
+                )
                 continue
             except Exception as err:
                 log.error("Image ingestion failure", error=str(err), item_index=idx)
@@ -103,7 +112,7 @@ class ImageIngestionService:
 
         return processed_images
 
-    async def _resolve_raw_bytes(self, item_str: str) -> Optional[bytes]:
+    async def _resolve_raw_bytes(self, item_str: str) -> bytes | None:
         """Resolves raw binary bytes from URL or Base64 Data URI."""
         if item_str.startswith("http://") or item_str.startswith("https://"):
             return await SecureImageFetcher.fetch_image(url=item_str, http_client=self.http_client)
@@ -112,10 +121,15 @@ class ImageIngestionService:
             match = re.match(r"^data:image\/[a-zA-Z0-9\+\-\.]+;base64,(.+)$", item_str)
             if not match:
                 raise ImageValidationError("Invalid Base64 Data URI format")
-            return base64.b64decode(match.group(1))
+            try:
+                return base64.b64decode(match.group(1), validate=True)
+            except (ValueError, binascii.Error) as error:
+                raise ImageValidationError("Invalid Base64 image payload") from error
         else:
             # Assume raw base64 string
             try:
-                return base64.b64decode(item_str)
-            except Exception:
-                raise ImageValidationError("Unrecognized image input format (expected HTTP URL or Base64)")
+                return base64.b64decode(item_str, validate=True)
+            except (ValueError, binascii.Error) as error:
+                raise ImageValidationError(
+                    "Unrecognized image input format (expected HTTP URL or Base64)"
+                ) from error

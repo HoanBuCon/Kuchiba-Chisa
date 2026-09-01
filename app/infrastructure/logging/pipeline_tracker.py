@@ -7,6 +7,8 @@ import uuid
 from collections.abc import Awaitable, Callable
 from typing import Any, cast
 
+from app.config.settings import settings
+from app.infrastructure.logging.telemetry_redaction import redact_telemetry_payload
 from app.shared.utils.logger import get_logger
 
 log = get_logger(__name__)
@@ -181,13 +183,10 @@ class PipelineTracker:
         guild_name: str | None = None,
     ) -> str:
         trace_id = str(uuid.uuid4())
+        # This is an observability record, never a conversation/content store.
+        # Arguments containing identity or user content remain outside the trace.
         trace: dict[str, Any] = {
             "id": trace_id,
-            "user_id": user_id,
-            "username": username,
-            "channel_name": channel_name,
-            "guild_name": guild_name,
-            "message": message,
             "source": source or "web",
             "pipeline": pipeline,
             "timestamp": datetime.datetime.now().isoformat(),
@@ -198,10 +197,13 @@ class PipelineTracker:
             "total_input_tokens": 0,
             "total_output_tokens": 0,
             "total_reasoning_tokens": 0,
-            "response": "",
             "latency_ms": 0.0,
-            "error": None,
-            "loop_thinking_activated": False
+            "loop_thinking_activated": False,
+            "input_char_count": len(message),
+            "has_principal": bool(user_id),
+            "has_tenant_context": bool(guild_name),
+            "has_channel_context": bool(channel_name),
+            "has_display_name": bool(username),
         }
         current_trace_var.set(trace)
         return trace_id
@@ -238,8 +240,10 @@ class PipelineTracker:
             if not trace:
                 return None
             
-            # Resolve stage_id
-            resolved_stage_id = stage_id or data.get("stage_id")
+            telemetry_data = redact_telemetry_payload(data)
+
+            # Resolve stage_id from the trusted method argument or a known stage map.
+            resolved_stage_id = stage_id or telemetry_data.get("stage_id")
             if not resolved_stage_id:
                 if name.startswith("thinking_loop_"):
                     resolved_stage_id = "stage_5_rag"
@@ -247,9 +251,12 @@ class PipelineTracker:
                     resolved_stage_id = STEP_NAME_TO_STAGE_ID.get(name, "stage_unknown")
 
             # Resolve depth
-            resolved_depth = depth if depth is not None else data.get("depth")
+            resolved_depth = depth if depth is not None else telemetry_data.get("depth")
             if resolved_depth is None:
-                if name == "web_search" and (data.get("source", "").startswith("thinking_loop_cycle_") or data.get("source") == "thinking_loop"):
+                if name == "web_search" and (
+                    telemetry_data.get("source", "").startswith("thinking_loop_cycle_")
+                    or telemetry_data.get("source") == "thinking_loop"
+                ):
                     resolved_depth = 2
                 elif name in (
                     "information_alignment_check", "alignment_assessment", "query_rewrite",
@@ -262,7 +269,7 @@ class PipelineTracker:
                     resolved_depth = 0
 
             # Resolve category
-            resolved_category = category or data.get("category")
+            resolved_category = category or telemetry_data.get("category")
             if not resolved_category:
                 if resolved_depth == 0 and name in (
                     "initialization", "init_stage", "intent_classification", "intent_stage",
@@ -286,15 +293,23 @@ class PipelineTracker:
                 resolved_category = resolved_category.value
 
             # Resolve timing, status, titles
-            resolved_duration_ms = duration_ms if duration_ms is not None else data.get("duration_ms", 0.0)
-            resolved_status = status or data.get("status", "success")
-            resolved_title = title or data.get("title")
-            resolved_subtitle = subtitle or data.get("subtitle")
-            resolved_parent_step_id = parent_step_id or data.get("parent_step_id")
-            resolved_tokens = tokens or data.get("tokens") or data.get("token_breakdown")
+            resolved_duration_ms = (
+                duration_ms if duration_ms is not None else telemetry_data.get("duration_ms", 0.0)
+            )
+            resolved_status = status or telemetry_data.get("status", "success")
+            resolved_parent_step_id = parent_step_id
+            resolved_tokens = redact_telemetry_payload(
+                {
+                    "tokens": (
+                        tokens
+                        or telemetry_data.get("tokens")
+                        or telemetry_data.get("token_breakdown")
+                    )
+                }
+            ).get("tokens", {})
 
             step_index = len(trace["steps"]) + 1
-            step_id = data.get("id") or f"step_{step_index}_{name}"
+            step_id = f"step_{step_index}_{name}"
 
             step = {
                 "id": step_id,
@@ -303,22 +318,20 @@ class PipelineTracker:
                 "depth": resolved_depth,
                 "name": name,
                 "category": resolved_category,
-                "title": resolved_title,
-                "subtitle": resolved_subtitle,
                 "status": resolved_status,
                 "duration_ms": resolved_duration_ms,
                 "timestamp": datetime.datetime.now(datetime.UTC).isoformat(),
                 "tokens": resolved_tokens,
-                "data": data
+                "data": telemetry_data,
             }
             trace["steps"].append(step)
             
             # Auto-aggregate tokens across LLM / token-bearing steps
-            tb = resolved_tokens or data.get("token_breakdown")
+            tb = resolved_tokens or telemetry_data.get("token_breakdown")
             if tb:
-                in_tok = tb.get("total_input") or data.get("input_tokens", 0)
-                out_tok = tb.get("total_output") or data.get("output_tokens", 0)
-                reason_tok = tb.get("reasoning_cot") or data.get("reasoning_tokens", 0)
+                in_tok = tb.get("total_input") or telemetry_data.get("input_tokens", 0)
+                out_tok = tb.get("total_output") or telemetry_data.get("output_tokens", 0)
+                reason_tok = tb.get("reasoning_cot") or telemetry_data.get("reasoning_tokens", 0)
                 tot_tok = tb.get("total_tokens") or (in_tok + out_tok + reason_tok)
                 
                 trace["total_input_tokens"] = trace.get("total_input_tokens", 0) + in_tok
@@ -326,9 +339,9 @@ class PipelineTracker:
                 trace["total_reasoning_tokens"] = trace.get("total_reasoning_tokens", 0) + reason_tok
                 trace["total_tokens"] = trace.get("total_tokens", 0) + tot_tok
             elif name == "llm_generation" and "data" in step:
-                in_tok = data.get("input_tokens", 0)
-                out_tok = data.get("output_tokens", 0)
-                reason_tok = data.get("reasoning_tokens", 0)
+                in_tok = telemetry_data.get("input_tokens", 0)
+                out_tok = telemetry_data.get("output_tokens", 0)
+                reason_tok = telemetry_data.get("reasoning_tokens", 0)
                 
                 trace["total_input_tokens"] = trace.get("total_input_tokens", 0) + in_tok
                 trace["total_output_tokens"] = trace.get("total_output_tokens", 0) + out_tok
@@ -407,9 +420,10 @@ class PipelineTracker:
                 return {}
 
             trace["status"] = status
-            trace["response"] = response_text
-            trace["emotions"] = emotions
-            trace["error"] = error
+            trace["response_char_count"] = len(response_text)
+            trace["has_emotions"] = bool(emotions)
+            trace["emotion_dimension_count"] = len(emotions or {})
+            trace["has_error"] = error is not None
             
             # Compute latency
             start_time = trace.pop("start_time", None)
@@ -453,6 +467,10 @@ class PipelineTracker:
             history_entry = json.dumps(trace, default=str)
             await cast(Awaitable[int], redis.lpush(REDIS_HISTORY_KEY, history_entry))
             await cast(Awaitable[str], redis.ltrim(REDIS_HISTORY_KEY, 0, self.max_history - 1))
+            await cast(
+                Awaitable[bool],
+                redis.expire(REDIS_HISTORY_KEY, settings.PIPELINE_TRACE_TTL_SECONDS),
+            )
         except Exception:
             pass
 

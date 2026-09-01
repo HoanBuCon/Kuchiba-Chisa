@@ -1,6 +1,9 @@
 from typing import Any
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, model_validator
+
+from app.application.security.input_limits import InputLimitPolicy
+from app.config.settings import settings
 
 
 def _empty_strings() -> list[str]:
@@ -16,33 +19,68 @@ def _empty_image_metadata() -> list[dict[str, Any]]:
 
 
 class CommunityMessageIn(BaseModel):
-    message_id: str = Field(default="", description="Unique Discord/Platform message ID")
-    speaker_id: str = Field(..., description="ID of the user who sent the message")
-    speaker_name: str = Field(..., description="Display name / Username of the speaker")
-    content: str = Field(..., description="Text content of the message")
+    model_config = ConfigDict(extra="forbid")
+
+    message_id: str = Field(
+        default="",
+        max_length=settings.COMMUNITY_MAX_IDENTIFIER_CHARS,
+        description="Unique Discord/Platform message ID",
+    )
+    speaker_id: str = Field(
+        ...,
+        max_length=settings.COMMUNITY_MAX_IDENTIFIER_CHARS,
+        description="ID of the user who sent the message",
+    )
+    speaker_name: str = Field(
+        ...,
+        max_length=settings.COMMUNITY_MAX_IDENTIFIER_CHARS,
+        description="Display name / Username of the speaker",
+    )
+    content: str = Field(
+        ...,
+        max_length=settings.COMMUNITY_MAX_MESSAGE_CHARS,
+        description="Text content of the message",
+    )
     reply_to_speaker: str | None = Field(
-        default=None, description="Username of user being replied to"
+        default=None,
+        max_length=settings.COMMUNITY_MAX_IDENTIFIER_CHARS,
+        description="Username of user being replied to",
     )
     reply_to_content: str | None = Field(
-        default=None, description="Snippet of message being replied to"
+        default=None,
+        max_length=settings.COMMUNITY_MAX_REPLY_CONTEXT_CHARS,
+        description="Snippet of message being replied to",
     )
     is_bot: bool = Field(default=False, description="True if message is from a bot/assistant")
-    created_at: str | None = Field(default=None, description="ISO timestamp string")
+    created_at: str | None = Field(
+        default=None,
+        max_length=settings.COMMUNITY_MAX_TIMESTAMP_CHARS,
+        description="ISO timestamp string",
+    )
 
 
 class CommunityChatRequest(BaseModel):
-    channel_id: str = Field(..., description="Discord Channel ID")
-    guild_id: str | None = Field(default=None, description="Discord Guild/Server ID")
-    channel_name: str = Field(default="general", description="Name of the channel")
-    guild_name: str | None = Field(default=None, description="Name of the guild/server")
-    user_id: str = Field(..., description="Current speaker Discord User ID")
-    username: str = Field(..., description="Current speaker display name / username")
-    message: str | None = Field(default="", description="User message addressing Chisa")
+    """Community content carried by a verified Discord workload envelope.
+
+    Actor, tenant, and channel claims are deliberately excluded: they are
+    taken only from the verified workload credential at the route boundary.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    message: str | None = Field(
+        default="",
+        max_length=settings.CHAT_MAX_MESSAGE_CHARS,
+        description="User message addressing Chisa",
+    )
     recent_messages: list[CommunityMessageIn] = Field(
-        default_factory=_empty_message_list, description="Recent channel transcript"
+        default_factory=_empty_message_list,
+        max_length=settings.COMMUNITY_MAX_HISTORY_MESSAGES,
+        description="Recent channel transcript",
     )
     images: list[str] | None = Field(
         default_factory=_empty_strings,
+        max_length=settings.VISION_MAX_IMAGES,
         description="Optional list of image URLs or Base64 Data URIs",
     )
     is_ephemeral_reference: bool | None = Field(
@@ -54,6 +92,8 @@ class CommunityChatRequest(BaseModel):
 
     @model_validator(mode="after")
     def validate_message_or_images(self) -> "CommunityChatRequest":
+        InputLimitPolicy.validate_community_history(self.recent_messages)
+        InputLimitPolicy.validate_images(self.images)
         msg = (self.message or "").strip()
         has_imgs = bool(self.images and len(self.images) > 0)
         if not msg and not has_imgs:

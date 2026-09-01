@@ -9,26 +9,29 @@ Position in Pipeline:
     Qdrant Collection (character_lore, world_lore, story_lore)
 
 Key Responsibilities:
-    1. Collection routing: Maps PageTypeEnum -> target Qdrant collection.
-    2. Page-level Atomic Upsert: Deletes existing points for page_id before inserting new vectors,
-       guaranteeing zero orphan chunks.
-    3. Payload construction: Prepares LorePayload-compatible payload dictionaries.
-    4. Orphan Cleanup: Purges all chunks from Qdrant for deleted wiki pages across collections.
+    1. Collection routing: Maps PageTypeEnum -> logical Qdrant collection.
+    2. Staged writes: Writes only to supplied versioned physical collections.
+    3. Acknowledgement: Fails on every unacknowledged Qdrant write.
+    4. Payload construction: Prepares LorePayload-compatible payload dictionaries.
+    5. Orphan Cleanup: Uses an explicit deletion operation only.
 """
 
 from __future__ import annotations
 
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from typing import Any
 
 import structlog
 
+from app.application.ingestion.errors import QdrantIngestionAcknowledgementError
+from app.config.settings import settings
 from app.infrastructure.ingestion.models.chunk_model import Chunk
 from app.infrastructure.vector.qdrant.qdrant_service import (
     COLLECTION_CHARACTER_LORE,
     COLLECTION_STORY_LORE,
     COLLECTION_WORLD_LORE,
     qdrant_service,
+    versioned_collection_name,
 )
 
 logger = structlog.get_logger(__name__)
@@ -56,9 +59,7 @@ def map_page_type_to_collection(page_type: str) -> str:
 
 
 class QdrantSyncManager:
-    """
-    Manager for batch vector upserts and atomic page-level deletions in Qdrant.
-    """
+    """Manage staged, acknowledged vector upserts and explicit page deletion."""
 
     def __init__(self, service: Any | None = None):
         """
@@ -75,9 +76,11 @@ class QdrantSyncManager:
         collections: Sequence[str] | None = None,
     ) -> None:
         """
-        Atomic Page Deletion: Delete all existing chunks for page_id across collections.
+        Explicitly delete all chunks for page_id across collections.
 
-        Prevents orphan chunks when a page is updated or re-chunked.
+        Standard corpus ingestion must not call this method. New corpus data is
+        written to a physical staging collection and becomes visible only after
+        separately authorized alias promotion passes its quality gate.
 
         Args:
             page_id: Target page_id.
@@ -97,18 +100,62 @@ class QdrantSyncManager:
                     "qdrant_page_delete_error", page_id=page_id, collection=col, error=str(exc)
                 )
 
+    async def prepare_staging_targets(
+        self,
+        chunks: Sequence[Chunk],
+        *,
+        staging_version: str,
+    ) -> dict[str, str]:
+        """Create only the physical targets needed for a versioned corpus run.
+
+        Creation is idempotent and never changes an active alias. Promotion is
+        intentionally a separate, authorized operation after quality checks.
+        """
+        if not staging_version:
+            raise ValueError("A non-empty staging version is required for Qdrant ingestion")
+
+        logical_collections = {map_page_type_to_collection(chunk.page_type) for chunk in chunks}
+        return {
+            logical_collection: await self.service.prepare_versioned_collection(
+                logical_collection,
+                staging_version,
+                settings.QDRANT_EMBEDDING_DIM,
+            )
+            for logical_collection in sorted(logical_collections)
+        }
+
+    @staticmethod
+    def _require_staging_target(logical_collection: str, target_collection: str) -> None:
+        """Reject active aliases and arbitrary physical collection names."""
+        prefix = f"{logical_collection}__"
+        if not target_collection.startswith(prefix):
+            raise ValueError(
+                f"Staging target {target_collection!r} is not a version of "
+                f"{logical_collection!r}"
+            )
+        version = target_collection.removeprefix(prefix)
+        if version == "active":
+            raise ValueError("An active Qdrant alias cannot be used as an ingestion target")
+        if versioned_collection_name(logical_collection, version) != target_collection:
+            raise ValueError("Invalid physical Qdrant staging target")
+
     async def upsert_chunk_batch(
         self,
         chunks_with_vectors: list[tuple[Chunk, list[float]]],
+        *,
+        target_collections: Mapping[str, str],
     ) -> int:
         """
-        Batch upsert chunks and vectors to Qdrant.
+        Upsert all chunks into explicitly supplied physical staging collections.
 
-        Routes each chunk to its mapped collection, performs atomic page-level
-        pre-deletion for new page_ids, and inserts points.
+        A return value is emitted only when every point has been acknowledged
+        by Qdrant. On partial failure the caller receives a typed exception and
+        must retry the same staging version; the active alias is untouched.
 
         Args:
             chunks_with_vectors: List of (Chunk, vector) tuples.
+            target_collections: Logical lore collection -> physical versioned
+                collection. Active aliases and base collection names are rejected.
 
         Returns:
             Number of points successfully upserted.
@@ -116,21 +163,17 @@ class QdrantSyncManager:
         if not chunks_with_vectors:
             return 0
 
-        # Group chunks by page_id and target collection
-        page_ids_seen: set[tuple[str, int]] = set()
         upsert_count = 0
 
         for chunk, vector in chunks_with_vectors:
-            col_name = map_page_type_to_collection(chunk.page_type)
-            page_key = (col_name, chunk.page_id)
-
-            # Delete existing chunks for this page_id ONCE per sync run
-            if page_key not in page_ids_seen:
-                try:
-                    await self.service.delete_lore_by_page(col_name, chunk.page_id)
-                except Exception as exc:
-                    logger.warning("qdrant_delete_fallback", error=str(exc), page_id=chunk.page_id)
-                page_ids_seen.add(page_key)
+            logical_collection = map_page_type_to_collection(chunk.page_type)
+            try:
+                target_collection = target_collections[logical_collection]
+            except KeyError as exc:
+                raise ValueError(
+                    f"Missing staging target for {logical_collection!r}"
+                ) from exc
+            self._require_staging_target(logical_collection, target_collection)
 
             # Build payload dict compatible with Qdrant & LorePayload
             import uuid
@@ -160,12 +203,21 @@ class QdrantSyncManager:
 
             point_id = str(chunk.chunk_id)
             try:
-                await self.service.upsert_lore(col_name, point_id, vector, payload)
+                await self.service.upsert_lore(target_collection, point_id, vector, payload)
                 upsert_count += 1
             except Exception as exc:
-                logger.warning("qdrant_upsert_fallback", error=str(exc), chunk_id=point_id)
-                # Count as processed for pipeline state even if Qdrant is offline
-                upsert_count += 1
+                logger.error(
+                    "qdrant_upsert_unacknowledged",
+                    collection=target_collection,
+                    acknowledged_count=upsert_count,
+                    chunk_id=point_id,
+                    error_type=type(exc).__name__,
+                )
+                raise QdrantIngestionAcknowledgementError(
+                    target_collection=target_collection,
+                    failed_point_id=point_id,
+                    acknowledged_count=upsert_count,
+                ) from exc
 
         logger.info("qdrant_batch_upsert_complete", total_chunks=upsert_count)
         return upsert_count

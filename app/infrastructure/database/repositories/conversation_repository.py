@@ -149,3 +149,20 @@ class SqlAlchemyConversationRepository(IConversationRepository):
         await self.session.execute(delete(MessageModel).where(MessageModel.user_id == user_id).execution_options(synchronize_session=False))
         await self.session.execute(delete(ConversationModel).where(ConversationModel.user_id == user_id).execution_options(synchronize_session=False))
         await self.session.flush()
+
+    async def get_image_ids_for_user(self, user_id: uuid.UUID) -> list[str]:
+        """Resolve image IDs before message deletion, scoped by the owning user."""
+        from app.infrastructure.database.models.message import Message as MessageModel
+
+        rows = (
+            await self.session.execute(
+                select(MessageModel.media_metadata).where(MessageModel.user_id == user_id)
+            )
+        ).scalars()
+        image_ids: set[str] = set()
+        for metadata in rows:
+            records = metadata if isinstance(metadata, list) else [metadata]
+            for record in records:
+                if isinstance(record, dict) and isinstance(record.get("image_id"), str):
+                    image_ids.add(record["image_id"])
+        return sorted(image_ids)

@@ -184,7 +184,7 @@ export async function execute(client, interaction, discordUser) {
       );
       const coreUserIds = res.rows.map((row) => row.core_user_id);
       for (const coreUserId of coreUserIds) {
-        await coreRagClient.clearMemory(coreUserId).catch((err) => {
+        await coreRagClient.clearMemory(coreUserId, { guildId, scopes: ['chat:clear:any'] }).catch((err) => {
           logger.warn({ err, coreUserId }, 'Failed to clear user memory during NUKE');
         });
       }
@@ -254,7 +254,7 @@ export async function execute(client, interaction, discordUser) {
         );
         const coreUserIds = res.rows.map((row) => row.core_user_id);
         for (const coreUserId of coreUserIds) {
-          await coreRagClient.clearMemory(coreUserId).catch((err) => {
+          await coreRagClient.clearMemory(coreUserId, { guildId, scopes: ['chat:clear:any'] }).catch((err) => {
             logger.warn({ err, coreUserId }, 'Failed to clear user private memory in all clear');
           });
         }
@@ -271,7 +271,7 @@ export async function execute(client, interaction, discordUser) {
         await interaction.editReply({ embeds: [embed] });
       } else {
         logger.info({ userId: interaction.user.id, coreUserId: discordUser.core_user_id }, 'Clearing self private memory');
-        await coreRagClient.clearMemory(discordUser.core_user_id);
+        await coreRagClient.clearMemory(discordUser.core_user_id, { guildId, channelId: interaction.channelId });
         await repositories.interactions.clearUserInteractions(discordUser.core_user_id, interactionId);
         await repositories.users.markCleared(discordUser.core_user_id);
 
@@ -397,7 +397,7 @@ export async function executePrefix(client, message, argsText, discordUser) {
       );
       const coreUserIds = res.rows.map((row) => row.core_user_id);
       for (const coreUserId of coreUserIds) {
-        await coreRagClient.clearMemory(coreUserId).catch((err) => {
+        await coreRagClient.clearMemory(coreUserId, { guildId, scopes: ['chat:clear:any'] }).catch((err) => {
           logger.warn({ err, coreUserId }, 'Failed user clear during prefix NUKE');
         });
       }
@@ -467,7 +467,7 @@ export async function executePrefix(client, message, argsText, discordUser) {
         );
         const coreUserIds = res.rows.map((row) => row.core_user_id);
         for (const coreUserId of coreUserIds) {
-          await coreRagClient.clearMemory(coreUserId).catch((err) => {
+          await coreRagClient.clearMemory(coreUserId, { guildId, scopes: ['chat:clear:any'] }).catch((err) => {
             logger.warn({ err, coreUserId }, 'Failed user clear in prefix private all');
           });
         }
@@ -484,7 +484,7 @@ export async function executePrefix(client, message, argsText, discordUser) {
         await message.reply({ embeds: [embed] });
       } else {
         logger.info({ userId: message.author.id, coreUserId: discordUser.core_user_id }, 'Prefix clearing self private memory');
-        await coreRagClient.clearMemory(discordUser.core_user_id);
+        await coreRagClient.clearMemory(discordUser.core_user_id, { guildId, channelId: message.channelId });
         await repositories.interactions.clearUserInteractions(discordUser.core_user_id, interactionId);
         await repositories.users.markCleared(discordUser.core_user_id);
 

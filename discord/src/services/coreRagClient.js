@@ -1,7 +1,9 @@
 import { env } from '../config/env.js';
 import { logger } from '../config/logger.js';
+import crypto from 'node:crypto';
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+const encodeJwtPart = (value) => Buffer.from(JSON.stringify(value)).toString('base64url');
 
 export class CoreRagClient {
   constructor() {
@@ -14,6 +16,29 @@ export class CoreRagClient {
 
   buildUrl(pathname) {
     return new URL(pathname, this.baseUrl).toString();
+  }
+
+  createWorkloadToken({ subjectId, tenantId = null, channelId = null, displayName = null, scopes }) {
+    const now = Math.floor(Date.now() / 1000);
+    const header = encodeJwtPart({ alg: 'HS256', typ: 'JWT' });
+    const payload = encodeJwtPart({
+      sub: subjectId,
+      tenant_id: tenantId,
+      channel_id: channelId,
+      display_name: displayName,
+      scopes,
+      source: 'discord',
+      token_use: 'workload',
+      iss: env.coreRag.workloadJwtIssuer,
+      aud: env.coreRag.workloadJwtAudience,
+      iat: now,
+      exp: now + 120,
+    });
+    const signature = crypto
+      .createHmac('sha256', env.coreRag.workloadJwtSecret)
+      .update(`${header}.${payload}`)
+      .digest('base64url');
+    return `${header}.${payload}.${signature}`;
   }
 
   async requestJson(url, options, { retries = this.retryCount } = {}) {
@@ -70,17 +95,20 @@ export class CoreRagClient {
     throw lastError;
   }
 
-  async ask({ coreUserId, message, username, channelName, guildName, images = [], isEphemeralReference = false } = {}) {
+  async ask({ coreUserId, guildId = null, channelId = null, message, username, channelName, guildName, images = [], isEphemeralReference = false } = {}) {
     const url = this.buildUrl(this.chatPath);
+    const workloadToken = this.createWorkloadToken({
+      subjectId: coreUserId,
+      tenantId: guildId,
+      channelId,
+      displayName: username,
+      scopes: ['chat:write'],
+    });
     const payload = await this.requestJson(url, {
       method: 'POST',
+      headers: { authorization: `Bearer ${workloadToken}` },
       body: JSON.stringify({
-        user_id: coreUserId,
         message,
-        source: 'discord',
-        username,
-        channel_name: channelName,
-        guild_name: guildName,
         images,
         is_ephemeral_reference: isEphemeralReference,
       }),
@@ -109,15 +137,17 @@ export class CoreRagClient {
     isEphemeralReference = false,
   } = {}) {
     const url = this.buildUrl('/api/v1/community/chat');
+    const workloadToken = this.createWorkloadToken({
+      subjectId: coreUserId,
+      tenantId: guildId,
+      channelId,
+      displayName: username,
+      scopes: ['community:write'],
+    });
     const payload = await this.requestJson(url, {
       method: 'POST',
+      headers: { authorization: `Bearer ${workloadToken}` },
       body: JSON.stringify({
-        channel_id: channelId,
-        guild_id: guildId ?? null,
-        channel_name: channelName || 'general',
-        guild_name: guildName ?? null,
-        user_id: coreUserId,
-        username,
         message,
         recent_messages: recentMessages,
         images,
@@ -135,11 +165,18 @@ export class CoreRagClient {
     };
   }
 
-  async clearMemory(coreUserId) {
+  async clearMemory(coreUserId, { guildId = null, channelId = null, scopes = ['chat:clear'] } = {}) {
     const path = this.clearPathTemplate.replace('{user_id}', encodeURIComponent(coreUserId));
     const url = this.buildUrl(path);
+    const workloadToken = this.createWorkloadToken({
+      subjectId: coreUserId,
+      tenantId: guildId,
+      channelId,
+      scopes,
+    });
     const payload = await this.requestJson(url, {
       method: 'DELETE',
+      headers: { authorization: `Bearer ${workloadToken}` },
     });
 
     return payload;
@@ -150,8 +187,15 @@ export class CoreRagClient {
     if (channelId) queryParams += `&channel_id=${encodeURIComponent(channelId)}`;
     if (coreUserId) queryParams += `&user_id=${encodeURIComponent(coreUserId)}`;
     const url = this.buildUrl(`/api/v1/community/clear/${encodeURIComponent(guildId)}?${queryParams}`);
+    const workloadToken = this.createWorkloadToken({
+      subjectId: coreUserId ?? 'discord-guild-admin',
+      tenantId: guildId,
+      channelId: channelId ?? null,
+      scopes: [scope === 'all' ? 'community:clear:any' : 'community:clear:self'],
+    });
     const payload = await this.requestJson(url, {
       method: 'DELETE',
+      headers: { authorization: `Bearer ${workloadToken}` },
     });
 
     return payload;

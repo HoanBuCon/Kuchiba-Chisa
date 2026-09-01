@@ -325,8 +325,13 @@ class MasterIngestionPipeline:
         print(f"[+] Chunking completed: {len(all_chunks)} chunks written to {self.chunks_path}")
         return all_chunks
 
-    async def stage_5b_ingest(self, chunks: list[Chunk] | None = None) -> tuple[int, int]:
-        """Stage 5b: Upsert embeddings to Qdrant & Parent sections to PostgreSQL."""
+    async def stage_5b_ingest(
+        self,
+        chunks: list[Chunk] | None = None,
+        *,
+        staging_version: str,
+    ) -> tuple[int, int]:
+        """Stage 5b: acknowledged writes to a versioned Qdrant staging corpus."""
         print("\n=======================================================")
         print("🚀 STAGE 5B: INGESTION TO QDRANT & POSTGRESQL")
         print("=======================================================")
@@ -340,25 +345,30 @@ class MasterIngestionPipeline:
                     if line.strip():
                         chunks.append(Chunk.model_validate_json(line))
 
-        qdrant_synced = 0
-        postgres_synced = 0
+        from app.infrastructure.embeddings.fastembed_adapter import FastEmbedAdapter
+        from app.infrastructure.ingestion.storage.qdrant_sync import QdrantSyncManager
 
-        try:
-            from app.infrastructure.ingestion.storage.qdrant_sync import QdrantSyncManager
-            from app.infrastructure.embeddings.fastembed_adapter import FastEmbedAdapter
-            sync_mgr = QdrantSyncManager()
-            embedder = FastEmbedAdapter()
-            texts_to_embed = [f"{c.context_prefix}\n{c.text_content}" for c in chunks]
-            vectors = await embedder.embed_batch(texts_to_embed, prefix="passage: ")
-            chunks_with_vectors = list(zip(chunks, vectors))
-            qdrant_synced = await sync_mgr.upsert_chunk_batch(chunks_with_vectors)
-            print(f"[+] Qdrant Vector Sync: Successfully ingested {qdrant_synced} chunks.")
-        except Exception as e:
-            logger.warning("qdrant_sync_warning", error=str(e))
-            print(f"[!] Qdrant Sync encountered warning: {e} (Using fallback/local chunks)")
-            qdrant_synced = len(chunks)
-
-        return qdrant_synced, postgres_synced
+        sync_mgr = QdrantSyncManager()
+        embedder = FastEmbedAdapter()
+        texts_to_embed = [f"{chunk.context_prefix}\n{chunk.text_content}" for chunk in chunks]
+        vectors = await embedder.embed_batch(texts_to_embed, prefix="passage: ")
+        if len(vectors) != len(chunks):
+            raise RuntimeError(
+                "Embedding provider returned a vector count that does not match "
+                "the staged chunk count"
+            )
+        target_collections = await sync_mgr.prepare_staging_targets(
+            chunks,
+            staging_version=staging_version,
+        )
+        qdrant_synced = await sync_mgr.upsert_chunk_batch(
+            list(zip(chunks, vectors, strict=True)),
+            target_collections=target_collections,
+        )
+        if qdrant_synced != len(chunks):
+            raise RuntimeError("Qdrant acknowledgement count does not match the staged chunk count")
+        print(f"[+] Qdrant staging sync acknowledged {qdrant_synced} chunks.")
+        return qdrant_synced, 0
 
     async def stage_6_benchmark(self) -> BenchmarkResult:
         """Stage 6: Automated Retrieval Accuracy Benchmark."""
@@ -389,7 +399,12 @@ class MasterIngestionPipeline:
                     selected.add(val)
         return sorted(selected)
 
-    async def run_reviewed_update(self, categories: Optional[List[str]] = None) -> PipelineExecutionSummary:
+    async def run_reviewed_update(
+        self,
+        categories: list[str] | None = None,
+        *,
+        staging_version: str,
+    ) -> PipelineExecutionSummary:
         """
         Interactive Mode:
         1. Scan Wiki and detect new / modified pages compared to local storage.
@@ -477,7 +492,10 @@ class MasterIngestionPipeline:
 
         # Stage 5a & 5b: Chunk & Ingest
         chunks = self.stage_5a_chunk(pages)
-        q_count, p_count = await self.stage_5b_ingest(chunks)
+        q_count, p_count = await self.stage_5b_ingest(
+            chunks,
+            staging_version=staging_version,
+        )
 
         # Stage 6: Benchmark
         bm_res = await self.stage_6_benchmark()
@@ -495,7 +513,13 @@ class MasterIngestionPipeline:
             success=True,
         )
 
-    async def run(self, mode: str = "full", categories: Optional[List[str]] = None) -> PipelineExecutionSummary:
+    async def run(
+        self,
+        mode: str = "full",
+        categories: list[str] | None = None,
+        *,
+        staging_version: str | None = None,
+    ) -> PipelineExecutionSummary:
         """Executes the pipeline according to the requested mode."""
         t0 = time.perf_counter()
         summary = PipelineExecutionSummary(
@@ -505,7 +529,12 @@ class MasterIngestionPipeline:
 
         try:
             if mode in ("reviewed", "update"):
-                return await self.run_reviewed_update(categories=categories)
+                if not staging_version:
+                    raise ValueError("--staging-version is required for an ingestion mode")
+                return await self.run_reviewed_update(
+                    categories=categories,
+                    staging_version=staging_version,
+                )
 
             elif mode == "scan":
                 summary.scan_report = await self.stage_1_2_scan(categories)
@@ -519,12 +548,17 @@ class MasterIngestionPipeline:
                 summary.clean_markdown_count = len(pages)
 
             elif mode == "reingest":
+                if not staging_version:
+                    raise ValueError("--staging-version is required for an ingestion mode")
                 pages = self.stage_4_clean()
                 summary.canonical_pages_count = len(pages)
                 summary.clean_markdown_count = len(pages)
                 chunks = self.stage_5a_chunk(pages)
                 summary.chunks_count = len(chunks)
-                q_count, p_count = await self.stage_5b_ingest(chunks)
+                q_count, p_count = await self.stage_5b_ingest(
+                    chunks,
+                    staging_version=staging_version,
+                )
                 summary.synced_to_qdrant_count = q_count
                 summary.synced_to_postgres_count = p_count
                 summary.benchmark_result = await self.stage_6_benchmark()
@@ -533,6 +567,8 @@ class MasterIngestionPipeline:
                 summary.benchmark_result = await self.stage_6_benchmark()
 
             elif mode == "full":
+                if not staging_version:
+                    raise ValueError("--staging-version is required for an ingestion mode")
                 # 1 -> 2 -> 3
                 summary.scan_report = await self.stage_3_crawl(categories)
                 # 4
@@ -543,7 +579,10 @@ class MasterIngestionPipeline:
                 chunks = self.stage_5a_chunk(pages)
                 summary.chunks_count = len(chunks)
                 # 5b
-                q_count, p_count = await self.stage_5b_ingest(chunks)
+                q_count, p_count = await self.stage_5b_ingest(
+                    chunks,
+                    staging_version=staging_version,
+                )
                 summary.synced_to_qdrant_count = q_count
                 summary.synced_to_postgres_count = p_count
                 # 6
@@ -583,10 +622,20 @@ def main():
         default=str(DEFAULT_RAW_DIR),
         help="Raw wiki storage directory",
     )
+    parser.add_argument(
+        "--staging-version",
+        help="Required for full/reingest/reviewed ingestion; retry the same version after failure.",
+    )
     args = parser.parse_args()
 
     pipeline = MasterIngestionPipeline(raw_dir=Path(args.raw_dir))
-    asyncio.run(pipeline.run(mode=args.mode, categories=args.categories))
+    asyncio.run(
+        pipeline.run(
+            mode=args.mode,
+            categories=args.categories,
+            staging_version=args.staging_version,
+        )
+    )
 
 
 if __name__ == "__main__":
