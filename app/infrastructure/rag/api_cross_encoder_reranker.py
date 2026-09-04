@@ -9,7 +9,11 @@ from typing import Any
 
 import httpx
 
-from app.domain.interfaces.reranker import RerankerDataBoundary, RerankerUnavailableError
+from app.domain.interfaces.reranker import (
+    RerankerDataBoundary,
+    RerankerFailureKind,
+    RerankerUnavailableError,
+)
 from app.domain.services.guardrails.pii_redaction import PiiRedactor
 
 
@@ -81,8 +85,13 @@ class ApiCrossEncoderReranker:
             "model": self._model_name,
             "query": redacted_query,
             "documents": redacted_documents,
-            "top_n": len(documents),
         }
+        if self._provider is ApiRerankerProvider.VOYAGE:
+            # Voyage names this field ``top_k``.  Using the Cohere/Jina
+            # spelling (``top_n``) makes a valid model request fail with 400.
+            payload["top_k"] = len(documents)
+        else:
+            payload["top_n"] = len(documents)
         if self._provider is ApiRerankerProvider.JINA:
             payload["return_documents"] = False
 
@@ -98,10 +107,30 @@ class ApiCrossEncoderReranker:
             )
             response.raise_for_status()
             response_payload = response.json()
-        except (httpx.TimeoutException, httpx.RequestError, httpx.HTTPStatusError) as error:
-            raise RerankerUnavailableError("remote reranker is unavailable") from error
+        except httpx.TimeoutException as error:
+            raise RerankerUnavailableError(
+                "remote reranker timed out",
+                failure_kind=RerankerFailureKind.TIMEOUT,
+            ) from error
+        except httpx.HTTPStatusError as error:
+            failure_kind = (
+                RerankerFailureKind.RATE_LIMIT
+                if error.response.status_code == 429
+                else RerankerFailureKind.PROVIDER
+            )
+            raise RerankerUnavailableError(
+                "remote reranker is unavailable", failure_kind=failure_kind
+            ) from error
+        except httpx.RequestError as error:
+            raise RerankerUnavailableError(
+                "remote reranker is unavailable",
+                failure_kind=RerankerFailureKind.PROVIDER,
+            ) from error
         except (TypeError, ValueError) as error:
-            raise RerankerUnavailableError("remote reranker returned invalid JSON") from error
+            raise RerankerUnavailableError(
+                "remote reranker returned invalid JSON",
+                failure_kind=RerankerFailureKind.INVALID_RESPONSE,
+            ) from error
 
         return self._parse_scores(response_payload, len(documents))
 
