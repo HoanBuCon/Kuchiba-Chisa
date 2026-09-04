@@ -1,32 +1,99 @@
-from typing import Any, Dict, List, Optional
-from pydantic import BaseModel, Field, model_validator
+from typing import Any
+
+from pydantic import BaseModel, ConfigDict, Field, model_validator
+
+from app.application.security.input_limits import InputLimitPolicy
+from app.config.settings import settings
+
+
+def _empty_strings() -> list[str]:
+    return []
+
+
+def _empty_message_list() -> list["CommunityMessageIn"]:
+    return []
+
+
+def _empty_image_metadata() -> list[dict[str, Any]]:
+    return []
 
 
 class CommunityMessageIn(BaseModel):
-    message_id: str = Field(default="", description="Unique Discord/Platform message ID")
-    speaker_id: str = Field(..., description="ID of the user who sent the message")
-    speaker_name: str = Field(..., description="Display name / Username of the speaker")
-    content: str = Field(..., description="Text content of the message")
-    reply_to_speaker: Optional[str] = Field(default=None, description="Username of user being replied to")
-    reply_to_content: Optional[str] = Field(default=None, description="Snippet of message being replied to")
+    model_config = ConfigDict(extra="forbid")
+
+    message_id: str = Field(
+        default="",
+        max_length=settings.COMMUNITY_MAX_IDENTIFIER_CHARS,
+        description="Unique Discord/Platform message ID",
+    )
+    speaker_id: str = Field(
+        ...,
+        max_length=settings.COMMUNITY_MAX_IDENTIFIER_CHARS,
+        description="ID of the user who sent the message",
+    )
+    speaker_name: str = Field(
+        ...,
+        max_length=settings.COMMUNITY_MAX_IDENTIFIER_CHARS,
+        description="Display name / Username of the speaker",
+    )
+    content: str = Field(
+        ...,
+        max_length=settings.COMMUNITY_MAX_MESSAGE_CHARS,
+        description="Text content of the message",
+    )
+    reply_to_speaker: str | None = Field(
+        default=None,
+        max_length=settings.COMMUNITY_MAX_IDENTIFIER_CHARS,
+        description="Username of user being replied to",
+    )
+    reply_to_content: str | None = Field(
+        default=None,
+        max_length=settings.COMMUNITY_MAX_REPLY_CONTEXT_CHARS,
+        description="Snippet of message being replied to",
+    )
     is_bot: bool = Field(default=False, description="True if message is from a bot/assistant")
-    created_at: Optional[str] = Field(default=None, description="ISO timestamp string")
+    created_at: str | None = Field(
+        default=None,
+        max_length=settings.COMMUNITY_MAX_TIMESTAMP_CHARS,
+        description="ISO timestamp string",
+    )
 
 
 class CommunityChatRequest(BaseModel):
-    channel_id: str = Field(..., description="Discord Channel ID")
-    guild_id: Optional[str] = Field(default=None, description="Discord Guild/Server ID")
-    channel_name: str = Field(default="general", description="Name of the channel")
-    guild_name: Optional[str] = Field(default=None, description="Name of the guild/server")
-    user_id: str = Field(..., description="Current speaker Discord User ID")
-    username: str = Field(..., description="Current speaker display name / username")
-    message: Optional[str] = Field(default="", description="User message addressing Chisa")
-    recent_messages: List[CommunityMessageIn] = Field(default_factory=list, description="Recent channel transcript")
-    images: Optional[List[str]] = Field(default_factory=list, description="Optional list of image URLs or Base64 Data URIs")
-    is_ephemeral_reference: Optional[bool] = Field(default=False, description="True if images are from referenced community messages without permanent saving")
+    """Community content carried by a verified Discord workload envelope.
+
+    Actor, tenant, and channel claims are deliberately excluded: they are
+    taken only from the verified workload credential at the route boundary.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    message: str | None = Field(
+        default="",
+        max_length=settings.CHAT_MAX_MESSAGE_CHARS,
+        description="User message addressing Chisa",
+    )
+    recent_messages: list[CommunityMessageIn] = Field(
+        default_factory=_empty_message_list,
+        max_length=settings.COMMUNITY_MAX_HISTORY_MESSAGES,
+        description="Recent channel transcript",
+    )
+    images: list[str] | None = Field(
+        default_factory=_empty_strings,
+        max_length=settings.VISION_MAX_IMAGES,
+        description="Optional list of image URLs or Base64 Data URIs",
+    )
+    is_ephemeral_reference: bool | None = Field(
+        default=False,
+        description=(
+            "True if images are from referenced community messages without permanent saving"
+        ),
+    )
 
     @model_validator(mode="after")
     def validate_message_or_images(self) -> "CommunityChatRequest":
+        InputLimitPolicy.validate_community_history(self.recent_messages)
+        InputLimitPolicy.validate_images(self.images)
         msg = (self.message or "").strip()
         has_imgs = bool(self.images and len(self.images) > 0)
         if not msg and not has_imgs:
@@ -40,9 +107,22 @@ class CommunityChatRequest(BaseModel):
 
 class CommunityChatResponse(BaseModel):
     response: str = Field(..., description="Chisa's reply in the community channel")
-    emotions: Dict[str, Any] = Field(default_factory=dict, description="Updated emotion state with current speaker")
-    emotion_caption: Optional[str] = Field(default=None, description="Dynamic psychological summary caption")
-    sentiment: Optional[Dict[str, Any]] = Field(default=None, description="Sentiment analysis of interaction")
-    execution_time_ms: float = Field(default=0.0, description="Pipeline execution duration in milliseconds")
-    images_processed: Optional[List[Dict[str, Any]]] = Field(default_factory=list, description="Metadata of processed images")
-    attached_images: Optional[List[str]] = Field(default_factory=list, description="List of retrieved image URLs attached in response")
+    emotions: dict[str, Any] = Field(
+        default_factory=dict, description="Updated emotion state with current speaker"
+    )
+    emotion_caption: str | None = Field(
+        default=None, description="Dynamic psychological summary caption"
+    )
+    sentiment: dict[str, Any] | None = Field(
+        default=None, description="Sentiment analysis of interaction"
+    )
+    execution_time_ms: float = Field(
+        default=0.0, description="Pipeline execution duration in milliseconds"
+    )
+    images_processed: list[dict[str, Any]] | None = Field(
+        default_factory=_empty_image_metadata, description="Metadata of processed images"
+    )
+    attached_images: list[str] | None = Field(
+        default_factory=_empty_strings,
+        description="List of retrieved image URLs attached in response",
+    )

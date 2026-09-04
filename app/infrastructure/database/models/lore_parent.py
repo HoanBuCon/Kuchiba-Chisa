@@ -36,7 +36,7 @@ class LoreParentModel(Base, UUIDMixin, TimestampMixin):
 
     @classmethod
     def from_domain(cls, entity: LoreParent) -> "LoreParentModel":
-        return cls(
+        model = cls(
             id=entity.id,
             page_id=entity.page_id,
             page_title=entity.page_title,
@@ -47,6 +47,9 @@ class LoreParentModel(Base, UUIDMixin, TimestampMixin):
             section_id=entity.section_id,
             heading_path=entity.heading_path,
             section_depth=entity.section_depth,
-            created_at=entity.created_at,
-            updated_at=entity.updated_at
         )
+        if entity.created_at is not None:
+            model.created_at = entity.created_at
+        if entity.updated_at is not None:
+            model.updated_at = entity.updated_at
+        return model

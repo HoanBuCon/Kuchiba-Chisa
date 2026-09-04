@@ -33,18 +33,32 @@ class CommunityTopicSummarizer:
             "required": ["topic_summary"]
         }
 
-    def _counter_key(self, channel_id: str) -> str:
-        return f"chisa:channel:{channel_id}:msg_count"
+    @staticmethod
+    def _channel_prefix(channel_id: str, guild_id: str | None = None) -> str:
+        if guild_id:
+            return f"chisa:guild:{guild_id}:channel:{channel_id}"
+        return f"chisa:channel:{channel_id}"
 
-    def _summary_key(self, channel_id: str) -> str:
-        return f"chisa:channel:{channel_id}:topic_summary"
+    @classmethod
+    def summary_cache_key(cls, channel_id: str, guild_id: str | None = None) -> str:
+        return f"{cls._channel_prefix(channel_id, guild_id)}:topic_summary"
 
-    def _buffer_key(self, channel_id: str) -> str:
-        return f"chisa:channel:{channel_id}:rolling_buffer"
+    def _counter_key(self, channel_id: str, guild_id: str | None = None) -> str:
+        return f"{self._channel_prefix(channel_id, guild_id)}:msg_count"
 
-    async def increment_message_count(self, channel_id: str) -> int:
+    def _summary_key(self, channel_id: str, guild_id: str | None = None) -> str:
+        return self.summary_cache_key(channel_id, guild_id)
+
+    def _buffer_key(self, channel_id: str, guild_id: str | None = None) -> str:
+        return f"{self._channel_prefix(channel_id, guild_id)}:rolling_buffer"
+
+    @staticmethod
+    def _channel_index_key(guild_id: str) -> str:
+        return f"chisa:guild:{guild_id}:community_channels"
+
+    async def increment_message_count(self, channel_id: str, guild_id: str | None = None) -> int:
         """Increment message counter for the channel in Redis."""
-        key = self._counter_key(channel_id)
+        key = self._counter_key(channel_id, guild_id)
         try:
             val = await self.cache.get(key)
             count = (int(val) if val else 0) + 1
@@ -54,11 +68,13 @@ class CommunityTopicSummarizer:
             log.warning("Failed to increment channel message counter in Redis", channel_id=channel_id, error=str(e))
             return 1
 
-    async def get_topic_summary(self, channel_id: str) -> Optional[str]:
+    async def get_topic_summary(
+        self, channel_id: str, guild_id: str | None = None
+    ) -> str | None:
         """Fetch active topic summary from Redis."""
         if not channel_id:
             return None
-        key = self._summary_key(channel_id)
+        key = self._summary_key(channel_id, guild_id)
         try:
             summary = await self.cache.get(key)
             return summary.strip() if summary else None
@@ -66,12 +82,14 @@ class CommunityTopicSummarizer:
             log.warning("Failed to fetch channel topic summary from Redis", channel_id=channel_id, error=str(e))
             return None
 
-    async def get_rolling_buffer(self, channel_id: str) -> List[Dict[str, Any]]:
+    async def get_rolling_buffer(
+        self, channel_id: str, guild_id: str | None = None
+    ) -> list[dict[str, Any]]:
         """Fetch accumulated rolling message buffer from Redis."""
         if not channel_id:
             return []
         try:
-            buf = await self.cache.get_json(self._buffer_key(channel_id))
+            buf = await self.cache.get_json(self._buffer_key(channel_id, guild_id))
             return buf if isinstance(buf, list) else []
         except Exception as e:
             log.warning("Failed to fetch channel rolling buffer from Redis", channel_id=channel_id, error=str(e))
@@ -83,6 +101,7 @@ class CommunityTopicSummarizer:
         messages: Optional[List[Any]] = None,
         current_user_turn: Optional[Dict[str, Any]] = None,
         current_assistant_turn: Optional[Dict[str, Any]] = None,
+        guild_id: str | None = None,
     ) -> None:
         """
         Appends new channel messages and the current conversation turn to the Redis Rolling Buffer.
@@ -92,7 +111,7 @@ class CommunityTopicSummarizer:
             return
 
         try:
-            buffer: List[Dict[str, Any]] = await self.get_rolling_buffer(channel_id)
+            buffer: list[dict[str, Any]] = await self.get_rolling_buffer(channel_id, guild_id)
 
             def _msg_sig(m: Any) -> tuple:
                 if isinstance(m, dict):
@@ -161,7 +180,19 @@ class CommunityTopicSummarizer:
             if len(buffer) > self.BUFFER_MAX_MESSAGES:
                 buffer = buffer[-self.BUFFER_MAX_MESSAGES:]
 
-            await self.cache.set_json(self._buffer_key(channel_id), buffer, ttl=self.SUMMARY_TTL_SECONDS)
+            await self.cache.set_json(
+                self._buffer_key(channel_id, guild_id), buffer, ttl=self.SUMMARY_TTL_SECONDS
+            )
+            if guild_id:
+                index_key = self._channel_index_key(guild_id)
+                known_channels = await self.cache.get_json(index_key)
+                channel_ids = known_channels if isinstance(known_channels, list) else []
+                if channel_id not in channel_ids:
+                    await self.cache.set_json(
+                        index_key,
+                        [*channel_ids, channel_id],
+                        ttl=self.SUMMARY_TTL_SECONDS,
+                    )
         except Exception as e:
             log.warning("Failed to append messages to Redis rolling buffer", channel_id=channel_id, error=str(e))
 
@@ -178,7 +209,7 @@ class CommunityTopicSummarizer:
         2. Accumulated History Buffer (Redis Rolling Buffer)
         3. Live Recent Channel Messages (15 raw Discord messages)
         """
-        rolling_buffer = await self.get_rolling_buffer(channel_id)
+        rolling_buffer = await self.get_rolling_buffer(channel_id, guild_id)
         live_messages = messages or []
 
         if not rolling_buffer and not live_messages:
@@ -213,7 +244,7 @@ class CommunityTopicSummarizer:
             return None
 
         # 3. Fetch Previous Summary from Redis
-        previous_summary = await self.get_topic_summary(channel_id)
+        previous_summary = await self.get_topic_summary(channel_id, guild_id)
 
         # Build 3-Tier User Message Sections
         sections = []
@@ -261,7 +292,7 @@ class CommunityTopicSummarizer:
 
             if summary_text:
                 await self.cache.set(
-                    self._summary_key(channel_id),
+                    self._summary_key(channel_id, guild_id),
                     summary_text,
                     ttl=self.SUMMARY_TTL_SECONDS
                 )
@@ -269,7 +300,11 @@ class CommunityTopicSummarizer:
                 # Trim rolling buffer to retain last BUFFER_OVERLAP_MESSAGES for subsequent continuity
                 if rolling_buffer and len(rolling_buffer) > self.BUFFER_OVERLAP_MESSAGES:
                     trimmed = rolling_buffer[-self.BUFFER_OVERLAP_MESSAGES:]
-                    await self.cache.set_json(self._buffer_key(channel_id), trimmed, ttl=self.SUMMARY_TTL_SECONDS)
+                    await self.cache.set_json(
+                        self._buffer_key(channel_id, guild_id),
+                        trimmed,
+                        ttl=self.SUMMARY_TTL_SECONDS,
+                    )
 
                 sample_transcript = (formatted_live_transcript or formatted_history_transcript)[:300]
                 log.info("Community topic summary updated in Redis", channel_id=channel_id, summary_length=len(summary_text))

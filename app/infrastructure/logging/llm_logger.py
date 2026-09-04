@@ -1,19 +1,21 @@
 import asyncio
-import os
 import json
 import logging
-from logging.handlers import RotatingFileHandler
+import os
 from datetime import datetime, timezone
+from logging.handlers import RotatingFileHandler
 from typing import Any, List
-from app.domain.interfaces.llm_provider import StructuredPrompt, LLMResponse
+
 from app.config.settings import settings
 from app.domain.context import (
+    enable_clean_log,
+    llm_call_purpose,
     request_question_idx,
     request_turn_idx,
-    llm_call_purpose,
-    enable_clean_log
 )
+from app.domain.interfaces.llm_provider import LLMResponse, StructuredPrompt
 from app.infrastructure.logging.pipeline_tracker import current_trace_var
+from app.infrastructure.logging.telemetry_redaction import redact_telemetry_payload
 
 # ─── JSON Formatter ───────────────────────────────────────────────────────────
 
@@ -21,9 +23,9 @@ class LLMTelemetryFormatter(logging.Formatter):
     """Formats log records as JSON lines with an ISO8601 UTC timestamp."""
     def format(self, record: logging.LogRecord) -> str:
         if isinstance(record.msg, dict):
-            data = record.msg.copy()
+            data = redact_telemetry_payload(record.msg)
         else:
-            data = {"message": str(record.msg)}
+            data = {"event_type": "unstructured_telemetry"}
             
         # Ensure timestamp is ISO8601 UTC
         data["timestamp"] = datetime.now(timezone.utc).isoformat()
@@ -95,16 +97,14 @@ def _write_routing_log_sync(
     payload = {
         "event_type": "semantic_routing",
         "request_id": trace.get("id") if trace else None,
-        "user_id": trace.get("user_id") if trace else None,
         "question_idx": q_idx,
-        "user_message": user_message,
+        "input_char_count": len(user_message),
         "is_small_talk": is_small_talk,
-        "intents": intents,
-        "tool_routing": {
-            "tool_name": tool_name,
-            "confidence": tool_score,
-            "result_summary": tool_result if tool_result else None
-        }
+        "tool_score": tool_score,
+        "has_tool_result": bool(tool_result),
+        "tool_result_char_count": len(tool_result),
+        "has_intents": bool(intents),
+        "tool_name": tool_name,
     }
     llm_telemetry_logger.info(payload)
 
@@ -150,18 +150,9 @@ def _write_log_sync(prompt: StructuredPrompt, response: LLMResponse, q_idx: int,
         "memory_count": len(prompt.retrieved_memories) if prompt.retrieved_memories else 0
     }
     
-    # Optional intent from trace
-    intent = None
-    if trace and "steps" in trace:
-        for step in trace["steps"]:
-            if step.get("name") == "intent_stage":
-                intent = step.get("data", {}).get("intents")
-                break
-    
     payload = {
         "event_type": "llm_generation",
         "request_id": trace.get("id") if trace else None,
-        "user_id": trace.get("user_id") if trace else None,
         "provider": settings.LLM_PROVIDER,
         "model": response.model,
         "purpose": purpose,
@@ -171,17 +162,13 @@ def _write_log_sync(prompt: StructuredPrompt, response: LLMResponse, q_idx: int,
         "completion_tokens": response.output_tokens,
         "reasoning_tokens": getattr(response, "reasoning_tokens", 0),
         "total_tokens": response.input_tokens + response.output_tokens,
-        "intent": intent,
         "retrieval_metadata": retrieval_metadata,
         "status": "success",
-        
-        # Additional debug details
-        "details": {
-            "question_idx": q_idx,
-            "turn_idx": t_idx,
-            "finish_reason": response.finish_reason,
-            "parsed_response": response.parsed
-        }
+        "question_idx": q_idx,
+        "turn_idx": t_idx,
+        "finish_reason": response.finish_reason,
+        "has_structured_response": bool(response.parsed),
+        "has_reasoning": bool(getattr(response, "reasoning_content", None)),
     }
     llm_telemetry_logger.info(payload)
 
@@ -247,8 +234,9 @@ def compute_token_breakdown(prompt: StructuredPrompt, response: LLMResponse) -> 
     user_tokens = TokenEstimator.estimate(user_text)
 
     reasoning_tokens = getattr(response, "reasoning_tokens", 0) or 0
-    if not reasoning_tokens and getattr(response, "reasoning_content", None):
-        reasoning_tokens = TokenEstimator.estimate(response.reasoning_content)
+    reasoning_content = getattr(response, "reasoning_content", None)
+    if not reasoning_tokens and isinstance(reasoning_content, str):
+        reasoning_tokens = TokenEstimator.estimate(reasoning_content)
 
     output_tokens = response.output_tokens or TokenEstimator.estimate(response.raw_content or "")
     total_input = response.input_tokens or (total_system_tokens + history_tokens + user_tokens)
@@ -291,12 +279,6 @@ async def log_llm_transaction(prompt: StructuredPrompt, response: LLMResponse) -
             is_main_chat = (purpose == "chat_response" or not purpose or purpose == "unknown")
 
             if is_main_chat:
-                parsed = response.parsed if isinstance(response.parsed, dict) else {}
-                sentiment_analysis = parsed.get("sentiment") or parsed.get("sentiment_analysis", {})
-                user_sentiment = parsed.get("user_sentiment", {})
-                chisa_sentiment = parsed.get("chisa_sentiment", {})
-                chisa_reply = parsed.get("response") or parsed.get("reply") or response.raw_content or ""
-
                 pipeline_tracker.add_step(
                     name="llm_generation",
                     stage_id="stage_7_llm",
@@ -313,21 +295,13 @@ async def log_llm_transaction(prompt: StructuredPrompt, response: LLMResponse) -
                         "total_tokens": token_breakdown["total_tokens"],
                         "token_breakdown": token_breakdown,
                         "finish_reason": response.finish_reason,
-                        "raw_response": response.raw_content,
-                        "parsed_response": response.parsed,
-                        "response_preview": (chisa_reply[:200] + "...") if len(chisa_reply) > 200 else chisa_reply,
-                        "sentiment": sentiment_analysis,
-                        "user_sentiment": user_sentiment,
-                        "chisa_sentiment": chisa_sentiment,
                         "purpose": purpose or "chat_response",
                         "purpose_label": purpose_label(purpose or "chat_response"),
                         "call_index": t_idx,
                         "token_source": "api",
-                        "system_prompt": prompt.system,
-                        "user_message": prompt.user_message,
                         "use_deep_thinking": is_deep_thinking,
-                        "reasoning_content": response.reasoning_content,
-                        "history": prompt.history,
+                        "has_structured_response": bool(response.parsed),
+                        "has_reasoning": bool(response.reasoning_content),
                         "temperature": getattr(prompt, "temperature", 0.5),
                         "status": "success"
                     }
@@ -354,24 +328,24 @@ async def log_llm_transaction(prompt: StructuredPrompt, response: LLMResponse) -
                                 s["data"]["llm_rewrite_telemetry"] = {
                                     "model": response.model,
                                     "tokens": token_breakdown,
-                                    "raw_response": response.raw_content,
-                                    "parsed_response": response.parsed
+                                    "has_structured_response": bool(response.parsed),
+                                    "has_reasoning": bool(response.reasoning_content),
                                 }
                                 break
                             elif purpose in ("alignment_assessor", "context_assessor") and s.get("name") in ("information_alignment_check", "alignment_assessment"):
                                 s["data"]["assessor_llm_telemetry"] = {
                                     "model": response.model,
                                     "tokens": token_breakdown,
-                                    "raw_response": response.raw_content,
-                                    "parsed_response": response.parsed
+                                    "has_structured_response": bool(response.parsed),
+                                    "has_reasoning": bool(response.reasoning_content),
                                 }
                                 break
                             elif purpose.startswith("thinking_loop_cycle_") and s.get("name") == purpose:
                                 s["data"]["llm_telemetry"] = {
                                     "model": response.model,
                                     "tokens": token_breakdown,
-                                    "raw_response": response.raw_content,
-                                    "parsed_response": response.parsed
+                                    "has_structured_response": bool(response.parsed),
+                                    "has_reasoning": bool(response.reasoning_content),
                                 }
                                 break
         except Exception:

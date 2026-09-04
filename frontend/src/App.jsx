@@ -41,16 +41,39 @@ const saveConversations = (convs) => {
   }
 };
 
-const BASE = 'http://localhost:8000/api/v1';
+const BASE = import.meta.env.VITE_API_BASE_URL ?? '/api/v1';
+const WEB_SESSION_STORAGE_KEY = 'chisa_web_session_v1';
+
+async function getWebSession() {
+  const existingToken = sessionStorage.getItem(WEB_SESSION_STORAGE_KEY);
+  const requestSession = async (token) => fetch(`${BASE}/auth/anonymous-session`, {
+    method: 'POST',
+    headers: token ? { authorization: `Bearer ${token}` } : {},
+  });
+
+  let response = existingToken ? await requestSession(existingToken) : null;
+  if (!response || !response.ok) {
+    sessionStorage.removeItem(WEB_SESSION_STORAGE_KEY);
+    response = await requestSession(null);
+  }
+  if (!response.ok) {
+    throw new Error(`Unable to establish web session (${response.status})`);
+  }
+
+  const session = await response.json();
+  sessionStorage.setItem(WEB_SESSION_STORAGE_KEY, session.access_token);
+  return session;
+}
 const GREETING = { role: 'chisa', content: 'Chào Senpai~ Em là Chisa đây ♡  Hôm nay Senpai có gì muốn tâm sự với em không?' };
 
 // ── SSE Chat Streaming Handler ───────────────────────────────────────────
-async function streamChatResponse(payload, { onLoopThinkingStart, onToken } = {}) {
+async function streamChatResponse(payload, accessToken, { onLoopThinkingStart, onToken } = {}) {
   const response = await fetch(`${BASE}/chat/stream`, {
     method: 'POST',
     headers: {
       'content-type': 'application/json',
       accept: 'text/event-stream',
+      authorization: `Bearer ${accessToken}`,
     },
     body: JSON.stringify(payload),
   });
@@ -121,7 +144,7 @@ async function streamChatResponse(payload, { onLoopThinkingStart, onToken } = {}
 }
 
 // ── Emotion Status Summary Helper (21 Plutchik Dyads & Nuances) ──────────
-export function getEmotionStatusSummary(emotions = {}) {
+function getEmotionStatusSummary(emotions = {}) {
   const trust = Number(emotions.trust || 0);
   const attachment = Number(emotions.attachment || 0);
   const shyness = Number(emotions.shyness || 0);
@@ -395,6 +418,7 @@ export default function App() {
   const [emotionCaption, setEmotionCaption] = useState('');
   const [isHistoryLoading, setIsHistoryLoading] = useState(true);
   const [isEmotionOpen, setIsEmotionOpen]   = useState(false);
+  const [webSession, setWebSession]         = useState(null);
 
   const messagesEndRef = useRef(null);
   const textareaRef    = useRef(null);
@@ -402,12 +426,24 @@ export default function App() {
   const scrollToBottom = () =>
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
 
-  // Fetch history & emotions whenever activeSessionId changes
   useEffect(() => {
+    let active = true;
+    getWebSession()
+      .then(session => {
+        if (active) setWebSession(session);
+      })
+      .catch(console.error);
+    return () => { active = false; };
+  }, []);
+
+  // Backend memory belongs to the verified principal, never a local UI thread ID.
+  useEffect(() => {
+    if (!webSession) return undefined;
     setIsHistoryLoading(true);
+    const config = { headers: { authorization: `Bearer ${webSession.access_token}` } };
     
     // Fetch History
-    axios.get(`${BASE}/chat/history/${activeSessionId}?limit=50`)
+    axios.get(`${BASE}/chat/history/${webSession.subject_id}?limit=50`, config)
       .then(res => {
         const hist = res.data?.history || [];
         setMessages(hist.length
@@ -419,7 +455,7 @@ export default function App() {
       .finally(() => setIsHistoryLoading(false));
 
     // Fetch Emotions
-    axios.get(`${BASE}/chat/emotions/${activeSessionId}`)
+    axios.get(`${BASE}/chat/emotions/${webSession.subject_id}`, config)
       .then(res => {
         if (res.data) {
           setEmotions(res.data);
@@ -427,7 +463,8 @@ export default function App() {
         }
       })
       .catch(console.error);
-  }, [activeSessionId]);
+    return undefined;
+  }, [webSession]);
 
   useEffect(() => { scrollToBottom(); }, [messages, isLoading]);
 
@@ -467,7 +504,12 @@ export default function App() {
     }
 
     try {
-      await axios.delete(`${BASE}/chat/clear/${id}`).catch(console.error);
+      if (webSession) {
+        await axios.delete(
+          `${BASE}/chat/clear/${webSession.subject_id}`,
+          { headers: { authorization: `Bearer ${webSession.access_token}` } },
+        ).catch(console.error);
+      }
     } catch {
       // Ignore backend delete errors if network issue
     }
@@ -497,7 +539,11 @@ export default function App() {
     setMessages(prev => [...prev, { role: 'user', content: '/clear' }]);
     setIsLoading(true);
     try {
-      const res = await axios.delete(`${BASE}/chat/clear/${activeSessionId}`);
+      if (!webSession) throw new Error('Web session is unavailable');
+      const res = await axios.delete(
+        `${BASE}/chat/clear/${webSession.subject_id}`,
+        { headers: { authorization: `Bearer ${webSession.access_token}` } },
+      );
       setMessages([{ role: 'chisa', content: `🌸 ${res.data?.message || 'Ký ức đã được xóa!'}` }]);
       setEmotions({ joy: 0.1, sadness: 0.0, trust: 0.5, irritation: 0.0, attachment: 0.0 });
       setEmotionCaption('🍃 Chisa ở trạng thái Kuudere điềm tĩnh, ấm áp ngầm và quan tâm Senpai tinh tế.');
@@ -510,7 +556,7 @@ export default function App() {
 
   // Send message
   const handleSend = async () => {
-    if (!input.trim() || isLoading) return;
+    if (!input.trim() || isLoading || !webSession) return;
     const userText = input.trim();
     setInput('');
     if (textareaRef.current) textareaRef.current.style.height = 'auto';
@@ -535,7 +581,8 @@ export default function App() {
 
     try {
       const res = await streamChatResponse(
-        { user_id: activeSessionId, message: userText, source: 'web' },
+        { message: userText },
+        webSession.access_token,
         {
           onLoopThinkingStart: () => {
             setIsThinkingMode(true);

@@ -1,13 +1,14 @@
-from typing import Any, List, Dict, Tuple, Optional
 import asyncio
-import re
-from app.domain.interfaces.session import IDbSession
-from app.domain.interfaces.llm_provider import BaseLLMAdapter, StructuredPrompt
+from typing import Any
+
 from app.domain.interfaces.embedding_provider import IEmbeddingProvider
-from app.shared.utils.logger import get_logger
+from app.domain.interfaces.llm_provider import BaseLLMAdapter, StructuredPrompt
+from app.domain.interfaces.session import IDbSession
 from app.domain.interfaces.tracker import IPipelineTracker
+from app.shared.utils.logger import get_logger
 
 log = get_logger(__name__)
+
 
 class ThinkingLoopAgent:
     """
@@ -15,10 +16,11 @@ class ThinkingLoopAgent:
     Web (DuckDuckGo/Tavily/Serper), or Hybrid for missing information,
     acting as the Loop Thinking component of the RAG pipeline.
     """
+
     def __init__(
         self,
         pipeline_tracker: IPipelineTracker,
-        lore_retriever: Optional[Any] = None,
+        lore_retriever: Any | None = None,
     ):
         self.pipeline_tracker = pipeline_tracker
         self.lore_retriever = lore_retriever
@@ -28,16 +30,16 @@ class ThinkingLoopAgent:
         session: IDbSession,
         user_id: str,
         user_message: str,
-        history: List[Dict[str, str]],
+        history: list[dict[str, str]],
         initial_context: str,
         llm: BaseLLMAdapter,
         embedder: IEmbeddingProvider,
         web_search_tool: Any,
-        initial_search_query: str = None,
+        initial_search_query: str | None = None,
         initial_extracted_facts: str = "",
-        lore_retriever: Optional[Any] = None,
+        lore_retriever: Any | None = None,
         initial_search_target: str = "web",
-    ) -> Tuple[str, List[Dict[str, Any]]]:
+    ) -> tuple[str, list[dict[str, Any]]]:
         from app.config.settings import settings
 
         try:
@@ -56,10 +58,13 @@ class ThinkingLoopAgent:
                     lore_retriever=lore_retriever or self.lore_retriever,
                     initial_search_target=initial_search_target,
                 ),
-                timeout=float(settings.THINKING_LOOP_TIMEOUT)
+                timeout=float(settings.THINKING_LOOP_TIMEOUT),
             )
-        except asyncio.TimeoutError:
-            log.warning("Thinking loop global timeout reached, returning accumulated context", user_message=user_message)
+        except TimeoutError:
+            log.warning(
+                "Thinking loop global timeout reached, returning accumulated context",
+                user_message=user_message,
+            )
             return initial_context, []
 
     async def _execute_adaptive_search(
@@ -69,16 +74,16 @@ class ThinkingLoopAgent:
         session: IDbSession,
         user_id: str,
         llm: BaseLLMAdapter,
-        embedder: Optional[IEmbeddingProvider],
+        embedder: IEmbeddingProvider | None,
         web_search_tool: Any,
-        history: List[Dict[str, str]],
-        lore_retriever: Optional[Any] = None,
-    ) -> Tuple[str, Dict[str, Any]]:
+        history: list[dict[str, str]],
+        lore_retriever: Any | None = None,
+    ) -> tuple[str, dict[str, Any]]:
         """
         Executes adaptive search according to the target (vector, web, or both).
         """
         results = []
-        details: Dict[str, Any] = {
+        details: dict[str, Any] = {
             "search_target": search_target,
             "search_query": search_query,
             "vector_results": [],
@@ -112,12 +117,9 @@ class ThinkingLoopAgent:
                             score = 0.5
                             meta = {}
                         results.append(f"[LORE ({collection})] (score={score:.2f}):\n{text}")
-                        details["vector_results"].append({
-                            "text": text,
-                            "score": score,
-                            "collection": collection,
-                            "meta": meta
-                        })
+                        details["vector_results"].append(
+                            {"text": text, "score": score, "collection": collection, "meta": meta}
+                        )
             except Exception as ve:
                 log.warning("Vector search in thinking loop failed", error=str(ve))
 
@@ -152,18 +154,18 @@ class ThinkingLoopAgent:
         session: IDbSession,
         user_id: str,
         user_message: str,
-        history: List[Dict[str, str]],
+        history: list[dict[str, str]],
         initial_context: str,
         llm: BaseLLMAdapter,
         embedder: IEmbeddingProvider,
         web_search_tool: Any,
-        initial_search_query: str = None,
+        initial_search_query: str | None = None,
         initial_extracted_facts: str = "",
-        lore_retriever: Optional[Any] = None,
+        lore_retriever: Any | None = None,
         initial_search_target: str = "web",
-    ) -> Tuple[str, List[Dict[str, Any]]]:
+    ) -> tuple[str, list[dict[str, Any]]]:
         log.info("Activating Loop Thinking Agent for user query", user_message=user_message)
-        
+
         # Format history for the model
         history_lines = []
         for msg in history[-6:]:
@@ -174,13 +176,16 @@ class ThinkingLoopAgent:
 
         current_context = initial_context
         max_cycles = 2
-        thinking_steps = []
+        thinking_steps: list[dict[str, Any]] = []
 
         for i in range(1, max_cycles + 1):
             log.info("Starting thinking loop cycle", cycle=i)
-            
+
             if i == 1 and initial_search_query and initial_search_query.strip():
-                log.info("Bypassing Cycle 1 LLM query extraction using assessor query", query=initial_search_query)
+                log.info(
+                    "Bypassing Cycle 1 LLM query extraction using assessor query",
+                    query=initial_search_query,
+                )
                 thinking = "ContextAssessor has already evaluated the initial context as unaligned and generated a targeted search query."
                 has_enough_info = False
                 search_query = initial_search_query.strip()
@@ -230,7 +235,7 @@ class ThinkingLoopAgent:
                 else:
                     user_prompt = (
                         f"[Conversation History]:\n{history_str}\n\n"
-                        f"[User Question]: \"{user_message}\"\n\n"
+                        f'[User Question]: "{user_message}"\n\n'
                         f"[Current Context]:\n{current_context}"
                     )
 
@@ -240,15 +245,21 @@ class ThinkingLoopAgent:
                     "search_target": {
                         "type": "string",
                         "enum": ["web", "vector", "both"],
-                        "description": "Nguồn tìm kiếm tiếp theo: 'vector' = Qdrant game lore DB, 'web' = Internet search, 'both' = cả hai."
+                        "description": (
+                            "Nguồn tìm kiếm tiếp theo: 'vector' = Qdrant game lore DB, "
+                            "'web' = Internet search, 'both' = cả hai."
+                        ),
                     },
                     "distilled_facts": {
                         "type": "string",
-                        "description": "Tóm tắt dữ kiện quan trọng từ context hiện tại (giữ nguyên 100% số liệu, tên riêng, ngày tháng, công thức)"
-                    }
+                        "description": (
+                            "Tóm tắt dữ kiện quan trọng từ context hiện tại "
+                            "(giữ nguyên 100% số liệu, tên riêng, ngày tháng, công thức)"
+                        ),
+                    },
                 }
                 required_fields = ["has_enough_info"]
-                
+
                 if is_reasoning_cycle:
                     schema_properties["thinking"] = {"type": "string"}
                     required_fields.append("thinking")
@@ -256,7 +267,7 @@ class ThinkingLoopAgent:
                 schema = {
                     "type": "object",
                     "properties": schema_properties,
-                    "required": required_fields
+                    "required": required_fields,
                 }
 
                 prompt = StructuredPrompt(
@@ -266,22 +277,23 @@ class ThinkingLoopAgent:
                     response_schema=schema,
                     retrieved_memories=[],
                     retrieved_lore=[],
-                    rag_decisions={"use_deep_thinking": False}
+                    rag_decisions={"use_deep_thinking": False},
                 )
 
             try:
                 # Only execute LLM call if not bypassed
                 if not (i == 1 and initial_search_query and initial_search_query.strip()):
                     from app.domain.context import llm_call_purpose
+
                     llm_call_purpose.set(f"thinking_loop_cycle_{i}")
                     response = await llm.generate(prompt)
                     parsed = response.parsed or {}
                     reasoning_content = getattr(response, "reasoning_content", None)
                     thinking = reasoning_content or parsed.get("thinking", "")
-                    
+
                     if not is_reasoning_cycle and not thinking:
                         thinking = f"Bypassed thinking for cycle {i} to save tokens."
-                        
+
                     has_enough_info = parsed.get("has_enough_info", False)
                     search_query = (parsed.get("search_query") or "").strip()
                     search_target = parsed.get("search_target") or "web"
@@ -294,18 +306,26 @@ class ThinkingLoopAgent:
                 if context_is_empty and not has_enough_info and not search_query:
                     search_query = user_message.strip()
 
-                log.info("Thinking cycle evaluated", cycle=i, has_enough_info=has_enough_info, search_query=search_query, search_target=search_target)
+                log.info(
+                    "Thinking cycle evaluated",
+                    cycle=i,
+                    has_enough_info=has_enough_info,
+                    search_query=search_query,
+                    search_target=search_target,
+                )
 
                 if has_enough_info or not search_query:
-                    thinking_steps.append({
-                        "cycle": i,
-                        "thinking": thinking,
-                        "has_enough_info": True,
-                        "search_query": "",
-                        "search_target": search_target,
-                        "distilled_facts": distilled_facts,
-                        "search_result": "No further search needed."
-                    })
+                    thinking_steps.append(
+                        {
+                            "cycle": i,
+                            "thinking": thinking,
+                            "has_enough_info": True,
+                            "search_query": "",
+                            "search_target": search_target,
+                            "distilled_facts": distilled_facts,
+                            "search_result": "No further search needed.",
+                        }
+                    )
                     self.pipeline_tracker.add_step(
                         name=f"thinking_loop_cycle_{i}",
                         stage_id="stage_5_rag",
@@ -320,8 +340,8 @@ class ThinkingLoopAgent:
                             "search_target": search_target,
                             "distilled_facts": distilled_facts,
                             "search_result": "No further search needed.",
-                            "input_context": current_context
-                        }
+                            "input_context": current_context,
+                        },
                     )
                     break
 
@@ -362,7 +382,7 @@ class ThinkingLoopAgent:
                     depth=1,
                     category="llm_inference",
                     title=f"5.3.{i} [THINKING] Vòng lặp Loop Thinking Cycle {i}",
-                    subtitle=f"Đang tìm kiếm ({search_target.upper()}): \"{search_query[:24]}...\"",
+                    subtitle=f'Đang tìm kiếm ({search_target.upper()}): "{search_query[:24]}..."',
                     data={
                         "thinking": thinking,
                         "has_enough_info": False,
@@ -370,8 +390,8 @@ class ThinkingLoopAgent:
                         "search_target": search_target,
                         "distilled_facts": distilled_facts,
                         "search_result": search_result_text,
-                        "input_context": context_before_search
-                    }
+                        "input_context": context_before_search,
+                    },
                 )
 
                 # Sub-node for Vector Lore Retrieval (5.3.i.1)
@@ -388,13 +408,18 @@ class ThinkingLoopAgent:
                             "source": f"thinking_loop_cycle_{i}",
                             "chunks_count": len(search_details.get("vector_results", [])),
                             "chunks": search_details.get("vector_results", []),
-                        }
+                        },
                     )
 
                 # Sub-node for Web Search (5.3.i.1 or 5.3.i.2)
                 if search_target in ("web", "both") and search_details.get("web_results"):
                     from app.domain.services.tools.web_search import web_search_trace_payload
-                    web_sub_idx = "2" if (search_target == "both" and search_details.get("vector_results")) else "1"
+
+                    web_sub_idx = (
+                        "2"
+                        if (search_target == "both" and search_details.get("vector_results"))
+                        else "1"
+                    )
                     self.pipeline_tracker.add_step(
                         name="web_search",
                         stage_id="stage_5_rag",
@@ -416,7 +441,7 @@ class ThinkingLoopAgent:
                 vector_success = len(vector_hits) >= 1
 
                 if search_target == "both":
-                    is_satisfied = (web_success and vector_success)
+                    is_satisfied = web_success and vector_success
                     satisfied_reason = (
                         f"Tìm kiếm Hybrid Cycle 1 trả về {len(vector_hits)} vector chunks và {len(snippets)} web snippets. "
                         "Đầy đủ cả 2 nguồn tri thức ➔ Tự động chuyển sang Prompt Build."
@@ -449,22 +474,24 @@ class ThinkingLoopAgent:
                             "search_target": search_target,
                             "snippet_count": len(snippets),
                             "vector_count": len(vector_hits),
-                            "reason": satisfied_reason
-                        }
+                            "reason": satisfied_reason,
+                        },
                     )
                     break
 
             except Exception as e:
                 log.error("Error in thinking loop cycle", cycle=i, error=str(e))
-                thinking_steps.append({
-                    "cycle": i,
-                    "thinking": f"Error occurred: {str(e)}",
-                    "has_enough_info": True,
-                    "search_query": "",
-                    "search_target": "none",
-                    "distilled_facts": "",
-                    "search_result": ""
-                })
+                thinking_steps.append(
+                    {
+                        "cycle": i,
+                        "thinking": f"Error occurred: {str(e)}",
+                        "has_enough_info": True,
+                        "search_query": "",
+                        "search_target": "none",
+                        "distilled_facts": "",
+                        "search_result": "",
+                    }
+                )
                 break
 
         return current_context, thinking_steps

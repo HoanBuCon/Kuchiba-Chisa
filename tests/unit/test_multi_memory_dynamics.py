@@ -172,7 +172,7 @@ async def test_community_topic_summarizer():
     assert summary == "Nhóm đang thảo luận về việc lập team leo tháp và lên lịch đi raid boss tối nay."
     
     # Test get summary
-    cached_summary = await summarizer.get_topic_summary("chan_999")
+    cached_summary = await summarizer.get_topic_summary("chan_999", "guild_888")
     assert cached_summary == summary
 
 

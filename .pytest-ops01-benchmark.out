@@ -1,0 +1,8 @@
+.                                                                        [100%]
+============================== warnings summary ===============================
+venv\Lib\site-packages\qdrant_client\async_qdrant_remote.py:117
+  D:\Hoc_Tap\Code\Du_An_Ca_Nhan\Chisa_bot\kuchiba_chisa\venv\Lib\site-packages\qdrant_client\async_qdrant_remote.py:117: UserWarning: Api key is used with an insecure connection.
+    warnings.warn("Api key is used with an insecure connection.")
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+1 passed, 1 warning in 32.62s

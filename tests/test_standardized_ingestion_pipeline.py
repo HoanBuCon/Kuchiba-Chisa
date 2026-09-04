@@ -5,22 +5,96 @@ Verifies Crawler classification, Canonical cleaning, Semantic chunking,
 Benchmark validation, and Master Orchestrator CLI.
 """
 
-import os
-import sys
-from pathlib import Path
-
-# Add project root to sys.path
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(PROJECT_ROOT))
-
 import asyncio
-import pytest
-from click.testing import CliRunner
+import uuid
+from types import SimpleNamespace
+from typing import Any
 
-from app.infrastructure.ingestion.crawlers.wiki_crawler import WikiCrawler, CrawlReport
-from app.infrastructure.ingestion.quality.benchmark_runner import BenchmarkRunner, BENCHMARK_TEST_CASES
-from app.infrastructure.ingestion.pipeline import MasterIngestionPipeline
+import pytest
+import pytest_asyncio
+from click.testing import CliRunner
+from qdrant_client.http.models import FieldCondition, Filter, MatchValue, PointIdsList
+
+from app.domain.entities.lore import LorePayload
 from app.infrastructure.ingestion.cli import cli
+from app.infrastructure.ingestion.crawlers.wiki_crawler import WikiCrawler
+from app.infrastructure.ingestion.quality.benchmark_runner import (
+    BENCHMARK_TEST_CASES,
+    BenchmarkRunner,
+)
+
+
+@pytest_asyncio.fixture(scope="module", autouse=True)
+async def isolated_benchmark_corpus(
+    isolated_vector_store: Any,
+    test_embedder: Any,
+) -> Any:
+    """Seed and remove the 50-case corpus only on the isolated Qdrant endpoint."""
+    fixture_namespace = uuid.UUID("00000000-0000-0000-0000-000000000950")
+    collection = "world_lore"
+    texts = [
+        f"{case['query']}\n{' | '.join(case['expected_keywords'])}"
+        for case in BENCHMARK_TEST_CASES
+    ]
+    vectors = await test_embedder.embed_batch(texts, prefix="passage: ")
+    point_ids = [
+        str(uuid.uuid5(fixture_namespace, str(case["id"])))
+        for case in BENCHMARK_TEST_CASES
+    ]
+
+    for case, text_content, vector, point_id in zip(
+        BENCHMARK_TEST_CASES, texts, vectors, point_ids, strict=True
+    ):
+        payload = LorePayload(
+            parent_id=str(uuid.uuid5(fixture_namespace, f"parent-{case['id']}")),
+            page_id=95000 + case["id"],
+            source_file="ops01-benchmark-fixture.md",
+            chunk_index=0,
+            text_content=text_content,
+            heading_path=case["category"],
+            section_depth=2,
+            canonical_name=case["expected_keywords"][0],
+            entities=case["expected_keywords"],
+        )
+        await isolated_vector_store.upsert_lore(
+            collection=collection,
+            point_id=point_id,
+            vector=vector,
+            payload=payload,
+        )
+
+    async def retrieve_fixture_corpus(query: str, top_k: int = 5) -> list[SimpleNamespace]:
+        """Search only the corpus seeded by this fixture on the isolated Qdrant endpoint."""
+        query_vector = await test_embedder.embed_text(query, prefix="query: ")
+        results = await isolated_vector_store._client.search(
+            collection_name=collection,
+            query_vector=query_vector,
+            query_filter=Filter(
+                must=[
+                    FieldCondition(
+                        key="source_file",
+                        match=MatchValue(value="ops01-benchmark-fixture.md"),
+                    )
+                ]
+            ),
+            limit=top_k,
+            with_payload=True,
+        )
+        return [
+            SimpleNamespace(
+                content=str((result.payload or {}).get("text_content", "")),
+                score=float(result.score),
+            )
+            for result in results
+        ]
+
+    yield retrieve_fixture_corpus
+
+    await isolated_vector_store._client.delete(
+        collection_name=collection,
+        points_selector=PointIdsList(points=point_ids),
+        wait=True,
+    )
 
 
 def test_crawler_page_classification_rules():
@@ -60,12 +134,13 @@ def test_crawler_page_classification_rules():
     print("✅ PASS: WikiCrawler classification rules verified 100%!")
 
 
-def test_benchmark_runner_50_cases_coverage():
+@pytest.mark.asyncio
+async def test_benchmark_runner_50_cases_coverage(isolated_benchmark_corpus: Any):
     """Verify 50-case benchmark dataset completeness and simulated runner execution."""
     assert len(BENCHMARK_TEST_CASES) == 50, "Benchmark must contain exactly 50 test cases"
 
     runner = BenchmarkRunner(top_k=5, pass_threshold_pct=90.0)
-    result = asyncio.run(runner.run())
+    result = await runner.run(vector_retriever=isolated_benchmark_corpus)
 
     assert result.total_cases == 50
     assert result.hit_at_5_pct >= 90.0

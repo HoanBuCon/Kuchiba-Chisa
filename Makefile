@@ -2,7 +2,7 @@
 # Chisa AI — Developer Makefile
 # ─────────────────────────────────────────────────────────────────────────────
 
-.PHONY: help install dev test lint format migrate worker clean
+.PHONY: help install dev test test-isolated lint format migrate worker clean
 
 PYTHON = venv/Scripts/python
 PIP = venv/Scripts/pip
@@ -22,6 +22,12 @@ dev:                           ## Run development server with hot reload
 
 test:                          ## Run test suite
 	$(PYTEST) tests/ -v --cov=app --cov-report=term-missing
+
+test-isolated:                 ## Run migration and checks against disposable Docker services
+	@set -e; \
+		cleanup() { docker compose -p kuchiba-chisa-test -f docker-compose.test.yml down --volumes --remove-orphans; }; \
+		trap cleanup EXIT; \
+		docker compose -p kuchiba-chisa-test -f docker-compose.test.yml up --build --abort-on-container-exit --exit-code-from test
 
 lint:                          ## Run ruff linter
 	$(RUFF) check app/ tests/

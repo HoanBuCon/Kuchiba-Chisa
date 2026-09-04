@@ -477,6 +477,7 @@ class MemoryExtractor:
 
                 point_id = str(uuid.uuid4())
 
+                payload: MemoryPayload | GuildMemoryPayload
                 if target_collection == "guild_memories":
                     payload = GuildMemoryPayload(
                         guild_id=str(guild_id),

@@ -1,12 +1,16 @@
 from __future__ import annotations
+
 import asyncio
 import json
-from typing import Any, AsyncIterator
+from collections.abc import AsyncIterator
+from typing import Any
+
 from google import genai
 from google.genai import types
+from PIL import Image
+
 from app.config.settings import settings
 from app.config.tuning.llm import LLMTuning
-from app.infrastructure.logging.logger import get_logger
 from app.domain.interfaces.llm_provider import (
     BaseLLMAdapter,
     LLMError,
@@ -17,8 +21,12 @@ from app.domain.interfaces.llm_provider import (
     LLMTokenOverflowError,
     StructuredPrompt,
 )
+from app.infrastructure.logging.logger import get_logger
 
 log = get_logger(__name__)
+
+GeminiPart = str | Image.Image | types.File | types.FileDict | types.Part | types.PartDict
+GeminiContent = types.Content | types.ContentDict | GeminiPart | list[GeminiPart]
 
 
 class GeminiAdapter(BaseLLMAdapter):
@@ -80,13 +88,13 @@ class GeminiAdapter(BaseLLMAdapter):
 
     async def _call_gemini(self, prompt: StructuredPrompt) -> LLMResponse:
         """Internal Gemini API call."""
-        contents = []
+        contents: list[GeminiContent] = []
         for msg in prompt.history:
             # Map role to Gemini-compatible roles
             role = "user" if msg["role"] == "user" else "model"
-            contents.append({"role": role, "parts": [{"text": msg["content"]}]})
+            contents.append(types.Content(role=role, parts=[types.Part(text=msg["content"])]))
         
-        contents.append({"role": "user", "parts": [{"text": prompt.user_message}]})
+        contents.append(types.Content(role="user", parts=[types.Part(text=prompt.user_message)]))
 
         safety_settings = [
             types.SafetySetting(
@@ -142,7 +150,7 @@ class GeminiAdapter(BaseLLMAdapter):
                 reasoning_content = raw[s_idx:e_idx].strip()
 
         parsed = {}
-        error_to_raise = None
+        error_to_raise: Exception | None = None
 
         if "MAX_TOKENS" in finish_reason:
             error_to_raise = LLMTokenOverflowError()
@@ -183,12 +191,12 @@ class GeminiAdapter(BaseLLMAdapter):
         """
         Streams structured prompt response from Gemini.
         """
-        contents = []
+        contents: list[GeminiContent] = []
         for msg in prompt.history:
             role = "user" if msg["role"] == "user" else "model"
-            contents.append({"role": role, "parts": [{"text": msg["content"]}]})
+            contents.append(types.Content(role=role, parts=[types.Part(text=msg["content"])]))
         
-        contents.append({"role": "user", "parts": [{"text": prompt.user_message}]})
+        contents.append(types.Content(role="user", parts=[types.Part(text=prompt.user_message)]))
 
         safety_settings = [
             types.SafetySetting(

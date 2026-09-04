@@ -11,7 +11,7 @@ class DummyEmbedder:
     def __init__(self):
         self.calls = 0
 
-    async def embed_text(self, text: str) -> list[float]:
+    async def embed_text(self, text: str, prefix: str = "query") -> list[float]:
         self.calls += 1
         return [0.0, 0.0, 0.0]
 
@@ -22,23 +22,22 @@ class FailSemanticRouter:
 
 
 @pytest.mark.asyncio
-async def test_small_talk_bypass_returns_other_without_semantic():
+async def test_small_talk_bypass_returns_small_talk_without_embedding():
     classifier = IntentClassifier(llm=DummyLLM(), embedder=DummyEmbedder())
-    classifier.semantic_router = FailSemanticRouter()
 
     intents, _ = await classifier.classify("hihi")
 
-    assert intents == [ChatIntent.OTHER]
+    assert intents == [ChatIntent.SMALL_TALK]
+    assert classifier.embedder.calls == 0
 
 
 @pytest.mark.asyncio
-async def test_memory_keyword_fast_path_without_semantic():
+async def test_ambiguous_personal_question_uses_knowledge_gateway():
     classifier = IntentClassifier(llm=DummyLLM(), embedder=DummyEmbedder())
-    classifier.semantic_router = FailSemanticRouter()
 
     intents, _ = await classifier.classify("tên anh là gì")
 
-    assert ChatIntent.MEMORY in intents
+    assert intents == [ChatIntent.KNOWLEDGE_OR_TASK]
 
 
 @pytest.mark.asyncio
@@ -51,10 +50,9 @@ async def test_character_false_positive_prevented_by_boundary_regex():
 
 
 @pytest.mark.asyncio
-async def test_system_action_fast_path_without_semantic():
+async def test_conversation_summary_request_uses_knowledge_gateway():
     classifier = IntentClassifier(llm=DummyLLM(), embedder=DummyEmbedder())
-    classifier.semantic_router = FailSemanticRouter()
 
     intents, _ = await classifier.classify("tóm tắt cuộc trò chuyện nãy giờ")
 
-    assert ChatIntent.SYSTEM_ACTION in intents
+    assert intents == [ChatIntent.KNOWLEDGE_OR_TASK]

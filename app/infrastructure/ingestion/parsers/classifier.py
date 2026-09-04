@@ -296,13 +296,13 @@ def classify_page_type(
 
     # Partial infobox match (e.g., "Weapon Stats Infobox" contains "weapon")
     if infobox_lower:
-        for pattern, (page_type, confidence) in _INFOBOX_RULES.items():
-            if pattern in infobox_lower:
+        for infobox_keyword, (page_type, confidence) in _INFOBOX_RULES.items():
+            if infobox_keyword in infobox_lower:
                 result = ClassificationResult(
                     page_type=page_type,
                     confidence=confidence * 0.9,  # Slightly lower for partial match
                     source="infobox",
-                    matched_rule=f"infobox partial match: '{pattern}' in '{infobox_name}'",
+                    matched_rule=f"infobox partial match: '{infobox_keyword}' in '{infobox_name}'",
                 )
                 logger.debug("page_classified", result=result.model_dump(), **log_ctx)
                 return result

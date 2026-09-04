@@ -56,6 +56,9 @@ export const env = {
     clearPathTemplate: process.env.CORE_RAG_CLEAR_PATH_TEMPLATE ?? '/api/v1/chat/clear/{user_id}',
     timeoutMs: parseInteger(process.env.CORE_RAG_TIMEOUT_MS, 60_000),
     retryCount: parseInteger(process.env.CORE_RAG_RETRY_COUNT, 0),
+    workloadJwtSecret: required('CORE_RAG_WORKLOAD_JWT_SECRET'),
+    workloadJwtIssuer: process.env.CORE_RAG_WORKLOAD_JWT_ISSUER ?? 'kuchiba-chisa-discord',
+    workloadJwtAudience: process.env.CORE_RAG_WORKLOAD_JWT_AUDIENCE ?? 'kuchiba-chisa-api',
   },
   rateLimit: {
     windowMs: parseInteger(process.env.DISCORD_RATE_LIMIT_WINDOW_MS, 15_000),

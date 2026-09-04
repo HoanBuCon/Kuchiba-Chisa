@@ -78,13 +78,16 @@ class BackgroundTaskStage(PipelineStage):
                 }
                 await self.topic_summarizer.append_messages(
                     channel_id=context.channel_id,
+                    guild_id=context.guild_id,
                     messages=context.recent_community_messages or [],
                     current_user_turn=current_user_turn,
                     current_assistant_turn=current_assistant_turn,
                 )
 
                 # 2. Check interval and spawn background summarization with rolling buffer
-                msg_count = await self.topic_summarizer.increment_message_count(context.channel_id)
+                msg_count = await self.topic_summarizer.increment_message_count(
+                    context.channel_id, context.guild_id
+                )
                 if msg_count > 0 and msg_count % self.topic_summarizer.SUMMARIZE_INTERVAL == 0:
                     triggered_topic_summary = True
                     BackgroundTaskManager.spawn(

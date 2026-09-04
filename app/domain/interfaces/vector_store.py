@@ -50,6 +50,11 @@ class IVectorStore(ABC):
         pass
 
     @abstractmethod
+    async def delete_lore_by_page(self, collection: str, page_id: int) -> None:
+        """Deletes the vectors for one lore page during an authorized ingestion run."""
+        pass
+
+    @abstractmethod
     async def delete_points(self, collection: str, ids: List[Union[str, int]]) -> None:
         """
         Deletes vectors by a list of point IDs.

@@ -1,6 +1,9 @@
 from typing import Any, Dict, Optional, Protocol
 
 class IPipelineTracker(Protocol):
+    def get_current_trace(self) -> dict[str, Any]:
+        ...
+
     def add_step(
         self,
         name: str,

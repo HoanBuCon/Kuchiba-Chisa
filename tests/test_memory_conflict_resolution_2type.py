@@ -13,18 +13,14 @@ import sys
 
 sys.path.insert(0, os.path.abspath("."))
 
-from app.application.dependencies import container
-from app.domain.services.memory_extractor import MemoryExtractor
-
-
-async def test_conflict_reconciliation():
+async def test_conflict_reconciliation(isolated_memory_extractor):
     print("=" * 80)
     print("🚀 BẮT ĐẦU KIỂM THỬ: CONFLICT RECONCILIATION CHO 2-TYPE MEMORY MODEL")
     print("=" * 80)
 
-    extractor: MemoryExtractor = container.memory_extractor
-    test_user_id = "test_conflict_user_2type"
-    test_conv_id = "test_conv_2type"
+    extractor = isolated_memory_extractor
+    test_user_id = "ops01_conflict_user"
+    test_conv_id = "ops01_conflict_conversation"
 
     # Clean up test user memories first
     try:

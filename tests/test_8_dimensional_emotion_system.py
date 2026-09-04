@@ -12,7 +12,6 @@ sys.path.insert(0, os.path.abspath("."))
 from app.domain.entities.emotion import EmotionState
 from app.domain.services.emotion_engine import EmotionEngine
 from app.domain.services.state_manager import StateManager
-from app.application.dependencies import container
 from app.infrastructure.database.engine import AsyncSessionFactory
 
 
@@ -24,18 +23,16 @@ def test_trust_5_tier_ladder_and_compliance():
     # T1 Guarded (<0.35)
     s_t1 = EmotionState(user_id=uuid.uuid4(), trust=0.20)
     t1_tier, _ = StateManager.get_trust_tier(s_t1.trust)
-    prompt_t1 = StateManager.format_state(s_t1)
     print(f"  • Trust=0.20 -> Tier: '{t1_tier}'")
     assert "T1" in t1_tier and "Dè chừng" in t1_tier
 
     # T4 Confidant (0.75 - 0.90) - Dễ dụ & Nghe lời
     s_t4 = EmotionState(user_id=uuid.uuid4(), trust=0.82)
-    t4_tier, _ = StateManager.get_trust_tier(s_t4.trust)
-    prompt_t4 = StateManager.format_state(s_t4)
+    t4_tier, t4_directive = StateManager.get_trust_tier(s_t4.trust)
     print(f"  • Trust=0.82 -> Tier: '{t4_tier}'")
-    print(f"  • Directive T4:\n{prompt_t4}\n")
+    print(f"  • Directive T4: {t4_directive}\n")
     assert "T4" in t4_tier and "Tri kỷ" in t4_tier
-    assert "mềm lòng" in prompt_t4 or "chiều theo" in prompt_t4
+    assert "mềm lòng" in t4_directive or "chiều theo" in t4_directive
 
     # T5 Devoted Trust (>=0.90)
     s_t5 = EmotionState(user_id=uuid.uuid4(), trust=0.95)
@@ -131,16 +128,16 @@ def test_antagonistic_cross_inhibition_and_pout_shield():
     print("  ✓ PASS: Ma trận Ức chế Đối kháng & Khiên Pout Shield hoạt động xuất sắc 100%!")
 
 
-async def test_end_to_end_8_dimensional_chat_cycle():
+async def test_end_to_end_8_dimensional_chat_cycle(test_chat_engine):
     print("\n" + "=" * 80)
     print("🚀 TEST 5: END-TO-END CHAT ENGINE CYCLE WITH 8-DIMENSIONAL EMOTIONS")
     print("=" * 80)
 
-    chat_engine = container.chat_engine
+    chat_engine = test_chat_engine
     user_id = f"test_8d_user_{uuid.uuid4().hex[:6]}"
 
     async with AsyncSessionFactory() as session:
-        reply_text, emotions = await chat_engine.chat(
+        reply_text, emotions, _, _ = await chat_engine.chat(
             session=session,
             user_id=user_id,
             user_message="Chisa ơi, em có thấy anh thông minh và đáng yêu không nào?"

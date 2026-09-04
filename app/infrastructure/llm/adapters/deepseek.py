@@ -1,11 +1,14 @@
 from __future__ import annotations
+
 import asyncio
 import json
-from typing import Any, AsyncIterator
+from collections.abc import AsyncIterator
+from typing import Any
+
 import httpx
+
 from app.config.settings import settings
 from app.config.tuning.llm import LLMTuning
-from app.infrastructure.logging.logger import get_logger
 from app.domain.interfaces.llm_provider import (
     BaseLLMAdapter,
     LLMError,
@@ -16,6 +19,7 @@ from app.domain.interfaces.llm_provider import (
     LLMTokenOverflowError,
     StructuredPrompt,
 )
+from app.infrastructure.logging.logger import get_logger
 
 log = get_logger(__name__)
 
@@ -74,7 +78,7 @@ class DeepSeekAdapter(BaseLLMAdapter):
 
     async def _call_deepseek(self, prompt: StructuredPrompt) -> LLMResponse:
         if prompt.images:
-            user_content = [{"type": "text", "text": prompt.user_message}]
+            user_content: list[dict[str, Any]] = [{"type": "text", "text": prompt.user_message}]
             for img_item in prompt.images:
                 user_content.append({
                     "type": "image_url",
@@ -83,12 +87,16 @@ class DeepSeekAdapter(BaseLLMAdapter):
                         "detail": "high"
                     }
                 })
-            messages = [
+            messages: list[dict[str, Any]] = [
                 {"role": "system", "content": prompt.system},
                 *prompt.history,
                 {"role": "user", "content": user_content},
             ]
-            target_model = getattr(settings, "DEEPSEEK_VISION_MODEL", "deepseek-v4-flash-vision-exp")
+            target_model = getattr(
+                settings,
+                "DEEPSEEK_VISION_MODEL",
+                "deepseek-v4-flash-vision-exp",
+            )
         else:
             messages = [
                 {"role": "system", "content": prompt.system},
@@ -103,11 +111,13 @@ class DeepSeekAdapter(BaseLLMAdapter):
             "Authorization": f"Bearer {self._api_key}"
         }
         
-        payload = {
+        payload: dict[str, Any] = {
             "model": target_model,
             "messages": messages,
             "max_tokens": prompt.max_tokens or self._max_tokens,
-            "temperature": prompt.temperature if prompt.temperature is not None else self._temperature,
+            "temperature": (
+                prompt.temperature if prompt.temperature is not None else self._temperature
+            ),
         }
         
         is_deep_thinking = prompt.rag_decisions.get("use_deep_thinking", False) if hasattr(prompt, "rag_decisions") else False
@@ -157,12 +167,12 @@ class DeepSeekAdapter(BaseLLMAdapter):
             reasoning_tokens = usage.get("completion_tokens_details", {}).get("reasoning_tokens", 0)
             if not reasoning_tokens and reasoning_content:
                 from app.shared.utils.token_estimator import TokenEstimator
-                reasoning_tokens = TokenEstimator.estimate_tokens(reasoning_content)
+                reasoning_tokens = TokenEstimator.estimate(reasoning_content)
         except (KeyError, IndexError) as e:
             raise LLMInvalidResponseError(f"Invalid response structure: {e}")
 
         parsed = {}
-        error_to_raise = None
+        error_to_raise: Exception | None = None
 
         if finish_reason == "length":
             error_to_raise = LLMTokenOverflowError()

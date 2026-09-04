@@ -4,15 +4,16 @@ Location: app/domain/services/visual_memory_ingestion.py
 """
 
 from __future__ import annotations
-import re
-import uuid
+
 import time
-from typing import List, Dict, Any, Optional
+import uuid
+from typing import Any
+
 from qdrant_client.http.models import PointStruct
 
 from app.domain.entities.image_memory import ImageMemoryPayload
-from app.domain.interfaces.vector_store import IVectorStore
 from app.domain.interfaces.embedding_provider import IEmbeddingProvider
+from app.domain.interfaces.vector_store import IVectorStore
 from app.infrastructure.logging.logger import get_logger
 from app.infrastructure.vector.qdrant.qdrant_service import COLLECTION_IMAGE_MEMORIES
 
@@ -20,12 +21,68 @@ log = get_logger(__name__)
 
 # Common tag extractor dictionary
 _TAG_PATTERNS = {
-    "du lịch": ["du lịch", "đi chơi", "bãi biển", "biển", "phượt", "resort", "khách sạn", "núi", "cảnh đẹp", "hoàng hôn", "bình minh"],
-    "thú cưng": ["mèo", "chó", "thú cưng", "pet", "meo", "dog", "cat", "cún", "miu", "hoàng thượng"],
-    "game": ["wuthering waves", "genshin", "echo", "vũ khí", "weapon", "crit", "chỉ số", "stats", "build", "nhân vật", "dòng phụ", "tinh luyện"],
+    "du lịch": [
+        "du lịch",
+        "đi chơi",
+        "bãi biển",
+        "biển",
+        "phượt",
+        "resort",
+        "khách sạn",
+        "núi",
+        "cảnh đẹp",
+        "hoàng hôn",
+        "bình minh",
+    ],
+    "thú cưng": [
+        "mèo",
+        "chó",
+        "thú cưng",
+        "pet",
+        "meo",
+        "dog",
+        "cat",
+        "cún",
+        "miu",
+        "hoàng thượng",
+    ],
+    "game": [
+        "wuthering waves",
+        "genshin",
+        "echo",
+        "vũ khí",
+        "weapon",
+        "crit",
+        "chỉ số",
+        "stats",
+        "build",
+        "nhân vật",
+        "dòng phụ",
+        "tinh luyện",
+    ],
     "ẩm thực": ["món ăn", "ăn uống", "trà", "cà phê", "bánh", "nấu ăn", "quán ăn", "socola", "kem"],
-    "học tập/code": ["code", "lập trình", "python", "lỗi", "error", "terminal", "ocr", "tài liệu", "sách", "bài tập"],
-    "kỷ niệm": ["kỷ niệm", "chúng ta", "senpai", "chisa", "chụp chung", "lần đầu", "hôm nọ", "hồi trước"],
+    "học tập/code": [
+        "code",
+        "lập trình",
+        "python",
+        "lỗi",
+        "error",
+        "terminal",
+        "ocr",
+        "tài liệu",
+        "sách",
+        "bài tập",
+    ],
+    "kỷ niệm": [
+        "kỷ niệm",
+        "chúng ta",
+        "senpai",
+        "chisa",
+        "chụp chung",
+        "lần đầu",
+        "hôm nọ",
+        "hồi trước",
+    ],
     "meme": ["meme", "hài", "bựa", "vui", "ảnh chế", "troll"],
 }
 
@@ -49,13 +106,13 @@ class VisualMemoryIngestionWorker:
         user_id: str,
         user_message: str,
         chisa_reply: str,
-        processed_images: List[Dict[str, Any]],
-        conversation_id: Optional[str] = None,
-        guild_id: Optional[str] = None,
-        channel_id: Optional[str] = None,
+        processed_images: list[dict[str, Any]],
+        conversation_id: str | None = None,
+        guild_id: str | None = None,
+        channel_id: str | None = None,
         is_ephemeral: bool = False,
-        llm_image_tags: Optional[List[str]] = None,
-        llm_visual_caption: Optional[str] = None,
+        llm_image_tags: list[str] | None = None,
+        llm_visual_caption: str | None = None,
     ) -> int:
         """
         Indexes all permanent processed images into Qdrant 'image_memories'.
@@ -71,12 +128,12 @@ class VisualMemoryIngestionWorker:
 
         # Extract semantic tags: prioritize LLM tags and combine with heuristic fallback
         combined_text = f"{cleaned_user_msg} {cleaned_chisa_reply}".lower()
-        fallback_tags: List[str] = []
+        fallback_tags: list[str] = []
         for tag_name, keywords in _TAG_PATTERNS.items():
             if any(kw in combined_text for kw in keywords):
                 fallback_tags.append(tag_name)
 
-        final_tags: List[str] = []
+        final_tags: list[str] = []
         if llm_image_tags:
             for t in llm_image_tags:
                 clean_t = str(t).strip().lower()
@@ -102,7 +159,11 @@ class VisualMemoryIngestionWorker:
                     # Take first 250 characters of Chisa's analytical response
                     summary_reply = cleaned_chisa_reply[:250].replace("\n", " ")
                     caption_parts.append(f"Mô tả và nhận xét của Chisa: {summary_reply}")
-                visual_caption = " | ".join(caption_parts) if caption_parts else "Hình ảnh được lưu trữ trong kho ký ức."
+                visual_caption = (
+                    " | ".join(caption_parts)
+                    if caption_parts
+                    else "Hình ảnh được lưu trữ trong kho ký ức."
+                )
 
             # Text to embed
             tags_str = ", ".join(final_tags) if final_tags else "hình ảnh, ký ức"
@@ -156,10 +217,12 @@ class VisualMemoryIngestionWorker:
                         "Ingested image memory into Qdrant",
                         image_id=image_id,
                         user_id=user_id,
-                        tags=extracted_tags,
+                        tags=final_tags,
                     )
 
             except Exception as ex:
-                log.error("Failed to ingest image memory into Qdrant", image_id=image_id, error=str(ex))
+                log.error(
+                    "Failed to ingest image memory into Qdrant", image_id=image_id, error=str(ex)
+                )
 
         return ingested_count

@@ -1,22 +1,28 @@
 import asyncio
 from enum import Enum
-from typing import List, Dict, Any, Optional, Set
-from app.domain.tuning.rag import RAGTuning
-from app.domain.interfaces.session import IDbSession
+from typing import Any
+
 from app.domain.interfaces.embedding_provider import IEmbeddingProvider
 from app.domain.interfaces.llm_provider import BaseLLMAdapter
-from app.domain.services.rag.base import RAGContext
-from app.domain.services.rag.retriever_memory import MemoryRetriever
-from app.domain.services.rag.retriever_guild_memory import GuildMemoryRetriever
-from app.domain.services.rag.retriever_lore import LoreRetriever
-from app.domain.services.rag.retriever_image_memory import ImageMemoryRetriever
-from app.domain.services.rag.assessor import ContextAssessor
-from app.domain.services.rag.thinking_loop import ThinkingLoopAgent
-from app.domain.services.rag.entity_resolver import EntityResolver
-from app.shared.utils.logger import get_logger
+from app.domain.interfaces.session import IDbSession
 from app.domain.interfaces.tracker import IPipelineTracker
+from app.domain.services.rag.assessor import ContextAssessor
+from app.domain.services.rag.base import RAGContext
+from app.domain.services.rag.entity_resolver import EntityResolver
+from app.domain.services.rag.retriever_guild_memory import GuildMemoryRetriever
+from app.domain.services.rag.retriever_image_memory import ImageMemoryRetriever
+from app.domain.services.rag.retriever_lore import LoreRetriever
+from app.domain.services.rag.retriever_memory import MemoryRetriever
+from app.domain.services.rag.thinking_loop import ThinkingLoopAgent
+from app.domain.tuning.rag import RAGTuning
+from app.shared.utils.logger import get_logger
 
 log = get_logger(__name__)
+
+
+class VectorQueryInvariantError(ValueError):
+    """Raised when a routed vector search reaches retrieval without an embedding."""
+
 
 class RAGPipeline:
     """
@@ -25,14 +31,14 @@ class RAGPipeline:
     """
     def __init__(
         self,
-        memory_retriever: Optional[MemoryRetriever] = None,
-        lore_retriever: Optional[LoreRetriever] = None,
-        guild_memory_retriever: Optional[GuildMemoryRetriever] = None,
-        image_memory_retriever: Optional[ImageMemoryRetriever] = None,
-        assessor: Optional[ContextAssessor] = None,
-        thinking_loop_agent: Optional[ThinkingLoopAgent] = None,
-        pipeline_tracker: Optional[IPipelineTracker] = None,
-        entity_resolver: Optional[EntityResolver] = None
+        memory_retriever: MemoryRetriever | None = None,
+        lore_retriever: LoreRetriever | None = None,
+        guild_memory_retriever: GuildMemoryRetriever | None = None,
+        image_memory_retriever: ImageMemoryRetriever | None = None,
+        assessor: ContextAssessor | None = None,
+        thinking_loop_agent: ThinkingLoopAgent | None = None,
+        pipeline_tracker: IPipelineTracker | None = None,
+        entity_resolver: EntityResolver | None = None
     ):
         if memory_retriever is None:
             raise ValueError("memory_retriever is required")
@@ -45,9 +51,7 @@ class RAGPipeline:
             self.lore_retriever = lore_retriever
             
         self.guild_memory_retriever = guild_memory_retriever
-        self.image_memory_retriever = image_memory_retriever or (
-            ImageMemoryRetriever(memory_retriever.vector_store) if memory_retriever else None
-        )
+        self.image_memory_retriever = image_memory_retriever
             
         if assessor is None:
             self.assessor = ContextAssessor()
@@ -67,9 +71,9 @@ class RAGPipeline:
         self.entity_resolver = entity_resolver
 
     @staticmethod
-    def _normalize_intents(intents: List[Any]) -> Set[str]:
+    def _normalize_intents(intents: list[Any]) -> set[str]:
         """Normalize intent values to uppercase strings for stable routing checks."""
-        normalized: Set[str] = set()
+        normalized: set[str] = set()
         for intent in intents:
             if isinstance(intent, Enum):
                 normalized.add(str(intent.value).upper())
@@ -82,19 +86,19 @@ class RAGPipeline:
         session: IDbSession,
         user_id: str,
         user_message: str,
-        query_vector: Optional[List[float]],
+        query_vector: list[float] | None,
         cleaned_query: str,
-        intents: List[Any],
-        current_emotions: Dict[str, float],
-        history: List[Dict[str, str]],
+        intents: list[Any],
+        current_emotions: dict[str, float],
+        history: list[dict[str, str]],
         llm: BaseLLMAdapter,
         embedder: IEmbeddingProvider,
         web_search_tool: Any,
         is_small_talk: bool = False,
-        conversation_summary: str = None,
-        conversation_id: Optional[str] = None,
-        guild_id: Optional[str] = None,
-        channel_id: Optional[str] = None,
+        conversation_summary: str | None = None,
+        conversation_id: str | None = None,
+        guild_id: str | None = None,
+        channel_id: str | None = None,
         needs_vector_search: bool = True,
         needs_web_search: bool = False,
     ) -> RAGContext:
@@ -121,7 +125,12 @@ class RAGPipeline:
             and not is_hybrid_search_mode
         )
 
-        LORE_COLLECTIONS = ["character_lore", "world_lore", "story_lore"]
+        if needs_vector_search and not is_small_talk and has_knowledge_intent and not query_vector:
+            raise VectorQueryInvariantError(
+                "Vector retrieval was requested without a query embedding"
+            )
+
+        lore_collections = ["character_lore", "world_lore", "story_lore"]
         extracted = set()
         expanded = set()
         scoring_details = []
@@ -146,7 +155,7 @@ class RAGPipeline:
                     expanded = self.entity_resolver.expand_entities(extracted)
                     log.info("Entity Resolver Output", extracted=list(extracted), expanded=list(expanded))
 
-                for col_name in LORE_COLLECTIONS:
+                for col_name in lore_collections:
                     active_intents.append("LORE")
                     queried_lore_cols.append(col_name)
                     retrieval_tasks.append(
@@ -212,8 +221,15 @@ class RAGPipeline:
                         results.append(res)
 
                     # Fair Multi-Collection Fusion (RRF + Normalized Score Fusion)
-                    collection_buckets: Dict[str, List[Tuple[str, float, dict]]] = {}
-                    for intent_type, col_name, retrieved_data in zip(active_intents, queried_lore_cols + ["guild_memories"] * (len(active_intents) - len(queried_lore_cols)), results):
+                    collection_buckets: dict[str, list[tuple[str, float, dict]]] = {}
+                    for intent_type, col_name, retrieved_data in zip(
+                        active_intents,
+                        queried_lore_cols
+                        + ["guild_memories"]
+                        * (len(active_intents) - len(queried_lore_cols)),
+                        results,
+                        strict=False,
+                    ):
                         if isinstance(retrieved_data, Exception):
                             log.warning("Retrieval sub-task failed", error=str(retrieved_data), collection=col_name)
                             continue
@@ -243,8 +259,8 @@ class RAGPipeline:
                                 collection_buckets[col_name].append((text, score, meta))
 
                     # Apply RRF and Interleaving to prevent single-collection starvation
-                    scored_by_text: Dict[str, Tuple[float, dict]] = {}
-                    for col_name, items in collection_buckets.items():
+                    scored_by_text: dict[str, tuple[float, dict]] = {}
+                    for items in collection_buckets.values():
                         for rank, (text, score, meta) in enumerate(items, start=1):
                             rrf_score = (1.0 / (60.0 + rank)) * 10.0 + score
                             if text not in scored_by_text:
@@ -509,9 +525,10 @@ class RAGPipeline:
             extracted_facts = ""
             
         # Log assessment result in trace
-        history_mode = "summary" if (conversation_summary and conversation_summary.strip()) else "raw"
+        summary_text = conversation_summary or ""
+        history_mode = "summary" if summary_text.strip() else "raw"
         if history_mode == "summary":
-            history_display = conversation_summary.strip()
+            history_display = summary_text.strip()
         elif history and len(history) > 0:
             history_lines = []
             for m in history[-4:]:
@@ -551,7 +568,7 @@ class RAGPipeline:
 
         # ── LOOP THINKING (Search Lần 2 nếu ContextAssessor phát hiện thiếu dữ liệu) ──
         tool_output_msg = ""
-        thinking_steps = []
+        thinking_steps: list[dict[str, Any]] = []
         if not is_aligned:
             # Use dynamically decided target from ContextAssessor if available
             initial_target = search_target or ("both" if is_hybrid_search_mode else ("vector" if is_vector_search_mode else "web"))

@@ -1,13 +1,15 @@
 import asyncio
 import re
+from typing import Any
+
 import numpy as np
-from typing import Any, Dict, List, Optional, Tuple
-from app.domain.interfaces.llm_provider import BaseLLMAdapter
+
 from app.domain.interfaces.embedding_provider import IEmbeddingProvider
-from app.shared.utils.logger import get_logger
+from app.domain.interfaces.llm_provider import BaseLLMAdapter
 
 # Import modular tools
 from app.domain.services.tools import BaseAgentTool
+from app.shared.utils.logger import get_logger
 
 log = get_logger(__name__)
 
@@ -16,15 +18,19 @@ log = get_logger(__name__)
 # Tầng 2a – Semantic Tool Router
 # ──────────────────────────────────────────────────────────────────
 
+
 class SemanticToolRouter:
     """
     Tầng 2a – Định tuyến tool bằng Cosine Similarity.
     """
-    def __init__(self, embedder: IEmbeddingProvider, tools: List[BaseAgentTool], threshold: float = 0.50):
+
+    def __init__(
+        self, embedder: IEmbeddingProvider, tools: list[BaseAgentTool], threshold: float = 0.50
+    ):
         self.embedder = embedder
         self.tools = tools
         self.threshold = threshold
-        self.tool_embeddings: Dict[str, np.ndarray] = {}
+        self.tool_embeddings: dict[str, np.ndarray] = {}
         self._initialized = False
         self._lock = asyncio.Lock()
 
@@ -41,11 +47,15 @@ class SemanticToolRouter:
                         vec = await self.embedder.embed_text(text)
                         vectors.append(vec)
                     except Exception as e:
-                        log.error("Failed to embed tool anchor", tool=tool.name, text=text, error=str(e))
+                        log.error(
+                            "Failed to embed tool anchor", tool=tool.name, text=text, error=str(e)
+                        )
                 if vectors:
                     self.tool_embeddings[tool.name] = np.array(vectors)
             self._initialized = True
-            log.info("SemanticToolRouter anchors initialized ✓", tools=list(self.tool_embeddings.keys()))
+            log.info(
+                "SemanticToolRouter anchors initialized ✓", tools=list(self.tool_embeddings.keys())
+            )
 
     def _cosine_similarity(self, q_vec: np.ndarray, anchor_matrix: np.ndarray) -> np.ndarray:
         """Tính cosine similarity giữa query vector và ma trận anchors."""
@@ -54,7 +64,7 @@ class SemanticToolRouter:
         norm_a = np.linalg.norm(anchor_matrix, axis=1)
         return dot / (norm_q * norm_a + 1e-9)
 
-    async def route(self, query_vector: List[float]) -> Tuple[str, float]:
+    async def route(self, query_vector: list[float]) -> tuple[str, float]:
         """
         Trả về (tool_name, confidence_score).
         tool_name = 'none' nếu không có tool nào vượt ngưỡng threshold.
@@ -97,10 +107,10 @@ class KeywordToolRouter:
     Sử dụng chung tập SYSTEM_PATTERNS chuẩn với IntentClassifier.
     """
 
-    PATTERNS: Dict[str, List[str]] = SYSTEM_PATTERNS
+    PATTERNS: dict[str, list[str]] = SYSTEM_PATTERNS
 
     @classmethod
-    def match(cls, msg_lower: str) -> Optional[str]:
+    def match(cls, msg_lower: str) -> str | None:
         for tool_name, patterns in cls.PATTERNS.items():
             if any(re.search(pattern, msg_lower) for pattern in patterns):
                 return tool_name
@@ -111,21 +121,28 @@ class KeywordToolRouter:
 # Tầng 2 – Hybrid Tool Router Coordinator
 # ──────────────────────────────────────────────────────────────────
 
+
 class LLMToolRouter:
     """
     Tầng 2 – Hybrid Tool Router.
     Điều phối định tuyến và thực thi các Agent Tools đã đăng ký.
     """
-    def __init__(self, llm: BaseLLMAdapter, embedder: IEmbeddingProvider, tools: List[BaseAgentTool] = None):
+
+    def __init__(
+        self,
+        llm: BaseLLMAdapter,
+        embedder: IEmbeddingProvider,
+        tools: list[BaseAgentTool] | None = None,
+    ):
         self.llm = llm
         self.embedder = embedder
-        
+
         # Đăng ký danh sách các công cụ hệ thống (Agent Tools)
         if tools is None:
             self.tools = []
         else:
             self.tools = tools
-            
+
         self.tool_map = {tool.name: tool for tool in self.tools}
         self.semantic_tool_router = SemanticToolRouter(embedder=embedder, tools=self.tools)
 
@@ -133,9 +150,9 @@ class LLMToolRouter:
         self,
         user_message: str,
         user_id: str,
-        query_vector: Optional[List[float]] = None,
+        query_vector: list[float] | None = None,
         **kwargs,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Thực thi định tuyến và xử lý tác vụ tương ứng.
         """
@@ -149,11 +166,15 @@ class LLMToolRouter:
             if query_vector is not None:
                 tool_name, score = await self.semantic_tool_router.route(query_vector)
             else:
-                log.warning("No pre-computed query_vector provided to LLMToolRouter, embedding on-the-fly")
+                log.warning(
+                    "No pre-computed query_vector provided to LLMToolRouter, embedding on-the-fly"
+                )
                 vec = await self.embedder.embed_text(user_message)
                 tool_name, score = await self.semantic_tool_router.route(vec)
 
-        log.info("Tool routing decided", tool_name=tool_name, score=round(score, 4), user_id=user_id)
+        log.info(
+            "Tool routing decided", tool_name=tool_name, score=round(score, 4), user_id=user_id
+        )
 
         # ── Thực thi Tool logic được tìm thấy
         tool = self.tool_map.get(tool_name)
@@ -175,12 +196,12 @@ class LLMToolRouter:
                     "status": "error",
                     "message": f"Gặp lỗi khi thực thi công cụ {tool_name}: {str(e)}",
                     "tool": tool_name,
-                    "score": score
+                    "score": score,
                 }
         else:
             return {
                 "status": "skipped",
                 "message": "Không có hành động hệ thống nào cần thực hiện.",
                 "tool": "none",
-                "score": score
+                "score": score,
             }

@@ -1,8 +1,11 @@
 from __future__ import annotations
+
 from fastapi import APIRouter
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
-from app.infrastructure.database.engine import check_database_health
+
 from app.infrastructure.cache.redis.redis_service import redis_service
+from app.infrastructure.database.engine import check_database_health
 from app.infrastructure.vector.qdrant.qdrant_service import qdrant_service
 
 router = APIRouter()
@@ -42,14 +45,14 @@ async def health() -> HealthResponse:
     summary="Readiness probe",
     description="Returns 200 only when all backend services are reachable.",
 )
-async def ready() -> ReadinessResponse:
+async def ready() -> ReadinessResponse | JSONResponse:
     """
     Readiness check — used by Kubernetes to gate traffic.
     Checks PostgreSQL, Redis, and Qdrant connectivity.
     """
     db_ok = await check_database_health()
     redis_ok = await redis_service.health_check()
-    qdrant_ok = await qdrant_service.health_check()
+    qdrant_ok = await qdrant_service.health_check(require_active_collections=True)
 
     services = {
         "postgresql": db_ok,
@@ -59,7 +62,10 @@ async def ready() -> ReadinessResponse:
 
     all_ready = all(services.values())
 
-    return ReadinessResponse(
+    response = ReadinessResponse(
         status="ready" if all_ready else "degraded",
         services=services,
     )
+    if not all_ready:
+        return JSONResponse(status_code=503, content=response.model_dump())
+    return response

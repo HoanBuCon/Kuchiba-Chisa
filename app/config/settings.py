@@ -3,7 +3,7 @@ from __future__ import annotations
 from functools import lru_cache
 from typing import Literal, Optional
 
-from pydantic import AnyUrl, Field, RedisDsn, field_validator
+from pydantic import Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -73,7 +73,18 @@ class Settings(BaseSettings):
     DEEPSEEK_TIMEOUT: int = 60
     DEEPSEEK_BASE_URL: str = "https://api.deepseek.com"
     DEEP_THINKING: bool = True
-    VISION_MAX_IMAGES: int = 4
+    # â”€â”€ Request admission limits (SEC-05 / SEC-API-003) â”€â”€
+    CHAT_MAX_MESSAGE_CHARS: int = Field(default=4_000, ge=1, le=20_000)
+    COMMUNITY_MAX_HISTORY_MESSAGES: int = Field(default=20, ge=1, le=100)
+    COMMUNITY_MAX_MESSAGE_CHARS: int = Field(default=4_000, ge=1, le=20_000)
+    COMMUNITY_MAX_REPLY_CONTEXT_CHARS: int = Field(default=1_000, ge=1, le=10_000)
+    COMMUNITY_MAX_IDENTIFIER_CHARS: int = Field(default=128, ge=1, le=512)
+    COMMUNITY_MAX_TIMESTAMP_CHARS: int = Field(default=64, ge=1, le=256)
+    VISION_MAX_IMAGES: int = Field(default=4, ge=1, le=4)
+    VISION_MAX_IMAGE_BYTES: int = Field(default=10 * 1024 * 1024, ge=1_024)
+    VISION_MAX_IMAGE_URL_CHARS: int = Field(default=2_048, ge=64, le=16_384)
+    VISION_MAX_TOTAL_DECODED_BYTES: int = Field(default=40 * 1024 * 1024, ge=1_024)
+    API_MAX_REQUEST_BODY_BYTES: int = Field(default=60 * 1024 * 1024, ge=1_024)
     VISION_STORAGE_MAX_MB: int = 1024
     VISION_STORAGE_BACKEND: str = "local"  # "local" | "s3" | "r2" | "minio" | "cloudinary"
     VISION_LOCAL_STORAGE_DIR: str = "app/static/uploads"
@@ -108,9 +119,17 @@ class Settings(BaseSettings):
     JWT_ALGORITHM: str = "HS256"
     JWT_EXPIRE_MINUTES: int = 60
     JWT_REFRESH_EXPIRE_DAYS: int = 7
+    JWT_ISSUER: str = "kuchiba-chisa"
+    JWT_AUDIENCE: str = "kuchiba-chisa-api"
+    DISCORD_WORKLOAD_JWT_SECRET: str = Field(min_length=32)
+    DISCORD_WORKLOAD_JWT_ISSUER: str = "kuchiba-chisa-discord"
 
     # ── Rate Limiting ──────────────────────────────────────────
     RATE_LIMIT_PER_MINUTE: int = 60
+    RATE_LIMIT_LOCAL_FALLBACK_MAX_KEYS: int = Field(default=10_000, ge=100, le=100_000)
+    RATE_LIMIT_IP_ANOMALY_PER_MINUTE: int = Field(default=120, ge=1, le=10_000)
+    ANONYMOUS_SESSION_RATE_LIMIT_PER_MINUTE: int = Field(default=10, ge=1, le=1_000)
+    TRUSTED_PROXY_CIDRS: str = ""
 
     # ── Celery / Workers ───────────────────────────────────────
     CELERY_BROKER_URL: str = "redis://localhost:6379/1"
@@ -132,6 +151,7 @@ class Settings(BaseSettings):
     LLM_LOG_FILE: str = "logs/llm_api.jsonl"
     LLM_LOG_MAX_BYTES: int = 10 * 1024 * 1024  # 10 MB default
     LLM_LOG_BACKUP_COUNT: int = 5
+    PIPELINE_TRACE_TTL_SECONDS: int = Field(default=3_600, ge=60, le=2_592_000)
 
     # ── Derived Properties ─────────────────────────────────────
     @property
@@ -152,6 +172,17 @@ class Settings(BaseSettings):
         if not v.startswith("postgresql"):
             raise ValueError("DATABASE_URL must be a PostgreSQL connection string")
         return v
+
+    @model_validator(mode="after")
+    def validate_request_admission_limits(self) -> Settings:
+        """Ensure transport/body limits can carry the configured safe image quota."""
+        max_encoded_image_bytes = 4 * ((self.VISION_MAX_IMAGE_BYTES + 2) // 3)
+        min_total_decoded = self.VISION_MAX_IMAGES * self.VISION_MAX_IMAGE_BYTES
+        if min_total_decoded > self.VISION_MAX_TOTAL_DECODED_BYTES:
+            raise ValueError("VISION_MAX_TOTAL_DECODED_BYTES cannot be below the image quota")
+        if self.VISION_MAX_IMAGES * max_encoded_image_bytes > self.API_MAX_REQUEST_BODY_BYTES:
+            raise ValueError("API_MAX_REQUEST_BODY_BYTES cannot carry the configured image quota")
+        return self
 
 
 @lru_cache(maxsize=1)

@@ -1,6 +1,6 @@
 from datetime import datetime
 from zoneinfo import ZoneInfo
-from typing import Optional, Tuple
+
 from app.domain.entities.emotion import EmotionState
 from app.domain.tuning.memory import EmotionTuning
 
@@ -14,7 +14,7 @@ class StateManager:
 
     # ── Circadian Rhythm (Time-of-day Awareness UTC+7) ─────────────
     @staticmethod
-    def get_circadian_context() -> Tuple[str, str]:
+    def get_circadian_context() -> tuple[str, str]:
         """Xác định nhịp sinh học theo múi giờ UTC+7 (Asia/Ho_Chi_Minh) của Senpai."""
         now = datetime.now(ZoneInfo("Asia/Ho_Chi_Minh"))
         hour = now.hour + now.minute / 60.0
@@ -33,7 +33,7 @@ class StateManager:
 
     # ── Plutchik Emotional Dyads (Priority Waterfall) ──────────────
     @classmethod
-    def get_emotional_dyad(cls, emotion: EmotionState) -> Optional[Tuple[str, str]]:
+    def get_emotional_dyad(cls, emotion: EmotionState) -> tuple[str, str] | None:
         """
         Xác định trạng thái cảm xúc hỗn hợp (Plutchik Dyads) theo thứ bậc ưu tiên.
         Tránh xung đột khi nhiều chỉ số cùng vượt ngưỡng cao.

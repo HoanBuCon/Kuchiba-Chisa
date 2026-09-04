@@ -13,18 +13,26 @@ Strategy:
 from __future__ import annotations
 
 import re
-from typing import List
 
 import structlog
 
 from app.infrastructure.ingestion.chunkers.base import BaseChunker
 from app.infrastructure.ingestion.models.canonical_page import CanonicalPage, CanonicalSection
-from app.infrastructure.ingestion.models.chunk_model import Chunk, ChunkStrategyEnum, estimate_token_count
+from app.infrastructure.ingestion.models.chunk_model import (
+    Chunk,
+    ChunkStrategyEnum,
+    estimate_token_count,
+)
 
 logger = structlog.get_logger(__name__)
 
-# Smart sentence boundary regex (preserves abbreviations like Lv. 90, v1.2, Dr. Honami, decimal 12.5%)
-_RE_SENTENCE = re.compile(r"(?<!\b(?:Lv|v|No|Dr|Mr|Mrs|Ms|Prof|etc|approx|e\.g|i\.e|\d))\b(?<=[.!?])\s+(?=[A-ZÀ-Ỹ\"'‘“\[\(\d])")
+# Candidate sentence boundary. Python's ``re`` engine does not support the
+# variable-width negative look-behind needed to exclude abbreviations, so that
+# exclusion is handled deterministically after splitting.
+_RE_SENTENCE_BOUNDARY = re.compile(r"(?<=[.!?])\s+(?=[A-ZÀ-Ỹ\"'‘“\[\(\d])")
+_RE_ABBREVIATION = re.compile(
+    r"(?i)(?:\b(?:lv|v|no|dr|mr|mrs|ms|prof|etc|approx)|\b(?:e\.g|i\.e)|\d)\.$"
+)
 
 
 class GenericChunker(BaseChunker):
@@ -49,15 +57,26 @@ class GenericChunker(BaseChunker):
         super().__init__(target_token_size=target_token_size, max_token_size=max_token_size)
         self.overlap_sentences = overlap_sentences
 
-    def _split_sentences(self, text: str) -> List[str]:
-        """Split text block into clean sentences."""
-        raw_sentences = _RE_SENTENCE.split(text.strip())
-        return [s.strip() for s in raw_sentences if s.strip()]
+    def _split_sentences(self, text: str) -> list[str]:
+        """Split text while preserving known abbreviations and decimal labels."""
+        candidates = _RE_SENTENCE_BOUNDARY.split(text.strip())
+        sentences: list[str] = []
 
-    def _split_paragraphs(self, text: str) -> List[str]:
+        for candidate in candidates:
+            clean_candidate = candidate.strip()
+            if not clean_candidate:
+                continue
+            if sentences and _RE_ABBREVIATION.search(sentences[-1]):
+                sentences[-1] = f"{sentences[-1]} {clean_candidate}"
+            else:
+                sentences.append(clean_candidate)
+
+        return sentences
+
+    def _split_paragraphs(self, text: str) -> list[str]:
         """Split text block into paragraphs by double-newline or bullet blocks."""
         paragraphs = text.split("\n\n")
-        cleaned: List[str] = []
+        cleaned: list[str] = []
 
         for p in paragraphs:
             p_str = p.strip()
@@ -67,7 +86,7 @@ class GenericChunker(BaseChunker):
             # If paragraph itself is huge (> max_token_size), break into sentence blocks
             if estimate_token_count(p_str) > self.max_token_size:
                 sentences = self._split_sentences(p_str)
-                temp_block: List[str] = []
+                temp_block: list[str] = []
                 temp_tokens = 0
 
                 for s in sentences:
@@ -91,7 +110,7 @@ class GenericChunker(BaseChunker):
         page: CanonicalPage,
         section: CanonicalSection,
         heading_path: str,
-    ) -> List[Chunk]:
+    ) -> list[Chunk]:
         """
         Chunk a prose/generic section using paragraph-merge and sentence overlap.
 
@@ -110,8 +129,8 @@ class GenericChunker(BaseChunker):
         if not paragraphs:
             return []
 
-        chunks: List[Chunk] = []
-        current_paragraphs: List[str] = []
+        chunks: list[Chunk] = []
+        current_paragraphs: list[str] = []
         current_tokens = 0
         chunk_idx = 0
         overlap_prefix = ""
@@ -122,7 +141,9 @@ class GenericChunker(BaseChunker):
             # Check if adding paragraph exceeds max_token_size
             if current_paragraphs and (current_tokens + p_tokens > self.max_token_size):
                 body_text = "\n\n".join(current_paragraphs)
-                full_chunk_text = f"{overlap_prefix}\n\n{body_text}" if overlap_prefix else body_text
+                full_chunk_text = (
+                    f"{overlap_prefix}\n\n{body_text}" if overlap_prefix else body_text
+                )
 
                 strategy = (
                     ChunkStrategyEnum.SLIDING_WINDOW
@@ -159,7 +180,9 @@ class GenericChunker(BaseChunker):
             # Target token size reached
             if current_tokens >= self.target_token_size:
                 body_text = "\n\n".join(current_paragraphs)
-                full_chunk_text = f"{overlap_prefix}\n\n{body_text}" if overlap_prefix else body_text
+                full_chunk_text = (
+                    f"{overlap_prefix}\n\n{body_text}" if overlap_prefix else body_text
+                )
 
                 strategy = (
                     ChunkStrategyEnum.SLIDING_WINDOW

@@ -11,7 +11,6 @@ import sys
 sys.path.insert(0, os.path.abspath("."))
 
 from app.domain.services.rag.reranker import HybridMemoryScorer
-from app.application.dependencies import container
 
 
 def test_adaptive_time_decay_math():
@@ -78,7 +77,7 @@ def test_adaptive_time_decay_math():
     print("  ✓ PASS: Toàn bộ công thức Adaptive Time-Decay hoạt động chính xác 100%!")
 
 
-async def test_streaming_token_collector():
+async def test_streaming_token_collector(test_chat_engine):
     print("\n" + "=" * 80)
     print("🚀 KIỂM THỬ: STREAMING GENERATION TOKEN COLLECTOR (SSE)")
     print("=" * 80)
@@ -86,14 +85,14 @@ async def test_streaming_token_collector():
     from app.infrastructure.database.engine import AsyncSessionFactory
     from app.interface.api.schemas.chat import ChatRequest
 
-    chat_engine = container.chat_engine
+    chat_engine = test_chat_engine
     collected_tokens = []
 
     async def token_callback(token: str):
         collected_tokens.append(token)
 
     async with AsyncSessionFactory() as session:
-        reply_text, emotions = await chat_engine.chat(
+        reply_text, emotions, _, _ = await chat_engine.chat(
             session=session,
             user_id="test_stream_user",
             user_message="chào em Chisa nha",

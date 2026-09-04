@@ -120,21 +120,9 @@ def upgrade() -> None:
     sa.PrimaryKeyConstraint('id', name=op.f('pk_pipeline_events'))
     )
     op.create_index(op.f('ix_pipeline_events_job_id'), 'pipeline_events', ['job_id'], unique=False)
-    op.drop_index(op.f('idx_discord_interactions_channel_id'), table_name='discord_interactions')
-    op.drop_index(op.f('idx_discord_interactions_core_user_id'), table_name='discord_interactions')
-    op.drop_index(op.f('idx_discord_interactions_created_at'), table_name='discord_interactions')
-    op.drop_index(op.f('idx_discord_interactions_user_id'), table_name='discord_interactions')
-    op.drop_table('discord_interactions')
-    op.drop_table('emotional_states')
-    op.drop_index(op.f('idx_guild_settings_channel_unique'), table_name='guild_settings')
-    op.drop_table('guild_settings')
-    op.drop_index(op.f('idx_discord_users_core_user_id'), table_name='discord_users')
-    op.drop_index(op.f('idx_discord_users_last_seen_at'), table_name='discord_users')
-    op.drop_index(op.f('idx_discord_users_uid_gid'), table_name='discord_users')
-    op.drop_table('discord_users')
-    op.drop_index(op.f('ix_affection_logs_created_desc'), table_name='affection_logs')
-    op.drop_index(op.f('ix_affection_logs_user_id'), table_name='affection_logs')
-    op.drop_table('affection_logs')
+    # Legacy Discord and affection tables are deliberately retained.  They were
+    # never owned by this Alembic revision chain, so deleting them during an
+    # application schema upgrade would be an unaudited destructive migration.
     # ### end Alembic commands ###
 
 def downgrade() -> None:

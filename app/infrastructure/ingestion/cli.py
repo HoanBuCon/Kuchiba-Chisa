@@ -22,7 +22,6 @@ import json
 import sys
 from datetime import datetime
 from pathlib import Path
-from typing import List
 
 import click
 import structlog
@@ -35,15 +34,18 @@ if hasattr(sys.stdout, "reconfigure"):
         pass
 
 from app.infrastructure.ingestion.canonical import (
-    CanonicalWriter,
     build_canonical_page,
     read_canonical_stream,
     write_canonical_stream,
 )
 from app.infrastructure.ingestion.chunkers import chunk_canonical_page
-from app.infrastructure.ingestion.parsers.sanitizer import clean_and_filter_chunk
 from app.infrastructure.ingestion.models import CanonicalPage, Chunk, RawPage, RawPageMeta
-from app.infrastructure.ingestion.storage import IngestionStateDB, PageStateRecord, QdrantSyncManager
+from app.infrastructure.ingestion.parsers.sanitizer import clean_and_filter_chunk
+from app.infrastructure.ingestion.storage import (
+    IngestionStateDB,
+    PageStateRecord,
+    QdrantSyncManager,
+)
 
 logger = structlog.get_logger(__name__)
 
@@ -89,9 +91,10 @@ def build_canonical_cmd(raw_dir: Path, output: Path) -> None:
     click.echo(f"[*] Found {len(files)} raw files to process.")
 
     from app.infrastructure.ingestion.canonical.entity_registry import EntityRegistry
+
     shared_registry = EntityRegistry()
 
-    canonical_pages: List[CanonicalPage] = []
+    canonical_pages: list[CanonicalPage] = []
     page_counter = 1000
 
     for fpath in files:
@@ -130,21 +133,29 @@ def build_canonical_cmd(raw_dir: Path, output: Path) -> None:
             canonical = build_canonical_page(raw_page, registry=shared_registry)
             canonical_pages.append(canonical)
             page_counter += 1
-            click.echo(f"  [OK] Parsed: [{canonical.identity.page_type.value}] {title} ({len(canonical.sections)} sections)")
+            click.echo(
+                f"  [OK] Parsed: [{canonical.identity.page_type.value}] {title} "
+                f"({len(canonical.sections)} sections)"
+            )
         except Exception as exc:
             click.echo(f"  [FAIL] Failed: {fpath.name} — {exc}", err=True)
 
     # Pass 2: Post-process metadata synchronization across all canonical pages
     for canonical in canonical_pages:
-        c_name = canonical.document_metadata.canonical_name or canonical.identity.title.split("/")[0].strip()
+        c_name = (
+            canonical.document_metadata.canonical_name
+            or canonical.identity.title.split("/")[0].strip()
+        )
         e_rec = shared_registry.get_entity(c_name)
         if e_rec and e_rec.attributes:
-            meta = canonical.document_metadata
-            meta.faction = meta.faction or e_rec.attributes.get("faction")
-            meta.element = meta.element or e_rec.attributes.get("element")
-            meta.rarity = meta.rarity or e_rec.attributes.get("rarity")
-            meta.weapon_type = meta.weapon_type or e_rec.attributes.get("weapon")
-            meta.region = meta.region or e_rec.attributes.get("region")
+            document_metadata = canonical.document_metadata
+            document_metadata.faction = document_metadata.faction or e_rec.attributes.get("faction")
+            document_metadata.element = document_metadata.element or e_rec.attributes.get("element")
+            document_metadata.rarity = document_metadata.rarity or e_rec.attributes.get("rarity")
+            document_metadata.weapon_type = document_metadata.weapon_type or e_rec.attributes.get(
+                "weapon"
+            )
+            document_metadata.region = document_metadata.region or e_rec.attributes.get("region")
 
     written = write_canonical_stream(canonical_pages, filepath=output, mode="w")
     click.echo(f"[SUCCESS] Successfully wrote {written} CanonicalPage records to {output}")
@@ -206,9 +217,15 @@ def process_chunks_cmd(input_path: Path, output_path: Path, target_size: int) ->
                 else:
                     dropped_chunks += 1
                 total_chunks += 1
-            click.echo(f"  [OK] Page '{page.identity.title}': {page_kept}/{len(chunks)} valid chunks generated.")
+            click.echo(
+                f"  [OK] Page '{page.identity.title}': {page_kept}/{len(chunks)} "
+                "valid chunks generated."
+            )
 
-    click.echo(f"[SUCCESS] Total {kept_chunks} valid chunks written to {output_path} ({dropped_chunks} junk chunks dropped by Quality Gate).")
+    click.echo(
+        f"[SUCCESS] Total {kept_chunks} valid chunks written to {output_path} "
+        f"({dropped_chunks} junk chunks dropped by Quality Gate)."
+    )
 
 
 # ─────────────────────────────────────────────────────────────
@@ -231,13 +248,18 @@ def process_chunks_cmd(input_path: Path, output_path: Path, target_size: int) ->
     default=Path("data/ingestion.sqlite"),
     help="Path to ingestion.sqlite DB.",
 )
-def sync_qdrant_cmd(input_path: Path, db_path: Path) -> None:
-    """Embed chunks and sync vectors to Qdrant & SQLite state DB."""
+@click.option(
+    "--staging-version",
+    required=True,
+    help="Physical corpus version; retry the same version after an unacknowledged write.",
+)
+def sync_qdrant_cmd(input_path: Path, db_path: Path, staging_version: str) -> None:
+    """Embed chunks and stage acknowledged vectors before any alias promotion."""
     click.echo(f"[+] Syncing Qdrant & SQLite from: {input_path}")
 
     # Read chunks
-    chunks: List[Chunk] = []
-    with open(input_path, "r", encoding="utf-8") as f:
+    chunks: list[Chunk] = []
+    with open(input_path, encoding="utf-8") as f:
         for line in f:
             line_str = line.strip()
             if line_str:
@@ -252,15 +274,15 @@ def sync_qdrant_cmd(input_path: Path, db_path: Path) -> None:
     # Instantiate state DB
     state_db = IngestionStateDB(db_path)
 
-    # Initialize FastEmbed embedding adapter
+    # Initialize FastEmbed embedding adapter. A missing model must fail the
+    # command; synthetic vectors would falsely mark a corpus as ingested.
     try:
         from app.infrastructure.embeddings.fastembed_adapter import FastEmbedAdapter
 
         embedder = FastEmbedAdapter()
         click.echo("  [OK] Initialized FastEmbed model.")
     except Exception as exc:
-        click.echo(f"[!] FastEmbed initialization fallback: {exc}")
-        embedder = None
+        raise click.ClickException("FastEmbed initialization failed; no data was staged") from exc
 
     async def _async_sync() -> None:
         sync_manager = QdrantSyncManager()
@@ -268,17 +290,26 @@ def sync_qdrant_cmd(input_path: Path, db_path: Path) -> None:
 
         # Generate vectors
         texts_to_embed = [f"{c.context_prefix}\n{c.text_content}" for c in chunks]
-        if embedder:
-            vectors = await embedder.embed_batch(texts_to_embed, prefix="passage: ")
-        else:
-            # Synthetic 384-dim dummy vector for testing if FastEmbed model missing
-            vectors = [[0.01] * 384 for _ in chunks]
+        vectors = await embedder.embed_batch(texts_to_embed, prefix="passage: ")
+        if len(vectors) != len(chunks):
+            raise RuntimeError(
+                "Embedding provider returned a vector count that does not match "
+                "the staged chunk count"
+            )
 
-        for chunk, vector in zip(chunks, vectors):
+        for chunk, vector in zip(chunks, vectors, strict=True):
             chunks_with_vectors.append((chunk, vector))
 
-        # Batch upsert to Qdrant
-        upserted_count = await sync_manager.upsert_chunk_batch(chunks_with_vectors)
+        target_collections = await sync_manager.prepare_staging_targets(
+            chunks,
+            staging_version=staging_version,
+        )
+        upserted_count = await sync_manager.upsert_chunk_batch(
+            chunks_with_vectors,
+            target_collections=target_collections,
+        )
+        if upserted_count != len(chunks):
+            raise RuntimeError("Qdrant acknowledgement count does not match the staged chunk count")
 
         # Update SQLite State DB
         page_chunks_count: dict[int, int] = {}
@@ -302,13 +333,16 @@ def sync_qdrant_cmd(input_path: Path, db_path: Path) -> None:
             )
             state_db.upsert_page_state(rec)
 
-        click.echo(f"[SUCCESS] Successfully upserted {upserted_count} points to Qdrant.")
-        click.echo(f"[SUCCESS] Updated {len(page_chunks_count)} pages in SQLite state DB ({db_path}).")
+        click.echo(f"[SUCCESS] Staged and acknowledged {upserted_count} Qdrant points.")
+        click.echo(
+            f"[SUCCESS] Updated {len(page_chunks_count)} pages in SQLite state DB ({db_path})."
+        )
 
     asyncio.run(_async_sync())
 
     # Explicit memory cleanup & graceful exit
     import gc
+
     gc.collect()
     sys.exit(0)
 
@@ -418,7 +452,6 @@ def status_cmd() -> None:
 )
 def clear_data_cmd(keep_raw: bool) -> None:
     """Clear all test/crawled data across pipeline layers."""
-    import shutil
 
     click.echo("==================================================")
     click.echo("=== Kuchiba Chisa - Ingestion Data Cleanup ===")
@@ -460,7 +493,9 @@ def clear_data_cmd(keep_raw: bool) -> None:
 # ─────────────────────────────────────────────────────────────
 
 
-@cli.command("validate-quality", help="Run 5-Gate Quality Control validation & Quarantine management.")
+@cli.command(
+    "validate-quality", help="Run 5-Gate Quality Control validation & Quarantine management."
+)
 @click.option(
     "--input",
     "input_path",
@@ -488,22 +523,22 @@ def validate_quality_cmd(
     quarantine_dir: Path,
 ) -> None:
     """Run 5-Gate Quality Control validation across CanonicalPages and Chunks."""
-    from app.infrastructure.ingestion.quality.validator import QualityValidator, QualityStatusEnum
+    from app.infrastructure.ingestion.quality.validator import QualityStatusEnum, QualityValidator
 
     click.echo(f"[+] Running 5-Gate Quality Control validation on: {input_path}")
 
     # Read CanonicalPages
-    pages: List[CanonicalPage] = []
-    with open(input_path, "r", encoding="utf-8") as f:
+    pages: list[CanonicalPage] = []
+    with open(input_path, encoding="utf-8") as f:
         for line in f:
             line_str = line.strip()
             if line_str:
                 pages.append(CanonicalPage.model_validate_json(line_str))
 
     # Read Chunks if available
-    chunks: List[Chunk] = []
+    chunks: list[Chunk] = []
     if chunks_path.exists():
-        with open(chunks_path, "r", encoding="utf-8") as f:
+        with open(chunks_path, encoding="utf-8") as f:
             for line in f:
                 line_str = line.strip()
                 if line_str:
@@ -561,6 +596,7 @@ def validate_quality_cmd(
 def enrich_canonical_command(input_file: Path, output_file: Path) -> None:
     """Enrich Canonical pages using instructor structured LLM extraction."""
     from app.infrastructure.ingestion.enrichment.enricher import enrich_canonical_page
+
     click.echo(f"[*] Reading canonical stream from {input_file}...")
     pages = read_canonical_stream(input_file)
     enriched_pages = []
@@ -569,7 +605,10 @@ def enrich_canonical_command(input_file: Path, output_file: Path) -> None:
         enriched_pages.append(enriched)
 
     write_canonical_stream(enriched_pages, output_file)
-    click.echo(f"[SUCCESS] Processed enrichment for {len(enriched_pages)} canonical pages into {output_file}")
+    click.echo(
+        f"[SUCCESS] Processed enrichment for {len(enriched_pages)} canonical pages "
+        f"into {output_file}"
+    )
 
 
 # ─────────────────────────────────────────────────────────────
@@ -584,12 +623,14 @@ def enrich_canonical_command(input_file: Path, output_file: Path) -> None:
     multiple=True,
     help="Specific categories to scan (e.g. -c Resonators -c Factions).",
 )
-def scan_wiki_cmd(categories: Tuple[str, ...]) -> None:
+def scan_wiki_cmd(categories: tuple[str, ...]) -> None:
     """Scan MediaWiki categories and print dry-run selection report."""
     from app.infrastructure.ingestion.crawlers import WikiCrawler
 
     crawler = WikiCrawler()
-    report = asyncio.run(crawler.scan_and_select(categories=list(categories) if categories else None))
+    report = asyncio.run(
+        crawler.scan_and_select(categories=list(categories) if categories else None)
+    )
     click.echo(report.summary_markdown())
 
 
@@ -611,12 +652,14 @@ def scan_wiki_cmd(categories: Tuple[str, ...]) -> None:
     multiple=True,
     help="Specific categories to crawl (e.g. -c Resonators -c Factions).",
 )
-def crawl_wiki_cmd(raw_dir: Path, categories: Tuple[str, ...]) -> None:
+def crawl_wiki_cmd(raw_dir: Path, categories: tuple[str, ...]) -> None:
     """Download approved lore pages into data/raw_wiki/."""
     from app.infrastructure.ingestion.crawlers import WikiCrawler
 
     crawler = WikiCrawler(output_dir=raw_dir)
-    report = asyncio.run(crawler.crawl_and_save(categories=list(categories) if categories else None, dry_run=False))
+    report = asyncio.run(
+        crawler.crawl_and_save(categories=list(categories) if categories else None, dry_run=False)
+    )
     click.echo(f"[SUCCESS] Downloaded {report.saved_count} clean lore pages into {raw_dir}")
 
 
@@ -670,4 +713,3 @@ def run_pipeline_cmd(mode: str, raw_dir: Path) -> None:
 
 if __name__ == "__main__":
     cli()
-

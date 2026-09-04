@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Any, AsyncIterator, Optional
+from collections.abc import AsyncIterator
+from typing import Any, Optional
 
 from pydantic import BaseModel
-
 
 # ─── Request / Response Schemas ───────────────────────────────────────────────
 
@@ -87,7 +87,7 @@ class BaseLLMAdapter(ABC):
         ...
 
     @abstractmethod
-    async def stream(self, prompt: StructuredPrompt) -> AsyncIterator[str]:
+    def stream(self, prompt: StructuredPrompt) -> AsyncIterator[str]:
         """
         Stream LLM response chunks (for real-time UX).
         Yields raw content deltas.

@@ -1,21 +1,22 @@
 import re
-from typing import Any, Dict, List, Callable, Awaitable
-from app.domain.interfaces.llm_provider import BaseLLMAdapter, StructuredPrompt
+from collections.abc import Awaitable, Callable
+from typing import Any
+
 from app.domain.interfaces.embedding_provider import IEmbeddingProvider
+from app.domain.interfaces.llm_provider import BaseLLMAdapter
+from app.domain.interfaces.search_provider import ISearchProvider
 from app.domain.services.tools.base import BaseAgentTool
-from app.domain.tuning.rag import RAGTuning
-from app.config.settings import settings
 from app.shared.utils.logger import get_logger
 
 log = get_logger(__name__)
 
 
 def web_search_trace_payload(
-    res: Dict[str, Any],
+    res: dict[str, Any],
     *,
     source: str,
     original_message: str = "",
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Chuẩn hóa payload cho pipeline visualizer."""
     return {
         "source": source,
@@ -35,6 +36,7 @@ class WebSearchAgentTool(BaseAgentTool):
     """
     Agent tool for performing DuckDuckGo searches and query optimization.
     """
+
     @property
     def name(self) -> str:
         return "web_search"
@@ -44,7 +46,7 @@ class WebSearchAgentTool(BaseAgentTool):
         return "Tìm kiếm thông tin cập nhật hoặc thông tin thực tế mới nhất trên Internet qua DuckDuckGo."
 
     @property
-    def anchors(self) -> List[str]:
+    def anchors(self) -> list[str]:
         return [
             # --- Ra lệnh tìm kiếm tường minh ---
             "tra mạng giúp anh tin tức này",
@@ -86,14 +88,13 @@ class WebSearchAgentTool(BaseAgentTool):
         user_message: str,
         llm: BaseLLMAdapter,
         embedder: IEmbeddingProvider,
-        **kwargs
-    ) -> Dict[str, Any]:
+        **kwargs,
+    ) -> dict[str, Any]:
         import hashlib
         import json
-        import asyncio
 
         cache = kwargs.get("cache")
-        
+
         search_query = user_message.strip()
         log.info("Executing search query", query=search_query)
 
@@ -127,20 +128,20 @@ class WebSearchAgentTool(BaseAgentTool):
 
         return res
 
-
     @staticmethod
     def _clean_html_to_text(html: str) -> str:
         """
         Industry-Standard Web Content Extractor (Trafilatura + Link-Density Fallback).
-        Extracts high-signal article body, tables, and facts while stripping boilerplate, 
+        Extracts high-signal article body, tables, and facts while stripping boilerplate,
         navbars, menus, and footers without any language hardcoding.
         """
         if not html:
             return ""
-        
+
         # 1. Primary: Trafilatura (State-of-the-art Content Extractor for LLM/NLP pipelines)
         try:
             import trafilatura
+
             extracted = trafilatura.extract(
                 html,
                 include_comments=False,
@@ -151,12 +152,14 @@ class WebSearchAgentTool(BaseAgentTool):
             )
             if extracted and len(extracted.strip()) >= 50:
                 import html as html_module
+
                 return html_module.unescape(extracted.strip())
         except Exception:
             pass
 
         # 2. Fallback: First-Principles Link-to-Text Density Extractor
         import html as html_module
+
         text = re.sub(r"<!--.*?-->", " ", html, flags=re.DOTALL)
         text = re.sub(
             r"<(script|style|nav|header|footer|aside|noscript|form|svg|button|iframe|select|option)[^>]*>.*?</\1>",
@@ -164,7 +167,7 @@ class WebSearchAgentTool(BaseAgentTool):
             text,
             flags=re.DOTALL | re.IGNORECASE,
         )
-        
+
         paragraphs = []
         h1_match = re.search(r"<h1[^>]*>(.*?)</h1>", text, flags=re.DOTALL | re.IGNORECASE)
         if h1_match:
@@ -172,34 +175,34 @@ class WebSearchAgentTool(BaseAgentTool):
             t = html_module.unescape(t).strip()
             if len(t) >= 15:
                 paragraphs.append(t)
-        
+
         p_matches = re.findall(r"<p[^>]*>(.*?)</p>", text, flags=re.DOTALL | re.IGNORECASE)
         for p in p_matches:
             p_text = re.sub(r"<[^>]+>", " ", p)
             p_text = html_module.unescape(p_text)
             p_text = re.sub(r"\s+", " ", p_text).strip()
-            
+
             if len(p_text) < 40:
                 continue
-            
+
             link_texts = re.findall(r"<a[^>]*>(.*?)</a>", p, flags=re.DOTALL | re.IGNORECASE)
             link_chars = sum(len(re.sub(r"<[^>]+>", "", lt).strip()) for lt in link_texts)
             link_density = link_chars / max(1, len(p_text))
-            
+
             if link_density > 0.40:
                 continue
-                
+
             paragraphs.append(p_text)
-        
+
         if paragraphs:
             return "\n\n".join(paragraphs)
-        
+
         text = re.sub(r"<[^>]+>", " ", text)
         text = html_module.unescape(text)
         return re.sub(r"\s+", " ", text).strip()
 
     @staticmethod
-    def _filter_quality_snippets(snippets: List[str], query: str) -> List[str]:
+    def _filter_quality_snippets(snippets: list[str], query: str) -> list[str]:
         """
         Snippet Quality Gate:
         - Filters out snippets that are too short (< 30 chars).
@@ -250,14 +253,19 @@ class WebSearchAgentTool(BaseAgentTool):
         return quality_snippets[:4]
 
     @staticmethod
-    def _rank_urls_by_relevance(urls: List[str], snippets: List[str], query: str) -> List[str]:
+    def _rank_urls_by_relevance(urls: list[str], snippets: list[str], query: str) -> list[str]:
         """
         Smart Deep Page Selection:
         Prioritizes candidate URLs with high snippet keyword overlap and reputable domains.
         """
         DOMAIN_BLACKLIST = {
-            "youtube.com", "facebook.com", "twitter.com", "x.com",
-            "instagram.com", "tiktok.com", "pinterest.com"
+            "youtube.com",
+            "facebook.com",
+            "twitter.com",
+            "x.com",
+            "instagram.com",
+            "tiktok.com",
+            "pinterest.com",
         }
         DOMAIN_BOOST = {
             "wikipedia.org": 2.0,
@@ -290,8 +298,8 @@ class WebSearchAgentTool(BaseAgentTool):
 
     def __init__(
         self,
-        providers: List['ISearchProvider'] = None,
-        page_fetcher: Callable[[str], Awaitable[str]] = None
+        providers: list[ISearchProvider] | None = None,
+        page_fetcher: Callable[[str], Awaitable[str]] | None = None,
     ):
         super().__init__()
         if providers is None:
@@ -300,14 +308,15 @@ class WebSearchAgentTool(BaseAgentTool):
             self.providers = providers
         self.page_fetcher = page_fetcher
 
-    async def _web_search(self, query: str) -> Dict[str, Any]:
+    async def _web_search(self, query: str) -> dict[str, Any]:
         import asyncio
+
         log.info("Executing resilient web search provider chain", query=query)
-        
+
         snippets = []
         urls = []
         provider_name = "none"
-        
+
         for provider in self.providers:
             result = await provider.search(query)
             if result:
@@ -329,7 +338,9 @@ class WebSearchAgentTool(BaseAgentTool):
         # ── Snippet Quality Gate ──
         quality_snippets = self._filter_quality_snippets(snippets, query)
         results = quality_snippets if quality_snippets else snippets[:4]
-        results_str = f"SEARCH SNIPPETS ({provider_name}):\n" + "\n".join([f"- {r}" for r in results])
+        results_str = f"SEARCH SNIPPETS ({provider_name}):\n" + "\n".join(
+            [f"- {r}" for r in results]
+        )
 
         # ── Smart Deep Page Selection ──
         candidate_urls = self._rank_urls_by_relevance(urls, snippets, query)
@@ -338,26 +349,31 @@ class WebSearchAgentTool(BaseAgentTool):
         deep_page_url = None
         deep_page_preview = None
 
-        if candidate_urls and self.page_fetcher:
+        page_fetcher = self.page_fetcher
+        if candidate_urls and page_fetcher:
+
             async def fetch_page(target_url: str):
                 try:
                     log.info("Fetching deep page in parallel", url=target_url)
-                    html = await asyncio.wait_for(self.page_fetcher(target_url), timeout=3.5)
+                    html = await asyncio.wait_for(page_fetcher(target_url), timeout=3.5)
                     if html:
                         cleaned_text = self._clean_html_to_text(html)
                         # Filter out robot policy blocks or captcha error messages
-                        is_blocked = any(err in cleaned_text.lower() for err in [
-                            "please set a user-agent",
-                            "robot policy",
-                            "403 forbidden",
-                            "access denied",
-                            "attention required",
-                            "cloudflare",
-                            "just a moment..."
-                        ])
+                        is_blocked = any(
+                            err in cleaned_text.lower()
+                            for err in [
+                                "please set a user-agent",
+                                "robot policy",
+                                "403 forbidden",
+                                "access denied",
+                                "attention required",
+                                "cloudflare",
+                                "just a moment...",
+                            ]
+                        )
                         if len(cleaned_text) >= 150 and not is_blocked:
                             return target_url, cleaned_text[:2500]
-                except asyncio.TimeoutError:
+                except TimeoutError:
                     log.warning("Deep page fetch timed out after 3.5s", url=target_url)
                 except Exception as pe:
                     log.warning("Failed parallel deep page fetch", url=target_url, error=str(pe))
@@ -379,7 +395,12 @@ class WebSearchAgentTool(BaseAgentTool):
             if fetched_content:
                 results_str += "\n\nDEEP PAGE CONTENT:\n" + "\n\n".join(fetched_content)
 
-        log.info("Resilient web search completed", provider=provider_name, count=len(results), got_deep_content=bool(fetched_content))
+        log.info(
+            "Resilient web search completed",
+            provider=provider_name,
+            count=len(results),
+            got_deep_content=bool(fetched_content),
+        )
         return {
             "status": "success",
             "message": results_str,

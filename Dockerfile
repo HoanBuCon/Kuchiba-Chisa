@@ -12,13 +12,6 @@ ENV PYTHONUNBUFFERED=1 \
 
 WORKDIR /build
 
-# Install system-level build dependencies
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential \
-    libpq-dev \
-    curl \
-    && rm -rf /var/lib/apt/lists/*
-
 # Copy requirements first (layer caching)
 COPY requirements.txt .
 
@@ -37,12 +30,7 @@ RUN groupadd --gid 1001 chisa && \
     useradd --uid 1001 --gid chisa --shell /bin/bash --create-home chisa
 
 WORKDIR /app
-
-# System runtime dependencies only
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    libpq5 \
-    curl \
-    && rm -rf /var/lib/apt/lists/*
+RUN chown chisa:chisa /app
 
 # Copy installed packages from builder
 COPY --from=builder /install /usr/local
@@ -57,9 +45,25 @@ USER chisa
 
 # Health check for container orchestrator
 HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
-    CMD curl -f http://localhost:8000/health || exit 1
+    CMD python -c "from urllib.request import urlopen; urlopen('http://localhost:8000/health', timeout=5)"
 
 EXPOSE 8000
 
 # Default: run API server (overridden in docker-compose for worker)
 CMD ["python", "-m", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+
+
+# ── Stage 3: Isolated verification ───────────────────────────────────────────
+# Used only by docker-compose.test.yml and CI. Production images do not contain
+# test, lint, or type-check dependencies.
+FROM production AS test
+
+USER root
+
+COPY requirements.txt requirements-dev.txt ./
+RUN pip install --no-cache-dir -r requirements-dev.txt
+
+COPY --chown=chisa:chisa pyproject.toml ./
+COPY --chown=chisa:chisa tests/ ./tests/
+
+USER chisa

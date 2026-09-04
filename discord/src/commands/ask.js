@@ -178,6 +178,8 @@ export async function execute(client, interaction, discordUser) {
     } else {
       result = await coreRagClient.ask({
         coreUserId: discordUser.core_user_id,
+        guildId: interaction.guildId ?? null,
+        channelId: interaction.channelId ?? null,
         message: question,
         username: interaction.user.username,
         channelName: interaction.channel ? (interaction.channel.name || 'DM') : 'DM',
@@ -282,6 +284,8 @@ export async function executePrefix(client, message, question, discordUser, opti
     } else {
       result = await coreRagClient.ask({
         coreUserId: discordUser.core_user_id,
+        guildId: message.guildId ?? null,
+        channelId: message.channelId ?? null,
         message: finalQuestion,
         username: message.author.username,
         channelName: message.channel ? (message.channel.name || 'DM') : 'DM',
