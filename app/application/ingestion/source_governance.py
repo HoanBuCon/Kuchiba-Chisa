@@ -15,7 +15,6 @@ from app.domain.models.ingestion_source import (
     IngestionSourceAuditAction,
     IngestionSourceAuditEvent,
     SourceAccessPolicy,
-    SourceStatus,
     SourceTrustTier,
 )
 from app.domain.value_objects.principal import PrincipalContext
