@@ -1,9 +1,13 @@
-import pytest
-from unittest.mock import AsyncMock, patch
+from unittest.mock import patch
+
 import httpx
+import pytest
+
 from app.config.settings import settings
+from app.domain.interfaces.llm_provider import LLMResponse, StructuredPrompt
+from app.domain.services.context_builder import ContextBuilder
 from app.infrastructure.llm.adapters.deepseek import DeepSeekAdapter
-from app.domain.interfaces.llm_provider import StructuredPrompt, LLMResponse
+
 
 @pytest.mark.asyncio
 @patch("httpx.AsyncClient.post")
@@ -15,7 +19,11 @@ async def test_deepseek_adapter_generate_success(mock_post):
             "choices": [
                 {
                     "message": {
-                        "content": '{"response": "Hello Senpai!", "user_sentiment": {"is_positive": true}, "chisa_sentiment": {"is_happy": true}}'
+                        "content": (
+                            '{"response": "Hello Senpai!", "sentiment": '
+                            '{"reaction": "calm_warmth", "user_stance": "neutral", '
+                            '"intensity": 0.5, "variance": 0.0}}'
+                        )
                     },
                     "finish_reason": "stop"
                 }
@@ -35,7 +43,7 @@ async def test_deepseek_adapter_generate_success(mock_post):
         system="Test system",
         history=[],
         user_message="Hello",
-        response_schema={"type": "object"},
+        response_schema=ContextBuilder.get_response_schema(),
         retrieved_memories=[],
         retrieved_lore=[],
         rag_decisions={}
@@ -44,7 +52,10 @@ async def test_deepseek_adapter_generate_success(mock_post):
     res = await adapter.generate(prompt)
     
     assert isinstance(res, LLMResponse)
-    assert res.raw_content == '{"response": "Hello Senpai!", "user_sentiment": {"is_positive": true}, "chisa_sentiment": {"is_happy": true}}'
+    assert res.raw_content == (
+        '{"response": "Hello Senpai!", "sentiment": {"reaction": "calm_warmth", '
+        '"user_stance": "neutral", "intensity": 0.5, "variance": 0.0}}'
+    )
     assert res.parsed["response"] == "Hello Senpai!"
     assert res.input_tokens == 12
     assert res.output_tokens == 8

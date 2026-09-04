@@ -3,6 +3,7 @@ from contextlib import suppress
 
 from app.domain.context import request_question_idx, request_turn_idx
 from app.domain.interfaces.cache_provider import ICacheProvider
+from app.domain.interfaces.privacy import IPrivacyPreferenceRepository
 from app.domain.interfaces.repositories import (
     IConversationRepository,
     IEmotionRepository,
@@ -32,18 +33,27 @@ class InitializationStage(PipelineStage):
         conv_repo_factory: Callable[[IDbSession], IConversationRepository],
         cache_provider: ICacheProvider | None = None,
         pipeline_tracker: IPipelineTracker | None = None,
+        privacy_repo_factory: (
+            Callable[[IDbSession], IPrivacyPreferenceRepository] | None
+        ) = None,
     ):
         self.user_repo_factory = user_repo_factory
         self.emotion_repo_factory = emotion_repo_factory
         self.conv_repo_factory = conv_repo_factory
         self.cache_provider = cache_provider
         self.pipeline_tracker = pipeline_tracker
+        self.privacy_repo_factory = privacy_repo_factory
 
     async def process(self, context: ChatContext) -> ChatContext:
         user_uuid = normalize_user_id(context.user_id)
         user_repo = self.user_repo_factory(context.session)
         emotion_repo = self.emotion_repo_factory(context.session)
         conv_repo = self.conv_repo_factory(context.session)
+        privacy_policy = (
+            await self.privacy_repo_factory(context.session).get_memory_policy(user_uuid)
+            if self.privacy_repo_factory
+            else context.memory_privacy_policy
+        )
 
         # 1. Try reading User State from Redis Cache (~0.2ms)
         from app.domain.services.user_state_cache import UserStateCache
@@ -162,15 +172,24 @@ class InitializationStage(PipelineStage):
             from app.domain.services.image_ingestion import ImageIngestionService
 
             ingestion_service = ImageIngestionService()
+            # A submitted image may be used transiently for the current answer,
+            # but cannot become a disk-backed or retrievable memory without the
+            # verified principal's durable consent policy.
+            persist_images = (
+                not context.is_ephemeral_reference
+                and privacy_policy.allows_long_term_memory
+            )
+            effective_ephemeral = not persist_images
             try:
                 processed_images = await ingestion_service.ingest_images(
                     image_inputs=context.images,
-                    save_to_disk=True,
-                    is_ephemeral=False,
+                    save_to_disk=persist_images,
+                    is_ephemeral=effective_ephemeral,
                 )
                 context.processed_images = processed_images
                 context.has_images = len(processed_images) > 0
                 context.images_processed = processed_images
+                context.is_ephemeral_reference = effective_ephemeral
             except Exception as img_err:
                 log.error("Failed to process images in InitializationStage", error=str(img_err))
                 context.has_images = False
@@ -184,6 +203,7 @@ class InitializationStage(PipelineStage):
         context.conversation_summary = summary
         context.attachment_bonus_raw = 0.0
         context.current_emotions = current_emotions
+        context.memory_privacy_policy = privacy_policy
 
         if self.pipeline_tracker:
             if not context.trace_id:
@@ -226,21 +246,9 @@ class InitializationStage(PipelineStage):
                     else context.channel_transcript,
                     "attachment_bonus_raw": round(attachment_bonus_raw, 4),
                     "has_images": context.has_images,
+                    "long_term_memory_enabled": privacy_policy.allows_long_term_memory,
                     "images_count": len(context.processed_images),
-                    "processed_images": [
-                        {
-                            "image_id": img.get("image_id"),
-                            "url": img.get("url"),
-                            "thumbnail_url": img.get("thumbnail_url")
-                            or img.get("thumbnail_data_uri"),
-                            "thumbnail_data_uri": img.get("thumbnail_data_uri"),
-                            "width": img.get("width"),
-                            "height": img.get("height"),
-                            "size_bytes": img.get("size_bytes"),
-                            "is_ephemeral": img.get("is_ephemeral"),
-                        }
-                        for img in context.processed_images
-                    ],
+                    "processed_images": _trace_image_metadata(context.processed_images),
                     "status": "success",
                 },
             )
@@ -251,3 +259,17 @@ class InitializationStage(PipelineStage):
             await context.session.commit()
 
         return context
+
+
+def _trace_image_metadata(processed_images: list[dict[str, object]]) -> list[dict[str, object]]:
+    """Return metadata suitable for telemetry without image data or storage locations."""
+    return [
+        {
+            "image_id": image.get("image_id"),
+            "width": image.get("width"),
+            "height": image.get("height"),
+            "size_bytes": image.get("size_bytes"),
+            "is_ephemeral": image.get("is_ephemeral"),
+        }
+        for image in processed_images
+    ]

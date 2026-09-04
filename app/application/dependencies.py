@@ -110,6 +110,21 @@ class AppContainer:
         return res
 
     @cached_property
+    def cross_encoder_reranker(self):
+        """Construct only an explicitly approved, locally provisioned reranker."""
+        if not settings.RERANKER_MODEL:
+            return None
+        from app.infrastructure.rag.fastembed_cross_encoder_reranker import (
+            FastEmbedCrossEncoderReranker,
+        )
+
+        return FastEmbedCrossEncoderReranker(
+            model_name=settings.RERANKER_MODEL,
+            timeout_seconds=settings.RERANKER_TIMEOUT_SECONDS,
+            batch_size=settings.RERANKER_BATCH_SIZE,
+        )
+
+    @cached_property
     def chat_engine(self) -> ChatEngine:
         from app.domain.services.chat_engine import ChatPipeline
         from app.domain.services.chat_pipeline.stages.background_task_stage import (
@@ -127,9 +142,13 @@ class AppContainer:
         from app.domain.services.chat_pipeline.stages.intent_stage import IntentStage
         from app.domain.services.chat_pipeline.stages.llm_generation_stage import LLMGenerationStage
         from app.domain.services.chat_pipeline.stages.persistence_stage import PersistenceStage
+        from app.domain.services.chat_pipeline.stages.provider_pii_redaction_stage import (
+            ProviderPiiRedactionStage,
+        )
         from app.domain.services.chat_pipeline.stages.rag_stage import RAGStage
         from app.domain.services.chat_pipeline.stages.tool_routing_stage import ToolRoutingStage
         from app.domain.services.emotion_engine import EmotionEngine
+        from app.domain.services.guardrails import PromptLeakageGuard
         from app.domain.services.intent_classifier import IntentClassifier
         from app.domain.services.tool_router import LLMToolRouter
         from app.infrastructure.cache.redis.redis_service import redis_service
@@ -141,6 +160,9 @@ class AppContainer:
             SqlAlchemyEmotionRepository,
         )
         from app.infrastructure.database.repositories.lore_parent import LoreParentRepository
+        from app.infrastructure.database.repositories.privacy_preference import (
+            SqlAlchemyPrivacyPreferenceRepository,
+        )
         from app.infrastructure.database.repositories.user_repository import (
             SqlAlchemyUserRepository,
         )
@@ -159,6 +181,9 @@ class AppContainer:
 
         def conversation_repo_factory(session: IDbSession):
             return SqlAlchemyConversationRepository(_require_async_session(session))
+
+        def privacy_repo_factory(session: IDbSession):
+            return SqlAlchemyPrivacyPreferenceRepository(_require_async_session(session))
 
         def unit_of_work_factory(session: IDbSession):
             return UnitOfWork(_require_async_session(session))
@@ -232,7 +257,8 @@ class AppContainer:
             image_memory_retriever=ImageMemoryRetriever(vector_store=qdrant_service),
             lore_retriever=LoreRetriever(
                 vector_store=qdrant_service,
-                lore_parent_repo_factory=LoreParentRepository
+                lore_parent_repo_factory=LoreParentRepository,
+                cross_encoder_reranker=self.cross_encoder_reranker,
             ),
             assessor=ContextAssessor(),
             thinking_loop_agent=ThinkingLoopAgent(pipeline_tracker=pipeline_tracker),
@@ -252,7 +278,8 @@ class AppContainer:
                 emotion_repo_factory=emotion_repo_factory,
                 conv_repo_factory=conversation_repo_factory,
                 cache_provider=redis_service,
-                pipeline_tracker=pipeline_tracker
+                pipeline_tracker=pipeline_tracker,
+                privacy_repo_factory=privacy_repo_factory,
             ),
             IntentStage(
                 intent_classifier=intent_classifier,
@@ -283,10 +310,12 @@ class AppContainer:
                 context_builder=self.context_builder,
                 pipeline_tracker=pipeline_tracker
             ),
+            ProviderPiiRedactionStage(),
             LLMGenerationStage(
                 llm=self.llm,
                 llm_logger_callback=log_llm_transaction,
-                pipeline_tracker=pipeline_tracker
+                pipeline_tracker=pipeline_tracker,
+                output_leakage_guard=PromptLeakageGuard(),
             ),
             EmotionUpdateStage(
                 emotion_engine=emotion_engine,
@@ -329,6 +358,37 @@ class AppContainer:
         engine_ref.append(engine)
         
         return engine
+
+    @cached_property
+    def memory_policy_service(self):
+        from app.application.privacy import MemoryPolicyService
+        from app.infrastructure.database.repositories.conversation_repository import (
+            SqlAlchemyConversationRepository,
+        )
+        from app.infrastructure.database.repositories.privacy_preference import (
+            SqlAlchemyPrivacyPreferenceRepository,
+        )
+        from app.infrastructure.database.repositories.user_repository import (
+            SqlAlchemyUserRepository,
+        )
+        from app.infrastructure.storage.factory import get_image_storage_provider
+
+        def user_repo_factory(session: IDbSession):
+            return SqlAlchemyUserRepository(_require_async_session(session))
+
+        def privacy_repo_factory(session: IDbSession):
+            return SqlAlchemyPrivacyPreferenceRepository(_require_async_session(session))
+
+        def conversation_repo_factory(session: IDbSession):
+            return SqlAlchemyConversationRepository(_require_async_session(session))
+
+        return MemoryPolicyService(
+            user_repo_factory=user_repo_factory,
+            conversation_repo_factory=conversation_repo_factory,
+            privacy_repo_factory=privacy_repo_factory,
+            vector_store=qdrant_service,
+            image_storage=get_image_storage_provider(),
+        )
 
     @cached_property
     def clear_user_memory_use_case(self):
@@ -389,6 +449,11 @@ def get_clear_user_memory_use_case():
 def get_clear_community_memory_use_case():
     """FastAPI Dependency for injecting ClearCommunityMemoryUseCase."""
     return container.clear_community_memory_use_case
+
+
+def get_memory_policy_service():
+    """FastAPI dependency for SAFE-02 consent transitions."""
+    return container.memory_policy_service
 
 async def get_vector_store():
     return qdrant_service

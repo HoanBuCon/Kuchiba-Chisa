@@ -127,7 +127,7 @@ async function streamChatResponse(payload, accessToken, { onLoopThinkingStart, o
       if (eventName === 'token' && typeof onToken === 'function') {
         onToken(data?.token || '');
       }
-      if (eventName === 'complete') {
+      if (eventName === 'done') {
         finalPayload = data;
       }
       if (eventName === 'error') {

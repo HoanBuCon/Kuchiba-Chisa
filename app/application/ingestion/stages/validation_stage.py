@@ -47,7 +47,7 @@ class ValidationStage(IPipelineStage[ValidationInput, List[ProcessingChunk]]):
             if "|" in chunk.text_content and "-|-" in chunk.text_content:
                 # Naive check to see if we chopped a table in half
                 lines = chunk.text_content.splitlines()
-                table_lines = [l for l in lines if "|" in l]
+                table_lines = [line for line in lines if "|" in line]
                 if len(table_lines) == 1:
                     chunk.is_valid = False
                     chunk.validation_errors.append("Potentially broken markdown table")

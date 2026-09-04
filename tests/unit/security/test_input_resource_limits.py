@@ -9,7 +9,7 @@ from fastapi import FastAPI, Request
 from httpx import ASGITransport, AsyncClient
 from pydantic import ValidationError
 
-from app.config.settings import settings
+from app.config.settings import Settings, settings
 from app.domain.services.image_ingestion import ImageIngestionService
 from app.interface.api.schemas.chat import ChatRequest
 from app.interface.api.schemas.community import CommunityChatRequest
@@ -41,9 +41,42 @@ def test_schema_preflights_encoded_and_aggregate_image_budgets(
     monkeypatch.setattr(settings, "VISION_MAX_TOTAL_DECODED_BYTES", 5)
 
     with pytest.raises(ValidationError, match="decoded image payload is too large"):
-        ChatRequest.model_validate({"message": "hello", "images": ["AAAAAAA"]})
+        ChatRequest.model_validate({"message": "hello", "images": ["AAAAAAAA"]})
     with pytest.raises(ValidationError, match="aggregate decoded image payload is too large"):
         ChatRequest.model_validate({"message": "hello", "images": ["AAAA", "AAAA"]})
+
+
+def test_schema_rejects_malformed_or_empty_base64_before_ingestion() -> None:
+    for image in ("data:image/png;base64,", "data:image/png;base64,%%%not-base64%%%"):
+        with pytest.raises(ValidationError, match="invalid base64 image payload"):
+            ChatRequest.model_validate({"message": "hello", "images": [image]})
+
+
+def test_invalid_config_cannot_underprovision_image_or_body_quota() -> None:
+    with pytest.raises(ValidationError, match="cannot be below the image quota"):
+        Settings(
+            SECRET_KEY="s" * 32,
+            DATABASE_URL="postgresql+asyncpg://chisa:secret@localhost/chisa_test",
+            DISCORD_WORKLOAD_JWT_SECRET="d" * 32,
+            VISION_MAX_IMAGES=4,
+            VISION_MAX_IMAGE_BYTES=1_024,
+            VISION_MAX_TOTAL_DECODED_BYTES=4_095,
+        )
+
+
+@pytest.mark.asyncio
+async def test_main_app_rejects_oversized_body_before_route_or_rate_limit(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from app.main import create_app
+
+    monkeypatch.setattr(settings, "API_MAX_REQUEST_BODY_BYTES", 4)
+    api = create_app()
+
+    async with AsyncClient(transport=ASGITransport(api), base_url="http://testserver") as client:
+        response = await client.post("/api/v1/chat", content=b"12345")
+
+    assert response.status_code == 413
 
 
 def test_community_schema_rejects_excessive_history_and_oversized_fields() -> None:

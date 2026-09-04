@@ -109,7 +109,7 @@ def _detect_content_type(
 
     # List check: > 50% of non-empty lines start with bullet/number
     list_lines = [
-        l for l in lines if l.startswith(("- ", "* ", "1. ", "2. ", "3. "))
+        line for line in lines if line.startswith(("- ", "* ", "1. ", "2. ", "3. "))
     ]
     if len(lines) >= 3 and len(list_lines) / len(lines) >= 0.5:
         return ContentTypeEnum.LIST

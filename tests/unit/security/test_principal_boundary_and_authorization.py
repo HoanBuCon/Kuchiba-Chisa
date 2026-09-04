@@ -156,7 +156,7 @@ async def test_chat_payload_identity_fields_are_rejected_and_principal_is_used(
     monkeypatch.setattr(
         chat,
         "_run_chat_request",
-        AsyncMock(return_value=("ok", {}, False, [], [])),
+        AsyncMock(return_value=("ok", {}, False, [], [], ["lore:server-owned"])),
     )
 
     response = await chat.chat_endpoint(
@@ -168,6 +168,7 @@ async def test_chat_payload_identity_fields_are_rejected_and_principal_is_used(
     )
 
     assert response.user_id == "verified-user"
+    assert response.citations == ["lore:server-owned"]
     run_call = chat._run_chat_request.await_args.kwargs
     assert run_call["original_user_id"] == "verified-user"
     assert run_call["normalized_user_id"] != "attacker-selected-user"
@@ -294,7 +295,15 @@ async def test_community_payload_identity_fields_are_rejected_and_principal_is_u
 
     request = CommunityChatRequest(message="hello")
     engine = SimpleNamespace(
-        community_chat=AsyncMock(return_value=("ok", {}, [], [])),
+        community_chat_detailed=AsyncMock(
+            return_value=SimpleNamespace(
+                reply_text="ok",
+                emotions={},
+                images_processed=[],
+                attached_images=[],
+                citation_ids=["lore:server-owned"],
+            )
+        ),
     )
     session = SimpleNamespace(commit=AsyncMock(), rollback=AsyncMock())
     from app.infrastructure.logging.pipeline_tracker import pipeline_tracker
@@ -302,15 +311,16 @@ async def test_community_payload_identity_fields_are_rejected_and_principal_is_u
     monkeypatch.setattr(pipeline_tracker, "start_trace", lambda **kwargs: "trace-1")
     monkeypatch.setattr(pipeline_tracker, "end_trace", lambda **kwargs: None)
 
-    await community.community_chat_endpoint(
+    response = await community.community_chat_endpoint(
         request=request, principal=principal, session=session, chat_engine=engine
     )
 
-    call = engine.community_chat.await_args.kwargs
+    call = engine.community_chat_detailed.await_args.kwargs
     assert call["user_id"] == "verified-user"
     assert call["guild_id"] == "tenant-a"
     assert call["channel_id"] == "channel-a"
     assert call["speaker_name"] == "Verified Name"
+    assert response.citations == ["lore:server-owned"]
 
 
 @pytest.mark.asyncio

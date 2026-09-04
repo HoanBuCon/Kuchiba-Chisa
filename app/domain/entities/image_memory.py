@@ -20,7 +20,7 @@ class ImageMemoryPayload(BaseModel):
     channel_id: Optional[str] = None
     conversation_id: Optional[str] = None
     url: str                           # Web URL / Static path: e.g. "/static/uploads/2026/08/abc.webp"
-    thumbnail_url: Optional[str] = None # 300px thumbnail URL for visualizer preview
+    thumbnail_url: str | None = None # 300px thumbnail URL for visualizer preview
     local_path: Optional[str] = None   # Server local path for Discord AttachmentBuilder
     visual_caption: str                # Detailed Vietnamese visual caption (60-120 words)
     tags: List[str] = Field(default_factory=list) # Visual tags: ["du lịch", "biển", "hoàng hôn", "kỷ niệm"]
@@ -28,6 +28,8 @@ class ImageMemoryPayload(BaseModel):
     chisa_comment_hint: Optional[str] = None      # Chisa's initial comment when receiving the image
     importance_score: float = Field(default=0.85, ge=0.0, le=1.0)
     created_at: int = Field(default_factory=lambda: int(time.time())) # Epoch seconds
+    expires_at: int | None = None
+    sensitivity: str = "standard"
     width: Optional[int] = None
     height: Optional[int] = None
     size_bytes: Optional[int] = None

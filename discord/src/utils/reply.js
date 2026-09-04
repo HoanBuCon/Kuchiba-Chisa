@@ -1,6 +1,5 @@
 import { AttachmentBuilder } from 'discord.js';
-import path from 'node:path';
-import fs from 'node:fs';
+import { approvedAttachmentUrl } from '../security/attachmentManifest.js';
 
 export function splitDiscordMessage(text, maxLength = 1900) {
   if (!text || text.length <= maxLength) {
@@ -297,40 +296,28 @@ export async function replyWithChunks(context, text, emotions, client, attachedI
   const formatted = formatCoreResponse(resolvedText, emotions, client);
   const chunks = splitDiscordMessage(formatted, client.services?.config?.reply?.maxChars ?? 1900);
 
-  // Build Discord attachments if Chisa retrieved images from memory
+  // Build Discord attachments only from Core-issued evidence manifests.
   const files = [];
   if (Array.isArray(attachedImages) && attachedImages.length > 0) {
-    for (const imgUrlOrPath of attachedImages) {
+    for (const attachment of attachedImages) {
       try {
-        if (typeof imgUrlOrPath === 'string' && imgUrlOrPath.trim()) {
-          if (imgUrlOrPath.startsWith('http://') || imgUrlOrPath.startsWith('https://')) {
-            files.push(new AttachmentBuilder(imgUrlOrPath));
-          } else {
-            // Local file path resolution
-            const relPath = imgUrlOrPath.startsWith('/') ? imgUrlOrPath.slice(1) : imgUrlOrPath;
-            const candidatePaths = [
-              path.resolve(process.cwd(), relPath),
-              path.resolve(process.cwd(), '..', relPath),
-              path.resolve(process.cwd(), 'app', relPath),
-              path.resolve(process.cwd(), '..', 'app', relPath),
-            ];
-            let found = null;
-            for (const p of candidatePaths) {
-              if (fs.existsSync(p)) {
-                found = p;
-                break;
-              }
-            }
-            if (found) {
-              files.push(new AttachmentBuilder(found));
-            } else if (client.services?.coreRagClient?.baseUrl) {
-              const fullUrl = `${client.services.coreRagClient.baseUrl.replace(/\/$/, '')}/${relPath}`;
-              files.push(new AttachmentBuilder(fullUrl));
-            }
-          }
+        const approvedUrl = approvedAttachmentUrl(
+          attachment,
+          client.services?.coreRagClient?.baseUrl ?? '',
+        );
+        if (approvedUrl) {
+          files.push(new AttachmentBuilder(approvedUrl));
+        } else {
+          client.services?.logger?.warn(
+            { attachmentId: attachment?.attachment_id },
+            'Rejected non-approved attachment manifest',
+          );
         }
       } catch (attErr) {
-        client.services?.logger?.warn({ err: attErr, image: imgUrlOrPath }, 'Failed to create AttachmentBuilder for image');
+        client.services?.logger?.warn(
+          { err: attErr, attachmentId: attachment?.attachment_id },
+          'Failed to create AttachmentBuilder for approved manifest',
+        );
       }
     }
   }

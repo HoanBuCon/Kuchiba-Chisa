@@ -149,7 +149,7 @@ def _parse_header_row(row_text: str) -> List[str]:
     Returns:
         List of cleaned header strings.
     """
-    lines = [l.strip() for l in row_text.split("\n") if l.strip()]
+    lines = [line.strip() for line in row_text.split("\n") if line.strip()]
     headers = []
     for line in lines:
         if line.startswith("!"):

@@ -29,6 +29,8 @@ class MemoryPayload(BaseModel):
     importance_score: float = Field(ge=0.0, le=1.0)
     emotion: dict[str, float] = Field(default_factory=dict)
     created_at: int
+    expires_at: int | None = None
+    sensitivity: str = "standard"
     text_content: str
     
     model_config = ConfigDict(extra="allow")
@@ -39,12 +41,14 @@ class GuildMemoryPayload(BaseModel):
     Strict typing for server-shared knowledge, events, and culture stored in Qdrant guild_memories.
     """
     guild_id: str
+    user_id: str
     channel_id: str | None = None
     memory_type: str = "guild_event"  # "guild_event" | "guild_culture" | "guild_rule" | "guild_inside_joke"
     memory_tier: MemoryTier = MemoryTier.PERSONAL
     importance_score: float = Field(default=0.8, ge=0.0, le=1.0)
     created_at: int = Field(default_factory=lambda: int(time.time()))
     expires_at: int | None = None
+    sensitivity: str = "standard"
     text_content: str
     recorded_by_speaker: str | None = None
     

@@ -14,6 +14,8 @@ from qdrant_client.http.models import PointStruct
 from app.domain.entities.image_memory import ImageMemoryPayload
 from app.domain.interfaces.embedding_provider import IEmbeddingProvider
 from app.domain.interfaces.vector_store import IVectorStore
+from app.domain.services.guardrails import ContentSource, GuardAction, InjectionGuard
+from app.domain.services.guardrails.pii_redaction import PiiRedactor
 from app.infrastructure.logging.logger import get_logger
 from app.infrastructure.vector.qdrant.qdrant_service import COLLECTION_IMAGE_MEMORIES
 
@@ -97,9 +99,13 @@ class VisualMemoryIngestionWorker:
         self,
         vector_store: IVectorStore,
         embedder: IEmbeddingProvider,
+        injection_guard: InjectionGuard | None = None,
+        pii_redactor: PiiRedactor | None = None,
     ) -> None:
         self.vector_store = vector_store
         self.embedder = embedder
+        self.injection_guard = injection_guard or InjectionGuard()
+        self.pii_redactor = pii_redactor or PiiRedactor()
 
     async def ingest_image_memories(
         self,
@@ -113,6 +119,7 @@ class VisualMemoryIngestionWorker:
         is_ephemeral: bool = False,
         llm_image_tags: list[str] | None = None,
         llm_visual_caption: str | None = None,
+        retention_expires_at: int | None = None,
     ) -> int:
         """
         Indexes all permanent processed images into Qdrant 'image_memories'.
@@ -123,8 +130,8 @@ class VisualMemoryIngestionWorker:
             return 0
 
         ingested_count = 0
-        cleaned_user_msg = (user_message or "").strip()
-        cleaned_chisa_reply = (chisa_reply or "").strip()
+        cleaned_user_msg = self.pii_redactor.redact((user_message or "").strip()).value
+        cleaned_chisa_reply = self.pii_redactor.redact((chisa_reply or "").strip()).value
 
         # Extract semantic tags: prioritize LLM tags and combine with heuristic fallback
         combined_text = f"{cleaned_user_msg} {cleaned_chisa_reply}".lower()
@@ -150,7 +157,7 @@ class VisualMemoryIngestionWorker:
 
             # Build descriptive visual caption: prioritize LLM caption
             if llm_visual_caption and llm_visual_caption.strip():
-                visual_caption = llm_visual_caption.strip()
+                visual_caption = self.pii_redactor.redact(llm_visual_caption.strip()).value
             else:
                 caption_parts = []
                 if cleaned_user_msg:
@@ -164,6 +171,21 @@ class VisualMemoryIngestionWorker:
                     if caption_parts
                     else "Hình ảnh được lưu trữ trong kho ký ức."
                 )
+
+            # Vision captions and tags originate from image-derived, untrusted content.
+            # Do not embed or persist a visual prompt-injection payload for future retrieval.
+            image_derived_text = "\n".join([visual_caption, *final_tags])
+            assessment = self.injection_guard.assess(
+                image_derived_text, ContentSource.IMAGE_DERIVED
+            )
+            if assessment.action is GuardAction.QUARANTINE:
+                log.warning(
+                    "Image-derived metadata quarantined before visual-memory indexing",
+                    image_id=str(image_id),
+                    rule_id=assessment.rule_id,
+                    fingerprint=assessment.fingerprint,
+                )
+                continue
 
             # Text to embed
             tags_str = ", ".join(final_tags) if final_tags else "hình ảnh, ký ức"
@@ -190,6 +212,7 @@ class VisualMemoryIngestionWorker:
                     user_context_hint=cleaned_user_msg[:200] if cleaned_user_msg else None,
                     chisa_comment_hint=cleaned_chisa_reply[:200] if cleaned_chisa_reply else None,
                     created_at=int(time.time()),
+                    expires_at=retention_expires_at,
                     width=img.get("width"),
                     height=img.get("height"),
                     size_bytes=img.get("size_bytes"),

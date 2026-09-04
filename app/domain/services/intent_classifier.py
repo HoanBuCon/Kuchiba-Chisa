@@ -44,7 +44,7 @@ class IntentClassifier:
         "vui", "quá", "đi", "nhỉ", "nhở", "thật", "luôn", "nha", "nhé", "nè", "nhen",
         "hén", "đấy", "đó", "lắm", "ghê", "em", "anh", "chisa", "chía", "senpai", "bé", "bạn",
         "yêu", "thương", "nhớ", "quý", "ghét", "thích", "iu", "iêu", "xinh", "cute", "ngoan",
-        "dễ", "thương", "dễ thương", "đáng", "yêu", "đáng yêu", "tuyệt", "vời", "tuyệt vời",
+        "dễ", "dễ thương", "đáng", "đáng yêu", "tuyệt", "vời", "tuyệt vời",
         "mất", "thôi", "rồi", "nào", "hả", "nữa", "buổi", "sáng", "tối", "chiều", "đẹp", "xinh đẹp",
         "nhiều", "hết", "sức"
     }

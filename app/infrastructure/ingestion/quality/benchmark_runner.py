@@ -175,7 +175,7 @@ class BenchmarkRunner:
                 vector_retriever = _default_retriever
             except Exception as e:
                 logger.error("failed_to_initialize_benchmark_retriever", error=str(e))
-                return self._run_mock_benchmark()
+                raise RuntimeError("quality benchmark retriever initialization failed") from e
 
         result = BenchmarkResult(total_cases=len(BENCHMARK_TEST_CASES))
         latencies = []
@@ -254,26 +254,3 @@ class BenchmarkRunner:
             passed=result.quality_gate_passed,
         )
         return result
-
-    def _run_mock_benchmark(self) -> BenchmarkResult:
-        """Simulated benchmark result when Qdrant service is in test mode."""
-        res = BenchmarkResult(total_cases=len(BENCHMARK_TEST_CASES))
-        for tc in BENCHMARK_TEST_CASES:
-            res.hit_at_1 += 1
-            res.hit_at_3 += 1
-            res.hit_at_5 += 1
-            res.mrr_sum += 1.0
-            res.passed_cases += 1
-            res.results_detail.append({
-                "id": tc["id"],
-                "category": tc["category"],
-                "query": tc["query"],
-                "rank": 1,
-                "hit_at_5": "✓",
-                "top_score": 0.92,
-                "passed": True,
-                "latency_ms": 12.5,
-            })
-        res.latency_ms_avg = 12.5
-        res.quality_gate_passed = True
-        return res

@@ -1,9 +1,9 @@
-import re
 import math
-import time
-import yaml
+import re
 from pathlib import Path
-from typing import List, Dict
+
+import yaml
+
 from app.shared.utils.logger import get_logger
 
 log = get_logger(__name__)
@@ -18,7 +18,7 @@ class KeywordOverlapReranker:
         self.synonyms = {}
         try:
             if config_path.exists():
-                with open(config_path, "r", encoding="utf-8") as f:
+                with open(config_path, encoding="utf-8") as f:
                     config = yaml.safe_load(f)
                     if config:
                         self.high_value_terms = set(config.get("high_value_terms", []))
@@ -28,7 +28,7 @@ class KeywordOverlapReranker:
         except Exception as e:
             log.error("Failed to load reranker config", error=str(e))
 
-    def tokenize(self, text: str) -> List[str]:
+    def tokenize(self, text: str) -> list[str]:
         if not text:
             return []
         words = re.findall(r"[\wÀ-ỹ]+", text.lower())
@@ -49,7 +49,7 @@ class KeywordOverlapReranker:
         "ở", "tại", "tạo", "đến", "khi", "đang", "đã", "sẽ", "để", "thì"
     }
 
-    def calculate_score(self, query_tokens: List[str], candidate_text: str) -> float:
+    def calculate_score(self, query_tokens: list[str], candidate_text: str) -> float:
         if not query_tokens or not candidate_text:
             return 0.0
 
@@ -164,7 +164,9 @@ class HybridMemoryScorer:
 
         return max(0.01, min(1.0, math.exp(-adaptive_lambda * age_days)))
 
-    def calculate_emotion_match(self, memory_emotion: Dict[str, float], current_emotion: Dict[str, float]) -> float:
+    def calculate_emotion_match(
+        self, memory_emotion: dict[str, float], current_emotion: dict[str, float]
+    ) -> float:
         if not memory_emotion or not current_emotion:
             return 0.5
 

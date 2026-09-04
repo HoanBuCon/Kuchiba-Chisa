@@ -1,16 +1,40 @@
 import asyncio
-from typing import Dict, Any, Callable, Awaitable, Optional
-from app.domain.services.chat_pipeline.stage import PipelineStage
-from app.domain.services.chat_pipeline.context import ChatContext
-from app.domain.interfaces.llm_provider import BaseLLMAdapter, LLMResponse, StructuredPrompt
-from app.domain.interfaces.tracker import IPipelineTracker
-from app.shared.utils.json_stream_parser import IncrementalJsonParser
-from app.shared.utils.token_estimator import TokenEstimator
-from app.shared.utils.logger import get_logger
+from collections.abc import Awaitable, Callable
+
 from app.config.settings import settings
 from app.domain.context import llm_call_purpose
+from app.domain.interfaces.llm_provider import (
+    BaseLLMAdapter,
+    LLMInvalidResponseError,
+    LLMResponse,
+    StructuredPrompt,
+)
+from app.domain.interfaces.tracker import IPipelineTracker
+from app.domain.models.intent_result import ChatIntent
+from app.domain.services.attachment_manifest import resolve_attachment_manifests
+from app.domain.services.chat_pipeline.context import ChatContext
+from app.domain.services.chat_pipeline.stage import PipelineStage
+from app.domain.services.guardrails import (
+    CitationValidationError,
+    ClaimEvidenceGuard,
+    ClaimEvidenceValidationError,
+    EvidenceCitationGuard,
+    PromptLeakageGuard,
+)
+from app.shared.utils.logger import get_logger
+from app.shared.utils.token_estimator import TokenEstimator
 
 log = get_logger(__name__)
+
+_GROUNDED_ABSTENTION = (
+    "Mình chưa có đủ bằng chứng trong nguồn hiện tại để trả lời chính xác. "
+    "Bạn có thể cung cấp thêm ngữ cảnh hoặc hỏi theo cách khác không?"
+)
+_GROUNDED_INTENTS = {
+    ChatIntent.KNOWLEDGE_OR_TASK,
+    ChatIntent.LORE,
+    ChatIntent.MEMORY,
+}
 
 class LLMGenerationStage(PipelineStage):
     """
@@ -22,11 +46,17 @@ class LLMGenerationStage(PipelineStage):
         llm_logger_callback: (
             Callable[[StructuredPrompt, LLMResponse], Awaitable[None]] | None
         ) = None,
-        pipeline_tracker: Optional[IPipelineTracker] = None
+        pipeline_tracker: IPipelineTracker | None = None,
+        output_leakage_guard: PromptLeakageGuard | None = None,
+        citation_guard: EvidenceCitationGuard | None = None,
+        claim_evidence_guard: ClaimEvidenceGuard | None = None,
     ):
         self.llm = llm
         self.llm_logger_callback = llm_logger_callback
         self.pipeline_tracker = pipeline_tracker
+        self.output_leakage_guard = output_leakage_guard or PromptLeakageGuard()
+        self.citation_guard = citation_guard or EvidenceCitationGuard()
+        self.claim_evidence_guard = claim_evidence_guard or ClaimEvidenceGuard()
 
     async def process(self, context: ChatContext) -> ChatContext:
         if context.is_cached_answer:
@@ -41,12 +71,13 @@ class LLMGenerationStage(PipelineStage):
         prompt = context.prompt
         if prompt is None:
             raise RuntimeError("LLMGenerationStage requires a prompt from ContextBuildingStage.")
+        if self._requires_grounded_evidence(context) and not prompt.retrieved_evidence:
+            return await self._abstain_for_missing_evidence(context)
             
         log.info("Generating response with structured LLM")
         llm_call_purpose.set("chat_response")
         
         if context.on_token:
-            parser = IncrementalJsonParser()
             raw_chunks = []
             raw_response = ""
             parsed = {}
@@ -55,12 +86,6 @@ class LLMGenerationStage(PipelineStage):
             try:
                 async for chunk in self.llm.stream(prompt):
                     raw_chunks.append(chunk)
-                    parsed_token = parser.feed(chunk)
-                    if parsed_token:
-                        if asyncio.iscoroutinefunction(context.on_token):
-                            await context.on_token(parsed_token)
-                        else:
-                            context.on_token(parsed_token)
                 
                 raw_response = "".join(raw_chunks)
                 parsed = await self.llm.validate_response(raw_response, prompt.response_schema)
@@ -171,8 +196,42 @@ class LLMGenerationStage(PipelineStage):
                 f"raw_preview={raw_preview[:100]})"
             )
 
+        leakage_assessment = self.output_leakage_guard.inspect(prompt.system, chisa_reply)
+        if leakage_assessment.leaked:
+            log.warning(
+                "Generated response rejected by prompt leakage guard",
+                response_fingerprint=leakage_assessment.fingerprint,
+            )
+            raise LLMInvalidResponseError("Response rejected by output safety checks")
+
+        try:
+            citation_ids = self.citation_guard.validate(
+                response.parsed.get("citations"), prompt.retrieved_evidence
+            )
+        except CitationValidationError as error:
+            log.warning("Generated response rejected by citation guard")
+            raise LLMInvalidResponseError("Response rejected by grounding checks") from error
+
+        try:
+            grounding = self._verify_grounding(
+                context=context,
+                answer=chisa_reply,
+                citation_ids=citation_ids,
+            )
+        except ClaimEvidenceValidationError as error:
+            log.warning("Generated response rejected by claim-evidence guard")
+            raise LLMInvalidResponseError("Response rejected by grounding checks") from error
+
+        if context.on_token:
+            for token in chisa_reply:
+                if asyncio.iscoroutinefunction(context.on_token):
+                    await context.on_token(token)
+                else:
+                    context.on_token(token)
+
         # Parse sentiments and store in LLM response parsed object directly to be used by next stage
         context.chisa_reply = chisa_reply
+        context.citation_ids = citation_ids
         context.estimated_input_tokens = response.input_tokens
         context.estimated_output_tokens = response.output_tokens
         
@@ -189,25 +248,16 @@ class LLMGenerationStage(PipelineStage):
             chisa_sentiment = {}
             
         context.tool_res = context.tool_res or {}
+        if grounding is not None:
+            context.tool_res["grounding"] = grounding.telemetry()
         context.tool_res["sentiment"] = sentiment_analysis
         context.tool_res["sentiment_analysis"] = sentiment_analysis
         context.tool_res["user_sentiment"] = user_sentiment
         context.tool_res["chisa_sentiment"] = chisa_sentiment
 
-        # Extract attached images from LLM output with safety fallback
-        attached_images = response.parsed.get("attached_images") or []
-        if isinstance(attached_images, str):
-            attached_images = [attached_images]
-        elif not isinstance(attached_images, list):
-            attached_images = []
-
-        # Fallback: if retrieved_images exists and is high confidence (score >= 0.68) but LLM forgot to populate attached_images
-        if not attached_images and context.retrieved_images:
-            top_retrieved = context.retrieved_images[0]
-            if top_retrieved.get("score", 0.0) >= 0.68 and top_retrieved.get("url"):
-                attached_images = [top_retrieved["url"]]
-
-        context.attached_images = [img for img in attached_images if isinstance(img, str) and img.strip()]
+        # Delivery manifests are derived exclusively from retrieved server evidence.
+        # Model output is never an attachment source (SEC-06 / FR-RAG-012).
+        context.attached_images = resolve_attachment_manifests(context.retrieved_images)
 
         # Extract visual tags & caption directly from Vision LLM output (0ms added latency auto-tagging)
         if context.has_images:
@@ -224,4 +274,41 @@ class LLMGenerationStage(PipelineStage):
             if isinstance(raw_caption, str) and raw_caption.strip():
                 context.visual_caption = raw_caption.strip()
 
+        return context
+
+    @staticmethod
+    def _requires_grounded_evidence(context: ChatContext) -> bool:
+        return any(intent in _GROUNDED_INTENTS for intent in context.intents)
+
+    def _verify_grounding(
+        self,
+        *,
+        context: ChatContext,
+        answer: str,
+        citation_ids: list[str],
+    ):
+        if not self._requires_grounded_evidence(context):
+            return None
+        prompt = context.prompt
+        if prompt is None:
+            raise RuntimeError("LLMGenerationStage requires a prompt from ContextBuildingStage.")
+        return self.claim_evidence_guard.require_supported(
+            answer=answer,
+            evidence=prompt.retrieved_evidence,
+            citation_ids=citation_ids,
+        )
+
+    @staticmethod
+    async def _abstain_for_missing_evidence(context: ChatContext) -> ChatContext:
+        """Return a deterministic limitation instead of asking the model to invent facts."""
+        context.chisa_reply = _GROUNDED_ABSTENTION
+        context.citation_ids = []
+        context.tool_res = context.tool_res or {}
+        context.tool_res["grounding"] = {"status": "abstained_missing_evidence"}
+        if context.on_token:
+            for token in context.chisa_reply:
+                if asyncio.iscoroutinefunction(context.on_token):
+                    await context.on_token(token)
+                else:
+                    context.on_token(token)
         return context

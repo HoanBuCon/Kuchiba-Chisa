@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import asyncio
 import re
+import time
 from dataclasses import dataclass
 from typing import Any, Optional
 
@@ -16,14 +18,24 @@ from qdrant_client.http.models import (
     Filter,
     HnswConfigDiff,
     MatchValue,
+    Modifier,
     OptimizersConfigDiff,
     PointStruct,
+    Range,
+    SparseVectorParams,
     VectorParams,
 )
 
 from app.config.settings import settings
 from app.domain.entities.memory import MemoryPayload, MemoryTier
+from app.domain.interfaces.corpus_publisher import CorpusPublication
+from app.domain.models.corpus_manifest import LoreManifestRow, lore_manifest_checksum
+from app.domain.models.corpus_release import CorpusRelease
+from app.domain.models.evidence import EvidenceAccess
+from app.domain.services.guardrails import CorpusSafetyGate
+from app.domain.tuning.rag import RAGTuning
 from app.infrastructure.logging.logger import get_logger
+from app.infrastructure.vector.qdrant.sparse_encoder import SparseTextEncoder
 
 log = get_logger(__name__)
 
@@ -99,6 +111,16 @@ class AliasPromotionResult:
     actual_point_count: int
 
 
+@dataclass(frozen=True)
+class AliasPromotionCandidate:
+    """One independently verified physical corpus candidate for an alias swap."""
+
+    target_collection: str
+    expected_point_count: int
+    expected_corpus_version: str | None = None
+    expected_manifest_checksum: str | None = None
+
+
 def active_collection_alias(collection: str) -> str:
     """Return the only runtime-readable alias for a managed logical collection."""
     try:
@@ -126,8 +148,14 @@ class QdrantService(IVectorStore):
     CRITICAL: All searches enforce user_id filtering for strict user isolation.
     """
 
-    def __init__(self, client: AsyncQdrantClient | None = None) -> None:
+    def __init__(
+        self,
+        client: AsyncQdrantClient | None = None,
+        corpus_safety_gate: CorpusSafetyGate | None = None,
+    ) -> None:
         self._client = client or get_qdrant_client()
+        self._sparse_encoder = SparseTextEncoder()
+        self._corpus_safety_gate = corpus_safety_gate or CorpusSafetyGate()
 
     @staticmethod
     def _dimension_from_collection_info(info: Any) -> int | None:
@@ -152,6 +180,55 @@ class QdrantService(IVectorStore):
     @staticmethod
     def _active_collection_name(collection: str) -> str:
         return ACTIVE_COLLECTION_ALIASES.get(collection, collection)
+
+    @staticmethod
+    def _is_lore_collection(name: str) -> bool:
+        logical_name = name.split("__", 1)[0]
+        return logical_name in {
+            COLLECTION_CHARACTER_LORE,
+            COLLECTION_WORLD_LORE,
+            COLLECTION_STORY_LORE,
+        }
+
+    @staticmethod
+    def _supports_sparse_vectors(info: Any) -> bool:
+        sparse_config = getattr(info.config.params, "sparse_vectors", None)
+        return isinstance(sparse_config, dict) and "bm25" in sparse_config
+
+    @staticmethod
+    def _valid_lore_acl_filter() -> Filter:
+        """Return the accepted ACL-shape union for a publishable lore collection."""
+        from qdrant_client.http.models import IsEmptyCondition, PayloadField
+
+        empty_subject = IsEmptyCondition(is_empty=PayloadField(key="access_subject_id"))
+        empty_tenant = IsEmptyCondition(is_empty=PayloadField(key="access_tenant_id"))
+        empty_channel = IsEmptyCondition(is_empty=PayloadField(key="access_channel_id"))
+        return Filter(
+            should=[
+                Filter(
+                    must=[
+                        FieldCondition(
+                            key="access_scope", match=MatchValue(value="public")
+                        ),
+                        empty_subject,
+                        empty_tenant,
+                        empty_channel,
+                    ]
+                ),
+                Filter(
+                    must=[
+                        FieldCondition(key="access_scope", match=MatchValue(value="user"))
+                    ],
+                    must_not=[empty_subject],
+                ),
+                Filter(
+                    must=[
+                        FieldCondition(key="access_scope", match=MatchValue(value="tenant"))
+                    ],
+                    must_not=[empty_tenant],
+                ),
+            ]
+        )
 
     # ── Health ─────────────────────────────────────────────────────
     async def health_check(self, *, require_active_collections: bool = False) -> bool:
@@ -238,9 +315,21 @@ class QdrantService(IVectorStore):
             log.info("Collection already exists with correct dimensions, skipping", collection=name)
             return
 
+        lore_collection = self._is_lore_collection(name)
+        vectors_config: VectorParams | dict[str, VectorParams]
+        vectors_config = (
+            {"dense": VectorParams(size=vector_size, distance=distance, on_disk=True)}
+            if lore_collection
+            else VectorParams(size=vector_size, distance=distance, on_disk=True)
+        )
         await self._client.create_collection(
             collection_name=name,
-            vectors_config=VectorParams(size=vector_size, distance=distance, on_disk=True),
+            vectors_config=vectors_config,
+            sparse_vectors_config=(
+                {"bm25": SparseVectorParams(modifier=Modifier.IDF)}
+                if lore_collection
+                else None
+            ),
             hnsw_config=HnswConfigDiff(on_disk=True),
             optimizers_config=OptimizersConfigDiff(indexing_threshold=20000),
             on_disk_payload=True,
@@ -248,10 +337,19 @@ class QdrantService(IVectorStore):
         log.info("Qdrant collection created", collection=name, size=vector_size)
 
         # Optimize payload indexes for Entity-Centric Retrieval
-        if name in ["lore", "character_lore", "world_lore", "story_lore"]:
+        if lore_collection:
             try:
                 from qdrant_client.http.models import PayloadSchemaType
-                for field in ["entities", "region", "faction", "canonical_name"]:
+                for field in [
+                    "entities",
+                    "region",
+                    "faction",
+                    "canonical_name",
+                    "access_scope",
+                    "access_subject_id",
+                    "access_tenant_id",
+                    "access_channel_id",
+                ]:
                     await self._client.create_payload_index(
                         collection_name=name,
                         field_name=field,
@@ -287,6 +385,8 @@ class QdrantService(IVectorStore):
         logical_collection: str,
         target_collection: str,
         expected_point_count: int,
+        expected_corpus_version: str,
+        expected_manifest_checksum: str,
         expected_dimension: int | None = None,
     ) -> AliasPromotionResult:
         """Atomically point a runtime alias at a verified, versioned collection.
@@ -295,11 +395,133 @@ class QdrantService(IVectorStore):
         recreates an active collection, so its returned previous target is a rollback
         candidate.
         """
+        results = await self.promote_active_aliases(
+            {
+                logical_collection: AliasPromotionCandidate(
+                    target_collection=target_collection,
+                    expected_point_count=expected_point_count,
+                    expected_corpus_version=expected_corpus_version,
+                    expected_manifest_checksum=expected_manifest_checksum,
+                )
+            },
+            expected_dimension=expected_dimension,
+        )
+        return results[logical_collection]
+
+    async def promote(self, release: CorpusRelease) -> CorpusPublication:
+        """Implement the corpus publisher port with a verified atomic alias swap."""
+        previous_active_collection = await self.active_alias_target(
+            release.logical_collection.value
+        )
+        if previous_active_collection is None:
+            raise CollectionAliasPromotionError(
+                "cannot promote a corpus without a retained active rollback target"
+            )
+        promotion = await self.promote_active_alias(
+            logical_collection=release.logical_collection.value,
+            target_collection=release.staging_collection,
+            expected_point_count=release.vector_count,
+            expected_corpus_version=release.corpus_version,
+            expected_manifest_checksum=release.vector_manifest_checksum,
+        )
+        return CorpusPublication(
+            previous_active_collection=promotion.previous_collection,
+            active_collection=promotion.target_collection,
+        )
+
+    async def active_target(self, logical_collection: str) -> str | None:
+        """Implement the publisher port's read-only alias inspection."""
+        return await self.active_alias_target(logical_collection)
+
+    async def promote_active_aliases(
+        self,
+        candidates: dict[str, AliasPromotionCandidate],
+        *,
+        expected_dimension: int | None = None,
+    ) -> dict[str, AliasPromotionResult]:
+        """Atomically swap one or more aliases after validating every candidate.
+
+        The method performs all validation before the single Qdrant alias update.
+        If a candidate is malformed, count-mismatched, or ACL-incomplete, no
+        runtime alias changes.  Previous physical collections are retained for
+        one-operation rollback through this same method.
+        """
+        if not candidates:
+            raise ValueError("at least one alias promotion candidate is required")
+
+        expected_dim = expected_dimension or settings.QDRANT_EMBEDDING_DIM
+        validated_counts: dict[str, int] = {}
+        for logical_collection, candidate in candidates.items():
+            validated_counts[logical_collection] = await self._validate_promotion_candidate(
+                logical_collection=logical_collection,
+                target_collection=candidate.target_collection,
+                expected_point_count=candidate.expected_point_count,
+                expected_dimension=expected_dim,
+                expected_corpus_version=candidate.expected_corpus_version,
+                expected_manifest_checksum=candidate.expected_manifest_checksum,
+            )
+
+        aliases = await self._client.get_aliases()
+        active_targets = {
+            alias.alias_name: alias.collection_name for alias in aliases.aliases
+        }
+        operations: list[CreateAliasOperation | DeleteAliasOperation] = []
+        results: dict[str, AliasPromotionResult] = {}
+        for logical_collection, candidate in candidates.items():
+            alias_name = active_collection_alias(logical_collection)
+            previous_collection = active_targets.get(alias_name)
+            actual_count = validated_counts[logical_collection]
+            results[logical_collection] = AliasPromotionResult(
+                logical_collection=logical_collection,
+                alias_name=alias_name,
+                target_collection=candidate.target_collection,
+                previous_collection=previous_collection,
+                expected_point_count=candidate.expected_point_count,
+                actual_point_count=actual_count,
+            )
+            if previous_collection == candidate.target_collection:
+                continue
+            if previous_collection is not None:
+                operations.append(
+                    DeleteAliasOperation(delete_alias=DeleteAlias(alias_name=alias_name))
+                )
+            operations.append(
+                CreateAliasOperation(
+                    create_alias=CreateAlias(
+                        collection_name=candidate.target_collection,
+                        alias_name=alias_name,
+                    )
+                )
+            )
+
+        if operations:
+            await self._client.update_collection_aliases(
+                change_aliases_operations=operations
+            )
+        for result in results.values():
+            log.info(
+                "Qdrant active alias promoted",
+                logical_collection=result.logical_collection,
+                alias_name=result.alias_name,
+                target_collection=result.target_collection,
+                previous_collection=result.previous_collection,
+                point_count=result.actual_point_count,
+            )
+        return results
+
+    async def _validate_promotion_candidate(
+        self,
+        *,
+        logical_collection: str,
+        target_collection: str,
+        expected_point_count: int,
+        expected_dimension: int,
+        expected_corpus_version: str | None,
+        expected_manifest_checksum: str | None,
+    ) -> int:
         if expected_point_count < 0:
             raise ValueError("expected_point_count must be non-negative")
         self._require_versioned_target(logical_collection, target_collection)
-        expected_dim = expected_dimension or settings.QDRANT_EMBEDDING_DIM
-
         try:
             target_info = await self._client.get_collection(target_collection)
         except Exception as exc:
@@ -308,64 +530,156 @@ class QdrantService(IVectorStore):
             ) from exc
 
         actual_dimension = self._dimension_from_collection_info(target_info)
-        if actual_dimension != expected_dim:
+        if actual_dimension != expected_dimension:
             raise CollectionDimensionMismatchError(
                 f"Candidate collection {target_collection!r} has dimension {actual_dimension}; "
-                f"expected {expected_dim}"
+                f"expected {expected_dimension}"
             )
-
-        count_result = await self._client.count(
-            collection_name=target_collection,
-            exact=True,
-        )
+        if not self._supports_sparse_vectors(target_info):
+            raise CollectionAliasPromotionError(
+                f"Candidate collection {target_collection!r} has no required sparse BM25 index"
+            )
+        count_result = await self._client.count(collection_name=target_collection, exact=True)
         actual_point_count = count_result.count
         if actual_point_count != expected_point_count:
             raise CollectionAliasPromotionError(
                 f"Candidate collection {target_collection!r} has {actual_point_count} points; "
                 f"expected {expected_point_count}"
             )
-
-        alias_name = active_collection_alias(logical_collection)
-        previous_collection = await self.active_alias_target(logical_collection)
-        if previous_collection == target_collection:
-            return AliasPromotionResult(
-                logical_collection=logical_collection,
-                alias_name=alias_name,
-                target_collection=target_collection,
-                previous_collection=previous_collection,
-                expected_point_count=expected_point_count,
-                actual_point_count=actual_point_count,
+        valid_acl_count = await self._client.count(
+            collection_name=target_collection,
+            count_filter=self._valid_lore_acl_filter(),
+            exact=True,
+        )
+        if valid_acl_count.count != expected_point_count:
+            raise CollectionAliasPromotionError(
+                f"Candidate collection {target_collection!r} has incomplete ACL labels"
             )
-
-        operations: list[CreateAliasOperation | DeleteAliasOperation] = []
-        if previous_collection is not None:
-            operations.append(
-                DeleteAliasOperation(delete_alias=DeleteAlias(alias_name=alias_name))
-            )
-        operations.append(
-            CreateAliasOperation(
-                create_alias=CreateAlias(
-                    collection_name=target_collection,
-                    alias_name=alias_name,
+        self._validate_manifest_request(
+            candidate_version=target_collection.removeprefix(f"{logical_collection}__"),
+            expected_corpus_version=expected_corpus_version,
+            expected_manifest_checksum=expected_manifest_checksum,
+        )
+        if expected_manifest_checksum is not None:
+            if expected_corpus_version is None:
+                raise CollectionAliasPromotionError(
+                    "candidate manifest verification requires a corpus version"
                 )
+            actual_manifest_checksum = await self.staged_lore_manifest_checksum(
+                collection=target_collection,
+                corpus_version=expected_corpus_version,
+                expected_point_count=expected_point_count,
             )
-        )
-        await self._client.update_collection_aliases(change_aliases_operations=operations)
-        log.info(
-            "Qdrant active alias promoted",
-            logical_collection=logical_collection,
-            alias_name=alias_name,
-            target_collection=target_collection,
-            previous_collection=previous_collection,
-            point_count=actual_point_count,
-        )
-        return AliasPromotionResult(
-            logical_collection=logical_collection,
-            alias_name=alias_name,
-            target_collection=target_collection,
-            previous_collection=previous_collection,
-            expected_point_count=expected_point_count,
-            actual_point_count=actual_point_count,
+            if actual_manifest_checksum != expected_manifest_checksum.lower():
+                raise CollectionAliasPromotionError(
+                    f"Candidate collection {target_collection!r} has a manifest checksum mismatch"
+                )
+        return actual_point_count
+
+    @staticmethod
+    def _validate_manifest_request(
+        *,
+        candidate_version: str,
+        expected_corpus_version: str | None,
+        expected_manifest_checksum: str | None,
+    ) -> None:
+        """Require a complete, version-bound checksum request for every promotion."""
+        if expected_corpus_version != candidate_version:
+            raise CollectionAliasPromotionError(
+                "candidate corpus version does not match its physical collection name"
+            )
+        if expected_manifest_checksum is None or re.fullmatch(
+            r"[0-9a-f]{64}", expected_manifest_checksum.lower()
+        ) is None:
+            raise CollectionAliasPromotionError(
+                "candidate manifest checksum must be a SHA-256 hexadecimal digest"
+            )
+
+    async def staged_lore_manifest_checksum(
+        self,
+        *,
+        collection: str,
+        corpus_version: str,
+        expected_point_count: int,
+    ) -> str:
+        """Hash the actual staged Qdrant records before an alias can be promoted.
+
+        The digest covers immutable point identity, text hash, parent, source,
+        corpus version, and ACL. It is calculated from Qdrant rather than a
+        caller-provided count so a partially written or wrongly labelled index
+        cannot be promoted merely by supplying a matching metadata document.
+        """
+        rows: list[LoreManifestRow] = []
+        offset: Any = None
+        while True:
+            records, offset = await self._client.scroll(
+                collection_name=collection,
+                scroll_filter=None,
+                limit=256,
+                offset=offset,
+                with_payload=True,
+                with_vectors=False,
+            )
+            for record in records:
+                payload = record.payload
+                if not isinstance(payload, dict):
+                    raise CollectionAliasPromotionError(
+                        f"Candidate collection {collection!r} has a record without payload"
+                    )
+                rows.append(
+                    self._manifest_row(
+                        point_id=str(record.id),
+                        payload=payload,
+                        corpus_version=corpus_version,
+                    )
+                )
+            if offset is None:
+                break
+
+        if len(rows) != expected_point_count:
+            raise CollectionAliasPromotionError(
+                f"Candidate collection {collection!r} has {len(rows)} manifest records; "
+                f"expected {expected_point_count}"
+            )
+        return lore_manifest_checksum(rows)
+
+    @staticmethod
+    def _manifest_row(
+        *, point_id: str, payload: dict[str, Any], corpus_version: str
+    ) -> LoreManifestRow:
+        """Validate one payload and return its canonical checksum row."""
+        chunk_hash = payload.get("chunk_hash")
+        parent_id = payload.get("parent_id")
+        source_id = payload.get("source_id")
+        payload_version = payload.get("corpus_version")
+        if (
+            not isinstance(chunk_hash, str)
+            or re.fullmatch(r"[0-9a-f]{64}", chunk_hash.lower()) is None
+            or not isinstance(parent_id, str)
+            or not parent_id
+            or not isinstance(source_id, str)
+            or not source_id
+            or payload_version != corpus_version
+        ):
+            raise CollectionAliasPromotionError(
+                "candidate payload is missing a versioned source, parent, or chunk checksum"
+            )
+        try:
+            access = EvidenceAccess(
+                scope=payload.get("access_scope"),
+                subject_id=payload.get("access_subject_id"),
+                tenant_id=payload.get("access_tenant_id"),
+                channel_id=payload.get("access_channel_id"),
+            )
+        except ValueError as exc:
+            raise CollectionAliasPromotionError("candidate payload has invalid ACL labels") from exc
+        return LoreManifestRow(
+            point_id=point_id,
+            chunk_hash=chunk_hash,
+            parent_id=parent_id,
+            source_id=source_id,
+            corpus_version=corpus_version,
+            access=access,
         )
 
     async def ensure_payload_indexes(self) -> None:
@@ -618,18 +932,16 @@ class QdrantService(IVectorStore):
     ) -> list[dict[str, Any]]:
         """
         Searches guild_memories collection scoped by guild_id.
-        Optionally excludes memories where expires_at < current_timestamp.
+        Optionally excludes memories where expires_at is at or before the current timestamp.
         """
         must_conditions = [
             FieldCondition(key="guild_id", match=MatchValue(value=str(guild_id)))
         ]
         
         if exclude_expired:
-            import time
             now_sec = int(time.time())
-            from qdrant_client.http.models import Range
             must_not_conditions = [
-                FieldCondition(key="expires_at", range=Range(lt=now_sec))
+                FieldCondition(key="expires_at", range=Range(lte=now_sec))
             ]
             guild_filter = Filter(must=must_conditions, must_not=must_not_conditions)
         else:
@@ -696,48 +1008,220 @@ class QdrantService(IVectorStore):
         self,
         collection: str,
         query_vector: list[float],
+        query_text: str = "",
         limit: int = 4,
         score_threshold: float = 0.3,
         entities_filter: Optional[list[str]] = None,
+        requester_subject_id: str | None = None,
+        requester_tenant_id: str | None = None,
+        requester_channel_id: str | None = None,
     ) -> list[dict[str, Any]]:
         """
-        Searches lore collection without user_id filter.
-        Lore is global shared character knowledge.
-        Applies payload boosting if entities_filter is provided.
+        Search only evidence whose persisted ACL admits the trusted requester.
+
+        Records without an ACL label are intentionally excluded.  This makes a
+        partially migrated or malformed corpus unavailable rather than exposing
+        it as public lore.
         """
-        from qdrant_client.http.models import MatchAny
-        query_filter = None
+        from qdrant_client.http.models import IsEmptyCondition, MatchAny, PayloadField
+
+        public_access = Filter(
+            must=[FieldCondition(key="access_scope", match=MatchValue(value="public"))]
+        )
+        access_conditions: list[Filter] = [public_access]
+        if requester_subject_id:
+            access_conditions.append(
+                Filter(
+                    must=[
+                        FieldCondition(key="access_scope", match=MatchValue(value="user")),
+                        FieldCondition(
+                            key="access_subject_id",
+                            match=MatchValue(value=requester_subject_id),
+                        ),
+                    ]
+                )
+            )
+        if requester_tenant_id:
+            tenant_base = [
+                FieldCondition(key="access_scope", match=MatchValue(value="tenant")),
+                FieldCondition(
+                    key="access_tenant_id",
+                    match=MatchValue(value=requester_tenant_id),
+                ),
+            ]
+            access_conditions.append(
+                Filter(
+                    must=[
+                        *tenant_base,
+                        IsEmptyCondition(is_empty=PayloadField(key="access_channel_id")),
+                    ]
+                )
+            )
+            if requester_channel_id:
+                access_conditions.append(
+                    Filter(
+                        must=[
+                            *tenant_base,
+                            FieldCondition(
+                                key="access_channel_id",
+                                match=MatchValue(value=requester_channel_id),
+                            ),
+                        ]
+                    )
+                )
+
+        access_filter = Filter(should=access_conditions)
+        query_filter = access_filter
         if entities_filter:
             query_filter = Filter(
+                must=[access_filter],
                 should=[
                     FieldCondition(key="entities", match=MatchAny(any=entities_filter))
                 ]
             )
             
-        results = await self._client.search(
-            collection_name=self._active_collection_name(collection),
+        active_collection = self._active_collection_name(collection)
+        try:
+            info = await self._client.get_collection(active_collection)
+            hybrid_enabled = bool(query_text.strip()) and self._supports_sparse_vectors(info)
+        except Exception:
+            hybrid_enabled = False
+
+        results = await self._search_lore_candidates(
+            collection_name=active_collection,
             query_vector=query_vector,
+            query_text=query_text,
             query_filter=query_filter,
             limit=limit,
             score_threshold=score_threshold,
-            with_payload=True,
+            hybrid_enabled=hybrid_enabled,
         )
-        
-        # Fallback to global vector search if entity filter eliminated results
-        if not results and query_filter is not None:
-            results = await self._client.search(
-                collection_name=self._active_collection_name(collection),
+
+        if not results and entities_filter:
+            results = await self._search_lore_candidates(
+                collection_name=active_collection,
                 query_vector=query_vector,
-                query_filter=None,
+                query_text=query_text,
+                query_filter=access_filter,
+                limit=limit,
+                score_threshold=score_threshold,
+                hybrid_enabled=hybrid_enabled,
+            )
+        return results
+
+    async def _search_lore_candidates(
+        self,
+        *,
+        collection_name: str,
+        query_vector: list[float],
+        query_text: str,
+        query_filter: Filter | None,
+        limit: int,
+        score_threshold: float,
+        hybrid_enabled: bool,
+    ) -> list[dict[str, Any]]:
+        if not hybrid_enabled:
+            results = await self._client.search(
+                collection_name=collection_name,
+                query_vector=query_vector,
+                query_filter=query_filter,
                 limit=limit,
                 score_threshold=score_threshold,
                 with_payload=True,
             )
-            
-        return [
-            {"id": r.id, "score": r.score, "payload": r.payload or {}}
-            for r in results
-        ]
+            return [
+                {
+                    "id": result.id,
+                    "score": result.score,
+                    "payload": result.payload or {},
+                    "retrieval_mode": "dense_legacy",
+                }
+                for result in results
+            ]
+
+        dense_task = asyncio.create_task(
+            asyncio.wait_for(
+                self._client.query_points(
+                collection_name=collection_name,
+                query=query_vector,
+                using="dense",
+                query_filter=query_filter,
+                limit=limit * RAGTuning.HYBRID_CANDIDATE_MULTIPLIER,
+                with_payload=True,
+                score_threshold=score_threshold,
+                ),
+                timeout=RAGTuning.HYBRID_RETRIEVAL_TIMEOUT_SECONDS,
+            )
+        )
+        sparse_task = asyncio.create_task(
+            asyncio.wait_for(
+                self._client.query_points(
+                collection_name=collection_name,
+                query=self._sparse_encoder.encode(query_text),
+                using="bm25",
+                query_filter=query_filter,
+                limit=limit * RAGTuning.HYBRID_CANDIDATE_MULTIPLIER,
+                with_payload=True,
+                ),
+                timeout=RAGTuning.HYBRID_RETRIEVAL_TIMEOUT_SECONDS,
+            )
+        )
+        dense_result, sparse_result = await asyncio.gather(
+            dense_task, sparse_task, return_exceptions=True
+        )
+        dense_points = (
+            getattr(dense_result, "points", [])
+            if not isinstance(dense_result, Exception)
+            else []
+        )
+        sparse_points = (
+            getattr(sparse_result, "points", [])
+            if not isinstance(sparse_result, Exception)
+            else []
+        )
+        if not dense_points and not sparse_points:
+            if isinstance(dense_result, Exception) and isinstance(sparse_result, Exception):
+                raise RuntimeError("dense and sparse lore retrieval both failed") from dense_result
+            return []
+        mode = "hybrid_rrf"
+        if isinstance(dense_result, Exception):
+            mode = "sparse_degraded"
+        elif isinstance(sparse_result, Exception):
+            mode = "dense_degraded"
+        return self._calibrated_rrf(dense_points, sparse_points, limit=limit, mode=mode)
+
+    @staticmethod
+    def _calibrated_rrf(
+        dense_points: list[Any], sparse_points: list[Any], *, limit: int, mode: str
+    ) -> list[dict[str, Any]]:
+        """Fuse independently ranked dense and BM25 lists with calibrated reciprocal rank."""
+
+        combined: dict[str, dict[str, Any]] = {}
+        for source, weight, points in (
+            ("dense", RAGTuning.HYBRID_DENSE_WEIGHT, dense_points),
+            ("sparse", RAGTuning.HYBRID_SPARSE_WEIGHT, sparse_points),
+        ):
+            for rank, point in enumerate(points, start=1):
+                point_id = str(point.id)
+                candidate = combined.setdefault(
+                    point_id,
+                    {
+                        "id": point.id,
+                        "payload": point.payload or {},
+                        "score": 0.0,
+                        "dense_score": None,
+                        "sparse_score": None,
+                        "dense_rank": None,
+                        "sparse_rank": None,
+                    },
+                )
+                candidate["score"] += weight / (RAGTuning.HYBRID_RRF_K + rank)
+                candidate[f"{source}_score"] = float(point.score)
+                candidate[f"{source}_rank"] = rank
+        ranked = sorted(combined.values(), key=lambda candidate: candidate["score"], reverse=True)
+        for candidate in ranked:
+            candidate["retrieval_mode"] = mode
+        return ranked[:limit]
 
     async def upsert_lore(
         self,
@@ -754,10 +1238,29 @@ class QdrantService(IVectorStore):
             upsert_payload = payload.model_dump()
         else:
             upsert_payload = payload
-            
+        if not isinstance(upsert_payload, dict):
+            raise TypeError("Lore payload must be a mapping")
+        self._corpus_safety_gate.require_safe(
+            text=str(upsert_payload.get("text_content", "")),
+            source_id=f"qdrant:{collection}:point:{point_id}",
+            checksum=str(upsert_payload.get("text_hash", "unknown")),
+        )
+
+        target_collection = self._active_collection_name(collection)
+        try:
+            collection_info = await self._client.get_collection(target_collection)
+            sparse_enabled = self._supports_sparse_vectors(collection_info)
+        except Exception:
+            sparse_enabled = False
+        point_vector: list[float] | dict[str, Any] = vector
+        if sparse_enabled:
+            point_vector = {
+                "dense": vector,
+                "bm25": self._sparse_encoder.encode(str(upsert_payload.get("text_content", ""))),
+            }
         await self._client.upsert(
-            collection_name=self._active_collection_name(collection),
-            points=[PS(id=point_id, vector=vector, payload=upsert_payload)],
+            collection_name=target_collection,
+            points=[PS(id=point_id, vector=point_vector, payload=upsert_payload)],
             wait=True,
         )
 

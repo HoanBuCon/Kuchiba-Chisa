@@ -8,6 +8,10 @@ from typing import Any, cast
 from groq import AsyncGroq
 from groq.types.chat import ChatCompletionMessageParam
 
+from app.application.security.json_schema import (
+    StructuredOutputValidationError,
+    validate_structured_output,
+)
 from app.config.settings import settings
 from app.config.tuning.llm import LLMTuning
 from app.domain.interfaces.llm_provider import (
@@ -122,15 +126,17 @@ class GroqAdapter(BaseLLMAdapter):
         except Exception as e:
             error_str = str(e).lower()
             if "timeout" in error_str:
-                raise LLMTimeoutError()
+                raise LLMTimeoutError() from e
             if "rate_limit" in error_str or "429" in error_str:
-                raise LLMRateLimitError()
+                raise LLMRateLimitError() from e
             if "context_length" in error_str or "token" in error_str:
-                raise LLMTokenOverflowError()
+                raise LLMTokenOverflowError() from e
             if "413" in error_str or "payload too large" in error_str:
                 # Do not retry 413 errors as sending the exact same payload again will always fail
-                raise LLMError(f"Groq API error: {e}", retryable=False, code="PAYLOAD_TOO_LARGE")
-            raise LLMError(f"Groq API error: {e}", retryable=True)
+                raise LLMError(
+                    f"Groq API error: {e}", retryable=False, code="PAYLOAD_TOO_LARGE"
+                ) from e
+            raise LLMError(f"Groq API error: {e}", retryable=True) from e
 
         raw = response.choices[0].message.content or ""
         finish_reason = response.choices[0].finish_reason or ""
@@ -198,7 +204,7 @@ class GroqAdapter(BaseLLMAdapter):
                     yield content
         except Exception as e:
             log.error("Groq streaming failed", error=str(e))
-            raise LLMError(f"Groq streaming failed: {e}", retryable=False)
+            raise LLMError(f"Groq streaming failed: {e}", retryable=False) from e
 
     # ── Validate Response ──────────────────────────────────────────
     async def validate_response(self, raw: str, schema: dict[str, Any]) -> dict[str, Any]:
@@ -206,7 +212,10 @@ class GroqAdapter(BaseLLMAdapter):
         parsed = robust_parse_json(raw)
         if not parsed or not isinstance(parsed, dict):
             raise LLMInvalidResponseError("LLM response is not a valid JSON object")
-        return parsed
+        try:
+            return validate_structured_output(parsed, schema)
+        except StructuredOutputValidationError as error:
+            raise LLMInvalidResponseError(str(error)) from error
 
     # ── Token Estimation ───────────────────────────────────────────
     async def estimate_tokens(self, text: str) -> int:

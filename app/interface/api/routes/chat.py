@@ -9,7 +9,11 @@ from fastapi.responses import JSONResponse, StreamingResponse
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.application.dependencies import get_chat_engine, get_clear_user_memory_use_case
+from app.application.dependencies import (
+    get_chat_engine,
+    get_clear_user_memory_use_case,
+    get_memory_policy_service,
+)
 from app.application.security.authorization import AuthorizationError, AuthorizationPolicy
 from app.domain.interfaces.llm_provider import (
     LLMInvalidResponseError,
@@ -21,7 +25,12 @@ from app.domain.value_objects.principal import PrincipalContext
 from app.infrastructure.database.engine import get_db_session
 from app.infrastructure.logging.logger import get_logger
 from app.interface.api.dependencies.security import CurrentPrincipal, require_scope
-from app.interface.api.schemas.chat import ChatRequest, ChatResponse
+from app.interface.api.schemas.chat import (
+    ChatRequest,
+    ChatResponse,
+    MemoryConsentRequest,
+    MemoryConsentResponse,
+)
 from app.shared.utils.circuit_breaker import CircuitBreakerError
 from app.shared.utils.user_identity import normalize_user_id, normalize_user_id_str
 
@@ -49,6 +58,43 @@ def _prepare_chat_context(principal: PrincipalContext, http_request: Request) ->
 UserIdPath = Annotated[str, Path(min_length=1, max_length=128, pattern=r"^[a-zA-Z0-9_\-\:]+$")]
 
 
+@router.get("/chat/me/memory-consent", response_model=MemoryConsentResponse)
+async def get_memory_consent(
+    principal: Annotated[PrincipalContext, Depends(require_scope("chat:write"))],
+    session: AsyncSession = Depends(get_db_session),
+    memory_policy_service=Depends(get_memory_policy_service),
+) -> MemoryConsentResponse:
+    """Read only the verified principal's long-term-memory preference."""
+    policy = await memory_policy_service.get(session, normalize_user_id(principal.subject_id))
+    return MemoryConsentResponse(
+        enabled=policy.long_term_memory_enabled,
+        retention_days=policy.retention_days,
+        consented_at=policy.consented_at.isoformat() if policy.consented_at else None,
+    )
+
+
+@router.put("/chat/me/memory-consent", response_model=MemoryConsentResponse)
+async def set_memory_consent(
+    request: MemoryConsentRequest,
+    principal: Annotated[PrincipalContext, Depends(require_scope("chat:write"))],
+    session: AsyncSession = Depends(get_db_session),
+    memory_policy_service=Depends(get_memory_policy_service),
+) -> MemoryConsentResponse:
+    """Persist explicit consent; revocation removes active long-term vector memory."""
+    policy = await memory_policy_service.update(
+        session,
+        normalize_user_id(principal.subject_id),
+        enabled=request.enabled,
+        retention_days=request.retention_days,
+    )
+    await session.commit()
+    return MemoryConsentResponse(
+        enabled=policy.long_term_memory_enabled,
+        retention_days=policy.retention_days,
+        consented_at=policy.consented_at.isoformat() if policy.consented_at else None,
+    )
+
+
 def _start_chat_trace(
     principal: PrincipalContext, username: str | None, message: str
 ) -> str:
@@ -74,11 +120,11 @@ async def _run_chat_request(
     on_token: Callable[[str], Any] | None = None,
     images: list[str] | None = None,
     is_ephemeral_reference: bool = False,
-) -> tuple[str, dict[str, Any] | None, bool, list, list]:
+) -> tuple[str, dict[str, Any] | None, bool, list, list, list[str]]:
     from app.infrastructure.logging.pipeline_tracker import pipeline_tracker
 
     try:
-        reply_text, emotions, images_processed, attached_images = await chat_engine.chat(
+        execution = await chat_engine.chat_detailed(
             session=session,
             user_id=normalized_user_id,
             user_message=message,
@@ -86,6 +132,11 @@ async def _run_chat_request(
             images=images,
             is_ephemeral_reference=is_ephemeral_reference,
         )
+        reply_text = execution.reply_text
+        emotions = execution.emotions
+        images_processed = execution.images_processed
+        attached_images = execution.attached_images
+        citation_ids = execution.citation_ids
         loop_thinking_activated = pipeline_tracker.get_loop_thinking_activated()
 
         pipeline_tracker.end_trace(
@@ -93,7 +144,14 @@ async def _run_chat_request(
             emotions=emotions,
             status="success",
         )
-        return reply_text, emotions, loop_thinking_activated, images_processed, attached_images
+        return (
+            reply_text,
+            emotions,
+            loop_thinking_activated,
+            images_processed,
+            attached_images,
+            citation_ids,
+        )
     except LLMRateLimitError:
         fallback_text = "Chisa đang hơi bận một chút, Senpai chờ em thêm lát nữa nhé."
         fallback_emotions = None
@@ -103,7 +161,7 @@ async def _run_chat_request(
             status="success",
             error=None,
         )
-        return fallback_text, fallback_emotions, False, [], []
+        return fallback_text, fallback_emotions, False, [], [], []
     except (LLMTimeoutError, LLMInvalidResponseError, CircuitBreakerError) as llm_err:
         fallback_text = "Chisa hơi mệt một chút, Senpai nhắn lại sau nhé ~"
         fallback_emotions = None
@@ -119,7 +177,7 @@ async def _run_chat_request(
             status="success",
             error=str(llm_err),
         )
-        return fallback_text, fallback_emotions, False, [], []
+        return fallback_text, fallback_emotions, False, [], [], []
     except Exception as error:
         pipeline_tracker.end_trace(
             status="failed",
@@ -157,6 +215,7 @@ async def chat_endpoint(
             loop_thinking_activated,
             images_processed,
             attached_images,
+            citation_ids,
         ) = await _run_chat_request(
             session=session,
             message=message,
@@ -196,6 +255,7 @@ async def chat_endpoint(
             loop_thinking_activated=loop_thinking_activated,
             images_processed=images_processed,
             attached_images=attached_images,
+            citations=citation_ids,
         )
     except ChatEngineBusyError:
         raise HTTPException(
@@ -283,6 +343,7 @@ async def chat_stream_endpoint(
                     loop_thinking_activated,
                     images_processed,
                     attached_images,
+                    citation_ids,
                 ) = await _run_chat_request(
                     session=session,
                     message=message,
@@ -318,7 +379,14 @@ async def chat_stream_endpoint(
 
             await queue.put(
                 {
-                    "type": "complete",
+                    "type": "citation",
+                    "trace_id": trace_id,
+                    "data": {"citation_ids": citation_ids},
+                }
+            )
+            await queue.put(
+                {
+                    "type": "done",
                     "trace_id": trace_id,
                     "data": {
                         "response": reply_text,
@@ -328,6 +396,7 @@ async def chat_stream_endpoint(
                         "loop_thinking_activated": loop_thinking_activated,
                         "images_processed": images_processed,
                         "attached_images": attached_images,
+                        "citations": citation_ids,
                     },
                 }
             )
@@ -361,7 +430,7 @@ async def chat_stream_endpoint(
                         "trace_id": trace_id,
                         "data": {
                             "message": "Internal server error during chat generation",
-                            "error": str(error),
+                            "error": "InternalServerError",
                         },
                     }
                 )
@@ -386,11 +455,11 @@ async def chat_stream_endpoint(
 
     async def event_generator():
         try:
-            yield _sse_event("trace_started", {"trace_id": trace_id})
+            yield _sse_event("meta", {"trace_id": trace_id})
             while True:
                 event = await queue.get()
                 yield _sse_event(event["type"], event.get("data", {}))
-                if event["type"] in {"complete", "error"}:
+                if event["type"] in {"done", "error"}:
                     break
         finally:
             pipeline_tracker.unregister_listener(listener)

@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import hashlib
 import json
 import os
 import sys
@@ -40,13 +41,14 @@ if hasattr(sys.stdout, "reconfigure"):
     except Exception:
         pass
 
-from app.infrastructure.ingestion.crawlers import WikiCrawler, CrawlReport
+from app.application.ingestion.errors import CorpusSafetyGateError
+from app.domain.services.guardrails import CorpusSafetyDecision, CorpusSafetyGate
 from app.infrastructure.ingestion.canonical import build_canonical_page, write_canonical_stream
 from app.infrastructure.ingestion.canonical.builder import split_backstory_and_forte_sections
 from app.infrastructure.ingestion.chunkers import chunk_canonical_page
-from app.infrastructure.ingestion.parsers.sanitizer import clean_and_filter_chunk
+from app.infrastructure.ingestion.crawlers import CrawlReport, WikiCrawler
 from app.infrastructure.ingestion.models import CanonicalPage, Chunk
-from app.infrastructure.ingestion.quality.benchmark_runner import BenchmarkRunner, BenchmarkResult
+from app.infrastructure.ingestion.quality.benchmark_runner import BenchmarkResult, BenchmarkRunner
 from app.infrastructure.ingestion.storage.state_db import IngestionStateDB, PageStateRecord
 
 logger = structlog.get_logger(__name__)
@@ -171,13 +173,14 @@ class MasterIngestionPipeline:
         canonical_path: Path = DEFAULT_CANONICAL_PATH,
         chunks_path: Path = DEFAULT_CHUNKS_PATH,
         report_path: Path = DEFAULT_REPORT_PATH,
+        state_db: IngestionStateDB | None = None,
     ):
         self.raw_dir = Path(raw_dir)
         self.clean_dir = Path(clean_dir)
         self.canonical_path = Path(canonical_path)
         self.chunks_path = Path(chunks_path)
         self.report_path = Path(report_path)
-        self.state_db = IngestionStateDB()
+        self.state_db = state_db or IngestionStateDB()
 
     async def stage_1_2_scan(self, categories: Optional[List[str]] = None) -> CrawlReport:
         """Stage 1 & 2: Scan Wiki structure and generate pre-crawl classification report."""
@@ -345,6 +348,13 @@ class MasterIngestionPipeline:
                     if line.strip():
                         chunks.append(Chunk.model_validate_json(line))
 
+        quarantined = self._quarantined_corpus_chunks(chunks)
+        if quarantined:
+            report_path = self._write_corpus_safety_report(staging_version, quarantined)
+            raise CorpusSafetyGateError(
+                quarantined_count=len(quarantined), report_path=str(report_path)
+            )
+
         from app.infrastructure.embeddings.fastembed_adapter import FastEmbedAdapter
         from app.infrastructure.ingestion.storage.qdrant_sync import QdrantSyncManager
 
@@ -369,6 +379,47 @@ class MasterIngestionPipeline:
             raise RuntimeError("Qdrant acknowledgement count does not match the staged chunk count")
         print(f"[+] Qdrant staging sync acknowledged {qdrant_synced} chunks.")
         return qdrant_synced, 0
+
+    @staticmethod
+    def _quarantined_corpus_chunks(chunks: list[Chunk]) -> list[CorpusSafetyDecision]:
+        safety_gate = CorpusSafetyGate()
+        decisions = [
+            safety_gate.inspect(
+                text=chunk.text_content,
+                source_id=f"page:{chunk.page_id}:chunk:{chunk.chunk_id}",
+                checksum=chunk.text_hash,
+            )
+            for chunk in chunks
+        ]
+        return [decision for decision in decisions if decision.quarantined]
+
+    def _write_corpus_safety_report(
+        self, staging_version: str, decisions: list[CorpusSafetyDecision]
+    ) -> Path:
+        version_fingerprint = hashlib.sha256(staging_version.encode("utf-8")).hexdigest()[:16]
+        report_dir = self.report_path.parent / "quarantine"
+        report_dir.mkdir(parents=True, exist_ok=True)
+        report_path = report_dir / f"corpus_safety_{version_fingerprint}.json"
+        payload = {
+            "staging_version": staging_version,
+            "status": "QUARANTINED",
+            "quarantined_count": len(decisions),
+            "records": [
+                {
+                    "source_id": decision.source_id,
+                    "checksum": decision.checksum,
+                    "rule_id": decision.rule_id,
+                    "fingerprint": decision.fingerprint,
+                }
+                for decision in decisions
+            ],
+        }
+        temporary_path = report_path.with_suffix(".tmp")
+        temporary_path.write_text(
+            json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8"
+        )
+        temporary_path.replace(report_path)
+        return report_path
 
     async def stage_6_benchmark(self) -> BenchmarkResult:
         """Stage 6: Automated Retrieval Accuracy Benchmark."""

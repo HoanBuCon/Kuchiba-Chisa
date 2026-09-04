@@ -911,13 +911,13 @@ def convert_mediawiki_tables_to_markdown(text: str) -> str:
                 raw = "|".join(parts[1:]).strip()
 
         # Format multi-line list items within cell
-        lines = [l.strip() for l in raw.split("\n") if l.strip()]
+        lines = [line.strip() for line in raw.split("\n") if line.strip()]
         cleaned_items = []
-        for l in lines:
+        for line in lines:
             # Strip bullet prefixes (*, **, #, -)
-            l = re.sub(r"^[\*\#\-]+\s*", "", l).strip()
-            if l:
-                cleaned_items.append(l)
+            cleaned_line = re.sub(r"^[\*\#\-]+\s*", "", line).strip()
+            if cleaned_line:
+                cleaned_items.append(cleaned_line)
 
         cell_text = "; ".join(cleaned_items) if len(cleaned_items) > 1 else (cleaned_items[0] if cleaned_items else "")
         # Clean wikitext artifacts
@@ -1255,21 +1255,20 @@ def clean_entities(
         "some", "many", "more", "other", "another", "such", "only", "first", "second", "third",
         "last", "next", "same", "different", "every", "each", "all", "any", "no", "not",
         "with", "without", "into", "onto", "over", "under", "above", "below", "between",
-        "through", "during", "before", "after", "above", "below", "from", "up", "down",
-        "in", "out", "on", "off", "over", "under", "again", "further", "then", "once",
-        "here", "there", "when", "where", "why", "how", "all", "any", "both", "each",
-        "few", "more", "most", "other", "some", "such", "no", "nor", "not", "only", "own",
-        "same", "so", "than", "too", "very", "can", "will", "just", "should", "now",
+        "through", "before", "after", "from", "up", "down",
+        "in", "out", "on", "off", "again", "further", "then", "once",
+        "here", "there", "when", "where", "why", "how", "few", "most", "nor", "own",
+        "so", "than", "too", "very", "can", "will", "just", "should", "now",
         "hahaha", "huh", "dicon", "reward", "correct", "unfortunately", "talk", "please", "chat",
         "something", "yes", "sure", "come", "don", "eyeing", "set", "humans", "loans", "memories",
         "the moon", "ahem", "sic", "tx", "color", "exit", "leave", "thanks", "sorry", "wait",
-        "hey", "hello", "hi", "okay", "fine", "cool", "well", "nice", "good", "bad", "riddle",
+        "hey", "hello", "hi", "okay", "fine", "cool", "nice", "good", "bad", "riddle",
         "riddles", "stall", "booth", "dialogue", "dialogue start", "dialogue end", "prof", "professor",
         "name", "image", "images", "description", "intro", "location", "locations", "areas", "area",
         "points", "interest", "item", "items", "bell", "situated", "according", "details", "summary",
         "type", "category", "rarity", "cost", "source", "effect", "stats", "attribute", "attributes",
         "unlocked", "level", "rank", "stat", "value", "property", "properties", "table", "column", "row",
-        "making", "could", "would", "should", "she", "he", "they", "it", "yet", "but", "one", "nutri",
+        "making", "could", "would", "she", "he", "it", "yet", "but", "one", "nutri",
         "pack", "aren", "pattern", "relatively", "previous", "class", "subsequent", "presently", "routine",
         "release", "cleanse", "category table", "these resonators", "extra effect", "mutant resonators",
         "ex42978", "although", "gold", "finally", "silence", "numb", "teachers", "among", "soon", "back",

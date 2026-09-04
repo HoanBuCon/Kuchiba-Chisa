@@ -8,6 +8,7 @@ from typing import Any
 from app.config.settings import settings
 
 _DATA_IMAGE_URI = re.compile(r"^data:image/[a-zA-Z0-9+.-]+;base64,", re.IGNORECASE)
+_BASE64_PAYLOAD = re.compile(r"[A-Za-z0-9+/]*={0,2}")
 
 
 class InputLimitError(ValueError):
@@ -45,6 +46,10 @@ class InputLimitPolicy:
                     raise InputLimitError("invalid image data URI")
                 encoded_payload = item[match.end() :]
 
+            if not encoded_payload or len(encoded_payload) % 4 or not _BASE64_PAYLOAD.fullmatch(
+                encoded_payload
+            ):
+                raise InputLimitError("invalid base64 image payload")
             if len(encoded_payload) > cls.max_base64_chars():
                 raise InputLimitError("base64 image payload is too large")
             estimated_decoded_bytes = (len(encoded_payload.rstrip("=")) * 3) // 4

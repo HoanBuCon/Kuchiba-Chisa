@@ -9,7 +9,6 @@ from sqlalchemy.ext.asyncio import create_async_engine
 from alembic import context
 
 from app.config.settings import settings
-from app.infrastructure.database.engine import Base
 
 # Alembic Config object
 config = context.config
@@ -56,7 +55,6 @@ async def run_async_migrations() -> None:
 
 
 def run_migrations_online() -> None:
-    import asyncio
     asyncio.run(run_async_migrations())
 
 

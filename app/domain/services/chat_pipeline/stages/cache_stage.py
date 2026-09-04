@@ -1,9 +1,11 @@
 import hashlib
 from typing import Optional
-from app.domain.services.chat_pipeline.stage import PipelineStage
-from app.domain.services.chat_pipeline.context import ChatContext
+
 from app.domain.interfaces.cache_provider import ICacheProvider
 from app.domain.interfaces.tracker import IPipelineTracker
+from app.domain.services.chat_pipeline.context import ChatContext
+from app.domain.services.chat_pipeline.stage import PipelineStage
+from app.domain.services.guardrails.injection_guard import GuardAction
 from app.domain.services.intent_classifier import ChatIntent
 from app.shared.utils.logger import get_logger
 
@@ -19,6 +21,11 @@ class CacheStage(PipelineStage):
         self.pipeline_tracker = pipeline_tracker
 
     async def process(self, context: ChatContext) -> ChatContext:
+        if (
+            context.guardrail_assessment
+            and context.guardrail_assessment.action is GuardAction.BLOCK
+        ):
+            return context
         cache_key = None
         is_lore_only = len(context.intents) == 1 and context.intents[0] == ChatIntent.LORE and not context.is_small_talk and not context.has_images
         

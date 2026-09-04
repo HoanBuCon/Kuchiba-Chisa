@@ -4,11 +4,13 @@ Location: app/domain/services/rag/retriever_image_memory.py
 """
 
 from __future__ import annotations
+
+import asyncio
 import os
 import time
-import asyncio
-from typing import List, Dict, Any, Optional
-from qdrant_client.http.models import Filter, FieldCondition, MatchValue, PointIdsList
+from typing import Any
+
+from qdrant_client.http.models import FieldCondition, Filter, MatchValue, PointIdsList, Range
 
 from app.domain.entities.image_memory import RetrievedImageMemory
 from app.domain.interfaces.vector_store import IVectorStore
@@ -27,7 +29,7 @@ class ImageMemoryRetriever:
     def __init__(self, vector_store: IVectorStore) -> None:
         self.vector_store = vector_store
 
-    async def _delete_orphan_points(self, qdrant_client: Any, point_ids: List[str]) -> None:
+    async def _delete_orphan_points(self, qdrant_client: Any, point_ids: list[str]) -> None:
         """Deletes dangling/orphan points from Qdrant collection 'image_memories'."""
         try:
             await qdrant_client.delete(
@@ -40,13 +42,13 @@ class ImageMemoryRetriever:
 
     async def retrieve_image_memories(
         self,
-        query_vector: List[float],
+        query_vector: list[float],
         user_id: str,
-        guild_id: Optional[str] = None,
+        guild_id: str | None = None,
         is_community: bool = False,
         limit: int = 5,
         score_threshold: float = 0.68,
-    ) -> List[RetrievedImageMemory]:
+    ) -> list[RetrievedImageMemory]:
         """
         Retrieves matching visual memories from Qdrant.
         Filters by user_id in DM, or guild_id/user_id in Community channels.
@@ -73,7 +75,17 @@ class ImageMemoryRetriever:
                 FieldCondition(key="guild_id", match=MatchValue(value=str(guild_id)))
             )
 
-        search_filter = Filter(must=must_conditions)
+        # Exclude expired values in Qdrant rather than letting them consume the
+        # limited top-k result window. Missing ``expires_at`` remains eligible.
+        search_filter = Filter(
+            must=must_conditions,
+            must_not=[
+                FieldCondition(
+                    key="expires_at",
+                    range=Range(lte=int(time.time())),
+                )
+            ],
+        )
 
         try:
             results = await qdrant_client.search(
@@ -92,11 +104,14 @@ class ImageMemoryRetriever:
             log.info("No matching image memories found", user_id=user_id, threshold=score_threshold)
             return []
 
-        retrieved: List[RetrievedImageMemory] = []
-        orphan_point_ids: List[str] = []
+        retrieved: list[RetrievedImageMemory] = []
+        orphan_point_ids: list[str] = []
 
         for hit in results:
             payload = hit.payload or {}
+            expires_at = payload.get("expires_at")
+            if isinstance(expires_at, int) and expires_at <= int(time.time()):
+                continue
             local_path = payload.get("local_path")
 
             # Self-Healing Check: If image was stored locally but file was pruned by LRU quota / deleted

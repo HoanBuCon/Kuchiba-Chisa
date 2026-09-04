@@ -11,6 +11,7 @@ log = get_logger(__name__)
 
 class IncrementalRouterInput(BaseModel):
     chunks: List[ProcessingChunk]
+    full_version_rebuild: bool = False
     
 class IncrementalRouterStage(IPipelineStage[IncrementalRouterInput, List[ProcessingChunk]]):
     """
@@ -24,6 +25,17 @@ class IncrementalRouterStage(IPipelineStage[IncrementalRouterInput, List[Process
     async def execute(self, job_id: uuid.UUID, input_data: IncrementalRouterInput) -> PipelineResult[List[ProcessingChunk]]:
         log.info("Starting IncrementalRouterStage", job_id=job_id, chunks=len(input_data.chunks))
         start_time = time.perf_counter()
+
+        if input_data.full_version_rebuild:
+            metrics = PipelineMetrics(
+                duration_seconds=time.perf_counter() - start_time,
+                items_processed=len(input_data.chunks),
+                items_failed=0,
+                items_skipped=0,
+                details={"mode": "full_version_rebuild"},
+            )
+            await self.job_repo.log_event(job_id, "IncrementalRouterComplete", metrics.model_dump())
+            return PipelineResult(output=input_data.chunks, metrics=metrics)
         
         items_skipped = 0
         

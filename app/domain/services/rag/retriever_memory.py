@@ -49,6 +49,11 @@ class MemoryRetriever:
         for cand in candidates:
             payload = cand["payload"]
             similarity_score = cand["score"]
+            expires_at = payload.get("expires_at")
+            if isinstance(expires_at, int) and expires_at <= now:
+                # Expired records must not be rehydrated while asynchronous
+                # cleanup catches up; this preserves retention at read time.
+                continue
             
             # Adaptive Ebbinghaus Recency decay with importance modulation
             created_at = payload.get("created_at", now)
@@ -91,6 +96,7 @@ class MemoryRetriever:
                     memory_type=payload.get("memory_type", "fact"),
                     memory_tier=tier,
                     final_score=final_score,
+                    metadata=payload,
                     components={
                         "similarity": similarity_score,
                         "recency": recency_score,

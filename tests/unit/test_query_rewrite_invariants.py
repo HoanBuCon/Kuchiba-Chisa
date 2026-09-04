@@ -9,8 +9,8 @@ from app.domain.services.chat_pipeline.stages.intent_stage import (
     IntentStage,
     QueryEmbeddingUnavailableError,
 )
-from app.domain.services.rag.query_rewriter import QueryRewriter, RewriteResult
 from app.domain.services.rag.pipeline import RAGPipeline, VectorQueryInvariantError
+from app.domain.services.rag.query_rewriter import QueryRewriter, RewriteResult
 
 
 def _intent_stage(
@@ -94,7 +94,11 @@ async def test_web_only_query_does_not_create_vector_embedding() -> None:
     )
 
     result = await stage.process(
-        ChatContext(session=None, user_id="principal-1", user_message="latest official announcement")
+        ChatContext(
+            session=None,
+            user_id="principal-1",
+            user_message="latest official announcement",
+        )
     )
 
     embedder.embed_text.assert_not_awaited()
@@ -117,7 +121,11 @@ async def test_vector_routing_fails_closed_when_embedding_is_empty() -> None:
 
     with pytest.raises(QueryEmbeddingUnavailableError, match="no embedding"):
         await stage.process(
-            ChatContext(session=None, user_id="principal-1", user_message="How does her Forte work?")
+            ChatContext(
+                session=None,
+                user_id="principal-1",
+                user_message="How does her Forte work?",
+            )
         )
 
 

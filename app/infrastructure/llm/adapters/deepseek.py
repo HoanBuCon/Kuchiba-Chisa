@@ -7,6 +7,10 @@ from typing import Any
 
 import httpx
 
+from app.application.security.json_schema import (
+    StructuredOutputValidationError,
+    validate_structured_output,
+)
 from app.config.settings import settings
 from app.config.tuning.llm import LLMTuning
 from app.domain.interfaces.llm_provider import (
@@ -140,12 +144,12 @@ class DeepSeekAdapter(BaseLLMAdapter):
                 raise LLMError(f"API error: {response.status_code} - {response.text}", retryable=False)
                 
             res_json = response.json()
-        except httpx.TimeoutException:
-            raise LLMTimeoutError()
+        except httpx.TimeoutException as error:
+            raise LLMTimeoutError() from error
         except httpx.RequestError as e:
-            raise LLMError(f"HTTP request failed: {e}", retryable=True)
-        except json.JSONDecodeError:
-            raise LLMInvalidResponseError("Failed to decode JSON from DeepSeek response")
+            raise LLMError(f"HTTP request failed: {e}", retryable=True) from e
+        except json.JSONDecodeError as error:
+            raise LLMInvalidResponseError("Failed to decode JSON from DeepSeek response") from error
 
         try:
             choice = res_json["choices"][0]
@@ -169,7 +173,7 @@ class DeepSeekAdapter(BaseLLMAdapter):
                 from app.shared.utils.token_estimator import TokenEstimator
                 reasoning_tokens = TokenEstimator.estimate(reasoning_content)
         except (KeyError, IndexError) as e:
-            raise LLMInvalidResponseError(f"Invalid response structure: {e}")
+            raise LLMInvalidResponseError(f"Invalid response structure: {e}") from e
 
         parsed = {}
         error_to_raise: Exception | None = None
@@ -281,19 +285,22 @@ class DeepSeekAdapter(BaseLLMAdapter):
                             continue
                 if in_thinking:
                     yield "\n</think>\n"
-        except httpx.TimeoutException:
+        except httpx.TimeoutException as error:
             log.error("DeepSeek streaming timed out")
-            raise LLMTimeoutError()
+            raise LLMTimeoutError() from error
         except Exception as e:
             log.error("DeepSeek streaming failed", error=str(e))
-            raise LLMError(f"DeepSeek streaming failed: {e}", retryable=False)
+            raise LLMError(f"DeepSeek streaming failed: {e}", retryable=False) from e
 
     async def validate_response(self, raw: str, schema: dict[str, Any]) -> dict[str, Any]:
         from app.shared.utils.json_parser import robust_parse_json
         parsed = robust_parse_json(raw)
         if not parsed or not isinstance(parsed, dict):
             raise LLMInvalidResponseError("LLM response is not a valid JSON object")
-        return parsed
+        try:
+            return validate_structured_output(parsed, schema)
+        except StructuredOutputValidationError as error:
+            raise LLMInvalidResponseError(str(error)) from error
 
     async def estimate_tokens(self, text: str) -> int:
         """Precise token count via tiktoken cl100k_base (shared TokenEstimator)."""

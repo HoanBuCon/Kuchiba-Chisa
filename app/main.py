@@ -14,7 +14,7 @@ from app.infrastructure.cache.redis.redis_service import redis_service
 from app.infrastructure.database.engine import connect_database, disconnect_database
 from app.infrastructure.logging.logger import configure_logging, get_logger
 from app.infrastructure.vector.qdrant.qdrant_service import qdrant_service
-from app.interface.api.routes import auth, chat, community, health
+from app.interface.api.routes import admin_ingestion, auth, chat, community, health
 from app.interface.middlewares.rate_limiter import RateLimitMiddleware
 from app.interface.middlewares.request_body_limit import RequestBodyLimitMiddleware
 from app.shared.utils.background_tasks import BackgroundTaskManager
@@ -178,13 +178,7 @@ def create_app() -> FastAPI:
     # replacement is available.
     # app.include_router(users.router, prefix="/api/v1", tags=["Users"])
 
-    try:
-        from importlib import import_module
-
-        admin_ingestion = import_module("app.interface.api.routes.admin_ingestion")
-        app.include_router(admin_ingestion.router, prefix="/api/v1")
-    except ImportError:
-        pass
+    app.include_router(admin_ingestion.router, prefix="/api/v1")
 
     if ASSETS_DIR.is_dir():
         app.mount("/assets", StaticFiles(directory=str(ASSETS_DIR)), name="assets")

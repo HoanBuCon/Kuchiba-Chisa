@@ -4,6 +4,7 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from app.application.security.input_limits import InputLimitPolicy
 from app.config.settings import settings
+from app.interface.api.schemas.attachments import AttachmentManifestOut
 
 
 def _empty_strings() -> list[str]:
@@ -11,6 +12,14 @@ def _empty_strings() -> list[str]:
 
 
 def _empty_image_metadata() -> list[dict[str, Any]]:
+    return []
+
+
+def _empty_attachment_manifests() -> list[AttachmentManifestOut]:
+    return []
+
+
+def _empty_citations() -> list[str]:
     return []
 
 
@@ -63,7 +72,32 @@ class ChatResponse(BaseModel):
     images_processed: list[dict[str, Any]] | None = Field(
         default_factory=_empty_image_metadata, description="Metadata of processed images"
     )
-    attached_images: list[str] | None = Field(
-        default_factory=_empty_strings,
-        description="List of retrieved image URLs attached in response",
+    attached_images: list[AttachmentManifestOut] | None = Field(
+        default_factory=_empty_attachment_manifests,
+        description="Server-approved retrieved-image attachment manifests",
     )
+    citations: list[str] = Field(
+        default_factory=_empty_citations,
+        description="Server-validated evidence IDs supporting the response",
+    )
+
+
+class MemoryConsentRequest(BaseModel):
+    """Authenticated principal's explicit long-term-memory preference."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    enabled: bool
+    retention_days: int | None = Field(default=None, ge=1, le=365)
+
+    @model_validator(mode="after")
+    def validate_retention(self) -> "MemoryConsentRequest":
+        if self.enabled and self.retention_days is None:
+            raise ValueError("retention_days is required when enabling long-term memory")
+        return self
+
+
+class MemoryConsentResponse(BaseModel):
+    enabled: bool
+    retention_days: int | None
+    consented_at: str | None

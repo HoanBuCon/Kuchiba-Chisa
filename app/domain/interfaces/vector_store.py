@@ -33,9 +33,13 @@ class IVectorStore(ABC):
         self,
         collection: str,
         query_vector: List[float],
+        query_text: str = "",
         limit: int = 4,
         score_threshold: float = 0.3,
         entities_filter: Optional[List[str]] = None,
+        requester_subject_id: str | None = None,
+        requester_tenant_id: str | None = None,
+        requester_channel_id: str | None = None,
     ) -> List[Dict[str, Any]]:
         pass
 

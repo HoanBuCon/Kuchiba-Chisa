@@ -1,10 +1,8 @@
 import time
-from typing import List, Dict, Optional, Any
+
 from app.domain.interfaces.vector_store import IVectorStore
 from app.domain.services.rag.base import ScoredMemory
 from app.domain.services.rag.reranker import HybridMemoryScorer
-from app.domain.tuning.memory import MemoryTuning
-from app.domain.tuning.rag import RAGTuning
 from app.shared.utils.logger import get_logger
 
 log = get_logger(__name__)
@@ -15,21 +13,21 @@ class GuildMemoryRetriever:
     Retrieves and ranks server-level shared memories, events, and culture from Qdrant.
     Enforces guild_id isolation and optionally filters out expired events.
     """
-    def __init__(self, vector_store: IVectorStore, scorer: Optional[HybridMemoryScorer] = None):
+    def __init__(self, vector_store: IVectorStore, scorer: HybridMemoryScorer | None = None):
         self.vector_store = vector_store
         self.scorer = scorer or HybridMemoryScorer()
 
     async def retrieve_guild_memories(
         self,
         collection: str,
-        query_vector: List[float],
+        query_vector: list[float],
         guild_id: str,
-        channel_id: Optional[str] = None,
+        channel_id: str | None = None,
         limit: int = 10,
         top_k: int = 3,
         score_threshold: float = 0.45,
         exclude_expired: bool = True
-    ) -> List[ScoredMemory]:
+    ) -> list[ScoredMemory]:
         if not guild_id or guild_id.startswith("CHANNEL_") or guild_id == "DM":
             return []
 
@@ -65,7 +63,7 @@ class GuildMemoryRetriever:
             tier = payload.get("memory_tier", "personal")
 
             # If event has expired and wasn't filtered by Qdrant, skip it
-            if exclude_expired and expires_at and expires_at < now:
+            if exclude_expired and expires_at and expires_at <= now:
                 continue
 
             # Boost active upcoming events

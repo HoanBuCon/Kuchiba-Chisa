@@ -6,8 +6,20 @@ from app.domain.interfaces.embedding_provider import IEmbeddingProvider
 from app.domain.interfaces.llm_provider import BaseLLMAdapter
 from app.domain.interfaces.session import IDbSession
 from app.domain.interfaces.tracker import IPipelineTracker
+from app.domain.services.guardrails.injection_guard import (
+    ContentSource,
+    GuardAction,
+    InjectionGuard,
+)
 from app.domain.services.rag.assessor import ContextAssessor
-from app.domain.services.rag.base import RAGContext
+from app.domain.services.rag.base import (
+    Evidence,
+    EvidenceAccess,
+    RAGContext,
+    image_memory_evidence,
+    lore_evidence,
+    memory_evidence,
+)
 from app.domain.services.rag.entity_resolver import EntityResolver
 from app.domain.services.rag.retriever_guild_memory import GuildMemoryRetriever
 from app.domain.services.rag.retriever_image_memory import ImageMemoryRetriever
@@ -38,7 +50,8 @@ class RAGPipeline:
         assessor: ContextAssessor | None = None,
         thinking_loop_agent: ThinkingLoopAgent | None = None,
         pipeline_tracker: IPipelineTracker | None = None,
-        entity_resolver: EntityResolver | None = None
+        entity_resolver: EntityResolver | None = None,
+        injection_guard: InjectionGuard | None = None,
     ):
         if memory_retriever is None:
             raise ValueError("memory_retriever is required")
@@ -69,6 +82,7 @@ class RAGPipeline:
             self.pipeline_tracker = pipeline_tracker
             
         self.entity_resolver = entity_resolver
+        self.injection_guard = injection_guard or InjectionGuard()
 
     @staticmethod
     def _normalize_intents(intents: list[Any]) -> set[str]:
@@ -109,6 +123,7 @@ class RAGPipeline:
         memories = []
         guild_memories = []
         retrieved_images = []
+        evidence: list[Evidence] = []
         lore_chunks = []
         queried_lore_cols = []
         intent_strs = self._normalize_intents(intents)
@@ -141,13 +156,23 @@ class RAGPipeline:
 
         # Helper coroutine: Execute Qdrant Vector Lore & Memory Retrieval
         async def _fetch_vector_lore_and_memory():
-            nonlocal lore_scored, memories, guild_memories, retrieved_images, lore_chunks, queried_lore_cols, extracted, expanded, scoring_details
+            nonlocal evidence
+            nonlocal expanded
+            nonlocal extracted
+            nonlocal guild_memories
+            nonlocal lore_chunks
+            nonlocal lore_scored
+            nonlocal memories
+            nonlocal queried_lore_cols
+            nonlocal retrieved_images
+            nonlocal scoring_details
             if not query_vector:
                 return
 
-            retrieval_tasks = []
-            active_intents = []
-            should_fetch_lore = ("LORE" in intent_strs or "OTHER" in intent_strs or "KNOWLEDGE_OR_TASK" in intent_strs)
+            retrieval_tasks: list[tuple[str, str, Any]] = []
+            should_fetch_lore = bool(
+                {"LORE", "OTHER", "KNOWLEDGE_OR_TASK"} & intent_strs
+            )
 
             if should_fetch_lore:
                 if self.entity_resolver:
@@ -156,64 +181,92 @@ class RAGPipeline:
                     log.info("Entity Resolver Output", extracted=list(extracted), expanded=list(expanded))
 
                 for col_name in lore_collections:
-                    active_intents.append("LORE")
                     queried_lore_cols.append(col_name)
                     retrieval_tasks.append(
-                        self.lore_retriever.retrieve_lore_parent_child(
-                            collection=col_name,
-                            query_vector=query_vector,
-                            session=session,
-                            query_text=cleaned_query,
-                            top_k=RAGTuning.TOP_K,
-                            score_threshold=RAGTuning.SCORE_THRESHOLD,
-                            entities_filter=list(expanded) if expanded else None
+                        (
+                            "LORE",
+                            col_name,
+                            self.lore_retriever.retrieve_lore_parent_child(
+                                collection=col_name,
+                                query_vector=query_vector,
+                                session=session,
+                                query_text=cleaned_query,
+                                top_k=RAGTuning.TOP_K,
+                                score_threshold=RAGTuning.SCORE_THRESHOLD,
+                                entities_filter=list(expanded) if expanded else None,
+                                requester_subject_id=str(user_id),
+                                requester_tenant_id=str(guild_id) if guild_id else None,
+                                requester_channel_id=str(channel_id) if channel_id else None,
+                            ),
                         )
                     )
 
-            if "MEMORY" in intent_strs or "KNOWLEDGE_OR_TASK" in intent_strs or "OTHER" in intent_strs or "LORE" in intent_strs:
-                active_intents.append("MEMORY")
+            if {"MEMORY", "KNOWLEDGE_OR_TASK", "OTHER", "LORE"} & intent_strs:
                 retrieval_tasks.append(
-                    self.memory_retriever.retrieve_memories(
-                        collection="memories",
-                        query_vector=query_vector,
-                        user_id=user_id,
-                        conversation_id=conversation_id,
-                        current_emotion=current_emotions,
-                        limit=10,
-                        top_k=RAGTuning.TOP_K
+                    (
+                        "MEMORY",
+                        "memories",
+                        self.memory_retriever.retrieve_memories(
+                            collection="memories",
+                            query_vector=query_vector,
+                            user_id=user_id,
+                            conversation_id=conversation_id,
+                            current_emotion=current_emotions,
+                            limit=10,
+                            top_k=RAGTuning.TOP_K,
+                        ),
                     )
                 )
 
-                if self.guild_memory_retriever and guild_id and not guild_id.startswith("CHANNEL_") and guild_id != "DM":
-                    active_intents.append("GUILD_MEMORY")
+                if (
+                    self.guild_memory_retriever
+                    and guild_id
+                    and not guild_id.startswith("CHANNEL_")
+                    and guild_id != "DM"
+                ):
                     retrieval_tasks.append(
-                        self.guild_memory_retriever.retrieve_guild_memories(
-                            collection="guild_memories",
-                            query_vector=query_vector,
-                            guild_id=str(guild_id),
-                            channel_id=str(channel_id) if channel_id else None,
-                            limit=10,
-                            top_k=RAGTuning.TOP_K
+                        (
+                            "GUILD_MEMORY",
+                            "guild_memories",
+                            self.guild_memory_retriever.retrieve_guild_memories(
+                                collection="guild_memories",
+                                query_vector=query_vector,
+                                guild_id=str(guild_id),
+                                channel_id=str(channel_id) if channel_id else None,
+                                limit=10,
+                                top_k=RAGTuning.TOP_K,
+                            ),
                         )
                     )
 
-            if "RETRIEVE_PAST_IMAGE" in intent_strs and self.image_memory_retriever and query_vector:
-                active_intents.append("IMAGE_MEMORY")
+            if (
+                "RETRIEVE_PAST_IMAGE" in intent_strs
+                and self.image_memory_retriever
+                and query_vector
+            ):
                 retrieval_tasks.append(
-                    self.image_memory_retriever.retrieve_image_memories(
-                        query_vector=query_vector,
-                        user_id=user_id,
-                        guild_id=guild_id,
-                        is_community=bool(guild_id and not str(guild_id).startswith("CHANNEL_") and guild_id != "DM"),
-                        limit=5,
-                        score_threshold=0.68,
+                    (
+                        "IMAGE_MEMORY",
+                        "image_memories",
+                        self.image_memory_retriever.retrieve_image_memories(
+                            query_vector=query_vector,
+                            user_id=user_id,
+                            guild_id=guild_id,
+                            is_community=bool(
+                                guild_id
+                                and not str(guild_id).startswith("CHANNEL_")
+                                and guild_id != "DM"
+                            ),
+                            limit=5,
+                            score_threshold=0.68,
+                        ),
                     )
                 )
 
             if retrieval_tasks:
                 try:
                     results = []
-                    for task in retrieval_tasks:
+                    for _, _, task in retrieval_tasks:
                         try:
                             res = await task
                         except Exception as e:
@@ -222,31 +275,74 @@ class RAGPipeline:
 
                     # Fair Multi-Collection Fusion (RRF + Normalized Score Fusion)
                     collection_buckets: dict[str, list[tuple[str, float, dict]]] = {}
-                    for intent_type, col_name, retrieved_data in zip(
-                        active_intents,
-                        queried_lore_cols
-                        + ["guild_memories"]
-                        * (len(active_intents) - len(queried_lore_cols)),
-                        results,
-                        strict=False,
+                    for (intent_type, col_name, _), retrieved_data in zip(
+                        retrieval_tasks, results, strict=True
                     ):
                         if isinstance(retrieved_data, Exception):
                             log.warning("Retrieval sub-task failed", error=str(retrieved_data), collection=col_name)
                             continue
                         if intent_type == "MEMORY":
                             for m in retrieved_data:
-                                if m.text_content and m.text_content not in memories:
+                                assessment = self.injection_guard.assess(
+                                    m.text_content, ContentSource.MEMORY
+                                )
+                                if (
+                                    assessment.action is not GuardAction.QUARANTINE
+                                    and m.text_content
+                                    and m.text_content not in memories
+                                ):
                                     memories.append(m.text_content)
+                                    evidence.append(
+                                        memory_evidence(
+                                            memory=m,
+                                            kind="memory",
+                                            access=EvidenceAccess(
+                                                scope="user", subject_id=str(user_id)
+                                            ),
+                                        )
+                                    )
                         elif intent_type == "GUILD_MEMORY":
                             for m in retrieved_data:
-                                if m.text_content and m.text_content not in guild_memories:
+                                assessment = self.injection_guard.assess(
+                                    m.text_content, ContentSource.MEMORY
+                                )
+                                if (
+                                    assessment.action is not GuardAction.QUARANTINE
+                                    and m.text_content
+                                    and m.text_content not in guild_memories
+                                ):
                                     guild_memories.append(m.text_content)
+                                    evidence.append(
+                                        memory_evidence(
+                                            memory=m,
+                                            kind="guild_memory",
+                                            access=EvidenceAccess(
+                                                scope="tenant",
+                                                tenant_id=str(guild_id),
+                                                channel_id=str(channel_id)
+                                                if channel_id
+                                                else None,
+                                            ),
+                                        )
+                                    )
                         elif intent_type == "IMAGE_MEMORY":
                             for img_mem in retrieved_data:
                                 if hasattr(img_mem, "model_dump"):
-                                    retrieved_images.append(img_mem.model_dump())
+                                    image_data = img_mem.model_dump()
                                 elif isinstance(img_mem, dict):
-                                    retrieved_images.append(img_mem)
+                                    image_data = img_mem
+                                else:
+                                    continue
+                                assessment = self.injection_guard.assess(
+                                    str(image_data.get("visual_caption", "")),
+                                    ContentSource.IMAGE_DERIVED,
+                                )
+                                if assessment.action is GuardAction.QUARANTINE:
+                                    continue
+                                retrieved_images.append(image_data)
+                                evidence.append(
+                                    image_memory_evidence(image=image_data, user_id=str(user_id))
+                                )
                         else:
                             if col_name not in collection_buckets:
                                 collection_buckets[col_name] = []
@@ -256,22 +352,49 @@ class RAGPipeline:
                                 else:
                                     text, score = item
                                     meta = {}
+                                assessment = self.injection_guard.assess(
+                                    text, ContentSource.RETRIEVED_EVIDENCE
+                                )
+                                if assessment.action is GuardAction.QUARANTINE:
+                                    log.warning(
+                                        "Quarantined injected retrieval evidence",
+                                        rule_id=assessment.rule_id,
+                                        fingerprint=assessment.fingerprint,
+                                    )
+                                    continue
                                 collection_buckets[col_name].append((text, score, meta))
 
                     # Apply RRF and Interleaving to prevent single-collection starvation
                     scored_by_text: dict[str, tuple[float, dict]] = {}
                     for items in collection_buckets.values():
                         for rank, (text, score, meta) in enumerate(items, start=1):
-                            rrf_score = (1.0 / (60.0 + rank)) * 10.0 + score
+                            rrf_component = (1.0 / (60.0 + rank)) * 10.0
+                            rrf_score = rrf_component + score
+                            evidence_metadata = {**meta, "rrf_score": round(rrf_component, 6)}
                             if text not in scored_by_text:
-                                scored_by_text[text] = (rrf_score, meta)
+                                scored_by_text[text] = (rrf_score, evidence_metadata)
                             else:
                                 existing_score, existing_meta = scored_by_text[text]
-                                scored_by_text[text] = (existing_score + rrf_score, {**existing_meta, **meta})
+                                evidence_metadata["rrf_score"] = round(
+                                    float(existing_meta.get("rrf_score", 0.0)) + rrf_component,
+                                    6,
+                                )
+                                scored_by_text[text] = (
+                                    existing_score + rrf_score,
+                                    {**existing_meta, **evidence_metadata},
+                                )
 
                     lore_scored = [(t, s, m) for t, (s, m) in scored_by_text.items()]
                     lore_scored.sort(key=lambda x: x[1], reverse=True)
                     lore_chunks = [x[0] for x in lore_scored[:RAGTuning.TOP_K]]
+                    for text, score, metadata in lore_scored[:RAGTuning.TOP_K]:
+                        evidence.append(
+                            lore_evidence(
+                                text=text,
+                                final_score=score,
+                                metadata=metadata,
+                            )
+                        )
                     if len(memories) > RAGTuning.TOP_K:
                         memories = memories[:RAGTuning.TOP_K]
                     if len(guild_memories) > RAGTuning.TOP_K:
@@ -368,6 +491,10 @@ class RAGPipeline:
                     bypass_optimize=True
                 )
                 search_msg = web_search_1_res.get("message", "")
+                assessment = self.injection_guard.assess(search_msg, ContentSource.WEB)
+                if assessment.action is GuardAction.QUARANTINE:
+                    search_msg = ""
+                    web_search_1_res = None
                 from app.domain.services.tools.web_search import web_search_trace_payload
                 self.pipeline_tracker.add_step(
                     name="web_search",
@@ -642,6 +769,7 @@ class RAGPipeline:
             memories=memories,
             guild_memories=guild_memories,
             retrieved_images=retrieved_images,
+            evidence=[item for item in evidence if use_lore or item.kind != "lore"],
             tool_output_msg=tool_output_msg,
             is_aligned=is_aligned,
             alignment_reason=alignment_reason,

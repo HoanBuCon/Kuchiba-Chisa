@@ -193,7 +193,6 @@ class ThinkingLoopAgent:
                 distilled_facts = initial_extracted_facts or ""
             else:
                 is_reasoning_cycle = False
-                use_deep_thinking = False
 
                 system_prompt = (
                     "You are an Adaptive Loop Thinking Agent for Kuchiba Chisa (Wuthering Waves).\n"
