@@ -7,19 +7,17 @@ against a standardized 50-case benchmark suite after every ingestion cycle.
 
 from __future__ import annotations
 
-import asyncio
 import time
 from dataclasses import dataclass, field
 from datetime import datetime
-from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 import structlog
 
 logger = structlog.get_logger(__name__)
 
 # Standard 50-case cross-lingual gold standard dataset for Wuthering Waves
-BENCHMARK_TEST_CASES: List[Dict[str, Any]] = [
+BENCHMARK_TEST_CASES: list[dict[str, Any]] = [
     # 1. Resonator Lore & Identities (15 cases)
     {"id": 1, "category": "Resonators", "query": "Kuchiba Chisa là ai và học ở đâu?", "expected_keywords": ["Chisa", "Startorch", "Mutant", "Havoc", "Sonoro"]},
     {"id": 2, "category": "Resonators", "query": "Tuổi thực tế và tuổi sinh học của Chisa", "expected_keywords": ["18", "38", "Sonoro", "Sphere"]},
@@ -90,7 +88,7 @@ class BenchmarkResult:
     hit_at_5: int = 0
     mrr_sum: float = 0.0
     latency_ms_avg: float = 0.0
-    results_detail: List[Dict[str, Any]] = field(default_factory=list)
+    results_detail: list[dict[str, Any]] = field(default_factory=list)
     quality_gate_passed: bool = False
 
     @property
@@ -136,7 +134,7 @@ class BenchmarkRunner:
         self.top_k = top_k
         self.pass_threshold_pct = pass_threshold_pct
 
-    async def run(self, vector_retriever: Optional[Any] = None) -> BenchmarkResult:
+    async def run(self, vector_retriever: Any | None = None) -> BenchmarkResult:
         """
         Runs the 50-case benchmark suite and evaluates retrieval precision.
         """

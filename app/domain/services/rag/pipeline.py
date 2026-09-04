@@ -173,6 +173,7 @@ class RAGPipeline:
             should_fetch_lore = bool(
                 {"LORE", "OTHER", "KNOWLEDGE_OR_TASK"} & intent_strs
             )
+            should_rerank_lore = bool({"LORE", "KNOWLEDGE_OR_TASK"} & intent_strs)
 
             if should_fetch_lore:
                 if self.entity_resolver:
@@ -197,6 +198,7 @@ class RAGPipeline:
                                 requester_subject_id=str(user_id),
                                 requester_tenant_id=str(guild_id) if guild_id else None,
                                 requester_channel_id=str(channel_id) if channel_id else None,
+                                enable_cross_encoder_rerank=should_rerank_lore,
                             ),
                         )
                     )

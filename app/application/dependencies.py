@@ -111,17 +111,12 @@ class AppContainer:
 
     @cached_property
     def cross_encoder_reranker(self):
-        """Construct only an explicitly approved, locally provisioned reranker."""
-        if not settings.RERANKER_MODEL:
-            return None
-        from app.infrastructure.rag.fastembed_cross_encoder_reranker import (
-            FastEmbedCrossEncoderReranker,
-        )
+        """Construct the explicitly configured RAG-05 reranker adapter."""
+        from app.infrastructure.rag.reranker_factory import build_cross_encoder_reranker
 
-        return FastEmbedCrossEncoderReranker(
-            model_name=settings.RERANKER_MODEL,
-            timeout_seconds=settings.RERANKER_TIMEOUT_SECONDS,
-            batch_size=settings.RERANKER_BATCH_SIZE,
+        return build_cross_encoder_reranker(
+            config=settings,
+            http_client=self.http_client,
         )
 
     @cached_property

@@ -117,6 +117,14 @@ class Settings(BaseSettings):
     EMBEDDING_MODEL: str = "intfloat/multilingual-e5-small"
     INTENT_SEMANTIC_THRESHOLD: float = 0.65
     INTENT_ENABLE_L3_SEMANTIC: bool = True
+    # RAG-05 remote reranking is opt-in until a provider key and data-processing
+    # approval are explicitly provisioned. Local artifacts remain explicit too.
+    RERANKER_PROVIDER: Literal["disabled", "voyage", "jina", "cohere", "local"] = "disabled"
+    RERANKER_API_MODEL: str = "rerank-3-lite"
+    RERANKER_API_MAX_DOCUMENTS: int = Field(default=15, ge=1, le=15)
+    VOYAGE_API_KEY: str | None = None
+    JINA_API_KEY: str | None = None
+    COHERE_API_KEY: str | None = None
     RERANKER_MODEL: str | None = None
     RERANKER_TIMEOUT_SECONDS: float = Field(default=1.5, gt=0, le=10)
     RERANKER_BATCH_SIZE: int = Field(default=16, ge=1, le=64)

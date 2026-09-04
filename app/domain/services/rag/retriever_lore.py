@@ -4,8 +4,15 @@ from collections.abc import Callable
 from typing import Any
 
 from app.domain.interfaces.repositories import ILoreParentRepository
-from app.domain.interfaces.reranker import ICrossEncoderReranker, RerankerUnavailableError
+from app.domain.interfaces.reranker import (
+    ICrossEncoderReranker,
+    RerankerDataBoundary,
+    RerankerUnavailableError,
+)
 from app.domain.interfaces.vector_store import IVectorStore
+from app.domain.services.rag.deterministic_reranker_fallback import (
+    DeterministicRerankerFallback,
+)
 from app.domain.services.rag.reranker import KeywordOverlapReranker
 from app.domain.tuning.rag import RAGTuning
 from app.shared.utils.logger import get_logger
@@ -30,6 +37,7 @@ class LoreRetriever:
         self.reranker = reranker or KeywordOverlapReranker()
         self.lore_parent_repo_factory = lore_parent_repo_factory
         self.cross_encoder_reranker = cross_encoder_reranker
+        self._cross_encoder_fallback = DeterministicRerankerFallback()
 
     @staticmethod
     def resolve_windowed_parent(
@@ -118,6 +126,7 @@ class LoreRetriever:
         requester_tenant_id: str | None = None,
         requester_channel_id: str | None = None,
         max_token_budget: int | None = None,
+        enable_cross_encoder_rerank: bool = True,
     ) -> list[tuple[str, float, dict[str, Any]]]:
         try:
             if not self.vector_store:
@@ -210,6 +219,7 @@ class LoreRetriever:
         scored_candidates = await self._cross_encoder_rerank(
             query_text=query_text,
             scored_candidates=scored_candidates,
+            enabled=enable_cross_encoder_rerank,
         )
 
         seen_parents = set()
@@ -280,6 +290,7 @@ class LoreRetriever:
         *,
         query_text: str,
         scored_candidates: list[tuple[dict[str, Any], float]],
+        enabled: bool,
     ) -> list[tuple[dict[str, Any], float]]:
         """Rerank top candidates with the configured cross encoder or expose fallback.
 
@@ -289,18 +300,27 @@ class LoreRetriever:
         """
         if not scored_candidates:
             return scored_candidates
+        if not enabled:
+            return self._apply_cross_encoder_fallback(
+                scored_candidates,
+                "not_applicable",
+                degraded=False,
+            )
         if self.cross_encoder_reranker is None or not query_text.strip():
-            self._mark_lexical_fallback(scored_candidates, "not_configured")
-            return scored_candidates
+            return self._apply_cross_encoder_fallback(scored_candidates, "not_configured")
 
         rerankable = scored_candidates[: RAGTuning.CROSS_ENCODER_CANDIDATE_LIMIT]
+        if self._reranker_requires_public_evidence() and not self._all_public(rerankable):
+            log.warning(
+                "Remote reranker denied non-public evidence; using deterministic fallback"
+            )
+            return self._apply_cross_encoder_fallback(scored_candidates, "remote_policy")
         documents = [
             str(candidate.get("payload", {}).get("text_content", ""))
             for candidate, _ in rerankable
         ]
         if not all(documents):
-            self._mark_lexical_fallback(scored_candidates, "invalid_candidate")
-            return scored_candidates
+            return self._apply_cross_encoder_fallback(scored_candidates, "invalid_candidate")
         try:
             cross_encoder_scores = await self.cross_encoder_reranker.rerank(
                 query_text, documents
@@ -310,14 +330,12 @@ class LoreRetriever:
                 "Cross-encoder reranking unavailable; using deterministic fallback",
                 error_type=type(error).__name__,
             )
-            self._mark_lexical_fallback(scored_candidates, "unavailable")
-            return scored_candidates
+            return self._apply_cross_encoder_fallback(scored_candidates, "unavailable")
         if len(cross_encoder_scores) != len(rerankable) or not all(
             math.isfinite(score) for score in cross_encoder_scores
         ):
             log.warning("Cross-encoder returned an invalid score set; using deterministic fallback")
-            self._mark_lexical_fallback(scored_candidates, "invalid_score_set")
-            return scored_candidates
+            return self._apply_cross_encoder_fallback(scored_candidates, "invalid_score_set")
 
         reranked: list[tuple[dict[str, Any], float]] = []
         for (candidate, _), raw_score in zip(rerankable, cross_encoder_scores, strict=True):
@@ -327,24 +345,42 @@ class LoreRetriever:
             scoring_meta["reranker_score"] = round(calibrated_score, 6)
             scoring_meta["reranker_mode"] = "cross_encoder"
             scoring_meta["reranker_fallback"] = False
+            scoring_meta["reranker_degraded"] = False
             reranked.append((candidate, calibrated_score))
         for candidate, score in scored_candidates[RAGTuning.CROSS_ENCODER_CANDIDATE_LIMIT :]:
             scoring_meta = candidate["scoring_meta"]
             scoring_meta["reranker_mode"] = "candidate_limit_fallback"
             scoring_meta["reranker_fallback"] = True
+            scoring_meta["reranker_degraded"] = True
             reranked.append((candidate, score))
         reranked.sort(key=lambda item: item[1], reverse=True)
         return reranked
 
+    def _apply_cross_encoder_fallback(
+        self,
+        scored_candidates: list[tuple[dict[str, Any], float]],
+        reason: str,
+        degraded: bool = True,
+    ) -> list[tuple[dict[str, Any], float]]:
+        return self._cross_encoder_fallback.apply(
+            scored_candidates,
+            reason=reason,
+            degraded=degraded,
+        )
+
+    def _reranker_requires_public_evidence(self) -> bool:
+        """Treat an unlabelled adapter as remote until it proves otherwise."""
+        return (
+            getattr(self.cross_encoder_reranker, "data_boundary", None)
+            is not RerankerDataBoundary.LOCAL
+        )
+
     @staticmethod
-    def _mark_lexical_fallback(
-        scored_candidates: list[tuple[dict[str, Any], float]], reason: str
-    ) -> None:
-        for candidate, _ in scored_candidates:
-            scoring_meta = candidate["scoring_meta"]
-            scoring_meta["reranker_mode"] = "lexical_fallback"
-            scoring_meta["reranker_fallback"] = True
-            scoring_meta["reranker_fallback_reason"] = reason
+    def _all_public(scored_candidates: list[tuple[dict[str, Any], float]]) -> bool:
+        return all(
+            candidate.get("payload", {}).get("access_scope") == "public"
+            for candidate, _ in scored_candidates
+        )
 
     @staticmethod
     def _calibrate_cross_encoder_score(raw_score: float) -> float:
