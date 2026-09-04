@@ -221,6 +221,16 @@ class Chunk(BaseModel):
         ge=0,
         description="Zero-based sequential index within the parent section.",
     )
+    chunk_start_offset: int | None = Field(
+        default=None,
+        ge=0,
+        description="Inclusive character offset within the source section, when known.",
+    )
+    chunk_end_offset: int | None = Field(
+        default=None,
+        ge=0,
+        description="Exclusive character offset within the source section, when known.",
+    )
     chunk_strategy: ChunkStrategyEnum = Field(
         default=ChunkStrategyEnum.PARAGRAPH_MERGE,
         description="Strategy that produced this chunk (for diagnostics/A/B testing).",

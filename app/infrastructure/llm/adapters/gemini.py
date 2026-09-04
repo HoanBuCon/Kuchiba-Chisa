@@ -9,6 +9,10 @@ from google import genai
 from google.genai import types
 from PIL import Image
 
+from app.application.security.json_schema import (
+    StructuredOutputValidationError,
+    validate_structured_output,
+)
 from app.config.settings import settings
 from app.config.tuning.llm import LLMTuning
 from app.domain.interfaces.llm_provider import (
@@ -132,12 +136,12 @@ class GeminiAdapter(BaseLLMAdapter):
         except Exception as e:
             error_str = str(e).lower()
             if "timeout" in error_str:
-                raise LLMTimeoutError()
+                raise LLMTimeoutError() from e
             if "rate_limit" in error_str or "429" in error_str or "quota" in error_str:
-                raise LLMRateLimitError()
+                raise LLMRateLimitError() from e
             if "context_length" in error_str or "token limit" in error_str:
-                raise LLMTokenOverflowError()
-            raise LLMError(f"Gemini API error: {e}", retryable=True)
+                raise LLMTokenOverflowError() from e
+            raise LLMError(f"Gemini API error: {e}", retryable=True) from e
 
         raw = response.text or ""
         finish_reason = str(response.candidates[0].finish_reason) if response.candidates else ""
@@ -236,7 +240,7 @@ class GeminiAdapter(BaseLLMAdapter):
                     yield chunk.text
         except Exception as e:
             log.error("Gemini streaming failed", error=str(e))
-            raise LLMError(f"Gemini streaming failed: {e}", retryable=False)
+            raise LLMError(f"Gemini streaming failed: {e}", retryable=False) from e
 
     # ── Validate Response ──────────────────────────────────────────
     async def validate_response(self, raw: str, schema: dict[str, Any]) -> dict[str, Any]:
@@ -244,7 +248,10 @@ class GeminiAdapter(BaseLLMAdapter):
         parsed = robust_parse_json(raw)
         if not parsed or not isinstance(parsed, dict):
             raise LLMInvalidResponseError("LLM response is not a valid JSON object")
-        return parsed
+        try:
+            return validate_structured_output(parsed, schema)
+        except StructuredOutputValidationError as error:
+            raise LLMInvalidResponseError(str(error)) from error
 
     # ── Token Estimation ───────────────────────────────────────────
     async def estimate_tokens(self, text: str) -> int:

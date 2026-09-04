@@ -19,8 +19,10 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from app.config.settings import settings
-from app.infrastructure.vector.qdrant.qdrant_service import (
+from app.config.settings import (  # noqa: E402  # sys.path is set above for direct execution.
+    settings,
+)
+from app.infrastructure.vector.qdrant.qdrant_service import (  # noqa: E402  # sys.path is set above for direct execution.
     ALL_COLLECTIONS,
     active_collection_alias,
     qdrant_service,
@@ -32,7 +34,9 @@ def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("action", choices=("prepare", "promote", "rollback"))
     parser.add_argument("--collection", choices=ALL_COLLECTIONS, required=True)
-    parser.add_argument("--actor", required=True, help="Authorized operator identity for audit output")
+    parser.add_argument(
+        "--actor", required=True, help="Authorized operator identity for audit output"
+    )
     parser.add_argument("--execute", action="store_true", help="Perform the requested state change")
     parser.add_argument("--version", help="Version component for prepare, e.g. corpus_20260901")
     parser.add_argument("--target", help="Verified physical target for promote or rollback")
@@ -40,6 +44,14 @@ def _build_parser() -> argparse.ArgumentParser:
         "--expected-point-count",
         type=int,
         help="Exact candidate point count required before alias promotion",
+    )
+    parser.add_argument(
+        "--expected-corpus-version",
+        help="Corpus version recorded by the staged ingestion manifest",
+    )
+    parser.add_argument(
+        "--expected-manifest-checksum",
+        help="SHA-256 of actual staged Qdrant payload identity/hash/ACL rows",
     )
     parser.add_argument(
         "--expected-dimension",
@@ -71,6 +83,10 @@ def _plan(args: argparse.Namespace) -> dict[str, Any]:
             raise ValueError("--expected-point-count is required for promote or rollback")
         event["target_collection"] = args.target
         event["expected_point_count"] = args.expected_point_count
+        if args.expected_corpus_version is not None:
+            event["expected_corpus_version"] = args.expected_corpus_version
+        if args.expected_manifest_checksum is not None:
+            event["expected_manifest_checksum"] = args.expected_manifest_checksum
     return event
 
 
@@ -89,10 +105,18 @@ async def _run(args: argparse.Namespace) -> dict[str, Any]:
         event.update(status="prepared", target_collection=target)
         return event
 
+    if not args.expected_corpus_version or not args.expected_manifest_checksum:
+        raise ValueError(
+            "--expected-corpus-version and --expected-manifest-checksum are required "
+            "before alias mutation"
+        )
+
     promotion = await qdrant_service.promote_active_alias(
         logical_collection=args.collection,
         target_collection=args.target,
         expected_point_count=args.expected_point_count,
+        expected_corpus_version=args.expected_corpus_version,
+        expected_manifest_checksum=args.expected_manifest_checksum,
         expected_dimension=args.expected_dimension,
     )
     event.update(

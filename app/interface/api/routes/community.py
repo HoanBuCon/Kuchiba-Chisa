@@ -96,21 +96,24 @@ async def community_chat_endpoint(
     started_at = time.time()
 
     try:
-        reply_text, updated_emotions, images_processed, attached_images = (
-            await chat_engine.community_chat(
-                session=session,
-                channel_id=channel_id,
-                user_id=actor_id,
-                user_message=message,
-                speaker_name=username,
-                channel_name=channel_id,
-                guild_id=guild_id,
-                guild_name=guild_id,
-                recent_messages=_domain_messages(request),
-                images=request.images,
-                is_ephemeral_reference=bool(request.is_ephemeral_reference),
-            )
+        execution = await chat_engine.community_chat_detailed(
+            session=session,
+            channel_id=channel_id,
+            user_id=actor_id,
+            user_message=message,
+            speaker_name=username,
+            channel_name=channel_id,
+            guild_id=guild_id,
+            guild_name=guild_id,
+            recent_messages=_domain_messages(request),
+            images=request.images,
+            is_ephemeral_reference=bool(request.is_ephemeral_reference),
         )
+        reply_text = execution.reply_text
+        updated_emotions = execution.emotions
+        images_processed = execution.images_processed
+        attached_images = execution.attached_images
+        citation_ids = execution.citation_ids
         await session.commit()
         pipeline_tracker.end_trace(
             response_text=reply_text,
@@ -147,6 +150,7 @@ async def community_chat_endpoint(
             execution_time_ms=round((time.time() - started_at) * 1000, 2),
             images_processed=images_processed,
             attached_images=attached_images,
+            citations=citation_ids,
         )
     except ChatEngineBusyError as error:
         pipeline_tracker.end_trace(response_text="Busy", emotions={}, status="error", error="busy")

@@ -5,23 +5,22 @@ and generates clean_categories_whitelist.yaml + taxonomy report for LLM review.
 """
 
 from __future__ import annotations
-import glob
-import json
-import os
-from pathlib import Path
-from typing import Dict, List, Set
 
-from app.infrastructure.ingestion.parsers.sanitizer import get_rule_engine, clean_categories
+import json
+from pathlib import Path
+from typing import Any
+
+from app.infrastructure.ingestion.parsers.sanitizer import get_rule_engine
 
 RAW_WIKI_DIR = Path("data/raw_wiki")
 OUTPUT_WHITELIST_PATH = Path("app/infrastructure/ingestion/config/category_whitelist.json")
 
-def harvest_and_classify_categories() -> Dict[str, Any]:
+def harvest_and_classify_categories() -> dict[str, Any]:
     engine = get_rule_engine()
     meta_files = list(RAW_WIKI_DIR.rglob("*.meta.json"))
     
-    all_categories: Set[str] = set()
-    category_counts: Dict[str, int] = {}
+    all_categories: set[str] = set()
+    category_counts: dict[str, int] = {}
 
     for fpath in meta_files:
         try:
@@ -33,8 +32,8 @@ def harvest_and_classify_categories() -> Dict[str, Any]:
         except Exception:
             pass
 
-    kept_categories: Dict[str, int] = {}
-    junk_categories: Dict[str, int] = {}
+    kept_categories: dict[str, int] = {}
+    junk_categories: dict[str, int] = {}
 
     for cat in sorted(all_categories):
         if engine.is_junk_category(cat):
@@ -42,7 +41,7 @@ def harvest_and_classify_categories() -> Dict[str, Any]:
         else:
             kept_categories[cat] = category_counts[cat]
 
-    print(f"=== WIKI CATEGORY TAXONOMY AUDIT ===")
+    print("=== WIKI CATEGORY TAXONOMY AUDIT ===")
     print(f"Total Meta Files Examined: {len(meta_files)}")
     print(f"Total Unique Categories Found: {len(all_categories)}")
     print(f"Lore-Relevant Categories (KEPT): {len(kept_categories)}")

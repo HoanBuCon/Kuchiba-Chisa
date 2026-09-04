@@ -42,7 +42,7 @@ class PersistenceStage(PipelineStage):
         user_rw = context.rewritten_query or context.cleaned_query or None
 
         media_meta = None
-        if context.processed_images:
+        if context.processed_images and not context.is_ephemeral_reference:
             media_meta = [
                 {
                     "image_id": img.get("image_id"),

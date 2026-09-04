@@ -4,7 +4,9 @@ from abc import ABC, abstractmethod
 from collections.abc import AsyncIterator
 from typing import Any, Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
+
+from app.domain.models.evidence import Evidence
 
 # ─── Request / Response Schemas ───────────────────────────────────────────────
 
@@ -19,6 +21,7 @@ class StructuredPrompt(BaseModel):
     temperature: Optional[float] = None
     retrieved_memories: list[Any] = []
     retrieved_lore: list[str] = []
+    retrieved_evidence: list[Evidence] = Field(default_factory=list)
     rag_decisions: dict[str, bool] = {}
 
 

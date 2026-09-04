@@ -2,14 +2,21 @@ from __future__ import annotations
 
 import json
 import time
+from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import Any, Optional
 
 from app.config.settings import settings
 from app.domain.entities.emotion import EmotionState
 from app.domain.interfaces.llm_provider import StructuredPrompt
+from app.domain.models.evidence import Evidence
 from app.domain.services.budget_mode import BudgetMode
 from app.domain.services.context_budget_manager import BudgetAudit, ContextBudgetManager
+from app.domain.services.guardrails.injection_guard import (
+    ContentSource,
+    GuardAction,
+    InjectionGuard,
+)
 from app.domain.services.persona_loader import persona_loader
 from app.domain.services.state_manager import StateManager
 from app.shared.utils.logger import get_logger
@@ -32,7 +39,11 @@ class ContextBuilder:
     RESPONSE_SCHEMA = {
         "type": "object",
         "properties": {
-            "response": {"type": "string"},
+            "response": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": settings.LLM_OUTPUT_MAX_RESPONSE_CHARS,
+            },
             "sentiment": {
                 "type": "object",
                 "properties": {
@@ -73,15 +84,12 @@ class ContextBuilder:
                         "description": "Nuance variance: -1.0 (melancholic/philosophical) to +1.0 (bright/joyful), 0.0 (neutral balance)"
                     }
                 },
-                "required": ["reaction", "user_stance", "intensity", "variance"]
+                "required": ["reaction", "user_stance", "intensity", "variance"],
+                "additionalProperties": False,
             },
-            "attached_images": {
-                "type": "array",
-                "items": {"type": "string"},
-                "description": "Danh sách các URL ảnh đính kèm gửi lại cho Senpai (trích xuất từ Retrieved Image Memory)"
-            }
         },
         "required": ["response", "sentiment"],
+        "additionalProperties": False,
     }
 
     @classmethod
@@ -89,15 +97,20 @@ class ContextBuilder:
         cls,
         has_images: bool = False,
         has_retrieved_images: bool = False,
+        evidence_ids: Sequence[str] = (),
     ) -> dict[str, Any]:
         """
         Dynamically constructs the strict JSON response schema.
         - Text-only (Zero Contamination): pure {response, sentiment}.
-        - Past Image Retrieval: conditionally adds {attached_images}.
+        - Past Image Retrieval: server resolves attachments from retrieved evidence.
         - Multimodal Vision: conditionally adds {image_tags, visual_caption} for 0ms latency auto-tagging.
         """
         props = {
-            "response": {"type": "string"},
+            "response": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": settings.LLM_OUTPUT_MAX_RESPONSE_CHARS,
+            },
             "sentiment": {
                 "type": "object",
                 "properties": {
@@ -138,34 +151,44 @@ class ContextBuilder:
                         "description": "Nuance variance: -1.0 (melancholic/philosophical) to +1.0 (bright/joyful), 0.0 (neutral balance)"
                     }
                 },
-                "required": ["reaction", "user_stance", "intensity", "variance"]
+                "required": ["reaction", "user_stance", "intensity", "variance"],
+                "additionalProperties": False,
             }
         }
 
-        # Conditionally inject attached_images schema if user has images or past retrieved images
-        if has_retrieved_images or has_images:
-            props["attached_images"] = {
+        allowed_evidence_ids = tuple(dict.fromkeys(item for item in evidence_ids if item))
+        if allowed_evidence_ids:
+            props["citations"] = {
                 "type": "array",
-                "items": {"type": "string"},
-                "description": "Danh sách các URL ảnh đính kèm gửi lại cho Senpai (trích xuất từ Retrieved Image Memory)"
+                "items": {"type": "string", "enum": list(allowed_evidence_ids)},
+                "minItems": 1,
+                "maxItems": len(allowed_evidence_ids),
+                "uniqueItems": True,
             }
 
         # In Multimodal Vision mode: enable 0ms zero-cost metadata auto-tagging by Vision LLM
         if has_images:
             props["image_tags"] = {
                 "type": "array",
-                "items": {"type": "string"},
+                "items": {"type": "string", "minLength": 1, "maxLength": 64},
+                "maxItems": 16,
                 "description": "Các từ khóa/nhãn chủ đề thị giác ngắn gọn miêu tả nội dung ảnh (ví dụ: ['mèo', 'thú cưng', 'dễ thương'] hoặc ['biển', 'hoàng hôn', 'kỷ niệm'])"
             }
             props["visual_caption"] = {
                 "type": "string",
+                "maxLength": 1_000,
                 "description": "Bản tóm tắt thị giác súc tích (1-2 câu) miêu tả các chi tiết và bối cảnh xuất hiện trong bức ảnh để lưu vào kho ký ức."
             }
 
         return {
             "type": "object",
             "properties": props,
-            "required": ["response", "sentiment"]
+            "required": [
+                "response",
+                "sentiment",
+                *(("citations",) if allowed_evidence_ids else ()),
+            ],
+            "additionalProperties": False,
         }
 
     SEARCH_INSTRUCTIONS = (
@@ -303,9 +326,12 @@ class ContextBuilder:
     @classmethod
     def _format_history_for_budget(cls, history: list[dict[str, str]]) -> list[dict[str, str]]:
         formatted_history = []
+        guard = InjectionGuard()
         for turn in history:
             role = turn.get("role", "user")
             content = turn.get("content", "")
+            if guard.assess(content, ContentSource.HISTORY).action is GuardAction.QUARANTINE:
+                continue
             if role == "assistant" and not content.strip().startswith("{"):
                 assistant_json = {
                     "response": content,
@@ -382,6 +408,7 @@ class ContextBuilder:
         topic_summary: Optional[str] = None,
         has_images: bool = False,
         retrieved_images: list[dict[str, Any]] | None = None,
+        evidence: list[Evidence] | None = None,
         interaction_count: int = 0,
     ) -> ContextBuildResult:
         """
@@ -460,10 +487,10 @@ class ContextBuilder:
                 "Em đã lục tìm trong kho lưu trữ ký ức và tìm thấy các bức ảnh phù hợp với yêu cầu của Senpai:\n"
                 + "\n".join(img_lines)
                 + "\n\n"
-                "HƯỚNG DẪN QUAN TRỌNG VỀ GỬI ẢNH:\n"
+                "HƯỚNG DẪN GỬI ẢNH:\n"
                 "- Hãy hào hứng, dịu dàng nhắc lại kỷ niệm về bức ảnh và trả lời Senpai bằng giọng Kuudere ấm áp.\n"
-                "- Điền đường dẫn URL của bức ảnh phù hợp nhất vào trường 'attached_images' trong JSON output (ví dụ: [\"/static/uploads/2026/08/...\"]).\n"
-                "- Nếu tìm thấy nhiều ảnh phù hợp, em có thể đính kèm tối đa 1-2 ảnh.\n"
+                "- Ảnh đính kèm được server quyết định từ evidence truy hồi; "
+                "không trả URL hay path ảnh trong JSON.\n"
                 "[KÝ ỨC HÌNH ẢNH — REFERENCE DATA END]"
             )
 
@@ -575,9 +602,13 @@ class ContextBuilder:
             else user_message
         )
 
+        selected_evidence = self._selected_evidence(
+            evidence or [], allocation.trimmed_lore, allocation.trimmed_memories
+        )
         schema_to_use = self.get_response_schema(
             has_images=has_images,
-            has_retrieved_images=bool(retrieved_images)
+            has_retrieved_images=bool(retrieved_images),
+            evidence_ids=[item.evidence_id for item in selected_evidence],
         )
 
         prompt = StructuredPrompt(
@@ -587,6 +618,7 @@ class ContextBuilder:
             response_schema=schema_to_use,
             retrieved_memories=allocation.trimmed_memories,
             retrieved_lore=allocation.trimmed_lore,
+            retrieved_evidence=selected_evidence,
             rag_decisions={
                 "use_lore": len(allocation.trimmed_lore) > 0,
                 "use_memory": len(allocation.trimmed_memories) > 0,
@@ -594,3 +626,22 @@ class ContextBuilder:
             },
         )
         return ContextBuildResult(prompt=prompt, audit=allocation.audit, components=components)
+
+    @staticmethod
+    def _selected_evidence(
+        evidence: list[Evidence], lore: list[str], memories: list[Any]
+    ) -> list[Evidence]:
+        """Keep only evidence whose text survived the prompt budget allocation."""
+
+        selected_lore = set(lore)
+        selected_memories = {
+            memory.text_content if hasattr(memory, "text_content") else str(memory)
+            for memory in memories
+        }
+        return [
+            item
+            for item in evidence
+            if (item.kind == "lore" and item.text in selected_lore)
+            or (item.kind in {"memory", "guild_memory"} and item.text in selected_memories)
+            or item.kind == "image_memory"
+        ]

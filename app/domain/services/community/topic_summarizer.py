@@ -1,8 +1,9 @@
-import time
-from typing import List, Optional, Any, Dict
-from app.domain.interfaces.llm_provider import BaseLLMAdapter, StructuredPrompt
+from typing import Any
+
 from app.domain.interfaces.cache_provider import ICacheProvider
+from app.domain.interfaces.llm_provider import BaseLLMAdapter, StructuredPrompt
 from app.domain.services.community.transcript_formatter import ChannelTranscriptFormatter
+from app.domain.services.guardrails.pii_redaction import PiiRedactor
 from app.shared.utils.logger import get_logger
 
 log = get_logger(__name__)
@@ -19,9 +20,12 @@ class CommunityTopicSummarizer:
     BUFFER_OVERLAP_MESSAGES = 10
     SUMMARIZE_INTERVAL = 30
 
-    def __init__(self, llm: BaseLLMAdapter, cache: ICacheProvider):
+    def __init__(
+        self, llm: BaseLLMAdapter, cache: ICacheProvider, pii_redactor: PiiRedactor | None = None
+    ):
         self.llm = llm
         self.cache = cache
+        self.pii_redactor = pii_redactor or PiiRedactor()
         self.SUMMARY_SCHEMA = {
             "type": "object",
             "properties": {
@@ -98,9 +102,9 @@ class CommunityTopicSummarizer:
     async def append_messages(
         self,
         channel_id: str,
-        messages: Optional[List[Any]] = None,
-        current_user_turn: Optional[Dict[str, Any]] = None,
-        current_assistant_turn: Optional[Dict[str, Any]] = None,
+        messages: list[Any] | None = None,
+        current_user_turn: dict[str, Any] | None = None,
+        current_assistant_turn: dict[str, Any] | None = None,
         guild_id: str | None = None,
     ) -> None:
         """
@@ -139,6 +143,7 @@ class CommunityTopicSummarizer:
                     sig = _msg_sig(m)
                     if sig[1] and sig not in seen_sigs:
                         clean_content = ChannelTranscriptFormatter.clean_message_content(raw_content)
+                        clean_content = self.pii_redactor.redact(clean_content).value
                         if not clean_content:
                             continue
                         if isinstance(m, dict):
@@ -164,14 +169,18 @@ class CommunityTopicSummarizer:
                 if not ChannelTranscriptFormatter.is_noise_or_command(user_content, is_bot=False, speaker_name=current_user_turn.get("speaker_name", "User")):
                     sig = _msg_sig(current_user_turn)
                     if sig not in seen_sigs:
-                        buffer.append(current_user_turn)
+                        sanitized_user_turn = dict(current_user_turn)
+                        sanitized_user_turn["content"] = self.pii_redactor.redact(
+                            user_content
+                        ).value
+                        buffer.append(sanitized_user_turn)
                         seen_sigs.add(sig)
 
             if current_assistant_turn and current_assistant_turn.get("content"):
                 asst_content = ChannelTranscriptFormatter.clean_message_content(current_assistant_turn.get("content", ""))
                 if asst_content:
                     asst_turn = dict(current_assistant_turn)
-                    asst_turn["content"] = asst_content
+                    asst_turn["content"] = self.pii_redactor.redact(asst_content).value
                     sig = _msg_sig(asst_turn)
                     if sig not in seen_sigs:
                         buffer.append(asst_turn)
@@ -200,9 +209,9 @@ class CommunityTopicSummarizer:
         self,
         channel_id: str,
         guild_id: str,
-        messages: Optional[List[Any]] = None,
-        trace_id: Optional[str] = None,
-    ) -> Optional[str]:
+        messages: list[Any] | None = None,
+        trace_id: str | None = None,
+    ) -> str | None:
         """
         Background execution: Calls LLM to summarize channel topic with 3-tier context:
         1. Previous Topic Summary (Redis)
@@ -288,7 +297,9 @@ class CommunityTopicSummarizer:
             llm_call_purpose.set("community_topic_summarize")
             response = await self.llm.generate(prompt)
             parsed = response.parsed or {}
-            summary_text = str(parsed.get("topic_summary", "")).strip()
+            summary_text = self.pii_redactor.redact(
+                str(parsed.get("topic_summary", "")).strip()
+            ).value
 
             if summary_text:
                 await self.cache.set(
@@ -347,9 +358,9 @@ class CommunityTopicSummarizer:
         status: str,
         topic_summary: str,
         channel_id: str,
-        previous_summary: Optional[str] = None,
+        previous_summary: str | None = None,
         transcript_sample: str = "",
-        trace_id: Optional[str] = None
+        trace_id: str | None = None
     ) -> None:
         try:
             from app.infrastructure.logging.pipeline_tracker import pipeline_tracker

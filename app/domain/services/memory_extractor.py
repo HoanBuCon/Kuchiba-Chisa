@@ -1,10 +1,12 @@
-import uuid
 import time
-from typing import Any, Optional
-from app.domain.interfaces.llm_provider import BaseLLMAdapter, StructuredPrompt
+import uuid
+from typing import Any
+
+from app.domain.entities.memory import GuildMemoryPayload, MemoryPayload
 from app.domain.interfaces.embedding_provider import IEmbeddingProvider
-from app.domain.entities.memory import MemoryPayload, GuildMemoryPayload
+from app.domain.interfaces.llm_provider import BaseLLMAdapter, StructuredPrompt
 from app.domain.interfaces.vector_store import IVectorStore
+from app.domain.services.guardrails.pii_redaction import PiiRedactor
 from app.shared.utils.logger import get_logger
 
 log = get_logger(__name__)
@@ -14,10 +16,17 @@ class MemoryExtractor:
     Background worker that extracts long-term facts/preferences from user messages and stores them.
     Supports both Individual memories (memories collection) and Guild memories (guild_memories collection).
     """
-    def __init__(self, llm: BaseLLMAdapter, embedder: IEmbeddingProvider, vector_store: IVectorStore):
+    def __init__(
+        self,
+        llm: BaseLLMAdapter,
+        embedder: IEmbeddingProvider,
+        vector_store: IVectorStore,
+        pii_redactor: PiiRedactor | None = None,
+    ):
         self.llm = llm
         self.embedder = embedder
         self.vector_store = vector_store
+        self.pii_redactor = pii_redactor or PiiRedactor()
         self.RESPONSE_SCHEMA = {
             "type": "object",
             "properties": {
@@ -67,7 +76,7 @@ class MemoryExtractor:
     async def reconcile_memory_conflicts_batch(
         self,
         items: list[dict[str, Any]],
-    ) -> dict[int, tuple[str, Optional[str]]]:
+    ) -> dict[int, tuple[str, str | None]]:
         """
         Batched reconciliation: Evaluates logical relationships between MULTIPLE new facts
         and their candidate existing memories in a single LLM call.
@@ -158,7 +167,7 @@ class MemoryExtractor:
             rag_decisions={"use_deep_thinking": False}
         )
 
-        results: dict[int, tuple[str, Optional[str]]] = {}
+        results: dict[int, tuple[str, str | None]] = {}
         try:
             from app.domain.context import llm_call_purpose
             llm_call_purpose.set("memory_reconciliation")
@@ -200,7 +209,7 @@ class MemoryExtractor:
         self,
         new_fact: str,
         candidates: list[dict[str, Any]],
-    ) -> tuple[str, Optional[str]]:
+    ) -> tuple[str, str | None]:
         """
         Legacy single-fact reconciliation wrapper.
         """
@@ -271,11 +280,12 @@ class MemoryExtractor:
         history: list[dict[str, str]],
         current_user_message: str,
         current_assistant_reply: str,
-        guild_id: Optional[str] = None,
-        channel_id: Optional[str] = None,
-        speaker_name: Optional[str] = None,
+        guild_id: str | None = None,
+        channel_id: str | None = None,
+        speaker_name: str | None = None,
         is_community: bool = False,
-        trace_id: Optional[str] = None,
+        trace_id: str | None = None,
+        retention_expires_at: int | None = None,
     ) -> None:
         """
         Batched background worker: Analyzes conversation window to extract multi-fact milestones,
@@ -319,6 +329,13 @@ class MemoryExtractor:
         )
 
         transcript = self.build_batch_transcript(history, current_user_message, current_assistant_reply)
+        transcript_redaction = self.pii_redactor.redact(transcript)
+        transcript = transcript_redaction.value
+        if transcript_redaction.changed:
+            log.info(
+                "Redacted identifiers before memory extraction provider call",
+                categories=transcript_redaction.categories,
+            )
 
         prompt = StructuredPrompt(
             system=system_prompt,
@@ -350,8 +367,16 @@ class MemoryExtractor:
                 if fact_type in ("important_facts", "preferences", "relationship", "fact", "core_facts"):
                     fact_type = "user_fact"
                 content = (fact.get("content") or "").strip()
+                content_redaction = self.pii_redactor.redact(content)
+                if content_redaction.changed:
+                    log.info(
+                        "Dropped sensitive extracted memory fact",
+                        categories=content_redaction.categories,
+                    )
+                    continue
                 importance = float(fact.get("importance_score", 0.7))
-                expires_at = fact.get("expires_at")
+                extracted_expiry = fact.get("expires_at")
+                expires_at = _bounded_expiry(extracted_expiry, retention_expires_at)
 
                 if fact_type not in allowed_types:
                     continue
@@ -481,6 +506,7 @@ class MemoryExtractor:
                 if target_collection == "guild_memories":
                     payload = GuildMemoryPayload(
                         guild_id=str(guild_id),
+                        user_id=user_id,
                         channel_id=str(channel_id) if channel_id else None,
                         memory_type=fact_type,
                         importance_score=importance,
@@ -496,6 +522,7 @@ class MemoryExtractor:
                         memory_type=fact_type,
                         importance_score=importance,
                         created_at=int(time.time()),
+                        expires_at=expires_at,
                         text_content=content,
                     )
 
@@ -535,7 +562,7 @@ class MemoryExtractor:
         facts: list[dict[str, Any]],
         extracted_input_context: str,
         raw_facts_count: int = 0,
-        trace_id: Optional[str] = None
+        trace_id: str | None = None
     ) -> None:
         try:
             from app.infrastructure.logging.pipeline_tracker import pipeline_tracker
@@ -557,3 +584,12 @@ class MemoryExtractor:
             )
         except Exception:
             pass
+
+
+def _bounded_expiry(extracted_expiry: object, retention_expires_at: int | None) -> int | None:
+    """Never permit an extractor response to extend the verified retention window."""
+    if retention_expires_at is None:
+        return None
+    if isinstance(extracted_expiry, int) and extracted_expiry > 0:
+        return min(extracted_expiry, retention_expires_at)
+    return retention_expires_at

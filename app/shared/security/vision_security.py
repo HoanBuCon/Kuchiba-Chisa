@@ -7,7 +7,6 @@ from __future__ import annotations
 
 import asyncio
 import io
-import ipaddress
 import os
 import socket
 import time
@@ -21,7 +20,9 @@ from urllib.parse import urlparse
 import httpx
 from PIL import Image, ImageOps
 
+from app.config.settings import settings
 from app.infrastructure.logging.logger import get_logger
+from app.shared.security.network_destinations import is_forbidden_ip
 
 log = get_logger(__name__)
 
@@ -34,7 +35,7 @@ Image.MAX_IMAGE_PIXELS = MAX_IMAGE_PIXELS_ALLOWED
 
 MAX_IMAGE_WIDTH: int = 4096
 MAX_IMAGE_HEIGHT: int = 4096
-MAX_FILE_SIZE_BYTES: int = 10 * 1024 * 1024  # 10 MB limit
+MAX_FILE_SIZE_BYTES: int = settings.VISION_MAX_IMAGE_BYTES
 MAX_STORAGE_MB_DEFAULT: int = 1024           # 1 GB LRU storage limit
 
 # 2. MIME & Magic Bytes Whitelist
@@ -49,32 +50,6 @@ TRUSTED_IMAGE_DOMAINS: set[str] = {
     "cdn.discordapp.com",
     "media.discordapp.net",
 }
-
-# 4. Blacklisted IP Networks (SSRF Prevention)
-FORBIDDEN_IP_NETWORKS = [
-    ipaddress.ip_network("0.0.0.0/8"),          # Current network
-    ipaddress.ip_network("10.0.0.0/8"),          # RFC 1918 Private
-    ipaddress.ip_network("100.64.0.0/10"),       # Carrier-grade NAT
-    ipaddress.ip_network("127.0.0.0/8"),         # Loopback
-    ipaddress.ip_network("169.254.0.0/16"),      # Link-local / Cloud Metadata (AWS/GCP/DO)
-    ipaddress.ip_network("172.16.0.0/12"),       # RFC 1918 Private
-    ipaddress.ip_network("192.0.0.0/24"),        # IETF Protocol
-    ipaddress.ip_network("192.0.2.0/24"),        # TEST-NET-1
-    ipaddress.ip_network("192.168.0.0/16"),      # RFC 1918 Private
-    ipaddress.ip_network("198.18.0.0/15"),       # Benchmark testing
-    ipaddress.ip_network("198.51.100.0/24"),     # TEST-NET-2
-    ipaddress.ip_network("203.0.113.0/24"),      # TEST-NET-3
-    ipaddress.ip_network("224.0.0.0/4"),         # Multicast
-    ipaddress.ip_network("240.0.0.0/4"),         # Reserved
-    ipaddress.ip_network("255.255.255.255/32"),  # Broadcast
-    # IPv6 Blacklists
-    ipaddress.ip_network("::1/128"),             # Loopback
-    ipaddress.ip_network("::/128"),              # Unspecified
-    ipaddress.ip_network("fc00::/7"),            # Unique local address (ULA)
-    ipaddress.ip_network("fe80::/10"),           # Link-local address
-    ipaddress.ip_network("::ffff:0:0/96"),       # IPv4-mapped IPv6
-]
-
 
 class VisionSecurityError(Exception):
     """Base exception for Multimodal Vision security violations."""
@@ -102,14 +77,7 @@ class SecureImageFetcher:
 
     @staticmethod
     def is_ip_forbidden(ip_str: str) -> bool:
-        try:
-            ip_obj = ipaddress.ip_address(ip_str)
-            for forbidden_net in FORBIDDEN_IP_NETWORKS:
-                if ip_obj in forbidden_net:
-                    return True
-            return False
-        except ValueError:
-            return True
+        return is_forbidden_ip(ip_str)
 
     @classmethod
     async def validate_url_and_resolve_ip(cls, url: str) -> tuple[str, str]:
@@ -138,7 +106,7 @@ class SecureImageFetcher:
                 family=socket.AF_UNSPEC, type=socket.SOCK_STREAM
             )
         except socket.gaierror as e:
-            raise SSRFViolationError(f"DNS Resolution failed for {hostname}: {str(e)}")
+            raise SSRFViolationError(f"DNS Resolution failed for {hostname}: {str(e)}") from e
 
         for _, _, _, _, sockaddr in addr_info:
             ip = sockaddr[0]
@@ -179,10 +147,10 @@ class SecureImageFetcher:
                         raise ImageValidationError(f"Downloaded stream exceeded limit of {MAX_FILE_SIZE_BYTES // (1024*1024)}MB")
 
                 return bytes(buffer)
-        except httpx.TimeoutException:
-            raise ImageValidationError("Image fetch request timed out")
+        except httpx.TimeoutException as error:
+            raise ImageValidationError("Image fetch request timed out") from error
         except httpx.RequestError as e:
-            raise ImageValidationError(f"Network error during image fetch: {str(e)}")
+            raise ImageValidationError(f"Network error during image fetch: {str(e)}") from e
         finally:
             if own_client:
                 await client.aclose()
@@ -287,12 +255,12 @@ class ImageSanitizer:
                     "size_bytes": len(sanitized_bytes),
                 }
 
-        except Image.DecompressionBombError:
-            raise ImageValidationError("Decompression bomb detected: Image rejected")
+        except Image.DecompressionBombError as error:
+            raise ImageValidationError("Decompression bomb detected: Image rejected") from error
         except Exception as e:
             if isinstance(e, ImageValidationError):
                 raise
-            raise ImageValidationError(f"Corrupted or malicious image payload: {str(e)}")
+            raise ImageValidationError(f"Corrupted or malicious image payload: {str(e)}") from e
 
     @classmethod
     async def sanitize_image(

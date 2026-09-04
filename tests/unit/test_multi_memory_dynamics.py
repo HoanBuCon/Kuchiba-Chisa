@@ -14,6 +14,7 @@ async def test_guild_memory_payload_creation():
     payload = GuildMemoryPayload(
         text_content="Server sẽ tổ chức giải đấu Honkai vào thứ Bảy.",
         guild_id="guild_123",
+        user_id="verified-user",
         channel_id="chan_456",
         memory_type="guild_event",
         expires_at=1770000000,
@@ -22,6 +23,7 @@ async def test_guild_memory_payload_creation():
     )
     assert payload.text_content == "Server sẽ tổ chức giải đấu Honkai vào thứ Bảy."
     assert payload.guild_id == "guild_123"
+    assert payload.user_id == "verified-user"
     assert payload.channel_id == "chan_456"
     assert payload.memory_type == "guild_event"
     assert payload.expires_at == 1770000000
@@ -76,6 +78,37 @@ async def test_guild_memory_retriever_recency_and_decay():
     assert results[0].text_content == "Server có văn hóa chào hỏi bằng emote Chisa mỗi sáng."
     assert results[0].metadata["guild_id"] == "guild_123"
     assert results[0].final_score > results[1].final_score
+
+
+@pytest.mark.asyncio
+async def test_guild_memory_retriever_rejects_record_expiring_at_current_second(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    mock_vector_store = AsyncMock()
+    mock_vector_store.search_guild_memories.return_value = [
+        {
+            "text": "An expired event.",
+            "score": 0.9,
+            "metadata": {
+                "created_at": 1_699_999_000,
+                "expires_at": 1_700_000_000,
+                "memory_type": "guild_event",
+            },
+        }
+    ]
+    monkeypatch.setattr(
+        "app.domain.services.rag.retriever_guild_memory.time.time", lambda: 1_700_000_000
+    )
+
+    retriever = GuildMemoryRetriever(vector_store=mock_vector_store)
+
+    result = await retriever.retrieve_guild_memories(
+        collection="guild_memories",
+        query_vector=[0.1],
+        guild_id="guild_123",
+    )
+
+    assert result == []
 
 
 @pytest.mark.asyncio

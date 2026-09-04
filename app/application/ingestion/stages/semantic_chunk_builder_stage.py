@@ -11,6 +11,8 @@ from app.shared.utils.logger import get_logger
 
 log = get_logger(__name__)
 
+_CHUNK_ID_NAMESPACE = uuid.UUID("ec277dcd-9412-519b-9d96-f19dfaa90dac")
+
 class SemanticChunkBuilderInput(BaseModel):
     parents: List[LoreParent]
 
@@ -39,13 +41,18 @@ class SemanticChunkBuilderStage(IPipelineStage[SemanticChunkBuilderInput, List[P
             current_chunk_blocks: List[str] = []
             current_chunk_length = 0
             chunk_index = 0
+            source_cursor = 0
             
             for block in blocks:
                 block_len = len(block)
                 
                 # If adding this block exceeds HARD_MAX, flush the current chunk first
                 if current_chunk_length + block_len > self.HARD_MAX_CHARS and current_chunk_blocks:
-                    all_chunks.append(self._create_chunk(parent, current_chunk_blocks, chunk_index))
+                    chunk = self._create_chunk(
+                        parent, current_chunk_blocks, chunk_index, source_cursor
+                    )
+                    all_chunks.append(chunk)
+                    source_cursor = int(chunk.metadata["chunk_end_offset"])
                     chunk_index += 1
                     current_chunk_blocks = []
                     current_chunk_length = 0
@@ -56,14 +63,20 @@ class SemanticChunkBuilderStage(IPipelineStage[SemanticChunkBuilderInput, List[P
                 
                 # If current chunk is within TARGET range, flush it
                 if self.TARGET_MIN_CHARS <= current_chunk_length <= self.TARGET_MAX_CHARS:
-                    all_chunks.append(self._create_chunk(parent, current_chunk_blocks, chunk_index))
+                    chunk = self._create_chunk(
+                        parent, current_chunk_blocks, chunk_index, source_cursor
+                    )
+                    all_chunks.append(chunk)
+                    source_cursor = int(chunk.metadata["chunk_end_offset"])
                     chunk_index += 1
                     current_chunk_blocks = []
                     current_chunk_length = 0
                     
             # Flush remaining blocks
             if current_chunk_blocks:
-                all_chunks.append(self._create_chunk(parent, current_chunk_blocks, chunk_index))
+                all_chunks.append(
+                    self._create_chunk(parent, current_chunk_blocks, chunk_index, source_cursor)
+                )
                 
         metrics = PipelineMetrics(
             duration_seconds=time.perf_counter() - start_time,
@@ -75,7 +88,13 @@ class SemanticChunkBuilderStage(IPipelineStage[SemanticChunkBuilderInput, List[P
         await self.job_repo.log_event(job_id, "SemanticChunkBuilderComplete", metrics.model_dump())
         return PipelineResult(output=all_chunks, metrics=metrics)
 
-    def _create_chunk(self, parent: LoreParent, blocks: List[str], chunk_index: int) -> ProcessingChunk:
+    def _create_chunk(
+        self,
+        parent: LoreParent,
+        blocks: list[str],
+        chunk_index: int,
+        source_cursor: int,
+    ) -> ProcessingChunk:
         content = "\n\n".join(blocks).strip()
         # Create a stable hash of the content for incremental routing
         chunk_hash = hashlib.sha256(content.encode("utf-8")).hexdigest()
@@ -85,8 +104,20 @@ class SemanticChunkBuilderStage(IPipelineStage[SemanticChunkBuilderInput, List[P
             "heading_path": parent.heading_path,
             "section_depth": parent.section_depth,
         }
+        chunk_start_offset = parent.markdown.find(content, source_cursor)
+        if chunk_start_offset < 0:
+            raise ValueError("Semantic chunk text is not traceable to its parent markdown")
+        metadata["chunk_start_offset"] = chunk_start_offset
+        metadata["chunk_end_offset"] = chunk_start_offset + len(content)
         
         return ProcessingChunk(
+            chunk_id=uuid.uuid5(
+                _CHUNK_ID_NAMESPACE,
+                (
+                    f"parent:{parent.id}:index:{chunk_index}:hash:{chunk_hash}:"
+                    f"start:{chunk_start_offset}:end:{metadata['chunk_end_offset']}"
+                ),
+            ),
             parent_id=parent.id,
             page_id=parent.page_id,
             revision_id=parent.revision_id,
@@ -94,5 +125,8 @@ class SemanticChunkBuilderStage(IPipelineStage[SemanticChunkBuilderInput, List[P
             chunk_index=chunk_index,
             text_content=content,
             chunk_hash=chunk_hash,
+            corpus_version=parent.corpus_version,
+            source_id=parent.source_id,
+            access=parent.access,
             metadata=metadata
         )

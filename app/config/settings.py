@@ -40,11 +40,20 @@ class Settings(BaseSettings):
     # ── Redis ──────────────────────────────────────────────────
     REDIS_URL: str = "redis://localhost:6379/0"
     REDIS_PASSWORD: Optional[str] = None
+    REDIS_USERNAME: str = "chisa"
 
     # ── Qdrant ─────────────────────────────────────────────────
     QDRANT_URL: str = "http://localhost:6333"
     QDRANT_API_KEY: Optional[str] = None
     QDRANT_EMBEDDING_DIM: int = 384
+
+    # ── Ingestion source and raw-revision storage (ING-01) ─────
+    INGESTION_WIKI_API_URL: str = "https://wutheringwaves.fandom.com/api.php"
+    INGESTION_WIKI_CATEGORIES: str = "Resonators,Factions,Regions,Lore"
+    INGESTION_ALLOWED_SOURCE_HOSTS: str = "wutheringwaves.fandom.com"
+    INGESTION_RAW_STORAGE_DIR: str = "data/raw_wiki_revisions"
+    INGESTION_SOURCE_TIMEOUT_SECONDS: float = Field(default=20.0, gt=0, le=120.0)
+    INGESTION_SOURCE_MAX_RETRIES: int = Field(default=2, ge=0, le=5)
 
     # ── LLM — Provider ─────────────────────────────────────────
     LLM_PROVIDER: Literal["groq", "gemini", "deepseek"] = Field(default="groq", validation_alias="LLM_PROVIDER")
@@ -108,6 +117,9 @@ class Settings(BaseSettings):
     EMBEDDING_MODEL: str = "intfloat/multilingual-e5-small"
     INTENT_SEMANTIC_THRESHOLD: float = 0.65
     INTENT_ENABLE_L3_SEMANTIC: bool = True
+    RERANKER_MODEL: str | None = None
+    RERANKER_TIMEOUT_SECONDS: float = Field(default=1.5, gt=0, le=10)
+    RERANKER_BATCH_SIZE: int = Field(default=16, ge=1, le=64)
 
     # ── Search API Keys (Optional Free Tiers) ──────────────────
     TAVILY_API_KEY: Optional[str] = None
@@ -146,6 +158,7 @@ class Settings(BaseSettings):
     PROMPT_HISTORY_MIN_TURNS: int = Field(default=4, ge=1, le=20)
     PROMPT_REALLOCATE_EMPTY: bool = True
     MAX_RESPONSE_TOKENS: int = 20000
+    LLM_OUTPUT_MAX_RESPONSE_CHARS: int = Field(default=16_000, ge=1, le=80_000)
 
     # ── LLM Telemetry Logging ──────────────────────────────────
     LLM_LOG_FILE: str = "logs/llm_api.jsonl"
@@ -182,7 +195,25 @@ class Settings(BaseSettings):
             raise ValueError("VISION_MAX_TOTAL_DECODED_BYTES cannot be below the image quota")
         if self.VISION_MAX_IMAGES * max_encoded_image_bytes > self.API_MAX_REQUEST_BODY_BYTES:
             raise ValueError("API_MAX_REQUEST_BODY_BYTES cannot carry the configured image quota")
+        if self.is_prod:
+            protected_secrets = (
+                self.SECRET_KEY,
+                self.JWT_SECRET,
+                self.DISCORD_WORKLOAD_JWT_SECRET,
+            )
+            if any(_is_placeholder_secret(secret) for secret in protected_secrets):
+                raise ValueError("production secrets must not use template values")
+            if not self.REDIS_PASSWORD:
+                raise ValueError("REDIS_PASSWORD is required in production")
+            if not self.QDRANT_API_KEY:
+                raise ValueError("QDRANT_API_KEY is required in production")
         return self
+
+
+def _is_placeholder_secret(value: str) -> bool:
+    normalized = value.strip().lower()
+    placeholder_markers = ("change_this", "replace_", "placeholder")
+    return not normalized or any(marker in normalized for marker in placeholder_markers)
 
 
 @lru_cache(maxsize=1)

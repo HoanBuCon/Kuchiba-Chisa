@@ -32,7 +32,7 @@ def test_redis_publish_requires_a_ready_subscriber() -> None:
     assert not tracker._pending_tasks
 
 
-def test_redis_publish_runs_after_subscriber_is_ready() -> None:
+def test_redis_publish_runs_after_subscriber_is_ready(monkeypatch) -> None:
     """Readiness gating must not suppress cross-worker telemetry after startup."""
     tracker = PipelineTracker()
     published_events: list[dict[str, object]] = []
@@ -40,7 +40,7 @@ def test_redis_publish_runs_after_subscriber_is_ready() -> None:
     async def publish(event: dict[str, object]) -> None:
         published_events.append(event)
 
-    setattr(tracker, "_publish_redis_event", publish)
+    monkeypatch.setattr(tracker, "_publish_redis_event", publish)
     tracker._redis_broadcast_ready = True
 
     async def notify() -> None:

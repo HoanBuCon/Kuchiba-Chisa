@@ -8,18 +8,18 @@ from __future__ import annotations
 import base64
 import binascii
 import re
+from typing import Any
 
 import httpx
-from typing import Any
 
 from app.domain.interfaces.image_storage import IImageStorageProvider
 from app.infrastructure.logging.logger import get_logger
 from app.infrastructure.storage.factory import get_image_storage_provider
 from app.shared.security.vision_security import (
-    SecureImageFetcher,
     ImageSanitizer,
-    VisionSecurityError,
     ImageValidationError,
+    SecureImageFetcher,
+    VisionSecurityError,
 )
 
 log = get_logger(__name__)

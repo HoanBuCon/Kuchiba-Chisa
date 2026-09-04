@@ -1,11 +1,14 @@
-from typing import List, Tuple, Optional, Callable, Any, Dict
-from app.domain.interfaces.vector_store import IVectorStore
+import math
+import uuid
+from collections.abc import Callable
+from typing import Any
+
 from app.domain.interfaces.repositories import ILoreParentRepository
+from app.domain.interfaces.reranker import ICrossEncoderReranker, RerankerUnavailableError
+from app.domain.interfaces.vector_store import IVectorStore
 from app.domain.services.rag.reranker import KeywordOverlapReranker
 from app.domain.tuning.rag import RAGTuning
 from app.shared.utils.logger import get_logger
-import uuid
-
 from app.shared.utils.token_estimator import TokenEstimator
 
 log = get_logger(__name__)
@@ -19,15 +22,19 @@ class LoreRetriever:
     def __init__(
         self, 
         vector_store: IVectorStore, 
-        reranker: Optional[KeywordOverlapReranker] = None,
-        lore_parent_repo_factory: Optional[Callable[[Any], ILoreParentRepository]] = None
+        reranker: KeywordOverlapReranker | None = None,
+        lore_parent_repo_factory: Callable[[Any], ILoreParentRepository] | None = None,
+        cross_encoder_reranker: ICrossEncoderReranker | None = None,
     ):
         self.vector_store = vector_store
         self.reranker = reranker or KeywordOverlapReranker()
         self.lore_parent_repo_factory = lore_parent_repo_factory
+        self.cross_encoder_reranker = cross_encoder_reranker
 
     @staticmethod
-    def resolve_windowed_parent(parent_markdown: Optional[str], child_text: str, window_chars: int = 1200) -> str:
+    def resolve_windowed_parent(
+        parent_markdown: str | None, child_text: str, window_chars: int = 1200
+    ) -> str:
         """
         Extracts a localized context window around child_text instead of loading the entire parent markdown.
         Preserves Markdown Section Headers and prevents Parent Document Bloat.
@@ -101,14 +108,17 @@ class LoreRetriever:
     async def retrieve_lore_parent_child(
         self,
         collection: str,
-        query_vector: List[float],
+        query_vector: list[float],
         session: Any = None,
         query_text: str = "",
         top_k: int = RAGTuning.TOP_K,
         score_threshold: float = RAGTuning.SCORE_THRESHOLD,
-        entities_filter: Optional[List[str]] = None,
-        max_token_budget: Optional[int] = None,
-    ) -> List[Tuple[str, float, Dict[str, Any]]]:
+        entities_filter: list[str] | None = None,
+        requester_subject_id: str | None = None,
+        requester_tenant_id: str | None = None,
+        requester_channel_id: str | None = None,
+        max_token_budget: int | None = None,
+    ) -> list[tuple[str, float, dict[str, Any]]]:
         try:
             if not self.vector_store:
                 return []
@@ -116,9 +126,13 @@ class LoreRetriever:
             candidates = await self.vector_store.search_lore(
                 collection=collection,
                 query_vector=query_vector,
+                query_text=query_text,
                 limit=15,
                 score_threshold=score_threshold,
                 entities_filter=entities_filter,
+                requester_subject_id=requester_subject_id,
+                requester_tenant_id=requester_tenant_id,
+                requester_channel_id=requester_channel_id,
             )
         except Exception as e:
             log.warning("Lore parent-child retrieval failed", collection=collection, error=str(e))
@@ -153,10 +167,34 @@ class LoreRetriever:
                     (metadata_score * RAGTuning.WEIGHT_METADATA)
                 )
                 
+                dense_score = cand.get("dense_score")
+                sparse_score = cand.get("sparse_score")
                 scoring_meta = {
                     "collection": collection,
+                    "point_id": str(cand.get("id", "")),
                     "source_type": payload.get("source_type", "wiki"),
-                    "vector_score": round(score, 4),
+                    "parent_id": payload.get("parent_id"),
+                    "page_id": payload.get("page_id"),
+                    "section_id": payload.get("section_id"),
+                    "chunk_index": payload.get("chunk_index"),
+                    "chunk_start_offset": payload.get("chunk_start_offset"),
+                    "chunk_end_offset": payload.get("chunk_end_offset"),
+                    "revision_id": payload.get("revision_id"),
+                    "access_scope": payload.get("access_scope"),
+                    "access_subject_id": payload.get("access_subject_id"),
+                    "access_tenant_id": payload.get("access_tenant_id"),
+                    "access_channel_id": payload.get("access_channel_id"),
+                    "vector_score": round(
+                        float(dense_score if dense_score is not None else score), 4
+                    ),
+                    "dense_score": (
+                        round(float(dense_score), 4) if dense_score is not None else None
+                    ),
+                    "sparse_score": (
+                        round(float(sparse_score), 4) if sparse_score is not None else None
+                    ),
+                    "dense_sparse_rrf_score": round(score, 6),
+                    "retrieval_mode": cand.get("retrieval_mode", "dense_legacy"),
                     "keyword_score": round(keyword_score, 4),
                     "metadata_score": round(metadata_score, 4),
                     "hybrid_score": round(hybrid_score, 4),
@@ -169,6 +207,10 @@ class LoreRetriever:
                 scored_candidates.append((cand, hybrid_score))
 
         scored_candidates.sort(key=lambda x: x[1], reverse=True)
+        scored_candidates = await self._cross_encoder_rerank(
+            query_text=query_text,
+            scored_candidates=scored_candidates,
+        )
 
         seen_parents = set()
         lore_chunks: list[tuple[str, float, dict[str, Any]]] = []
@@ -232,3 +274,80 @@ class LoreRetriever:
                 break
                 
         return lore_chunks
+
+    async def _cross_encoder_rerank(
+        self,
+        *,
+        query_text: str,
+        scored_candidates: list[tuple[dict[str, Any], float]],
+    ) -> list[tuple[dict[str, Any], float]]:
+        """Rerank top candidates with the configured cross encoder or expose fallback.
+
+        Lexical/vector scores remain provenance features only when a cross encoder
+        succeeds. A missing, invalid, or late model never blocks chat retrieval;
+        callers can observe the deterministic fallback through evidence metadata.
+        """
+        if not scored_candidates:
+            return scored_candidates
+        if self.cross_encoder_reranker is None or not query_text.strip():
+            self._mark_lexical_fallback(scored_candidates, "not_configured")
+            return scored_candidates
+
+        rerankable = scored_candidates[: RAGTuning.CROSS_ENCODER_CANDIDATE_LIMIT]
+        documents = [
+            str(candidate.get("payload", {}).get("text_content", ""))
+            for candidate, _ in rerankable
+        ]
+        if not all(documents):
+            self._mark_lexical_fallback(scored_candidates, "invalid_candidate")
+            return scored_candidates
+        try:
+            cross_encoder_scores = await self.cross_encoder_reranker.rerank(
+                query_text, documents
+            )
+        except (RerankerUnavailableError, TimeoutError) as error:
+            log.warning(
+                "Cross-encoder reranking unavailable; using deterministic fallback",
+                error_type=type(error).__name__,
+            )
+            self._mark_lexical_fallback(scored_candidates, "unavailable")
+            return scored_candidates
+        if len(cross_encoder_scores) != len(rerankable) or not all(
+            math.isfinite(score) for score in cross_encoder_scores
+        ):
+            log.warning("Cross-encoder returned an invalid score set; using deterministic fallback")
+            self._mark_lexical_fallback(scored_candidates, "invalid_score_set")
+            return scored_candidates
+
+        reranked: list[tuple[dict[str, Any], float]] = []
+        for (candidate, _), raw_score in zip(rerankable, cross_encoder_scores, strict=True):
+            calibrated_score = self._calibrate_cross_encoder_score(raw_score)
+            scoring_meta = candidate["scoring_meta"]
+            scoring_meta["cross_encoder_score"] = round(float(raw_score), 6)
+            scoring_meta["reranker_score"] = round(calibrated_score, 6)
+            scoring_meta["reranker_mode"] = "cross_encoder"
+            scoring_meta["reranker_fallback"] = False
+            reranked.append((candidate, calibrated_score))
+        for candidate, score in scored_candidates[RAGTuning.CROSS_ENCODER_CANDIDATE_LIMIT :]:
+            scoring_meta = candidate["scoring_meta"]
+            scoring_meta["reranker_mode"] = "candidate_limit_fallback"
+            scoring_meta["reranker_fallback"] = True
+            reranked.append((candidate, score))
+        reranked.sort(key=lambda item: item[1], reverse=True)
+        return reranked
+
+    @staticmethod
+    def _mark_lexical_fallback(
+        scored_candidates: list[tuple[dict[str, Any], float]], reason: str
+    ) -> None:
+        for candidate, _ in scored_candidates:
+            scoring_meta = candidate["scoring_meta"]
+            scoring_meta["reranker_mode"] = "lexical_fallback"
+            scoring_meta["reranker_fallback"] = True
+            scoring_meta["reranker_fallback_reason"] = reason
+
+    @staticmethod
+    def _calibrate_cross_encoder_score(raw_score: float) -> float:
+        """Map model logits to a bounded score for existing RAG fusion consumers."""
+        bounded_logit = max(-20.0, min(20.0, float(raw_score)))
+        return 1.0 / (1.0 + math.exp(-bounded_logit))

@@ -24,6 +24,7 @@ def _get_pool() -> aioredis.ConnectionPool:
         _redis_pool = aioredis.ConnectionPool.from_url(
             settings.REDIS_URL,
             password=settings.REDIS_PASSWORD or None,
+            username=settings.REDIS_USERNAME,
             max_connections=50,
             decode_responses=True,
             socket_connect_timeout=5,

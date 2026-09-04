@@ -2,16 +2,23 @@
 # Chisa AI — Docker Compose
 # Runs all required infrastructure services + the application
 # ─────────────────────────────────────────────────────────────────────────────
-version: "3.9"
-
 networks:
-  chisa_net:
+  chisa_edge:
     driver: bridge
+  chisa_data:
+    driver: bridge
+    internal: true
 
 volumes:
   postgres_data:
   qdrant_data:
   redis_data:
+
+secrets:
+  postgres_password:
+    file: ${POSTGRES_PASSWORD_FILE:?POSTGRES_PASSWORD_FILE must reference a provisioned secret file}
+  redis_password:
+    file: ${REDIS_PASSWORD_FILE:?REDIS_PASSWORD_FILE must reference a provisioned secret file}
 
 # ─── Services ─────────────────────────────────────────────────────────────────
 
@@ -24,14 +31,14 @@ services:
     restart: unless-stopped
     environment:
       POSTGRES_USER: chisa
-      POSTGRES_PASSWORD: chisa_secret
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
       POSTGRES_DB: chisa_db
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
+    secrets:
+      - postgres_password
     networks:
-      - chisa_net
+      - chisa_data
     deploy:
       resources:
         limits:
@@ -50,18 +57,20 @@ services:
     image: redis:7-alpine
     container_name: chisa_redis
     restart: unless-stopped
-    command: >
-      redis-server
-      --maxmemory 512mb
-      --maxmemory-policy allkeys-lru
-      --save ""
-      --appendonly no
+    command:
+      - /bin/sh
+      - -ec
+      - >-
+        printf 'user default off\\nuser chisa on >%s ~* +@all\\n' "$$(cat /run/secrets/redis_password)" > /run/redis/users.acl;
+        exec redis-server --aclfile /run/redis/users.acl --maxmemory 512mb --maxmemory-policy allkeys-lru --appendonly yes --appendfsync everysec
     volumes:
       - redis_data:/data
-    ports:
-      - "6379:6379"
+    tmpfs:
+      - /run/redis:uid=999,gid=999,mode=0700
+    secrets:
+      - redis_password
     networks:
-      - chisa_net
+      - chisa_data
     deploy:
       resources:
         limits:
@@ -70,7 +79,7 @@ services:
         reservations:
           memory: 64M
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD-SHELL", "REDISCLI_AUTH=\"$$(cat /run/secrets/redis_password)\" redis-cli --user chisa ping"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -82,11 +91,10 @@ services:
     restart: unless-stopped
     volumes:
       - qdrant_data:/qdrant/storage
-    ports:
-      - "6333:6333"   # REST API
-      - "6334:6334"   # gRPC
+    environment:
+      QDRANT__SERVICE__API_KEY: ${QDRANT_API_KEY:?QDRANT_API_KEY must be supplied by the deployment secret manager}
     networks:
-      - chisa_net
+      - chisa_data
     deploy:
       resources:
         limits:
@@ -105,13 +113,17 @@ services:
     restart: unless-stopped
     env_file: .env
     environment:
-      DATABASE_URL: postgresql+asyncpg://chisa:chisa_secret@postgres:5432/chisa_db
       REDIS_URL: redis://redis:6379/0
+      REDIS_USERNAME: chisa
       QDRANT_URL: http://qdrant:6333
+    secrets:
+      - postgres_password
+      - redis_password
     ports:
-      - "${APP_PORT:-8000}:8000"
+      - "127.0.0.1:${APP_PORT:-8000}:8000"
     networks:
-      - chisa_net
+      - chisa_edge
+      - chisa_data
     deploy:
       resources:
         limits:
@@ -126,7 +138,13 @@ services:
         condition: service_healthy
       qdrant:
         condition: service_started
-    command: python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers ${WEB_CONCURRENCY:-2}
+    command:
+      - /bin/sh
+      - -ec
+      - >-
+        export DATABASE_URL="$$(python -c 'from pathlib import Path; from urllib.parse import quote; print("postgresql+asyncpg://chisa:" + quote(Path("/run/secrets/postgres_password").read_text().strip(), safe="") + "@postgres:5432/chisa_db")')";
+        export REDIS_PASSWORD="$$(cat /run/secrets/redis_password)";
+        exec python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers $${WEB_CONCURRENCY:-2}
 
   # ── Discord Bot ──────────────────────────────────────────────────
   discord:
@@ -137,12 +155,14 @@ services:
     restart: unless-stopped
     env_file: .env
     environment:
-      DATABASE_URL: postgresql://chisa:chisa_secret@postgres:5432/chisa_db
       CORE_RAG_BASE_URL: http://app:8000
       CORE_RAG_CHAT_PATH: /api/v1/chat
       CORE_RAG_CLEAR_PATH_TEMPLATE: /api/v1/chat/clear/{user_id}
     networks:
-      - chisa_net
+      - chisa_edge
+      - chisa_data
+    secrets:
+      - postgres_password
     deploy:
       resources:
         limits:
@@ -155,6 +175,11 @@ services:
         condition: service_healthy
       app:
         condition: service_started
-    command: node src/index.js
+    command:
+      - /bin/sh
+      - -ec
+      - >-
+        export DATABASE_URL="$$(node -e 'const fs = require("fs"); process.stdout.write("postgresql://chisa:" + encodeURIComponent(fs.readFileSync("/run/secrets/postgres_password", "utf8").trim()) + "@postgres:5432/chisa_db")')";
+        exec node src/index.js
 
 

@@ -7,11 +7,16 @@ import uuid
 
 from pydantic import BaseModel, Field, field_validator
 
-from app.application.ingestion.errors import QdrantIngestionAcknowledgementError
+from app.application.ingestion.errors import (
+    CorpusSafetyGateError,
+    QdrantIngestionAcknowledgementError,
+)
 from app.domain.entities.chunk_models import ProcessingChunk
 from app.domain.interfaces.pipeline import IPipelineStage, PipelineMetrics, PipelineResult
 from app.domain.interfaces.repositories import IPipelineJobRepository
 from app.domain.interfaces.vector_store import IVectorStore
+from app.domain.models.lore_collections import validate_lore_staging_collection
+from app.domain.services.guardrails import CorpusSafetyGate
 from app.shared.utils.logger import get_logger
 
 log = get_logger(__name__)
@@ -26,10 +31,7 @@ class QdrantUpsertInput(BaseModel):
     @field_validator("staging_collection")
     @classmethod
     def require_physical_staging_collection(cls, value: str) -> str:
-        target = value.strip()
-        if "__" not in target or target.endswith("__active"):
-            raise ValueError("Qdrant ingestion requires a physical versioned staging collection")
-        return target
+        return validate_lore_staging_collection(value)
 
 
 class QdrantUpsertStage(IPipelineStage[QdrantUpsertInput, list[ProcessingChunk]]):
@@ -40,10 +42,12 @@ class QdrantUpsertStage(IPipelineStage[QdrantUpsertInput, list[ProcessingChunk]]
         vector_store: IVectorStore,
         job_repo: IPipelineJobRepository,
         batch_size: int = 100,
+        corpus_safety_gate: CorpusSafetyGate | None = None,
     ) -> None:
         self.vector_store = vector_store
         self.job_repo = job_repo
         self.batch_size = batch_size
+        self.corpus_safety_gate = corpus_safety_gate or CorpusSafetyGate()
 
     async def execute(
         self, job_id: uuid.UUID, input_data: QdrantUpsertInput
@@ -63,6 +67,36 @@ class QdrantUpsertStage(IPipelineStage[QdrantUpsertInput, list[ProcessingChunk]]
             and chunk.vector is not None
             and chunk.payload is not None
         ]
+        quarantined = [
+            self.corpus_safety_gate.inspect(
+                text=chunk.text_content,
+                source_id=f"page:{chunk.page_id}:chunk:{chunk.chunk_id}",
+                checksum=chunk.chunk_hash,
+            )
+            for chunk in to_upsert
+        ]
+        quarantined = [decision for decision in quarantined if decision.quarantined]
+        if quarantined:
+            await self.job_repo.log_event(
+                job_id,
+                "CorpusSafetyQuarantined",
+                {
+                    "quarantined_count": len(quarantined),
+                    "records": [
+                        {
+                            "source_id": decision.source_id,
+                            "checksum": decision.checksum,
+                            "rule_id": decision.rule_id,
+                            "fingerprint": decision.fingerprint,
+                        }
+                        for decision in quarantined
+                    ],
+                },
+            )
+            raise CorpusSafetyGateError(
+                quarantined_count=len(quarantined),
+                report_path=f"ingestion-job:{job_id}",
+            )
         acknowledged_count = 0
 
         for batch_start in range(0, len(to_upsert), self.batch_size):

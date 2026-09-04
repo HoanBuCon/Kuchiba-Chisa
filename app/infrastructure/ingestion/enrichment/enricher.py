@@ -3,28 +3,31 @@ Offline LLM Enrichment Engine — Integrates instructor for Pydantic Schema enfo
 """
 
 from __future__ import annotations
-from typing import Any, Optional
-import structlog
-from app.infrastructure.ingestion.models import CanonicalPage
-from app.infrastructure.ingestion.enrichment.models import QuestLoreSummary
 
 import os
+from typing import Any
+
+import structlog
+
 from app.config.settings import settings
+from app.infrastructure.ingestion.enrichment.models import QuestLoreSummary
+from app.infrastructure.ingestion.models import CanonicalPage
 
 logger = structlog.get_logger(__name__)
 
 _HAS_INSTRUCTOR = False
 try:
     import instructor
-    _HAS_INSTRUCTOR = True
 except ImportError:
     _HAS_INSTRUCTOR = False
+else:
+    _HAS_INSTRUCTOR = instructor is not None
 
 
 def enrich_canonical_page(
     page: CanonicalPage,
-    client: Optional[Any] = None,
-    model: Optional[str] = None,
+    client: Any | None = None,
+    model: str | None = None,
 ) -> CanonicalPage:
     """
     Enrich complex canonical page (Quest / Lore) using instructor LLM structured output.
@@ -51,11 +54,14 @@ def enrich_canonical_page(
         return page
 
     if client is None or not _HAS_INSTRUCTOR:
-        logger.debug("Instructor LLM client not configured; skipping offline enrichment.", page_id=page.identity.page_id)
+        logger.debug(
+            "Instructor LLM client not configured; skipping offline enrichment.",
+            page_id=page.identity.page_id,
+        )
         return page
 
     try:
-        response: QuestLoreSummary = client.chat.completions.create(
+        client.chat.completions.create(
             model=model,
             response_model=QuestLoreSummary,
             messages=[
@@ -71,8 +77,16 @@ def enrich_canonical_page(
         page.document_metadata.categories.append("EnrichedLore")
         page.sections = page.sections or []
 
-        logger.info("Canonical page enriched successfully", page_id=page.identity.page_id, title=page.identity.title)
+        logger.info(
+            "Canonical page enriched successfully",
+            page_id=page.identity.page_id,
+            title=page.identity.title,
+        )
     except Exception as exc:
-        logger.warning("Failed to enrich canonical page", page_id=page.identity.page_id, error=str(exc))
+        logger.warning(
+            "Failed to enrich canonical page",
+            page_id=page.identity.page_id,
+            error=str(exc),
+        )
 
     return page

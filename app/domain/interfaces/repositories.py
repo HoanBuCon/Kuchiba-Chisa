@@ -7,6 +7,13 @@ from typing import Any, Protocol
 from app.domain.entities.emotion import EmotionState
 from app.domain.entities.lore import LoreParent
 from app.domain.entities.user import User, UserStats
+from app.domain.models.corpus_manifest import ParentCorpusManifest
+from app.domain.models.corpus_release import (
+    CorpusQualityReport,
+    CorpusRelease,
+    CorpusReleaseAuditEvent,
+)
+from app.domain.models.ingestion_source import IngestionSource, IngestionSourceAuditEvent
 
 
 class IUserRepository(Protocol):
@@ -156,11 +163,62 @@ class ILoreParentRepository(Protocol):
         """
         ...
 
+    async def get_corpus_manifest(
+        self, *, source_id: uuid.UUID, corpus_version: str
+    ) -> ParentCorpusManifest:
+        """Return a non-content receipt for exactly one staged parent corpus."""
+        ...
+
 
 class IChunkStateRepository(Protocol):
     async def get_chunk_state(self, chunk_id: uuid.UUID) -> dict | None:
         ...
     async def check_hash_exists(self, chunk_hash: str) -> bool:
+        ...
+
+
+class IIngestionSourceRepository(Protocol):
+    """Durable registry that controls which external sources may be crawled."""
+
+    async def get_source(self, source_id: uuid.UUID) -> IngestionSource | None:
+        ...
+
+    async def save_source(self, source: IngestionSource) -> None:
+        ...
+
+
+class IIngestionSourceAuditRepository(Protocol):
+    """Append-only audit port for curator-controlled source transitions."""
+
+    async def record(self, event: IngestionSourceAuditEvent) -> None:
+        ...
+
+
+class ICorpusReleaseRepository(Protocol):
+    """Persist non-content staging receipts and curator lifecycle audit events."""
+
+    async def save_release(self, release: CorpusRelease) -> None:
+        ...
+
+    async def get_release(self, release_id: uuid.UUID) -> CorpusRelease | None:
+        ...
+
+    async def get_release_by_staging_collection(
+        self, staging_collection: str
+    ) -> CorpusRelease | None:
+        ...
+
+    async def save_quality_report(self, report: CorpusQualityReport) -> None:
+        ...
+
+    async def get_quality_report(self, release_id: uuid.UUID) -> CorpusQualityReport | None:
+        ...
+
+    async def record_audit(self, event: CorpusReleaseAuditEvent) -> None:
+        ...
+
+    async def commit(self) -> None:
+        """Commit a release lifecycle boundary before an external alias operation."""
         ...
 
 

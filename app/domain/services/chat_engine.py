@@ -1,19 +1,24 @@
-import time
+from __future__ import annotations
+
 import uuid
-import asyncio
-import dataclasses
-from typing import Tuple, Dict, Any, List, Optional, Callable, AsyncContextManager
-from app.domain.interfaces.session import IDbSession
-from app.config.settings import settings
-from app.shared.utils.background_tasks import BackgroundTaskManager
+from collections.abc import Callable
+from contextlib import AbstractAsyncContextManager
+from dataclasses import dataclass
+from typing import Any
+
+from app.domain.entities.emotion import EmotionState
+from app.domain.interfaces.cache_provider import ICacheProvider
 from app.domain.interfaces.embedding_provider import IEmbeddingProvider
 from app.domain.interfaces.llm_provider import BaseLLMAdapter, StructuredPrompt
-from app.domain.entities.emotion import EmotionState
-from app.domain.entities.memory import MemoryPayload
-from app.domain.interfaces.vector_store import IVectorStore
-from app.domain.interfaces.repositories import IUserRepository, IEmotionRepository, IConversationRepository
+from app.domain.interfaces.repositories import (
+    IConversationRepository,
+    IEmotionRepository,
+    IUserRepository,
+)
+from app.domain.interfaces.session import IDbSession
 from app.domain.interfaces.uow import IUnitOfWork
-from app.domain.interfaces.cache_provider import ICacheProvider
+from app.domain.interfaces.vector_store import IVectorStore
+from app.domain.services.attachment_manifest import AttachmentManifest
 from app.domain.services.chat_pipeline.context import ChatContext
 from app.domain.services.chat_pipeline.stage import PipelineStage
 from app.shared.utils.logger import get_logger
@@ -26,8 +31,25 @@ class ChatEngineBusyError(Exception):
         self.user_id = user_id
         super().__init__(f"Chat engine busy for user {user_id} — concurrent request rejected")
 
+@dataclass(frozen=True)
+class ChatExecutionResult:
+    """Typed terminal chat state; citations are server-validated evidence IDs."""
+
+    reply_text: str
+    emotions: dict[str, float]
+    images_processed: list[dict[str, Any]]
+    attached_images: list[AttachmentManifest]
+    citation_ids: list[str]
+
+    def legacy_tuple(
+        self,
+    ) -> tuple[str, dict[str, float], list[dict[str, Any]], list[AttachmentManifest]]:
+        """Preserve the internal legacy call contract while API callers migrate."""
+        return self.reply_text, self.emotions, self.images_processed, self.attached_images
+
+
 class ChatPipeline:
-    def __init__(self, stages: List[PipelineStage]):
+    def __init__(self, stages: list[PipelineStage]):
         self.stages = stages
 
     async def execute(self, context: ChatContext) -> ChatContext:
@@ -48,7 +70,7 @@ class ChatEngine:
         emotion_repo_factory: Callable[[IDbSession], IEmotionRepository],
         conv_repo_factory: Callable[[IDbSession], IConversationRepository],
         user_repo_factory: Callable[[IDbSession], IUserRepository],
-        db_session_factory: Callable[[], AsyncContextManager[IDbSession]],
+        db_session_factory: Callable[[], AbstractAsyncContextManager[IDbSession]],
         # The following are needed for background tasks that weren't extracted
         llm: BaseLLMAdapter,
         embedder: IEmbeddingProvider,
@@ -109,10 +131,29 @@ class ChatEngine:
         session: IDbSession,
         user_id: str,
         user_message: str,
-        on_token: Optional[Callable[[str], Any]] = None,
-        images: Optional[List[str]] = None,
+        on_token: Callable[[str], Any] | None = None,
+        images: list[str] | None = None,
         is_ephemeral_reference: bool = False,
-    ) -> Tuple[str, Dict[str, float], List[Dict[str, Any]], List[str]]:
+    ) -> tuple[str, dict[str, float], list[dict[str, Any]], list[AttachmentManifest]]:
+        result = await self.chat_detailed(
+            session=session,
+            user_id=user_id,
+            user_message=user_message,
+            on_token=on_token,
+            images=images,
+            is_ephemeral_reference=is_ephemeral_reference,
+        )
+        return result.legacy_tuple()
+
+    async def chat_detailed(
+        self,
+        session: IDbSession,
+        user_id: str,
+        user_message: str,
+        on_token: Callable[[str], Any] | None = None,
+        images: list[str] | None = None,
+        is_ephemeral_reference: bool = False,
+    ) -> ChatExecutionResult:
         log.info("Starting ChatEngine cycle", user_id=user_id, has_images=bool(images))
 
         # ── Per-user distributed lock to prevent race conditions (TTL 120s) ──
@@ -141,13 +182,44 @@ class ChatEngine:
         user_message: str,
         speaker_name: str,
         channel_name: str = "general",
-        guild_id: Optional[str] = None,
-        guild_name: Optional[str] = None,
-        recent_messages: Optional[List[Any]] = None,
-        on_token: Optional[Callable[[str], Any]] = None,
-        images: Optional[List[str]] = None,
+        guild_id: str | None = None,
+        guild_name: str | None = None,
+        recent_messages: list[Any] | None = None,
+        on_token: Callable[[str], Any] | None = None,
+        images: list[str] | None = None,
         is_ephemeral_reference: bool = False,
-    ) -> Tuple[str, Dict[str, float], List[Dict[str, Any]], List[str]]:
+    ) -> tuple[str, dict[str, float], list[dict[str, Any]], list[AttachmentManifest]]:
+        result = await self.community_chat_detailed(
+            session=session,
+            channel_id=channel_id,
+            user_id=user_id,
+            user_message=user_message,
+            speaker_name=speaker_name,
+            channel_name=channel_name,
+            guild_id=guild_id,
+            guild_name=guild_name,
+            recent_messages=recent_messages,
+            on_token=on_token,
+            images=images,
+            is_ephemeral_reference=is_ephemeral_reference,
+        )
+        return result.legacy_tuple()
+
+    async def community_chat_detailed(
+        self,
+        session: IDbSession,
+        channel_id: str,
+        user_id: str,
+        user_message: str,
+        speaker_name: str,
+        channel_name: str = "general",
+        guild_id: str | None = None,
+        guild_name: str | None = None,
+        recent_messages: list[Any] | None = None,
+        on_token: Callable[[str], Any] | None = None,
+        images: list[str] | None = None,
+        is_ephemeral_reference: bool = False,
+    ) -> ChatExecutionResult:
         log.info(
             "Starting ChatEngine Community cycle",
             channel_id=channel_id,
@@ -180,7 +252,13 @@ class ChatEngine:
                 is_ephemeral_reference=is_ephemeral_reference,
             )
             context = await self.pipeline.execute(context)
-            return context.chisa_reply, context.updated_emotions, context.images_processed, context.attached_images
+            return ChatExecutionResult(
+                reply_text=context.chisa_reply,
+                emotions=context.updated_emotions,
+                images_processed=context.images_processed,
+                attached_images=context.attached_images,
+                citation_ids=context.citation_ids,
+            )
         finally:
             await self.cache.release_lock(lock_key, token=acquired)
 
@@ -189,10 +267,10 @@ class ChatEngine:
         session: IDbSession,
         user_id: str,
         user_message: str,
-        on_token: Optional[Callable[[str], Any]] = None,
-        images: Optional[List[str]] = None,
+        on_token: Callable[[str], Any] | None = None,
+        images: list[str] | None = None,
         is_ephemeral_reference: bool = False,
-    ) -> Tuple[str, Dict[str, float], List[Dict[str, Any]], List[str]]:
+    ) -> ChatExecutionResult:
         try:
             # Run Chat Pipeline (CacheStage handles pure-lore caching internally)
             context = ChatContext(
@@ -204,7 +282,13 @@ class ChatEngine:
                 is_ephemeral_reference=is_ephemeral_reference,
             )
             context = await self.pipeline.execute(context)
-            return context.chisa_reply, context.updated_emotions, context.images_processed, context.attached_images
+            return ChatExecutionResult(
+                reply_text=context.chisa_reply,
+                emotions=context.updated_emotions,
+                images_processed=context.images_processed,
+                attached_images=context.attached_images,
+                citation_ids=context.citation_ids,
+            )
             
         except Exception as e:
             log.warning("Production chat generation failed, saving user message as failed", user_id=user_id, error=str(e))
@@ -233,8 +317,10 @@ class ChatEngine:
         log.info("Starting background auto-summarization...", user_id=user_id, conv_id=str(conv_id))
         async with self.db_session_factory() as session:
             try:
+                from app.domain.services.community.transcript_formatter import (
+                    ChannelTranscriptFormatter,
+                )
                 from app.shared.utils.user_identity import normalize_user_id
-                from app.domain.services.community.transcript_formatter import ChannelTranscriptFormatter
 
                 user_uuid = normalize_user_id(user_id)
                 conv_uuid = uuid.UUID(str(conv_id)) if isinstance(conv_id, (str, uuid.UUID)) else conv_id

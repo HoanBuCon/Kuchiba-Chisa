@@ -1,9 +1,12 @@
-from typing import Callable, Coroutine, Any, Optional
-from app.domain.services.chat_pipeline.stage import PipelineStage
-from app.domain.services.chat_pipeline.context import ChatContext
-from app.domain.services.memory_extractor import MemoryExtractor
-from app.domain.services.community.topic_summarizer import CommunityTopicSummarizer
+from collections.abc import Callable, Coroutine
+from typing import Any, Optional
+
 from app.domain.interfaces.tracker import IPipelineTracker
+from app.domain.services.chat_pipeline.context import ChatContext
+from app.domain.services.chat_pipeline.stage import PipelineStage
+from app.domain.services.community.topic_summarizer import CommunityTopicSummarizer
+from app.domain.services.guardrails.injection_guard import GuardAction
+from app.domain.services.memory_extractor import MemoryExtractor
 from app.shared.utils.background_tasks import BackgroundTaskManager
 from app.shared.utils.logger import get_logger
 
@@ -26,8 +29,24 @@ class BackgroundTaskStage(PipelineStage):
         self.pipeline_tracker = pipeline_tracker
 
     async def process(self, context: ChatContext) -> ChatContext:
-        triggered_extract = bool(context.stats and context.stats.interaction_count > 0 and context.stats.interaction_count % 3 == 0)
-        triggered_summary = bool(context.stats and context.stats.interaction_count > 0 and context.stats.interaction_count % 10 == 0)
+        if (
+            context.guardrail_assessment
+            and context.guardrail_assessment.action is GuardAction.BLOCK
+        ):
+            return context
+        long_term_memory_allowed = context.memory_privacy_policy.allows_long_term_memory
+        triggered_extract = bool(
+            long_term_memory_allowed
+            and context.stats
+            and context.stats.interaction_count > 0
+            and context.stats.interaction_count % 3 == 0
+        )
+        triggered_summary = bool(
+            long_term_memory_allowed
+            and context.stats
+            and context.stats.interaction_count > 0
+            and context.stats.interaction_count % 10 == 0
+        )
         triggered_topic_summary = False
 
         # Trigger batched background fact extraction every 3 interaction turns (batch of 3 pairs + 2 context msgs)
@@ -44,6 +63,7 @@ class BackgroundTaskStage(PipelineStage):
                     speaker_name=context.speaker_name,
                     is_community=context.is_community,
                     trace_id=context.trace_id,
+                    retention_expires_at=context.memory_privacy_policy.retention_expiry_epoch(),
                 ),
                 name=f"memory_extract_batch:{context.user_id}",
             )
@@ -61,7 +81,12 @@ class BackgroundTaskStage(PipelineStage):
             )
 
         # Periodically trigger community topic summarization in community channels (every 30 messages)
-        if context.is_community and context.channel_id and self.topic_summarizer:
+        if (
+            long_term_memory_allowed
+            and context.is_community
+            and context.channel_id
+            and self.topic_summarizer
+        ):
             try:
                 # 1. Accumulate new messages and current turn into Redis Rolling Buffer
                 current_user_turn = {
@@ -103,7 +128,11 @@ class BackgroundTaskStage(PipelineStage):
                 log.warning("Failed to trigger community topic summarization", error=str(ts_err))
 
         # Trigger background visual memory ingestion when images are uploaded/referenced
-        triggered_visual_ingest = bool(context.processed_images)
+        triggered_visual_ingest = (
+            bool(context.processed_images)
+            and not context.is_ephemeral_reference
+            and long_term_memory_allowed
+        )
         if triggered_visual_ingest:
             try:
                 from app.domain.services.visual_memory_ingestion import VisualMemoryIngestionWorker
@@ -120,9 +149,10 @@ class BackgroundTaskStage(PipelineStage):
                         conversation_id=str(context.conv_id) if context.conv_id else None,
                         guild_id=context.guild_id,
                         channel_id=context.channel_id,
-                        is_ephemeral=False,
+                        is_ephemeral=context.is_ephemeral_reference,
                         llm_image_tags=context.image_tags,
                         llm_visual_caption=context.visual_caption,
+                        retention_expires_at=context.memory_privacy_policy.retention_expiry_epoch(),
                     ),
                     name=f"visual_memory_ingest:{context.user_id}",
                 )
@@ -132,7 +162,6 @@ class BackgroundTaskStage(PipelineStage):
         if self.pipeline_tracker:
             extract_desc = "Kích hoạt" if triggered_extract else "Bỏ qua (chu kỳ 3 lượt)"
             summary_desc = "Kích hoạt" if triggered_summary else "Bỏ qua (chu kỳ 10 lượt)"
-            topic_desc = "Kích hoạt" if triggered_topic_summary else "Bỏ qua (chu kỳ 30 tin)"
             vision_desc = "Kích hoạt (Lưu Ký Ức Thị Giác)" if triggered_visual_ingest else "Không có ảnh mới"
             self.pipeline_tracker.add_step(
                 name="background_tasks",
@@ -152,6 +181,7 @@ class BackgroundTaskStage(PipelineStage):
                     "topic_summarization_interval": 30,
                     "visual_memory_ingestion_triggered": triggered_visual_ingest,
                     "images_count": len(context.processed_images),
+                    "long_term_memory_allowed": long_term_memory_allowed,
                 }
             )
             

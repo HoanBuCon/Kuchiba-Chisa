@@ -7,6 +7,11 @@ from app.domain.interfaces.tracker import IPipelineTracker
 from app.domain.models.intent_result import ChatIntent, IntentResult
 from app.domain.services.chat_pipeline.context import ChatContext
 from app.domain.services.chat_pipeline.stage import PipelineStage
+from app.domain.services.guardrails.injection_guard import (
+    ContentSource,
+    GuardAction,
+    InjectionGuard,
+)
 from app.domain.services.intent_classifier import IntentClassifier
 from app.domain.services.rag.query_rewriter import QueryRewriter
 from app.shared.utils.logger import get_logger
@@ -109,12 +114,14 @@ class IntentStage(PipelineStage):
         query_rewriter: QueryRewriter | None = None,
         conv_repo_factory: Callable[[IDbSession], IConversationRepository] | None = None,
         pipeline_tracker: IPipelineTracker | None = None,
+        injection_guard: InjectionGuard | None = None,
     ):
         self.intent_classifier = intent_classifier
         self.embedder = embedder
         self.query_rewriter = query_rewriter
         self.conv_repo_factory = conv_repo_factory
         self.pipeline_tracker = pipeline_tracker
+        self.injection_guard = injection_guard or InjectionGuard()
 
     async def _embed_rewritten_vector_query(self, rewritten_query: str) -> list[float]:
         """Embed the canonical rewritten query or fail before vector retrieval can be skipped."""
@@ -126,6 +133,26 @@ class IntentStage(PipelineStage):
         return query_vector
 
     async def process(self, context: ChatContext) -> ChatContext:
+        assessment = self.injection_guard.assess(
+            context.user_message, ContentSource.USER
+        )
+        context.guardrail_assessment = assessment
+        if assessment.action is GuardAction.BLOCK:
+            context.is_cached_answer = True
+            context.chisa_reply = (
+                "I can’t help with instructions that try to override system behavior."
+            )
+            if self.pipeline_tracker:
+                self.pipeline_tracker.add_step(
+                    "input_guardrail",
+                    {
+                        "action": assessment.action.value,
+                        "rule_id": assessment.rule_id,
+                        "confidence": assessment.confidence,
+                        "fingerprint": assessment.fingerprint,
+                    },
+                )
+            return context
         if context.has_images:
             is_st = False
             st_reason = "Multimodal Vision Input Active (Bypass Small Talk Fast Path)"

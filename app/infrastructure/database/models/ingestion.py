@@ -8,6 +8,124 @@ from sqlalchemy.orm import Mapped, mapped_column
 from app.infrastructure.database.models.base import Base
 
 
+class IngestionSourceModel(Base):
+    """Persistent source governance state; corpus workers only read approved rows."""
+
+    __tablename__ = "ingestion_sources"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True)
+    uri: Mapped[str] = mapped_column(String(2048), nullable=False)
+    owner_id: Mapped[str] = mapped_column(String(128), nullable=False, index=True)
+    license_identifier: Mapped[str] = mapped_column(String(128), nullable=False)
+    access_scope: Mapped[str] = mapped_column(String(16), nullable=False)
+    subject_id: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    tenant_id: Mapped[str | None] = mapped_column(String(128), nullable=True, index=True)
+    channel_id: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    trust_tier: Mapped[str] = mapped_column(String(16), nullable=False)
+    checksum: Mapped[str] = mapped_column(String(64), nullable=False)
+    crawl_schedule: Mapped[str] = mapped_column(String(256), nullable=False)
+    status: Mapped[str] = mapped_column(String(16), nullable=False, index=True)
+    approved_by: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    approved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow
+    )
+
+
+class IngestionSourceAuditEventModel(Base):
+    """Append-only source governance audit metadata; no corpus text is stored."""
+
+    __tablename__ = "ingestion_source_audit_events"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True)
+    source_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("ingestion_sources.id"), nullable=False, index=True
+    )
+    actor_id: Mapped[str] = mapped_column(String(128), nullable=False, index=True)
+    action: Mapped[str] = mapped_column(String(32), nullable=False)
+    old_status: Mapped[str | None] = mapped_column(String(16), nullable=True)
+    new_status: Mapped[str] = mapped_column(String(16), nullable=False)
+    old_checksum: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    new_checksum: Mapped[str] = mapped_column(String(64), nullable=False)
+    occurred_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+
+class CorpusReleaseModel(Base):
+    """Durable, non-content receipt for a staged versioned lore corpus."""
+
+    __tablename__ = "corpus_releases"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True)
+    job_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("pipeline_jobs.id"), nullable=False, unique=True, index=True
+    )
+    source_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("ingestion_sources.id"), nullable=False, index=True
+    )
+    logical_collection: Mapped[str] = mapped_column(String(32), nullable=False, index=True)
+    staging_collection: Mapped[str] = mapped_column(String(192), nullable=False, unique=True)
+    corpus_version: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    parent_count: Mapped[int] = mapped_column(Integer, nullable=False)
+    vector_count: Mapped[int] = mapped_column(Integer, nullable=False)
+    parent_manifest_checksum: Mapped[str] = mapped_column(String(64), nullable=False)
+    vector_manifest_checksum: Mapped[str] = mapped_column(String(64), nullable=False)
+    status: Mapped[str] = mapped_column(String(24), nullable=False, index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    published_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    previous_active_collection: Mapped[str | None] = mapped_column(String(192), nullable=True)
+
+
+class CorpusReleaseAuditEventModel(Base):
+    """Append-only release audit record without corpus content or provider output."""
+
+    __tablename__ = "corpus_release_audit_events"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True)
+    release_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("corpus_releases.id"), nullable=False, index=True
+    )
+    actor_id: Mapped[str] = mapped_column(String(128), nullable=False, index=True)
+    action: Mapped[str] = mapped_column(String(24), nullable=False)
+    old_status: Mapped[str | None] = mapped_column(String(24), nullable=True)
+    new_status: Mapped[str] = mapped_column(String(24), nullable=False)
+    old_corpus_version: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    new_corpus_version: Mapped[str] = mapped_column(String(64), nullable=False)
+    occurred_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+
+class CorpusReleaseQualityReportModel(Base):
+    """Versioned aggregate evaluator outcome; no prompts, answers, or source text."""
+
+    __tablename__ = "corpus_release_quality_reports"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True)
+    release_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("corpus_releases.id"),
+        nullable=False,
+        unique=True,
+        index=True,
+    )
+    evaluator_version: Mapped[str] = mapped_column(String(128), nullable=False)
+    dataset_version: Mapped[str] = mapped_column(String(128), nullable=False)
+    sample_size: Mapped[int] = mapped_column(Integer, nullable=False)
+    confidence_interval: Mapped[float] = mapped_column(nullable=False)
+    faithfulness: Mapped[float] = mapped_column(nullable=False)
+    answer_relevance: Mapped[float] = mapped_column(nullable=False)
+    context_recall: Mapped[float] = mapped_column(nullable=False)
+    context_precision: Mapped[float] = mapped_column(nullable=False)
+    citation_correctness: Mapped[float] = mapped_column(nullable=False)
+    retrieval_hit_at_5: Mapped[float] = mapped_column(nullable=False)
+    retrieval_mrr_at_10: Mapped[float] = mapped_column(nullable=False)
+    critical_unsupported_claims: Mapped[int] = mapped_column(Integer, nullable=False)
+    cross_tenant_leakage_count: Mapped[int] = mapped_column(Integer, nullable=False)
+    prompt_leakage_count: Mapped[int] = mapped_column(Integer, nullable=False)
+    human_audit_completed: Mapped[bool] = mapped_column(nullable=False)
+    security_slice_passed: Mapped[bool] = mapped_column(nullable=False)
+    evaluated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+
 class WikiSyncStateModel(Base):
     __tablename__ = "wiki_sync_state"
     

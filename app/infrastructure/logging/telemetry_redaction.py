@@ -82,13 +82,15 @@ def redact_telemetry_payload(payload: Mapping[str, Any] | None) -> dict[str, Any
 
         if key in _SAFE_TEXT_FIELDS and isinstance(value, str):
             redacted[raw_key] = value[:128]
-        elif key in _SAFE_NUMERIC_FIELDS and _is_number(value):
-            redacted[raw_key] = value
-        elif key.endswith(_SAFE_NUMERIC_SUFFIXES) and _is_number(value):
-            redacted[raw_key] = value
-        elif key.startswith(_SAFE_BOOLEAN_PREFIXES) and isinstance(value, bool):
-            redacted[raw_key] = value
-        elif key in _SAFE_BOOLEAN_FIELDS and isinstance(value, bool):
+        elif (
+            (
+                key in _SAFE_NUMERIC_FIELDS or key.endswith(_SAFE_NUMERIC_SUFFIXES)
+            )
+            and _is_number(value)
+        ) or (
+            (key.startswith(_SAFE_BOOLEAN_PREFIXES) or key in _SAFE_BOOLEAN_FIELDS)
+            and isinstance(value, bool)
+        ):
             redacted[raw_key] = value
         elif key in _SAFE_METRIC_MAPPING_FIELDS and isinstance(value, Mapping):
             redacted[raw_key] = _redact_metric_mapping(value)
@@ -106,4 +108,4 @@ def _redact_metric_mapping(value: Mapping[Any, Any]) -> dict[str, int | float | 
 
 
 def _is_number(value: object) -> bool:
-    return isinstance(value, (int, float)) and not isinstance(value, bool)
+    return isinstance(value, int | float) and not isinstance(value, bool)

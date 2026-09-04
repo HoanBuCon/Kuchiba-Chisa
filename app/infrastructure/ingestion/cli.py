@@ -24,6 +24,7 @@ from datetime import datetime
 from pathlib import Path
 
 import click
+import httpx
 import structlog
 
 # Force stdout to UTF-8 for Windows console support
@@ -33,6 +34,9 @@ if hasattr(sys.stdout, "reconfigure"):
     except Exception:
         pass
 
+from app.application.ingestion.orchestrator import IngestionRunRequest
+from app.config.settings import settings
+from app.domain.services.guardrails import CorpusSafetyGate
 from app.infrastructure.ingestion.canonical import (
     build_canonical_page,
     read_canonical_stream,
@@ -58,6 +62,63 @@ logger = structlog.get_logger(__name__)
 @click.group(help="Kuchiba Chisa — Ingestion Pipeline CLI v1.1")
 def cli() -> None:
     pass
+
+
+@cli.command("run-dag", help="Run the canonical versioned application ingestion DAG.")
+@click.option(
+    "--staging-collection",
+    required=True,
+    help="Physical character_lore, world_lore, or story_lore version; aliases are never accepted.",
+)
+@click.option(
+    "--source-id",
+    required=True,
+    help="Approved ingestion source UUID from the curator registry.",
+)
+@click.option(
+    "--download-limit",
+    type=click.IntRange(min=1, max=10_000),
+    default=None,
+    help="Optional bounded source-page count for this run.",
+)
+def run_dag_cmd(source_id: str, staging_collection: str, download_limit: int | None) -> None:
+    """Run the only new ingestion entry point; it never promotes an alias."""
+    try:
+        request = IngestionRunRequest(
+            staging_collection=staging_collection,
+            source_id=source_id,
+            download_limit=download_limit,
+        )
+        result = asyncio.run(_run_application_dag(request))
+    except Exception as exc:
+        raise click.ClickException(f"ingestion DAG failed: {type(exc).__name__}") from exc
+    click.echo(
+        "[ACKNOWLEDGED] "
+        f"job={result.job_id} pages={result.downloaded_pages} "
+        f"parents={result.parent_documents} vectors={result.acknowledged_vectors} "
+        f"parent_manifest={result.parent_manifest_checksum} "
+        f"vector_manifest={result.vector_manifest_checksum}"
+    )
+
+
+async def _run_application_dag(request: IngestionRunRequest):
+    """Create request-scoped side-effect adapters and execute one bounded DAG run."""
+    from app.application.dependencies import container
+    from app.infrastructure.database.engine import AsyncSessionFactory
+    from app.infrastructure.ingestion.application_factory import build_ingestion_orchestrator
+
+    async with httpx.AsyncClient(
+        timeout=settings.INGESTION_SOURCE_TIMEOUT_SECONDS
+    ) as http_client, AsyncSessionFactory() as session:
+        orchestrator = await build_ingestion_orchestrator(
+            session=session,
+            http_client=http_client,
+            embedder=container.embedder,
+            vector_store=container.vector_store,
+            settings=settings,
+            request=request,
+        )
+        return await orchestrator.run(request)
 
 
 # ─────────────────────────────────────────────────────────────
@@ -268,6 +329,21 @@ def sync_qdrant_cmd(input_path: Path, db_path: Path, staging_version: str) -> No
     if not chunks:
         click.echo("[!] No chunks found to sync!", err=True)
         sys.exit(1)
+
+    corpus_safety_gate = CorpusSafetyGate()
+    quarantined = [
+        corpus_safety_gate.inspect(
+            text=chunk.text_content,
+            source_id=f"page:{chunk.page_id}:chunk:{chunk.chunk_id}",
+            checksum=chunk.text_hash,
+        )
+        for chunk in chunks
+    ]
+    quarantined_count = sum(decision.quarantined for decision in quarantined)
+    if quarantined_count:
+        raise click.ClickException(
+            f"Corpus safety gate quarantined {quarantined_count} chunk(s); no data was staged"
+        )
 
     click.echo(f"[*] Found {len(chunks)} chunks to embed and sync.")
 
@@ -689,7 +765,10 @@ def benchmark_cmd(top_k: int) -> None:
 # ─────────────────────────────────────────────────────────────
 
 
-@cli.command("run-pipeline", help="Execute the unified 6-stage master ingestion pipeline.")
+@cli.command(
+    "run-pipeline",
+    help="Legacy master pipeline retained until canonical DAG parity is verified.",
+)
 @click.option(
     "--mode",
     type=click.Choice(["full", "scan", "crawl", "clean", "reingest", "benchmark"]),
@@ -703,7 +782,7 @@ def benchmark_cmd(top_k: int) -> None:
     help="Raw wiki storage directory.",
 )
 def run_pipeline_cmd(mode: str, raw_dir: Path) -> None:
-    """Run master ingestion pipeline end-to-end."""
+    """Run the legacy master pipeline while the canonical DAG reaches parity."""
     from app.infrastructure.ingestion.pipeline import MasterIngestionPipeline
 
     pipeline = MasterIngestionPipeline(raw_dir=raw_dir)

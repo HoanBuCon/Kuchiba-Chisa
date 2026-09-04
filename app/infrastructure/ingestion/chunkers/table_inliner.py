@@ -79,8 +79,12 @@ class TableInlinerChunker(BaseChunker):
             if not section.content.strip():
                 return []
             # Create synthetic rows from text lines (filtering out raw wikitext syntax)
-            lines = [l.strip() for l in section.content.split("\n") if l.strip() and not l.strip().startswith(("{|", "|-", "!"))]
-            rows = [{"Content": l.lstrip("| ")} for l in lines]
+            lines = [
+                line.strip()
+                for line in section.content.split("\n")
+                if line.strip() and not line.strip().startswith(("{|", "|-", "!"))
+            ]
+            rows = [{"Content": line.lstrip("| ")} for line in lines]
 
         chunks: List[Chunk] = []
         current_prose_rows: List[str] = []

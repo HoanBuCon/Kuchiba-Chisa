@@ -8,7 +8,10 @@ from app.domain.entities.user import UserStats
 from app.domain.interfaces.llm_provider import StructuredPrompt
 from app.domain.interfaces.session import IDbSession
 from app.domain.models.intent_result import ChatIntent, IntentResult
+from app.domain.models.privacy import MemoryPrivacyPolicy
+from app.domain.services.attachment_manifest import AttachmentManifest
 from app.domain.services.context_budget_manager import BudgetAudit
+from app.domain.services.guardrails.injection_guard import InjectionAssessment
 from app.domain.services.rag import RAGContext
 
 
@@ -95,7 +98,11 @@ class ChatContext:
     
     # LLM Generation
     chisa_reply: str = ""
+    citation_ids: list[str] = field(default_factory=list)
     is_cached_answer: bool = False
+    guardrail_assessment: InjectionAssessment | None = None
+    memory_privacy_policy: MemoryPrivacyPolicy = field(default_factory=MemoryPrivacyPolicy)
+    provider_pii_redaction_counts: dict[str, int] = field(default_factory=dict)
     estimated_input_tokens: int = 0
     estimated_output_tokens: int = 0
     
@@ -108,7 +115,7 @@ class ChatContext:
     vision_failed: bool = False
     needs_image_retrieval: bool = False
     retrieved_images: list[dict[str, Any]] = field(default_factory=list)
-    attached_images: list[str] = field(default_factory=list)
+    attached_images: list[AttachmentManifest] = field(default_factory=list)
     image_tags: list[str] = field(default_factory=list)
     visual_caption: str | None = None
 

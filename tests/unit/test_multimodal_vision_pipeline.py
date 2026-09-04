@@ -49,7 +49,7 @@ async def test_deepseek_vision_multimodal_payload_construction(mock_post):
         system="Test Vision System",
         history=[],
         user_message="Senpai vừa gửi ảnh",
-        response_schema={"type": "object"},
+        response_schema=ContextBuilder.get_response_schema(has_images=True),
         images=["data:image/webp;base64,UklGRkAAAABXRUJQVlA4IDQAAADwAQCdASoBAAEAAQAcJaACdLoAAP7/2QAA"],
         retrieved_memories=[],
         retrieved_lore=[],
