@@ -7,8 +7,27 @@ from enum import StrEnum
 from typing import Protocol
 
 
+class RerankerFailureKind(StrEnum):
+    """Safe telemetry categories for a reranker failure."""
+
+    TIMEOUT = "timeout"
+    RATE_LIMIT = "rate_limit"
+    PROVIDER = "provider"
+    INVALID_RESPONSE = "invalid_response"
+    UNAVAILABLE = "unavailable"
+
+
 class RerankerUnavailableError(RuntimeError):
     """The configured reranker cannot produce a trustworthy score in time."""
+
+    def __init__(
+        self,
+        message: str,
+        *,
+        failure_kind: RerankerFailureKind = RerankerFailureKind.UNAVAILABLE,
+    ) -> None:
+        super().__init__(message)
+        self.failure_kind = failure_kind
 
 
 class RerankerDataBoundary(StrEnum):

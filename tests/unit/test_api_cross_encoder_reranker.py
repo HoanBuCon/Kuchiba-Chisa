@@ -8,7 +8,11 @@ from typing import Any
 import httpx
 import pytest
 
-from app.domain.interfaces.reranker import RerankerDataBoundary, RerankerUnavailableError
+from app.domain.interfaces.reranker import (
+    RerankerDataBoundary,
+    RerankerFailureKind,
+    RerankerUnavailableError,
+)
 from app.infrastructure.rag.api_cross_encoder_reranker import (
     ApiCrossEncoderReranker,
     ApiRerankerProvider,
@@ -60,7 +64,10 @@ async def test_remote_adapter_reconstructs_scores_in_input_order(
     assert scores == [0.14, 0.91]
     assert received["url"] == expected_url
     assert received["headers"]["authorization"] == "Bearer test-key"
-    assert received["json"]["top_n"] == 2
+    expected_limit_field = "top_k" if provider is ApiRerankerProvider.VOYAGE else "top_n"
+    unexpected_limit_field = "top_n" if expected_limit_field == "top_k" else "top_k"
+    assert received["json"][expected_limit_field] == 2
+    assert unexpected_limit_field not in received["json"]
     assert ("return_documents" in received["json"]) is (
         provider is ApiRerankerProvider.JINA
     )
@@ -106,8 +113,9 @@ async def test_remote_adapter_converts_rate_limit_to_typed_unavailability() -> N
             max_documents=15,
             http_client=client,
         )
-        with pytest.raises(RerankerUnavailableError, match="unavailable"):
+        with pytest.raises(RerankerUnavailableError, match="unavailable") as error:
             await reranker.rerank("query", ["first"])
+    assert error.value.failure_kind is RerankerFailureKind.RATE_LIMIT
 
 
 @pytest.mark.asyncio
