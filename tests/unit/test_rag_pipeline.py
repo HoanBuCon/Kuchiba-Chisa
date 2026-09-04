@@ -15,9 +15,11 @@ class DummyMemoryRetriever:
 class DummyLoreRetriever:
     def __init__(self):
         self.calls = 0
+        self.request_options = []
 
     async def retrieve_lore_parent_child(self, **kwargs):
         self.calls += 1
+        self.request_options.append(kwargs)
         return []
 
 
@@ -100,6 +102,49 @@ async def test_retrieval_runs_when_memory_intent_present():
 
     assert memory_retriever.calls == 1
     assert lore_retriever.calls == 0
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("intents", "expected_rerank"),
+    [
+        (["LORE"], True),
+        (["KNOWLEDGE_OR_TASK"], True),
+        (["OTHER"], False),
+    ],
+)
+async def test_only_lore_or_factual_intents_enable_cross_encoder_reranking(
+    intents: list[str], expected_rerank: bool
+) -> None:
+    lore_retriever = DummyLoreRetriever()
+    pipeline = RAGPipeline(
+        memory_retriever=DummyMemoryRetriever(),
+        lore_retriever=lore_retriever,
+        assessor=DummyAssessor(),
+        thinking_loop_agent=DummyThinkingLoop(),
+        pipeline_tracker=DummyPipelineTracker(),
+    )
+
+    await pipeline.retrieve_and_align(
+        session=None,
+        user_id="u1",
+        user_message="retrieval test",
+        query_vector=[0.1, 0.2],
+        cleaned_query="retrieval test",
+        intents=intents,
+        current_emotions={},
+        history=[],
+        llm=None,
+        embedder=None,
+        web_search_tool=None,
+        is_small_talk=False,
+    )
+
+    assert lore_retriever.calls == 3
+    assert {
+        options["enable_cross_encoder_rerank"]
+        for options in lore_retriever.request_options
+    } == {expected_rerank}
 
 
 class DummyFalseLoreAssessor:

@@ -10,7 +10,7 @@ class RAGTuning:
     HYBRID_RRF_K: int = 60
     HYBRID_DENSE_WEIGHT: float = 1.0
     HYBRID_SPARSE_WEIGHT: float = 1.0
-    CROSS_ENCODER_CANDIDATE_LIMIT: int = 30
+    CROSS_ENCODER_CANDIDATE_LIMIT: int = 15
 
     # Multi-signal hybrid weights (Sum = 1.0) — Optimized for Cross-Lingual Wiki Retrieval (VN query -> EN corpus)
     WEIGHT_VECTOR: float = 0.80      # Dense vector cross-lingual semantic similarity (multilingual-e5-small)

@@ -18,7 +18,6 @@ from app.application.ingestion.corpus_release_lifecycle import (
     CorpusReleaseNotFoundError,
 )
 from app.application.security.authorization import AuthorizationError
-from app.domain.value_objects.principal import PrincipalContext
 from app.infrastructure.database.engine import get_db_session
 from app.infrastructure.database.repositories.ingestion_source import (
     IngestionSourceAuditRepository,

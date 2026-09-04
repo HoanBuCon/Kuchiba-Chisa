@@ -7,7 +7,7 @@ import math
 from collections.abc import Sequence
 from typing import Any
 
-from app.domain.interfaces.reranker import RerankerUnavailableError
+from app.domain.interfaces.reranker import RerankerDataBoundary, RerankerUnavailableError
 
 
 class FastEmbedCrossEncoderReranker:
@@ -17,6 +17,8 @@ class FastEmbedCrossEncoderReranker:
     deployment image/cache. This adapter intentionally fails closed when it is
     absent so a network outage cannot turn reranking into an unbounded request.
     """
+
+    data_boundary = RerankerDataBoundary.LOCAL
 
     def __init__(
         self,
