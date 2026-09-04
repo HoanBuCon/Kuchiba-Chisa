@@ -1,33 +1,66 @@
+name: kuchiba_test
+
+networks:
+  test_data:
+    driver: bridge
+
+volumes:
+  postgres_test_data:
+  redis_test_data:
+  qdrant_test_data:
+
 services:
   postgres:
     image: postgres:16-alpine
+    restart: "no"
     environment:
       POSTGRES_USER: chisa
       POSTGRES_PASSWORD: chisa_test_secret
       POSTGRES_DB: chisa_test
+    ports:
+      - "127.0.0.1:55432:5432"
+    volumes:
+      - postgres_test_data:/var/lib/postgresql/data
+    networks:
+      - test_data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U chisa -d chisa_test"]
-      interval: 3s
+      interval: 5s
       timeout: 3s
-      retries: 20
+      retries: 12
 
   redis:
     image: redis:7-alpine
-    command: ["redis-server", "--save", "", "--appendonly", "no"]
+    restart: "no"
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "127.0.0.1:56379:6379"
+    volumes:
+      - redis_test_data:/data
+    networks:
+      - test_data
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
-      interval: 3s
+      interval: 5s
       timeout: 3s
-      retries: 20
+      retries: 12
 
   qdrant:
     image: qdrant/qdrant:v1.12.4
+    restart: "no"
+    ports:
+      - "127.0.0.1:16333:6333"
+    volumes:
+      - qdrant_test_data:/qdrant/storage
+    networks:
+      - test_data
 
   test:
     build:
       context: .
       dockerfile: Dockerfile
       target: test
+    restart: "no"
     environment:
       APP_ENV: test
       DATABASE_URL: postgresql+asyncpg://chisa:chisa_test_secret@postgres:5432/chisa_test
@@ -37,6 +70,7 @@ services:
       QDRANT_URL: http://qdrant:6333
       GROQ_API_KEY: test_groq_key_placeholder
       JWT_SECRET: test_jwt_secret_that_is_long_enough_for_validation
+      DISCORD_WORKLOAD_JWT_SECRET: test_discord_workload_secret_that_is_long_enough
       SECRET_KEY: test_secret_key_that_is_long_enough_for_validation
     depends_on:
       postgres:
@@ -45,6 +79,8 @@ services:
         condition: service_healthy
       qdrant:
         condition: service_started
+    networks:
+      - test_data
     command:
       - /bin/sh
       - -ec

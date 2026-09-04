@@ -65,5 +65,7 @@ RUN pip install --no-cache-dir -r requirements-dev.txt
 
 COPY --chown=chisa:chisa pyproject.toml ./
 COPY --chown=chisa:chisa tests/ ./tests/
+COPY --chown=chisa:chisa docker-compose.yml ./
+COPY --chown=chisa:chisa scripts/ ./scripts/
 
 USER chisa
