@@ -1,13 +1,13 @@
-# RAG-05 raw_wiki golden-set draft v1 — human review
+# RAG-05 raw_wiki golden-set v1 — human approval record
 
-- Approval status: `draft`
-- Label status: `proposed`
+- Approval status: `approved`
+- Label status: `approved`
 - Cases: 83
 - Corpus version: `raw-wiki-sha256:0efe04a586291c11c84c921a1839ac20be53f12c026e3ea2b43595e9a7d32c7a`
 - Automated validation: `PASS`
-- Reviewer identity/status: _not populated_
+- Reviewer identity/status: `HoanBuCon` / `approved` at `2026-09-05T16:18:36Z`
 
-Each excerpt is whitespace-normalized verbatim text from the referenced immutable main revision. Reviewer status remains `pending`.
+Each excerpt is whitespace-normalized verbatim text from the referenced immutable main revision. Human reviewer approval is recorded at the dataset level.
 
 ## rw-001 — affiliation
 
@@ -20,7 +20,7 @@ Each excerpt is whitespace-normalized verbatim text from the referenced immutabl
 - Page / revision / checksum: `585` / `101912` / `cdb1baf766c207e6`
 - Supporting excerpt: “He is an information broker from the [[New Federation]] and a Consultant of the [[Black Shores]].”
 - Rationale: The excerpt explicitly states the affiliation.
-- Reviewer status: `pending`
+- Reviewer status: `approved`
 - Reviewer notes: _blank_
 
 ## rw-002 — character_background
@@ -34,7 +34,7 @@ Each excerpt is whitespace-normalized verbatim text from the referenced immutabl
 - Page / revision / checksum: `624` / `92922` / `791b05ce14a56b51`
 - Supporting excerpt: “She is a researcher in Remnant Ecoacoustics at Huaxu Academy.”
 - Rationale: The role, field, and institution are explicit.
-- Reviewer status: `pending`
+- Reviewer status: `approved`
 - Reviewer notes: _blank_
 
 ## rw-003 — relationship
@@ -48,7 +48,7 @@ Each excerpt is whitespace-normalized verbatim text from the referenced immutabl
 - Page / revision / checksum: `1126` / `100700` / `6b4973485554efd0`
 - Supporting excerpt: “now serves as Counselor to [[Jinzhou]] Magistrate, [[Jinhsi]].”
 - Rationale: The Changli–Jinhsi professional relationship is explicitly stated.
-- Reviewer status: `pending`
+- Reviewer status: `approved`
 - Reviewer notes: _blank_
 
 ## rw-004 — character_background
@@ -62,7 +62,7 @@ Each excerpt is whitespace-normalized verbatim text from the referenced immutabl
 - Page / revision / checksum: `510` / `99239` / `2efdf295348ddd30`
 - Supporting excerpt: “She is a young Patroller who casts her jubilant figure along the streets of Jinzhou city.”
 - Rationale: The occupation and city are explicit.
-- Reviewer status: `pending`
+- Reviewer status: `approved`
 - Reviewer notes: _blank_
 
 ## rw-005 — affiliation
@@ -76,7 +76,7 @@ Each excerpt is whitespace-normalized verbatim text from the referenced immutabl
 - Page / revision / checksum: `632` / `99398` / `b84b4f87a9d9ade9`
 - Supporting excerpt: “He is a former Exile from the [[New Federation]]'s [[Lawless Zone]] and the leader of the [[Ghost Hounds]].”
 - Rationale: The leadership relation is explicit.
-- Reviewer status: `pending`
+- Reviewer status: `approved`
 - Reviewer notes: _blank_
 
 ## rw-006 — relationship
@@ -90,7 +90,7 @@ Each excerpt is whitespace-normalized verbatim text from the referenced immutabl
 - Page / revision / checksum: `24786` / `99400` / `468ec49727209414`
 - Supporting excerpt: “He is the captain of the [[Troupe of Fools]], exuding a carefree, easygoing charm and charisma, unbound by convention.”
 - Rationale: The leader-to-organization relation is explicit.
-- Reviewer status: `pending`
+- Reviewer status: `approved`
 - Reviewer notes: _blank_
 
 ## rw-007 — affiliation
@@ -104,7 +104,7 @@ Each excerpt is whitespace-normalized verbatim text from the referenced immutabl
 - Page / revision / checksum: `599` / `96614` / `56f198042c315f7e`
 - Supporting excerpt: “She is a Bloom Bearer of the [[Black Shores]], and handles the combat-oriented germination tests given to new candidates.”
 - Rationale: Both organization and responsibility are explicit.
-- Reviewer status: `pending`
+- Reviewer status: `approved`
 - Reviewer notes: _blank_
 
 ## rw-008 — relationship
@@ -118,7 +118,7 @@ Each excerpt is whitespace-normalized verbatim text from the referenced immutabl
 - Page / revision / checksum: `1007` / `135324` / `8f903f46d2fa3ca8`
 - Supporting excerpt: “**Faction Profile**: Leader: Rover, Founder: Rover”
 - Rationale: The faction profile explicitly records both roles.
-- Reviewer status: `pending`
+- Reviewer status: `approved`
 - Reviewer notes: _blank_
 
 ## rw-009 — faction_lore
@@ -132,7 +132,7 @@ Each excerpt is whitespace-normalized verbatim text from the referenced immutabl
 - Page / revision / checksum: `938` / `130729` / `103ceb2210a7890a`
 - Supporting excerpt: “Specializing in Wutherology, Ecoacoustics, and Resonology”
 - Rationale: The fields are enumerated in the text.
-- Reviewer status: `pending`
+- Reviewer status: `approved`
 - Reviewer notes: _blank_
 
 ## rw-010 — faction_lore
@@ -146,7 +146,7 @@ Each excerpt is whitespace-normalized verbatim text from the referenced immutabl
 - Page / revision / checksum: `896` / `99150` / `aa2a5187c5ebc08b`
 - Supporting excerpt: “The '''Midnight Rangers''' are the primary military force of the [[Jinzhou]] region, tasked with protecting the land from external threats.”
 - Rationale: The mission and region are explicit.
-- Reviewer status: `pending`
+- Reviewer status: `approved`
 - Reviewer notes: _blank_
 
 ## rw-011 — faction_lore
@@ -160,7 +160,7 @@ Each excerpt is whitespace-normalized verbatim text from the referenced immutabl
 - Page / revision / checksum: `37391` / `136476` / `a3a41695657088cf`
 - Supporting excerpt: “'''Startorch Academy''' is a multinational school built by the [[Spacetrek Collective]] specifically for [[Resonator]]s in [[Lahai-Roi]].”
 - Rationale: The institution, builder, audience, and location are explicit.
-- Reviewer status: `pending`
+- Reviewer status: `approved`
 - Reviewer notes: _blank_
 
 ## rw-012 — lore_event
@@ -174,7 +174,7 @@ Each excerpt is whitespace-normalized verbatim text from the referenced immutabl
 - Page / revision / checksum: `24999` / `99250` / `79f12bc79353ca49`
 - Supporting excerpt: “'''Overclocking''' is a state where a [[Resonator]] has lost control of their [[Forte]] as a result of overwhelming psychological stress or overexertion of their Resonance Ability.”
 - Rationale: The causal conditions are explicit.
-- Reviewer status: `pending`
+- Reviewer status: `approved`
 - Reviewer notes: _blank_
 
 ## rw-013 — lore_event
@@ -188,7 +188,7 @@ Each excerpt is whitespace-normalized verbatim text from the referenced immutabl
 - Page / revision / checksum: `1008` / `99738` / `fa6acd585adb1d2a`
 - Supporting excerpt: “'''Tacet Discords''' (abbreviated as TDs) are sentient beings formed by the residual chaotic frequency energy under the [[Waveworn Phenomenon]] with ever-changing, amorphous forms.”
 - Rationale: The formation mechanism is explicit.
-- Reviewer status: `pending`
+- Reviewer status: `approved`
 - Reviewer notes: _blank_
 
 ## rw-014 — paraphrase
@@ -202,7 +202,7 @@ Each excerpt is whitespace-normalized verbatim text from the referenced immutabl
 - Page / revision / checksum: `8269` / `95612` / `1c103964f57b0be7`
 - Supporting excerpt: “Sonoro Spheres are spaces of dense abundant [[Remnant]] Energy, capable of preserving transdimensional information.”
 - Rationale: The informal query asks for the definition stated verbatim.
-- Reviewer status: `pending`
+- Reviewer status: `approved`
 - Reviewer notes: _blank_
 
 ## rw-015 — relationship
@@ -216,7 +216,7 @@ Each excerpt is whitespace-normalized verbatim text from the referenced immutabl
 - Page / revision / checksum: `585` / `101912` / `cdb1baf766c207e6`
 - Supporting excerpt: “Both working for the Black Shores as Consultants, Aalto and Encore have become an inseparable and lively duo during missions.”
 - Rationale: The source explicitly states both their shared role and their relationship.
-- Reviewer status: `pending`
+- Reviewer status: `approved`
 - Reviewer notes: _blank_
 
 ## rw-016 — character_background
@@ -230,7 +230,7 @@ Each excerpt is whitespace-normalized verbatim text from the referenced immutabl
 - Page / revision / checksum: `38537` / `136632` / `f169b123e2bf1328`
 - Supporting excerpt: “She is a Frostlands native from the [[Roya Tribe]] who was once a Synchronist at [[Startorch Academy]].”
 - Rationale: The sentence explicitly gives both her origin and former academic role.
-- Reviewer status: `pending`
+- Reviewer status: `approved`
 - Reviewer notes: _blank_
 
 ## rw-017 — character_background
@@ -244,7 +244,7 @@ Each excerpt is whitespace-normalized verbatim text from the referenced immutabl
 - Page / revision / checksum: `31310` / `99574` / `02e73eaeaa24eb2c`
 - Supporting excerpt: “The fearless Ephor of [[Septimont]] with a will of iron”
 - Rationale: The source explicitly identifies Augusta as Septimont's Ephor.
-- Reviewer status: `pending`
+- Reviewer status: `approved`
 - Reviewer notes: _blank_
 
 ## rw-018 — character_background
@@ -258,7 +258,7 @@ Each excerpt is whitespace-normalized verbatim text from the referenced immutabl
 - Page / revision / checksum: `31556` / `97061` / `ae4ba2c13572f46c`
 - Supporting excerpt: “She is a [[Black Shores]] Consultant, known as the "Spiritchaser Taoist,"”
 - Rationale: The quoted title is stated directly.
-- Reviewer status: `pending`
+- Reviewer status: `approved`
 - Reviewer notes: _blank_
 
 ## rw-019 — relationship
@@ -272,7 +272,7 @@ Each excerpt is whitespace-normalized verbatim text from the referenced immutabl
 - Page / revision / checksum: `27951` / `96619` / `ae0c99137282474b`
 - Supporting excerpt: “She is the thirty-sixth matriarch of the Fisalia family”
 - Rationale: The family leadership relationship is explicit.
-- Reviewer status: `pending`
+- Reviewer status: `approved`
 - Reviewer notes: _blank_
 
 ## rw-020 — affiliation
@@ -286,7 +286,7 @@ Each excerpt is whitespace-normalized verbatim text from the referenced immutabl
 - Page / revision / checksum: `24790` / `96615` / `17a7637a393aa5fe`
 - Supporting excerpt: “She is the second daughter of the esteemed [[Montelli Family]] of [[Rinascita]]”
 - Rationale: The source directly states her family and region.
-- Reviewer status: `pending`
+- Reviewer status: `approved`
 - Reviewer notes: _blank_
 
 ## rw-021 — character_background
@@ -300,7 +300,7 @@ Each excerpt is whitespace-normalized verbatim text from the referenced immutabl
 - Page / revision / checksum: `26196` / `99513` / `1106002e2cae6db6`
 - Supporting excerpt: “Throughout [[Rinascita]], she is revered as '''Fleurdelys''', the "Blessed Maiden," and in some accounts, "The Martyred Maiden."”
 - Rationale: All three names are enumerated in one statement.
-- Reviewer status: `pending`
+- Reviewer status: `approved`
 - Reviewer notes: _blank_
 
 ## rw-022 — affiliation
@@ -314,7 +314,7 @@ Each excerpt is whitespace-normalized verbatim text from the referenced immutabl
 - Page / revision / checksum: `31283` / `102761` / `da0b008506be0f37`
 - Supporting excerpt: “Chisa is a conscientious, level-headed student from the [[Startorch Academy]].”
 - Rationale: The school affiliation is directly stated.
-- Reviewer status: `pending`
+- Reviewer status: `approved`
 - Reviewer notes: _blank_
 
 ## rw-023 — character_background
@@ -328,7 +328,7 @@ Each excerpt is whitespace-normalized verbatim text from the referenced immutabl
 - Page / revision / checksum: `28670` / `96621` / `ac4f9f01f5e3796b`
 - Supporting excerpt: “She is a free-spirited, romantic, sincere, and whimsical bard wandering [[Rinascita]] in search of inspiration.”
 - Rationale: The purpose of her travels is explicit.
-- Reviewer status: `pending`
+- Reviewer status: `approved`
 - Reviewer notes: _blank_
 
 ## rw-024 — character_background
@@ -342,7 +342,7 @@ Each excerpt is whitespace-normalized verbatim text from the referenced immutabl
 - Page / revision / checksum: `530` / `92937` / `7837aba16c572cfb`
 - Supporting excerpt: “She is a member of the [[Midnight Rangers]] and hunts down thieves and bandits in order to bring them to justice.”
 - Rationale: The targets and motivation are both explicit.
-- Reviewer status: `pending`
+- Reviewer status: `approved`
 - Reviewer notes: _blank_
 
 ## rw-025 — affiliation
@@ -356,7 +356,7 @@ Each excerpt is whitespace-normalized verbatim text from the referenced immutabl
 - Page / revision / checksum: `39187` / `136635` / `e0a124eb457dfb82`
 - Supporting excerpt: “who secretly serves as an agent for the [[Fractsidus]].”
 - Rationale: The covert affiliation is stated directly.
-- Reviewer status: `pending`
+- Reviewer status: `approved`
 - Reviewer notes: _blank_
 
 ## rw-026 — relationship
@@ -370,7 +370,7 @@ Each excerpt is whitespace-normalized verbatim text from the referenced immutabl
 - Page / revision / checksum: `522` / `103593` / `65ac76a1400c1df9`
 - Supporting excerpt: “she is responsible for finding new clients for the Black Shores alongside her fellow Consultant and brother figure [[Aalto]].”
 - Rationale: The working and brother-figure relationship is explicit.
-- Reviewer status: `pending`
+- Reviewer status: `approved`
 - Reviewer notes: _blank_
 
 ## rw-027 — character_background
@@ -384,7 +384,7 @@ Each excerpt is whitespace-normalized verbatim text from the referenced immutabl
 - Page / revision / checksum: `31295` / `135376` / `0a70da2ff45c5134`
 - Supporting excerpt: “she is now a formidable "Discord Slayer" who wields the ability to consume the frequencies and powers of Tacet Discords she hunts across [[Solaris-3]]”
 - Rationale: The ability and its targets are directly described.
-- Reviewer status: `pending`
+- Reviewer status: `approved`
 - Reviewer notes: _blank_
 
 ## rw-028 — character_background
@@ -398,7 +398,7 @@ Each excerpt is whitespace-normalized verbatim text from the referenced immutabl
 - Page / revision / checksum: `40075` / `136638` / `d67583a80d55df95`
 - Supporting excerpt: “which grants the bearer the ability to perceive and utilize "certain possibilities" of oneself.”
 - Rationale: The talisman's granted ability is explicit.
-- Reviewer status: `pending`
+- Reviewer status: `approved`
 - Reviewer notes: _blank_
 
 ## rw-029 — character_background
@@ -412,7 +412,7 @@ Each excerpt is whitespace-normalized verbatim text from the referenced immutabl
 - Page / revision / checksum: `10962` / `102771` / `2a81d1750c1bd1aa`
 - Supporting excerpt: “She is also known as "The Moon Fox" or Hsin (Heart), and is one of [[Huanglong|Huanglong's]] seven [[Sentinel]]s who is located in [[Mengzhou]].”
 - Rationale: The alias, status, and location appear together.
-- Reviewer status: `pending`
+- Reviewer status: `approved`
 - Reviewer notes: _blank_
 
 ## rw-030 — character_background
@@ -426,7 +426,7 @@ Each excerpt is whitespace-normalized verbatim text from the referenced immutabl
 - Page / revision / checksum: `31296` / `99397` / `cf04c89a577454a6`
 - Supporting excerpt: “She is a prodigious and renowned Priestess of [[Septimont]]'s [[Tetragon Temple]], charged with delivering prophecies that shape the lives of its citizens.”
 - Rationale: The institutional role and duty are direct.
-- Reviewer status: `pending`
+- Reviewer status: `approved`
 - Reviewer notes: _blank_
 
 ## rw-031 — character_background
@@ -440,7 +440,7 @@ Each excerpt is whitespace-normalized verbatim text from the referenced immutabl
 - Page / revision / checksum: `633` / `92941` / `f0bb12c836a8d2f8`
 - Supporting excerpt: “successor to the art of {{Extra Effect|Fengyiquan|Fengyiquan|A martial art embodying Taoist wisdom, where practitioners harmonize with nature's rhythms to develop balanced strength of body and mind.}} she has dedicated her life to mastering the ultimate martial art.”
 - Rationale: The named martial art is explicitly stated.
-- Reviewer status: `pending`
+- Reviewer status: `approved`
 - Reviewer notes: _blank_
 
 ## rw-032 — relationship
@@ -454,7 +454,7 @@ Each excerpt is whitespace-normalized verbatim text from the referenced immutabl
 - Page / revision / checksum: `936` / `101013` / `20a1567cbe138350`
 - Supporting excerpt: “She is also the appointed [[Resonator]] of Sentinel [[Jué]]”
 - Rationale: The Resonator–Sentinel relationship is explicit.
-- Reviewer status: `pending`
+- Reviewer status: `approved`
 - Reviewer notes: _blank_
 
 ## rw-033 — relationship
@@ -468,7 +468,7 @@ Each excerpt is whitespace-normalized verbatim text from the referenced immutabl
 - Page / revision / checksum: `525` / `136877` / `39d55ea5f72b29b4`
 - Supporting excerpt: “He is the general of the [[Midnight Rangers]] selected by the sentinel of [[Jinzhou]], [[Jué]]”
 - Rationale: The selecting entity and resulting role are stated directly.
-- Reviewer status: `pending`
+- Reviewer status: `approved`
 - Reviewer notes: _blank_
 
 ## rw-034 — character_background
@@ -482,7 +482,7 @@ Each excerpt is whitespace-normalized verbatim text from the referenced immutabl
 - Page / revision / checksum: `631` / `92944` / `69b041db40e5f9b9`
 - Supporting excerpt: “He is a member of the Lion dance Troupe in [[Jinzhou]] and the last living [[Suan'ni]].”
 - Rationale: The claim is explicit in the source.
-- Reviewer status: `pending`
+- Reviewer status: `approved`
 - Reviewer notes: _blank_
 
 ## rw-035 — character_background
@@ -496,7 +496,7 @@ Each excerpt is whitespace-normalized verbatim text from the referenced immutabl
 - Page / revision / checksum: `37545` / `99389` / `e03a4665c08c9421`
 - Supporting excerpt: “She is the president and the head of [[Startorch Academy]].”
 - Rationale: Both titles are directly stated.
-- Reviewer status: `pending`
+- Reviewer status: `approved`
 - Reviewer notes: _blank_
 
 ## rw-036 — character_background
@@ -510,7 +510,7 @@ Each excerpt is whitespace-normalized verbatim text from the referenced immutabl
 - Page / revision / checksum: `20501` / `99245` / `c417da3a3a4d4832`
 - Supporting excerpt: “She is a navigator at [[Lollo Logistics]] and leader of a transport squad team.”
 - Rationale: Her two job responsibilities are explicit.
-- Reviewer status: `pending`
+- Reviewer status: `approved`
 - Reviewer notes: _blank_
 
 ## rw-037 — character_background
@@ -524,7 +524,7 @@ Each excerpt is whitespace-normalized verbatim text from the referenced immutabl
 - Page / revision / checksum: `30940` / `96622` / `a0dca9f4d3d03fb9`
 - Supporting excerpt: “She is a gladiator from [[Septimont]], a warrior and undefeated champion of the arena”
 - Rationale: The source directly states why she is notable.
-- Reviewer status: `pending`
+- Reviewer status: `approved`
 - Reviewer notes: _blank_
 
 ## rw-038 — character_background
@@ -538,7 +538,7 @@ Each excerpt is whitespace-normalized verbatim text from the referenced immutabl
 - Page / revision / checksum: `37544` / `136308` / `b6e43f908463ebaa`
 - Supporting excerpt: “He is the head physician of the [[Resonator Nursing Unit]] at [[Startorch Academy]]”
 - Rationale: The unit and leadership role are explicit.
-- Reviewer status: `pending`
+- Reviewer status: `approved`
 - Reviewer notes: _blank_
 
 ## rw-039 — character_background
@@ -552,7 +552,7 @@ Each excerpt is whitespace-normalized verbatim text from the referenced immutabl
 - Page / revision / checksum: `37543` / `136637` / `1b307d031f032102`
 - Supporting excerpt: “Before attending Startorch, she was a mercenary from the [[Lawless Zone]] in the [[New Federation]].”
 - Rationale: The former occupation and origin are directly stated.
-- Reviewer status: `pending`
+- Reviewer status: `approved`
 - Reviewer notes: _blank_
 
 ## rw-040 — relationship
@@ -566,7 +566,7 @@ Each excerpt is whitespace-normalized verbatim text from the referenced immutabl
 - Page / revision / checksum: `37540` / `136639` / `46f5898638863eb0`
 - Supporting excerpt: “She was a student at Startorch Academy and an acquaintance of [[Rover]] 20 years before the [[Void Storm]] hit [[Lahai-Roi]].”
 - Rationale: The relationship and its timing are explicit.
-- Reviewer status: `pending`
+- Reviewer status: `approved`
 - Reviewer notes: _blank_
 
 ## rw-041 — character_background
@@ -580,7 +580,7 @@ Each excerpt is whitespace-normalized verbatim text from the referenced immutabl
 - Page / revision / checksum: `594` / `99232` / `375b861a53702e76`
 - Supporting excerpt: “the head of the Branch of Tacetite Weaponry within the Department of Safety in [[Huaxu Academy]] at [[Jinzhou]].”
 - Rationale: The complete branch and department are stated.
-- Reviewer status: `pending`
+- Reviewer status: `approved`
 - Reviewer notes: _blank_
 
 ## rw-042 — affiliation
@@ -594,7 +594,7 @@ Each excerpt is whitespace-normalized verbatim text from the referenced immutabl
 - Page / revision / checksum: `24784` / `96617` / `ecee4ea626873787`
 - Supporting excerpt: “She is an [[Order of the Deep#Acolyte|Acolyte]] of the [[Order of the Deep]].”
 - Rationale: The role and organization are explicit.
-- Reviewer status: `pending`
+- Reviewer status: `approved`
 - Reviewer notes: _blank_
 
 ## rw-043 — character_background
@@ -608,7 +608,7 @@ Each excerpt is whitespace-normalized verbatim text from the referenced immutabl
 - Page / revision / checksum: `1074` / `99099` / `f1f00f7ba53c6ff4`
 - Supporting excerpt: “Her forte can manipulate and transfigure the frequencies of humans, Echoes, and Tacet Discords alike.”
 - Rationale: The three affected frequency types are enumerated.
-- Reviewer status: `pending`
+- Reviewer status: `approved`
 - Reviewer notes: _blank_
 
 ## rw-044 — character_background
@@ -622,7 +622,7 @@ Each excerpt is whitespace-normalized verbatim text from the referenced immutabl
 - Page / revision / checksum: `31286` / `95380` / `0215bfb291304724`
 - Supporting excerpt: “He was framed by the [[Grand Architect]] for the murder of his master, and is now a fugitive throughout all of [[Huanglong]].”
 - Rationale: The source explicitly connects the framing to his fugitive status.
-- Reviewer status: `pending`
+- Reviewer status: `approved`
 - Reviewer notes: _blank_
 
 ## rw-045 — affiliation
@@ -636,7 +636,7 @@ Each excerpt is whitespace-normalized verbatim text from the referenced immutabl
 - Page / revision / checksum: `24789` / `103572` / `c7b9cc0a8a5cdfa6`
 - Supporting excerpt: “She is a gifted improvisational comedian and the First Mate of the [[Troupe of Fools]].”
 - Rationale: Her troupe position is directly stated.
-- Reviewer status: `pending`
+- Reviewer status: `approved`
 - Reviewer notes: _blank_
 
 ## rw-046 — relationship
@@ -650,7 +650,7 @@ Each excerpt is whitespace-normalized verbatim text from the referenced immutabl
 - Page / revision / checksum: `588` / `99853` / `a4995516cd60ac47`
 - Supporting excerpt: “She is the loyal and reliable guard of Jinzhou Magistrate [[Jinhsi]]”
 - Rationale: The guard relationship is explicit.
-- Reviewer status: `pending`
+- Reviewer status: `approved`
 - Reviewer notes: _blank_
 
 ## rw-047 — character_background
@@ -664,7 +664,7 @@ Each excerpt is whitespace-normalized verbatim text from the referenced immutabl
 - Page / revision / checksum: `10662` / `101177` / `8871332c765002d5`
 - Supporting excerpt: “is a mythical entity composed of [[Sonoro Spheres]] and high-purity [[Remnant]] Energy crystals”
 - Rationale: The composition is directly described.
-- Reviewer status: `pending`
+- Reviewer status: `approved`
 - Reviewer notes: _blank_
 
 ## rw-048 — faction_lore
@@ -678,7 +678,7 @@ Each excerpt is whitespace-normalized verbatim text from the referenced immutabl
 - Page / revision / checksum: `42215` / `100630` / `75aa31f94d24503e`
 - Supporting excerpt: “It holds the authority to jointly try major cases and wields significant supervisory power”
 - Rationale: The institution's authority is explicit.
-- Reviewer status: `pending`
+- Reviewer status: `approved`
 - Reviewer notes: _blank_
 
 ## rw-049 — faction_lore
@@ -692,7 +692,7 @@ Each excerpt is whitespace-normalized verbatim text from the referenced immutabl
 - Page / revision / checksum: `3150` / `93366` / `590fa68ddaf79966`
 - Supporting excerpt: “It was at the cutting edge of research into the Lament and related phenomena.”
 - Rationale: The research focus is stated directly.
-- Reviewer status: `pending`
+- Reviewer status: `approved`
 - Reviewer notes: _blank_
 
 ## rw-050 — faction_lore
@@ -706,7 +706,7 @@ Each excerpt is whitespace-normalized verbatim text from the referenced immutabl
 - Page / revision / checksum: `35947` / `81917` / `0722434a53a692f3`
 - Supporting excerpt: “whose position is attained through a form of combat merit gained from prevailing over the [[Great Agon]] that occurs once every four years.”
 - Rationale: The selection mechanism and interval are explicit.
-- Reviewer status: `pending`
+- Reviewer status: `approved`
 - Reviewer notes: _blank_
 
 ## rw-051 — faction_lore
@@ -720,7 +720,7 @@ Each excerpt is whitespace-normalized verbatim text from the referenced immutabl
 - Page / revision / checksum: `9136` / `91555` / `b4167fb1e8b24566`
 - Supporting excerpt: “the '''Exiles''' are different groups that reject the control of local authorities, and are not an organization with a unified leadership.”
 - Rationale: The lack of unified leadership is explicit.
-- Reviewer status: `pending`
+- Reviewer status: `approved`
 - Reviewer notes: _blank_
 
 ## rw-052 — faction_lore
@@ -734,7 +734,7 @@ Each excerpt is whitespace-normalized verbatim text from the referenced immutabl
 - Page / revision / checksum: `25664` / `91980` / `9be7bfc0b0f78f80`
 - Supporting excerpt: “renowned for their expertise in medicine and poison.”
 - Rationale: Both areas of expertise are stated directly.
-- Reviewer status: `pending`
+- Reviewer status: `approved`
 - Reviewer notes: _blank_
 
 ## rw-053 — faction_lore
@@ -748,7 +748,7 @@ Each excerpt is whitespace-normalized verbatim text from the referenced immutabl
 - Page / revision / checksum: `907` / `126835` / `49c5a92e82ee7ad1`
 - Supporting excerpt: “Their aim is to accelerate the next [[The Lament|Lament]] - dubbed the "True Lament" - by resurrecting the [[Threnodian]]s”
 - Rationale: The organization's objective and method are explicit.
-- Reviewer status: `pending`
+- Reviewer status: `approved`
 - Reviewer notes: _blank_
 
 ## rw-054 — faction_lore
@@ -762,7 +762,7 @@ Each excerpt is whitespace-normalized verbatim text from the referenced immutabl
 - Page / revision / checksum: `897` / `102549` / `c6a570ea76923091`
 - Supporting excerpt: “The '''Ghost Hounds''' are a multinational mercenary group rooted in the [[New Federation]]'s [[Lawless Zone]], annexed from the gang known as "the Underdogs"”
 - Rationale: The geographic and organizational origin are stated.
-- Reviewer status: `pending`
+- Reviewer status: `approved`
 - Reviewer notes: _blank_
 
 ## rw-055 — faction_lore
@@ -776,7 +776,7 @@ Each excerpt is whitespace-normalized verbatim text from the referenced immutabl
 - Page / revision / checksum: `37078` / `90660` / `e28687f672074f5b`
 - Supporting excerpt: “Reporting directly to the [[Emperor of Huanglong]]”
 - Rationale: The reporting line is explicit.
-- Reviewer status: `pending`
+- Reviewer status: `approved`
 - Reviewer notes: _blank_
 
 ## rw-056 — faction_lore
@@ -790,7 +790,7 @@ Each excerpt is whitespace-normalized verbatim text from the referenced immutabl
 - Page / revision / checksum: `25536` / `91984` / `eba4d3a4762e23f2`
 - Supporting excerpt: “handling various affairs, from city management, diplomacy, civil disputes, and overseeing all [[Common Echoes]].”
 - Rationale: The responsibilities are enumerated in the source.
-- Reviewer status: `pending`
+- Reviewer status: `approved`
 - Reviewer notes: _blank_
 
 ## rw-057 — faction_lore
@@ -804,7 +804,7 @@ Each excerpt is whitespace-normalized verbatim text from the referenced immutabl
 - Page / revision / checksum: `37607` / `136469` / `8050e4ce70f7de3d`
 - Supporting excerpt: “Its core mission is the study of the [[Exostrider]] for the purposes of advancing and re-instigating space travel technology.”
 - Rationale: The organization's core mission is directly stated.
-- Reviewer status: `pending`
+- Reviewer status: `approved`
 - Reviewer notes: _blank_
 
 ## rw-058 — place
@@ -818,7 +818,7 @@ Each excerpt is whitespace-normalized verbatim text from the referenced immutabl
 - Page / revision / checksum: `25647` / `136276` / `a53bc0e233f155a7`
 - Supporting excerpt: “The vault also provides public services such as secure storage for valuables, appraisals, and acquisition of rare collections.”
 - Rationale: The public services are explicitly listed.
-- Reviewer status: `pending`
+- Reviewer status: `approved`
 - Reviewer notes: _blank_
 
 ## rw-059 — place
@@ -832,7 +832,7 @@ Each excerpt is whitespace-normalized verbatim text from the referenced immutabl
 - Page / revision / checksum: `28697` / `99385` / `4dd8afe17544fe65`
 - Supporting excerpt: “A seminary faintly visible through a thin veil of clouds. Suspended upside down in the sky”
 - Rationale: The visible setting and orientation are explicit.
-- Reviewer status: `pending`
+- Reviewer status: `approved`
 - Reviewer notes: _blank_
 
 ## rw-060 — place
@@ -846,7 +846,7 @@ Each excerpt is whitespace-normalized verbatim text from the referenced immutabl
 - Page / revision / checksum: `37654` / `102567` / `739b9476d8734adf`
 - Supporting excerpt: “It is home to the [[Roya Tribe]] and the habitat of the [[Soliskin]].”
 - Rationale: Both inhabitants are directly named.
-- Reviewer status: `pending`
+- Reviewer status: `approved`
 - Reviewer notes: _blank_
 
 ## rw-061 — place
@@ -860,7 +860,7 @@ Each excerpt is whitespace-normalized verbatim text from the referenced immutabl
 - Page / revision / checksum: `21831` / `100474` / `3c84649dd4a92bf0`
 - Supporting excerpt: “Formed from Tacetites, these isles constantly emanate Remnant Energy, casting an eerie "mist" that envelopes the region.”
 - Rationale: The sentence explicitly links the emissions to the mist.
-- Reviewer status: `pending`
+- Reviewer status: `approved`
 - Reviewer notes: _blank_
 
 ## rw-062 — place
@@ -874,7 +874,7 @@ Each excerpt is whitespace-normalized verbatim text from the referenced immutabl
 - Page / revision / checksum: `4972` / `93386` / `0559269f28d2b45c`
 - Supporting excerpt: “After the onset of the Waveworn Phenomenon, abnormal weather patterns drained most of these water sources, leaving the lake area dry”
 - Rationale: The stated cause and outcome answer the question.
-- Reviewer status: `pending`
+- Reviewer status: `approved`
 - Reviewer notes: _blank_
 
 ## rw-063 — place
@@ -888,7 +888,7 @@ Each excerpt is whitespace-normalized verbatim text from the referenced immutabl
 - Page / revision / checksum: `2960` / `99756` / `4c2d85a16f6eb409`
 - Supporting excerpt: “It is a forest consisting of many unique flora, such as the [[Violet Banyan]] and [[Giant Banyan]]”
 - Rationale: The examples are directly named.
-- Reviewer status: `pending`
+- Reviewer status: `approved`
 - Reviewer notes: _blank_
 
 ## rw-064 — place
@@ -902,7 +902,7 @@ Each excerpt is whitespace-normalized verbatim text from the referenced immutabl
 - Page / revision / checksum: `32741` / `94835` / `53882334e3c9aac2`
 - Supporting excerpt: “The Fabricatorium of the Deep is a facility hidden in the unfathomed depths of the sea, where Common Echoes are manufactured, recycled, and studied.”
 - Rationale: The three activities are directly stated.
-- Reviewer status: `pending`
+- Reviewer status: `approved`
 - Reviewer notes: _blank_
 
 ## rw-065 — place
@@ -916,7 +916,7 @@ Each excerpt is whitespace-normalized verbatim text from the referenced immutabl
 - Page / revision / checksum: `25641` / `91914` / `11721f78613de356`
 - Supporting excerpt: “This peninsula thick with oak trees was once where Rinascita's rulers gathered for secret councils.”
 - Rationale: The location's former use is explicit.
-- Reviewer status: `pending`
+- Reviewer status: `approved`
 - Reviewer notes: _blank_
 
 ## rw-066 — lore_concept
@@ -930,7 +930,7 @@ Each excerpt is whitespace-normalized verbatim text from the referenced immutabl
 - Page / revision / checksum: `38339` / `136640` / `9d71c98f093fd140`
 - Supporting excerpt: “It is a [[Void Storm]] that erases people's existence and memories, unlike normal [[Tacet Discord]]s that just petrify them.”
 - Rationale: The source makes the contrast explicitly.
-- Reviewer status: `pending`
+- Reviewer status: `approved`
 - Reviewer notes: _blank_
 
 ## rw-067 — lore_concept
@@ -944,7 +944,7 @@ Each excerpt is whitespace-normalized verbatim text from the referenced immutabl
 - Page / revision / checksum: `9279` / `92868` / `b7fb9fbd7f67e230`
 - Supporting excerpt: “'''Arbiter''' is a title and position of power over the [[Sentinels]] that grants them decision making authority.”
 - Rationale: The authority is stated in the definition.
-- Reviewer status: `pending`
+- Reviewer status: `approved`
 - Reviewer notes: _blank_
 
 ## rw-068 — lore_event
@@ -958,7 +958,7 @@ Each excerpt is whitespace-normalized verbatim text from the referenced immutabl
 - Page / revision / checksum: `26888` / `99747` / `897732ef65d43d75`
 - Supporting excerpt: “taking place in the [[Norfall Barrens]] three years prior to the main story.”
 - Rationale: Both location and relative date are explicit.
-- Reviewer status: `pending`
+- Reviewer status: `approved`
 - Reviewer notes: _blank_
 
 ## rw-069 — lore_concept
@@ -972,7 +972,7 @@ Each excerpt is whitespace-normalized verbatim text from the referenced immutabl
 - Page / revision / checksum: `20570` / `99750` / `24263a0b90c8239f`
 - Supporting excerpt: “A '''Blake Bloom''' is the symbol of identity for the members of the [[Black Shores]].”
 - Rationale: The symbolic meaning is the direct definition.
-- Reviewer status: `pending`
+- Reviewer status: `approved`
 - Reviewer notes: _blank_
 
 ## rw-070 — lore_concept
@@ -986,7 +986,7 @@ Each excerpt is whitespace-normalized verbatim text from the referenced immutabl
 - Page / revision / checksum: `26008` / `95284` / `8988a45bf257299b`
 - Supporting excerpt: “The people of [[Ragunna]] treat Common Echoes with reverence, believing them to be divine emissaries of [[Sentinel]] [[Imperator]].”
 - Rationale: The belief causing that reverence is explicit.
-- Reviewer status: `pending`
+- Reviewer status: `approved`
 - Reviewer notes: _blank_
 
 ## rw-071 — lore_concept
@@ -1000,7 +1000,7 @@ Each excerpt is whitespace-normalized verbatim text from the referenced immutabl
 - Page / revision / checksum: `26165` / `131313` / `b22f8b2701be47df`
 - Supporting excerpt: “It manifests as a dark, swirling mass of clouds that gathers and eventually breaks, pouring down in torrents like a waterfall.”
 - Rationale: The manifestation is described directly.
-- Reviewer status: `pending`
+- Reviewer status: `approved`
 - Reviewer notes: _blank_
 
 ## rw-072 — lore_concept
@@ -1014,7 +1014,7 @@ Each excerpt is whitespace-normalized verbatim text from the referenced immutabl
 - Page / revision / checksum: `39515` / `92424` / `e9a79d8cabc6e6e2`
 - Supporting excerpt: “her Forte can randomly impact machine performance. For instance, a different clock affected by her Forte began running slowly, and became unresponsive to recalibration.”
 - Rationale: The general effect and an observed example are explicit.
-- Reviewer status: `pending`
+- Reviewer status: `approved`
 - Reviewer notes: _blank_
 
 ## rw-073 — lore_concept
@@ -1028,7 +1028,7 @@ Each excerpt is whitespace-normalized verbatim text from the referenced immutabl
 - Page / revision / checksum: `1011` / `91978` / `42944d61edab4c7f`
 - Supporting excerpt: “When a Tacet Discord is defeated, the remaining frequency may become an Echo.”
 - Rationale: The transformation condition is directly stated.
-- Reviewer status: `pending`
+- Reviewer status: `approved`
 - Reviewer notes: _blank_
 
 ## rw-074 — lore_event
@@ -1042,7 +1042,7 @@ Each excerpt is whitespace-normalized verbatim text from the referenced immutabl
 - Page / revision / checksum: `10270` / `99746` / `c2d602cbf420f2ad`
 - Supporting excerpt: “It now blankets [[Solaris-3|Solaris's]] sky, cutting the planet off from the rest of the universe and bringing all space exploration to a complete standstill”
 - Rationale: The cause and result are explicit.
-- Reviewer status: `pending`
+- Reviewer status: `approved`
 - Reviewer notes: _blank_
 
 ## rw-075 — lore_concept
@@ -1056,7 +1056,7 @@ Each excerpt is whitespace-normalized verbatim text from the referenced immutabl
 - Page / revision / checksum: `39255` / `94532` / `a4b996534deab505`
 - Supporting excerpt: “'''Exoswarm''' are creatures found in [[Lahai-Roi]] that are formed from the remnants of the [[Exostrider]].”
 - Rationale: The origin is directly defined.
-- Reviewer status: `pending`
+- Reviewer status: `approved`
 - Reviewer notes: _blank_
 
 ## rw-076 — lore_concept
@@ -1070,7 +1070,7 @@ Each excerpt is whitespace-normalized verbatim text from the referenced immutabl
 - Page / revision / checksum: `27413` / `92077` / `9d707490d9c3d53c`
 - Supporting excerpt: “Each Region, except [[Chronorift Metropolis]], has 2 unlockable Exploration Reports, which the player can access upon reaching 50% and 100% completion in the region.”
 - Rationale: The unlock thresholds and exception are explicit.
-- Reviewer status: `pending`
+- Reviewer status: `approved`
 - Reviewer notes: _blank_
 
 ## rw-077 — lore_concept
@@ -1084,7 +1084,7 @@ Each excerpt is whitespace-normalized verbatim text from the referenced immutabl
 - Page / revision / checksum: `39056` / `98971` / `e98008a22b980baa`
 - Supporting excerpt: “'''Fleet Snowfluff''' is a [[Startorch Academy]] student and a campus virtual idol who hosts online concerts.”
 - Rationale: The campus role and activity are explicit.
-- Reviewer status: `pending`
+- Reviewer status: `approved`
 - Reviewer notes: _blank_
 
 ## rw-078 — world_building
@@ -1098,7 +1098,7 @@ Each excerpt is whitespace-normalized verbatim text from the referenced immutabl
 - Page / revision / checksum: `42446` / `101218` / `eba876c1698e83d3`
 - Supporting excerpt: “A native bird of Lahai-Roi, it's believed they originally came from the Roya Frostlands.”
 - Rationale: The stated believed origin answers the question without strengthening certainty.
-- Reviewer status: `pending`
+- Reviewer status: `approved`
 - Reviewer notes: _blank_
 
 ## rw-079 — lore_concept
@@ -1112,7 +1112,7 @@ Each excerpt is whitespace-normalized verbatim text from the referenced immutabl
 - Page / revision / checksum: `3397` / `68336` / `55000dcfdd441514`
 - Supporting excerpt: “It is believed that a Resonator's past and subconscious mind influence their Forte”
 - Rationale: The source qualifies and states both influences.
-- Reviewer status: `pending`
+- Reviewer status: `approved`
 - Reviewer notes: _blank_
 
 ## rw-080 — lore_event
@@ -1126,7 +1126,7 @@ Each excerpt is whitespace-normalized verbatim text from the referenced immutabl
 - Page / revision / checksum: `58857` / `123826` / `fe87fa19ceeb0aaa`
 - Supporting excerpt: “was waged to prevent the spread of a large [[Tacet Discord]] outbreak that swept into [[Xuanfang]].”
 - Rationale: The war's stated purpose is explicit.
-- Reviewer status: `pending`
+- Reviewer status: `approved`
 - Reviewer notes: _blank_
 
 ## rw-081 — lore_concept
@@ -1140,7 +1140,7 @@ Each excerpt is whitespace-normalized verbatim text from the referenced immutabl
 - Page / revision / checksum: `37304` / `100540` / `d9c41f8fbf72b2ba`
 - Supporting excerpt: “Those chosen become corrupted and lose their identities as they become puppets to continue spreading Leviathan's influence until they perish.”
 - Rationale: The transformation and loss of agency are directly stated.
-- Reviewer status: `pending`
+- Reviewer status: `approved`
 - Reviewer notes: _blank_
 
 ## rw-082 — abstention
@@ -1154,7 +1154,7 @@ Each excerpt is whitespace-normalized verbatim text from the referenced immutabl
 - Page / revision / checksum: `1074` / `99099` / `f1f00f7ba53c6ff4`
 - Supporting excerpt: “Following its completion in {{Quest|Dawn Breaks on Dark Tides}}, she left the organization to find her own path.”
 - Rationale: The only main-revision mention records a story consequence for Phrolova; it does not specify any quest rewards.
-- Reviewer status: `pending`
+- Reviewer status: `approved`
 - Reviewer notes: _blank_
 
 ## rw-083 — abstention
@@ -1168,5 +1168,5 @@ Each excerpt is whitespace-normalized verbatim text from the referenced immutabl
 - Page / revision / checksum: `40856` / `136878` / `d51cccfe23ea5dcf`
 - Supporting excerpt: “*[[Instant Flashlight]]”
 - Rationale: The title appears only as a list item in the available main revision; no quest objectives are supplied.
-- Reviewer status: `pending`
+- Reviewer status: `approved`
 - Reviewer notes: _blank_

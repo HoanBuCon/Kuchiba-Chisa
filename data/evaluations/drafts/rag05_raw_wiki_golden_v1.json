@@ -2,11 +2,11 @@
   "dataset_version": "rag05-raw-wiki-golden-v1-draft",
   "methodology": "fact-reviewed from raw_wiki main-revision text",
   "approval": {
-    "status": "draft",
-    "approved_by": null,
-    "approved_at": null
+    "status": "approved",
+    "approved_by": "HoanBuCon",
+    "approved_at": "2026-09-05T16:18:36Z"
   },
-  "label_status": "proposed",
+  "label_status": "approved",
   "evidence_scope": "public",
   "corpus_version": "raw-wiki-sha256:0efe04a586291c11c84c921a1839ac20be53f12c026e3ea2b43595e9a7d32c7a",
   "case_count": 83,
@@ -36,7 +36,7 @@
       ],
       "proposed_relevance_grade": "primary",
       "rationale": "The excerpt explicitly states the affiliation.",
-      "reviewer_status": "pending",
+      "reviewer_status": "approved",
       "reviewer_notes": null
     },
     {
@@ -64,7 +64,7 @@
       ],
       "proposed_relevance_grade": "primary",
       "rationale": "The role, field, and institution are explicit.",
-      "reviewer_status": "pending",
+      "reviewer_status": "approved",
       "reviewer_notes": null
     },
     {
@@ -92,7 +92,7 @@
       ],
       "proposed_relevance_grade": "primary",
       "rationale": "The Changli–Jinhsi professional relationship is explicitly stated.",
-      "reviewer_status": "pending",
+      "reviewer_status": "approved",
       "reviewer_notes": null
     },
     {
@@ -120,7 +120,7 @@
       ],
       "proposed_relevance_grade": "primary",
       "rationale": "The occupation and city are explicit.",
-      "reviewer_status": "pending",
+      "reviewer_status": "approved",
       "reviewer_notes": null
     },
     {
@@ -148,7 +148,7 @@
       ],
       "proposed_relevance_grade": "primary",
       "rationale": "The leadership relation is explicit.",
-      "reviewer_status": "pending",
+      "reviewer_status": "approved",
       "reviewer_notes": null
     },
     {
@@ -176,7 +176,7 @@
       ],
       "proposed_relevance_grade": "primary",
       "rationale": "The leader-to-organization relation is explicit.",
-      "reviewer_status": "pending",
+      "reviewer_status": "approved",
       "reviewer_notes": null
     },
     {
@@ -204,7 +204,7 @@
       ],
       "proposed_relevance_grade": "primary",
       "rationale": "Both organization and responsibility are explicit.",
-      "reviewer_status": "pending",
+      "reviewer_status": "approved",
       "reviewer_notes": null
     },
     {
@@ -232,7 +232,7 @@
       ],
       "proposed_relevance_grade": "primary",
       "rationale": "The faction profile explicitly records both roles.",
-      "reviewer_status": "pending",
+      "reviewer_status": "approved",
       "reviewer_notes": null
     },
     {
@@ -260,7 +260,7 @@
       ],
       "proposed_relevance_grade": "primary",
       "rationale": "The fields are enumerated in the text.",
-      "reviewer_status": "pending",
+      "reviewer_status": "approved",
       "reviewer_notes": null
     },
     {
@@ -288,7 +288,7 @@
       ],
       "proposed_relevance_grade": "primary",
       "rationale": "The mission and region are explicit.",
-      "reviewer_status": "pending",
+      "reviewer_status": "approved",
       "reviewer_notes": null
     },
     {
@@ -316,7 +316,7 @@
       ],
       "proposed_relevance_grade": "primary",
       "rationale": "The institution, builder, audience, and location are explicit.",
-      "reviewer_status": "pending",
+      "reviewer_status": "approved",
       "reviewer_notes": null
     },
     {
@@ -344,7 +344,7 @@
       ],
       "proposed_relevance_grade": "primary",
       "rationale": "The causal conditions are explicit.",
-      "reviewer_status": "pending",
+      "reviewer_status": "approved",
       "reviewer_notes": null
     },
     {
@@ -372,7 +372,7 @@
       ],
       "proposed_relevance_grade": "primary",
       "rationale": "The formation mechanism is explicit.",
-      "reviewer_status": "pending",
+      "reviewer_status": "approved",
       "reviewer_notes": null
     },
     {
@@ -400,7 +400,7 @@
       ],
       "proposed_relevance_grade": "primary",
       "rationale": "The informal query asks for the definition stated verbatim.",
-      "reviewer_status": "pending",
+      "reviewer_status": "approved",
       "reviewer_notes": null
     },
     {
@@ -428,7 +428,7 @@
       ],
       "proposed_relevance_grade": "primary",
       "rationale": "The source explicitly states both their shared role and their relationship.",
-      "reviewer_status": "pending",
+      "reviewer_status": "approved",
       "reviewer_notes": null
     },
     {
@@ -456,7 +456,7 @@
       ],
       "proposed_relevance_grade": "primary",
       "rationale": "The sentence explicitly gives both her origin and former academic role.",
-      "reviewer_status": "pending",
+      "reviewer_status": "approved",
       "reviewer_notes": null
     },
     {
@@ -484,7 +484,7 @@
       ],
       "proposed_relevance_grade": "primary",
       "rationale": "The source explicitly identifies Augusta as Septimont's Ephor.",
-      "reviewer_status": "pending",
+      "reviewer_status": "approved",
       "reviewer_notes": null
     },
     {
@@ -512,7 +512,7 @@
       ],
       "proposed_relevance_grade": "primary",
       "rationale": "The quoted title is stated directly.",
-      "reviewer_status": "pending",
+      "reviewer_status": "approved",
       "reviewer_notes": null
     },
     {
@@ -540,7 +540,7 @@
       ],
       "proposed_relevance_grade": "primary",
       "rationale": "The family leadership relationship is explicit.",
-      "reviewer_status": "pending",
+      "reviewer_status": "approved",
       "reviewer_notes": null
     },
     {
@@ -568,7 +568,7 @@
       ],
       "proposed_relevance_grade": "primary",
       "rationale": "The source directly states her family and region.",
-      "reviewer_status": "pending",
+      "reviewer_status": "approved",
       "reviewer_notes": null
     },
     {
@@ -596,7 +596,7 @@
       ],
       "proposed_relevance_grade": "primary",
       "rationale": "All three names are enumerated in one statement.",
-      "reviewer_status": "pending",
+      "reviewer_status": "approved",
       "reviewer_notes": null
     },
     {
@@ -624,7 +624,7 @@
       ],
       "proposed_relevance_grade": "primary",
       "rationale": "The school affiliation is directly stated.",
-      "reviewer_status": "pending",
+      "reviewer_status": "approved",
       "reviewer_notes": null
     },
     {
@@ -652,7 +652,7 @@
       ],
       "proposed_relevance_grade": "primary",
       "rationale": "The purpose of her travels is explicit.",
-      "reviewer_status": "pending",
+      "reviewer_status": "approved",
       "reviewer_notes": null
     },
     {
@@ -680,7 +680,7 @@
       ],
       "proposed_relevance_grade": "primary",
       "rationale": "The targets and motivation are both explicit.",
-      "reviewer_status": "pending",
+      "reviewer_status": "approved",
       "reviewer_notes": null
     },
     {
@@ -708,7 +708,7 @@
       ],
       "proposed_relevance_grade": "primary",
       "rationale": "The covert affiliation is stated directly.",
-      "reviewer_status": "pending",
+      "reviewer_status": "approved",
       "reviewer_notes": null
     },
     {
@@ -736,7 +736,7 @@
       ],
       "proposed_relevance_grade": "primary",
       "rationale": "The working and brother-figure relationship is explicit.",
-      "reviewer_status": "pending",
+      "reviewer_status": "approved",
       "reviewer_notes": null
     },
     {
@@ -764,7 +764,7 @@
       ],
       "proposed_relevance_grade": "primary",
       "rationale": "The ability and its targets are directly described.",
-      "reviewer_status": "pending",
+      "reviewer_status": "approved",
       "reviewer_notes": null
     },
     {
@@ -792,7 +792,7 @@
       ],
       "proposed_relevance_grade": "primary",
       "rationale": "The talisman's granted ability is explicit.",
-      "reviewer_status": "pending",
+      "reviewer_status": "approved",
       "reviewer_notes": null
     },
     {
@@ -820,7 +820,7 @@
       ],
       "proposed_relevance_grade": "primary",
       "rationale": "The alias, status, and location appear together.",
-      "reviewer_status": "pending",
+      "reviewer_status": "approved",
       "reviewer_notes": null
     },
     {
@@ -848,7 +848,7 @@
       ],
       "proposed_relevance_grade": "primary",
       "rationale": "The institutional role and duty are direct.",
-      "reviewer_status": "pending",
+      "reviewer_status": "approved",
       "reviewer_notes": null
     },
     {
@@ -876,7 +876,7 @@
       ],
       "proposed_relevance_grade": "primary",
       "rationale": "The named martial art is explicitly stated.",
-      "reviewer_status": "pending",
+      "reviewer_status": "approved",
       "reviewer_notes": null
     },
     {
@@ -904,7 +904,7 @@
       ],
       "proposed_relevance_grade": "primary",
       "rationale": "The Resonator–Sentinel relationship is explicit.",
-      "reviewer_status": "pending",
+      "reviewer_status": "approved",
       "reviewer_notes": null
     },
     {
@@ -932,7 +932,7 @@
       ],
       "proposed_relevance_grade": "primary",
       "rationale": "The selecting entity and resulting role are stated directly.",
-      "reviewer_status": "pending",
+      "reviewer_status": "approved",
       "reviewer_notes": null
     },
     {
@@ -960,7 +960,7 @@
       ],
       "proposed_relevance_grade": "primary",
       "rationale": "The claim is explicit in the source.",
-      "reviewer_status": "pending",
+      "reviewer_status": "approved",
       "reviewer_notes": null
     },
     {
@@ -988,7 +988,7 @@
       ],
       "proposed_relevance_grade": "primary",
       "rationale": "Both titles are directly stated.",
-      "reviewer_status": "pending",
+      "reviewer_status": "approved",
       "reviewer_notes": null
     },
     {
@@ -1016,7 +1016,7 @@
       ],
       "proposed_relevance_grade": "primary",
       "rationale": "Her two job responsibilities are explicit.",
-      "reviewer_status": "pending",
+      "reviewer_status": "approved",
       "reviewer_notes": null
     },
     {
@@ -1044,7 +1044,7 @@
       ],
       "proposed_relevance_grade": "primary",
       "rationale": "The source directly states why she is notable.",
-      "reviewer_status": "pending",
+      "reviewer_status": "approved",
       "reviewer_notes": null
     },
     {
@@ -1072,7 +1072,7 @@
       ],
       "proposed_relevance_grade": "primary",
       "rationale": "The unit and leadership role are explicit.",
-      "reviewer_status": "pending",
+      "reviewer_status": "approved",
       "reviewer_notes": null
     },
     {
@@ -1100,7 +1100,7 @@
       ],
       "proposed_relevance_grade": "primary",
       "rationale": "The former occupation and origin are directly stated.",
-      "reviewer_status": "pending",
+      "reviewer_status": "approved",
       "reviewer_notes": null
     },
     {
@@ -1128,7 +1128,7 @@
       ],
       "proposed_relevance_grade": "primary",
       "rationale": "The relationship and its timing are explicit.",
-      "reviewer_status": "pending",
+      "reviewer_status": "approved",
       "reviewer_notes": null
     },
     {
@@ -1156,7 +1156,7 @@
       ],
       "proposed_relevance_grade": "primary",
       "rationale": "The complete branch and department are stated.",
-      "reviewer_status": "pending",
+      "reviewer_status": "approved",
       "reviewer_notes": null
     },
     {
@@ -1184,7 +1184,7 @@
       ],
       "proposed_relevance_grade": "primary",
       "rationale": "The role and organization are explicit.",
-      "reviewer_status": "pending",
+      "reviewer_status": "approved",
       "reviewer_notes": null
     },
     {
@@ -1212,7 +1212,7 @@
       ],
       "proposed_relevance_grade": "primary",
       "rationale": "The three affected frequency types are enumerated.",
-      "reviewer_status": "pending",
+      "reviewer_status": "approved",
       "reviewer_notes": null
     },
     {
@@ -1240,7 +1240,7 @@
       ],
       "proposed_relevance_grade": "primary",
       "rationale": "The source explicitly connects the framing to his fugitive status.",
-      "reviewer_status": "pending",
+      "reviewer_status": "approved",
       "reviewer_notes": null
     },
     {
@@ -1268,7 +1268,7 @@
       ],
       "proposed_relevance_grade": "primary",
       "rationale": "Her troupe position is directly stated.",
-      "reviewer_status": "pending",
+      "reviewer_status": "approved",
       "reviewer_notes": null
     },
     {
@@ -1296,7 +1296,7 @@
       ],
       "proposed_relevance_grade": "primary",
       "rationale": "The guard relationship is explicit.",
-      "reviewer_status": "pending",
+      "reviewer_status": "approved",
       "reviewer_notes": null
     },
     {
@@ -1324,7 +1324,7 @@
       ],
       "proposed_relevance_grade": "primary",
       "rationale": "The composition is directly described.",
-      "reviewer_status": "pending",
+      "reviewer_status": "approved",
       "reviewer_notes": null
     },
     {
@@ -1352,7 +1352,7 @@
       ],
       "proposed_relevance_grade": "primary",
       "rationale": "The institution's authority is explicit.",
-      "reviewer_status": "pending",
+      "reviewer_status": "approved",
       "reviewer_notes": null
     },
     {
@@ -1380,7 +1380,7 @@
       ],
       "proposed_relevance_grade": "primary",
       "rationale": "The research focus is stated directly.",
-      "reviewer_status": "pending",
+      "reviewer_status": "approved",
       "reviewer_notes": null
     },
     {
@@ -1408,7 +1408,7 @@
       ],
       "proposed_relevance_grade": "primary",
       "rationale": "The selection mechanism and interval are explicit.",
-      "reviewer_status": "pending",
+      "reviewer_status": "approved",
       "reviewer_notes": null
     },
     {
@@ -1436,7 +1436,7 @@
       ],
       "proposed_relevance_grade": "primary",
       "rationale": "The lack of unified leadership is explicit.",
-      "reviewer_status": "pending",
+      "reviewer_status": "approved",
       "reviewer_notes": null
     },
     {
@@ -1464,7 +1464,7 @@
       ],
       "proposed_relevance_grade": "primary",
       "rationale": "Both areas of expertise are stated directly.",
-      "reviewer_status": "pending",
+      "reviewer_status": "approved",
       "reviewer_notes": null
     },
     {
@@ -1492,7 +1492,7 @@
       ],
       "proposed_relevance_grade": "primary",
       "rationale": "The organization's objective and method are explicit.",
-      "reviewer_status": "pending",
+      "reviewer_status": "approved",
       "reviewer_notes": null
     },
     {
@@ -1520,7 +1520,7 @@
       ],
       "proposed_relevance_grade": "primary",
       "rationale": "The geographic and organizational origin are stated.",
-      "reviewer_status": "pending",
+      "reviewer_status": "approved",
       "reviewer_notes": null
     },
     {
@@ -1548,7 +1548,7 @@
       ],
       "proposed_relevance_grade": "primary",
       "rationale": "The reporting line is explicit.",
-      "reviewer_status": "pending",
+      "reviewer_status": "approved",
       "reviewer_notes": null
     },
     {
@@ -1576,7 +1576,7 @@
       ],
       "proposed_relevance_grade": "primary",
       "rationale": "The responsibilities are enumerated in the source.",
-      "reviewer_status": "pending",
+      "reviewer_status": "approved",
       "reviewer_notes": null
     },
     {
@@ -1604,7 +1604,7 @@
       ],
       "proposed_relevance_grade": "primary",
       "rationale": "The organization's core mission is directly stated.",
-      "reviewer_status": "pending",
+      "reviewer_status": "approved",
       "reviewer_notes": null
     },
     {
@@ -1632,7 +1632,7 @@
       ],
       "proposed_relevance_grade": "primary",
       "rationale": "The public services are explicitly listed.",
-      "reviewer_status": "pending",
+      "reviewer_status": "approved",
       "reviewer_notes": null
     },
     {
@@ -1660,7 +1660,7 @@
       ],
       "proposed_relevance_grade": "primary",
       "rationale": "The visible setting and orientation are explicit.",
-      "reviewer_status": "pending",
+      "reviewer_status": "approved",
       "reviewer_notes": null
     },
     {
@@ -1688,7 +1688,7 @@
       ],
       "proposed_relevance_grade": "primary",
       "rationale": "Both inhabitants are directly named.",
-      "reviewer_status": "pending",
+      "reviewer_status": "approved",
       "reviewer_notes": null
     },
     {
@@ -1716,7 +1716,7 @@
       ],
       "proposed_relevance_grade": "primary",
       "rationale": "The sentence explicitly links the emissions to the mist.",
-      "reviewer_status": "pending",
+      "reviewer_status": "approved",
       "reviewer_notes": null
     },
     {
@@ -1744,7 +1744,7 @@
       ],
       "proposed_relevance_grade": "primary",
       "rationale": "The stated cause and outcome answer the question.",
-      "reviewer_status": "pending",
+      "reviewer_status": "approved",
       "reviewer_notes": null
     },
     {
@@ -1772,7 +1772,7 @@
       ],
       "proposed_relevance_grade": "primary",
       "rationale": "The examples are directly named.",
-      "reviewer_status": "pending",
+      "reviewer_status": "approved",
       "reviewer_notes": null
     },
     {
@@ -1800,7 +1800,7 @@
       ],
       "proposed_relevance_grade": "primary",
       "rationale": "The three activities are directly stated.",
-      "reviewer_status": "pending",
+      "reviewer_status": "approved",
       "reviewer_notes": null
     },
     {
@@ -1828,7 +1828,7 @@
       ],
       "proposed_relevance_grade": "primary",
       "rationale": "The location's former use is explicit.",
-      "reviewer_status": "pending",
+      "reviewer_status": "approved",
       "reviewer_notes": null
     },
     {
@@ -1856,7 +1856,7 @@
       ],
       "proposed_relevance_grade": "primary",
       "rationale": "The source makes the contrast explicitly.",
-      "reviewer_status": "pending",
+      "reviewer_status": "approved",
       "reviewer_notes": null
     },
     {
@@ -1884,7 +1884,7 @@
       ],
       "proposed_relevance_grade": "primary",
       "rationale": "The authority is stated in the definition.",
-      "reviewer_status": "pending",
+      "reviewer_status": "approved",
       "reviewer_notes": null
     },
     {
@@ -1912,7 +1912,7 @@
       ],
       "proposed_relevance_grade": "primary",
       "rationale": "Both location and relative date are explicit.",
-      "reviewer_status": "pending",
+      "reviewer_status": "approved",
       "reviewer_notes": null
     },
     {
@@ -1940,7 +1940,7 @@
       ],
       "proposed_relevance_grade": "primary",
       "rationale": "The symbolic meaning is the direct definition.",
-      "reviewer_status": "pending",
+      "reviewer_status": "approved",
       "reviewer_notes": null
     },
     {
@@ -1968,7 +1968,7 @@
       ],
       "proposed_relevance_grade": "primary",
       "rationale": "The belief causing that reverence is explicit.",
-      "reviewer_status": "pending",
+      "reviewer_status": "approved",
       "reviewer_notes": null
     },
     {
@@ -1996,7 +1996,7 @@
       ],
       "proposed_relevance_grade": "primary",
       "rationale": "The manifestation is described directly.",
-      "reviewer_status": "pending",
+      "reviewer_status": "approved",
       "reviewer_notes": null
     },
     {
@@ -2024,7 +2024,7 @@
       ],
       "proposed_relevance_grade": "primary",
       "rationale": "The general effect and an observed example are explicit.",
-      "reviewer_status": "pending",
+      "reviewer_status": "approved",
       "reviewer_notes": null
     },
     {
@@ -2052,7 +2052,7 @@
       ],
       "proposed_relevance_grade": "primary",
       "rationale": "The transformation condition is directly stated.",
-      "reviewer_status": "pending",
+      "reviewer_status": "approved",
       "reviewer_notes": null
     },
     {
@@ -2080,7 +2080,7 @@
       ],
       "proposed_relevance_grade": "primary",
       "rationale": "The cause and result are explicit.",
-      "reviewer_status": "pending",
+      "reviewer_status": "approved",
       "reviewer_notes": null
     },
     {
@@ -2108,7 +2108,7 @@
       ],
       "proposed_relevance_grade": "primary",
       "rationale": "The origin is directly defined.",
-      "reviewer_status": "pending",
+      "reviewer_status": "approved",
       "reviewer_notes": null
     },
     {
@@ -2136,7 +2136,7 @@
       ],
       "proposed_relevance_grade": "primary",
       "rationale": "The unlock thresholds and exception are explicit.",
-      "reviewer_status": "pending",
+      "reviewer_status": "approved",
       "reviewer_notes": null
     },
     {
@@ -2164,7 +2164,7 @@
       ],
       "proposed_relevance_grade": "primary",
       "rationale": "The campus role and activity are explicit.",
-      "reviewer_status": "pending",
+      "reviewer_status": "approved",
       "reviewer_notes": null
     },
     {
@@ -2192,7 +2192,7 @@
       ],
       "proposed_relevance_grade": "primary",
       "rationale": "The stated believed origin answers the question without strengthening certainty.",
-      "reviewer_status": "pending",
+      "reviewer_status": "approved",
       "reviewer_notes": null
     },
     {
@@ -2220,7 +2220,7 @@
       ],
       "proposed_relevance_grade": "primary",
       "rationale": "The source qualifies and states both influences.",
-      "reviewer_status": "pending",
+      "reviewer_status": "approved",
       "reviewer_notes": null
     },
     {
@@ -2248,7 +2248,7 @@
       ],
       "proposed_relevance_grade": "primary",
       "rationale": "The war's stated purpose is explicit.",
-      "reviewer_status": "pending",
+      "reviewer_status": "approved",
       "reviewer_notes": null
     },
     {
@@ -2276,7 +2276,7 @@
       ],
       "proposed_relevance_grade": "primary",
       "rationale": "The transformation and loss of agency are directly stated.",
-      "reviewer_status": "pending",
+      "reviewer_status": "approved",
       "reviewer_notes": null
     },
     {
@@ -2303,7 +2303,7 @@
       ],
       "proposed_relevance_grade": "none",
       "rationale": "The only main-revision mention records a story consequence for Phrolova; it does not specify any quest rewards.",
-      "reviewer_status": "pending",
+      "reviewer_status": "approved",
       "reviewer_notes": null
     },
     {
@@ -2330,7 +2330,7 @@
       ],
       "proposed_relevance_grade": "none",
       "rationale": "The title appears only as a list item in the available main revision; no quest objectives are supplied.",
-      "reviewer_status": "pending",
+      "reviewer_status": "approved",
       "reviewer_notes": null
     }
   ]

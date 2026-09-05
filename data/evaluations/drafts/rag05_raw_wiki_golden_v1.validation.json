@@ -1,7 +1,8 @@
 {
   "result": "PASS",
   "case_count": 83,
-  "approval_status": "draft",
+  "approval_status": "approved",
+  "approved_content_sha256": "01cababd2e9912a1b435869afc500dc44d727d045f6bafe868c3be4bc6004976",
   "approval_errors": [],
   "reviewer_state_errors": [],
   "duplicate_case_ids": [],
@@ -16,7 +17,10 @@
   "unsupported_relationship_claims": [],
   "mechanically_paired_evidence": [],
   "manual_review": {
-    "status": "author_fact_review_complete_human_approval_pending",
+    "status": "human_approved",
+    "approved_by": "HoanBuCon",
+    "approved_at": "2026-09-05T16:18:36Z",
+    "approved_case_count": 83,
     "relationship_case_ids": [
       "rw-003",
       "rw-006",
@@ -30,7 +34,7 @@
       "rw-046"
     ],
     "multi_evidence_case_ids": [],
-    "note": "Every positive was checked against its quoted raw_wiki statement; labels remain proposed pending independent human approval."
+    "note": "Automated corpus/evidence checks passed separately; the named human reviewer explicitly approved every positive and abstention label."
   },
   "distribution": {
     "category": {

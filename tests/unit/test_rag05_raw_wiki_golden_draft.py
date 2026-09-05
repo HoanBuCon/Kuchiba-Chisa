@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import json
 import re
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
@@ -56,20 +57,46 @@ def _load_corpus() -> dict[str, tuple[dict[str, Any], str, str]]:
     return corpus
 
 
-def test_golden_draft_stays_unapproved_and_within_target_size() -> None:
+def _approved_content_fingerprint(dataset: dict[str, Any]) -> str:
+    content = {
+        key: value
+        for key, value in dataset.items()
+        if key not in {"approval", "label_status", "cases"}
+    }
+    content["cases"] = [
+        {
+            key: value
+            for key, value in case.items()
+            if key not in {"reviewer_status", "reviewer_notes"}
+        }
+        for case in dataset["cases"]
+    ]
+    canonical = json.dumps(
+        content,
+        ensure_ascii=False,
+        separators=(",", ":"),
+        sort_keys=True,
+    )
+    return hashlib.sha256(canonical.encode()).hexdigest()
+
+
+def test_golden_set_records_resolved_human_approval() -> None:
     dataset = _load_dataset()
 
-    assert dataset["approval"] == {
-        "status": "draft",
-        "approved_by": None,
-        "approved_at": None,
-    }
-    assert dataset["label_status"] == "proposed"
+    approval = dataset["approval"]
+    assert approval["status"] == "approved"
+    assert approval["approved_by"] == "HoanBuCon"
+    approved_at = datetime.fromisoformat(approval["approved_at"].replace("Z", "+00:00"))
+    assert approved_at.tzinfo is not None
+    assert dataset["label_status"] == "approved"
     assert dataset["evidence_scope"] == "public"
     assert 80 <= len(dataset["cases"]) <= 100
     assert dataset["case_count"] == len(dataset["cases"])
-    assert all(case["reviewer_status"] == "pending" for case in dataset["cases"])
+    assert all(case["reviewer_status"] == "approved" for case in dataset["cases"])
     assert all(case["reviewer_notes"] is None for case in dataset["cases"])
+    assert _approved_content_fingerprint(dataset) == (
+        "01cababd2e9912a1b435869afc500dc44d727d045f6bafe868c3be4bc6004976"
+    )
 
 
 def test_positive_evidence_identity_and_excerpt_resolve_to_candidate_text() -> None:

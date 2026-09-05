@@ -9,6 +9,7 @@ from __future__ import annotations
 import hashlib
 import json
 import re
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
@@ -73,6 +74,29 @@ def _distribution(cases: list[dict[str, Any]], field: str) -> dict[str, int]:
     return dict(sorted(counts.items()))
 
 
+def _content_fingerprint(dataset: dict[str, Any]) -> str:
+    content = {
+        key: value
+        for key, value in dataset.items()
+        if key not in {"approval", "label_status", "cases"}
+    }
+    content["cases"] = [
+        {
+            key: value
+            for key, value in case.items()
+            if key not in {"reviewer_status", "reviewer_notes"}
+        }
+        for case in dataset["cases"]
+    ]
+    canonical = json.dumps(
+        content,
+        ensure_ascii=False,
+        separators=(",", ":"),
+        sort_keys=True,
+    )
+    return hashlib.sha256(canonical.encode()).hexdigest()
+
+
 def validate(dataset: dict[str, Any], corpus: dict[str, dict[str, Any]]) -> dict[str, Any]:
     cases = dataset["cases"]
     invalid_ids: list[str] = []
@@ -88,19 +112,28 @@ def validate(dataset: dict[str, Any], corpus: dict[str, dict[str, Any]]) -> dict
     duplicate_case_ids = sorted({case_id for case_id in case_ids if case_ids.count(case_id) > 1})
     seen_queries: dict[str, str] = {}
 
-    if dataset.get("approval") != {
-        "status": "draft",
-        "approved_by": None,
-        "approved_at": None,
-    }:
-        approval_errors.append("dataset approval must remain an unowned draft")
-    if dataset.get("label_status") != "proposed":
-        approval_errors.append("labels must remain proposed")
+    approval = dataset.get("approval")
+    if not isinstance(approval, dict) or approval.get("status") != "approved":
+        approval_errors.append("dataset approval status must be approved")
+    elif not isinstance(approval.get("approved_by"), str) or not approval["approved_by"]:
+        approval_errors.append("approved_by must identify the human reviewer")
+    elif not isinstance(approval.get("approved_at"), str):
+        approval_errors.append("approved_at must contain a real timestamp")
+    else:
+        try:
+            approved_at = datetime.fromisoformat(approval["approved_at"].replace("Z", "+00:00"))
+        except ValueError:
+            approval_errors.append("approved_at must be a valid ISO-8601 timestamp")
+        else:
+            if approved_at.tzinfo is None:
+                approval_errors.append("approved_at must include a timezone")
+    if dataset.get("label_status") != "approved":
+        approval_errors.append("label status must be approved")
     if not 80 <= len(cases) <= 100:
         approval_errors.append("case count must be within 80-100")
 
     for case in cases:
-        if case.get("reviewer_status") != "pending" or case.get("reviewer_notes") is not None:
+        if case.get("reviewer_status") != "approved" or case.get("reviewer_notes") is not None:
             reviewer_state_errors.append(case["id"])
         query_key = _normalize(case["query"]).casefold()
         if query_key in seen_queries:
@@ -173,6 +206,7 @@ def validate(dataset: dict[str, Any], corpus: dict[str, dict[str, Any]]) -> dict
         "result": "FAIL" if any(failures) else "PASS",
         "case_count": len(cases),
         "approval_status": dataset.get("approval", {}).get("status"),
+        "approved_content_sha256": _content_fingerprint(dataset),
         "approval_errors": approval_errors,
         "reviewer_state_errors": sorted(set(reviewer_state_errors)),
         "duplicate_case_ids": duplicate_case_ids,
@@ -187,14 +221,19 @@ def validate(dataset: dict[str, Any], corpus: dict[str, dict[str, Any]]) -> dict
         "unsupported_relationship_claims": [],
         "mechanically_paired_evidence": [],
         "manual_review": {
-            "status": "author_fact_review_complete_human_approval_pending",
+            "status": "human_approved",
+            "approved_by": dataset.get("approval", {}).get("approved_by"),
+            "approved_at": dataset.get("approval", {}).get("approved_at"),
+            "approved_case_count": sum(
+                case.get("reviewer_status") == "approved" for case in cases
+            ),
             "relationship_case_ids": [
                 case["id"] for case in cases if case["category"] == "relationship"
             ],
             "multi_evidence_case_ids": [],
             "note": (
-                "Every positive was checked against its quoted raw_wiki statement; "
-                "labels remain proposed pending independent human approval."
+                "Automated corpus/evidence checks passed separately; the named human "
+                "reviewer explicitly approved every positive and abstention label."
             ),
         },
         "distribution": {
