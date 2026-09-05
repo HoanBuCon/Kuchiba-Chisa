@@ -1,9 +1,9 @@
-"""Run the versioned, public-lore RAG-05 reranker ablation.
+"""Run the versioned, public raw_wiki RAG-05 reranker ablation.
 
-The harness deliberately uses only repository-owned ``world_lore`` and
-``story_lore`` files referenced by the immutable golden manifest.  It never
-opens Qdrant, PostgreSQL, Redis, user memory, or a tenant corpus, so an active
-deployment index cannot be changed by a quality experiment.
+The offline harness builds its candidate snapshot from the complete approved
+``raw_wiki`` directory before it reads relevance labels. It never opens
+Qdrant, PostgreSQL, Redis, user memory, or a tenant corpus, so an active
+deployment index cannot be changed by an evaluation.
 """
 
 from __future__ import annotations
@@ -13,6 +13,7 @@ import asyncio
 import hashlib
 import json
 import math
+import re
 import sys
 import time
 from collections.abc import Sequence
@@ -44,8 +45,14 @@ from app.infrastructure.vector.qdrant.sparse_encoder import (  # noqa: E402 - di
 )
 from app.shared.utils.token_estimator import TokenEstimator  # noqa: E402 - direct script bootstrap
 
-_PUBLIC_LORE_ROOT = (_PROJECT_ROOT / "data" / "lore").resolve()
-_ALLOWED_LORE_DIRECTORIES = {"world_lore", "story_lore", "character_lore"}
+_RAW_WIKI_ROOT = (_PROJECT_ROOT / "data" / "raw_wiki").resolve()
+_RAW_WIKI_MAIN_SUFFIX = "_main.wikitext"
+_RAW_WIKI_TEXT_LIMIT = 1200
+_RAW_WIKI_EVIDENCE_ID = re.compile(
+    r"^raw_wiki:(?P<page_id>[1-9][0-9]*):(?P<revision_id>[1-9][0-9]*):"
+    r"(?P<checksum>[0-9a-f]{16}):chunk:000$"
+)
+_CONTEXT_PRECISION_NOT_EVALUABLE = "not_evaluable_label_incomplete"
 
 
 @dataclass(frozen=True)
@@ -63,6 +70,7 @@ class PublicDocument:
 
     document_id: str
     text: str
+    source_path: str | None = None
 
 
 class VoyageTierZeroPacer:
@@ -150,34 +158,74 @@ def load_golden_dataset(dataset_path: Path) -> tuple[str, list[GoldenCase]]:
     return raw_dataset["dataset_version"], cases
 
 
-def load_public_documents(cases: Sequence[GoldenCase]) -> list[PublicDocument]:
-    """Resolve only approved source files beneath the public-lore root."""
+def load_raw_wiki_documents(corpus_root: Path = _RAW_WIKI_ROOT) -> list[PublicDocument]:
+    """Load a deterministic, label-independent snapshot of the raw_wiki corpus."""
+    resolved_root = corpus_root.resolve()
+    if not resolved_root.is_dir():
+        raise ValueError("raw_wiki corpus root is unavailable")
+
     documents: list[PublicDocument] = []
     seen: set[str] = set()
-    for case in cases:
-        for document_id in case.relevant_evidence_ids:
-            relative_path = Path(document_id)
-            if (
-                relative_path.is_absolute()
-                or len(relative_path.parts) != 2
-                or relative_path.parts[0] not in _ALLOWED_LORE_DIRECTORIES
-                or relative_path.suffix != ".md"
-            ):
-                raise ValueError("golden dataset references a disallowed lore document")
-            path = (_PUBLIC_LORE_ROOT / relative_path).resolve()
-            if _PUBLIC_LORE_ROOT not in path.parents or not path.is_file():
-                raise ValueError("golden dataset references a missing public lore document")
-            if document_id in seen:
-                continue
-            try:
-                text = path.read_text(encoding="utf-8").strip()
-            except OSError as error:
-                raise ValueError("unable to load a public lore document") from error
-            if not text:
-                raise ValueError("public lore document is empty")
-            seen.add(document_id)
-            documents.append(PublicDocument(document_id=document_id, text=text))
+    paths = sorted(
+        resolved_root.rglob(f"*{_RAW_WIKI_MAIN_SUFFIX}"),
+        key=lambda path: path.relative_to(resolved_root).as_posix(),
+    )
+    if not paths:
+        raise ValueError("raw_wiki corpus contains no main revisions")
+    for unresolved_path in paths:
+        path = unresolved_path.resolve()
+        if resolved_root not in path.parents or not path.is_file():
+            raise ValueError("raw_wiki revision resolves outside the corpus root")
+        metadata_path = path.with_suffix(".meta.json")
+        try:
+            raw_text = path.read_text(encoding="utf-8")
+            metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError) as error:
+            raise ValueError("unable to read a raw_wiki revision and metadata pair") from error
+        if not isinstance(metadata, dict):
+            raise ValueError("raw_wiki metadata must be a JSON object")
+        page_id = metadata.get("page_id")
+        revision_id = metadata.get("revision_id")
+        if (
+            not isinstance(page_id, int)
+            or isinstance(page_id, bool)
+            or page_id < 1
+            or not isinstance(revision_id, int)
+            or isinstance(revision_id, bool)
+            or revision_id < 1
+        ):
+            raise ValueError("raw_wiki metadata requires positive page and revision IDs")
+        if path.name != f"{page_id}{_RAW_WIKI_MAIN_SUFFIX}":
+            raise ValueError("raw_wiki filename does not match its metadata page ID")
+        normalized_text = " ".join(raw_text.split())[:_RAW_WIKI_TEXT_LIMIT]
+        if not normalized_text:
+            raise ValueError("raw_wiki revision text is empty")
+        checksum = hashlib.sha256(raw_text.encode("utf-8")).hexdigest()[:16]
+        document_id = f"raw_wiki:{page_id}:{revision_id}:{checksum}:chunk:000"
+        if document_id in seen:
+            raise ValueError("raw_wiki corpus contains a duplicate evidence ID")
+        seen.add(document_id)
+        documents.append(
+            PublicDocument(
+                document_id=document_id,
+                text=normalized_text,
+                source_path=path.relative_to(resolved_root).as_posix(),
+            )
+        )
     return documents
+
+
+def validate_relevant_evidence_ids(
+    cases: Sequence[GoldenCase], documents: Sequence[PublicDocument]
+) -> None:
+    """Validate labels only after the independent corpus snapshot is complete."""
+    available_ids = {document.document_id for document in documents}
+    for case in cases:
+        for evidence_id in case.relevant_evidence_ids:
+            if _RAW_WIKI_EVIDENCE_ID.fullmatch(evidence_id) is None:
+                raise ValueError("golden dataset contains an invalid raw_wiki evidence ID")
+            if evidence_id not in available_ids:
+                raise ValueError("golden dataset references a missing raw_wiki revision")
 
 
 def _cosine(left: Sequence[float], right: Sequence[float]) -> float:
@@ -243,13 +291,13 @@ def _hybrid_rrf_order(
 
 def _first_relevant_rank(
     relevant_evidence_ids: Sequence[str], ranked_document_ids: Sequence[str]
-) -> int:
+) -> int | None:
     ranks = [
         ranked_document_ids.index(document_id) + 1
         for document_id in relevant_evidence_ids
         if document_id in ranked_document_ids
     ]
-    return min(ranks, default=len(ranked_document_ids) + 1)
+    return min(ranks, default=None)
 
 
 def _conservative_provider_token_estimate(query: str, documents: Sequence[PublicDocument]) -> int:
@@ -266,15 +314,21 @@ def _percentile(values: Sequence[float], percentile: float) -> float:
     return round(ordered[index], 3)
 
 
-def _metric_summary(ranks: Sequence[int], evidence_size: int = 5) -> dict[str, float]:
+def _metric_summary(ranks: Sequence[int | None]) -> dict[str, float | str]:
     total = max(len(ranks), 1)
-    hit_at_5 = sum(rank <= 5 for rank in ranks) / total
-    mrr_at_10 = sum((1 / rank) if rank <= 10 else 0.0 for rank in ranks) / total
     return {
-        "hit_at_5": round(hit_at_5, 6),
-        "mrr_at_10": round(mrr_at_10, 6),
-        "context_recall": round(hit_at_5, 6),
-        "context_precision": round(hit_at_5 / evidence_size, 6),
+        "hit_at_1": round(sum(rank == 1 for rank in ranks) / total, 6),
+        "hit_at_3": round(
+            sum(rank is not None and rank <= 3 for rank in ranks) / total, 6
+        ),
+        "hit_at_5": round(
+            sum(rank is not None and rank <= 5 for rank in ranks) / total, 6
+        ),
+        "mrr_at_10": round(
+            sum((1 / rank) for rank in ranks if rank is not None and rank <= 10) / total,
+            6,
+        ),
+        "context_precision": _CONTEXT_PRECISION_NOT_EVALUABLE,
     }
 
 
@@ -282,8 +336,10 @@ async def run_ablation(dataset_path: Path) -> dict[str, Any]:
     """Compare deterministic hybrid RRF with the configured Voyage reranker."""
     if settings.RERANKER_PROVIDER != "voyage" or not settings.VOYAGE_API_KEY:
         raise RuntimeError("RAG-05 ablation requires configured Voyage credentials")
+    documents = load_raw_wiki_documents()
     dataset_version, cases = load_golden_dataset(dataset_path)
-    documents = load_public_documents(cases)
+    validate_relevant_evidence_ids(cases, documents)
+    document_by_id = {document.document_id: document for document in documents}
     embedder = FastEmbedAdapter()
     sparse_encoder = SparseTextEncoder()
     document_vectors = await embedder.embed_batch(
@@ -292,8 +348,8 @@ async def run_ablation(dataset_path: Path) -> dict[str, Any]:
     if len(document_vectors) != len(documents):
         raise RuntimeError("local embedding provider returned an incomplete document batch")
 
-    fallback_ranks: list[int] = []
-    voyage_ranks: list[int] = []
+    fallback_ranks: list[int | None] = []
+    voyage_ranks: list[int | None] = []
     fallback_latencies_ms: list[float] = []
     total_latencies_ms: list[float] = []
     reranker_latencies_ms: list[float] = []
@@ -315,7 +371,7 @@ async def run_ablation(dataset_path: Path) -> dict[str, Any]:
         )
         for case in cases:
             retrieval_started = time.perf_counter()
-            query_vector = await embedder.embed_text(case.query, prefix="query: ")
+            query_vector = (await embedder.embed_batch([case.query], prefix="query: "))[0]
             baseline_order = _hybrid_rrf_order(
                 documents, query_vector, document_vectors, case.query, sparse_encoder
             )[: settings.RERANKER_API_MAX_DOCUMENTS]
@@ -327,7 +383,7 @@ async def run_ablation(dataset_path: Path) -> dict[str, Any]:
             reranker_started = time.perf_counter()
             try:
                 ordered_documents = [
-                    next(document for document in documents if document.document_id == document_id)
+                    document_by_id[document_id]
                     for document_id in baseline_order
                 ]
                 provider_token_estimate = _conservative_provider_token_estimate(
@@ -389,8 +445,23 @@ async def run_ablation(dataset_path: Path) -> dict[str, Any]:
         "provider": "voyage",
         "model": settings.RERANKER_API_MODEL,
         "cases": len(cases),
+        "candidate_corpus_documents": len(documents),
+        "candidate_document_representation": (
+            "normalized raw_wiki main revision prefix, first 1200 characters"
+        ),
+        "retrieval_parity": {
+            "mode": "offline_raw_wiki_page_snapshot",
+            "production_equivalent": False,
+            "gaps": [
+                "production queries Qdrant named dense and BM25 sparse vectors with ACL filters",
+                "production applies score thresholds and bounded per-branch candidate limits",
+                "production hydrates versioned parent/child records after candidate retrieval",
+            ],
+        },
         "baseline_deterministic_hybrid_rrf": _metric_summary(fallback_ranks),
-        "voyage_rerank": _metric_summary(voyage_ranks) if voyage_ranks else None,
+        "voyage_rerank": (
+            _metric_summary(voyage_ranks) if len(voyage_ranks) == len(cases) else None
+        ),
         "reranker_latency_ms": {
             "p50": _percentile(reranker_latencies_ms, 50),
             "p95": _percentile(reranker_latencies_ms, 95),
@@ -412,6 +483,11 @@ async def run_ablation(dataset_path: Path) -> dict[str, Any]:
         "fallback_rate": round(fallback_count / len(cases), 6),
         "quality_comparison_valid": len(voyage_ranks) == len(cases),
         "privacy_policy_rejection_count": 0,
+        "first_stage_retrieval_misses": [
+            case.case_id
+            for case, rank in zip(cases, fallback_ranks, strict=True)
+            if rank is None
+        ],
         "groundedness_and_citation": (
             "not_applicable: retrieval-only ablation does not generate answers or citations"
         ),
