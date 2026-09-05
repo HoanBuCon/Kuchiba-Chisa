@@ -1,0 +1,61 @@
+{
+  "result": "PASS",
+  "case_count": 83,
+  "approval_status": "draft",
+  "approval_errors": [],
+  "reviewer_state_errors": [],
+  "duplicate_case_ids": [],
+  "invalid_evidence_ids": [],
+  "missing_supporting_excerpts": [],
+  "unsupported_positive_cases": [],
+  "invalid_abstention_cases": [],
+  "exact_duplicate_queries": [],
+  "unresolved_near_duplicate_queries": [],
+  "benchmark_meta_queries": [],
+  "synthetic_entities": [],
+  "unsupported_relationship_claims": [],
+  "mechanically_paired_evidence": [],
+  "manual_review": {
+    "status": "author_fact_review_complete_human_approval_pending",
+    "relationship_case_ids": [
+      "rw-003",
+      "rw-006",
+      "rw-008",
+      "rw-015",
+      "rw-019",
+      "rw-026",
+      "rw-032",
+      "rw-033",
+      "rw-040",
+      "rw-046"
+    ],
+    "multi_evidence_case_ids": [],
+    "note": "Every positive was checked against its quoted raw_wiki statement; labels remain proposed pending independent human approval."
+  },
+  "distribution": {
+    "category": {
+      "abstention": 2,
+      "affiliation": 8,
+      "character_background": 23,
+      "faction_lore": 13,
+      "lore_concept": 12,
+      "lore_event": 5,
+      "paraphrase": 1,
+      "place": 8,
+      "relationship": 10,
+      "world_building": 1
+    },
+    "language": {
+      "en": 40,
+      "vi": 37,
+      "vi_informal": 6
+    },
+    "difficulty": {
+      "easy": 27,
+      "hard": 10,
+      "medium": 46
+    }
+  },
+  "provider_calls": 0,
+  "active_corpus_or_index_mutations": 0
+}
