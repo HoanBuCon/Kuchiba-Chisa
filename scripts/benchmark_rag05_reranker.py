@@ -345,6 +345,18 @@ def _percentile(values: Sequence[float], percentile: float) -> float:
     return round(ordered[index], 3)
 
 
+def _latency_summary(values: Sequence[float]) -> dict[str, float]:
+    if not values:
+        return {"min": 0.0, "mean": 0.0, "p50": 0.0, "p95": 0.0, "max": 0.0}
+    return {
+        "min": round(min(values), 3),
+        "mean": round(sum(values) / len(values), 3),
+        "p50": _percentile(values, 50),
+        "p95": _percentile(values, 95),
+        "max": round(max(values), 3),
+    }
+
+
 def _metric_summary(ranks: Sequence[int | None]) -> dict[str, float | str]:
     total = max(len(ranks), 1)
     return {
@@ -409,10 +421,13 @@ async def run_ablation(dataset_path: Path) -> dict[str, Any]:
     voyage_rank_by_case: dict[str, int | None] = {}
     fallback_latencies_ms: list[float] = []
     total_latencies_ms: list[float] = []
-    reranker_latencies_ms: list[float] = []
+    pacing_waits_ms: list[float] = []
+    provider_http_latencies_ms: list[float] = []
+    reranker_total_elapsed_ms: list[float] = []
     processed_tokens = 0
     reserved_provider_tokens = 0
     fallback_count = 0
+    provider_calls = 0
     provider_success_count = 0
     failure_counts = {failure_kind.value: 0 for failure_kind in RerankerFailureKind}
     case_results: list[dict[str, Any]] = []
@@ -439,6 +454,9 @@ async def run_ablation(dataset_path: Path) -> dict[str, Any]:
             baseline_case_ranks.append(baseline_rank)
 
             reranker_started = time.perf_counter()
+            pacing_wait_ms = 0.0
+            provider_http_latency_ms: float | None = None
+            provider_token_estimate = 0
             try:
                 ordered_documents = [
                     document_by_id[document_id]
@@ -447,11 +465,18 @@ async def run_ablation(dataset_path: Path) -> dict[str, Any]:
                 provider_token_estimate = _conservative_provider_token_estimate(
                     case.query, ordered_documents
                 )
-                await pacer.reserve(provider_token_estimate)
+                pacing_wait_ms = await pacer.reserve(provider_token_estimate)
                 reserved_provider_tokens += provider_token_estimate
+                provider_calls += 1
                 scores = await reranker.rerank(
                     case.query, [document.text for document in ordered_documents]
                 )
+                provider_http_latency_ms = reranker.last_http_latency_ms
+                if provider_http_latency_ms is None:
+                    raise RuntimeError(
+                        "successful reranker call did not publish provider HTTP latency"
+                    )
+                provider_http_latencies_ms.append(provider_http_latency_ms)
                 voyage_order = [
                     document.document_id
                     for document, _ in sorted(
@@ -459,8 +484,6 @@ async def run_ablation(dataset_path: Path) -> dict[str, Any]:
                         key=lambda item: (-item[1], item[0].document_id),
                     )
                 ]
-                reranker_latency_ms = (time.perf_counter() - reranker_started) * 1000
-                reranker_latencies_ms.append(reranker_latency_ms)
                 processed_tokens += TokenEstimator.estimate(case.query) * len(ordered_documents)
                 processed_tokens += sum(
                     TokenEstimator.estimate(document.text)
@@ -472,15 +495,17 @@ async def run_ablation(dataset_path: Path) -> dict[str, Any]:
                 voyage_rank_by_case[case.case_id] = final_rank
                 provider_success_count += 1
             except RerankerUnavailableError as error:
-                reranker_latency_ms = (time.perf_counter() - reranker_started) * 1000
-                reranker_latencies_ms.append(reranker_latency_ms)
                 failure_counts[error.failure_kind.value] += 1
                 fallback_count += 1
                 final_rank = baseline_rank
                 reranker_mode = "deterministic_fallback"
                 failure_kind = error.failure_kind.value
 
-            total_latencies_ms.append((time.perf_counter() - retrieval_started) * 1000)
+            reranker_elapsed_ms = (time.perf_counter() - reranker_started) * 1000
+            total_elapsed_ms = (time.perf_counter() - retrieval_started) * 1000
+            pacing_waits_ms.append(pacing_wait_ms)
+            reranker_total_elapsed_ms.append(reranker_elapsed_ms)
+            total_latencies_ms.append(total_elapsed_ms)
             case_results.append(
                 {
                     "case_id": case.case_id,
@@ -491,6 +516,15 @@ async def run_ablation(dataset_path: Path) -> dict[str, Any]:
                     "fallback_rank": final_rank if reranker_mode != "voyage" else None,
                     "reranker_mode": reranker_mode,
                     "failure_kind": failure_kind,
+                    "processed_token_estimate": provider_token_estimate,
+                    "pacing_wait_ms": round(pacing_wait_ms, 3),
+                    "provider_http_latency_ms": (
+                        round(provider_http_latency_ms, 3)
+                        if provider_http_latency_ms is not None
+                        else None
+                    ),
+                    "reranker_total_elapsed_ms": round(reranker_elapsed_ms, 3),
+                    "total_retrieval_latency_ms": round(total_elapsed_ms, 3),
                     "abstention_evaluation": (
                         None if case.is_answerable else _ABSTENTION_NOT_EVALUABLE
                     ),
@@ -507,6 +541,35 @@ async def run_ablation(dataset_path: Path) -> dict[str, Any]:
         voyage_rank_by_case[case.case_id]
         for case in answerable_cases
         if case.case_id in voyage_rank_by_case
+    ]
+    successful_answerable_results = [
+        result
+        for result in case_results
+        if result["expected_behavior"] == GoldenExpectedBehavior.RETRIEVE.value
+        and result["reranker_mode"] == "voyage"
+    ]
+    improved_cases = [
+        result["case_id"]
+        for result in successful_answerable_results
+        if result["voyage_rank"] is not None
+        and (
+            result["baseline_rank"] is None
+            or result["voyage_rank"] < result["baseline_rank"]
+        )
+    ]
+    unchanged_cases = [
+        result["case_id"]
+        for result in successful_answerable_results
+        if result["voyage_rank"] == result["baseline_rank"]
+    ]
+    degraded_cases = [
+        result["case_id"]
+        for result in successful_answerable_results
+        if result["baseline_rank"] is not None
+        and (
+            result["voyage_rank"] is None
+            or result["voyage_rank"] > result["baseline_rank"]
+        )
     ]
     estimated_cost_usd = (processed_tokens / 1_000_000) * 0.02
     return {
@@ -540,19 +603,28 @@ async def run_ablation(dataset_path: Path) -> dict[str, Any]:
         "voyage_rerank": (
             _metric_summary(voyage_ranks) if voyage_answerable_complete else None
         ),
-        "reranker_latency_ms": {
-            "p50": _percentile(reranker_latencies_ms, 50),
-            "p95": _percentile(reranker_latencies_ms, 95),
+        "answerable_case_outcomes": {
+            "improved": improved_cases,
+            "unchanged": unchanged_cases,
+            "degraded": degraded_cases,
         },
+        "provider_http_latency_ms": _latency_summary(provider_http_latencies_ms),
+        "pacing_wait_ms": {
+            "total": round(sum(pacing_waits_ms), 3),
+            "mean": round(sum(pacing_waits_ms) / len(pacing_waits_ms), 3),
+            "p50": _percentile(pacing_waits_ms, 50),
+            "p95": _percentile(pacing_waits_ms, 95),
+            "paced_case_count": sum(wait > 0 for wait in pacing_waits_ms),
+        },
+        "reranker_total_elapsed_ms": _latency_summary(reranker_total_elapsed_ms),
         "total_retrieval_latency_ms": {
-            "baseline_p50": _percentile(fallback_latencies_ms, 50),
-            "baseline_p95": _percentile(fallback_latencies_ms, 95),
-            "voyage_p50": _percentile(total_latencies_ms, 50),
-            "voyage_p95": _percentile(total_latencies_ms, 95),
+            "baseline": _latency_summary(fallback_latencies_ms),
+            "with_reranker": _latency_summary(total_latencies_ms),
         },
         "processed_tokens": processed_tokens,
         "reserved_provider_tokens": reserved_provider_tokens,
         "estimated_cost_usd": round(estimated_cost_usd, 8),
+        "provider_calls": provider_calls,
         "provider_success_count": provider_success_count,
         "provider_failure_counts": failure_counts,
         "timeout_rate": round(failure_counts["timeout"] / len(cases), 6),
@@ -578,8 +650,15 @@ def main() -> None:
         type=Path,
         default=_PROJECT_ROOT / "data" / "evaluations" / "rag05_public_lore_golden_v1.json",
     )
+    parser.add_argument("--output", type=Path)
     args = parser.parse_args()
-    print(json.dumps(asyncio.run(run_ablation(args.dataset)), ensure_ascii=False, indent=2))
+    serialized = json.dumps(
+        asyncio.run(run_ablation(args.dataset)), ensure_ascii=False, indent=2
+    )
+    if args.output is not None:
+        args.output.parent.mkdir(parents=True, exist_ok=True)
+        args.output.write_text(serialized + "\n", encoding="utf-8")
+    print(serialized)
 
 
 if __name__ == "__main__":

@@ -16,6 +16,7 @@ from scripts.benchmark_rag05_reranker import (
     _first_relevant_rank,
     _first_stage_retrieval_misses,
     _hybrid_rrf_order,
+    _latency_summary,
     _metric_summary,
     load_golden_dataset,
     load_raw_wiki_documents,
@@ -180,6 +181,16 @@ def test_abstentions_do_not_enter_ranking_denominator_or_miss_list() -> None:
     assert ranking_ranks == [1, None]
     assert _metric_summary(ranking_ranks)["hit_at_1"] == 0.5
     assert _first_stage_retrieval_misses(cases, per_case_ranks) == ["answer-miss"]
+
+
+def test_latency_summary_keeps_provider_timing_aggregates_explicit() -> None:
+    assert _latency_summary([10.0, 20.0, 40.0]) == {
+        "min": 10.0,
+        "mean": 23.333,
+        "p50": 20.0,
+        "p95": 40.0,
+        "max": 40.0,
+    }
 
 
 def test_raw_wiki_resolution_is_deterministic_auditable_and_read_only(tmp_path: Path) -> None:
