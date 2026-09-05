@@ -11,11 +11,23 @@ import pytest
 from app.infrastructure.vector.qdrant.sparse_encoder import SparseTextEncoder
 from scripts.benchmark_rag05_reranker import (
     GoldenCase,
+    GoldenExpectedBehavior,
+    _answerable_ranking_slice,
     _first_relevant_rank,
+    _first_stage_retrieval_misses,
     _hybrid_rrf_order,
     _metric_summary,
+    load_golden_dataset,
     load_raw_wiki_documents,
     validate_relevant_evidence_ids,
+)
+
+APPROVED_GOLDEN_SET = (
+    Path(__file__).resolve().parents[2]
+    / "data"
+    / "evaluations"
+    / "drafts"
+    / "rag05_raw_wiki_golden_v1.json"
 )
 
 
@@ -38,6 +50,136 @@ def _snapshot(root: Path) -> dict[str, bytes]:
         for path in sorted(root.rglob("*"))
         if path.is_file()
     }
+
+
+def _write_golden_dataset(path: Path, cases: list[dict[str, object]]) -> None:
+    path.write_text(
+        json.dumps(
+            {
+                "dataset_version": "test-v1",
+                "evidence_scope": "public",
+                "approval": {
+                    "status": "approved",
+                    "approved_by": "reviewer",
+                    "approved_at": "2026-09-05T16:18:36Z",
+                },
+                "cases": cases,
+            }
+        ),
+        encoding="utf-8",
+    )
+
+
+def _case(
+    *, expected_behavior: str, relevant_evidence_ids: list[str]
+) -> dict[str, object]:
+    return {
+        "id": "case-1",
+        "query": "What is the supported fact?",
+        "expected_behavior": expected_behavior,
+        "relevant_evidence_ids": relevant_evidence_ids,
+    }
+
+
+def test_loader_accepts_answerable_case_with_positive_evidence(tmp_path: Path) -> None:
+    dataset_path = tmp_path / "golden.json"
+    evidence_id = "raw_wiki:10:101:0123456789abcdef:chunk:000"
+    _write_golden_dataset(
+        dataset_path,
+        [_case(expected_behavior="retrieve", relevant_evidence_ids=[evidence_id])],
+    )
+
+    _, cases = load_golden_dataset(dataset_path)
+
+    assert cases == [
+        GoldenCase(
+            "case-1",
+            "What is the supported fact?",
+            (evidence_id,),
+            GoldenExpectedBehavior.RETRIEVE,
+        )
+    ]
+
+
+def test_loader_accepts_abstention_case_without_positive_evidence(tmp_path: Path) -> None:
+    dataset_path = tmp_path / "golden.json"
+    _write_golden_dataset(
+        dataset_path,
+        [_case(expected_behavior="abstain", relevant_evidence_ids=[])],
+    )
+
+    _, cases = load_golden_dataset(dataset_path)
+
+    assert cases[0].expected_behavior is GoldenExpectedBehavior.ABSTAIN
+    assert cases[0].relevant_evidence_ids == ()
+
+
+def test_loader_rejects_answerable_case_without_evidence(tmp_path: Path) -> None:
+    dataset_path = tmp_path / "golden.json"
+    _write_golden_dataset(
+        dataset_path,
+        [_case(expected_behavior="retrieve", relevant_evidence_ids=[])],
+    )
+
+    with pytest.raises(ValueError, match="answerable golden case needs relevant evidence"):
+        load_golden_dataset(dataset_path)
+
+
+def test_loader_rejects_abstention_case_with_positive_evidence(tmp_path: Path) -> None:
+    dataset_path = tmp_path / "golden.json"
+    _write_golden_dataset(
+        dataset_path,
+        [
+            _case(
+                expected_behavior="abstain",
+                relevant_evidence_ids=[
+                    "raw_wiki:10:101:0123456789abcdef:chunk:000"
+                ],
+            )
+        ],
+    )
+
+    with pytest.raises(ValueError, match="abstention golden case cannot declare"):
+        load_golden_dataset(dataset_path)
+
+
+def test_approved_golden_set_loads_with_both_evaluation_slices() -> None:
+    version, cases = load_golden_dataset(APPROVED_GOLDEN_SET)
+
+    assert version == "rag05-raw-wiki-golden-v1-draft"
+    assert len(cases) == 83
+    assert sum(case.is_answerable for case in cases) == 81
+    assert sum(not case.is_answerable for case in cases) == 2
+
+
+def test_abstentions_do_not_enter_ranking_denominator_or_miss_list() -> None:
+    cases = [
+        GoldenCase(
+            "answer-hit",
+            "answerable",
+            ("evidence-1",),
+            GoldenExpectedBehavior.RETRIEVE,
+        ),
+        GoldenCase(
+            "abstain",
+            "no answer",
+            (),
+            GoldenExpectedBehavior.ABSTAIN,
+        ),
+        GoldenCase(
+            "answer-miss",
+            "answerable miss",
+            ("evidence-2",),
+            GoldenExpectedBehavior.RETRIEVE,
+        ),
+    ]
+    per_case_ranks = [1, None, None]
+
+    ranking_ranks = _answerable_ranking_slice(cases, per_case_ranks)
+
+    assert ranking_ranks == [1, None]
+    assert _metric_summary(ranking_ranks)["hit_at_1"] == 0.5
+    assert _first_stage_retrieval_misses(cases, per_case_ranks) == ["answer-miss"]
 
 
 def test_raw_wiki_resolution_is_deterministic_auditable_and_read_only(tmp_path: Path) -> None:

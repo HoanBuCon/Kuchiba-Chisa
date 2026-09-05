@@ -18,6 +18,7 @@ import sys
 import time
 from collections.abc import Sequence
 from dataclasses import dataclass
+from enum import StrEnum
 from pathlib import Path
 from typing import Any
 
@@ -53,15 +54,29 @@ _RAW_WIKI_EVIDENCE_ID = re.compile(
     r"(?P<checksum>[0-9a-f]{16}):chunk:000$"
 )
 _CONTEXT_PRECISION_NOT_EVALUABLE = "not_evaluable_label_incomplete"
+_ABSTENTION_NOT_EVALUABLE = "not_evaluable_at_retrieval_stage"
+
+
+class GoldenExpectedBehavior(StrEnum):
+    """Schema-defined evaluation behavior for a golden case."""
+
+    RETRIEVE = "retrieve"
+    ABSTAIN = "abstain"
 
 
 @dataclass(frozen=True)
 class GoldenCase:
-    """One labelled, public document retrieval case."""
+    """One human-approved public evaluation case."""
 
     case_id: str
     query: str
     relevant_evidence_ids: tuple[str, ...]
+    expected_behavior: GoldenExpectedBehavior = GoldenExpectedBehavior.RETRIEVE
+
+    @property
+    def is_answerable(self) -> bool:
+        """Return whether positive-evidence ranking metrics apply to this case."""
+        return self.expected_behavior is GoldenExpectedBehavior.RETRIEVE
 
 
 @dataclass(frozen=True)
@@ -138,9 +153,24 @@ def load_golden_dataset(dataset_path: Path) -> tuple[str, list[GoldenCase]]:
     for raw_case in raw_cases:
         if not isinstance(raw_case, dict):
             raise ValueError("every golden case must be an object")
+        raw_behavior = raw_case.get("expected_behavior")
+        if not isinstance(raw_behavior, str):
+            raise ValueError(
+                "golden case expected_behavior must be 'retrieve' or 'abstain'"
+            )
+        try:
+            expected_behavior = GoldenExpectedBehavior(raw_behavior)
+        except ValueError as error:
+            raise ValueError(
+                "golden case expected_behavior must be 'retrieve' or 'abstain'"
+            ) from error
         raw_evidence_ids = raw_case.get("relevant_evidence_ids")
-        if not isinstance(raw_evidence_ids, list) or not raw_evidence_ids:
-            raise ValueError("every golden case needs at least one relevant evidence identifier")
+        if not isinstance(raw_evidence_ids, list):
+            raise ValueError("golden case relevant_evidence_ids must be a list")
+        if expected_behavior is GoldenExpectedBehavior.RETRIEVE and not raw_evidence_ids:
+            raise ValueError("answerable golden case needs relevant evidence")
+        if expected_behavior is GoldenExpectedBehavior.ABSTAIN and raw_evidence_ids:
+            raise ValueError("abstention golden case cannot declare relevant evidence")
         evidence_ids = tuple(
             _require_string(value, "relevant_evidence_ids") for value in raw_evidence_ids
         )
@@ -150,6 +180,7 @@ def load_golden_dataset(dataset_path: Path) -> tuple[str, list[GoldenCase]]:
             case_id=_require_string(raw_case.get("id"), "id"),
             query=_require_string(raw_case.get("query"), "query"),
             relevant_evidence_ids=evidence_ids,
+            expected_behavior=expected_behavior,
         )
         if case.case_id in case_ids:
             raise ValueError("golden dataset case identifiers must be unique")
@@ -332,6 +363,32 @@ def _metric_summary(ranks: Sequence[int | None]) -> dict[str, float | str]:
     }
 
 
+def _answerable_ranking_slice(
+    cases: Sequence[GoldenCase], ranks: Sequence[int | None]
+) -> list[int | None]:
+    """Exclude abstentions from positive-evidence retrieval denominators."""
+    if len(cases) != len(ranks):
+        raise ValueError("case and rank counts must match")
+    return [
+        rank
+        for case, rank in zip(cases, ranks, strict=True)
+        if case.is_answerable
+    ]
+
+
+def _first_stage_retrieval_misses(
+    cases: Sequence[GoldenCase], ranks: Sequence[int | None]
+) -> list[str]:
+    """Report only genuine positive-evidence misses."""
+    if len(cases) != len(ranks):
+        raise ValueError("case and rank counts must match")
+    return [
+        case.case_id
+        for case, rank in zip(cases, ranks, strict=True)
+        if case.is_answerable and rank is None
+    ]
+
+
 async def run_ablation(dataset_path: Path) -> dict[str, Any]:
     """Compare deterministic hybrid RRF with the configured Voyage reranker."""
     if settings.RERANKER_PROVIDER != "voyage" or not settings.VOYAGE_API_KEY:
@@ -348,14 +405,15 @@ async def run_ablation(dataset_path: Path) -> dict[str, Any]:
     if len(document_vectors) != len(documents):
         raise RuntimeError("local embedding provider returned an incomplete document batch")
 
-    fallback_ranks: list[int | None] = []
-    voyage_ranks: list[int | None] = []
+    baseline_case_ranks: list[int | None] = []
+    voyage_rank_by_case: dict[str, int | None] = {}
     fallback_latencies_ms: list[float] = []
     total_latencies_ms: list[float] = []
     reranker_latencies_ms: list[float] = []
     processed_tokens = 0
     reserved_provider_tokens = 0
     fallback_count = 0
+    provider_success_count = 0
     failure_counts = {failure_kind.value: 0 for failure_kind in RerankerFailureKind}
     case_results: list[dict[str, Any]] = []
     pacer = VoyageTierZeroPacer()
@@ -378,7 +436,7 @@ async def run_ablation(dataset_path: Path) -> dict[str, Any]:
             fallback_latency_ms = (time.perf_counter() - retrieval_started) * 1000
             fallback_latencies_ms.append(fallback_latency_ms)
             baseline_rank = _first_relevant_rank(case.relevant_evidence_ids, baseline_order)
-            fallback_ranks.append(baseline_rank)
+            baseline_case_ranks.append(baseline_rank)
 
             reranker_started = time.perf_counter()
             try:
@@ -411,7 +469,8 @@ async def run_ablation(dataset_path: Path) -> dict[str, Any]:
                 final_rank = _first_relevant_rank(case.relevant_evidence_ids, voyage_order)
                 reranker_mode = "voyage"
                 failure_kind: str | None = None
-                voyage_ranks.append(final_rank)
+                voyage_rank_by_case[case.case_id] = final_rank
+                provider_success_count += 1
             except RerankerUnavailableError as error:
                 reranker_latency_ms = (time.perf_counter() - reranker_started) * 1000
                 reranker_latencies_ms.append(reranker_latency_ms)
@@ -425,15 +484,30 @@ async def run_ablation(dataset_path: Path) -> dict[str, Any]:
             case_results.append(
                 {
                     "case_id": case.case_id,
+                    "expected_behavior": case.expected_behavior.value,
                     "relevant_evidence_ids": case.relevant_evidence_ids,
                     "baseline_rank": baseline_rank,
                     "voyage_rank": final_rank if reranker_mode == "voyage" else None,
                     "fallback_rank": final_rank if reranker_mode != "voyage" else None,
                     "reranker_mode": reranker_mode,
                     "failure_kind": failure_kind,
+                    "abstention_evaluation": (
+                        None if case.is_answerable else _ABSTENTION_NOT_EVALUABLE
+                    ),
                 }
             )
 
+    answerable_cases = [case for case in cases if case.is_answerable]
+    abstention_cases = [case for case in cases if not case.is_answerable]
+    fallback_ranks = _answerable_ranking_slice(cases, baseline_case_ranks)
+    voyage_answerable_complete = all(
+        case.case_id in voyage_rank_by_case for case in answerable_cases
+    )
+    voyage_ranks = [
+        voyage_rank_by_case[case.case_id]
+        for case in answerable_cases
+        if case.case_id in voyage_rank_by_case
+    ]
     estimated_cost_usd = (processed_tokens / 1_000_000) * 0.02
     return {
         "dataset_version": dataset_version,
@@ -445,6 +519,10 @@ async def run_ablation(dataset_path: Path) -> dict[str, Any]:
         "provider": "voyage",
         "model": settings.RERANKER_API_MODEL,
         "cases": len(cases),
+        "total_cases": len(cases),
+        "answerable_cases": len(answerable_cases),
+        "abstention_cases": len(abstention_cases),
+        "abstention_evaluation": _ABSTENTION_NOT_EVALUABLE,
         "candidate_corpus_documents": len(documents),
         "candidate_document_representation": (
             "normalized raw_wiki main revision prefix, first 1200 characters"
@@ -460,7 +538,7 @@ async def run_ablation(dataset_path: Path) -> dict[str, Any]:
         },
         "baseline_deterministic_hybrid_rrf": _metric_summary(fallback_ranks),
         "voyage_rerank": (
-            _metric_summary(voyage_ranks) if len(voyage_ranks) == len(cases) else None
+            _metric_summary(voyage_ranks) if voyage_answerable_complete else None
         ),
         "reranker_latency_ms": {
             "p50": _percentile(reranker_latencies_ms, 50),
@@ -475,19 +553,17 @@ async def run_ablation(dataset_path: Path) -> dict[str, Any]:
         "processed_tokens": processed_tokens,
         "reserved_provider_tokens": reserved_provider_tokens,
         "estimated_cost_usd": round(estimated_cost_usd, 8),
-        "provider_success_count": len(voyage_ranks),
+        "provider_success_count": provider_success_count,
         "provider_failure_counts": failure_counts,
         "timeout_rate": round(failure_counts["timeout"] / len(cases), 6),
         "rate_limit_rate": round(failure_counts["rate_limit"] / len(cases), 6),
         "error_rate": round(sum(failure_counts.values()) / len(cases), 6),
         "fallback_rate": round(fallback_count / len(cases), 6),
-        "quality_comparison_valid": len(voyage_ranks) == len(cases),
+        "quality_comparison_valid": voyage_answerable_complete,
         "privacy_policy_rejection_count": 0,
-        "first_stage_retrieval_misses": [
-            case.case_id
-            for case, rank in zip(cases, fallback_ranks, strict=True)
-            if rank is None
-        ],
+        "first_stage_retrieval_misses": _first_stage_retrieval_misses(
+            cases, baseline_case_ranks
+        ),
         "groundedness_and_citation": (
             "not_applicable: retrieval-only ablation does not generate answers or citations"
         ),
