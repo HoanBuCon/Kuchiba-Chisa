@@ -51,8 +51,10 @@
       "voyage_reciprocal_rank": 1.0,
       "provider_status": "success",
       "processed_token_estimate": 4509,
-      "reranker_latency_ms": 937.626,
-      "total_retrieval_latency_ms": 6888.419
+      "pacing_wait_ms": 0.0,
+      "provider_http_latency_ms": 552.529,
+      "reranker_total_elapsed_ms": 556.952,
+      "total_retrieval_latency_ms": 759.968
     },
     {
       "case_id": "p02",
@@ -100,8 +102,10 @@
       "voyage_reciprocal_rank": 1.0,
       "provider_status": "success",
       "processed_token_estimate": 4144,
-      "reranker_latency_ms": 304.806,
-      "total_retrieval_latency_ms": 418.518
+      "pacing_wait_ms": 0.0,
+      "provider_http_latency_ms": 301.528,
+      "reranker_total_elapsed_ms": 305.708,
+      "total_retrieval_latency_ms": 356.358
     },
     {
       "case_id": "p03",
@@ -149,8 +153,10 @@
       "voyage_reciprocal_rank": 1.0,
       "provider_status": "success",
       "processed_token_estimate": 3995,
-      "reranker_latency_ms": 58945.775,
-      "total_retrieval_latency_ms": 59001.599
+      "pacing_wait_ms": 59060.02,
+      "provider_http_latency_ms": 412.033,
+      "reranker_total_elapsed_ms": 59476.201,
+      "total_retrieval_latency_ms": 59518.001
     },
     {
       "case_id": "p04",
@@ -198,8 +204,10 @@
       "voyage_reciprocal_rank": 1.0,
       "provider_status": "success",
       "processed_token_estimate": 3944,
-      "reranker_latency_ms": 962.293,
-      "total_retrieval_latency_ms": 997.506
+      "pacing_wait_ms": 152.299,
+      "provider_http_latency_ms": 301.429,
+      "reranker_total_elapsed_ms": 457.79,
+      "total_retrieval_latency_ms": 496.526
     },
     {
       "case_id": "p05",
@@ -247,8 +255,10 @@
       "voyage_reciprocal_rank": 0.5,
       "provider_status": "success",
       "processed_token_estimate": 4374,
-      "reranker_latency_ms": 59074.251,
-      "total_retrieval_latency_ms": 59111.561
+      "pacing_wait_ms": 59053.426,
+      "provider_http_latency_ms": 354.008,
+      "reranker_total_elapsed_ms": 59411.885,
+      "total_retrieval_latency_ms": 59458.386
     },
     {
       "case_id": "p06",
@@ -296,8 +306,10 @@
       "voyage_reciprocal_rank": 0.5,
       "provider_status": "success",
       "processed_token_estimate": 3514,
-      "reranker_latency_ms": 884.993,
-      "total_retrieval_latency_ms": 925.75
+      "pacing_wait_ms": 187.179,
+      "provider_http_latency_ms": 319.757,
+      "reranker_total_elapsed_ms": 510.508,
+      "total_retrieval_latency_ms": 555.409
     },
     {
       "case_id": "p07",
@@ -345,8 +357,10 @@
       "voyage_reciprocal_rank": 1.0,
       "provider_status": "success",
       "processed_token_estimate": 5085,
-      "reranker_latency_ms": 59051.046,
-      "total_retrieval_latency_ms": 59096.75
+      "pacing_wait_ms": 59036.677,
+      "provider_http_latency_ms": 401.513,
+      "reranker_total_elapsed_ms": 59442.975,
+      "total_retrieval_latency_ms": 59496.742
     },
     {
       "case_id": "p08",
@@ -394,8 +408,10 @@
       "voyage_reciprocal_rank": 1.0,
       "provider_status": "success",
       "processed_token_estimate": 5159,
-      "reranker_latency_ms": 59955.858,
-      "total_retrieval_latency_ms": 59999.863
+      "pacing_wait_ms": 59559.311,
+      "provider_http_latency_ms": 603.82,
+      "reranker_total_elapsed_ms": 60167.418,
+      "total_retrieval_latency_ms": 60212.546
     },
     {
       "case_id": "p09",
@@ -443,8 +459,10 @@
       "voyage_reciprocal_rank": 1.0,
       "provider_status": "success",
       "processed_token_estimate": 4439,
-      "reranker_latency_ms": 327.85,
-      "total_retrieval_latency_ms": 380.531
+      "pacing_wait_ms": 0.0,
+      "provider_http_latency_ms": 367.772,
+      "reranker_total_elapsed_ms": 371.943,
+      "total_retrieval_latency_ms": 428.691
     },
     {
       "case_id": "p10",
@@ -492,8 +510,10 @@
       "voyage_reciprocal_rank": 1.0,
       "provider_status": "success",
       "processed_token_estimate": 4115,
-      "reranker_latency_ms": 59553.388,
-      "total_retrieval_latency_ms": 59590.574
+      "pacing_wait_ms": 58926.994,
+      "provider_http_latency_ms": 374.464,
+      "reranker_total_elapsed_ms": 59305.136,
+      "total_retrieval_latency_ms": 59345.211
     },
     {
       "case_id": "p11",
@@ -541,8 +561,10 @@
       "voyage_reciprocal_rank": 1.0,
       "provider_status": "success",
       "processed_token_estimate": 3723,
-      "reranker_latency_ms": 415.234,
-      "total_retrieval_latency_ms": 466.373
+      "pacing_wait_ms": 263.022,
+      "provider_http_latency_ms": 305.058,
+      "reranker_total_elapsed_ms": 571.872,
+      "total_retrieval_latency_ms": 613.391
     },
     {
       "case_id": "p12",
@@ -590,8 +612,10 @@
       "voyage_reciprocal_rank": 1.0,
       "provider_status": "success",
       "processed_token_estimate": 4939,
-      "reranker_latency_ms": 59552.575,
-      "total_retrieval_latency_ms": 59607.139
+      "pacing_wait_ms": 58963.554,
+      "provider_http_latency_ms": 439.445,
+      "reranker_total_elapsed_ms": 59408.86,
+      "total_retrieval_latency_ms": 59465.061
     },
     {
       "case_id": "p13",
@@ -639,8 +663,10 @@
       "voyage_reciprocal_rank": 1.0,
       "provider_status": "success",
       "processed_token_estimate": 4778,
-      "reranker_latency_ms": 351.039,
-      "total_retrieval_latency_ms": 388.923
+      "pacing_wait_ms": 173.897,
+      "provider_http_latency_ms": 296.307,
+      "reranker_total_elapsed_ms": 475.307,
+      "total_retrieval_latency_ms": 521.129
     },
     {
       "case_id": "p14",
@@ -688,8 +714,10 @@
       "voyage_reciprocal_rank": 1.0,
       "provider_status": "success",
       "processed_token_estimate": 5124,
-      "reranker_latency_ms": 59594.358,
-      "total_retrieval_latency_ms": 59631.907
+      "pacing_wait_ms": 58987.568,
+      "provider_http_latency_ms": 479.579,
+      "reranker_total_elapsed_ms": 59472.153,
+      "total_retrieval_latency_ms": 59511.696
     },
     {
       "case_id": "p15",
@@ -737,8 +765,10 @@
       "voyage_reciprocal_rank": 1.0,
       "provider_status": "success",
       "processed_token_estimate": 4984,
-      "reranker_latency_ms": 59868.888,
-      "total_retrieval_latency_ms": 59909.641
+      "pacing_wait_ms": 59481.153,
+      "provider_http_latency_ms": 452.677,
+      "reranker_total_elapsed_ms": 59938.476,
+      "total_retrieval_latency_ms": 59982.041
     }
   ],
   "baseline": {
@@ -753,16 +783,56 @@
     "hit_at_5": 1.0,
     "mrr_at_10": 0.9333333333333333
   },
-  "reranker_latency_ms": {
-    "average": 31985.33204000026,
-    "p50": 58945.775,
-    "p95": 59955.858
+  "context_precision": "not_evaluable_label_incomplete",
+  "case_outcomes": {
+    "improved": [
+      "p06",
+      "p07",
+      "p10",
+      "p15"
+    ],
+    "unchanged": [
+      "p01",
+      "p02",
+      "p03",
+      "p04",
+      "p05",
+      "p08",
+      "p09",
+      "p11",
+      "p12",
+      "p13",
+      "p14"
+    ],
+    "degraded": []
+  },
+  "provider_http_latency_ms": {
+    "min": 296.307,
+    "mean": 397.461,
+    "p50": 374.464,
+    "p95": 603.82,
+    "max": 603.82
+  },
+  "pacing_wait_ms": {
+    "total": 473845.099,
+    "mean": 31589.673,
+    "p50": 58926.994,
+    "p95": 59559.311,
+    "paced_case_count": 12
+  },
+  "reranker_total_elapsed_ms": {
+    "min": 305.708,
+    "mean": 31991.546,
+    "p50": 59305.136,
+    "p95": 60167.418,
+    "max": 60167.418
   },
   "total_retrieval_latency_ms": {
-    "p50": 59001.599,
-    "p95": 59999.863
+    "p50": 59345.211,
+    "p95": 60212.546
   },
   "provider_calls": 15,
+  "provider_success_count": 15,
   "processed_tokens": 53458,
   "estimated_cost_usd": 0.00106916,
   "failures": {

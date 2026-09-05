@@ -61,6 +61,8 @@ async def test_remote_adapter_reconstructs_scores_in_input_order(
         scores = await reranker.rerank("query", ["first", "second"])
 
     assert reranker.data_boundary is RerankerDataBoundary.REMOTE
+    assert reranker.last_http_latency_ms is not None
+    assert reranker.last_http_latency_ms >= 0
     assert scores == [0.14, 0.91]
     assert received["url"] == expected_url
     assert received["headers"]["authorization"] == "Bearer test-key"
@@ -95,8 +97,10 @@ async def test_remote_adapter_rejects_partial_or_duplicate_scores() -> None:
             max_documents=15,
             http_client=client,
         )
-        with pytest.raises(RerankerUnavailableError, match="invalid score"):
+        with pytest.raises(RerankerUnavailableError, match="invalid response") as error:
             await reranker.rerank("query", ["first", "second"])
+    assert error.value.failure_kind is RerankerFailureKind.INVALID_RESPONSE
+    assert reranker.last_http_latency_ms is None
 
 
 @pytest.mark.asyncio

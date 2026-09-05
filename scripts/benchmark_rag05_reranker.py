@@ -74,9 +74,11 @@ class VoyageTierZeroPacer:
     def __init__(self) -> None:
         self._reservations: list[tuple[float, int]] = []
 
-    async def reserve(self, estimated_tokens: int) -> None:
+    async def reserve(self, estimated_tokens: int) -> float:
+        """Reserve capacity and return milliseconds actually spent asleep."""
         if not 0 < estimated_tokens <= self._TOKENS_PER_MINUTE:
             raise ValueError("a benchmark request exceeds the Voyage Tier 0 token budget")
+        waited_ms = 0.0
         while True:
             now = time.monotonic()
             self._reservations = [
@@ -89,9 +91,11 @@ class VoyageTierZeroPacer:
             token_limit_reached = reserved_tokens + estimated_tokens > self._TOKENS_PER_MINUTE
             if not request_limit_reached and not token_limit_reached:
                 self._reservations.append((now, estimated_tokens))
-                return
+                return waited_ms
             wait_seconds = max(0.01, 60 - (now - self._reservations[0][0]))
+            wait_started = time.perf_counter()
             await asyncio.sleep(wait_seconds)
+            waited_ms += (time.perf_counter() - wait_started) * 1000
 
 
 def _require_string(value: object, field_name: str) -> str:

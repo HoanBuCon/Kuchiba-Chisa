@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import math
+import time
 from collections.abc import Mapping, Sequence
 from enum import StrEnum
 from typing import Any
@@ -67,9 +68,16 @@ class ApiCrossEncoderReranker:
         self._max_documents = max_documents
         self._http_client = http_client
         self._pii_redactor = pii_redactor or PiiRedactor()
+        self._last_http_latency_ms: float | None = None
+
+    @property
+    def last_http_latency_ms(self) -> float | None:
+        """Latency of the latest successfully validated provider response."""
+        return self._last_http_latency_ms
 
     async def rerank(self, query: str, documents: Sequence[str]) -> list[float]:
         """Return one finite score per document or a typed unavailable result."""
+        self._last_http_latency_ms = None
         if not query.strip() or not documents:
             return []
         if len(documents) > self._max_documents:
@@ -95,6 +103,7 @@ class ApiCrossEncoderReranker:
         if self._provider is ApiRerankerProvider.JINA:
             payload["return_documents"] = False
 
+        request_started = time.perf_counter()
         try:
             response = await self._http_client.post(
                 self._ENDPOINTS[self._provider],
@@ -132,7 +141,15 @@ class ApiCrossEncoderReranker:
                 failure_kind=RerankerFailureKind.INVALID_RESPONSE,
             ) from error
 
-        return self._parse_scores(response_payload, len(documents))
+        try:
+            scores = self._parse_scores(response_payload, len(documents))
+        except RerankerUnavailableError as error:
+            raise RerankerUnavailableError(
+                "remote reranker returned an invalid response",
+                failure_kind=RerankerFailureKind.INVALID_RESPONSE,
+            ) from error
+        self._last_http_latency_ms = (time.perf_counter() - request_started) * 1000
+        return scores
 
     def _parse_scores(self, response_payload: object, expected_count: int) -> list[float]:
         if not isinstance(response_payload, dict):
