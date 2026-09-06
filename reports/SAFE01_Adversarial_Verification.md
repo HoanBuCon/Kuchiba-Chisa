@@ -1,6 +1,6 @@
 # SAFE-01 Mandatory Adversarial Verification
 
-Status: **PASS**  
+Status: **PASS**
 Requirements: `SEC-RAG-001`, `SEC-RAG-002`, `SEC-RAG-003`, `SEC-RAG-008`, `NFR-RAG-008`
 
 ## Versioned suite

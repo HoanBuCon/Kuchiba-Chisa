@@ -1,6 +1,6 @@
 # TD-036 Ruff Debt Ratchet Verification
 
-Status: **PASS**  
+Status: **PASS**
 Requirements: `TD-036`, `NFR-OPS-006`, `NFR-OPS-006A`
 
 ## Implementation
