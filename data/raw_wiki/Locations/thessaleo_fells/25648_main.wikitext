@@ -1,0 +1,45 @@
+**Profile**: Title: Thessaleo Fells, Origin: Rinascita.
+
+{{Intro/Location|Thessaleo Fells}}  The rugged mountains of Thessaleo Fells always seem shrouded in the darkness of night, their gloom as deep as the abyssal sea. Once the domain of the [[Fisalia Family]], the oldest lineage in Ragunna, this desolate place remains one few outsiders dare to tread.
+
+==Areas==
+{| class="article-table alternating-colors-table tdc1" style="width: 100%;"
+! style="width: 200px;" |Name
+!Image
+!Description
+|- id="Garden of the Lost"
+|[[Garden of the Lost]]
+|[[File:Garden of the Lost.png|180px]] 
+
+|
+|- id="Twin Peaks"
+|[[Twin Peaks]]
+|[[File:Twin Peaks.png|180px]] 
+
+|
+|- id="Thorncrown Rises"
+|[[Thorncrown Rises]]
+|[[File:Thorncrown Rises.png|180px]] 
+
+|
+|- id="Porto-Veno Castle"
+|[[Porto-Veno Castle]]
+|[[File:Porto-Veno Castle.png|180px]] 
+
+|}
+==Quests==
+{{Quest by Category List|Thessaleo Fells Quests}}
+
+==Exploration Report==
+
+==='''Defendant's Witness I'''===
+* Unlocked by reaching 50% exploration.
+
+==='''Defendant's Witness II'''===
+* Unlocked by reaching 100% exploration.
+
+== Notable Features==
+===Bosses===
+====Overlord Class====
+* {{Enemy|Nightmare: Impermanence Heron}}
+===Resources===

@@ -1,0 +1,54 @@
+**Profile**: Title: Tidelost Forest, Origin: Roya Frostlands.
+
+{{Intro/Location|Tidelost Forest}}
+
+==Areas==
+{| class="article-table alternating-colors-table tdc1" style="width: 100%;"
+! style="width: 200px;" |Name
+!Image
+!Description
+|- id="Exostrider Observation Station"
+|[[Exostrider Observation Station]]
+|[[File:Exostrider Observation Station.png|180px]]
+|An observation station where members of the Roya Tribe and Spacetrek Collective anticipate the day of the Exostrider's awakening.
+|- id="Everfrost Cavern"
+|[[Everfrost Cavern]]
+|[[File:Everfrost Cavern.png|180px]]
+|Ruins of a field research station, kept safe from harm, frozen in the ice.
+|- id="Wavecleave Cape"
+|[[Wavecleave Cape]]
+|[[File:Wavecleave Cape.png|180px]]
+|Raging waves go no further here, hence the name Wavecleave Cape.
+|- id="Exostrider Slumber Site"
+|[[Exostrider Slumber Site]]
+|[[File:Exostrider Slumber Site.png|180px]]
+|The colossal mech Exostrider watches over the Roya, awaiting the day it must confront the Threnodian Aleph-1 once more.
+|}
+
+==Quests==
+{{Quest by Category List|Tidelost Forest Quests}}
+
+==Exploration Report==
+===Conversation Record with A Solsword (Excerpt)===
+* Achieve 50% Area Exploration Progress to unlock the full report. 
+
+===Summary of the Conversation with A Solsworn===
+* Achieve 100% Area Exploration Progress to unlock the full report. 
+
+==Notable Features==
+===Challenges===
+* [[Frostlands Surface - Void Storm Zone I]]
+* [[Frostlands Surface - Void Storm Zone II]]
+
+===Bosses===
+*{{Enemy|Sigillum}}
+
+===Enemies===
+*{{Enemy|Kronablight}}
+*{{Enemy|Glommoth}}
+*{{Enemy|Flora Reindeer}}
+*{{Enemy|Mining Reindeer}}
+*{{Enemy|Iceglint Dancer}}
+
+===Resources===
+*{{Item|Foxtail Kelp}}

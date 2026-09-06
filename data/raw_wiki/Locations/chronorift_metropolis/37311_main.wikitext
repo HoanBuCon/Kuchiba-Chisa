@@ -1,0 +1,68 @@
+**Profile**: Title: Chronorift Metropolis, Origin: The Black Shores.
+
+{{Location Tabs}}
+
+> A ruined city, like amber trapped in the Sonoro. Once-bustling streets lie overgrown with wild grass, low roads swallowed by seawater. The Lament repeats endlessly, and time and space are fractured, but this view seems frozen, stopped in a silent eternity.
+> — [https://wutheringwaves.kurogames.com/en/main#regions Wuthering Waves Official Website]
+{{Intro/Location|Chronorift Metropolis}}
+
+==Quests==
+{{Quest by Category List|Chronorift Metropolis Quests}}
+
+==Areas==
+{| class="article-table alternating-colors-table tdc1" style="width: 100%;"
+! style="width: 200px;" |Name
+!Image
+! Description
+|- id="Shashou Cafe"
+|[[Shashou Cafe]] 
+|[[File:Shashou Cafe.png|180px]]
+|
+|- id="Sazanami Avenue"
+|[[Sazanami Avenue]]
+|[[File:Sazanami Avenue.png|180px]]
+|
+|- id="Shiawase Fountain Square"
+|[[Shiawase Fountain Square]]
+|[[File:Shiawase Fountain Square.png|180px]]
+|
+|- id="Sakura Pedway"
+|[[Sakura Pedway]]
+|[[File:Sakura Pedway.png|180px]]
+|
+|- id="Sakura Quarter"
+|[[Sakura Quarter]]
+|[[File:Sakura Quarter.png|180px]]
+|This area was once known as "Honami's most beautiful living quarter," where homes and cherry blossoms stood in perfect harmony. Though the houses now lie hollow and lifeless, the cherry blossoms only flourish more vibrantly...
+|- id="Harukaze Stadium"
+|[[Harukaze Stadium]]
+|[[File:Harukaze Stadium.png|180px]]
+|Built under the City Hall's initiative, this once-grand football arena has long fallen into neglect. In its prime, however, the annual "Harukaze Cup" drew school teams from across the region and filled the stands with cheering crowds.
+|- id="Meishin Passageway"
+|[[Meishin Passageway]]
+|[[File:Meishin Passageway.png|180px]]
+|
+|- id="Honami Convention Center"
+|[[Honami Convention Center]]
+|[[File:Honami Convention Center.png|180px]]
+|
+|- id="Hanakage Underground Street"
+|[[Hanakage Underground Street]]
+|[[File:Hanakage Underground Street.png|180px]]
+|A cultural passage beneath the city, famed for its flower trees and the celebrated Seisen Garden. It was ance the city's hub for film festivals and photography exhibitions.
+|- id="Honami Central Park"
+|[[Honami Central Park]]
+|[[File:Honami Central Park.png|180px]]
+|Nestled in the city's center, this park was once a beloved retreat, its gardens draped in cascades of wisteria. The fish windsocks floating above the park used to be a popular sight, but now, for some reason, they all seem to be slowly drifting toward a single spot...
+|}
+
+==Notable Features==
+===Nightmare Nests===
+* [[Honami City Nightmare Nest]]
+
+===Resources===
+* {{Item|Summer Flower}}
+* {{Item|Lemongrass}}
+* {{Item|Perilla}}
+
+===Videos===

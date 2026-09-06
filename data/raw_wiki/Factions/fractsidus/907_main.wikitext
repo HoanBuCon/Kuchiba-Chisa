@@ -1,0 +1,135 @@
+# Fractsidus
+
+**Faction Profile**: Leader: Schwarzloch, Enemies: Black Shores;Jinzhou;Montelli Family;Septimont.
+
+ 
+
+The '''Fractsidus''' is a mysterious global terrorist organization that serves as the main antagonistic faction of ''[[Wuthering Waves]]''. Their aim is to accelerate the next [[The Lament|Lament]] - dubbed the "True Lament" - by resurrecting the [[Threnodian]]s, viewing the Lament not as an apocalyptic catastrophe but as a sign of necessary evolution for humanity. They have caused attacks of various scales across the world in their quest for absolute power and a distorted sense of Resonance Equality.
+
+==Overview==
+The Fractsidus' strongest belief is that, to attain the next level of human evolution, individuals must absorb [[Tacet Discord]]s into themselves, engaging in a transformative struggle. They are infamous for using [[Mask of Constraint|Masks of Constraint]] in order to suppress the body's natural rejection of merging with a Tacet Discord. A major side effect of these masks is the suppression of natural human emotions, ultimately leading to the complete loss of their humanity as their transformation progresses.
+
+They seek to gain powerful allies to their cause, such as [[Rover]] and [[Galbrena]], and were currently working with the [[Order of the Deep]]. They have completely infiltrated the upper echelons of [[New Federation]] society, and from their base in that wealthy nation money flows around the planet to fund their operations.
+
+On the other hand, they are deemed enemies of [[Jinzhou]] by [[Jinhsi]], the [[Montelli Family]], and [[Septimont]] due to their aggravated actions against their regions.
+
+==Organization==
+There are two known ranks within the Fractsidus: "Artificers", a lower rank, and the "Overseers", commanders of the Fractsidus. At its very top lies the thousand-faced [[Schwarzloch|Grand Architect]]. Some Artificers have enhanced body modifications due to [["Hydra"]]'s work. The individual cells of Fractsidus function relatively independently, although most money is directed from the New Federation, where [["Eris"]] runs the organisation in the country from the shadows.
+
+=== Overseers ===
+The Overseers are the Fractsidus' generals, taking on powerful forces and achieving objectives mostly independently. While most members serve as Artificers, the Overseers are responsible for commanding large cells and directing the organization's main objectives. Notably, accelerating the coming [[The Lament|True Lament]] by resurrecting [[Threnodian]]s and merging humans with Tacet Discords.
+
+The recruitment process for Overseers appears to be something to do with them "having crossed the veil that parts life and death," as stated by Schwarzloch when trying to recruit Galbrena. Phrolova was the oldest and longest running Overseer.
+
+==Known Members==
+===Notable Personnel===
+====Overseers====
+{| class="article-table"
+!Icon!!Personnel!!Codename!!Position!!Status!!Region of Operation
+|-
+|
+|[[Schwarzloch]]
+"The Grand Architect"
+|"Thousand-faced Leader"
+|Leader
+|Active
+|[[Solaris-3]]
+|-
+|
+|"The Vice Architect"
+|[["Eris"]]
+|Overseer
+|Active
+|[[New Federation]]
+|-
+|[[File:Resonator Phrolova.png|50px]]
+|[[Phrolova]]
+"The Conductor"
+|"Hecate"
+|Overseer
+|Resigned
+|[[Jinzhou]], [[Ragunna]], [[Septimont]]
+|-
+|[[File:Scar Lightbane Reversal Icon.png|50px]]
+|[[Scar]]
+|
+|Overseer
+|Active
+|[[Jinzhou]], [[Septimont]]
+|-
+|[[File:NPC Cristoforo Unmasked.png|45px]]
+|[[Cristoforo]]
+"The Playwright"
+|"Arachnos"
+|Overseer
+|Active
+|[[Ragunna]], [[Septimont]]
+|-
+|
+|
+|[["Hydra"]]
+|Overseer
+|Active
+|
+|-
+|
+|
+|[["Siren"]]
+|Overseer 
+|Active
+|
+|-
+|
+|[[Zashiki-warashi]]
+|
+|Overseer
+|Active
+|[[Ashinohara]]
+|-
+|
+|[[The Excellency|"The Excellency"]]
+|
+|Overseer
+|Unknown
+|[[Mt. Firmament]] (Jinzhou)
+|}
+All codenames are references to mythological beings.  is the Greek goddess of witchcraft;  was a talented weaver who challenged the goddess Minerva to a contest in Ovid's ''Metamorphoses'';  is the Greek goddess of strife and discord; the  is a serpentine creature Hercules defeats as part of his Twelve Labours;  are humanlike beings that tempt sailors to their deaths. While it is not clear if Zashiki-warashi is a codename, it is the name for a  that lives in storage rooms, plays pranks, and can confer fortune to a family. The Grand Architect refers to the overseers as 'the children'.
+
+====Operatives====
+{| class="article-table"
+!Icon!!Personnel!!Codename!!Position!!Status!!Region of Operation
+|-
+|[[File:Resonator Denia.png|45px]]
+|[[Denia]]
+|N/A
+|Experimental subject and spy
+[[Threnodian]] Resonator
+|Inactive 
+|[[Lahai-Roi]]
+|}
+
+===Infantry=== 
+* [[Fractsidus Executioner]]
+* [[Fractsidus Inspector]]
+* [[Fractsidus Cannoneer]]
+* [[Fractsidus Gunmaster]]
+* [[Fractsidus Thruster]]
+* [[Abyssal Gunmaster]]
+* [[Ogo]]
+* [[Lynae (Fractsidus)|Lynae]]
+* [[Yngvar]]
+* [[Warren]]
+
+===Allies===
+* [[Muyu]]
+
+==Trivia==
+*The [[Court of Savantae]] in [[Jinzhou]] was sponsored by a male Fractsidus Overseer, who in return for his patronage, meddled with their experiments with artificial [[Retroact Rain]] and a replica of a lost civilization, ultimately leading to the deaths of all of the researchers at the hands of the [[Mech Abomination]] they created. The identity of this Overseer is currently unknown.
+**Potential candidates include:
+***Cristoforo
+***Scar
+***The Excellency
+*In Camellya's Companion Quest, she mentions that Tethys has simulated a universe where she joined the Fractsidus. The visual of this simulated universe is Camellya alongside [[Scar]] and [[Phrolova]], potentially indicating that she was an Overseer in this projected timeline. If this is the case, her condition lines up with what other Overseers have experienced: parting the veil between life and death. Camellya has repeatedly been brought to the brink of life and revived without her memories, thus having experienced a sort of "death".
+
+===Etymology===
+*Fractsidus is derived from the Latin ''frāctus'', ancestor of English "fracture," and ''sīdus''. This is reflected in the Asian names for the Fractsidus, "broken star society."

@@ -1,0 +1,111 @@
+**Profile**: Title: Mt. Firmament, Origin: Huanglong.
+
+{{Location Tabs|Map:Mt. Firmament}}
+
+{{Intro/Location|Mt. Firmament {{lang|zh=乘霄山|zh_rm=Chéngxiāo-shān}}}} It is a secluded region located in the southeastern seas of [[Jinzhou]]. It is historically significant as the ancestral home of Jinzhou's original settlers and the birthplace of the Magistrate and Sentinel Resonator, [[Jinhsi]]. The region is defined by unique temporal properties. Due to the influence of [[Sentinel]] [[Jué|Jué’s]] Temporal Mandate—originally implemented as a defensive measure against [[Tacet Discord|Tacet Discords]]—the passage of time on the mountain diverges from the standard timeline of the outside world. This results in inconsistent temporal patterns throughout the area.
+
+==Areas==
+{| class="article-table alternating-colors-table tdc1" style="width: 100%;"
+! style="width: 200px;" |Name
+!Image
+! Description
+|- id="Hongzhen"
+|[[Hongzhen]] 
+|[[File:Hongzhen.png|180px]]
+
+|A self-sufficient town isolated from the outside world. Buildings of sleekness and elegance are scattered in the streets, with red leaves and white snow adding to its silent beauty.
+|- id="Loong's Crest"
+|[[Loong's Crest]]
+|[[File:Loong's Crest.png|180px]]
+
+|Originally called the Empyrean Cliff, the pinnacle of Loong's Crest perches atop Mt. Firmament. To celebrate the blessings of Jué, residents of Mt. Firmament carved its central pike into Jué's statute, after which Empyrean Cliff was renamed Loong's Crest.
+|- id="Loong's Rest"
+|[[Loong's Rest]]
+|[[File:Loong's Rest.png|180px]]
+
+|The dormant ground for Sentinel Jué. In relentless winds and year-round snow, scarce traces of humanity can be found here. Rumor has it that formidable obstacles are set to hinder steps from whom dare to trespass its domain.
+|- id="Loong's Ridge"
+|[[Loong's Ridge]]
+|[[File:Loong's Ridge.png|180px]]
+
+|South to the Mt. Firmament aligns towering mountains, weaving a winding and tortuous course akin to a loong's body, hence its name. Though perilous peaks protrude along Loong's Ridge, it harbors a diverse variety of tundra inhabitants.
+|- id="Luminous Shore"
+|[[Luminous Shore]]
+|[[File:Luminous Shore.png|180px]]
+
+|The very vessel that carried a vast field of shore resting on the corner of Mt. Firmament. It stands on the endless ridge of Mt. Firmament, welcoming roving voyagers on the farther side of the sea of fog.
+|- id="Mianloong Chamber"
+|[[Mianloong Chamber]]
+|[[File:Traces of Mt. Firmament VII.png|180px]]
+
+|Jué's place of rest and respite, and the origin point of all Jinzhou. Legend says that it fell from the sky, carrying the Sentinel inside.
+|- id="Tianqu Tree"
+|[[Tianqu Tree]]
+|[[File:Tianqu Tree.png|180px]]
+
+|By the towering canopy of Tianqu Tree, myriad maple leaves adorn the surface of the pond. Legend has it that these fallen leaves shall one day return to the embrace of the tree's branches.
+|- id="Truthseeker's Pass"
+|[[Truthseeker's Pass]]
+|[[File:Truthseeker's Pass.png|180px]]
+
+|Ruins of the Court of Savantae, nestled in a lonely corner of a hidden world.
+|- id="Woodveil Hall"
+|[[Woodveil Hall]]
+|[[File:Woodveil Hall.png|180px]]
+
+|An ancient cave, hiding a long-hidden secret.
+|- id="Xuanji Ridges"
+|[[Xuanji Ridges]]
+|[[File:Xuanji Ridges.png|180px]]
+
+|When Jué first appeared in Mt. Firmament, it left giant and strange rings interspersed among lofty cliffs. No one can perceive their meanings, except Jué.
+|}
+
+==Quests==
+{{Quest by Category List|Mt. Firmament}}
+
+==Exploration Report==
+===Lonely SOL-3: Hongzhen Hot Springs Special Edition I===
+Unlocked by reaching 50% exploration.
+
+===Lonely SOL-3: Hongzhen Hot Springs Special Edition II===
+Unlocked by reaching 100% exploration.
+
+==Notable Features==
+*Nine [[Traces of Mt. Firmament]] can be collected in this region with the [[Trace Scale]].
+*Swimming in the [[Sagaci Springs]] will restore [[HP]] over time to all [[Resonators]] in the player's team.
+
+===Bosses===
+*{{Enemy|Jué/Boss}}
+
+===Resources===
+*{{Item|Loong's Pearl}}
+*{{Item|Pavo Plum}}
+*{{Item|Silver Lotus}} 
+
+==Lore==
+Due to the [[Temporal Barrier]] affecting the flow of time, leaving Mt. Firmament comes at the cost having one's life shortened exponentially. The longer that someone lives in the Temporal Barrier, the less likely that they are to survive leaving. This is the reason behind most of the people of Hongzhen coming to Mt. Firmament and living their entire lives there.
+
+In ancient times, a colossal vehicle descended on Mt. Firmament alongside [[Jué]], and this vehicle became [[Mianloong Chamber]]. It is believed that the Sentinel came from a faraway star, and the chamber was its hibernation pod. Researchers from the [[Court of Savantae]] often visited the mountain, and built defense mechanisms for the Mianloong Chamber in exchange for the opportunity to research the area's time fluctuations.
+
+At one point, a group of individuals young enough to survive the aging, one of them being [[Rover]] left Mt. Firmament and founded [[Jinzhou]]. Others stayed and worshipped Jué as their god, vowing to protect the land, and carved the sentinel's likeness into the mountain.
+
+==Soundtracks==
+{{Soundtracks by Category Table|type=location}}
+
+==Descriptions==
+A secluded island situated in the southeastern ocean of Jinzhou territory. Cloaked in mist, it obscures its connection to the secular world. Mt. Firmament serves as the ancestral homeland of Jinzhou inhabitants. Legend has it that Sentinel "Jué" descended here to guide them. Navigating its waters is treacherous due to the thick fog. To safely reach its shores, you'll need to wait for precise timing and the expertise of a "Wayfinder".
+A sanctuary in the southeastern seas of Jinzhou, sealed away beyond the reach of common folks in thick fogs. According to ancient records, Mt. Firmament is the ancestral home of Jinzhou's earliest settlers. Sentinel Jué once descended upon this land, using the power of Temporal Mandate to protect it from Tacet Discords. Consequently, the flow of time within Mt. Firmament diverges from that of the outside world. In earlier times, scholars from the Court of Savantae were fortunate enough to uncover the mountain's hidden mysteries, leaving behind research facilities and invaluable records before vanishing without a trace.
+
+===Videos===
+
+===Other Media===
+
+==Trivia==
+*Mt. Firmament is based on the province of , near Shanghai.
+**Zhejiang is well-known for being mountainous, and for its hot springs, especially in Jinhua.
+**The province is the spiritual home of weiqi, with its mythological origin on Mount Lanke referenced in Changli's [[Immortal Blaze|story]].
+**Mount Lanke is also home to a cave where immortals such as Chisongzi are said to cultivate their powers. In a folktale, this cave causes time inside to pass at a much slower rate.
+
+===Etymology===
+*The Chinese name, {{lang|zh=乘霄山|zh_rm=Chéngxiāo-shān}}, means "ascending sky mountain."

@@ -1,0 +1,47 @@
+**Profile**: Title: Starblind Crashsite, Origin: Roya Frostlands.
+
+{{Intro/Location|Starblind Crashsite}}
+
+==Areas==
+{| class="article-table alternating-colors-table tdc1" style="width: 100%;"
+! style="width: 200px;" |Name
+!Image
+!Description
+|- id="Oldfrost Harbor"
+|[[Oldfrost Harbor]]
+|[[File:Oldfrost Harbor.png|180px]]
+|At the old seaport, ice floes drift near the harbor as the frigid tide whips the seawater, sculpting towering glaciers along the shore.
+|- id="Observation Passage"
+|[[Observation Passage]]
+|[[File:Observation Passage.png|180px]]
+|
+|- id="SkyArk Space Station"
+|[[SkyArk Space Station]]
+|[[File:SkyArk Space Station.png|180px]]
+|One of the near-orbit space stations humanity built before the Etheric Sea sealed off Solaris. Magnetic disturbances from the Lament sent it crashing down, but it remained largely whole. Its ruins once sheltered the Roya from the cold and served as an exploration outpost.
+|- id="SkyArk Space Station: Central Sector"
+|[[SkyArk Space Station: Central Sector]]
+|[[File:SkyArk Space Station Central Sector.png|180px]]
+|
+|- id="SkyArk Space Station: Blocked Sector"
+|[[SkyArk Space Station: Blocked Sector]]
+|[[File:SkyArk Space Station Blocked Sector.png|180px]]
+|
+|}
+
+==Quests==
+{{Quest by Category List|Starblind Crashsite Quests}}
+
+==Exploration Report==
+===Overview on the Exploration Project of Frostlands Space Station (Excerpt)===
+* Achieve 50% Area Exploration Progress to unlock the full report. 
+
+===SkyArk Space Station Project Summary (Excerpt)===
+* Achieve 100% Area Exploration Progress to unlock the full report. 
+
+==Notable Features==
+===Challenges===
+* [[Starblind Crashsite Tacet Discord Nest]]
+
+===Bosses===
+* {{Enemy|Nameless Explorer}}

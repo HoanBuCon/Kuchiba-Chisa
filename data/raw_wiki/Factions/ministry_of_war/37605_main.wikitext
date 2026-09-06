@@ -1,0 +1,6 @@
+# Ministry of War
+
+The Ministry of War is one of the governing bodies of the nation of [[Huanglong]]. Its highest official, the Minister of War, has the honorary title of Grand Marshal. The current Grand Marshal, who put the execution order out on [[Scar]], is a woman.
+==Resonators==
+===Playable===
+{{Resonators by Category Table|Playable Resonators&Ministry of War}}

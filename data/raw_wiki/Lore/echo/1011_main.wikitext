@@ -1,0 +1,12 @@
+**Profile**: Title: Echo.
+
+{{CustomTabs
+|tab1 = Overview
+|tab2 = List
+|tab3 = Stats
+|tab4 = Leveling
+
+The [[Pangu Terminal]] can capture and reproduce a unique frequency, known as the [[Tacet Discord]] ability. However, there is a possibility that it will leave behind a [[Reverberation]] effect when shattered. This Reverberation can be transformed into an '''Echo''' through the Pangu Terminal's Data Bank, providing a useful advantage in combat.
+
+When a Tacet Discord is defeated, the remaining frequency may become an Echo. You can obtain [[Data Bank]] EXP by absorbing an Echo for the first time. Level up Data Bank to raise the probability of Echo drop.
+Echoes are an important source of a [[Resonator]]'s strength. Resonators can use the Echo Skill of the Echo equipped at the top.

@@ -1,0 +1,16 @@
+# Special Response Force
+
+The '''Special Response Force''' is an emergency response team unit formed by the [[Spacetrek Collective]].
+
+==History==
+Members of the team operated in five-person squads, tasked with eliminating any threat to the Collective with year-round deployment into the most dangerous zones imaginable. The unit had a high casualty rate that increased annually and reached an all-time high of 85% until an operation resulted in all members of the Special Response Force being confirmed KIA.
+
+==Members==
+===Notable Personnel===
+{| class="article-table"
+!Icon!!Name!!Position
+|-
+|[[File:Resonator Hiyuki.png|50px]]
+|[[Hiyuki]]
+|Operative
+|}

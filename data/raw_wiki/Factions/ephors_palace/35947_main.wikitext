@@ -1,0 +1,22 @@
+# Ephor's Palace
+
+**Faction Profile**: Leader: Augusta, Base: Ephor's Palace (Location), Allies: Black Shores;Tetragon Temple, Enemies: Leviathan;Fractsidus.
+
+{{About|the [[Factions|faction]]|the location|Ephor's Palace (Location)}}
+
+The '''Ephor's Palace of Septimont''', or simply the '''Ephor's Palace''', is the ruling government faction of the city-state of [[Septimont]].
+
+It is composed of a Senate of counselors and politicians overseen and guided by an Ephor, whose position is attained through a form of combat merit gained from prevailing over the [[Great Agon]] that occurs once every four years.
+
+==Known Members==
+===Playable Resonators===
+{| class="article-table"
+!Icon!!Member!!Position
+|-
+|[[File:Resonator Augusta.png|50px]]
+|[[Augusta]]
+|Ephor
+|}
+
+===Former Members===
+* [[Magno]] (former Ephor)

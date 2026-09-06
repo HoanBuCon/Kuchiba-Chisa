@@ -1,0 +1,74 @@
+**Profile**: Title: Tethys' Deep, Origin: The Black Shores.
+
+{{Location Tabs|Map:Tethys' Deep}}
+
+> Here sits the Black Shores' Lament observation hub, the heart of the Tethys System. Its high-dimensional code stretches across the vast underground sky like ever-shifting celestial bodies, known as the "Stellar Matrices."
+> — [https://wutheringwaves.kurogames.com/en/main#regions Wuthering Waves Official Website]
+{{Intro/Location|Tethys' Deep}} Access is unlocked during [[Legacy of the Lasting Night]].
+
+==Areas==
+{| class="article-table alternating-colors-table tdc1" style="width: 100%;"
+! style="width: 200px;" |Name
+!Image
+! Description
+|- id="Bank of Life"
+|[[Bank of Life]] 
+|[[File:Bank of Life.png|180px]]
+
+|The plant archive in Tethys' Deep, the Black Shores' underground area. Here, seeds collected by Bloom Bearers and Consultants from around the world are carefully nurtured by robot attendants. This vibrant underground section is where Solaris' flora gets systematically categorized.
+|- id="Data Torrent"
+|[[Data Torrent]]
+|[[File:Data Torrent.png|180px]]
+
+|The Data Torrent connecting all the Nexus on this planet continuously transfers information about abnormal fluctuations caused by the Lament and Waveworn back to the Stellar Matrix. The Stellar Matrix then constructs models to predict the location and time of the next Lament. However, it must be noted that the raw energy of the Data Torrent is capable of annihilating any physical entity caught in its flow.
+|- id="Eidoscope"
+|[[Eidoscope]]
+|[[File:Eidoscope.png|180px]]
+
+|The garden, nestled within the depths of the subterranean galaxy, serves as the lens to observe its great expanse. It is said that the garden existed well before the founding of the Black Shores, functioning as the eye that gazes upon the stars. However, what the eye perceives may remain unknown to the heart. What truths lie behind these supreme concepts?
+|- id="Energy Hub"
+|[[Energy Hub]]
+|[[File:Energy Hub.png|180px]]
+
+|The Energy Hub houses KU-Roro charging stations, where KU-Roros (aka Tethys Terminals) return to recharge and "rest" when their energy reserves run low.
+|- id="Error Cell"
+|[[Error Cell]]
+|[[File:Error Cell.png|180px]]
+
+|The Stellar Matrices' orbital dance represents the execution of complex, high-dimensional code. As these celestial bodies collide, merge, and collapse, the code evolves through countless iterations. Occasionally, this process spawns errant code within some Stellar Matrices. To avoid contamination, the Black Shores contains these Stellar Matrices in special Tacetite vessels. The Error Cell then analyzes the aberrant data, deploying specialized probes to isolate the rogue code segments.
+|- id="Modulation Hall"
+|[[Modulation Hall]]
+|[[File:Modulation Hall.png|180px]]
+
+|The lighthouse of the subterranean galaxy and the heart of human activity in the Black Shores. It is where "Modulator" of the past and people of the present observe and guide the course of stars in the vast underground sky. Through here all beings are reborn as stars, which, in turn, reflect brief moments of reality. With the power of the Tethys System, Star Matrices brought to this place can reveal glimpses of the past, whether of destruction or renewal.
+|}
+
+==Notes and Points of Interests==
+===KU-Roro Charging Stations===
+Nestled in Tethys' Deep, KU-Roro Charging Station is where KU-Roros (aka Tethys Terminals) return to recharge and "rest" when their energy reserves run low.
+
+===Tethys' Space Anchors===
+These stabilizing devices are strategically positioned throughout the surface and underground parts of the Black Shores. Their primary function is to calibrate and stabilize the frequencies of the giant Tacetite that makes up the island, effectively isolating the Tethys System's virtual layer from reality. Additionally, these Anchors facilitate communication and carry the responsibility of observing the Etheric Sea, eliminating the need to build a Nexus Tower in the Black Shores.
+
+The Anchors drew inspiration from the reactor control rods used in pre-Lament reactor engineering. They are considered exemplary models of the Black Shores' minimalist engineering design. In the Black Shores, reality and data intertwine as one. Through this connection, we explore the many paths by which civilizations may endure.
+
+===[[End of Wandering]]===
+On the virtual shores, deep within the Tethys System, lies the ultimate destination of the Black Shores in a distant future. The tides of fate bring the lost traveler to this place, where their journey finds their end. It is a location exclusively accessible by [[Rover]] and [[Shorekeeper]].
+
+==Interactable== 
+{{#dpl:|category = Tethys' Deep Terminology|ordermethod= title}}
+
+==Quests==
+{{Quest by Category List|Tethys' Deep Quests}}
+
+==Exploration Report==
+===Advanced Introduction to the Black Shores I===
+
+*Unlocked by reaching 50% exploration.
+
+===Advanced Introduction to the Black Shores II===
+
+*Unlocked by reaching 100% exploration.
+
+==Soundtracks==
+{{Soundtracks by Category Table|type=location}}

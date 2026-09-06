@@ -1,0 +1,21 @@
+# Public Security Bureau
+
+The '''Public Security Bureau''' is in charge of the Patrollers, who act as the law enforcing authority of Jinzhou (and potentially the entirety of Huanglong). 
+
+==Notable Members==
+{| class="article-table"
+!Icon!!Name!!Position
+|-
+|[[File:Resonator Yinlin.png|50px]]
+|[[Yinlin]]
+|Patroller, Secret Agent
+|-
+|[[File:Resonator Chixia.png|50px]]
+|[[Chixia]]
+|Junior Patroller, known as the "Jinzhou Speedster"
+|}
+
+===Other Known Personnel===
+{{NPCs by Category List
+|Public Security Bureau
+|header = Patrollers

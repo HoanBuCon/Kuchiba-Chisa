@@ -1,0 +1,38 @@
+# Exiles
+
+**Faction Profile**: Enemies: Public Security Bureau.
+
+Shunned by society, the '''Exiles''' are different groups that reject the control of local authorities, and are not an organization with a unified leadership.
+
+==Description==
+===Criminal Sociology: The Exiles I===
+
+Exiles come from all walks of life and form a diverse, mixed group. While not inherently malicious, they have few qualms about committing illegal acts. To survive in harsh, unsheltered wilderness, they make use of scavenged materials and repurpose technology. Each Exile is typically armed with a Tacetite Weapon, obtained through illegal means, to defend against threat of TDs or rival Exile gangs. To become an Exile, one must defeat another Exile— whether by taking their life, stealing their Ring, or seizing it by force, a symbol of severance from mainstream society.
+
+===Huanglong Exiles===
+[[Jinzhou|Jinzhou's]] stance toward the Exiles is primarily preventative, with security forces deployed in areas frequented by them. For those Exiles without significant offenses, the authorities generally adopt a more lenient approach and sometimes try to persuade them to submit under certain conditions. However, for Exiles who are recalcitrant and pose a security risk, the authorities are quick to eliminate them without hesitation.
+
+===New Federation Exiles===
+In the [[New Federation]], Exiles faced extreme discrimination and were blocked from finding legitimate work. They resorted to building camps in the outskirts of the country, which became known as the [[Lawless Zone]]. The Exiles formed various gangs in order to survive.
+
+==Known Exiles==
+===Huanglong===
+{{column|2|
+*[[Feng]]
+*[[Gousi]]
+*[[Long'er]]
+*[[Maosan]]
+*[[Xiaojue]]
+*[[Yongli]]
+*[[Yuni]]
+*[[Shengying]]
+*[[Kumu]]}}
+
+===Former Exiles===
+{| class="article-table"
+!Icon!!Name!!Position
+|-
+|[[File:Resonator Calcharo.png|50px]]
+|[[Calcharo]]
+|Formerly an Exile situated in the [[Lawless Zone]]
+|}

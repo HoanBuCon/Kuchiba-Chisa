@@ -1,0 +1,68 @@
+**Profile**: Title: Xuanfang Hold, Origin: Huanglong.
+
+'''Xuanfang Hold''' is a [[region]] of the [[Mengzhou]] Province in [[Huanglong]], and the primary settlement of the frontier region of Xuanfang. It is located between the cities of Mengzhou and [[Jinzhou]], and is considered a vital passageway between them.
+
+Before the founding of Jinzhou, Xuanfang Hold was established north of the Clouded Cliffs by Sentinel [[Hsin]] and Mengzhou's frontier court to contain and divide the [[Tacet Discord]] outbreak flowing from [[Norfall Barrens]]. It was built atop the ruins of Yuan Fortress after its destruction during the Fortress and Gorges War in collaboration with the [[Court of Savantae]].
+
+One of its mountains is said to have a reclusive martial arts master living at the peak.
+
+==Areas==
+{| class="article-table alternating-colors-table tdc1" style="width: 100%;"
+! style="width: 200px;" |Name
+! Description
+|-
+|[[File:Xuanfang Square.png|180px]]
+[[Xuanfang Square]]
+|
+|-
+|[[File:Huizhen Plaza.png|180px]]
+[[Huizhen Plaza]]
+|
+|-
+|[[File:Xuanfang Huaxu Academy.png|180px]]
+[[Xuanfang Huaxu Academy]]
+|
+|-
+|[[File:Verdant Court.png|180px]]
+[[Verdant Court]]
+|
+|-
+|[[File:Xuanfang Ministry of War.png|180px]]
+[[Xuanfang Ministry of War]]
+|
+|-
+|[[File:Xuanfang Ministry of Development.png|180px]]
+[[Xuanfang Ministry of Development]]
+|
+|-
+|[[File:Western Skyreach Range.png|180px]]
+[[Western Skyreach Range]]
+|
+|-
+|[[File:Hidden Entrance.png|180px]]
+[[Hidden Entrance]]
+|
+|-
+|[[File:Eastern Fogveil Pass.png|180px]]
+[[Eastern Fogveil Pass]]
+|
+|}
+
+==Quests==
+{{Quest by Category List|Xuanfang Hold Quests}}
+
+==Notable Features==
+===Challenges===
+*[[Sparring Ground]]
+
+===Resources===
+*{{Item|Cloudperch Seed}}
+*{{Item|Flowborne Dream}}
+*{{Item|Leafweaver}}
+*{{Item|Uncracked Jade}}
+*{{Item|White Jade Beauty}}
+
+==Soundtracks==
+{{Soundtracks by Category Table|type=location}}
+
+===Videos===

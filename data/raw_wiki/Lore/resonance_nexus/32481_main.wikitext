@@ -1,0 +1,10 @@
+> Lemme see, uh, think of it as Jinzhou's largest server station, or an integration hub. It's something along those lines. I'm not much of a tech person myself. Long story short, it's a navigator, a defense system, and a regional information center all in one enormous package.
+> — Chixia
+'''Resonance Nexuses''' are structures found across [[Solaris-3]]. When a player unlocks one for the first time, the corresponding [[region]] will be revealed in the map. The Nexuses are part of a global monitoring network to anticipate Tacet Discord outbreaks, [[Waveworn Phenomenon|Waveworn Phenomena]] and to coordinate their contaiment by local authorities and [[the Black Shores]]. They serve as the core of the ecological information network centralising the energy fluctuation detection of [[Resonance Beacon]]s to convey information forward.
+
+As some of the most imposing structures on the landscape, they often acquire local names and histories. The one in the centre of [[Jinzhou]] City is known as the Nexus Tower; [[Rinascita]]'s are also known as the Genesis Nexuses; [[Startorch Academy (Region)|Startorch Academy's]] largest is called the Solis Lens Array; and in [[Xuanfang]] they are Lexicon Axes.
+
+==Tutorial==
+{{Tutorial|Resonance Nexus}}
+
+==Regional Nexuses==

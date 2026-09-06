@@ -1,0 +1,49 @@
+**Profile**: Title: Vault Underground, Origin: Rinascita.
+
+{{Intro/Location|Vault Underground}} 
+Tucked beneath the Sea of Clouds lies a vast depository zone of the Averardo Vault. Each item moved to the Vault will be meticulously transported to its designated storage location, where it will be safeguarded with the utmost care and precision.
+
+==Areas==
+{| class="article-table alternating-colors-table tdc1" style="width: 100%;"
+! style="width: 200px;" |Name
+!Image
+!Description
+|- id="Echo Station"
+|[[Echo Station]]
+|[[File:Echo Station.png|180px]] 
+
+|
+|- id="Precious Metals and Artworks Depository"
+|[[Precious Metals and Artworks Depository]]
+|[[File:Precious Metals and Artworks Depository.png|180px]] 
+
+|
+|- id="Echo Depository"
+|[[Echo Depository]]
+|[[File:Echo Depository.png|180px]] 
+
+|
+|- id="Unknown Vault Area"
+|[[Unknown Vault Area]]
+|[[File:Unknown Vault Area.png|180px]] 
+
+|
+|- id="Abandoned Tower"
+|[[Abandoned Tower]]
+|[[File:Abandoned Tower.png|180px]]
+|
+|}
+
+==Quests==
+{{Quest by Category List|Vault Underground Quests}}
+
+==Exploration Report==
+
+==='''Averardo Vault Employee Manual I'''===
+* Unlocked by reaching 50% exploration.
+
+==='''Averardo Vault Employee Manual II'''===
+* Unlocked by reaching 100% exploration.
+
+== Notable Features==
+===Resources===

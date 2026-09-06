@@ -1,0 +1,14 @@
+**Profile**: Origin: Lahai-Roi.
+
+'''''' is a note found during [[Operation: Frontier Renewal]] and is added to its Archives, Spacetrek Observatory Files.
+
+==Text==
+"The sprawling, secret-filled lands of Lahai-Roi made it necessary for the Spacetrek Collective to establish mid-to-long-term field research programs. However, sustaining these operations in such dangerous terrain required dependable mobile bases.
+
+After weighing its options, the Collective developed a versatile transport platform capable of handling logistics, storage, and emergency defense. They named it Spacetrek Explorer.
+
+The Explorer's design is based on a wheel robot. Its massive tires provide exceptional grip, allowing it to climb smooth vertical surfaces and easily navigate the dense architecture of Startorch Academy, delivering cargo to otherwise inaccessible locations. The large storage container mounted on its top further supports fieldwork, enabling researchers to access supplies or auxiliary equipment directly on-site.
+
+To defend against the Exoswarm affected by the Waveworn Phenomenon and attacks from Outcasts, the Explorer is equipped with a heavy electromagnetic cannon and a protective shield projector. However, due to its weight, frequent cargo load, and energy-saving design, it carries only small thrusters. These are useful for brief bursts of acceleration, but not for sustained flight.
+
+In addition to field expeditions, the Spacetrek Explorer now serves as one of Lahai-Roi's primary heavy logistics vehicles. In its logistics configuration, its weapons are removed and replaced with expanded storage modules to maximize cargo capacity."

@@ -1,0 +1,46 @@
+# Troupe of Fools
+
+**Faction Profile**: Leader: Brant.
+
+The '''Troupe of Fools''', or the ''Fool's Troupe'', is a carnevale-themed troupe based in [[Rinascita]]. They perform on tour across all of Rinascita, travelling on the back of [[Lario]], with their hidden refuge being located deep in a vast underground cavern on [[Penitent's End]] island.
+
+From every corner of the Rinascita Archipelago, playwrights and performers gather, praising the Troupe's art to be like "dancing in chains," defying the weight of conformity with their performance.
+
+==Archive Entry==
+The Fools who survived the dragon's assault-whom the Order refers to as the "pilgrims"—drifted on the warm currents, eventually finding refuge in a vast cavern on Penitent's End.There, the Fools formed a troupe, determined to one day expose the truth hidden by the Order and return to their home. To achieve this, the troupe wrote numerous plays and "danced in chains," performing tirelessly across the archipelago. For years, they have awaited the return of the Carnevale, hoping to expose the Order's secrets through their performance, claim the Laurel, and earn the chance to commune with the Sentinel.
+
+==History==
+As the Primus of the [[Order of the Deep]], [[Fenrico]] has used the [[Pilgrim's Sail]] as a way to banish those he sees as a threat to the Order's goal of achieving unity. Anyone who disobeys or questions the Order and its doctrine are branded 'Fools', and forced to board a ship to Penitent's End, once a sacred spot for pilgrims before being corrupted by the [[Dark Tide]]. Although Fools are told they can find redemption and a place beside the [[Imperator|Sentinel]] through this voyage, they are instead subject to the dangers of the Remnant Clouds, a mist that traps Reverberations that turn into [[Tacet Discord]], and the [[Dragon of Dirge]], whom has been altered by the Order with the help of the [[Fractsidus]] to attack all living creatures on sight.
+
+As a young boy, [[Brant]] curiously questioned the appearance of the Sentinel's statue inside the [[Cathedral of Mercury]], and was immediately branded a Fool and sent on the Pilgrim's Sail. While the other Fools on his ship did their best to shield the child from the reality of their fate, he ultimately watched them die one by one. However, they were able to fight against the Tacet Discord and scavenge enough from their shipwreck to build [[Fool's Elysium]], thus beginning the Troupe of Fools.
+
+In addition to establishing a refuge for themselves and patrolling the coast of Penitent's End island in search of new survivors, they have dedicated themselves to performing as they await the return of the [[Carnevale]]. There, they hope to expose the Order's lies through a grand performance, and claim the Laurel for the chance to commune with the Sentinel.
+
+During [[What Yesterday Wept, Today Doth Sing]], the Troupe of Fools fulfill their goal by performing at the Carnevale with [[Rover]], who claims the Laurel. Following the festival, Fenrico grants the troupe permanent rights within Ragunna.
+
+==Known Members==
+===Prominent Members===
+{| class="article-table"
+!Icon!!Member!!Position
+|-
+|[[File:Resonator Brant.png|50px]]
+|[[Brant]]
+|Captain
+|-
+|[[File:Resonator Roccia.png|50px]]
+|[[Roccia]]
+|First Mate
+|}
+
+* Bardolino
+* Tina
+
+===Other Members===
+{{NPCs by Category List
+|Troupe of Fools
+|header = Troupe of Fools Members
+
+===[[Echoes]]===
+*[[Lario]]
+
+===Videos===

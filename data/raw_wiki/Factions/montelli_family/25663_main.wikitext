@@ -1,0 +1,89 @@
+# Montelli Family
+
+**Faction Profile**: Leader: Carlotta, Base: Montelli Quarter, Enemies: Fractsidus.
+
+The '''Montelli Family''' is a family-run organization and enterprise native to [[Rinascita]], localized primarily in the city-state of [[Ragunna City|Ragunna]]. They are considered one of the families that influence the power dynamics of Ragunna, alongside the [[Fisalia Family]] and the [[Order of the Deep]].  As of [[Chapter II]]: Prologue - [[Through the Sea Thou Break]], it was revealed that the Montelli Family has sent an invitation to [[Rover]] to attend Rinascita's [[Carnevale]] via their outside connections with the [[Black Shores]]. They are recognized as the rivals of the Fisalia Family. 
+
+Through their efforts, pioneering spirit, and the support of the common folk of Ragunna, the Montelli family played a key role in hosting the most recent [[Carnevale]]. This endeavor, however, earned them the disdain of the Order of the Deep and, by extension, the Fisalias. 
+
+They are most prevalent in two locations within the Ragunna City: the [[Montelli Quarter]] that serves as their base of operations, and the [[Averardo Vault]], the leading bank in all of Rinascita. 
+
+==Archive Entry==
+One of the most powerful families in Ragunna, renowned for their pioneering spirit. The Montelli family played an instrumental role in charting trade routes that not only connect Ragunna, but also greater Rinascita to the wider world. As the city opened its doors, the Montellis rose to prominence, amassing great wealth and unmatched influence. The Montelli family also took the lead in introducing and developing Reserved Terminals across Ragunna. While the Order of the Deep dismissed these Terminals as an inferior mockery of the Genesis Nexus and Common Echoes, the Montellis secured the Order's approval to continue their development in secrecy, offering guarantees of safety and hefty tax payment in exchange. Unlike the more traditional families, the Montelli family values emotional bonds and shared ideals above bloodlines and social standing. They advocate for the distribution of opportunities and wealth, believing that riches are worth more when they circulate. Though often ridiculed by traditional families as "nouveau riche with Shell Credits running through their veins," the Montellis take no offense-on the contrary, they wear the label with pride.
+
+== Synopsis ==
+[[File:Montelli Invitation.png|left|thumb|345x345px|[[Carlotta|Carlotta Montelli]] sending an invitation addressed to the Black Shores.]]
+As revealed in [[Chapter II]]: Prologue - [[Through the Sea Thou Break]], the Montelli family extended the invitation to the Black Shores, facilitating Rover's visit to their Sentinel, [[Imperator]], with whom they had previously formed a pact. This action is consistent with the [[Shorekeeper]] and the [[Black Shores|Black Shores']] covert investigation into Rinascita, aimed at understanding why the revival of [[Threnodian]] in Jinzhou has had no discernible impact on Rinascita, while similar events have already provoked responses across various nations of [[Solaris-3]].
+To our esteemed business partner, As the celebrated Carnevale returns to Rinascita, the Montelli family, proud organizers of this grand festival, extend an invitation for you to grace Ragunna with your esteemed presence and partake in the celebrations. In the spirit of goodwill, we have arranged a modest sum for your use during your stay in Rinascita. These funds are available at your convenience at the Averardo Bank. The Montelli family holds in high regard each of its many friendships. Should you choose to place the Blake Bloom upon the Golden Scale, we shall consider you our most honored guest and a lifelong friend of the family. The Montelli family eagerly awaits your arrival.In [[Chapter II]]: Act I - [[The Sacred Breeze So Often Breathes]], it was revealed that the Carnevale would also host Echoes from the Reserved Terminals of the Montelli Family, garnering disdain from several followers of the Order of the Deep. Furthermore, it has also invited and sponsored a "travelling troupe" to perform in the Carnevale, cementing the alliance between the Montellis and the [[Troupe of Fools]].
+
+== Origins and History ==
+The Montelli family, once regarded as a third-rate minor house, was ridiculed for their principles of pioneering, innovation, and ambition. However, they played a pivotal role in establishing safe trade routes that connected Rinascita to other regions and nations of [[Solaris-3]]. The family also earned recognition for their pursuit of Echoes beyond Rinascita’s borders—Echoes not bound by the Genesis Nexus, which was provided by the Sentinel Imperator. This led to the development of Reserved Terminals, which evolved from a basic [[Terminal]] discovered in the Montellis' early trade dealings. Their investment in this technology was driven by the need for Echoes independent of the Genesis Nexus, capable of seafaring and defending against Tacet Discord encounters in open waters—an area where [[Common Echoes]] falter due to their inability to travel beyond the Genesis Nexus' range.
+
+In the early years, the family patriarch, [[Francesco Montelli]], learned to modify Terminals during his ventures in the [[New Federation]]. Unlike other regions where Terminals were freely traded, Rinascita’s Terminals were strictly controlled by the Order. The Montellis, however, developed a modified lantern-type Terminal that appeared ornamental but contained advanced tech modules. These modifications allowed the family to supply Terminals to Resonators at fair prices, effectively breaking the Order's monopoly. 
+
+Their success in this endeavor empowered more individuals with the means to protect themselves and made the Montellis a key player in the political landscape of Rinascita. Despite the Order's awareness of their actions, the family maintained a delicate balance by paying heavy taxes to avoid direct confrontation with the Order.  With the establishment of the Averardo Bank and Averardo Vault, along with their enterprise in making Reserved Terminals accessible to the general populace, the Montellis have grown into a significant and influential family within the city-state of Ragunna.
+
+After the defeat of the Threnodian and the rebuilding of Ragunna, [[Carlotta]] was appointed as the new Head of the family. 
+
+== Traditions ==
+The Montelli family has a deep appreciation for all forms of art, as confirmed by Francesco Montelli, the current head of the family, and Carlotta, through their commentary on the painting ''Glory in Decay''. They discuss how the artwork symbolizes power and change within the family. This passion is also evident in the numerous paintings displayed in their Mansion, the Montelli Quarter and Averardo Vault.
+
+Moreover, Carlotta attends an auction where she acquires a painting titled ''The Banquet;'' in her trailer—also named ''The Banquet''. Later, she reflects on the piece, offering her commentary on its significance.
+
+The Carnevale in Ragunna is hosted by the Montelli Family.
+
+The Montelli family uses codenames for family matters, with each name associated with a unique token. For instance, Carlotta’s codename is “Opal.” Two of Capollo Montelli's agents went by the names "Sage" and "Acorn". When introducing the Rover as part of her plan to uncover the family traitor, Carlotta assigns him the codename “Cat’s Eye,” referencing the "luster of Cat’s Eye gems" in his eyes. Other codenames include: Backwindow, Blue Rain, Bourbon, Clockwork, Juniper, La Llorona, Retriever & Tulip Coin.
+
+==Members==
+===Playable Resonators===
+{| class="article-table"
+!Icon!!Member!!Position
+|-
+|[[File:Resonator Carlotta.png|50px]]
+|[[Carlotta|Carlotta Montelli]]
+|
+*Current Leader
+**"Opal", Executor (Previously)
+*Second Daughter
+**Adopted from the "Lesser Branch"
+*Granddaughter of the "Padrino"
+|-
+|[[File:Resonator Zani.png|50px]]
+|[[Zani]]
+|
+*Employee of Averardo Bank
+*Assigned Bodyguard/Tour Guide to [[Rover]].
+|}
+
+===Family=== 
+* Main Branch
+**[[Francesco Montelli]] ("Padrino", previous Head of the family)
+**[[Capollo Montelli]] (Son of Francisco Montelli, former heir)
+* Lesser Branch
+** [[Carlotta|Carlotta Montelli]] ("Opal", current Head of the family)
+
+* Unspecified Branch
+** [[Alberto Montelli]] (Head of the Averardo Vault)
+** Ettore Montelli (Deceased, killed by Giacomo Fasciaspina)
+
+===Employees===
+*Acorn (Agent, allied to Capollo)
+*Benett (Former Vault Keeper)
+*Blue Rain
+*Bourbon
+*Clockwork
+*Duncan (Former Employee)
+*Juniper
+*La Llorona
+*Ludvika (Averado Vault Employee)
+*Retriever
+*Roberto
+*Sage (Agent, allied to Capollo)
+*Synthia (deceased)
+*Thurber
+*Tulip Coin
+*[[Zani]] (Staff Member/Employee of Averardo Bank, Assigned Bodyguard/Tour Guide to [[Rover]])
+
+===Echoes===
+*[[Mercurio]] (Averado Bank Counter)
+*[[Sentry Construct]] ([[Averardo Vault]] Guardian)

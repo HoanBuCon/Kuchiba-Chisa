@@ -1,0 +1,25 @@
+> Come, let us finish this performance we've all been waiting for. Together.
+> — Phrolova
+ She is a particularly powerful Resonator and a former Overseer of the [[Fractsidus]]. Her forte can manipulate and transfigure the frequencies of humans, Echoes, and Tacet Discords alike. 
+
+A life filled with unexpected suffering, grief, and betrayal led this former musician to align with the Fractsidus, in which she seeks to rekindle a past from which she was the sole survivor. After working with the Fractsidus for a long time, she made a promise with the leader, the [[Grand Architect]] to complete one final task. Following its completion in {{Quest|Dawn Breaks on Dark Tides}}, she left the organization to find her own path.
+
+After completing {{Quest|Dreamcatchers in the Secret Gardens}}, she can be found in the [[Lost Beyond]].
+
+==Official Introduction==
+Phrolova, a Fractsidus Overseer walking the fine line between life and death, an uncanny, deadly conductor.
+
+A silent wave of her baton is enough to attune the very frequencies of being and conduct the symphonies of "souls." The music of hers can sculpt a better world or, just as easily, summon a legion to wreak havoc.> The silent and somber Overseer of the Fractsidus, Phrolova carries an endless sadness that envelops everyone around her.
+She weaves music that bridges the gap between life and death, crafting an ideal world within her heart.
+> — [https://wutheringwaves.kurogames.com/en/main#resonators Introduction from the Official Website.]
+
+==Trivia== 
+* Phrolova has recurring thematical ties to death and the underworld.
+** The Lycoris radiata or red spider lily is a flower that symbolizes death and the afterlife, especially in Japan and China.
+** [[Hecate]], the Tacet Discord she summons and her closest companion, is described as a three-faced Witch of the Underworld from a [[Sonoro Sphere]] where all decaying frequencies converge, known as the "Beyond" or "Lost Beyond". Hecate is a goddess from Greek mythology associated with magic, witchcraft, and fittingly, with crossroads, similar to Phrolova's association with the [[Lost Beyond]].
+* As of Chapter II's climax, Phrolova was implied to represent the true identity of [[The Shepherd]], since she was known to manipulate Echoes and Tacet Discords alike, and possibly sacrificing anyone to become Tacet Discords.
+
+===Etymology===
+* "Phrolova" is a stylized spelling of "Frolova" (Фролова), a common Russian surname (the feminine form of Frolov). The use of the Greek digraph "Ph" instead of "F" is an aesthetic choice by the developers.
+* The surname is derived from the Russian given name "Frol" (Фрол), which is a colloquial form of the ancient baptismal name "Flor" (Флор). This name originates from the Latin word ''florus'', meaning "blooming", "flowering", or "bright" (from ''flos'', meaning flower).
+* The suffix "-ova" is a Russian possessive ending, historically meaning "belonging to" or "daughter/wife of Frolov."

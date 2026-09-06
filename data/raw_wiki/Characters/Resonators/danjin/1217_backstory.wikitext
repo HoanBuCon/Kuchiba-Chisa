@@ -1,0 +1,207 @@
+> Wherever I go, I swear to vanquish evil, whether it's out in the daylight or hiding in the dark.
+> — Danjin > A ranger straightforward in nature, with a strong sense of moral judgment. She travels the lands refining her knowledge in an endeavour to seek the true meaning of good and evil. Though perils lurk in every corner of her journey, she vows to cleanse the world of villainy.
+> — Description from the Official Website
+
+==Developer's Notes==
+2023-11-21 
+
+This time, we would like to introduce to you the backstory of Danjin, a red-haired ranger girl.
+
+===Danjin's Appearance===
+
+Danjin is a girl whose fiery red hair is as vibrant as balsam. Both her hair and her attire exude this striking hue.
+
+Elegantly styled in a youthful bun, her hair is adorned with a vintage hairpin at the temple, adding a touch of cuteness to her already charming appearance. Her clothing, steeped in traditional Chinese style, is specially tailored for ease of movement, from the satin ribbons to the ring-shaped neck ornament known as Yingluo, and even the crimson leg garter adorning her right thigh. All these elements come together to express the liveliness of a young girl.
+
+Amidst the deep red tones that envelop her, a clear and bright jade pendant hangs from Danjin's neck. In her hometown, a beautiful jade is referred to as "Jin," a name she shares. It is evident that this jade holds great significance for her. However, the pendant was once part of a perfect circle, and the missing piece remains a mystery, leaving a sense of intrigue.
+
+===A Sweet and Righteous Ranger Girl===
+
+Danjin's jade pendant carries her family's blessings, as her parents wished for her to grow into an upright and virtuous person. When she was younger, Danjin didn't fully understand the meaning of being "upright and virtuous." As she later embarked on a journey in search of a certain criminal, she gradually came to understand the true essence of her parents' wishes. 
+
+With a polite ranger tone and graceful actions, she embodies the heroic spirit of a dedicated martial artist and swordswoman. Her unwavering gaze reflects her pure intentions, free from any malice.
+
+Despite her mature demeanor, Danjin has a sweet tooth and a particular fondness for the renowned Huanglong dessert, Loong Whiskers Crisp. When people catch a glimpse of her savoring the crisp with sheer delight, they are reminded that she is, after all, still a young girl.
+
+===A Virtuous Maiden===
+
+Despite her youth, Danjin is far from a dreamy-eyed idealist. 
+
+Her disgust is palpable whenever she speaks of her encounters with wrongdoers, revealing a clear understanding of right and wrong. Even when criminals attempt to deceive her with their silver tongues, she remains unfazed. 
+
+Danjin fearlessly points out the truth without hesitation, a quality that may appear naive. However, it is precisely this quality that garners her the respect of others.
+
+Over time, tales spread of a young girl adorned in crimson, her neck adorned with a jade pendant. 
+
+Some recall witnessing a young girl "falling prey" to deceitful villains, yet their own fear held them back from speaking up. However, they later learned that those villains had mysteriously vanished, never to be seen again. Others speak of a girl wandering with a worn-out blade, fervently seeking a blacksmith to restore it. As the tale is told, she appears to possess the aura of a formidable berserker.
+
+===Danjin's Fighting Style===
+
+Danjin wields her blood as a blade, its edge honed by the blood of her enemies. In battle, she harnesses her own blood to create a second sword. Danjin can sacrifice her own HP to amplify the damage she inflicts.
+
+==Archives==
+
+**Resonance Power**: Scarlet Shade
+
+### Forte Examination Report
+Evaluation Basis: [Resonance Assessment 1856-G]
+
+The exact time of Resonator Danjin's Awakening remains uncertained. Notably, during Resonator Danjin's Awakening event, she exhibited an uncontrollable state of emotional outburst. It is speculated that overwhelming emotions may have catalyzed her awakening.
+
+A Tacet Mark is located on Danjin's upper left arm. Observations have revealed distinct alterations in her physical characteristics after her Awakening. A noteworthy alteration is the reddening of her pupils after exerting her Forte to a certain threshold.
+
+Resonator Danjin's frequency fluctuations are stronger than usual, displaying uncommon instantaneous changes that may result in physical damage to her surroundings and any living beings therein when left unhandled.
+
+Empirical testing has revealed that Danjin's destructive potential surpasses normal people by 78.94%.Resonance Spectrum Pattern of this Resonator matches that of the human blood. Tests reveal strong Syntony Responses, yet the cause of Danjin's Awakening remains unclear.
+
+Analysis of test samples has revealed a non-convergent Rabelle's Curve with a steep rise in its middle section. Therefore, Danjin is classified as a Mutant Resonator.
+
+### Overclock Diagnostic Report
+Resonator Danjin's waveform graph shows zigzag fluctuations. The pattern of Time Domain is irregular. Both the upper and lower peak values are high and manifest proximity to the Criticality level. The waveform displays segments of partial fuzziness and abnormal waveform can be seen.
+
+Resonant Criticality: Low, with low stability. Risk of Overclocking remains.
+
+Resonator Danjin has no recorded history of Overclocking. However, during her first Awakening, she was on the verge of reaching her Resonant Criticality. This caused her blood to exhibit an explosive state and a highly sensitive Frequency Fluctuation reaction. Danjin lost control of her behavior, resulting in the spilling of part of her Frequency Energy. No casualties were reported, but the incident was classified as a Class 2 hazard (code EX61453).
+
+Diagnostic analysis reveals that her frequency fluctuation stemmed from a huge provocation in a short time. Noticeable aftereffect persists. As a result, there is still a small chance for Resonator Danjin to enter a state of fury during violent mood swings.
+
+Further assessment reveals that the risk of Overclocking for Danjin is closely linked to her emotional state, posing a high risk. It is recommended to closely monitor her psychological and physical condition, and conduct routine counseling and examinations.
+
+### Character Profile
+With a vengeful blade of condensed blood in hand, Ranger Danjin hunts down thieves and bandits for retribution. She journeys to distant lands in pursuit of justice.
+
+==Character Stories==
+### Crimson Shade in the Wild
+There are many dangerous areas near Jinzhou — the Dim Forest cloaked in towering trees; the Whining Aix's Mire shrouded in unending fog; and the Wasted Metropolis, where shadows hide unknown dangers.
+
+Generally speaking, people would always steer clear of such dangerous places. Even on those rare occasions when they have to pass through these places, they do so carefully and try their best to hide themselves.
+
+However, there was one girl who didn't follow this unspoken rule. The girl, clothed in vivid red, strolled through dangerous streets with an air of ease. The bright jade pendant she wore danced to the tune of her light footsteps.
+
+Naturally, this alluring appearance made her a prime target for predators.
+
+A bandit approached her under the guise of offering help, and asked why she was wandering alone in this desolate and treacherous place.
+
+"I'm looking for someone," the girl answered.
+
+"Wow, small world! I hardly see anyone around here. Funny enough, I actually saved someone recently and they're at my place. Maybe it's the person you're looking for? Want me to take you there?" The bandit eagerly offered.
+
+The girl studied him thoughtfully, pondering for a moment before finally giving a timid nod. 
+
+Pleased with this response, the bandit immediately led the girl to his camp.
+
+They veered off the main roads and soon found themselves in a desolate place, shrouded in dense fog and overgrown with vegetation. Eerie cries echoed from the depths of the forest — was it a child's wail or a cat's scream? No one knew the answer. 
+
+The bandit, stealing a glance at the girl, worried that his prey may be scared off by the bloodcurdling ambiance.
+
+However, she still wore a calm expression with no trace of fear on her beautiful face.
+
+"Stupid chick," the bandit snickered to himself.
+
+As they approached an old iron door at the end of the path, intermittent whimpers could be heard from behind it. The girl pushed the door open and inside, they found a trembling and battered little girl.
+
+"Is this the one you're looking for?" asked several bandits with wicked grins, surrounding the girl.
+
+"Exactly!" replied the girl with a bright smile.
+
+Amidst deafening screams and agonized moans, crimson blood splattered everywhere... And so began a brutal slaughter that hushed even the evening glow.
+
+### A Strange Customer
+Uncle Wei the blacksmith had a strange customer one day.
+
+It was a young girl, who looked puny and quiet. Her request, however, was rather unusual: she asked him to repair a broken sword.
+
+“What happened to it?” Uncle Wei furrowed his brow and inquired. He was no stranger to repairing all kinds of damaged weapons; still, he couldn’t help but wonder what could have caused such significant wear on this blade.
+
+In his mind’s eye, Uncle Wei conjured up an image of a formidable big man wielding the sword with immense power, slashing through whatever stood in his way without mercy. By no means could he relate this image to a slender girl like her.
+
+“Sorry, I may have hit them a bit too hard... I didn’t mean it...” the girl answered, her embarrassment evident. “Is it difficult to repair?”
+
+Uncle Wei stared at her in disbelief. He examined the rolled edge with his callused finger and replied, “...No worries. I’ll give it a go.”
+
+With precision and skill, Uncle Wei heated the blade until it glowed and struck it forcefully with his hammer. Sparks flew, but the blade remained unyielding. Years of expertise guided him as he inspected and stroked the damaged metal, contemplating each blow. In a moment of clarity, he discovered the problem.
+
+“The blade is exceptionally hard but lacks toughness. Its center of mass is off now, and it has a special frequency. It’s difficult to repair and sharpen with traditional tools.”
+
+“If you wanna get it repaired,” Uncle Wei continued, “you’ll need some really hard gray chalks with a good amount of Tacetite. But they’re not easy to get, only found in a dangerous place, with a lot of rock cliffs! Don’t get your hopes up, kid.”
+
+“You mean the Desorock Highland, right? Please give me some time. I’ll be back soon.”
+
+With those words, the girl dashed out like the wind, leaving Uncle Wei confused and the rolled blade forgotten. 
+
+She returned shortly after, carrying a big piece of gray chalk with ease. 
+
+“Is this enough?” she asked, surprising Uncle Wei with her quick return from the dangerous Desorock Highland. 
+
+“Absolutely!” he stammered, amazed at her speed. How did she make it back so quickly?
+
+The girl smiled, and cute dimples appeared on her face — a faint red spot could be vaguely seen on one of her dimples. Was it a mole? Or was it... something else?
+
+### Special Loong Whisker Crisps
+Every food vendor in Jinzhou knows Danjin. After the rain, when the sun peeks through and the air is thick with humidity, they all set up their stalls. It's a symphony of clanging pots and sweet smelling syrup. That's when Danjin shows up, handing over a neat stack of Shell Credits for her favorite snack: two pieces of Loong Whisker Crisps. She always puts one in her pocket first, and then eagerly breaks apart the other, savoring each piece like it's a precious gem.
+
+A food vendor lady noticed Danjin always came alone and couldn't help but feel sorry for her: Even the cheapest snacks in Jinzhou, like Loong Whispers Crisps, seemed so precious to this girl. Wanting to spread some kindness, the lady started giving Danjin extra snacks popular with girls her age — from pretty Rock Sugar to fluffy Dreamy Floss, and more. At first, Danjin would always refuse, because she felt uncomfortable accepting someone's generosity without a good reason, and because her wallet was running on empty from constantly repairing her weapons.
+
+However, the lady insisted it wouldn't be trouble to let Danjin have some more sweets for free, as she always prepared extra snacks for her sweets-loving younger sister back home, who was approximately Danjin's age. Touched by this genuine kindness, Danjin eventually nodded and accepted the extra snacks.
+
+From that day on, every time the vendor lady gave Danjin extra snacks, a mysterious gift appeared on her stall. Rock sugar brought a Pearl Leaf, while Dreamy Floss resulted in a Caltrop. These herbs were crucial in easing her younger sister's panic disorder, which she hadn't even told Danjin about.
+
+Maybe sooner or later, her younger sister would be able to leave the house by herself, and enjoy the freshly made Loong Whiskers Crisps with Danjin.
+
+### Prey or the Hunter?
+Danjin is indeed traveling in the wild to look for someone.
+
+She is looking for revenge.
+
+One vicious group of bandits was kidnapping children for sinister purposes. Years ago, they slaughtered Danjin’s entire family. Her younger sister, a girl with a kind soul, opened the door for them out of sympathy, only to welcome the bloodthirsty blades that claimed her family’s lives.
+
+The culprits already met the wrath of Danjin’s sword, but even after many years, similar tragedies continued to occur. The evil persisted. It seemed like an impenetrable barrier, preventing anyone from escaping their grasp. Day after day, month after month, new tragedies emerged as other evildoers continued their reign of terror. Danjin knew she had to find the root and eradicate it once and for all to stop the cycle of pain and suffering inflicted upon the innocent. She would not rest until justice was served and peace was restored.
+
+Danjin decided to make herself the bait. She travelled through treacherous terrain looking all innocent and defenseless, wiping out one hideout after another while hunting for more clues.
+
+Hidden throughout the wilderness were these camps, blending into the natural surroundings. With precision and thoroughness, she scoured every inch of each campsite, uncovering vital details amidst the blood-stained haystacks and dilapidated structures. 
+
+Her efforts paid off when she discovered that all the camp vehicles had passed through a specific location: where the bandits had been ambushing innocent victims.
+
+Hiding in the tall weeds, Danjin nibbled on a Loong Whiskers Crisp, her eyes glued to the foggy crossroad. 
+
+For seven days she had been waiting at this crossroad, stopping any suspicious vehicles that passed by. She refused to give up hope of catching those bandits, no matter what.
+
+Finally, eerie headlights and crunching wheels broke through the dense fog. The wheels’ creaking almost drowned out a faint whimper, but it didn’t escape Danjin’s ears.
+
+Emerging from her hiding place, Danjin approached the vehicle. 
+
+She recited the lines she prepared with a perfectly practiced timid voice: “Excuse me... I’m lost. Could you please give me a ride?”
+
+### Moonlit Determination
+Eliminating all evil is a daunting task. That foggy crossroad had turned out to be merely a transit point, but Danjin wasn’t discouraged. Small progress is still progress, and besides, she had rescued some kidnapped children along the way. After escorting the children to the Patrol Station, Danjin sighed in relief and decided to return to the city for some much-needed rest.
+
+She strolled down the decorated street illuminated by vibrant festival lanterns and warm lights. The moon shone brightly above, adding to the enchanting atmosphere of the night.
+
+Many years ago, on a similar moonlit night, her family shared precious moments together. Her mother had prepared a table full of mouth-watering dishes, whereas Danjin’s younger sister happily presented two pieces of Loong Whiskers Crisp, one for herself, and one for Danjin.
+
+“B-Big sister, this is for you...”
+
+Her reminiscing was interrupted by a small voice. A younger girl held out a piece of Loong Whiskers Crisp, speaking to Danjin timidly. The treat was sprinkled with Dreamy Floss and colorful candies that fitted the festive vibe perfectly. The vendor lady, wearing a warm smile, gestured for Danjin to take it.
+
+Danjin’s legs took her closer to the stall, and it seems there is a new face working at the stall today.
+
+“Thanks to your herbs, Xinxin can leave our house now. Since it’s been safer recently, I decided to take her out to get some fresh air.”
+
+“It’s the first time she ever dared to talk to a stranger since her recovery. Maybe this is the blessing of fate?”
+
+Indeed, Danjin thought to herself. This little girl named Xinxin was one of the children she had rescued during one of her raids. The girl seemed to recognize Danjin, too. She took off a lantern decorating the stall and shoved it into Danjin’s hand.
+
+“C-can we... set it off together?”
+
+Danjin nodded, and the three of them set off the lantern into the night sky. The lantern soared, carrying their wishes along with it, joining the thousands of other floating lights in the velvety night.
+
+==Cherished Items==
+### Silky Reveries
+Danjin has a sweet tooth. In her youth, during those rare and cherished family reunions, her mother would always buy two pieces of Loong Whiskers Crisp, one for Danjin and the other for her younger sister. This delicate sweetness brought great happiness to her life. As Danjin set out on a journey on her own, she always carries a few pieces of Loong Whiskers Crisp with her as this sugary delight provides a timely energy boost for her whenever fatigue sets in. Besides, the delicate sweetness also serves as a reminder. It reminds her of her goal to help more people live a happy life and pushes her to keep moving forward.
+
+### Hand Mirror
+Danjin's master had gifted her a hand mirror. For years, as she practiced her sword skills, Danjin would see her reflection drenched in scarlet and try to stay calm. With time, she mastered the technique and the scarlet blade became obedient. But sometimes, a faint blush of crimson would still stain her cheeks, and Danjin would gently wipe it away with her hand mirror. It was a reminder of her journey from a young girl to a skilled warrior, always striving for perfection.
+
+### Jade Pendant
+Danjin's jade pendant, a symbol of a pure world bestowed upon her by her father. As a child, she couldn't comprehend its significance. But after tragedy struck and her family was killed, she wears it constantly as she roams the wild. The precious jewel attracts unsavory individuals who seek to take it from her. However, they soon learn that those who covet the pendant will face severe consequences at her hands.

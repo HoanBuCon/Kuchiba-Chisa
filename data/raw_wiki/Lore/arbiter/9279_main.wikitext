@@ -1,0 +1,27 @@
+**Profile**: Title: Arbiter.
+
+'''Arbiter''' is a title and position of power over the [[Sentinels]] that grants them decision making authority. Rover holds on to this title even after losing their memories. It is first mentioned by [[Sentinels|Sentinel]] [[Jué]] in {{Quest|Mianloong Chamber (Quest)}}.
+
+By definition, an Arbiter is a person with power to decide a dispute; a person or agency whose judgment or opinion is considered authoritative. 
+
+It is not known if there is more than one Arbiter or if it is a single designated role to Rover only, and if it's only authoritative power over just Sentinels. 
+
+==Known Arbiter==
+{| class="article-table alternating-colors-table tdc1" style="width: 100%;"
+! style="width: 150px;" |Image
+!Name
+!Title
+!Attribute
+|-
+|[[File:Resonator Rover.png|50px]]
+|[[Rover]]
+|Lord/Lady Arbiter
+|[[Attribute/Rover|Multiple]]
+|}
+
+==Known Duties==
+*In Chapter I: Act VII - [[Thaw of Eons]], Jué required the Arbiter permission to transfer the Temporal Mandate to [[Jinhsi]]. Later, Jué reveals that Their existence requires approval from Rover as the Arbiter for any decision made. 
+
+*In {{Quest|The Maiden, The Defier, The Death Crier}}, Imperator made an agreement with Arbiter (Rover) previously to have the restrictions on Their root privileges removed to be able to make decisions on Their own to uncovering Threnodian's true nature. 
+
+*In {{Quest|Ode to the Second Sunrise}}, [["The Shaper"|The Shaper]] requested Rover, who was foretold in the fractured records as Arbiter, to grant permission to take on the task of all [[Heliodic Six]] members calculations duties. This implies that Arbiter have some authority over the [[Exostrider]] as well.

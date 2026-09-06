@@ -1,0 +1,25 @@
+== '''Mortefi's Forte Examination Report''' ==
+
+=== '''Resonance Evaluation Report''' ===
+**Evaluation Basis**: [Resonance Assessment 2183-G]
+
+**Resonance Power**: Dragon's Breath
+
+According to Resonator Mortefi's reports, indications of his Awakening began to manifest during his youth. His actual Awakening was accompanied by a surge of intense anger.
+
+Mortefi's Tacet Mark is located on his right chest. When Mortefi's Forte is activated, crystalline matter in the shape of dragon scales materializes around his Tacet Mark. These scales burn intensely as he harnesses his power.
+
+Resonator Mortefi demonstrates the ability to generate and manipulate fire through the focused concentration of heat. The intensity of the flames produced is closely linked to Mortefi's emotional state. Extensive experimentation has revealed that the fire is a tangible manifestation of Mortefi's accumulated negative emotions over a certain threshold.
+
+The [[Resonance Spectrum Patterns|Resonance Spectrum Pattern]] of Mortefi has been observed to align closely with that of the Dragonkin, a species that is currently declared extinct. Due to the unavailability of living Dragonkin for Syntony tests, it is currently not possible to empirically confirm the cause of Mortefi's Awakening.
+
+Analysis of test samples has revealed a non-convergent [[Rabelle's Curve]], with a steep climbing in the middle section. Resonator Mortefi is thereby classified as a [[:Category:Mutant Resonators|Mutant Resonator]].
+
+=== '''Overclock Diagnostic Report''' ===
+Resonator Mortefi's waveform graph shows serrated fluctuations. The pattern of Time Domain is regular, though the peak values show an increasing tendency. Peak values are currently under Criticality level, and abnormal waveforms are not identified.
+
+**Resonant Criticality**: High, combined with low stability. A high risk of Overclocking is present. Resonator Mortefi has a recorded history of Overclocking. Maximum recorded Overclock rating: Negligible.
+
+During Overclocking, the scale-shaped red crystalline matter on Mortefi's chest continuously expands to cover a larger area of his skin. This transformation is accompanied by a significant rise in body temperature, resulting in the manifestation of intense Frequency Fluctuation. Notably, a fiery apparition resembling a dragon becomes visible behind Mortefi during this stage.
+
+Mortefi was the cause of a major fire in Desorock Highland. This event was classified under code EX67891 as a Class 3 hazard. Fortunately, no casualties were reported. Resonator Mortefi's Forte and Overclocking history indicate that negative emotions are his primary trigger for Overclocking, which warrants a higher risk of Overclocking. Therefore, it is recommended to closely monitor Resonator Mortefi's psychological status and implement regular counseling and examinations.

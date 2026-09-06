@@ -1,0 +1,24 @@
+Some special enemies on Solaris-3 are exceptionally violent and hard to defeat. Utilize Counterattacks, Dodge Attacks or Intro Skills to deal meaningful damage to them. 
+It's worth noting that these special enemies do not grow stronger with your SOL Phase. If they are hard to beat now, consider leveling up your characters and try again later. These special enemies will regenerate sometime after being defeated.
+
+==Description==
+'''Special Enemies''' are the special mini-boss [[enemies]] located throughout the [[Overworld]]. They are characterized by the glowing red aura around their model and are displayed with a Boss type [[HP]] bar during [[Combat]]. 
+
+===Respawning Enemies===
+This type of Special Enemies only exist in [[Jinzhou (Province)|Jinzhou]], [[Black Shores]] and [[Rinascita]]. This type of Special enemies are guaranteed to drop Rank-4 or Rank-5 [[Echo|Echoes]] and spawn 72 real time hours (3 days) after killing. The Special Enemies in Black Shores need to be unlocked through {{Quest|Retro Game Collector}}.
+
+===One-time Spawning Enemies===
+The main difference between the older Special Enemies and [[Dimmr Plains|Dimmr Plains']] red shrouded enemies, is that the latter do not respawn. They also are not quaranteed to leave an Echo. Otherwise these enemies are very similar to the Special Enemies of Jinzhou, Black Shores and Rinascita. For example, they take a fixed amount of damage from [[Dodge Counter|Dodge Counters]], have a boss type HP bar and defeating them gives a [[Trophies|Trophy]]. 
+
+In the Land of [[Xuanfang]] — i.e. [[Eastern Xuan Peaks]], [[Western Fang Peaks]] and [[Southern Yuan Hills]] — the Special Enemies need to be found through various hidden mechanisms and side quests. In addition to these Special Enemies, there are [[Censure Lock Crisis|Censure Locks]] that contain enemies shrouded in the red mist characteristic of Special Enemies.
+
+[[Lahai-Roi]] and the Roya Frostlands do not have Special Enemies. There are some stronger enemies shrouded in the red mist characteristic of Special Enemies and have a boss-type HP bar, but they do not grant a Trophy. Because of this difference, these enemies are not counted as Special Enemies.
+
+==List of Special Enemies==
+This list contains both the respawning Special Enemies and the ones that spawn only once. 
+
+{{Special Enemies Table}}
+
+==Trivia==
+*Special Enemies have fixed levels and do not scale with player's [[SOL-3 Phase|SOL Phase]].
+*Successful [[Dodge#Dodge_Counter|Dodge Counters]] deal a fixed amount of [[damage]] to these enemies. This damage does not scale with character [[Attributes|stats]] nor player [[Union Level]].

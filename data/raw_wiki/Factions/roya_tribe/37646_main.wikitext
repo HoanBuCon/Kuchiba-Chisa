@@ -1,0 +1,65 @@
+# Roya Tribe
+
+**Faction Profile**: Leader: Heliodic Six, Base: Bjartr Woods.
+
+The '''Roya Tribe''' are the indigenous people of Lahai-Roi. They inhabited the country before the planetary shifts occurred which froze the surface, causing them to relocate underground. They built the [[Solisylum]] and consider it their calling to guide the growth and migration of [[Exoswarm]] by using a calendar created after observing the behaviour of the [[Exostrider]]'s Reactor Drive.
+
+==Members==
+===Notable Roya===
+{| class="article-table"
+!Icon!!Name!!Information
+|-
+|[[File:Resonator Aemeath.png|50px]]
+|[[Aemeath]]
+|Exostrider Resonator
+|-
+|[[File:Resonator Sigrika.png|50px]]
+|[[Sigrika]]
+|Solsworn
+|}
+===Other Roya===
+{{Column|2|
+* [[Aksel]]
+* [[Aluna]]
+* [[Alviss]] (Shepherd)
+* [[Asa]]
+* [[Astrid]] (Shepherdess)
+* [[Beyza]]
+* [[Bjorn]]
+* [[Dhalifa]]
+* [[Effye]]
+* [[Eloni]]
+* [[Euginn]] (Shepherd)
+* [[Inga]]
+* [[Inger]]
+* [[Jorgen]]
+* [[Knut]]
+* [[Laliah]]
+* [[Liv]]
+* [[Lyosroth]] (Shepherd)
+* [[Maja]]
+* [[Minna]]
+* [[Rasmus]]
+* [[Serra]]
+* [[Siana]]
+* [[Vilmr]]
+* [[Yngvar]]
+* [[Zahira]]
+
+==Terminology==
+===Shepherds===
+Roya chosen by the [[Soliskin]] for their pure nature become shepherds. Their duty is to guide and care for the Soliskin. They lead the Soliskin to the best sunlit areas of Bjatr Woods and keep them safe.
+
+===Solsworn===
+Royan individuals gifted in calendrical calculation and a degree of resonance with the Exostrider and Soliskin are permitted into the Solisylum. There, they serve the Heliodic Six as aides and the tribe as healers and teachers, all while being groomed as the Six's eventual successors.
+
+===The Heliodic Six===
+
+Roya Elders such as the Eye, the Binder, and the Shaper. Each pair in the Six is entrusted with the roles of observation, archival, and extrapolation. They reside within the Solislyum, tracing the Reactor Drive's trajectories and forecasting Void Storms.
+
+==Descriptions==
+The indigenous inhabitants of Lahai-Roi. They have lived in the underground cavern long before the Spacetrek Collective's arrival. They now maintain a cooperative relationship with it.By observing the Reactor Drive's operational cycles, the Roya devised their own calendar. They guide the growth and migration of the Exoswarm, a sacred duty they regard as their tribe's calling.
+
+==Trivia==
+===Etymology===
+* Roya is likely derived from ru'yā / ro'yâ {{Lang|fa=رؤیا|lit=dream}}, borrowed from ruʔyā {{Lang|ar=رُؤْيَا|lit=something seen in sleep, a dream; a vision}}

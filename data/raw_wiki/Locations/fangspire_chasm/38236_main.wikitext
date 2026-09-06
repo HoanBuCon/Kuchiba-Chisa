@@ -1,0 +1,40 @@
+**Profile**: Title: Fangspire Chasm, Origin: Roya Frostlands.
+
+{{Intro/Location|Fangspire Chasm}}
+
+==Areas==
+{| class="article-table alternating-colors-table tdc1" style="width: 100%;"
+! style="width: 200px;" |Name
+!Image
+!Description
+|- id="Exospine Barrows"
+|[[Exospine Barrows]]
+|[[File:Exospine Barrows.png|180px]]
+|
+|- id="Dawnsip Fjord"
+|[[Dawnsip Fjord]]
+|[[File:Dawnsip Fjord.png|180px]]
+|
+|- id="Riseway-Sundermere Corridor"
+|[[Riseway-Sundermere Corridor]]
+|[[File:Riseway-Sundermere Corridor.png|180px]]
+|
+|}
+
+==Quests==
+{{Quest by Category List|Fangspire Chasm Quests}}
+
+==Exploration Report==
+===Royan Formulae Transcripts - Preface I===
+* Achieve 50% Area Exploration Progress to unlock the full report. 
+
+===Royan Formulae Transcripts - Preface II===
+* Achieve 100% Area Exploration Progress to unlock the full report. 
+
+==Notable Features==
+===Challenges===
+* [[Forgery Challenge: Stricken Sanctum]]
+* [[Void Storm Zone II]]
+
+===Bosses===
+* {{Enemy|Reactor Husk}}

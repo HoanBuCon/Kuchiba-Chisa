@@ -1,0 +1,58 @@
+**Profile**: Title: Southern Yuan Hills, Origin: Huanglong.
+
+{{Intro/Location|Southern Yuan Hills}} 
+
+==Areas==
+{| class="article-table alternating-colors-table tdc1" style="width: 100%;"
+! style="width: 200px;" |Name
+! Description
+|-
+|[[File:Gate of Xuanfang.png|180px]]
+[[Gate of Xuanfang]]
+|
+|-
+|[[File:Shaftpost Yard.png|180px]]
+[[Shaftpost Yard]]
+|
+|-
+|[[File:Bird-Return Garden.png|180px]]
+[[Bird-Return Garden]]
+|
+|-
+|[[File:Preening Pool.png|180px]]
+[[Preening Pool]]
+|
+|-
+|[[File:Goldsong Woods.png|180px]]
+[[Goldsong Woods]]
+|
+|-
+|[[File:Sweetbeak Orchard.png|180px]]
+[[Sweetbeak Orchard]]
+|
+|-
+|[[File:Hundred-Span Corridor.png|180px]]
+[[Hundred-Span Corridor]]
+|
+|-
+|[[File:Laststanding Squarefield.png|180px]]
+[[Laststanding Squarefield]]
+|
+|}
+
+==Quests==
+{{Quest by Category List|Southern Yuan Hills Quests}}
+
+==Notable Features==
+===Challenges===
+*[[Cloudfall Chasm]]
+*[[Southern Yuan Hills Tacet Discord Nest]]
+
+===Resources===
+*{{Item|Cloudperch Seed}}
+*{{Item|Flowborne Dream}}
+*{{Item|Blade Blossom}}
+*{{Item|White Jade Beauty}}
+*{{Item|Leafweaver}}
+*{{Item|Opus Stone}}
+*{{Item|Uncracked Jade}}

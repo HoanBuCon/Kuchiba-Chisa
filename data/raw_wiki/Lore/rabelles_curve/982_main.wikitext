@@ -1,0 +1,35 @@
+**Profile**: Title: Rabelle's Curve.
+
+'''Rabelle's Curve''' is a test used to classify [[Resonator|Resonators]] into one of four categorizations. The test and its results appear on [[:Category:Character Forte Examination Report|Resonance Evaluation Reports]].
+
+== History ==
+> Developed by Dr. Scott Rabelle, this method was originally designed to examine Resonators. It is also known as "Rabelle's Test." Known for its safety, reliability, and ease of use, the test has since been adopted across multiple regions.
+> — In-Game Description
+
+== Categorizations ==
+
+=== Natural ===
+[[:Category:Natural Resonators|Natural Resonators]] have a non-convergent Rabelle's Curve with a gradual, stable rise. These Resonators have naturally awakened their [[Forte]] during their growth.
+
+{{Resonators by Category Table|Natural Resonators}}
+
+=== Mutant ===
+[[:Category:Mutant Resonators|Mutant Resonators]] have a non-convergent Rabelle's Curve with a steep rise in its middle section. These Resonators experienced extreme conditions, surges of energy, emotional distress or a life-changing event that led to the awakening of their Forte.
+
+{{Resonators by Category Table|Mutant Resonators}}
+
+=== Congenital ===
+[[:Category:Congenital Resonators|Congenital Resonators]] have a non-convergent Rabelle's Curve with a periodic waveform. These Resonators were born with their Forte.
+
+{{Resonators by Category Table|Congenital Resonators}}
+
+=== Non-congenital ===
+{{Resonators by Category Table|Non-congenital Resonators}}
+
+=== Artificial ===
+{{Resonators by Category Table|Artificial Resonators}}
+
+=== Unclear ===
+These are resonators for whom their Rabelle's Curve is unclear, and not strictly mentioned in their Resonance Evaluation Report.
+
+{{Resonators by Category Table|Unclear Resonators}}

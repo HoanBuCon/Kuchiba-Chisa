@@ -1,0 +1,12 @@
+**Profile**: Title: Common Echo, Origin: Rinascita.
+
+> Thanks to the Genesis Nexus, Rinascita's Echoes can exist without Reserved Terminals. The people of Ragunna revere Common Echoes as divine gifts from Sentinel Imperator and treat them as friends and trusted allies. Managed by the Order of the Deep, Common Echoes are incorporated into every aspect of daily life, which is the very symbol that has earned Rinascita its name as the "Land of Echoes."
+
+'''Common [[Echoes]]''', or "Divine Envoys" can be found in [[Rinascita]]. The people of [[Ragunna]] treat Common Echoes with reverence, believing them to be divine emissaries of [[Sentinel]] [[Imperator]]. Most Ragunnesi use Common Echoes but do not know much of Reserved Echoes acquired using [[Pangu Terminal]]s, treated as Reserved Terminals in Ragunna.
+
+Once the frequencies of [[Tacet Discord]]s have been dispersed, the remaining [[Reverberation]] will gradually be absorbed by the Data Bank of the Genesis Nexus, subsequently becoming a frequency sample for Common Echoes. For that reason, the people of Ragunna believe that Tacet Discords and Echoes are essentially the same. These Common Echoes are connected in nature, thus if one loses control others would as well. It is believed that the purging of Tacet Discords and storing their Reverberations will allow Tacet Discords to receive the Sentinel's "initation and purification", enabling them to return to the Sentinel's embrace, once again becoming Divine Envoys to assist humantiy.
+
+The [[Order of the Deep#Servituse Hall|Servitude Hall]] of the [[Order of the Deep]] actively purges Tacet Discords around [[Ragunna City]] so that the remaining Reverbation may be stored in the Genesis Nexus. The people of Rinascita treat Common Echoes as friends and trusted allies, incorporating them into every aspect of daily life. The Rinascitans' deep, symbiotic bond with Common Echoes earned Rinascita the name of "Land of Echoes." All citizens of Ragunna can use Common Echoes by simply registering their information with the Nexus, but not all Common Echoes are available for personal use.
+
+==NPCs==
+{{NPCs by Category List|Common Echo Characters}}

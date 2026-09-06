@@ -1,0 +1,25 @@
+== '''Sanhua's Forte Examination Report''' ==
+
+=== '''Resonance Evaluation Report''' ===
+**Resonance Power**: Snow Waltz
+
+**Evaluation Basis**: [Resonance Assessment 2105-G]
+
+Based on Resonator Sanhua's reports, Sanhua was born with abnormal eye structure resulting in blindness of both eyes. The later [[Tacet Discord]] (TD) encounter during a blizzard caused by [[Waveworn Phenomenon]] left frequency erosions to her right eyes, leading to Sanhua's abnormal vision and the subsequent Awakening of Forte.
+
+The Tacet Mark is located in the pupil of Sanhua's right eye, visible during the use of Forte. According to Sanhua's recounts and examination results, we identified changes to her physical signs after her Awakening, which include disorderly frequency responses of the right pupil around the Tacet Mark, presented in a red contour. The frequency erosion continues to spread, reflected by the change in color of Sanhua's left pupil from grey to red.
+
+Sanhua's Forte gives her abnormal vision and the ability to manipulate snow, with the degree of intensity directly correlating to her mental concentration. Combined with Sanhua's recounts, we have come to an initial conclusion that her vision is different from that of an ordinary person, which is the capability to directly observe the frequency of objects. Frequency tests conclude an visual accuracy of 99.64%
+
+[[Resonance Spectrum Patterns|Resonance Spectrum Pattern]] of this Resonator is identical to the existing Snow Frequency Fluctuation. The results of the Resonance Spectrum Pattern around her pupils are also identical to the Frequency Fluctuation interval of known [[Tacet Discord|TDs]]. Tests reveal strong Harmonic Responses, yet the cause of Sanhua's Awakening remains unclear.
+
+Based on test samples revealing a non-convergent [[Rabelle Curve|Rabelle's Curve]] with a steep rise in its middle section, Sanhua is classified as a [[:Category:Mutant Resonators|Mutant Resonator]].
+
+=== '''Overclock Diagnostic Report''' ===
+Resonator Sanhua's waveform graph shows elliptical fluctuations. The pattern of Time Domain is stable with no abnormal waveforms. Examination results are determined to be within normal parameters. However, Sanhua's risk of Overclocking persists.
+
+**Resonant Criticality:** Very stable. Yet constantly verges on the Criticality level. Risk of Overclocking remains high. Records show past history of Overclocking. Maximum Overlock Rating: Moderate. Among her past Overclock occurrences, there were numerous times when Sanhua was on the extremity of her Resonant Criticality for extended durations, during which extreme Frequency Fluctuation reactions caused outbursts of energy, triggering Level 2 blizzards. No civilian casualties were reported in these incidents. These series of events are currently documented under code EX01521, classified as Class 3 hazard events.
+
+Diagnostics reveal TD Frequency erosion affecting Sanhua's perceptions of objects, causing Frequency Fluctuation, leading to outbursts of frequency energy. The aftereffect of Overclocking is the increased spread of erosion, ultimately changing the color of Sanhua's left pupil from grey to red.
+
+Combined with the behaviors of Sanhua's Forte and her past Overlock history, Sanhua bears a certain risk of Overclocking. Close monitoring of Resonator Sanhua' psychological and physical condition is advised. Routine counseling and examinations are required.

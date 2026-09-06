@@ -1,0 +1,23 @@
+== '''Jianxin's Forte Examination Report''' ==
+
+=== '''Resonance Evaluation Report''' ===
+**Resonance Power**: Cleansing Reflections
+
+**Evaluation Basis**: [Resonance Assessment 1514-G]
+
+Resonator Jianxin experienced her Awakening 3 years ago. The Awakening was not triggered by any event and thus is observed as a Natural Awakening.
+
+Resonator Jianxin's Tacet Mark is located on her left shoulder. Post-Awakening observations found no notable physical change.
+
+Jianxin's Forte allows her to enhance her attacks by manipulating airflow and creating force fields. Evaluation revealed a strike velocity of 340m/s. Details regarding the force fields remain inconclusive. Overall, Jianxin's Forte exhibits potential for further development.
+
+Resonator Jianxin's [[Resonance Spectrum Patterns|Resonance Spectrum Pattern]] has a 5% similarity to over 10 objects and no significant similarities above 20% have been found. The source of Awakening cannot be determined at this time.
+
+Analysis of test samples has revealed a non-convergent [[Rabelle's Curve]] with a stable rise. Occasional fluctuations within normal range have been detected. Therefore, Jianxin is identified as a [[:Category:Natural Resonators|Natural Resonator]].
+
+=== '''Overclock Diagnostic Report''' ===
+The waveform graph of Jianxin illustrates a stable Time Domain, matching the standard fluctuation patterns perfectly. No abnormal parameters are observed in the test sample.
+
+**Resonant Criticality**: High. Resonator Jianxin's frequency displays high stability, and the risk of Overclocking is minimal.
+
+Jianxin has no documented history of Overclocking. Routine counseling and examinations are not required.

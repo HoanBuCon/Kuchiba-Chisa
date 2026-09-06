@@ -1,0 +1,38 @@
+**Profile**: Title: Beohr Waters, Origin: Rinascita.
+
+{{Intro/Location|Beohr Waters}} 
+
+==Areas==
+{| class="article-table alternating-colors-table tdc1" style="width: 100%;"
+! style="width: 200px;" |Name
+!Image
+!Description
+|- id="Beohr Trench"
+|[[Beohr Trench]]
+|[[File:Beohr Waters.png|180px]] 
+
+|Beohr Trench spans throughout the islands located in the Beohr Waters. A railcar and rails designed by the Fisalia Family also run through the trench, leading to Avinoleum: Ground Remains.
+|- id="Avinoleum: Ground Remains"
+|[[Avinoleum: Ground Remains]]
+|[[file:Avinoleum_Ground_Remains.png|180px]] 
+
+|A large tower that is sealed with a power. 
+|}
+
+==Quests==
+{{Quest by Category List|Beohr Waters}}
+
+== Exploration Report ==
+
+=== '''The Fisalia Family Journal I''' ===
+* Unlocked by reaching 50% exploration.
+
+=== '''The Fisalia Family Journal II''' ===
+* Unlocked by reaching 100% exploration.
+
+==Notable Features==
+===Tacet Fields===
+*[[Tacet Field: Beohr Waters]]
+===Bosses===
+*{{Enemy|Nightmare: Lampylumen Myriad}}
+===Resources===

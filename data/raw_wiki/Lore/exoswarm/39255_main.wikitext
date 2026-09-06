@@ -1,0 +1,14 @@
+**Profile**: Title: Exoswarm, Origin: Lahai-Roi.
+
+'''Exoswarm''' are creatures found in [[Lahai-Roi]] that are formed from the remnants of the [[Exostrider]].
+
+==Types==
+===Soliskin===
+
+Soliskin are a unique type of Exoswarm formed from the Exostrider's neural structures that reside within [[Bjartr Woods]].
+
+==Enemies==
+{{Enemies by Category List|Exoswarm Enemies}}
+
+==Descriptions==
+Biomechanical creatures formed from the Exostrider's cellular remnants. By mimicking herds and other lifeforms, they helped rebuild Lahai-Roi's ecosystem.

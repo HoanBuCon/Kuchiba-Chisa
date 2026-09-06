@@ -1,0 +1,86 @@
+**Profile**: Title: Overclocking.
+
+> When a Resonator's mental capacity is overwhelmed, they may lose control of their {{Rubi|Forte|power}}, causing an overflow of Resonance energy.
+> — [[Baizhi]]
+
+'''Overclocking''' is a state where a [[Resonator]] has lost control of their [[Forte]] as a result of overwhelming psychological stress or overexertion of their Resonance Ability. The loss of control causes the Resonator’s [[Resonance Energy]] to overflow, potentially harming both the Resonator and their surroundings.
+
+==Effects of Overclocking==
+The exact effects of '''Overclocking''' depend on the Resonator's Forte and so the symptoms of '''Overclocking''' and the severity and type of damage it causes are unique to each Resonator.  In some cases '''Overclocking''' causes permanent changes to the Resonator's appearance and physique. It may even lead to a potential permanent transformation, though it could be reversed as one case seen in [[Camellya]] is confirmed who acknowledges her transformation was undone in time. At its worst, '''Overclocking '''can lead to the death of the Resonator and/or other people in cases where the overflowing Resonance Energy causes disasters like blizzards or large uncontrollable fires. Overclocking can also affect a Resonator's mind where language abilities degenerated. 
+
+In some rare cases the '''Overclocking '''of one or more resonators at once has led to a formation of a new [[Tacet Field]]. An example of this is the Tacet Field in the [[Port City of Guixu]]. It was formed as a result of a group of [[Midnight Rangers]] '''Overclocking''' during a mission there. There are also cases where the '''Overclocking '''and eventual death of a resonator has created a [[Sonoro Sphere]]. A Sonoro Sphere that was formed this way, will reflect the personality and emotions of its creator during their last moments. Currently there are two [[Forgery Challenge|Forgery Challenges]] that are inside Sonoro Spheres with this kind of origin: [[Forgery Challenge: Flaming Remnants|Flaming Remnants]] in Port City of Guixu and [[Forgery Challenge: Misty Forest|Misty Forest]] in [[Dim Forest]].
+
+According to Camellya, she also explains that once severe Overclocking symptoms appear, the person can no longer be cured. Camellya being an example of this as she is noted to being in a medical pod at set periods to manage her health properly, and even then experiences brief moments of pain at times which she tolerates.
+
+However, the documented reports of both [[Phrolova]] and [[Galbrena]] reveal the potential possibility of controlling one's Overclocking state. Despite the risks, it is considered that a Resonator with a considerable will, and if properly guided, Overclocking could potentially yield constructive outcomes, transforming into a power that Resonators could one day learn to wield with intent. However, such willful intent to Overclock is deemed dangerous where attempts to exploit the power gained from the action, as the [[Fractsidus]] themselves are known to do, can still lead to death and shouldn't be carelessly replicated.  
+
+==Overclock Diagnostic Report==
+Because '''Overclocking''' is dangerous to Resonators and their surroundings, scientists have developed a comprehensive diagnosis process to predict each Resonators potential risk of '''Overclocking'''. The diagnosis includes recommendations for preventive methods as well, such as psychological counseling and regular health checks.
+
+===Resonators With Documented Cases of Overclocking===
+{| class="article-table"
+! colspan="2" | Resonator
+!Current Risk
+!Severity
+!Trigger
+!Effects
+|-
+|[[File:Resonator Calcharo.png|50px]]
+|[[Calcharo]]
+|Substantial
+|Severe
+|Unidentified
+|Tacet Discord erosion
+|-
+|[[File:Resonator Camellya.png|50px]]
+|[[Camellya]]
+|High
+|High
+|Unidentified
+|Full-body vegetative somatization
+|-
+|[[File:Resonator Changli.png|50px]]
+|[[Changli]]
+|Minimal
+|Negligible
+|Hazardous childhood environment
+|Permanent left-hand burn, potential shortened lifespan
+|-
+|[[File:Resonator Galbrena.png|50px]]
+|[[Galbrena]]
+|N/A
+|Negligible
+|N/A
+|N/A
+|-
+|[[File:Resonator Mortefi.png|50px]]
+|[[Mortefi]]
+|High
+|Moderate
+|Negative emotions
+|Scale-shaped red crystalline matter on chest
+|-
+|[[File:Resonator Phrolova.png|50px]]
+|[[Phrolova]]
+|N/A
+|N/A
+|N/A
+|N/A
+|-
+|[[File:Resonator Sanhua.png|50px]]
+|[[Sanhua]]
+|High
+|Moderate
+|Erosion-induced frequency fluctuations
+|Quicker erosion spread, pupils changed to red
+|-
+|[[File:Resonator Yangyang.png|50px]]
+|[[Yangyang]]
+|None
+|Negligible
+|Emotional overflow from heightened perception
+|Featherlike transformation of hair 
+|}
+
+==Trivia== 
+*In addition to humans, animals too can have resonance abilities. This means that animals can '''Overclock''' as well. According to [[Lingyang]], this can be even more dangerous than Overclocking in humans.

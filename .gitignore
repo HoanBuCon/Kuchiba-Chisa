@@ -60,7 +60,6 @@ scratch/
 
 
 # Ingestion Data
-data/raw_wiki/
 data/clean_wiki/
 data/chunks/
 data/canonical/

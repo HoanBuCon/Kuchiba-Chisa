@@ -1,0 +1,43 @@
+**Profile**: Title: Mount Gjallar, Origin: Roya Frostlands.
+
+{{Intro/Location|Mount Gjallar}}
+
+==Areas==
+{| class="article-table alternating-colors-table tdc1" style="width: 100%;"
+! style="width: 200px;" |Name
+!Image
+!Description
+|- id="Ginnungamere"
+|[[Ginnungamere]]
+|[[File:Ginnungamere.png|180px]]
+|
+|- id="Ginnungamere Void Storm Monitoring Zone"
+|[[Ginnungamere Void Storm Monitoring Zone]]
+|[[File:Ginnungamere Void Storm Monitoring Zone.png|180px]]
+|
+|}
+
+==Quests==
+{{Quest by Category List|Mount Gjallar Quests}}
+
+==Exploration Report==
+===Documentary of Civilizations: Lahai-Roi - Excerpt I===
+* Achieve 50% Area Exploration Progress to unlock the full report. 
+
+===Documentary of Civilizations: Lahai-Roi - Excerpt II===
+* Achieve 100% Area Exploration Progress to unlock the full report. 
+
+==Notable Features==
+===Challenges===
+* [[Tacet Field: Mount Gjallar]]
+* [[Frostlands Surface - Void Storm Zone III]]
+
+===Enemies===
+====Elite Class====
+* {{Enemy|Flora Reindeer}}
+* {{Enemy|Mining Reindeer}}
+* {{Enemy|Ironhoof}}
+* {{Enemy|Glommoth}}
+
+===Resources===
+* {{Item|Edelschnee}}

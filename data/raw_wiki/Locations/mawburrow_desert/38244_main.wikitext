@@ -1,0 +1,20 @@
+**Profile**: Title: Mawburrow Desert, Origin: Roya Frostlands.
+
+{{Intro/Location|Mawburrow Desert}} The sandy expanse lies in the hinterland of Lahai-Roi and is infested with [[Voidworm|Voidworms]]. Its sole areas, the ''Voidspawn Control Complex Sectors'', are only accessible during the main quest [[What Burns Beneath Frostlands]].
+
+==Quests==
+{{Quest by Category List|Mawburrow Desert Quests}}
+
+==Exploration Report==
+
+==='''Terminal Log Recovered form a Lost Mawburrow Desert Expedition Member'''===
+* Unlocked by reaching 50% exploration.
+
+==='''Mr. Chase's Published Eulogy'''===
+* Unlocked by reaching 100% exploration.
+
+==Notable Features==
+
+===Challenges===
+* [[Tacet Field: Mawburrow Desert]]
+* [[Voidspawn Emergence]]

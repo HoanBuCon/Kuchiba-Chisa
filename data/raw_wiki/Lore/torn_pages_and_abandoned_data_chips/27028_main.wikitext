@@ -1,0 +1,16 @@
+**Profile**: Title: Torn Pages and Abandoned Data Chips, Rarity: 3★.
+
+Torn pages and Data Chips collected from around Solaris-3
+==Description==
+'''Torn pages''' and '''Abandoned Data Chips''' are [[Quest Items]] in ''[[Wuthering Waves]]''. Collecting a full set of them will unlock a  ''Tales of the Past and Present'' [[Side Quests|Side Quest]].
+
+==List of Items in this Group==
+{{#DPL:
+|namespace=
+|category=Items by ID&Torn Pages and Abandoned Data Chips
+|uses=Template:Item Infobox
+|include={Item Infobox}:title:source1:quest:otherRelation
+|table=class="article-table sortable alternating-colors-table",-,style="width: 200px;"¦Name,How to Obtain,Quest,Completed book/data
+|tablerow=²{Item¦%%}²,%%,[[%%]],[[%%]],[[%%]]
+|ordermethod=sortkey
+|noresultsfooter=No Results

@@ -1,0 +1,57 @@
+**Profile**: Title: Heliodic Six, Origin: Lahai-Roi, Affiliation: Roya Tribe.
+
+The '''Heliodic Six''' is a group of six [[Roya Tribe]] members known to have great mathematical and calculation skills. They act as the sense for the [[Heliogyre]] located in [[Solisylum]]. People from the tribe rarely see the members because they remain inside the Solisylum most of the time, and access is highly restricted.
+
+By the time [[Rover]] reaches [[Lahai-Roi]], five out of the Six members are 'no more'. Only [["The Shaper"]] mind remains intact.
+
+==Members==
+===Current===
+{| class="article-table"
+!Title!!Current!!Successor (Solsworn)
+|-
+|The Shaper
+|[[Isander]]
+|Unknown 
+|-
+|The Recorder
+|[[Laetia]]
+|Unknown
+|-
+|The Eye
+|[[Iselde]]
+|[[Yngvar]]
+|-
+|The Binder
+|[[Horstvald]]
+|Unknown
+|-
+|The Refiner
+|[[Freamir]]
+|Unknown
+|-
+|The Chronicler
+|[[Eivind]]
+|Unknown
+|}
+
+The Shaper describes Solisylum as "not what it once was" as the five of the Six minds have been corrupted by Voidmatter and no longer able to decipher the Heliogyre calculations to make predictions against Void Storm occurrences. The members of the Heliodic Six who were corrupted, had the following descriptions:
+
+* The Binder: He resembles a vessel carved by time itself.
+* The Eye: She looks like she hasn't seen the sun in a very long time.
+* The Recorder: Not a single speck of dust lies upon her robes.
+* The Refiner: Her closed eyes seem less like rest and more like a designed state.
+* The Chronicler: His breath carries a strange chill.
+
+After passing all calculating authority to The Shaper in {{Quest|Ode to the Second Sunrise}}, the others now roam Lahai-Roi.
+* The Shaper remains within Solislyum, found at any time.
+* The Recorder is found at Startorch Archive at 06:00 to 17:00
+* The Eye is found near Haldarheim at 06:00 to 17:00
+* The Binder is found by Starward Riseway at 06:00 to 17:00
+* The Refiner is found near Atuja Camp at 18:00 to 15:00
+* The Chronicler is found near the Startorch Academy, TIN & CAN eatery at 06:00 to 17:00
+
+===Solsworn===
+The Solsworn is the term for a future successor of the Heliodic Six. Each Heliodic six member has a chosen successor from the Roya Tribe. Yngvar, despite his derelict of duty and his disinterest of succeeding The Eye as  he was chosen as her replacement which made his qualification often being questioned by other Roya tribesmen; however he was chosen nonetheless because of resonance abilities. Sigrika is also one of the Heliodic Six successors, although it remains unconfirmed which member she is succeeding, based on "Lahai-Roi Special Cinematics | Farwatchers" it is speculated to be The Shaper.
+
+==Descriptions==
+The Roya elders are organized into the Six— three pairs holding roles such as the Eye, the Binder, and the Shaper. Each pair in the Six is entrusted with a core function: observation, archival, and extrapolation. They dwell within the Solisylumn, linking their consciousness to the Heliogyre to trace the Reactor Drive's trajectories and forecast Void Storms. To Maximize efficiency, only one of the Six remains awake during each cycle to oversee daily affairs. At the close of each season, Shepherds from all settlements gather in Bjartr Wood to deliver their recorded data, which the Six then deliberate upon to chart the future.

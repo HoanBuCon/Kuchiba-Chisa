@@ -1,0 +1,74 @@
+**Profile**: Title: Wuming Bay, Origin: Huanglong.
+
+'''Wuming Bay''' is a region of [[Huanglong]]. It is a coastal area, southeast of [[Jinzhou]] city.
+
+==Areas==
+{| class="article-table alternating-colors-table tdc1" style="width: 100%;"
+! style="width: 200px;" |Name
+! Image
+! Description
+|- id="Corroded Ruins"
+|[[Corroded Ruins]]
+|[[File:Corroded Ruins.png|180px]]
+
+|
+|- id="Shattered Blocks"
+|[[Shattered Blocks]]
+|[[File:Shattered Blocks.png|180px]]
+
+|
+|- id="Remnant Residence"
+|[[Remnant Residence]]
+|[[File:Remnant Residence.png|180px]]
+
+|
+|- id="Hermit Settlement"
+|[[Hermit Settlement]]
+|[[File:Hermit Settlement.png|180px]]
+
+|
+|}
+==Quests==
+{{Quest by Category List|Wuming Bay}}
+
+==Exploration Report==
+===Criminal Sociology: The Exiles I===
+
+*Unlocked by reaching 50% exploration.
+
+===Criminal Sociology: The Exiles II===
+
+*Unlocked by reaching 100% exploration.
+
+==Notable Features==
+===Challenges===
+*[[Forgery Challenge: Eroded Ruins]]
+*[[Forgery Challenge: Moonlit Groves]]
+*[[Tacet Field: Tiger's Maw]]
+
+===Enemies===
+*{{Enemy|Autopuppet Scout}}
+*{{Enemy|Spearback}}
+*{{Enemy|Stonewall Bracer}}
+*{{Enemy|Havoc Dreadmane}}
+*{{Enemy|Gulpuff}}
+*{{Enemy|Chirpuff}}
+*{{Enemy|Fusion Dreadmane}}
+*{{Enemy|Vanguard Junrock}}
+*{{Enemy|Whiff Whaff}}
+*{{Enemy|Fission Junrock}}
+*{{Enemy|Excarat}}
+
+===Resources===
+*{{Item|Violet Coral}}
+*{{Item|Erodorchid}}
+*{{Item|Lanternberry}}
+*{{Item|Noctemint}}
+*{{Item|Caltrop}}
+*{{Item|Chromeshell}}
+*{{Item|Waterlamp}}
+*{{Item|Pearl Leaf}}
+*{{Item|Floramber}}
+*{{Item|Indigoite}}
+*{{Item|Azure Lizard}}
+*{{Item|Green Pit Lizard}}

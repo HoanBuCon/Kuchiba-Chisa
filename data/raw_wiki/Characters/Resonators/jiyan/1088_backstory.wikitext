@@ -1,0 +1,168 @@
+== Official Introduction ==
+> Jiyan is the General of Midnight Rangers stationed in Jinzhou, embracing strong sense of justice and resolution.
+Born in a family devoted to medicine, Jiyan is both skilled and attentive.
+Later, in a bid to fend off the encroaching Tacet Discords, he relinquished his role in medicine and took up arms as a soldier.
+> — Description from the [https://wutheringwaves.kurogames.com/en/main#resonators Official Website]
+
+== Personality ==
+''To be added''
+
+==Appearance==
+Jiyan is a tall and muscular young man with yellow eyes and long teal hair pulled back into a ponytail. His tacet mark is located along the upper section of his spine.
+
+===Clothing===
+Jiyan wears a modified black hanfu that cuts off toward the right revealing part of his torso and shoulder along with a black sleeveless top, gray loose fitting pants, and black boots.
+
+==Archives==
+
+**Resonance Power**: Windborne Rider
+
+### Forte Examination Report
+Evaluation Basis: [Resonance Assessment 2141-G]Resonator Jiyan's Forte-Awakening was observed at the Yuanwang Camp located in Desorock Highland. This event was characterized by the accumulation of air currents around his body, forming a distinctive lance.Jiyan bears a distinctive Tacet Mark situated atop his dorsal ridge. Post-Awakening observations found some growths that resemble Loong scale on his left jaw. No indications of progressive expansion have been detected.Resonator Jiyan possesses the ability to manipulate wind energy, which he can channel into a "" that aids him in battle. Additionally, he possesses exceptional perception and leadership skills, utilizing his connection to the winds to gather and analyze battlefield information with astonishing accuracy. Empirical testing has shown an impressive accuracy rate of 99.12% in evaluating dynamic situations.Jiyan's Resonance Spectrum Pattern shows no resemblance to known samples. The cause of his Awakening remains unknown.Analysis of test samples has revealed a non-convergent Rabelle's Curve with a steep rise in its middle section. Resonator Jiyan is thereby classified as a Mutant Resonator.
+
+### Overclock Diagnostic Report
+The waveform graph for Resonator Jiyan shows non-periodic rectangular pulse fluctuations, with sustained peak values during specific time intervals. These waveforms demonstrate rapid and substantial changes within a short temporal span. There are two distinct waveforms identified, each with exceptionally high peak values.Resonant Criticality: Relatively high. Resonator Jiyan's frequency displays high stability with a low risk of Overclocking.No history of Overclocking has been documented. Routine examinations and counseling are recommended.
+
+### Character Profile
+Jiyan, leader of the Midnight Rangers, acts with swift and resolute righteousness. He possesses the formidable ability to conjure a powerful Qingloong from the winds, making him invincible on the battlefield.
+
+Male
+
+Huanglong
+
+Jinzhou
+
+==Character Stories==
+### The Unyielding Will
+Shortly after Jiyan's appointment as the Midnight Ranger's general, an unexpected Tacet Discord Outbreak occurred. It was during this battle that he suspected the Threnodian's resurrection.
+
+As the weary soldiers recovered from a fierce battle on the frontline, they were greeted by an ominous sight: shadow ravens circling above and swarms of Tacet Discords charging towards their position at the Norfall Barrens and Desorock Highland pass. 
+
+The outnumbered army knew that failure to defend this stronghold could spell doom for the entire Huanglong.
+
+Even seasoned veterans had never faced a crisis as urgent as this one. Amidst the chaos, Jiyan alone remained composed.
+
+"All of you. Prepare to fight."
+
+"Absurd! If we lose now, it's truly over. We can still retreat and protect the city!"
+
+"Choose now: stand with courage, seize our chance. Or run and face defeat. For centuries, the Midnight Rangers have held this pass without retreat. Or do you prefer to go down in history as cowards?"
+
+The veterans left, their emotions ranging from disappointment to rage.
+
+Jiyan's resolve remained unshaken. He carefully studied real-time images from monitoring devices and noticed a connection between the Tacet Discords and the shadow ravens above. Quickly summoning the other commanders in the military, Jiyan devised a plan and led their coordinated army to face the enemy head on. With precision, they used Sound Emulators set in a narrow valley to emit the shadow raven's frequency. As he expected, the Tacet Discords were drawn towards the sound, allowing for their easy capture.
+
+Meanwhile, the Midnight Rangers stationed at Norfall Barrens were instructed to join hands with their comrades in the Desorock Highland, and carry out a pincer attack on the Tacet Discords. In the midst of a sandstorm, Jiyan bravely fought off hordes of enemies, paving the way for his fellow soldiers with unmatched strength.
+
+The Tacet mark on Jiyan's nape was flickering, a sign of Forte overexertion, but he pressed on. His Qingloong flew high in the sky like a proud banner of resolution, never once faltering to the ground.
+
+### The Reason to Fight
+Jiyan is the youngest general in the Midnight Rangers' history. He is the Qingloong that everyone looks up to, and the invincible warrior no enemy stood any chance against. However, at some point, Jiyan became haunted by a recurring nightmare.
+
+In that dream, the city of Jinzhou was engulfed in flames and consumed by Tacet Discords. The monsters raged on, feeding on the frequencies of the dead. Chaotic sounds echoed throughout the city, creating a symphony of destruction.
+
+On the flame-lit battlefield, a lone figure fought relentlessly with a lance in hand. Each swing tore through the air. One, two, three... Hundreds of thousands of Tacet Discords fell under his fierce and restless strikes.
+
+Despite his best efforts, the man could not quell the endless swarm of Tacet Discords ravaging the land. Day after day, year after year, he fought in vain until he was the sole survivor on a desolate battlefield. The Tacet Discords transformed into his fallen comrades, encircling and closing in on him.
+
+"That's a clueless kid! How can we trust him with our lives?"
+
+"You said you would protect us... but why?"
+
+"Jiyan, what on earth are you fighting for?"
+
+Despite being known for his calm and decisive nature, few were aware of the nightmares that would sometimes jolt him awake, haunted by the voices of the dead.
+
+As the general, it was Jiyan's duty to safeguard not only the borders, but also the entirety of his nation. Every move he made and every plan he enacted carried immense responsibility and consequence.
+
+This is why he seems to be always frowning, thinking, and planning ahead. One day, perhaps, he will finally turn around and answer those questions from the dead.
+
+He fights for the living, and for the deceased.
+
+### Silent Caretaker
+Strange things do happen in the Midnight Rangers' camps.
+
+A soldier with knee injury received specialized pain relief patches from the medics each time the seasons changed, despite the fact that he never told anyone about it.
+
+Another soldier, previously inattentive during training, learned a few days later that the Midnight Rangers' General Affairs Department has paid for his mother's surgery.
+
+When the logistics department was short on funds, it received a budget increase notice for the next quarter before any budget request was officially made.
+
+Regardless of the size or age of the problem, there is always someone present to provide timely solutions when they are needed most. Just as a gentle rain quenches parched soil, this person carefully orchestrates aid and ensures that no area went without assistance. 
+
+"Team 3's captain obviously had difficulties using his left leg during the drill. I went through his operation records, and it seems to stem from his prolonged exposure to the swamp during one of the previous missions. Pass along this prescription to the medics. They'll know what to do."
+
+"Transfer some money to this account in the name of the General Affairs Department. Debit my account for the funding."
+
+"I remember there has been a 20% increase in the number of recruits this year. Verify this with the Logistics. If confirmed, adjust next quarter's budget accordingly."
+
+This is Jiyan, whose ruthlessness is reserved for enemies, while his tenderness is shown to comrades.
+
+### What's Inside His Gourd?
+When asked about his childhood, Jiyan recalls a plethora of memories: the smell of medicine, the bright lights of the operating room, the sound of medical equipment clashing, and the hallway where many goodbyes were exchanged.
+
+Born into a medical family, Jiyan became his mother's assistant at the age of 10. He excelled at medical skills and was popular among patients, not only for his expertise, but also for his great ability to soothe their upsets and cater to their needs.
+
+Despite his exceptional medical prowess, there were still some lives that Jiyan couldn't bring back from the jaws of death — the last patient he couldn't save was Beiwang, his friend and mentor, who was heavily injured by Tacet Discords. 
+
+Beiwang was initially known to Jiyan as the latter's patient, among many other Midnight Rangers who had to visit a doctor after fighting the frequent Tacet Discord tides plaguing the land. 
+
+Beiwang was impressed by Jiyan's intellect and intuition, leading him to share details of the Midnight Rangers' marches and provide military instruction. Conversely, Jiyan actively contributed his analytical skills to strategy discussions, despite never experiencing battle firsthand. His unique perspectives injected vitality into their conversations, invigorating Beiwang's perspectives with a fresh outlook.
+
+Beiwang's passing ignited a transformative spark in Jiyan — his wistfulness, frustration, and regret turned into his strength to wield the lance on the battlefield. 
+
+Jiyan began to realize that the Lament is such a deep-seated disease in the world's veins, not even the most sophisticated medical instrument or the most adept surgeon could remove it. This realization drove him to cure the world in another way — he took up arms and fought the Tacet Discords head on, with unwavering resolve.
+
+Now, only the gourd-shaped pill case on his belt loop indicates that he was once a doctor. Speculations abound about the contents of the case, with some claiming he uses sugar pearls to comfort children and others saying he drinks from it after battles.
+
+If someone asks Jiyan about it, he would answer frankly, "Just some common medicines, in case someone needs them."
+
+### The Temporary Team
+Amidst the lively Jinzhou Riverside Games, a group of young men stood together.
+
+"Here's the thing. Our captain's got an urgent matter to attend to, so we're one man short for the race. If you don't join us, we might have to forfeit." 
+
+"Please, please help us. We've been training so hard for the Gulpuff Relay. So please..."
+
+"Yeah, please, Jiyan!" they chorused, their urgency palpable.
+
+Standing at the center was a bright-eyed young man. Meeting their sincere gaze, he nodded in agreement. Therefore, a temporary team was formed.
+
+The young man asked about each teammate's conditions and the relay order. Then, he decided to adjust the strategy and take on the anchor leg himself.
+
+The Games, initially held to relieve the tension of Jinzhou people after their first triumph over the Tacet Discord Outbreaks, had evolved into a major event in Jinzhou, in which the Gulpuff Relay was one of the biggest highlights.
+
+The whistle blew. The relay racers charged forward, skillfully evading obstacles as they piloted their Gulpuffs. Crowds of cheering audience lined the banks.
+
+However, a mistake occurred during the baton exchange between the first and second runners, leading the temporary team to lag far behind.
+
+"Oops, looks like this team's hit a little snag! As a temporary team, their teamwork might be a bit rusty. Pity for them!"
+
+The commentator then shifted his attention to the top three contenders.
+
+Amidst the cheers, the race reached its climax as the final runner of the temporary team swiftly closed the gap with their opponents, unnoticed by everyone.
+
+"Oh man! Look at the temporary team! There was a hiccup earlier, but now the last runner is overtaking! There's a key curve ahead... Wha-what's happening? He's overtaking everyone on the curve! That's absolutely amazing!"
+
+Undisturbed by the noise and excitement of the audience, he kept his eyes locked on the finish line. A single thought was driving him forward — faster, just a little faster. His heart pounded, drowning out the loud cheers.
+
+As confetti descended with a loud bang, the cacophony of sounds once again poured into his ears.
+
+They won!
+
+"Who could've imagined this temporary team would break the record! Congratulations to the young lads!"
+
+His teammates swarmed him in excitement, surrounding the young man. Raising the weighty trophy, they vowed to team up again for the next Games.
+
+==Cherished Items==
+### The Art of War
+"A general is a man of wisdom, faith, benevolence, courage and discipline." Jiyan's desk is always organized with books on warfare and notes reflecting his own strategies
+
+### Medicine Box
+Jiyan's enlistment in the army came with a gift from his mother - a medicine box shaped like a Terminal. She feared he would become a killer on the battlefield and reminded him of his role as a healer. He later used it to carry necessary medicines, just in case.
+
+### A Corner of Jinzhou
+On an ordinary, everyday afternoon in Jinzhou, the sun was shining through the clear sky and spreading to thousands of homes, and Jiyan can't help but take pictures of the scene. The soldiers' sacrifices hold even greater significance against this tranquil backdrop.
+
+==Trivia==
+*Jiyan's age at the start of the game is likely 23; he became general of the Midnight Rangers at 20 years old following the Battle Beneath the Crescent, which took place 3 years prior to the start of the game.

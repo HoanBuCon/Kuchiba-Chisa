@@ -1,0 +1,50 @@
+**Profile**: Title: Riccioli Islands, Origin: Rinascita.
+
+The {{Intro/Location|Riccioli Islands}} It is a group of islands northwest of Ragunna, rich in various marine resources. Falling out of the governance of the Order of the Deep, these islands have preserved the customs from Rinascita's Age of a Thousand Islands era, setting them apart from the rest of Ragunna in lifestyle. However, rumor has it a great mystery lies hidden within this secluded paradise...
+
+==Areas==
+{| class="article-table alternating-colors-table tdc1" style="width: 100%;"
+! style="width: 200px;" |Name
+!Image
+!Description
+|- id="Port of Riccioli"
+|[[Port of Riccioli]]
+|[[File:Port of Riccioli.png|180px]] 
+
+|
+|- id="Helm Village"
+|[[Helm Village]]
+|[[File:Helm Village.png|180px]] 
+
+|
+|- id="Serene Bay"
+|[[Serene Bay]]
+|[[File:Serene Bay.png|180px]] 
+
+|
+|- id="Reyes Ruins"
+|[[Reyes Ruins]]
+|[[File:Reyes Ruins.png|180px]] 
+
+|
+|- id="Drake's Island"
+|[[Drake's Island]]
+|[[File:Drake's Island.png|180px]] 
+
+|
+|}
+==Quests==
+{{Quest by Category List|Riccioli Islands Quests}}
+
+==Exploration Report==
+
+==='''Riccioli Islands Promotional Poster I'''===
+* Unlocked by reaching 50% exploration.
+
+==='''Riccioli Islands Promotional Poster II'''===
+* Unlocked by reaching 100% exploration.
+
+== Notable Features==
+===Tacet Fields===
+* [[Tacet Field: Riccioli Islands]]
+===Resources===

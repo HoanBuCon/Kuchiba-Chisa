@@ -1,0 +1,79 @@
+**Profile**: Title: Threnodian.
+
+> When it comes to the Threnodian, there is a lot to tell. For now, you can think of it this way: the Threnodian is the most powerful Tacet Discord. The Battle of the Threnodian that happened before was to fend it off.
+> — Yangyang
+ 
+'''Threnodians''' are formidable creatures born from the [[The Lament|Laments]], with the power to destroy human spirit and feed off of their collapsed will. 
+
+If civilizations represent mankind's collective will, they are the embodiment of the hidden fears and inner turmoil of humanity, manifesting as destructive disasters known as [[Tacet Discord]] that spread across different parts of the world.
+
+==Overview==
+Threnodians are a reflection of the collective fears of humanity condensed into physical form, born from the dark side of collective consciousnesses. Each Threnodian embodies a certain fear of struggle, which has a deep connection to the area that faces them, such as [[Ovathrax]], the Threnodian of War, in [[Jinzhou]], a land that has been a battleground for centuries.
+
+Threnodians are incredibly powerful creatures, and are capable of vastly strengthening the effects of [[Waveworn Phenomenon]] on their surrounding environment. Just as a [[Sentinel]] has their own appointed Resonator whom they have resonated with, so too do Threnodians. However, the exact process of becoming a Threnodian's Resonator, and whether all Threnodians are capable of obtaining a Resonator, is not known—as Leviathan only gained this ability after its assimilation with the Sentinel Imperator, and Aleph-1's Resonator was artificially induced.
+
+A single Threnodian's revival is never an independent occurrence, as they can sense each other through some form of telepathic link and can trigger catastrophic events across [[Solaris-3]].
+
+After fusing with Leviathan, Sentinel Imperator gained knowledge that as long as there is human civilization, Threnodians will always exist, and Threnodians cannot be truly killed as even Leviathan itself does not know the means to do it. The only way to defeat a Threnodian is to shackle it to a Resonator. Aalto explains that due to their nature as shadows of civilization, they are both formless and immortal, thus cannot entirely be erased. Therefore, sealing it inside the Resonator's body is the next best method in defeating a Threnodian by giving them form. This was proven to be true as Leviathan was successfully sealed. For now, the threat of Threnodian is over in Rinascita and it will take some time before a new Threnodian will appear to replace the sealed Leviathan.  
+
+Due to their unique nature, Cristoforo reveals that a Threnodian’s power and essence is one and the same, and he claims that if Leviathan were to possess Abby through the Dark Tide, they could merge themselves with Ovathrax and gain a complete rebirth as Abby contains the dormant powers of Ovathrax within them.  
+
+[[Aemeath]] and [[Luuk Herssen]] reveal that Aleph-1 does not originate from Solaris-3 and is in fact a Threnodian from space. This suggests other Threnodians exist beyond the planet, with implications that the Lament may in fact not be a local phenomenon confined to Solaris-3, but across the universe.   
+
+==Story==
+===History===
+
+===Present Story===
+
+During the [[Grand Warstorm|Jinzhou crisis]], Ovathrax's revival begins unexpectedly. After the defeat of its vanguards, [[Crownless]] and [[Dreamless]], by [[Rover]] and [[Jiyan]] with the support of the [[Midnight Rangers]] and other [[Resonators]] in Jinzhou, it opted to flee, and its current location is unknown.
+
+According to [[Black Shores]]' systems, Ovathrax's revival has triggered similar reactions in other countries, with [[Rinascita]] being the only exception, where no frequencies fluctuations related to Threnodians have been detected.
+
+Aleph-1 is an extraterrestrial Threnodian that was drifting between the space of the [[Homeland Civilization]] and [[Solaris-3]], before intercepting the [[Exostrider]] Baldur. The two behemoths engaged in battle, with Baldur (after resonating with [[Aemeath]]) sealing Aleph-1 above Solaris-3 past the [[Stridergate]], a rare opening in the Etheric Sea that allows access to outer space. Baldur landed in the Roya Frostlands, providing warmth and guidance to the Royan people before becoming dormant. As of Rover's arrival in Lahai-Roi, Aleph-1 is attempting to break past the Stridergate and devour Solaris.
+
+==Known Threnodians==
+{| class="article-table alternating-colors-table tdc1" style="width: 100%;"
+! style="width: 200px;" |Threnodian
+!Embodiment
+!Location
+!Resonators
+!Status
+!Unique Waveworn Phenomena
+|-
+|[[File:Ovathrax.png|180px]]
+[[Ovathrax]]
+|War
+|[[Jinzhou]]
+|''Unconfirmed'' 
+|Semi-Active
+(Dormant)
+|Retroact Rain
+|-
+|[[File:Leviathan.png|180px]]
+[[Leviathan]]
+|Assimilation
+|[[Rinascita]]
+|[[Cartethyia]]
+|Inactive
+(Sealed by [[Rover]] and [[Galbrena]] within a gem and transported to the [[Black Shores]] for research and safekeeping)
+|Dark Tide
+|-
+|[[File:Aleph-1.png|180px]]
+[[Aleph-1]]
+|Erasure
+|[[Lahai-Roi]] (Extraterrestrial Origin)
+|[[Denia]]
+|Semi-Active
+(Sent to the furthest edge of the Universe by the [[Exostrider]])
+|Void Storm
+|}
+
+[[Ashinohara]] has a Threnodian whose power comes and goes in predictable cycles. It caused Honami City to vanish with a then-new power, and thus is implicated in the recent disappearance of Ashinohara as a whole.
+
+[[Chongzhou]] is known to have a Threnodian.
+
+An ancient civilisation preserved in the [[Somnoire]] also contains the Threnodian which destroyed said civilisation, as it slipped inside and eventually caused the fracturing of the Somnoire into its present day layers. As this Threnodian attempted to reconstruct both itself and the shattered memories of the civilisation, it has gained a soul and is now known as [[D]], master of the cinema layer - although the [[The White Tower|original Threnodian]] may still exist, sealed inside.
+
+==Trivia==
+===Etymology===
+*'Threnodian' is an adjective that refers to something that is mournful or related to a threnody, which is a song, poem, or speech expressing sorrow, especially for someone who has died. It often describes artistic expression that embodies themes of grief or lamentation.

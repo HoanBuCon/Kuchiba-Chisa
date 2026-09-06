@@ -1,0 +1,66 @@
+**Profile**: Title: Whining Aix's Mire, Origin: Huanglong.
+
+'''Whining Aix's Mire''' is a region in [[Huanglong]]. It consists of many landforms, ruins and buildings. There is a giant storm blocking movement into it in the middle of the region. The storm is later cleared out during the [[Stygian Lacrimosa]] quest.
+
+==Areas==
+{| class="article-table alternating-colors-table tdc1" style="width: 100%;"
+! style="width: 200px;" |Name
+!Image
+!Description
+|- id="Court of Savanatae"
+|[[Court of Savantae Ruins]]
+|[[File:Court ruins.png|180px]]
+
+|The ruins of the Court of Savantae's research building, where miracles were achieved.
+|- id="Heron Wetland"
+|[[Heron Wetland]]
+|[[File:Heron Wetland.png|180px]]
+
+|Wetlands containing a strange impassable storm, full of complex emotions.
+|- id="Frosting Harbor"
+|[[Frosting Harbor]]
+|[[File:Frosting Harbor.png|180px]]
+
+|A small harbour connecting to Mt. Firmament.
+|- id="Lollo Warehouse"
+|[[Lollo Warehouse]]
+|[[File:Lollo Warehouse.png|180px]]
+
+|A warehouse along the route to Jinzhou city.
+|- id="Plateau Ruins"
+|[[Plateau Ruins]]
+|[[File:Plateau Ruins.png|180px]]
+
+|The ruins of a skyscraper amongst cedar trees.
+|- id="Port Gunchao"
+|[[Port Gunchao]]
+|[[File:Port Gunchao.png|180px]]
+
+|A port along an important route to Jinzhou city.
+|- id="Waving Battlefield"
+|[[Waving Battlefield]]
+|[[File:Waving Battlefield.png|180px]]
+
+|A strange, broken ravine containing the Somnoire dreamscape.
+|}
+
+==Quests==
+{{Quest by Category List|Whining Aix's Mire}}
+
+==Exploration Report==
+==="The Tale of Two Love Birds" Review I===
+
+*Unlocked by reaching 50% exploration.
+
+==="The Tale of Two Love Birds" Review II===
+
+*Unlocked by reaching 100% exploration.
+
+==Notable Features==
+===Tacet Fields===
+*[[Tacet Field: Whining Aix's Mire]]
+===Bosses===
+*{{Enemy|Mourning Aix}}
+*{{Enemy|Mech Abomination}}
+
+==Trivia==

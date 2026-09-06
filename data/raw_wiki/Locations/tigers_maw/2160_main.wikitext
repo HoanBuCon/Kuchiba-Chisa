@@ -1,0 +1,41 @@
+**Profile**: Title: Tiger's Maw, Origin: Huanglong.
+
+The Tiger's Maw Mine primarily produces Lampylumen along with other ore deposits, as well as a minor quantity of Tacetite ores.
+'''Tiger's Maw''' is a region in [[Huanglong]] located to the south of [[Jinzhou]], most notable for its large mine.
+
+==Areas==
+{| class="article-table alternating-colors-table tdc1" style="width: 100%;"
+! style="width: 200px;" |Name
+! Image
+! Description
+|- id="Distribution Center"
+|[[Distribution Center]]
+|[[File:Distribution Center.png|180px]]
+
+|A large base located to the south of the mine.
+|- id="Tiger's Maw Mine"
+|[[Tiger's Maw Mine]]
+|[[File:Tiger's Maw Mine.png|180px]]
+
+|The large mine for which the region is named. It is built on top of the [[Lampylumen Myriad]].
+|- id="Dust-Sealed Track"
+|[[Dust-Sealed Track]]
+|[[File:Dust-Sealed Track.png|180px]]
+
+|A chilling path at the depths of the mine.
+|}
+==Quests==
+{{Quest by Category List|Tiger's Maw}}
+
+==Exploration Report==
+===Survey Report on the Lampylumen Veins I===
+Unlocked by reaching 50% exploration.
+
+===Survey Report on the Lampylumen Veins II===
+Unlocked by reaching 100% exploration.
+
+==Notable Features==
+===Bosses===
+*{{Enemy|Lampylumen Myriad}}
+===Resources===
+*{{Item|Lanternberry}}
