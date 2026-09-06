@@ -1,4 +1,4 @@
-"""Full-source incremental selection policy for wiki ingestion."""
+"""Full-source selection policy for immutable versioned corpus builds."""
 
 from __future__ import annotations
 
@@ -10,14 +10,19 @@ from app.domain.interfaces.wiki_sync import IWikiSyncStateRepository
 
 
 class AllPagesSyncStrategy:
-    """Yields only pages whose source revision is newer than stored state."""
+    """Yield every source page so a new physical collection is complete.
+
+    Revision state remains an auditable download receipt, but it must not turn a
+    full-version build into a delta-only collection. Incremental publication
+    requires an independently verified complete base snapshot and is not the
+    policy used by the canonical ``run-dag`` command.
+    """
 
     async def enumerate_pages_to_sync(
         self,
         source: IWikiSource,
         sync_state_repository: IWikiSyncStateRepository,
     ) -> AsyncIterator[WikiPage]:
+        del sync_state_repository
         async for page in source.get_all_pages():
-            stored_revision_id = await sync_state_repository.get_latest_revision_id(page.page_id)
-            if stored_revision_id is None or page.latest_revision_id > stored_revision_id:
-                yield page
+            yield page

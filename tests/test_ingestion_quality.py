@@ -4,15 +4,12 @@ Unit tests for Phase 5: 5-Gate Quality Control System & Quarantine Management.
 
 import sys
 from pathlib import Path
-from click.testing import CliRunner
-
 # Force stdout to UTF-8 for Windows console support
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8")
 
 from app.infrastructure.ingestion.canonical.builder import build_canonical_page
 from app.infrastructure.ingestion.chunkers import chunk_canonical_page
-from app.infrastructure.ingestion.cli import cli
 from app.infrastructure.ingestion.models.canonical_page import (
     CanonicalIdentity,
     CanonicalPage,
@@ -182,53 +179,6 @@ def test_validator_quarantine_flow(tmp_path: Path):
     assert qfile.exists()
     assert qfile.name.endswith(".quarantine.json")
     print(f"  Quarantined file created: {qfile.name}")
-    print("  PASS\n")
-
-
-def test_cli_validate_quality_command(tmp_path: Path):
-    print("=== Test 6: CLI validate-quality Command ===")
-    runner = CliRunner()
-
-    canonical_path = tmp_path / "canonical.jsonl"
-    chunks_path = tmp_path / "chunks.jsonl"
-    quarantine_dir = tmp_path / "quarantine"
-
-    page = CanonicalPage(
-        identity=CanonicalIdentity(page_id=601, title="Test CLI Page", canonical_slug="test_cli_page"),
-        document_metadata=DocumentMetadata(canonical_name="Test CLI Page"),
-        entities=[ExtractedEntity(name="Test CLI Page", type="CONCEPT", is_primary=True)],
-        sections=[
-            CanonicalSection(
-                section_id="601-H2-01",
-                title="Intro",
-                level=2,
-                content="This is test CLI page content for validation.",
-                content_type=ContentTypeEnum.PROSE,
-            )
-        ],
-    )
-    canonical_path.write_text(page.model_dump_json() + "\n", encoding="utf-8")
-
-    chunks = chunk_canonical_page(page)
-    chunks_content = "\n".join(c.model_dump_json() for c in chunks)
-    chunks_path.write_text(chunks_content + "\n", encoding="utf-8")
-
-    res = runner.invoke(
-        cli,
-        [
-            "validate-quality",
-            "--input",
-            str(canonical_path),
-            "--chunks",
-            str(chunks_path),
-            "--quarantine-dir",
-            str(quarantine_dir),
-        ],
-    )
-
-    assert res.exit_code == 0
-    assert "5-Gate Quality Control" in res.output
-    assert "AUTO_APPROVED:" in res.output
     print("  PASS\n")
 
 

@@ -24,7 +24,7 @@ from app.infrastructure.ingestion.quality.benchmark_runner import (
 )
 
 
-@pytest_asyncio.fixture(scope="module", autouse=True)
+@pytest_asyncio.fixture(scope="module")
 async def isolated_benchmark_corpus(
     isolated_vector_store: Any,
     test_embedder: Any,
@@ -154,28 +154,29 @@ async def test_benchmark_runner_50_cases_coverage(isolated_benchmark_corpus: Any
     print(f"✅ PASS: BenchmarkRunner verified: Hit@5 = {result.hit_at_5_pct:.1f}% (Quality Gate: PASS)!")
 
 
-def test_cli_commands_interface():
-    """Verify click CLI commands for scan-wiki, crawl-wiki, benchmark, and run-pipeline."""
+def test_cli_exposes_canonical_dag_only():
+    """Verify legacy executable ingestion paths are absent after parity migration."""
     runner = CliRunner()
 
-    # 1. Test CLI Help
     res = runner.invoke(cli, ["--help"])
     assert res.exit_code == 0
-    assert "scan-wiki" in res.output
-    assert "crawl-wiki" in res.output
-    assert "benchmark" in res.output
-    assert "run-pipeline" in res.output
+    assert "run-dag" in res.output
+    for legacy_command in (
+        "scan-wiki",
+        "crawl-wiki",
+        "build-canonical",
+        "process-chunks",
+        "sync-qdrant",
+        "cleanup-orphans",
+        "run-pipeline",
+    ):
+        assert legacy_command not in res.output
 
-    # 2. Test benchmark command CLI
-    res = runner.invoke(cli, ["benchmark", "--top-k", "5"])
-    assert res.exit_code == 0
-    assert "INGESTION QUALITY BENCHMARK REPORT" in res.output
-
-    print("✅ PASS: Click CLI commands interface verified!")
+    print("✅ PASS: only the canonical ingestion DAG is executable")
 
 
 if __name__ == "__main__":
     test_crawler_page_classification_rules()
     test_benchmark_runner_50_cases_coverage()
-    test_cli_commands_interface()
+    test_cli_exposes_canonical_dag_only()
     print("\n🎉 ALL STANDARDIZED INGESTION PIPELINE TESTS PASSED!")

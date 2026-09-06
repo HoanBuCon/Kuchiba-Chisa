@@ -65,7 +65,7 @@ if os.name == 'nt':
     os.system('')  # Enable ANSI escape sequences in Windows CMD/PowerShell
 
 # Global list of PIDs spawned by this CLI session
-SPAWNED_PIDS = set()
+SPAWNED_PIDS: set[int] = set()
 
 # ── Colors & Styles ──────────────────────────────────────────────────
 C_RESET   = "\033[0m"
@@ -327,18 +327,38 @@ def kill_visualizer():
 
 # ── Ingestion Handlers ───────────────────────────────────────────────
 
-def run_ingestion_pipeline_mode(mode: str):
-    """Executes ingestion pipeline with live feedback."""
+def run_ingestion_dag(
+    source_id: str | None = None,
+    staging_collection: str | None = None,
+    download_limit: int | None = None,
+):
+    """Execute the only supported, governed ingestion entry point."""
     clear_screen()
-    print(f"\n{C_BOLD}{C_CYAN}📚 CHISA INGESTION PIPELINE (Mode: {mode.upper()}){C_RESET}")
+    print(f"\n{C_BOLD}{C_CYAN}📚 CHISA CANONICAL INGESTION DAG{C_RESET}")
     print(f"{C_GRAY}─────────────────────────────────────────────────────────────{C_RESET}")
+    source_id = source_id or input("Approved source UUID: ").strip()
+    staging_collection = staging_collection or input(
+        "Physical staging collection (for example character_lore__v20260906): "
+    ).strip()
     try:
-        from app.infrastructure.ingestion.pipeline import MasterIngestionPipeline
-        pipeline = MasterIngestionPipeline()
-        summary = asyncio.run(pipeline.run(mode=mode))
-        print(f"\n{C_GREEN}{C_BOLD}✓ Ingestion task completed successfully!{C_RESET}")
+        from app.application.ingestion.orchestrator import IngestionRunRequest
+        from app.infrastructure.ingestion.cli import run_application_dag
+
+        request = IngestionRunRequest(
+            source_id=source_id,
+            staging_collection=staging_collection,
+            download_limit=download_limit,
+        )
+        result = asyncio.run(run_application_dag(request))
+        print(
+            f"\n{C_GREEN}{C_BOLD}✓ Staging ingestion acknowledged: "
+            f"job={result.job_id}, vectors={result.acknowledged_vectors}{C_RESET}"
+        )
     except Exception as e:
-        print(f"\n{C_RED}{C_BOLD}✗ Ingestion task encountered error: {e}{C_RESET}")
+        print(
+            f"\n{C_RED}{C_BOLD}✗ Canonical ingestion failed: "
+            f"{type(e).__name__}{C_RESET}"
+        )
     
     print(f"\n{C_GRAY}Nhấn phím bất kỳ để quay lại menu...{C_RESET}")
     read_key()
@@ -441,7 +461,7 @@ def render_main_menu(selected_idx: int):
         ("3", "🎨 Khởi động Frontend (Vite)"),
         ("4", "🤖 Khởi động Bot Discord"),
         ("5", "📊 Khởi động Visualizer (Trình duyệt http://localhost:8000/visualizer)"),
-        ("6", "📚 Ingestion Pipeline (Scan Wiki, Crawl Raw, Clean, Ingest, Benchmark)"),
+        ("6", "📚 Canonical versioned ingestion DAG"),
         ("7", "🛑 Kill tiến trình (Menu dừng/tắt các dịch vụ)"),
         ("8", "🚪 Exit (Thoát CLI - tự động dọn dẹp tiến trình)")
     ]
@@ -465,19 +485,13 @@ def render_ingestion_menu(selected_idx: int):
         sys.stdout.write("\033[H")
         sys.stdout.flush()
 
-    print(f"\n{C_BLUE}{C_BOLD}  📚 MENU DATA INGESTION & QUALITY PIPELINE (6 GIAI ĐOẠN){C_RESET}\033[K")
+    print(f"\n{C_BLUE}{C_BOLD}  📚 CANONICAL DATA INGESTION DAG{C_RESET}\033[K")
     print(f" {C_GRAY}─────────────────────────────────────────────────────────────{C_RESET}\033[K")
-    print(f" {C_YELLOW}Điều hướng: Dùng phím [↑]/[↓] + [Enter] HOẶC nhập số (1-8){C_RESET}\n\033[K")
+    print(f" {C_YELLOW}Điều hướng: Dùng phím [↑]/[↓] + [Enter] HOẶC nhập số (1-2){C_RESET}\n\033[K")
 
     options = [
-        ("1", "🚀 Chạy toàn bộ 6 bước (Scan -> Crawl -> Clean -> Chunk -> Ingest -> Benchmark)"),
-        ("2", "🔄 Cập nhật Lore có duyệt (Scan Wiki -> Duyệt danh sách mới/sửa -> Nạp DB)"),
-        ("3", "🔍 Quét & Xem trước báo cáo chọn lọc (Scan Wiki & Pre-Crawl Dry Run)"),
-        ("4", "📥 Cào dữ liệu Wiki sạch về đĩa (Crawl Clean Lore Pages)"),
-        ("5", "🧹 Làm sạch dữ liệu & Đóng gói Canonical (Clean & Build Canonical)"),
-        ("6", "🧩 Phân mảnh ngữ nghĩa & Nạp Vector DB (Chunk & Ingest Qdrant)"),
-        ("7", "🏆 Chạy bộ 50 Test Cases Benchmark kiểm định chất lượng RAG"),
-        ("8", "↩️ Quay lại Menu chính")
+        ("1", "🚀 Chạy governed DAG vào physical staging collection"),
+        ("2", "↩️ Quay lại Menu chính"),
     ]
 
     for idx, (num, label) in enumerate(options):
@@ -494,7 +508,7 @@ def run_ingestion_sub_menu():
     global IS_FIRST_RENDER
     IS_FIRST_RENDER = True
     selected_idx = 0
-    max_idx = 7
+    max_idx = 1
 
     while True:
         render_ingestion_menu(selected_idx)
@@ -508,7 +522,7 @@ def run_ingestion_sub_menu():
             continue
         elif key == 'ENTER':
             choice_idx = selected_idx
-        elif key in ('1', '2', '3', '4', '5', '6', '7', '8'):
+        elif key in ('1', '2'):
             choice_idx = int(key) - 1
         elif key.lower() in ('q', 'e', 'b'):
             break
@@ -516,27 +530,9 @@ def run_ingestion_sub_menu():
             continue
 
         if choice_idx == 0:
-            run_ingestion_pipeline_mode("full")
+            run_ingestion_dag()
             IS_FIRST_RENDER = True
         elif choice_idx == 1:
-            run_ingestion_pipeline_mode("reviewed")
-            IS_FIRST_RENDER = True
-        elif choice_idx == 2:
-            run_ingestion_pipeline_mode("scan")
-            IS_FIRST_RENDER = True
-        elif choice_idx == 3:
-            run_ingestion_pipeline_mode("crawl")
-            IS_FIRST_RENDER = True
-        elif choice_idx == 4:
-            run_ingestion_pipeline_mode("clean")
-            IS_FIRST_RENDER = True
-        elif choice_idx == 5:
-            run_ingestion_pipeline_mode("reingest")
-            IS_FIRST_RENDER = True
-        elif choice_idx == 6:
-            run_ingestion_pipeline_mode("benchmark")
-            IS_FIRST_RENDER = True
-        elif choice_idx == 7:
             break
 
 def render_kill_menu(selected_idx: int):
@@ -626,45 +622,34 @@ def handle_direct_cli_args() -> bool:
     cmd = sys.argv[1].lower()
 
     if cmd in ("ingest", "ingestion", "pipeline"):
-        from app.infrastructure.ingestion.pipeline import MasterIngestionPipeline
         import argparse
-        parser = argparse.ArgumentParser(description="Kuchiba Chisa Ingestion")
-        parser.add_argument("--mode", default="full", choices=["full", "scan", "crawl", "clean", "reingest", "benchmark"])
-        parser.add_argument("--categories", nargs="+")
+
+        parser = argparse.ArgumentParser(description="Kuchiba Chisa canonical ingestion DAG")
+        parser.add_argument("--source-id", required=True)
+        parser.add_argument("--staging-collection", required=True)
+        parser.add_argument("--download-limit", type=int)
         parsed, _ = parser.parse_known_args(sys.argv[2:])
-        pipeline = MasterIngestionPipeline()
-        asyncio.run(pipeline.run(mode=parsed.mode, categories=parsed.categories))
+        run_ingestion_dag(
+            source_id=parsed.source_id,
+            staging_collection=parsed.staging_collection,
+            download_limit=parsed.download_limit,
+        )
         return True
 
-    elif cmd in ("update", "reviewed", "update-lore", "review"):
-        from app.infrastructure.ingestion.pipeline import MasterIngestionPipeline
-        pipeline = MasterIngestionPipeline()
-        asyncio.run(pipeline.run(mode="reviewed"))
-        return True
-
-    elif cmd == "scan":
-        from app.infrastructure.ingestion.pipeline import MasterIngestionPipeline
-        pipeline = MasterIngestionPipeline()
-        asyncio.run(pipeline.run(mode="scan"))
-        return True
-
-    elif cmd == "crawl":
-        from app.infrastructure.ingestion.pipeline import MasterIngestionPipeline
-        pipeline = MasterIngestionPipeline()
-        asyncio.run(pipeline.run(mode="crawl"))
-        return True
-
-    elif cmd == "clean":
-        from app.infrastructure.ingestion.pipeline import MasterIngestionPipeline
-        pipeline = MasterIngestionPipeline()
-        asyncio.run(pipeline.run(mode="clean"))
-        return True
-
-    elif cmd == "benchmark":
-        from app.infrastructure.ingestion.pipeline import MasterIngestionPipeline
-        pipeline = MasterIngestionPipeline()
-        asyncio.run(pipeline.run(mode="benchmark"))
-        return True
+    elif cmd in (
+        "update",
+        "reviewed",
+        "update-lore",
+        "review",
+        "scan",
+        "crawl",
+        "clean",
+        "benchmark",
+    ):
+        raise SystemExit(
+            "Legacy ingestion modes were removed by ING-01. Use `ingest "
+            "--source-id <uuid> --staging-collection <logical_lore__version>`."
+        )
 
     elif cmd in ("start", "launch", "run"):
         target = sys.argv[2].lower() if len(sys.argv) > 2 else "all"
