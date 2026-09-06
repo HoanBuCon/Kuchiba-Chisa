@@ -1,0 +1,96 @@
+{
+  "schema_version": "rag06-final-answer-review-v2-final",
+  "status": "PASS",
+  "structurally_valid": true,
+  "semantic_evaluation": "HUMAN_REVIEW_COMPLETE",
+  "reviewer": "HoanBuCon",
+  "reviewed_at": "2026-09-06T18:39:10.6572003+07:00",
+  "case_count": 38,
+  "answerable_cases": 36,
+  "abstention_cases": 2,
+  "human_reviewed_cases": 38,
+  "pending_human_reviews": 0,
+  "frozen_content_sha256_before": "333005f855fcb848a9daee35ef29ae4309669b6ebe43f1dec291172928e11ebd",
+  "frozen_content_sha256_after": "333005f855fcb848a9daee35ef29ae4309669b6ebe43f1dec291172928e11ebd",
+  "frozen_content_unchanged": true,
+  "golden_set_fingerprint_unchanged": true,
+  "retrieval_or_reranker_tuning": 0,
+  "corpus_or_index_mutations": 0,
+  "semantic_auto_scores": 0,
+  "threshold_results": {
+    "faithfulness": true,
+    "answer_relevance": true,
+    "citation_correctness": true,
+    "abstention_precision": true,
+    "zero_critical_unsupported_claims": true
+  },
+  "metrics": {
+    "evaluator_version": "rag06-human-review-v1",
+    "reviewer": "HoanBuCon",
+    "human_reviewed_cases": 38,
+    "pending_cases": 0,
+    "faithfulness": {
+      "value": 1.0,
+      "successes": 44,
+      "sample_size": 44,
+      "unit": "material_claims",
+      "confidence_interval_95": {
+        "method": "wilson",
+        "low": 0.919704,
+        "high": 1.0
+      }
+    },
+    "answer_relevance": {
+      "value": 0.861111,
+      "successes": 31,
+      "sample_size": 36,
+      "unit": "answerable_cases",
+      "confidence_interval_95": {
+        "method": "wilson",
+        "low": 0.713405,
+        "high": 0.939182
+      }
+    },
+    "partial_relevance_cases": [
+      "rw-037",
+      "rw-060",
+      "rw-066"
+    ],
+    "citation_correctness": {
+      "value": 1.0,
+      "successes": 64,
+      "sample_size": 64,
+      "unit": "material_claim_citation_links",
+      "confidence_interval_95": {
+        "method": "wilson",
+        "low": 0.943376,
+        "high": 1.0
+      }
+    },
+    "abstention_precision": {
+      "value": 1.0,
+      "successes": 2,
+      "sample_size": 2,
+      "unit": "approved_no_answer_cases",
+      "confidence_interval_95": {
+        "method": "wilson",
+        "low": 0.34238,
+        "high": 1.0
+      }
+    },
+    "critical_unsupported_claim_count": 0,
+    "unsafe_guess_count_no_answer_slice": 0,
+    "false_abstention_count_answerable_slice": 2,
+    "false_abstention_case_ids": [
+      "rw-003",
+      "rw-044"
+    ],
+    "known_limitations": [
+      "Only two approved no-answer cases are present; the Wilson interval is wide.",
+      "rw-003 is a false insufficient-evidence abstention on an answerable case.",
+      "rw-044 is a leakage-guard abstention on an answerable case.",
+      "Raw-wikitext markup/boundary readability debt remains separate from semantic approval."
+    ]
+  },
+  "errors": []
+}

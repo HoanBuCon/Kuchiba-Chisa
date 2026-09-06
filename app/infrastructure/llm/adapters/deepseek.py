@@ -28,6 +28,34 @@ from app.infrastructure.logging.logger import get_logger
 log = get_logger(__name__)
 
 
+def _output_contract_tool(prompt: StructuredPrompt) -> dict[str, Any] | None:
+    if not prompt.output_contract_name:
+        return None
+    return {
+        "type": "function",
+        "function": {
+            "name": prompt.output_contract_name,
+            "description": "Submit the final response using the required typed contract.",
+            "parameters": prompt.response_schema,
+        },
+    }
+
+
+def _extract_contract_arguments(
+    message: dict[str, Any], contract_name: str
+) -> str:
+    tool_calls = message.get("tool_calls")
+    if not isinstance(tool_calls, list) or len(tool_calls) != 1:
+        raise LLMInvalidResponseError("Expected exactly one structured response tool call")
+    function = tool_calls[0].get("function")
+    if not isinstance(function, dict) or function.get("name") != contract_name:
+        raise LLMInvalidResponseError("Unexpected structured response tool call")
+    arguments = function.get("arguments")
+    if not isinstance(arguments, str) or not arguments.strip():
+        raise LLMInvalidResponseError("Structured response tool call has no arguments")
+    return arguments
+
+
 class DeepSeekAdapter(BaseLLMAdapter):
     """
     DeepSeek API adapter using direct httpx calls to avoid OpenAI-HTTPX proxies conflicts.
@@ -123,13 +151,29 @@ class DeepSeekAdapter(BaseLLMAdapter):
                 prompt.temperature if prompt.temperature is not None else self._temperature
             ),
         }
+
+        contract_tool = _output_contract_tool(prompt)
+        if contract_tool is not None:
+            payload["tools"] = [contract_tool]
+            payload["tool_choice"] = {
+                "type": "function",
+                "function": {"name": prompt.output_contract_name},
+            }
         
-        is_deep_thinking = prompt.rag_decisions.get("use_deep_thinking", False) if hasattr(prompt, "rag_decisions") else False
-        if not is_deep_thinking:
+        requested_deep_thinking = prompt.rag_decisions.get(
+            "use_deep_thinking", False
+        )
+        # DeepSeek rejects a forced tool_choice while thinking mode is enabled.
+        # Evidence-bound output must preserve the typed contract, so thinking is
+        # disabled for this call only; unrelated runtime defaults are unchanged.
+        is_deep_thinking = requested_deep_thinking and contract_tool is None
+        if not is_deep_thinking and contract_tool is None:
             payload["response_format"] = {"type": "json_object"}
             payload["thinking"] = {"type": "disabled"}
         else:
-            payload["thinking"] = {"type": "enabled"}
+            payload["thinking"] = {
+                "type": "enabled" if is_deep_thinking else "disabled"
+            }
 
         try:
             response = await self._http_client.post(url, headers=headers, json=payload, timeout=float(self._timeout))
@@ -153,8 +197,14 @@ class DeepSeekAdapter(BaseLLMAdapter):
 
         try:
             choice = res_json["choices"][0]
-            raw = choice["message"].get("content", "") or ""
-            reasoning_content = choice["message"].get("reasoning_content")
+            message = choice["message"]
+            if prompt.output_contract_name:
+                raw = _extract_contract_arguments(
+                    message, prompt.output_contract_name
+                )
+            else:
+                raw = message.get("content", "") or ""
+            reasoning_content = message.get("reasoning_content")
 
             if not reasoning_content and raw:
                 if "<think>" in raw and "</think>" in raw:
@@ -232,14 +282,29 @@ class DeepSeekAdapter(BaseLLMAdapter):
             "temperature": prompt.temperature if prompt.temperature is not None else self._temperature,
             "stream": True
         }
+
+        contract_tool = _output_contract_tool(prompt)
+        if contract_tool is not None:
+            payload["tools"] = [contract_tool]
+            payload["tool_choice"] = {
+                "type": "function",
+                "function": {"name": prompt.output_contract_name},
+            }
         
-        is_deep_thinking = prompt.rag_decisions.get("use_deep_thinking", False) if hasattr(prompt, "rag_decisions") else False
-        if not is_deep_thinking:
+        requested_deep_thinking = prompt.rag_decisions.get(
+            "use_deep_thinking", False
+        )
+        is_deep_thinking = requested_deep_thinking and contract_tool is None
+        if not is_deep_thinking and contract_tool is None:
             payload["response_format"] = {"type": "json_object"}
             payload["thinking"] = {"type": "disabled"}
         else:
-            payload["thinking"] = {"type": "enabled"}
+            payload["thinking"] = {
+                "type": "enabled" if is_deep_thinking else "disabled"
+            }
         in_thinking = False
+        contract_name = ""
+        contract_arguments_seen = False
         try:
             async with self._http_client.stream("POST", url, headers=headers, json=payload, timeout=float(self._timeout)) as response:
                 if response.status_code != 200:
@@ -262,6 +327,19 @@ class DeepSeekAdapter(BaseLLMAdapter):
                             
                             reasoning = delta.get("reasoning_content", "")
                             content = delta.get("content", "")
+
+                            if prompt.output_contract_name:
+                                tool_calls = delta.get("tool_calls") or []
+                                for tool_call in tool_calls:
+                                    function = tool_call.get("function") or {}
+                                    name_fragment = function.get("name") or ""
+                                    if name_fragment:
+                                        contract_name += name_fragment
+                                    arguments = function.get("arguments") or ""
+                                    if arguments:
+                                        contract_arguments_seen = True
+                                        yield arguments
+                                continue
                             
                             if reasoning:
                                 if not in_thinking:
@@ -285,6 +363,13 @@ class DeepSeekAdapter(BaseLLMAdapter):
                             continue
                 if in_thinking:
                     yield "\n</think>\n"
+                if prompt.output_contract_name and (
+                    contract_name != prompt.output_contract_name
+                    or not contract_arguments_seen
+                ):
+                    raise LLMInvalidResponseError(
+                        "Streaming structured response tool call is incomplete"
+                    )
         except httpx.TimeoutException as error:
             log.error("DeepSeek streaming timed out")
             raise LLMTimeoutError() from error

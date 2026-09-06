@@ -19,7 +19,10 @@ from app.domain.services.guardrails import (
     ClaimEvidenceGuard,
     ClaimEvidenceValidationError,
     EvidenceCitationGuard,
+    GroundedOutputAssembler,
+    GroundedOutputValidationError,
     PromptLeakageGuard,
+    build_grounded_response_schema,
 )
 from app.shared.utils.logger import get_logger
 from app.shared.utils.token_estimator import TokenEstimator
@@ -50,6 +53,7 @@ class LLMGenerationStage(PipelineStage):
         output_leakage_guard: PromptLeakageGuard | None = None,
         citation_guard: EvidenceCitationGuard | None = None,
         claim_evidence_guard: ClaimEvidenceGuard | None = None,
+        grounded_output_assembler: GroundedOutputAssembler | None = None,
     ):
         self.llm = llm
         self.llm_logger_callback = llm_logger_callback
@@ -57,6 +61,10 @@ class LLMGenerationStage(PipelineStage):
         self.output_leakage_guard = output_leakage_guard or PromptLeakageGuard()
         self.citation_guard = citation_guard or EvidenceCitationGuard()
         self.claim_evidence_guard = claim_evidence_guard or ClaimEvidenceGuard()
+        self.grounded_output_assembler = (
+            grounded_output_assembler
+            or GroundedOutputAssembler(self.claim_evidence_guard)
+        )
 
     async def process(self, context: ChatContext) -> ChatContext:
         if context.is_cached_answer:
@@ -73,6 +81,26 @@ class LLMGenerationStage(PipelineStage):
             raise RuntimeError("LLMGenerationStage requires a prompt from ContextBuildingStage.")
         if self._requires_grounded_evidence(context) and not prompt.retrieved_evidence:
             return await self._abstain_for_missing_evidence(context)
+
+        if self._requires_grounded_evidence(context):
+            sentiment_schema = prompt.response_schema.get("properties", {}).get(
+                "sentiment"
+            )
+            if not isinstance(sentiment_schema, dict):
+                raise RuntimeError("Grounded generation requires the sentiment schema")
+            prompt = prompt.model_copy(
+                update={
+                    "response_schema": build_grounded_response_schema(
+                        evidence_ids=[
+                            item.evidence_id for item in prompt.retrieved_evidence
+                        ],
+                        sentiment_schema=sentiment_schema,
+                    ),
+                    "output_contract_name": "submit_grounded_answer",
+                    "temperature": 0.0,
+                }
+            )
+            context.prompt = prompt
             
         log.info("Generating response with structured LLM")
         llm_call_purpose.set("chat_response")
@@ -146,7 +174,27 @@ class LLMGenerationStage(PipelineStage):
                 else:
                     raise gen_err
 
-        chisa_reply = response.parsed.get("response")
+        grounded_envelope = None
+        chisa_reply: str
+        if prompt.output_contract_name == "submit_grounded_answer":
+            manifests = resolve_attachment_manifests(context.retrieved_images)
+            try:
+                grounded_envelope = self.grounded_output_assembler.assemble(
+                    payload=response.parsed,
+                    evidence=prompt.retrieved_evidence,
+                    attachment_ids=[item.attachment_id for item in manifests],
+                    abstention_answer=_GROUNDED_ABSTENTION,
+                )
+            except (GroundedOutputValidationError, ValueError):
+                log.warning("Generated response rejected by grounded output contract")
+                return await self._abstain_for_rejected_output(
+                    context,
+                    status="abstained_invalid_grounding",
+                )
+            chisa_reply = grounded_envelope.answer
+        else:
+            raw_reply = response.parsed.get("response")
+            chisa_reply = raw_reply if isinstance(raw_reply, str) else ""
         
         # Fallback if parsing has mismatched JSON key but correct raw JSON string
         if not chisa_reply and response.parsed:
@@ -155,8 +203,6 @@ class LLMGenerationStage(PipelineStage):
                     chisa_reply = val
                     break
                     
-        chisa_reply = chisa_reply or ""
-        
         # Defense against raw JSON string leaking through as message text
         if chisa_reply.strip().startswith("{") and ('"response"' in chisa_reply or "'response'" in chisa_reply):
             from app.shared.utils.json_parser import robust_parse_json
@@ -196,31 +242,52 @@ class LLMGenerationStage(PipelineStage):
                 f"raw_preview={raw_preview[:100]})"
             )
 
-        leakage_assessment = self.output_leakage_guard.inspect(prompt.system, chisa_reply)
+        leakage_assessment = self.output_leakage_guard.inspect(
+            prompt.system,
+            chisa_reply,
+            allowed_source_texts=[item.text for item in prompt.retrieved_evidence],
+        )
         if leakage_assessment.leaked:
             log.warning(
                 "Generated response rejected by prompt leakage guard",
                 response_fingerprint=leakage_assessment.fingerprint,
             )
+            if grounded_envelope is not None:
+                return await self._abstain_for_rejected_output(
+                    context,
+                    status="abstained_output_leakage",
+                )
             raise LLMInvalidResponseError("Response rejected by output safety checks")
 
-        try:
-            citation_ids = self.citation_guard.validate(
-                response.parsed.get("citations"), prompt.retrieved_evidence
-            )
-        except CitationValidationError as error:
-            log.warning("Generated response rejected by citation guard")
-            raise LLMInvalidResponseError("Response rejected by grounding checks") from error
+        if grounded_envelope is not None and grounded_envelope.abstained:
+            citation_ids = []
+        else:
+            try:
+                citation_input: object = response.parsed.get("citations")
+                if grounded_envelope is not None:
+                    citation_input = grounded_envelope.citations
+                citation_ids = self.citation_guard.validate(
+                    citation_input, prompt.retrieved_evidence
+                )
+            except CitationValidationError as error:
+                log.warning("Generated response rejected by citation guard")
+                raise LLMInvalidResponseError(
+                    "Response rejected by grounding checks"
+                ) from error
 
-        try:
-            grounding = self._verify_grounding(
-                context=context,
-                answer=chisa_reply,
-                citation_ids=citation_ids,
-            )
-        except ClaimEvidenceValidationError as error:
-            log.warning("Generated response rejected by claim-evidence guard")
-            raise LLMInvalidResponseError("Response rejected by grounding checks") from error
+        grounding = None
+        if grounded_envelope is None or not grounded_envelope.abstained:
+            try:
+                grounding = self._verify_grounding(
+                    context=context,
+                    answer=chisa_reply,
+                    citation_ids=citation_ids,
+                )
+            except ClaimEvidenceValidationError as error:
+                log.warning("Generated response rejected by claim-evidence guard")
+                raise LLMInvalidResponseError(
+                    "Response rejected by grounding checks"
+                ) from error
 
         if context.on_token:
             for token in chisa_reply:
@@ -250,6 +317,21 @@ class LLMGenerationStage(PipelineStage):
         context.tool_res = context.tool_res or {}
         if grounding is not None:
             context.tool_res["grounding"] = grounding.telemetry()
+        elif grounded_envelope is not None and grounded_envelope.abstained:
+            context.tool_res["grounding"] = {
+                "status": "abstained_insufficient_evidence"
+            }
+        if grounded_envelope is not None:
+            context.tool_res["generation_contract"] = {
+                "confidence": grounded_envelope.confidence,
+                "safety_flags": grounded_envelope.safety_flags,
+                "verified_claims": grounded_envelope.verified_claims,
+                "extractive_claims": grounded_envelope.extractive_claims,
+                "removed_claims": grounded_envelope.removed_claims,
+                "rebound_citations": grounded_envelope.rebound_citations,
+                "attachment_ids": grounded_envelope.attachment_ids,
+                "abstained": grounded_envelope.abstained,
+            }
         context.tool_res["sentiment"] = sentiment_analysis
         context.tool_res["sentiment_analysis"] = sentiment_analysis
         context.tool_res["user_sentiment"] = user_sentiment
@@ -301,10 +383,22 @@ class LLMGenerationStage(PipelineStage):
     @staticmethod
     async def _abstain_for_missing_evidence(context: ChatContext) -> ChatContext:
         """Return a deterministic limitation instead of asking the model to invent facts."""
+        return await LLMGenerationStage._abstain_for_rejected_output(
+            context,
+            status="abstained_missing_evidence",
+        )
+
+    @staticmethod
+    async def _abstain_for_rejected_output(
+        context: ChatContext,
+        *,
+        status: str,
+    ) -> ChatContext:
+        """Deliver a safe limitation after a grounded candidate fails validation."""
         context.chisa_reply = _GROUNDED_ABSTENTION
         context.citation_ids = []
         context.tool_res = context.tool_res or {}
-        context.tool_res["grounding"] = {"status": "abstained_missing_evidence"}
+        context.tool_res["grounding"] = {"status": status}
         if context.on_token:
             for token in context.chisa_reply:
                 if asyncio.iscoroutinefunction(context.on_token):
