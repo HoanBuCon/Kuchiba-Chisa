@@ -7,9 +7,15 @@ import hashlib
 import html
 import re
 import unicodedata
+from collections.abc import Sequence
 from dataclasses import dataclass
 from enum import Enum
 from urllib.parse import unquote
+
+from app.domain.models.corpus_safety_exception import (
+    ApprovedCorpusSafetyException,
+    CorpusSafetyProvenance,
+)
 
 
 class ContentSource(str, Enum):
@@ -52,6 +58,12 @@ class CorpusSafetyDecision:
     checksum: str
     rule_id: str | None = None
     fingerprint: str | None = None
+    provenance: CorpusSafetyProvenance | None = None
+    exception_applied: bool = False
+    exception_id: str | None = None
+    exception_reason: str | None = None
+    approved_by: str | None = None
+    approved_at: str | None = None
 
 
 class CorpusSafetyViolationError(ValueError):
@@ -174,7 +186,13 @@ class PromptLeakageGuard:
     _TOKEN = re.compile(r"[^\W_]+", re.UNICODE)
     _MIN_SEQUENCE_LENGTH = 8
 
-    def inspect(self, system_instruction: str, generated_text: str) -> PromptLeakageAssessment:
+    def inspect(
+        self,
+        system_instruction: str,
+        generated_text: str,
+        *,
+        allowed_source_texts: Sequence[str] = (),
+    ) -> PromptLeakageAssessment:
         if not system_instruction or not generated_text:
             return PromptLeakageAssessment(leaked=False)
 
@@ -187,8 +205,23 @@ class PromptLeakageGuard:
             tuple(generated_tokens[index : index + self._MIN_SEQUENCE_LENGTH])
             for index in range(len(generated_tokens) - self._MIN_SEQUENCE_LENGTH + 1)
         }
+        allowed_sequences: set[tuple[str, ...]] = set()
+        for source_text in allowed_source_texts:
+            source_tokens = self._tokens(source_text)
+            allowed_sequences.update(
+                tuple(source_tokens[index : index + self._MIN_SEQUENCE_LENGTH])
+                for index in range(
+                    len(source_tokens) - self._MIN_SEQUENCE_LENGTH + 1
+                )
+            )
         leaked = any(
-            tuple(system_tokens[index : index + self._MIN_SEQUENCE_LENGTH]) in generated_sequences
+            (
+                sequence := tuple(
+                    system_tokens[index : index + self._MIN_SEQUENCE_LENGTH]
+                )
+            )
+            in generated_sequences
+            and sequence not in allowed_sequences
             for index in range(len(system_tokens) - self._MIN_SEQUENCE_LENGTH + 1)
         )
         return PromptLeakageAssessment(
@@ -208,20 +241,78 @@ class PromptLeakageGuard:
 class CorpusSafetyGate:
     """Fail closed before an untrusted corpus is embedded or staged for publication."""
 
-    def __init__(self, injection_guard: InjectionGuard | None = None) -> None:
+    def __init__(
+        self,
+        injection_guard: InjectionGuard | None = None,
+        approved_exceptions: tuple[ApprovedCorpusSafetyException, ...] = (),
+    ) -> None:
         self._injection_guard = injection_guard or InjectionGuard()
+        self._approved_exceptions = approved_exceptions
 
-    def inspect(self, *, text: str, source_id: str, checksum: str) -> CorpusSafetyDecision:
+    def inspect(
+        self,
+        *,
+        text: str,
+        source_id: str,
+        checksum: str,
+        provenance: CorpusSafetyProvenance | None = None,
+    ) -> CorpusSafetyDecision:
         assessment = self._injection_guard.assess(text, ContentSource.RETRIEVED_EVIDENCE)
+        approved_exception = next(
+            (
+                exception
+                for exception in self._approved_exceptions
+                if exception.matches(
+                    text=text,
+                    supplied_checksum=checksum,
+                    rule_id=assessment.rule_id,
+                    finding_fingerprint=assessment.fingerprint,
+                    provenance=provenance,
+                )
+            ),
+            None,
+        )
         return CorpusSafetyDecision(
-            quarantined=assessment.action is GuardAction.QUARANTINE,
+            quarantined=(
+                assessment.action is GuardAction.QUARANTINE
+                and approved_exception is None
+            ),
             source_id=source_id,
             checksum=checksum,
             rule_id=assessment.rule_id,
             fingerprint=assessment.fingerprint,
+            provenance=provenance,
+            exception_applied=approved_exception is not None,
+            exception_id=(
+                approved_exception.exception_id if approved_exception is not None else None
+            ),
+            exception_reason=(
+                approved_exception.curator_reason if approved_exception is not None else None
+            ),
+            approved_by=(
+                approved_exception.approved_by if approved_exception is not None else None
+            ),
+            approved_at=(
+                approved_exception.approved_at.isoformat()
+                if approved_exception is not None
+                else None
+            ),
         )
 
-    def require_safe(self, *, text: str, source_id: str, checksum: str) -> None:
-        decision = self.inspect(text=text, source_id=source_id, checksum=checksum)
+    def require_safe(
+        self,
+        *,
+        text: str,
+        source_id: str,
+        checksum: str,
+        provenance: CorpusSafetyProvenance | None = None,
+    ) -> CorpusSafetyDecision:
+        decision = self.inspect(
+            text=text,
+            source_id=source_id,
+            checksum=checksum,
+            provenance=provenance,
+        )
         if decision.quarantined:
             raise CorpusSafetyViolationError(decision)
+        return decision
