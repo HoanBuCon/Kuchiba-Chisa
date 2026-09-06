@@ -51,7 +51,7 @@ were verified independently.
 
 ## Interpretation of the reviewed raw-wiki noise
 
-The user's approval that all 405 returned items answer their queries is valid relevance evidence for `NFR-RAG-004`. The observed MediaWiki residue and broken chunk boundaries are a different quality dimension. They do not retroactively change the 405 relevance labels, but they can lower final-answer faithfulness, citation readability, and ingestion publish quality. They therefore remain tracked under `ING-01`/`ING-03` and must be represented in the future `RAG-06` generation evaluation rather than hidden by relabelling retrieval results.
+The user's approval that all 405 returned items answer their queries is valid relevance evidence for `NFR-RAG-004`. The observed MediaWiki residue and broken chunk boundaries are a different quality dimension. They do not retroactively change the 405 relevance labels, but they can lower final-answer faithfulness, citation readability, and ingestion publish quality. They were therefore kept visible in the completed `RAG-06` generation evaluation and remain tracked as non-blocking `ING-01`/`ING-03` quality debt rather than being hidden by relabelling retrieval results.
 
 ## Closure limitations retained
 
