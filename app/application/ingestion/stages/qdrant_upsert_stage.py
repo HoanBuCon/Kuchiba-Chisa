@@ -15,6 +15,7 @@ from app.domain.entities.chunk_models import ProcessingChunk
 from app.domain.interfaces.pipeline import IPipelineStage, PipelineMetrics, PipelineResult
 from app.domain.interfaces.repositories import IPipelineJobRepository
 from app.domain.interfaces.vector_store import IVectorStore
+from app.domain.models.corpus_safety_exception import CorpusSafetyProvenance
 from app.domain.models.lore_collections import validate_lore_staging_collection
 from app.domain.services.guardrails import CorpusSafetyGate
 from app.shared.utils.logger import get_logger
@@ -67,15 +68,53 @@ class QdrantUpsertStage(IPipelineStage[QdrantUpsertInput, list[ProcessingChunk]]
             and chunk.vector is not None
             and chunk.payload is not None
         ]
-        quarantined = [
+        decisions = [
             self.corpus_safety_gate.inspect(
                 text=chunk.text_content,
                 source_id=f"page:{chunk.page_id}:chunk:{chunk.chunk_id}",
                 checksum=chunk.chunk_hash,
+                provenance=(
+                    CorpusSafetyProvenance(
+                        source_id=str(chunk.source_id),
+                        corpus_version=chunk.corpus_version,
+                        page_id=chunk.page_id,
+                        revision_id=chunk.revision_id,
+                        chunk_id=str(chunk.chunk_id),
+                    )
+                    if chunk.source_id is not None and chunk.corpus_version is not None
+                    else None
+                ),
             )
             for chunk in to_upsert
         ]
-        quarantined = [decision for decision in quarantined if decision.quarantined]
+        exceptions = [decision for decision in decisions if decision.exception_applied]
+        if exceptions:
+            await self.job_repo.log_event(
+                job_id,
+                "CorpusSafetyExceptionApplied",
+                {
+                    "exception_count": len(exceptions),
+                    "records": [
+                        {
+                            "source_id": decision.source_id,
+                            "checksum": decision.checksum,
+                            "rule_id": decision.rule_id,
+                            "finding_fingerprint": decision.fingerprint,
+                            "exception_id": decision.exception_id,
+                            "curator_reason": decision.exception_reason,
+                            "approved_by": decision.approved_by,
+                            "approved_at": decision.approved_at,
+                            "provenance": (
+                                decision.provenance.model_dump(mode="json")
+                                if decision.provenance is not None
+                                else None
+                            ),
+                        }
+                        for decision in exceptions
+                    ],
+                },
+            )
+        quarantined = [decision for decision in decisions if decision.quarantined]
         if quarantined:
             await self.job_repo.log_event(
                 job_id,
