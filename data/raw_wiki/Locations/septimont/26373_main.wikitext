@@ -1,0 +1,90 @@
+**Profile**: Title: Septimont, Origin: Rinascita.
+
+'''Septimont''' is a [[Region]] and city-state of [[Rinascita]]. Unlike [[Ragunna]], Septimont has a far more militant and irreligious culture, as it places far less importance on the primacy of the [[Sentinel]] [[Imperator]] and instead worships the [[Lioness of Glory]] Arsinosa. As a result, the Agons, competitive gladiatorial combat, are the pinnacle of Septimontese society and can even determine the makeup of the political establishment. The [[Order of the Deep]] holds little power in Septimont, with most locals uninterested or even hostile to their message of salvation.
+
+Septimont can be reached during {{Quest|Shadow of Glory}}.
+
+==Areas==
+{| class="article-table alternating-colors-table tdc1" style="width: 100%;"
+! style="width: 200px;" |Name
+!Image
+!Description
+|- id="Titanbone Expanse"
+|[[Titanbone Expanse]]
+|[[File:Titanbone Expanse.webp|180px]]
+|A vast plain framed by mountain ranges. Named for the giant boulder clusters left by ancient lava flows, it was here that Septimontian civilization first took root centuries ago. Now, only scattered old villages remain, where wayfaring outlanders often rest before crossing into the Septimont highlands.
+|- id="Mournfell Canyon"
+|[[Mournfell Canyon]]
+|[[file:Mournfell Canyon.webp|180px]]
+|The remains of a coast eroded by the Dark Tide. Temples and sacred statues once erected by Ragunnesi Acolytes now lie in ruin. Their silent halls, devoid of worshippers, are spread across the canyon floor, transformed into haunted dwellings of Tacet Discords.
+|- id="Border Mountains"
+|[[Border Mountains]]
+|[[file:Border Mountains.webp|180px]]
+|A precipitous mountain range that marks the border of Septimont. The craggy peaks form a natural barrier between Septimont and the outside world. During the first outbreak of the Dark Tide, the Border Mountains bore the brunt, leaving them forever scarred by ashen traces and Tidal Blight calcification.
+|- id="Capitoline Hill"
+|[[Capitoline Hill]]
+|[[file:Capitoline hill.webp|180px]]
+|An area at the base of Capitoline Hill, near the Borderline Fort. Herds graze in peace throughout lush pastures, and scattered villages nestle among ancient ruins. Yet even in such tranquility, small arenas remain a vital part of life.
+|- id="Vale of Glory"
+|[[Vale of Glory]]
+|[[file:Vale of Glory.png|180px]]
+|The final resting place of Septimont's most heroic warriors, and those acknowledged by Arsinosa may find a final glory here.
+|- id="Minos Sewers"
+|[[Minos Sewers]]
+|[[file:Minos Sewers.png|180px]]
+|A labyrinthine series of caverns and waterways underneath the city atop Capitoline Hill.
+|}
+
+==Quests==
+{{Quest by Category List|Septimont Quests}}
+
+==Exploration Report==
+===Septimont Travel Guide I===
+* Unlocked by reaching 50% exploration.
+
+===Septimont Travel Guide II===
+* Unlocked by reaching 100% exploration.
+
+==Notable Features==
+===Challenges===
+* [[Tacet Field: Mournfell Canyon]]
+
+===Bosses===
+* {{Enemy|Lioness of Glory}}
+* {{Enemy|Lady of the Sea}}
+* {{Enemy|Nightmare: Kelpie}}
+
+===Enemies===
+====Elite Class====
+* {{Enemy|Kerasaur}}
+* {{Enemy|Pilgrim's Shell}}
+
+===Common Class===
+* {{Enemy|Devotee's Flesh}}
+* {{Enemy|Fusion Drake}}
+* {{Enemy|Havoc Drake}}
+* {{Enemy|Spectro Drake}}
+
+===Resources===
+* {{Item|Bamboo Iris}}
+* {{Item|Bloodleaf Viburnum}}
+* {{Item|Amber Halite}}
+* {{Item|Oaknut}}
+* {{Item|Sonance Casket: Septimont}}
+
+==Government==
+Septimont is lead by the Ephor, head of the city. The Priestess can foretell fate and can that makes the final calls and acts alongside the Ephor. Most people trust her judgement. They are accompanied by a [[Council of Elders]] who advises the Ephor but ultimately, the decision-making comes down to them. The Ephor's word is law as the rule of Septimont is those who have Power stands at the top. The current Ephor is [[Augusta]] and the current Priestess is [[Iuno]], who is considered extreme in the line of Priestesses. Not everyone agrees with her behavior despite her capabilities.
+
+==Resonators==
+===Playable===
+{{Resonators by Category Table|Playable Resonators&Septimont}}
+
+===Upcoming===
+{{Resonators by Category Table|Upcoming Resonators&Septimont}}
+
+==Trivia==
+*Aside from succession via Might makes right, Septimont's system of government somewhat resembles that of ancient Sparta, with the Ephor and Priestess of Septimont advised by a Council of Elders bearing similarities to the List of kings of Sparta who are in turn advised, ironically, by five individuals holding the title of Ephor, though the Elders are more akin to the Gerousia. Though, unlike the Spartan Ephors and Gerousia, the Septimont Council of Elders have no judicial authority over the Ephor and Priestess.
+===Etymology===
+*Septimont is derived from Latin ''septem montes'', meaning “seven mountains” or “seven hills.” The name references Rome, traditionally known as the city of the Seven Hills.
+
+===Videos===

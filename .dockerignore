@@ -8,6 +8,5 @@ __pycache__
 *.log
 .coverage
 htmlcov
-reports
 logs
 discord/node_modules

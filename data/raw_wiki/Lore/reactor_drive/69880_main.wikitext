@@ -1,0 +1,10 @@
+**Profile**: Title: Reactor Drive.
+
+The Exostrider's power core and Lahai-Roi's underground "sun."Royan records say this energy entity was removed from the Exostrider and placed underground to sustain the haven. However, monitoring data confirms a gradual but steady decline in its energy output. Both the Roya and the Spacetrek Collective are now formulating emergency contingencies in response.
+The '''Reactor Drive''' is the [[Exostrider]]'s power core which acts as [[Lahai-Roi]]'s underground "sun". The Reactor Drive is the reason Lahai-Roi is the underground haven it is.
+
+==Overview==
+Monitoring data confirms that there is a gradual but steady decline in the Reactor Drive's energy output, which both the [[Roya Tribe]] and [[Spacetrek Collective]] are formulating emergency contingencies for. According to Ms. Voss, once the Reactor Drive's energy output is depleted, it's gone forever, which is why Lahai-Roi planned the New Solar Ceremony to replace the Reactor Drive with an artificial sun, thus also letting the Exostrider take back the Reactor Drive.
+
+===Hyvatia Detector===
+The [[Hyvatia]] Detector is a critical sensor for the Reactor Drive. It's a surface detector built by the Spacetrek Collective at [[Sundermere]] for the Reactor Drive's inspection and maintenance. It's vital for the Ceremony's data calibration.

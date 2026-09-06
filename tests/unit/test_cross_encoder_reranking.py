@@ -128,7 +128,8 @@ async def test_unavailable_cross_encoder_uses_observable_deterministic_fallback(
     assert all(metadata["reranker_mode"] == "lexical_fallback" for _, _, metadata in results)
     assert all(metadata["reranker_fallback"] is True for _, _, metadata in results)
     assert all(
-        metadata["reranker_fallback_reason"] == "unavailable" for _, _, metadata in results
+        metadata["reranker_fallback_reason"] == "provider_unavailable"
+        for _, _, metadata in results
     )
     assert all(metadata["reranker_degraded"] is True for _, _, metadata in results)
 

@@ -1,0 +1,22 @@
+**Profile**: Origin: Lahai-Roi.
+
+'''''' is a note found during [[Operation: Frontier Renewal]] and is added to its Archives, Spacetrek Observatory Files.
+
+==Text==
+"Operators must follow the steps below with strict attention to operate Route Constructors.
+
+Step 1: Put in the required amount of Compressed Bedrock.
+Note: Compressed Bedrock is processed material made of natural minerals. After refining native Lahai-Roi stone, the Spacetrek Collective produces a high-density construction medium. Once parsed and separated by the Route Constructor, it can be combined with other resources to form structural baseplates for various building types.
+
+Step 2: Put in the required amount of Mechanite.
+Note: Mechanite is a native Lahai-Roi mineral. After the arrival of the Exostrider, mechanical patterns and structures started to grow on it under the influence. The Collective has found that electronic devices made with this mineral exhibit increased computational performance, as if the Mechanite itself has processing capability.
+
+Step 3: Put in the required amount of Constructor Cores.
+Note: Constructor Cores are artificial power units designed for the equipment's operation. Since the Route Constructor's immense energy demands, remote deployment, and single-use nature make stable energy lines impractical, the Collective developed these cores to serve as portable, reusable "batteries." They are charged by focusing the Reactor's light through a Solis Lens Array.
+
+Step 4: Verify the construction blueprint.
+Note: Blueprints are usually pre-loaded during setup. Only a simple confirmation is required.
+
+Step 5: Ensure the construction area is fully cleared of any personnel, animals, or Exoswarm units.
+
+Step 6: Activate the Route Constructor."

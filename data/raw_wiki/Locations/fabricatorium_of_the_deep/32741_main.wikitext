@@ -1,0 +1,63 @@
+**Profile**: Title: Fabricatorium of the Deep, Origin: Rinascita.
+
+{{Intro/Location|Fabricatorium of the Deep}} 
+
+The Fabricatorium of the Deep is a facility hidden in the unfathomed depths of the sea, where Common Echoes are manufactured, recycled, and studied. At its heart stands the Lumen Tower, composed of experimental zones that are arranged in a circular fashion and interconnected by pathways; everything here serves to maintain the smooth running of the facility.
+
+==Areas==
+{| class="article-table alternating-colors-table tdc1" style="width: 100%;"
+! style="width: 200px;" |Name
+!Image
+!Description
+|- id="Fallen Grave"
+|[[Fallen Grave]]
+|[[File:Fallen Grave.png|180px]]
+|In the outlying corner of the Fabricatorium lies an Echo burial ground embedded into deep-sea canyons. Here, heaps of abandoned Brooders cover the floor. Decommissioned Echoes wait in lines to be dismantled and incinerated in the workshops. Their frequencies will be recycled and redirected across the Fabricatorium, feeding the creation of new Echoes.
+|- id="Anima Cradle"
+|[[Anima Cradle]]
+|[[File:Anima Cradle.png|180px]]
+|The core area in the Fabricatorium of the Deep for developing Common Echoes. Endless arrays of Echo Brooders line the space, cradling Echoes awaiting rebirth.
+As the foundation of the Common Echo system, this site commands heavy investment of security and research resources by the Order.
+|- id="Energy Hub (Rinascita)"
+|[[Energy Hub (Rinascita)|Energy Hub]]
+|[[File:Energy Hub (Rinascita).png|180px]]
+|The energy storage and distribution center of the Fabricatorium.
+The recycled energy from the Fallen Grave converges here, waiting to be distributed to other areas as needed. All energy is reserved in liquid media. Frequencies born of the tides once again dissolve in water.
+|- id="Sanctuary of Faith"
+|[[Sanctuary of Faith]]
+|[[File:Sanctuary of Faith.png|180px]]
+|A praying ground dedicated to the Acolytes dwelling under the sea, the only sanctuary of the Order's undersea expanse that remains untouched by the Fractsidus.
+|- id="Lumen Tower"
+|[[Lumen Tower]]
+|[[File:Lumen Tower.png|180px]]
+|The central tower of the Fabricatorium of the Deep, where the Lost Beyond is created.
+As the control hub of the entire Fabricatorium, the tower regulates the activities in all other areas within the facility. Deep in the tower keeps the lantern of the first Primus, the first gift bestowed upon the Order by Sentinel Imperator.
+|}
+
+==Quests==
+{{Quest by Category List|Fabricatorium of the Deep Quests}}
+
+== Exploration Report ==
+
+=== '''Fabricatorium of the Deep: Surveillance Report I''' ===
+* Unlocked by reaching 50% exploration.
+
+=== '''Fabricatorium of the Deep: Surveillance Report II''' ===
+* Unlocked by reaching 100% exploration.
+
+==Notable Features==
+===Nightmare Nests===
+* [[Fallen Grave Nightmare Nest]]
+
+===Bosses===
+* {{Enemy|Nightmare: Hecate}}
+* {{Enemy|Fenrico}}
+
+===Enemies===
+====Common Class====
+* {{Enemy|Abyssal Gunmaster}}
+* {{Enemy|Fractsidus Inspector}}
+
+===Resources===
+* {{Item|"Afterlife"}}
+* {{Item|Abyss Luminary}}

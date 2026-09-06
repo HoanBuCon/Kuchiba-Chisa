@@ -1,0 +1,1070 @@
+# RAG-05 Jina Context-Precision Human Review
+
+- Golden fingerprint: `01cababd2e9912a1b435869afc500dc44d727d045f6bafe868c3be4bc6004976`
+- Jina artifact SHA-256: `8df4a6b6ebde0a289e90a8b14d69c34f2c04fd61cc6a2a72cb910d9eb3ef7605`
+- Staging version: `rag05eval_01cababd2e_20260905192227`
+- Scope: `81 answerable cases × top-5 = 405 items`
+- Abstention cases excluded: `2`
+- Approval: `approved`.
+- Context precision: `1.0`.
+- SRS comparison: `PASS` against `0.75`.
+
+## Human review decision
+
+- Reviewer: `HoanBuCon`
+- Reviewed at: `2026-09-06T05:22:21+07:00`
+- Decision scope: `all 405 production-equivalent Jina top-5 items`
+- Reviewer note: Human reviewer inspected all 405 items and confirmed every item retrieves query-relevant content. Residual raw-wikitext/chunking noise was observed and is tracked separately from relevance.
+
+## rw-001
+
+- Query: What organization is Aalto affiliated with?
+- Expected answer: Aalto is a Consultant of the Black Shores.
+
+| Rank | Evidence | Source | Proposed | Human label | Source excerpt |
+|---:|---|---|---|---|---|
+| 1 | `raw_wiki:585:101912:cdb1baf766c207e6:chunk:000` | `Characters/Resonators/aalto/585_main.wikitext` | relevant | **relevant** | He is an information broker from the [[New Federation]] and a Consultant of the [[Black Shores]]. |
+| 2 | `raw_wiki:585:101912:cdb1baf766c207e6:chunk:000` | `Characters/Resonators/aalto/585_main.wikitext` | relevant | **relevant** | He is an information broker from the [[New Federation]] and a Consultant of the [[Black Shores]]. |
+| 3 | `raw_wiki:522:103593:65ac76a1400c1df9:chunk:000` | `Characters/Resonators/encore/522_main.wikitext` | pending | **relevant** | … see? ...Black Shores member, Encore, reporting in! > — Encore She is from the [[New Federation]] and a Consultant of the [[Black Shores]]. With her vivid imagination, her Wooly companions, Cosmos and Cloudy, and a penchant for crafting fairy tales, she is responsible for finding new clients for the Black Shores alongside her fellow Consultant and brother figure [[Aalto]]. ==Official Introduction== > Encore, a consul… |
+| 4 | `raw_wiki:28266:131321:5f2feb1a382c7763:chunk:000` | `Locations/lilyland/28266_main.wikitext` | pending | **relevant** | …ntinel]] [[Imperator]]. Lilyland is known for hosting the "Lilyland Fashion Week" and having a large stage surrounded by fields of flowers, with the audience throwing petals as applause. The beauty industry in general is important in Lilyland, with products such as Upala Perfume and Efreeta Hair Conditioner, and Huanglong's rising fashion star [[Linglong]] has presented work at the fashion week. The Fisher family is … |
+| 5 | `raw_wiki:585:101912:cdb1baf766c207e6:chunk:000` | `Characters/Resonators/aalto/585_main.wikitext` | relevant | **relevant** | He is an information broker from the [[New Federation]] and a Consultant of the [[Black Shores]]. |
+
+## rw-002
+
+- Query: Baizhi làm việc trong lĩnh vực nào ở Huaxu Academy?
+- Expected answer: Baizhi researches Remnant Ecoacoustics at Huaxu Academy.
+
+| Rank | Evidence | Source | Proposed | Human label | Source excerpt |
+|---:|---|---|---|---|---|
+| 1 | `raw_wiki:624:92922:791b05ce14a56b51:chunk:000` | `Characters/Resonators/baizhi/624_main.wikitext` | relevant | **relevant** | She is a researcher in Remnant Ecoacoustics at Huaxu Academy. |
+| 2 | `raw_wiki:624:92922:791b05ce14a56b51:chunk:000` | `Characters/Resonators/baizhi/624_main.wikitext` | relevant | **relevant** | She is a researcher in Remnant Ecoacoustics at Huaxu Academy. |
+| 3 | `raw_wiki:938:130729:103ceb2210a7890a:chunk:000` | `Factions/huaxu_academy/938_main.wikitext` | pending | **relevant** | # Huaxu Academy The state-run research institute of Huanglong, with branch organizations established in each city. '''Huaxu Academy''' is a research institute in [[Huanglong]] with state-run branches in each city. ==Jinzhou Campus' Organization== In the Jinzhou territory, "Huaxu Academy" specifically denotes its Jinzhou Campus. Specializing in Wutherology, Ecoacoustics, and Resonology, the Jinzhou Campus has signific… |
+| 4 | `raw_wiki:938:130729:103ceb2210a7890a:chunk:000` | `Factions/huaxu_academy/938_main.wikitext` | pending | **relevant** | # Huaxu Academy The state-run research institute of Huanglong, with branch organizations established in each city. '''Huaxu Academy''' is a research institute in [[Huanglong]] with state-run branches in each city. ==Jinzhou Campus' Organization== In the Jinzhou territory, "Huaxu Academy" specifically denotes its Jinzhou Campus. Specializing in Wutherology, Ecoacoustics, and Resonology, the Jinzhou Campus has signific… |
+| 5 | `raw_wiki:938:130729:103ceb2210a7890a:chunk:000` | `Factions/huaxu_academy/938_main.wikitext` | pending | **relevant** | # Huaxu Academy The state-run research institute of Huanglong, with branch organizations established in each city. '''Huaxu Academy''' is a research institute in [[Huanglong]] with state-run branches in each city. ==Jinzhou Campus' Organization== In the Jinzhou territory, "Huaxu Academy" specifically denotes its Jinzhou Campus. Specializing in Wutherology, Ecoacoustics, and Resonology, the Jinzhou Campus has signific… |
+
+## rw-003
+
+- Query: Changli giữ vai trò gì tại Jinzhou?
+- Expected answer: Changli serves as Counselor to Jinzhou Magistrate Jinhsi.
+
+| Rank | Evidence | Source | Proposed | Human label | Source excerpt |
+|---:|---|---|---|---|---|
+| 1 | `raw_wiki:1126:100700:6b4973485554efd0:chunk:000` | `Characters/Resonators/changli/1126_main.wikitext` | relevant | **relevant** | now serves as Counselor to [[Jinzhou]] Magistrate, [[Jinhsi]]. |
+| 2 | `raw_wiki:26888:99747:897732ef65d43d75:chunk:000` | `Lore/battle_beneath_the_crescent/26888_main.wikitext` | pending | **relevant** | …haos. We were terrified, couldn't tell friend from foe... > — Midnight Ranger The '''Battle Beneath the Crescent''' is a crucial event in [[Jinzhou\|Jinzhou's]] history, taking place in the [[Norfall Barrens]] three years prior to the main story. The battle was fought between the [[Midnight Rangers]], the military force of Jinzhou, and [[Ovathrax]], the [[Threnodian]] of War. ==Overview== ===Background=== ===Battle===… |
+| 3 | `raw_wiki:26888:99747:897732ef65d43d75:chunk:000` | `Lore/battle_beneath_the_crescent/26888_main.wikitext` | pending | **relevant** | …haos. We were terrified, couldn't tell friend from foe... > — Midnight Ranger The '''Battle Beneath the Crescent''' is a crucial event in [[Jinzhou\|Jinzhou's]] history, taking place in the [[Norfall Barrens]] three years prior to the main story. The battle was fought between the [[Midnight Rangers]], the military force of Jinzhou, and [[Ovathrax]], the [[Threnodian]] of War. ==Overview== ===Background=== ===Battle===… |
+| 4 | `raw_wiki:936:101013:20a1567cbe138350:chunk:000` | `Characters/Resonators/jinhsi/936_main.wikitext` | pending | **relevant** | > As the Sentinel foretold, you and I were meant to cross paths. > — Jinhsi She is the young Magistrate of [[Jinzhou]] with a resolute and altruistic nature and an unbreakable dedication to defending her city and countrymen to her last breath. She is also the appointed [[Resonator]] of Sentinel [[Jué]], manifesting in the shape of a Loong, since birth, and with it the responsibility to safeguard Jinzhou's past and gu… |
+| 5 | `raw_wiki:588:99853:a4995516cd60ac47:chunk:000` | `Characters/Resonators/sanhua/588_main.wikitext` | pending | **relevant** | > Greetings, Rover. I will escort you for the time being. > — Sanhua She is the loyal and reliable guard of Jinzhou Magistrate [[Jinhsi]] who perceives a world distinctly different from that in the eyes of others. ==Official Introduction == > A loyal and reliable guard for Jinhsi, Sanhua is composed and reserved. Sanhua perceives a world distinctly different from that in the eyes of others, and her body temperature i… |
+
+## rw-004
+
+- Query: What job does Chixia have in Jinzhou?
+- Expected answer: Chixia is a young Patroller in Jinzhou.
+
+| Rank | Evidence | Source | Proposed | Human label | Source excerpt |
+|---:|---|---|---|---|---|
+| 1 | `raw_wiki:510:99239:2efdf295348ddd30:chunk:000` | `Characters/Resonators/chixia/510_main.wikitext` | relevant | **relevant** | She is a young Patroller who casts her jubilant figure along the streets of Jinzhou city. |
+| 2 | `raw_wiki:510:99239:2efdf295348ddd30:chunk:000` | `Characters/Resonators/chixia/510_main.wikitext` | relevant | **relevant** | She is a young Patroller who casts her jubilant figure along the streets of Jinzhou city. |
+| 3 | `raw_wiki:898:136862:688bebbd18ed5936:chunk:000` | `Locations/jinzhou/898_main.wikitext` | pending | **relevant** | …ity. In the event of a catastrophic collapse of the city's defense, a dam near Lake Heights can be used to flood the lower city and protect what remains from the Tacet Discord threat. ==Areas== {\| class="article-table alternating-colors-table tdc1" style="width: 100%;" ! style="width: 200px;" \|Name ! Description \|- id="Jinzhou (Area)" \|[[File:Jinzhou.png\|180px]] [[Jinzhou (Area)]] \|The city proper, and centre of all … |
+| 4 | `raw_wiki:3150:93366:590fa68ddaf79966:chunk:000` | `Factions/court_of_savantae/3150_main.wikitext` | pending | **relevant** | …o the [[Roya Frostlands]] near the north pole, where it has remained until today. The [[Tower of Adversity (Area)\|Tower of Adversity]] in [[Jinzhou (Province)\|Jinzhou]] is repurposed from an abandoned experiment site once used by the Court. Researchers from the Court of Savantae often visited [[Mt. Firmament]] to investigate the time fluctuations, despite the cost that it would have on their lifespans. |
+| 5 | `raw_wiki:898:136862:688bebbd18ed5936:chunk:000` | `Locations/jinzhou/898_main.wikitext` | pending | **relevant** | …ity. In the event of a catastrophic collapse of the city's defense, a dam near Lake Heights can be used to flood the lower city and protect what remains from the Tacet Discord threat. ==Areas== {\| class="article-table alternating-colors-table tdc1" style="width: 100%;" ! style="width: 200px;" \|Name ! Description \|- id="Jinzhou (Area)" \|[[File:Jinzhou.png\|180px]] [[Jinzhou (Area)]] \|The city proper, and centre of all … |
+
+## rw-005
+
+- Query: Calcharo lãnh đạo nhóm nào?
+- Expected answer: Calcharo leads the Ghost Hounds.
+
+| Rank | Evidence | Source | Proposed | Human label | Source excerpt |
+|---:|---|---|---|---|---|
+| 1 | `raw_wiki:897:102549:c6a570ea76923091:chunk:000` | `Factions/ghost_hounds/897_main.wikitext` | pending | **relevant** | **Faction Profile**: Leader: Calcharo, Founder: Calcharo. The '''Ghost Hounds''' are a multinational mercenary group rooted in the [[New Federation]]'s [[Lawless Zone]], annexed from the gang known as "the Underdogs", both led by Calcharo. ==Notable Members== {\| class="article-table" !Icon!!Name!!Position \|- \|[[File:Resonator Calcharo.png\|50px]] \|[[Calcharo]] \|Leader and founder \|} == Trivia == * [[Galbrena]] was onc… |
+| 2 | `raw_wiki:632:99398:b84b4f87a9d9ade9:chunk:000` | `Characters/Resonators/calcharo/632_main.wikitext` | relevant | **relevant** | He is a former Exile from the [[New Federation]]'s [[Lawless Zone]] and the leader of the [[Ghost Hounds]]. |
+| 3 | `raw_wiki:897:102549:c6a570ea76923091:chunk:000` | `Factions/ghost_hounds/897_main.wikitext` | pending | **relevant** | **Faction Profile**: Leader: Calcharo, Founder: Calcharo. The '''Ghost Hounds''' are a multinational mercenary group rooted in the [[New Federation]]'s [[Lawless Zone]], annexed from the gang known as "the Underdogs", both led by Calcharo. ==Notable Members== {\| class="article-table" !Icon!!Name!!Position \|- \|[[File:Resonator Calcharo.png\|50px]] \|[[Calcharo]] \|Leader and founder \|} == Trivia == * [[Galbrena]] was onc… |
+| 4 | `raw_wiki:907:126835:49c5a92e82ee7ad1:chunk:000` | `Factions/fractsidus/907_main.wikitext` | pending | **relevant** | # Fractsidus **Faction Profile**: Leader: Schwarzloch, Enemies: Black Shores;Jinzhou;Montelli Family;Septimont. The '''Fractsidus''' is a mysterious global terrorist organization that serves as the main antagonistic faction of ''[[Wuthering Waves]]''. Their aim is to accelerate the next [[The Lament\|Lament]] - dubbed the "True Lament" - by resurrecting the [[Threnodian]]s, viewing the Lament not as an apocalyptic cat… |
+| 5 | `raw_wiki:31852:72985:814ee00262cb4399:chunk:000` | `Factions/house_silva/31852_main.wikitext` | pending | **relevant** | # House Silva **Faction Profile**: Leader: Julia Silva, Base: Septimont (formerly). '''House Silva''' is one of the founding bloodlines of [[Septimont]] and a once prominent noble family, though their influence began waver with the rise of the new [[Augusta\|Ephor]]. During the most recent [[Great Agon]] the household and their head, Julia Silva, take part in match fixing and go as far as to sabotage [[Lupa]]'s equipm… |
+
+## rw-006
+
+- Query: Who leads the Troupe of Fools?
+- Expected answer: Brant is the captain of the Troupe of Fools.
+
+| Rank | Evidence | Source | Proposed | Human label | Source excerpt |
+|---:|---|---|---|---|---|
+| 1 | `raw_wiki:25657:91989:d626dfb652418c20:chunk:000` | `Factions/troupe_of_fools/25657_main.wikitext` | pending | **relevant** | …ising the Troupe's art to be like "dancing in chains," defying the weight of conformity with their performance. ==Archive Entry== The Fools who survived the dragon's assault-whom the Order refers to as the "pilgrims"—drifted on the warm currents, eventually finding refuge in a vast cavern on Penitent's End.There, the Fools formed a troupe, determined to one day expose the truth hidden by the Order and return to their… |
+| 2 | `raw_wiki:24786:99400:468ec49727209414:chunk:000` | `Characters/Resonators/brant/24786_main.wikitext` | relevant | **relevant** | He is the captain of the [[Troupe of Fools]], exuding a carefree, easygoing charm and charisma, unbound by convention. |
+| 3 | `raw_wiki:25657:91989:d626dfb652418c20:chunk:000` | `Factions/troupe_of_fools/25657_main.wikitext` | pending | **relevant** | …ising the Troupe's art to be like "dancing in chains," defying the weight of conformity with their performance. ==Archive Entry== The Fools who survived the dragon's assault-whom the Order refers to as the "pilgrims"—drifted on the warm currents, eventually finding refuge in a vast cavern on Penitent's End.There, the Fools formed a troupe, determined to one day expose the truth hidden by the Order and return to their… |
+| 4 | `raw_wiki:24789:103572:c7b9cc0a8a5cdfa6:chunk:000` | `Characters/Resonators/roccia/24789_main.wikitext` | pending | **relevant** | > All the world's a stage, and we are mere players. > — Roccia She is a gifted improvisational comedian and the First Mate of the [[Troupe of Fools]]. While bashful and introverted, she, alongside '''Pero''', her closest companion, possesses a repertoire of tools and talents to protect and nurture her friends and newfound family. ==Official Introduction== > Roccia is a gifted improvisational comedian and the First Ma… |
+| 5 | `raw_wiki:26166:100313:e86c3e53552bfa24:chunk:000` | `Lore/pilgrims_sail/26166_main.wikitext` | pending | **relevant** | **Profile**: Title: Pilgrim's Sail. The '''Pilgrim's Sail''' is a tradition in [[Ragunna]], enforced by the [[Order of the Deep]]. ==Archive Entry== Those deemed faithless by the Order of the Deep are sent to voyage upon the Pilgrim's Sail, following the ancient path of those who once braved the mist and maelstrom seeking the Sentinel's guidance. The Order claims that only [[Imperator]] can grant absolution to these … |
+
+## rw-007
+
+- Query: Camellya phụ trách việc gì ở Black Shores?
+- Expected answer: Camellya is a Bloom Bearer who handles combat-oriented germination tests for new candidates.
+
+| Rank | Evidence | Source | Proposed | Human label | Source excerpt |
+|---:|---|---|---|---|---|
+| 1 | `raw_wiki:599:96614:56f198042c315f7e:chunk:000` | `Characters/Resonators/camellya/599_main.wikitext` | relevant | **relevant** | She is a Bloom Bearer of the [[Black Shores]], and handles the combat-oriented germination tests given to new candidates. |
+| 2 | `raw_wiki:7557:136952:45922d58511e4b39:chunk:000` | `Lore/timeline/7557_main.wikitext` | pending | **relevant** | This '''Timeline''' is a rough estimation of the universe of [[Wuthering Waves]]. LD (Landing Date) refers to the year that [[Rover]] lands in [[Solaris-3]] and starts the game's events. References are provided as much as possible. ==Pre-First Lament== *'''?''' &mdash; [[The Farwatcher]] and eight other interstellar probes are launched by the [[Pre-Lament Civilization]]. *'''?''' &mdash; The Tethys Institute proposes… |
+| 3 | `raw_wiki:7557:136952:45922d58511e4b39:chunk:000` | `Lore/timeline/7557_main.wikitext` | pending | **relevant** | This '''Timeline''' is a rough estimation of the universe of [[Wuthering Waves]]. LD (Landing Date) refers to the year that [[Rover]] lands in [[Solaris-3]] and starts the game's events. References are provided as much as possible. ==Pre-First Lament== *'''?''' &mdash; [[The Farwatcher]] and eight other interstellar probes are launched by the [[Pre-Lament Civilization]]. *'''?''' &mdash; The Tethys Institute proposes… |
+| 4 | `raw_wiki:1007:135324:8f903f46d2fa3ca8:chunk:000` | `Factions/black_shores/1007_main.wikitext` | pending | **relevant** | # The Black Shores **Faction Profile**: Leader: Rover, Founder: Rover, Base: Black Shores Archipelago, Allies: Jinzhou;Montelli Family;Ephor's Palace;Startorch Academy, Enemies: Fractsidus. {{About\|the [[Factions\|faction]]\|the location\|The Black Shores}} The '''Black Shores''' is a global organization enshrouded in mysteries and turmoil, headquartered on the remote [[Black Shores Archipelago]] and built on a large pi… |
+| 5 | `raw_wiki:599:96614:56f198042c315f7e:chunk:000` | `Characters/Resonators/camellya/599_main.wikitext` | relevant | **relevant** | She is a Bloom Bearer of the [[Black Shores]], and handles the combat-oriented germination tests given to new candidates. |
+
+## rw-008
+
+- Query: Ai là lãnh đạo và người sáng lập Black Shores?
+- Expected answer: Rover is both Leader and Founder of the Black Shores.
+
+| Rank | Evidence | Source | Proposed | Human label | Source excerpt |
+|---:|---|---|---|---|---|
+| 1 | `raw_wiki:1007:135324:8f903f46d2fa3ca8:chunk:000` | `Factions/black_shores/1007_main.wikitext` | relevant | **relevant** | **Faction Profile**: Leader: Rover, Founder: Rover |
+| 2 | `raw_wiki:7557:136952:45922d58511e4b39:chunk:000` | `Lore/timeline/7557_main.wikitext` | pending | **relevant** | This '''Timeline''' is a rough estimation of the universe of [[Wuthering Waves]]. LD (Landing Date) refers to the year that [[Rover]] lands in [[Solaris-3]] and starts the game's events. References are provided as much as possible. ==Pre-First Lament== *'''?''' &mdash; [[The Farwatcher]] and eight other interstellar probes are launched by the [[Pre-Lament Civilization]]. *'''?''' &mdash; The Tethys Institute proposes… |
+| 3 | `raw_wiki:7557:136952:45922d58511e4b39:chunk:000` | `Lore/timeline/7557_main.wikitext` | pending | **relevant** | This '''Timeline''' is a rough estimation of the universe of [[Wuthering Waves]]. LD (Landing Date) refers to the year that [[Rover]] lands in [[Solaris-3]] and starts the game's events. References are provided as much as possible. ==Pre-First Lament== *'''?''' &mdash; [[The Farwatcher]] and eight other interstellar probes are launched by the [[Pre-Lament Civilization]]. *'''?''' &mdash; The Tethys Institute proposes… |
+| 4 | `raw_wiki:1007:135324:8f903f46d2fa3ca8:chunk:000` | `Factions/black_shores/1007_main.wikitext` | relevant | **relevant** | **Faction Profile**: Leader: Rover, Founder: Rover |
+| 5 | `raw_wiki:10459:95089:82fed37418e8019f:chunk:000` | `Factions/lollo_logistics/10459_main.wikitext` | pending | **relevant** | # Lollo Logistics Lollo Logistics is a trusted logistics company that delivers not only the tangible, but also the intangible.Whether it's sending sweet words to a loved one or retrieving lost memories, if it's ordered and can be delivered, Lollo Logistics will handle them with care. '''Lollo Logistics''' is a professional multinational logistics expertise, offering services for all items—tangible or intangible—as lo… |
+
+## rw-009
+
+- Query: What fields does Huaxu Academy's Jinzhou Campus specialize in?
+- Expected answer: It specializes in Wutherology, Ecoacoustics, and Resonology.
+
+| Rank | Evidence | Source | Proposed | Human label | Source excerpt |
+|---:|---|---|---|---|---|
+| 1 | `raw_wiki:938:130729:103ceb2210a7890a:chunk:000` | `Factions/huaxu_academy/938_main.wikitext` | relevant | **relevant** | Specializing in Wutherology, Ecoacoustics, and Resonology |
+| 2 | `raw_wiki:1567:101748:f9ba41dcd5878b94:chunk:000` | `Characters/Resonators/xiangli_yao/1567_main.wikitext` | pending | **relevant** | …e to hear your insights. > — Xiangli Yao He is the Principal Investigator in charge of the academics at [[Huaxu Academy\|Huaxu Academy's]] [[Jinzhou]] Campus. He is the Academy's youngest multi-disciplinary scientist, and an expert in the research of Automata Mechanics. ==Official Introduction== Huaxu Academy's Principal Investigator, Xiangli Yao, displays exceptional expertise in various research fields despite his y… |
+| 3 | `raw_wiki:938:130729:103ceb2210a7890a:chunk:000` | `Factions/huaxu_academy/938_main.wikitext` | relevant | **relevant** | Specializing in Wutherology, Ecoacoustics, and Resonology |
+| 4 | `raw_wiki:898:136862:688bebbd18ed5936:chunk:000` | `Locations/jinzhou/898_main.wikitext` | pending | **relevant** | …ity. In the event of a catastrophic collapse of the city's defense, a dam near Lake Heights can be used to flood the lower city and protect what remains from the Tacet Discord threat. ==Areas== {\| class="article-table alternating-colors-table tdc1" style="width: 100%;" ! style="width: 200px;" \|Name ! Description \|- id="Jinzhou (Area)" \|[[File:Jinzhou.png\|180px]] [[Jinzhou (Area)]] \|The city proper, and centre of all … |
+| 5 | `raw_wiki:898:136862:688bebbd18ed5936:chunk:000` | `Locations/jinzhou/898_main.wikitext` | pending | **relevant** | …ity. In the event of a catastrophic collapse of the city's defense, a dam near Lake Heights can be used to flood the lower city and protect what remains from the Tacet Discord threat. ==Areas== {\| class="article-table alternating-colors-table tdc1" style="width: 100%;" ! style="width: 200px;" \|Name ! Description \|- id="Jinzhou (Area)" \|[[File:Jinzhou.png\|180px]] [[Jinzhou (Area)]] \|The city proper, and centre of all … |
+
+## rw-010
+
+- Query: Midnight Rangers có nhiệm vụ gì ở Jinzhou?
+- Expected answer: They are Jinzhou's primary military force and protect the land from external threats.
+
+| Rank | Evidence | Source | Proposed | Human label | Source excerpt |
+|---:|---|---|---|---|---|
+| 1 | `raw_wiki:896:99150:aa2a5187c5ebc08b:chunk:000` | `Factions/midnight_rangers/896_main.wikitext` | relevant | **relevant** | The '''Midnight Rangers''' are the primary military force of the [[Jinzhou]] region, tasked with protecting the land from external threats. |
+| 2 | `raw_wiki:2495:95403:5f1aaaf7d623c0fb:chunk:000` | `Lore/ovathrax/2495_main.wikitext` | pending | **relevant** | …the frequencies of 'weapons' and turning Jinzhou's soldiers into [[Tacet Discord]]s. Three years prior to the start of the storyline, the [[Midnight Rangers]], led by General [[Geshulin\|Geshu Lin]] fought against Ovathrax in the [[Norfall Barrens]], in an event known as the [[Battle Beneath the Crescent]]. However, Ovathrax was able to enhance the effects of the [[Retroact Rain]], projecting dangerous phantoms of bot… |
+| 3 | `raw_wiki:530:92937:7837aba16c572cfb:chunk:000` | `Characters/Resonators/danjin/530_main.wikitext` | pending | **relevant** | > Ranger, Danjin. Worry not, my Crimson Blade will not harm you as long as you haven't done anything bad. > — Danjin She is a member of the [[Midnight Rangers]] and hunts down thieves and bandits in order to bring them to justice. |
+| 4 | `raw_wiki:525:136877:39d55ea5f72b29b4:chunk:000` | `Characters/Resonators/jiyan/525_main.wikitext` | pending | **relevant** | > I have never regretted to brave the long night. > — Jiyan He is the general of the [[Midnight Rangers]] selected by the sentinel of [[Jinzhou]], [[Jué]] and is stationed in the same city. ==Official Introduction== > Jiyan is the General of Midnight Rangers stationed in Jinzhou, embracing strong sense of justice and resolution. Born in a family devoted to medicine, Jiyan is both skilled and attentive. Later, in a bi… |
+| 5 | `raw_wiki:26888:99747:897732ef65d43d75:chunk:000` | `Lore/battle_beneath_the_crescent/26888_main.wikitext` | pending | **relevant** | …rades, were coming back to life, ready to stab us behind our backs... It was chaos. We were terrified, couldn't tell friend from foe... > — Midnight Ranger The '''Battle Beneath the Crescent''' is a crucial event in [[Jinzhou\|Jinzhou's]] history, taking place in the [[Norfall Barrens]] three years prior to the main story. The battle was fought between the [[Midnight Rangers]], the military force of Jinzhou, and [[Ova… |
+
+## rw-011
+
+- Query: What kind of school is Startorch Academy?
+- Expected answer: It is a multinational school built by the Spacetrek Collective for Resonators in Lahai-Roi.
+
+| Rank | Evidence | Source | Proposed | Human label | Source excerpt |
+|---:|---|---|---|---|---|
+| 1 | `raw_wiki:37391:136476:a3a41695657088cf:chunk:000` | `Factions/startorch_academy/37391_main.wikitext` | relevant | **relevant** | '''Startorch Academy''' is a multinational school built by the [[Spacetrek Collective]] specifically for [[Resonator]]s in [[Lahai-Roi]]. |
+| 2 | `raw_wiki:37391:136476:a3a41695657088cf:chunk:000` | `Factions/startorch_academy/37391_main.wikitext` | relevant | **relevant** | '''Startorch Academy''' is a multinational school built by the [[Spacetrek Collective]] specifically for [[Resonator]]s in [[Lahai-Roi]]. |
+| 3 | `raw_wiki:38235:100618:8025f2e9981c401e:chunk:000` | `Locations/startorch_academy_region/38235_main.wikitext` | pending | **relevant** | **Profile**: Title: Startorch Academy, Origin: Roya Frostlands. {{About\|the region\|the institution\|Startorch Academy}} '''Startorch Academy''' is a [[Region]] located in [[Roya Frostlands]]. It contains the primary settlement and education institute of Lahai-Roi, [[Startorch Academy]]. ==Areas== {\| class="article-table alternating-colors-table tdc1" style="width: 100%;" ! style="width: 200px;" \|Name !Image !Descripti… |
+| 4 | `raw_wiki:37391:136476:a3a41695657088cf:chunk:000` | `Factions/startorch_academy/37391_main.wikitext` | relevant | **relevant** | '''Startorch Academy''' is a multinational school built by the [[Spacetrek Collective]] specifically for [[Resonator]]s in [[Lahai-Roi]]. |
+| 5 | `raw_wiki:37391:136476:a3a41695657088cf:chunk:000` | `Factions/startorch_academy/37391_main.wikitext` | relevant | **relevant** | '''Startorch Academy''' is a multinational school built by the [[Spacetrek Collective]] specifically for [[Resonator]]s in [[Lahai-Roi]]. |
+
+## rw-012
+
+- Query: Điều gì có thể khiến một Resonator bị Overclocking?
+- Expected answer: Overwhelming psychological stress or overexertion of a Resonance Ability can cause loss of Forte control.
+
+| Rank | Evidence | Source | Proposed | Human label | Source excerpt |
+|---:|---|---|---|---|---|
+| 1 | `raw_wiki:24999:99250:79f12bc79353ca49:chunk:000` | `Lore/overclocking/24999_main.wikitext` | relevant | **relevant** | '''Overclocking''' is a state where a [[Resonator]] has lost control of their [[Forte]] as a result of overwhelming psychological stress or overexertion of their Resonance Ability. |
+| 2 | `raw_wiki:348:86837:3b43bd7a33ec8d89:chunk:000` | `Characters/Resonators/resonator/348_main.wikitext` | pending | **relevant** | **Profile**: Title: Resonator. {{CharacterSystemTabs}} '''Resonators''' are the obtainable playable characters of ''[[Wuthering Waves]]'', and individuals with the ability to resonate with certain objects or elements and manipulate their frequencies. ==Lore== A Resonator experiences their Awakening when they first resonate with the frequencies of something in the world and gain their Resonance Ability, also known as … |
+| 3 | `raw_wiki:24999:99250:79f12bc79353ca49:chunk:000` | `Lore/overclocking/24999_main.wikitext` | relevant | **relevant** | '''Overclocking''' is a state where a [[Resonator]] has lost control of their [[Forte]] as a result of overwhelming psychological stress or overexertion of their Resonance Ability. |
+| 4 | `raw_wiki:24999:99250:79f12bc79353ca49:chunk:000` | `Lore/overclocking/24999_main.wikitext` | relevant | **relevant** | '''Overclocking''' is a state where a [[Resonator]] has lost control of their [[Forte]] as a result of overwhelming psychological stress or overexertion of their Resonance Ability. |
+| 5 | `raw_wiki:24999:99250:79f12bc79353ca49:chunk:000` | `Lore/overclocking/24999_main.wikitext` | relevant | **relevant** | '''Overclocking''' is a state where a [[Resonator]] has lost control of their [[Forte]] as a result of overwhelming psychological stress or overexertion of their Resonance Ability. |
+
+## rw-013
+
+- Query: What are Tacet Discords formed from?
+- Expected answer: They are formed by residual chaotic frequency energy under the Waveworn Phenomenon.
+
+| Rank | Evidence | Source | Proposed | Human label | Source excerpt |
+|---:|---|---|---|---|---|
+| 1 | `raw_wiki:1008:99738:fa6acd585adb1d2a:chunk:000` | `Lore/tacet_discord/1008_main.wikitext` | relevant | **relevant** | '''Tacet Discords''' (abbreviated as TDs) are sentient beings formed by the residual chaotic frequency energy under the [[Waveworn Phenomenon]] with ever-changing, amorphous forms. |
+| 2 | `raw_wiki:1005:99743:9725a6704dccd755:chunk:000` | `Lore/waveworn_phenomenon/1005_main.wikitext` | pending | **relevant** | …tive term used to describe anomalies caused directly by the influence of [[The Lament]] in [[Solaris-3]]. These phenomena can vary in scope from minor distortions to widespread ecological and psychic collapse. They are distinguished by their chaotic nature and the presence of [[Tacet Discord\|Tacet Discords]]. ==Data Entries== [[File:Post-Lament Anthropocene - Comprehensive Mirror for Historians.png\|thumb\|266x266px\|Th… |
+| 3 | `raw_wiki:26165:131313:b22f8b2701be47df:chunk:000` | `Lore/dark_tide/26165_main.wikitext` | pending | **relevant** | …ing mass of clouds that gathers and eventually breaks, pouring down in torrents like a waterfall. Whenever the Dark Tide strikes, it spawns Tacet Discords, and the area around its point of origin becomes a new Tacet Field.There have been two significant Dark Tides in Ragunna's history. The first, according to the Order of the Deep, was stopped by Napoli II, the first Primus of the Order. The second was quelled by the… |
+| 4 | `raw_wiki:1005:99743:9725a6704dccd755:chunk:000` | `Lore/waveworn_phenomenon/1005_main.wikitext` | pending | **relevant** | …tive term used to describe anomalies caused directly by the influence of [[The Lament]] in [[Solaris-3]]. These phenomena can vary in scope from minor distortions to widespread ecological and psychic collapse. They are distinguished by their chaotic nature and the presence of [[Tacet Discord\|Tacet Discords]]. ==Data Entries== [[File:Post-Lament Anthropocene - Comprehensive Mirror for Historians.png\|thumb\|266x266px\|Th… |
+| 5 | `raw_wiki:26165:131313:b22f8b2701be47df:chunk:000` | `Lore/dark_tide/26165_main.wikitext` | pending | **relevant** | …ing mass of clouds that gathers and eventually breaks, pouring down in torrents like a waterfall. Whenever the Dark Tide strikes, it spawns Tacet Discords, and the area around its point of origin becomes a new Tacet Field.There have been two significant Dark Tides in Ragunna's history. The first, according to the Order of the Deep, was stopped by Napoli II, the first Primus of the Order. The second was quelled by the… |
+
+## rw-014
+
+- Query: Sonoro Sphere là gì vậy?
+- Expected answer: Sonoro Spheres are spaces with dense Remnant Energy that preserve transdimensional information.
+
+| Rank | Evidence | Source | Proposed | Human label | Source excerpt |
+|---:|---|---|---|---|---|
+| 1 | `raw_wiki:8269:95612:1c103964f57b0be7:chunk:000` | `Lore/sonoro_sphere/8269_main.wikitext` | relevant | **relevant** | Sonoro Spheres are spaces of dense abundant [[Remnant]] Energy, capable of preserving transdimensional information. |
+| 2 | `raw_wiki:8269:95612:1c103964f57b0be7:chunk:000` | `Lore/sonoro_sphere/8269_main.wikitext` | relevant | **relevant** | Sonoro Spheres are spaces of dense abundant [[Remnant]] Energy, capable of preserving transdimensional information. |
+| 3 | `raw_wiki:8269:95612:1c103964f57b0be7:chunk:000` | `Lore/sonoro_sphere/8269_main.wikitext` | relevant | **relevant** | Sonoro Spheres are spaces of dense abundant [[Remnant]] Energy, capable of preserving transdimensional information. |
+| 4 | `raw_wiki:8269:95612:1c103964f57b0be7:chunk:000` | `Lore/sonoro_sphere/8269_main.wikitext` | relevant | **relevant** | Sonoro Spheres are spaces of dense abundant [[Remnant]] Energy, capable of preserving transdimensional information. |
+| 5 | `raw_wiki:1074:99099:f1f00f7ba53c6ff4:chunk:000` | `Characters/Resonators/phrolova/1074_main.wikitext` | pending | **relevant** | > Come, let us finish this performance we've all been waiting for. Together. > — Phrolova She is a particularly powerful Resonator and a former Overseer of the [[Fractsidus]]. Her forte can manipulate and transfigure the frequencies of humans, Echoes, and Tacet Discords alike. A life filled with unexpected suffering, grief, and betrayal led this former musician to align with the Fractsidus, in which she seeks to reki… |
+
+## rw-015
+
+- Query: Why are Aalto and Encore described as a duo?
+- Expected answer: They both work as Black Shores Consultants and became an inseparable, lively duo during missions.
+
+| Rank | Evidence | Source | Proposed | Human label | Source excerpt |
+|---:|---|---|---|---|---|
+| 1 | `raw_wiki:585:101912:cdb1baf766c207e6:chunk:000` | `Characters/Resonators/aalto/585_main.wikitext` | relevant | **relevant** | Both working for the Black Shores as Consultants, Aalto and Encore have become an inseparable and lively duo during missions. |
+| 2 | `raw_wiki:522:103593:65ac76a1400c1df9:chunk:000` | `Characters/Resonators/encore/522_main.wikitext` | pending | **relevant** | … crafting fairy tales, she is responsible for finding new clients for the Black Shores alongside her fellow Consultant and brother figure [[Aalto]]. ==Official Introduction== > Encore, a consultant from the Black Shores, is a quirky, lively, and spunky girl who loves to recount her friendships and adventures through fantasy and fairy tales. She always has two Woolies with her, who are Encore's best friends and protec… |
+| 3 | `raw_wiki:585:101912:cdb1baf766c207e6:chunk:000` | `Characters/Resonators/aalto/585_main.wikitext` | relevant | **relevant** | Both working for the Black Shores as Consultants, Aalto and Encore have become an inseparable and lively duo during missions. |
+| 4 | `raw_wiki:585:101912:cdb1baf766c207e6:chunk:000` | `Characters/Resonators/aalto/585_main.wikitext` | relevant | **relevant** | Both working for the Black Shores as Consultants, Aalto and Encore have become an inseparable and lively duo during missions. |
+| 5 | `raw_wiki:1010:123798:8f9ec690e3b88c0c:chunk:000` | `Lore/threnodian/1010_main.wikitext` | pending | **relevant** | **Profile**: Title: Threnodian. > When it comes to the Threnodian, there is a lot to tell. For now, you can think of it this way: the Threnodian is the most powerful Tacet Discord. The Battle of the Threnodian that happened before was to fend it off. > — Yangyang '''Threnodians''' are formidable creatures born from the [[The Lament\|Laments]], with the power to destroy human spirit and feed off of their collapsed will… |
+
+## rw-016
+
+- Query: Where did Aemeath come from before attending Startorch Academy?
+- Expected answer: Aemeath is a Frostlands native from the Roya Tribe and was once a Synchronist at Startorch Academy.
+
+| Rank | Evidence | Source | Proposed | Human label | Source excerpt |
+|---:|---|---|---|---|---|
+| 1 | `raw_wiki:38537:136632:f169b123e2bf1328:chunk:000` | `Characters/Resonators/aemeath/38537_main.wikitext` | relevant | **relevant** | She is a Frostlands native from the [[Roya Tribe]] who was once a Synchronist at [[Startorch Academy]]. |
+| 2 | `raw_wiki:37543:136637:1b307d031f032102:chunk:000` | `Characters/Resonators/lynae/37543_main.wikitext` | pending | **relevant** | > Outlaw Blue, Apollo Orange, Hazard Yellow, Acid Green... Wanna guess what color is my next pick? > — Lynae She is a Preparatory Program student at [[Startorch Academy]] and a free spirit who lives every day to its fullest. Before attending Startorch, she was a mercenary from the [[Lawless Zone]] in the [[New Federation]]. In order to escape from the Lawless Zone and gain her freedom, she stole the identity of the r… |
+| 3 | `raw_wiki:37391:136476:a3a41695657088cf:chunk:000` | `Factions/startorch_academy/37391_main.wikitext` | pending | **relevant** | # Startorch Academy **Faction Profile**: Leader: Lucilla, Base: Startorch Academy (Region). {{About\|the institution\|the region\|Startorch Academy (Region)}} '''Startorch Academy''' is a multinational school built by the [[Spacetrek Collective]] specifically for [[Resonator]]s in [[Lahai-Roi]]. It is known to contain the Exo Genesis Labs, Voidwatch Tower, Tactical Proving Grounds, and Simulator Cockpit. Its name comes … |
+| 4 | `raw_wiki:37391:136476:a3a41695657088cf:chunk:000` | `Factions/startorch_academy/37391_main.wikitext` | pending | **relevant** | # Startorch Academy **Faction Profile**: Leader: Lucilla, Base: Startorch Academy (Region). {{About\|the institution\|the region\|Startorch Academy (Region)}} '''Startorch Academy''' is a multinational school built by the [[Spacetrek Collective]] specifically for [[Resonator]]s in [[Lahai-Roi]]. It is known to contain the Exo Genesis Labs, Voidwatch Tower, Tactical Proving Grounds, and Simulator Cockpit. Its name comes … |
+| 5 | `raw_wiki:37391:136476:a3a41695657088cf:chunk:000` | `Factions/startorch_academy/37391_main.wikitext` | pending | **relevant** | # Startorch Academy **Faction Profile**: Leader: Lucilla, Base: Startorch Academy (Region). {{About\|the institution\|the region\|Startorch Academy (Region)}} '''Startorch Academy''' is a multinational school built by the [[Spacetrek Collective]] specifically for [[Resonator]]s in [[Lahai-Roi]]. It is known to contain the Exo Genesis Labs, Voidwatch Tower, Tactical Proving Grounds, and Simulator Cockpit. Its name comes … |
+
+## rw-017
+
+- Query: Augusta giữ vị trí gì ở Septimont?
+- Expected answer: Augusta is the Ephor of Septimont.
+
+| Rank | Evidence | Source | Proposed | Human label | Source excerpt |
+|---:|---|---|---|---|---|
+| 1 | `raw_wiki:31310:99574:02e73eaeaa24eb2c:chunk:000` | `Characters/Resonators/augusta/31310_main.wikitext` | relevant | **relevant** | The fearless Ephor of [[Septimont]] with a will of iron |
+| 2 | `raw_wiki:26373:135203:7ce25d5efa8633f0:chunk:000` | `Locations/septimont/26373_main.wikitext` | pending | **relevant** | **Profile**: Title: Septimont, Origin: Rinascita. '''Septimont''' is a [[Region]] and city-state of [[Rinascita]]. Unlike [[Ragunna]], Septimont has a far more militant and irreligious culture, as it places far less importance on the primacy of the [[Sentinel]] [[Imperator]] and instead worships the [[Lioness of Glory]] Arsinosa. As a result, the Agons, competitive gladiatorial combat, are the pinnacle of Septimontes… |
+| 3 | `raw_wiki:35947:81917:0722434a53a692f3:chunk:000` | `Factions/ephors_palace/35947_main.wikitext` | pending | **relevant** | # Ephor's Palace **Faction Profile**: Leader: Augusta, Base: Ephor's Palace (Location), Allies: Black Shores;Tetragon Temple, Enemies: Leviathan;Fractsidus. {{About\|the [[Factions\|faction]]\|the location\|Ephor's Palace (Location)}} The '''Ephor's Palace of Septimont''', or simply the '''Ephor's Palace''', is the ruling government faction of the city-state of [[Septimont]]. It is composed of a Senate of counselors and … |
+| 4 | `raw_wiki:31310:99574:02e73eaeaa24eb2c:chunk:000` | `Characters/Resonators/augusta/31310_main.wikitext` | relevant | **relevant** | The fearless Ephor of [[Septimont]] with a will of iron |
+| 5 | `raw_wiki:26165:131313:b22f8b2701be47df:chunk:000` | `Lore/dark_tide/26165_main.wikitext` | pending | **relevant** | **Profile**: Title: The Dark Tide, Origin: Rinascita. > It is "Paradise." "It is a place where sickness, hunger, sorrow, despair, and dullness of heart cease to exist. There, deacons sing eternal hymns..." > — Cartethyia The '''Dark Tide''' is a form of [[Waveworn Phenomenon]] native to [[Rinascita]]. During the events of [[Chapter II]]: Act II - ''[[Veils Off in Sun or Shadow]],'' in the depictions found in an aband… |
+
+## rw-018
+
+- Query: Buling được biết đến với danh xưng nào?
+- Expected answer: Buling is known as the Spiritchaser Taoist.
+
+| Rank | Evidence | Source | Proposed | Human label | Source excerpt |
+|---:|---|---|---|---|---|
+| 1 | `raw_wiki:31556:97061:ae4ba2c13572f46c:chunk:000` | `Characters/Resonators/buling/31556_main.wikitext` | relevant | **relevant** | She is a [[Black Shores]] Consultant, known as the "Spiritchaser Taoist," |
+| 2 | `raw_wiki:31556:97061:ae4ba2c13572f46c:chunk:000` | `Characters/Resonators/buling/31556_main.wikitext` | relevant | **relevant** | She is a [[Black Shores]] Consultant, known as the "Spiritchaser Taoist," |
+| 3 | `raw_wiki:41351:136925:90323859e9cee427:chunk:000` | `Characters/Resonators/qingxiao/41351_main.wikitext` | pending | **relevant** | {{Upcoming}} > On the qin strings do eons sing, eternal peace my blade shall bring. > — Qingxiao She is known as the Paragon of Mengzhou. Qingxiao is likely the woman that had appeared before Buling in Xuanfang Hold after her fight with Jianxin in the tournament. |
+| 4 | `raw_wiki:20501:99245:c417da3a3a4d4832:chunk:000` | `Characters/Resonators/lumi/20501_main.wikitext` | pending | **relevant** | > Don't worry, my light's got you! > — Lumi She is a navigator at [[Lollo Logistics]] and leader of a transport squad team. ==Official Introduction== > From dense forests to vast wilderness, places where navigator of Lollo Logistics Lumi has traveled bear witness to her charming personality, like a shaft of sunlight. Born disciplined, she is now enjoying her daily tasks as a diligent courier, honoring her duty of pun… |
+| 5 | `raw_wiki:8689:130735:a3c36e894cf4a2c1:chunk:000` | `Locations/mt_firmament/8689_main.wikitext` | pending | **relevant** | **Profile**: Title: Mt. Firmament, Origin: Huanglong. {{Location Tabs\|Map:Mt. Firmament}} {{Intro/Location\|Mt. Firmament {{lang\|zh=乘霄山\|zh_rm=Chéngxiāo-shān}}}} It is a secluded region located in the southeastern seas of [[Jinzhou]]. It is historically significant as the ancestral home of Jinzhou's original settlers and the birthplace of the Magistrate and Sentinel Resonator, [[Jinhsi]]. The region is defined by uniqu… |
+
+## rw-019
+
+- Query: Who is the thirty-sixth matriarch of the Fisalia family?
+- Expected answer: Cantarella is the thirty-sixth matriarch of the Fisalia family.
+
+| Rank | Evidence | Source | Proposed | Human label | Source excerpt |
+|---:|---|---|---|---|---|
+| 1 | `raw_wiki:27951:96619:ae0c99137282474b:chunk:000` | `Characters/Resonators/cantarella/27951_main.wikitext` | relevant | **relevant** | She is the thirty-sixth matriarch of the Fisalia family |
+| 2 | `raw_wiki:27951:96619:ae0c99137282474b:chunk:000` | `Characters/Resonators/cantarella/27951_main.wikitext` | relevant | **relevant** | She is the thirty-sixth matriarch of the Fisalia family |
+| 3 | `raw_wiki:25664:91980:9be7bfc0b0f78f80:chunk:000` | `Factions/fisalia_family/25664_main.wikitext` | pending | **relevant** | …traditional, families in Ragunna, renowned for their expertise in medicine and poison. Their devotion to Sentinel Imperator is clear to all who know them. A faction within the Fisalia family believes that the Montelli family's embrace of openness and the privatization of Echoes is a direct affront to Imperator's teachings, threatening to lead Rag |
+| 4 | `raw_wiki:25664:91980:9be7bfc0b0f78f80:chunk:000` | `Factions/fisalia_family/25664_main.wikitext` | pending | **relevant** | …traditional, families in Ragunna, renowned for their expertise in medicine and poison. Their devotion to Sentinel Imperator is clear to all who know them. A faction within the Fisalia family believes that the Montelli family's embrace of openness and the privatization of Echoes is a direct affront to Imperator's teachings, threatening to lead Rag |
+| 5 | `raw_wiki:25664:91980:9be7bfc0b0f78f80:chunk:000` | `Factions/fisalia_family/25664_main.wikitext` | pending | **relevant** | …traditional, families in Ragunna, renowned for their expertise in medicine and poison. Their devotion to Sentinel Imperator is clear to all who know them. A faction within the Fisalia family believes that the Montelli family's embrace of openness and the privatization of Echoes is a direct affront to Imperator's teachings, threatening to lead Rag |
+
+## rw-020
+
+- Query: Carlotta thuộc gia tộc nào ở Rinascita?
+- Expected answer: Carlotta is the second daughter of the Montelli Family of Rinascita.
+
+| Rank | Evidence | Source | Proposed | Human label | Source excerpt |
+|---:|---|---|---|---|---|
+| 1 | `raw_wiki:24790:96615:17a7637a393aa5fe:chunk:000` | `Characters/Resonators/carlotta/24790_main.wikitext` | relevant | **relevant** | She is the second daughter of the esteemed [[Montelli Family]] of [[Rinascita]] |
+| 2 | `raw_wiki:25663:91985:b51f66944bdef37e:chunk:000` | `Factions/montelli_family/25663_main.wikitext` | pending | **relevant** | # Montelli Family **Faction Profile**: Leader: Carlotta, Base: Montelli Quarter, Enemies: Fractsidus. The '''Montelli Family''' is a family-run organization and enterprise native to [[Rinascita]], localized primarily in the city-state of [[Ragunna City\|Ragunna]]. They are considered one of the families that influence the power dynamics of Ragunna, alongside the [[Fisalia Family]] and the [[Order of the Deep]]. As of … |
+| 3 | `raw_wiki:24790:96615:17a7637a393aa5fe:chunk:000` | `Characters/Resonators/carlotta/24790_main.wikitext` | relevant | **relevant** | She is the second daughter of the esteemed [[Montelli Family]] of [[Rinascita]] |
+| 4 | `raw_wiki:25663:91985:b51f66944bdef37e:chunk:000` | `Factions/montelli_family/25663_main.wikitext` | pending | **relevant** | # Montelli Family **Faction Profile**: Leader: Carlotta, Base: Montelli Quarter, Enemies: Fractsidus. The '''Montelli Family''' is a family-run organization and enterprise native to [[Rinascita]], localized primarily in the city-state of [[Ragunna City\|Ragunna]]. They are considered one of the families that influence the power dynamics of Ragunna, alongside the [[Fisalia Family]] and the [[Order of the Deep]]. As of … |
+| 5 | `raw_wiki:27120:96278:b1047d1aa9a9b8d2:chunk:000` | `Lore/leviathan/27120_main.wikitext` | pending | **relevant** | **Profile**: Title: Leviathan, Origin: Rinascita, Affiliation: Threnodians. ''This article is about the NPC.&#x20;For the Weekly Boss, see [[Threnodian: Leviathan]].'' > "Fleurdelys, my Resonator, why dost thou persist? Why abandon thy oath? Why hinder the spread of my gospel? The one blessed by the Dark Tide shall return to us. Continue thy disobedience at the risk of insanity. My most beloved Resonator, why persist… |
+
+## rw-021
+
+- Query: What names is Cartethyia revered by across Rinascita?
+- Expected answer: She is revered as Fleurdelys, the Blessed Maiden, and in some accounts the Martyred Maiden.
+
+| Rank | Evidence | Source | Proposed | Human label | Source excerpt |
+|---:|---|---|---|---|---|
+| 1 | `raw_wiki:26196:99513:1106002e2cae6db6:chunk:000` | `Characters/Resonators/cartethyia/26196_main.wikitext` | relevant | **relevant** | Throughout [[Rinascita]], she is revered as '''Fleurdelys''', the "Blessed Maiden," and in some accounts, "The Martyred Maiden." |
+| 2 | `raw_wiki:1012:123801:ecdcd6cae8d7c1f6:chunk:000` | `Lore/sentinel/1012_main.wikitext` | pending | **relevant** | **Profile**: Title: Sentinels. The '''Sentinels''', also called '''Oracle Engines''', stand at the brink of civilization and history, as guardians and guides. Their immortal existence has helped humanity through countless troubles, sharing prophecies and wisdom. As [[Rover]] embarks on a new journey after enduring the [[The Lament\|Lament]], the Sentinels remain humanity's record keeper and beacon in times of disaster… |
+| 3 | `raw_wiki:26165:131313:b22f8b2701be47df:chunk:000` | `Lore/dark_tide/26165_main.wikitext` | pending | **relevant** | **Profile**: Title: The Dark Tide, Origin: Rinascita. > It is "Paradise." "It is a place where sickness, hunger, sorrow, despair, and dullness of heart cease to exist. There, deacons sing eternal hymns..." > — Cartethyia The '''Dark Tide''' is a form of [[Waveworn Phenomenon]] native to [[Rinascita]]. During the events of [[Chapter II]]: Act II - ''[[Veils Off in Sun or Shadow]],'' in the depictions found in an aband… |
+| 4 | `raw_wiki:27120:96278:b1047d1aa9a9b8d2:chunk:000` | `Lore/leviathan/27120_main.wikitext` | pending | **relevant** | … the risk of insanity. My most beloved Resonator, why persist in the error of thy ways?" > — Leviathan (assimilated with Imperator) towards Cartethyia '''Leviathan''' is the [[Threnodian]] of [[Rinascita]] and is the main antagonist of [[Chapter II\|Chapter II:]] [[Chapter II\|Even When Divinity Remains Silent]]. It is recognized as the Threnodian of Unity, a shadow that seized humanity's "longing for Unity" and shaped… |
+| 5 | `raw_wiki:26165:131313:b22f8b2701be47df:chunk:000` | `Lore/dark_tide/26165_main.wikitext` | pending | **relevant** | **Profile**: Title: The Dark Tide, Origin: Rinascita. > It is "Paradise." "It is a place where sickness, hunger, sorrow, despair, and dullness of heart cease to exist. There, deacons sing eternal hymns..." > — Cartethyia The '''Dark Tide''' is a form of [[Waveworn Phenomenon]] native to [[Rinascita]]. During the events of [[Chapter II]]: Act II - ''[[Veils Off in Sun or Shadow]],'' in the depictions found in an aband… |
+
+## rw-022
+
+- Query: Chisa học ở đâu?
+- Expected answer: Chisa is a student at Startorch Academy.
+
+| Rank | Evidence | Source | Proposed | Human label | Source excerpt |
+|---:|---|---|---|---|---|
+| 1 | `raw_wiki:31283:102761:da0b008506be0f37:chunk:000` | `Characters/Resonators/chisa/31283_main.wikitext` | relevant | **relevant** | Chisa is a conscientious, level-headed student from the [[Startorch Academy]]. |
+| 2 | `raw_wiki:37391:136476:a3a41695657088cf:chunk:000` | `Factions/startorch_academy/37391_main.wikitext` | pending | **relevant** | # Startorch Academy **Faction Profile**: Leader: Lucilla, Base: Startorch Academy (Region). {{About\|the institution\|the region\|Startorch Academy (Region)}} '''Startorch Academy''' is a multinational school built by the [[Spacetrek Collective]] specifically for [[Resonator]]s in [[Lahai-Roi]]. It is known to contain the Exo Genesis Labs, Voidwatch Tower, Tactical Proving Grounds, and Simulator Cockpit. Its name comes … |
+| 3 | `raw_wiki:31283:102761:da0b008506be0f37:chunk:000` | `Characters/Resonators/chisa/31283_main.wikitext` | relevant | **relevant** | Chisa is a conscientious, level-headed student from the [[Startorch Academy]]. |
+| 4 | `raw_wiki:37391:136476:a3a41695657088cf:chunk:000` | `Factions/startorch_academy/37391_main.wikitext` | pending | **relevant** | # Startorch Academy **Faction Profile**: Leader: Lucilla, Base: Startorch Academy (Region). {{About\|the institution\|the region\|Startorch Academy (Region)}} '''Startorch Academy''' is a multinational school built by the [[Spacetrek Collective]] specifically for [[Resonator]]s in [[Lahai-Roi]]. It is known to contain the Exo Genesis Labs, Voidwatch Tower, Tactical Proving Grounds, and Simulator Cockpit. Its name comes … |
+| 5 | `raw_wiki:7557:136952:45922d58511e4b39:chunk:000` | `Lore/timeline/7557_main.wikitext` | pending | **relevant** | This '''Timeline''' is a rough estimation of the universe of [[Wuthering Waves]]. LD (Landing Date) refers to the year that [[Rover]] lands in [[Solaris-3]] and starts the game's events. References are provided as much as possible. ==Pre-First Lament== *'''?''' &mdash; [[The Farwatcher]] and eight other interstellar probes are launched by the [[Pre-Lament Civilization]]. *'''?''' &mdash; The Tethys Institute proposes… |
+
+## rw-023
+
+- Query: What does Ciaccona travel around Rinascita looking for?
+- Expected answer: Ciaccona wanders Rinascita in search of inspiration.
+
+| Rank | Evidence | Source | Proposed | Human label | Source excerpt |
+|---:|---|---|---|---|---|
+| 1 | `raw_wiki:28670:96621:ac4f9f01f5e3796b:chunk:000` | `Characters/Resonators/ciaccona/28670_main.wikitext` | relevant | **relevant** | She is a free-spirited, romantic, sincere, and whimsical bard wandering [[Rinascita]] in search of inspiration. |
+| 2 | `raw_wiki:28670:96621:ac4f9f01f5e3796b:chunk:000` | `Characters/Resonators/ciaccona/28670_main.wikitext` | relevant | **relevant** | She is a free-spirited, romantic, sincere, and whimsical bard wandering [[Rinascita]] in search of inspiration. |
+| 3 | `raw_wiki:1005:99743:9725a6704dccd755:chunk:000` | `Lore/waveworn_phenomenon/1005_main.wikitext` | pending | **relevant** | **Profile**: Title: Waveworn Phenomenon. > The anomalies that occurred after the Lament, including the formation of Tacet Fields, Etheric Sea, Retroact Rain, and gravity loss. These are collectively called the "Waveworn Phenomena" - and the Lament was the start of it all. > — [[Yangyang]] '''Waveworn Phenomenon''' (Chinese: 海蚀现象, ''"Coastal Erosion Phenomenon"'') is a collective term used to describe anomalies caused… |
+| 4 | `raw_wiki:1058:99748:2f12f0e7b9fb0625:chunk:000` | `Lore/terminal/1058_main.wikitext` | pending | **relevant** | **Profile**: Title: Terminal. '''Terminal''' is a device used by [[Resonator\|Resonators]]. Each Terminal has various functions that aid Resonators in exploration, navigation and collection in [[Solaris-3]]. Terminals vary in appearance and function depending on the nation, as can be visually seen in the difference between the Terminals of Resonators from [[Huanglong]], [[Rinascita]], [[The Black Shores]] and the [[Fr… |
+| 5 | `raw_wiki:25536:91984:eba4d3a4762e23f2:chunk:000` | `Factions/order_of_the_deep/25536_main.wikitext` | pending | **relevant** | # Order of the Deep **Faction Profile**: Leader: Vacant, Founder: Napoli II, Base: Cathedral of Mercury. {{About\|the [[Factions\|faction]]\|the location\|Order of the Deep (Area)}} The '''Order of the Deep''' is a [[Ragunna\|Ragunnesi]] faction that worships the [[Sentinel]], [[Imperator]], and claim to act as the Sentinel's representative. They serve as the ultimate authority in Ragunna. According to the city tradition,… |
+
+## rw-024
+
+- Query: Danjin săn đuổi những ai, và để làm gì?
+- Expected answer: Danjin hunts thieves and bandits to bring them to justice.
+
+| Rank | Evidence | Source | Proposed | Human label | Source excerpt |
+|---:|---|---|---|---|---|
+| 1 | `raw_wiki:530:92937:7837aba16c572cfb:chunk:000` | `Characters/Resonators/danjin/530_main.wikitext` | relevant | **relevant** | She is a member of the [[Midnight Rangers]] and hunts down thieves and bandits in order to bring them to justice. |
+| 2 | `raw_wiki:896:99150:aa2a5187c5ebc08b:chunk:000` | `Factions/midnight_rangers/896_main.wikitext` | pending | **relevant** | # Midnight Rangers **Faction Profile**: Leader: Jiyan. The '''Midnight Rangers''' are the primary military force of the [[Jinzhou]] region, tasked with protecting the land from external threats. The military branch is integral to [[Huanglong]]'s defense strategy, deploying wherever the nation’s enemies pose a threat. They are under the jurisdiction of the Ministry of War, and led by General [[Jiyan]]. ==Organization=… |
+| 3 | `raw_wiki:3397:68336:55000dcfdd441514:chunk:000` | `Lore/forte/3397_main.wikitext` | pending | **relevant** | '''Forte''' is the Resonance Abilities that belongs to a resonator. ==Description== The Resonance Abilities of a [[Resonator]] are referred to as their '''Forte'''. In the world of ''Wuthering Waves'' there are as many different Forte's as there are Resonators. It is believed that a Resonator's past and subconscious mind influence their Forte, thus making their Fortes unique. As a part of what seems to be routine hea… |
+| 4 | `raw_wiki:3397:68336:55000dcfdd441514:chunk:000` | `Lore/forte/3397_main.wikitext` | pending | **relevant** | '''Forte''' is the Resonance Abilities that belongs to a resonator. ==Description== The Resonance Abilities of a [[Resonator]] are referred to as their '''Forte'''. In the world of ''Wuthering Waves'' there are as many different Forte's as there are Resonators. It is believed that a Resonator's past and subconscious mind influence their Forte, thus making their Fortes unique. As a part of what seems to be routine hea… |
+| 5 | `raw_wiki:3397:68336:55000dcfdd441514:chunk:000` | `Lore/forte/3397_main.wikitext` | pending | **relevant** | '''Forte''' is the Resonance Abilities that belongs to a resonator. ==Description== The Resonance Abilities of a [[Resonator]] are referred to as their '''Forte'''. In the world of ''Wuthering Waves'' there are as many different Forte's as there are Resonators. It is believed that a Resonator's past and subconscious mind influence their Forte, thus making their Fortes unique. As a part of what seems to be routine hea… |
+
+## rw-025
+
+- Query: Denia secretly works for which organization?
+- Expected answer: Denia secretly serves as an agent for the Fractsidus.
+
+| Rank | Evidence | Source | Proposed | Human label | Source excerpt |
+|---:|---|---|---|---|---|
+| 1 | `raw_wiki:39187:136635:e0a124eb457dfb82:chunk:000` | `Characters/Resonators/denia/39187_main.wikitext` | relevant | **relevant** | who secretly serves as an agent for the [[Fractsidus]]. |
+| 2 | `raw_wiki:38339:136640:9d71c98f093fd140:chunk:000` | `Lore/aleph-1/38339_main.wikitext` | pending | **relevant** | …t is considered the strongest Threnodian due to its existential erasure power, potentially linked to the region's research focus and desire for space, causing people to forget their origins. Its appearance resembles that of a massive black hole, but with a blue iris flowing downwards as its center instead of an event horizon. Inside the center of its pupil is a tiny blue dot, and it has a white accretion disk. Aleph-… |
+| 3 | `raw_wiki:37391:136476:a3a41695657088cf:chunk:000` | `Factions/startorch_academy/37391_main.wikitext` | pending | **relevant** | …gh the '''Torch''' of Tomorrow". All students (except Synchronists admitted to Rabelle College) begin with a cross-disciplinary curriculum, which covers foundational sciences, humanities, and essential survival skills for life in Lahai-Roi. Students' specialized department placement is determined at the end of Year 2, based on their stated interest and academic performance. ==Descriptions== Startorch Academy is a com… |
+| 4 | `raw_wiki:907:126835:49c5a92e82ee7ad1:chunk:000` | `Factions/fractsidus/907_main.wikitext` | pending | **relevant** | # Fractsidus **Faction Profile**: Leader: Schwarzloch, Enemies: Black Shores;Jinzhou;Montelli Family;Septimont. The '''Fractsidus''' is a mysterious global terrorist organization that serves as the main antagonistic faction of ''[[Wuthering Waves]]''. Their aim is to accelerate the next [[The Lament\|Lament]] - dubbed the "True Lament" - by resurrecting the [[Threnodian]]s, viewing the Lament not as an apocalyptic cat… |
+| 5 | `raw_wiki:37391:136476:a3a41695657088cf:chunk:000` | `Factions/startorch_academy/37391_main.wikitext` | pending | **relevant** | …gh the '''Torch''' of Tomorrow". All students (except Synchronists admitted to Rabelle College) begin with a cross-disciplinary curriculum, which covers foundational sciences, humanities, and essential survival skills for life in Lahai-Roi. Students' specialized department placement is determined at the end of Year 2, based on their stated interest and academic performance. ==Descriptions== Startorch Academy is a com… |
+
+## rw-026
+
+- Query: Encore tìm khách hàng mới cho Black Shores cùng với ai?
+- Expected answer: Encore finds new clients alongside Aalto, her fellow Consultant and brother figure.
+
+| Rank | Evidence | Source | Proposed | Human label | Source excerpt |
+|---:|---|---|---|---|---|
+| 1 | `raw_wiki:522:103593:65ac76a1400c1df9:chunk:000` | `Characters/Resonators/encore/522_main.wikitext` | relevant | **relevant** | she is responsible for finding new clients for the Black Shores alongside her fellow Consultant and brother figure [[Aalto]]. |
+| 2 | `raw_wiki:522:103593:65ac76a1400c1df9:chunk:000` | `Characters/Resonators/encore/522_main.wikitext` | relevant | **relevant** | she is responsible for finding new clients for the Black Shores alongside her fellow Consultant and brother figure [[Aalto]]. |
+| 3 | `raw_wiki:585:101912:cdb1baf766c207e6:chunk:000` | `Characters/Resonators/aalto/585_main.wikitext` | pending | **relevant** | …us organization based on an isolated island, for his intel-gathering expertise. Both working for the Black Shores as Consultants, Aalto and Encore have become an inseparable and lively duo during missions. Despite his skittish demeanor, Aalto's true character shines through as a reliable and attentive individual. > — [https://wutheringwaves.kurogames.com/en/main#resonators His introduction on the Official Website.] =… |
+| 4 | `raw_wiki:10459:95089:82fed37418e8019f:chunk:000` | `Factions/lollo_logistics/10459_main.wikitext` | pending | **relevant** | # Lollo Logistics Lollo Logistics is a trusted logistics company that delivers not only the tangible, but also the intangible.Whether it's sending sweet words to a loved one or retrieving lost memories, if it's ordered and can be delivered, Lollo Logistics will handle them with care. '''Lollo Logistics''' is a professional multinational logistics expertise, offering services for all items—tangible or intangible—as lo… |
+| 5 | `raw_wiki:585:101912:cdb1baf766c207e6:chunk:000` | `Characters/Resonators/aalto/585_main.wikitext` | pending | **relevant** | …us organization based on an isolated island, for his intel-gathering expertise. Both working for the Black Shores as Consultants, Aalto and Encore have become an inseparable and lively duo during missions. Despite his skittish demeanor, Aalto's true character shines through as a reliable and attentive individual. > — [https://wutheringwaves.kurogames.com/en/main#resonators His introduction on the Official Website.] =… |
+
+## rw-027
+
+- Query: What unusual ability does Galbrena use against Tacet Discords?
+- Expected answer: Galbrena can consume the frequencies and powers of the Tacet Discords she hunts.
+
+| Rank | Evidence | Source | Proposed | Human label | Source excerpt |
+|---:|---|---|---|---|---|
+| 1 | `raw_wiki:31295:135376:0a70da2ff45c5134:chunk:000` | `Characters/Resonators/galbrena/31295_main.wikitext` | relevant | **relevant** | she is now a formidable "Discord Slayer" who wields the ability to consume the frequencies and powers of Tacet Discords she hunts across [[Solaris-3]] |
+| 2 | `raw_wiki:26165:131313:b22f8b2701be47df:chunk:000` | `Lore/dark_tide/26165_main.wikitext` | pending | **relevant** | …ing mass of clouds that gathers and eventually breaks, pouring down in torrents like a waterfall. Whenever the Dark Tide strikes, it spawns Tacet Discords, and the area around its point of origin becomes a new Tacet Field.There have been two significant Dark Tides in Ragunna's history. The first, according to the Order of the Deep, was stopped by Napoli II, the first Primus of the Order. The second was quelled by the… |
+| 3 | `raw_wiki:31295:135376:0a70da2ff45c5134:chunk:000` | `Characters/Resonators/galbrena/31295_main.wikitext` | relevant | **relevant** | she is now a formidable "Discord Slayer" who wields the ability to consume the frequencies and powers of Tacet Discords she hunts across [[Solaris-3]] |
+| 4 | `raw_wiki:26165:131313:b22f8b2701be47df:chunk:000` | `Lore/dark_tide/26165_main.wikitext` | pending | **relevant** | …ing mass of clouds that gathers and eventually breaks, pouring down in torrents like a waterfall. Whenever the Dark Tide strikes, it spawns Tacet Discords, and the area around its point of origin becomes a new Tacet Field.There have been two significant Dark Tides in Ragunna's history. The first, according to the Order of the Deep, was stopped by Napoli II, the first Primus of the Order. The second was quelled by the… |
+| 5 | `raw_wiki:1005:99743:9725a6704dccd755:chunk:000` | `Lore/waveworn_phenomenon/1005_main.wikitext` | pending | **relevant** | **Profile**: Title: Waveworn Phenomenon. > The anomalies that occurred after the Lament, including the formation of Tacet Fields, Etheric Sea, Retroact Rain, and gravity loss. These are collectively called the "Waveworn Phenomena" - and the Lament was the start of it all. > — [[Yangyang]] '''Waveworn Phenomenon''' (Chinese: 海蚀现象, ''"Coastal Erosion Phenomenon"'') is a collective term used to describe anomalies caused… |
+
+## rw-028
+
+- Query: Suzu cho Hiyuki khả năng gì?
+- Expected answer: Suzu lets Hiyuki perceive and use certain possibilities of herself.
+
+| Rank | Evidence | Source | Proposed | Human label | Source excerpt |
+|---:|---|---|---|---|---|
+| 1 | `raw_wiki:40075:136638:d67583a80d55df95:chunk:000` | `Characters/Resonators/hiyuki/40075_main.wikitext` | relevant | **relevant** | which grants the bearer the ability to perceive and utilize "certain possibilities" of oneself. |
+| 2 | `raw_wiki:40657:97698:cab5f6a8c2e733e8:chunk:000` | `Lore/legacy_talismans/40657_main.wikitext` | pending | **relevant** | **Profile**: Title: Legacy Talismans, Origin: Ashinohara. The '''Legacy Talismans''' are five relics left behind by the [[Sentinels]] in [[Ashinohara]] that were distributed amongst the nation's internal factions for safekeeping. ==Suzu== The Suzu is a talisman in the shape of a bell that's described as being able to grant its bearer the power to 'draw upon the future'. The futures that are able to be drawn upon, how… |
+| 3 | `raw_wiki:40510:100543:5d386e6f565fcdd8:chunk:000` | `Lore/suzu/40510_main.wikitext` | pending | **relevant** | **Profile**: Title: Suzu, Origin: Ashinohara. '''Suzu''' is a [[Legacy Talismans\|Legacy Talisman]] from [[Ashinohara]], in the possession of the Miko of Flaming Sakura, [[Hiyuki]]. Like the other Talismans, it was left behind in the country for safekeeping by the [[Sentinels]]. |
+| 4 | `raw_wiki:7557:136952:45922d58511e4b39:chunk:000` | `Lore/timeline/7557_main.wikitext` | pending | **relevant** | This '''Timeline''' is a rough estimation of the universe of [[Wuthering Waves]]. LD (Landing Date) refers to the year that [[Rover]] lands in [[Solaris-3]] and starts the game's events. References are provided as much as possible. ==Pre-First Lament== *'''?''' &mdash; [[The Farwatcher]] and eight other interstellar probes are launched by the [[Pre-Lament Civilization]]. *'''?''' &mdash; The Tethys Institute proposes… |
+| 5 | `raw_wiki:7557:136952:45922d58511e4b39:chunk:000` | `Lore/timeline/7557_main.wikitext` | pending | **relevant** | This '''Timeline''' is a rough estimation of the universe of [[Wuthering Waves]]. LD (Landing Date) refers to the year that [[Rover]] lands in [[Solaris-3]] and starts the game's events. References are provided as much as possible. ==Pre-First Lament== *'''?''' &mdash; [[The Farwatcher]] and eight other interstellar probes are launched by the [[Pre-Lament Civilization]]. *'''?''' &mdash; The Tethys Institute proposes… |
+
+## rw-029
+
+- Query: Which Huanglong Sentinel is known as the Moon Fox?
+- Expected answer: Hsin, the Sentinel located in Mengzhou, is known as the Moon Fox.
+
+| Rank | Evidence | Source | Proposed | Human label | Source excerpt |
+|---:|---|---|---|---|---|
+| 1 | `raw_wiki:10962:102771:2a81d1750c1bd1aa:chunk:000` | `Characters/Resonators/hsin/10962_main.wikitext` | relevant | **relevant** | She is also known as "The Moon Fox" or Hsin (Heart), and is one of [[Huanglong\|Huanglong's]] seven [[Sentinel]]s who is located in [[Mengzhou]]. |
+| 2 | `raw_wiki:1012:123801:ecdcd6cae8d7c1f6:chunk:000` | `Lore/sentinel/1012_main.wikitext` | pending | **relevant** | …e breaking of this law will result in both the Sentinel and its current Resonator having their frequencies rent asunder, destroying them. ==Known Sentinels== ===Huanglong=== The Sentinels of [[Huanglong]] were originally one being before being split into seven, each guarding a province of the nation. They are likely named after the seven astrological mansions of the Azure Dragon. {\| class="article-table alternating-c… |
+| 3 | `raw_wiki:1012:123801:ecdcd6cae8d7c1f6:chunk:000` | `Lore/sentinel/1012_main.wikitext` | pending | **relevant** | …e breaking of this law will result in both the Sentinel and its current Resonator having their frequencies rent asunder, destroying them. ==Known Sentinels== ===Huanglong=== The Sentinels of [[Huanglong]] were originally one being before being split into seven, each guarding a province of the nation. They are likely named after the seven astrological mansions of the Azure Dragon. {\| class="article-table alternating-c… |
+| 4 | `raw_wiki:41913:136779:8670bd0697124da2:chunk:000` | `Lore/the_moon/41913_main.wikitext` | pending | **relevant** | … destruction if it occurred after the fall of [[SkyArk Space Station]] and the envelopment of the Etheric Sea. Events in [[Dreaming Deep]], which may or may not be tales based on reality, imply that the Moon once visible from the surface was artificially placed in orbit. [[Wutherium Geographic: Lands and Waters — Extra Volume: Culture and Customs#Dual Moons\|Some aspects]] of [[Jinzhou]] culture an |
+| 5 | `raw_wiki:41351:136925:90323859e9cee427:chunk:000` | `Characters/Resonators/qingxiao/41351_main.wikitext` | pending | **relevant** | {{Upcoming}} > On the qin strings do eons sing, eternal peace my blade shall bring. > — Qingxiao She is known as the Paragon of Mengzhou. Qingxiao is likely the woman that had appeared before Buling in Xuanfang Hold after her fight with Jianxin in the tournament. |
+
+## rw-030
+
+- Query: Iuno có trách nhiệm gì tại Tetragon Temple?
+- Expected answer: Iuno is a priestess charged with delivering prophecies that shape Septimont citizens' lives.
+
+| Rank | Evidence | Source | Proposed | Human label | Source excerpt |
+|---:|---|---|---|---|---|
+| 1 | `raw_wiki:36127:136805:e24081106cc2ec69:chunk:000` | `Factions/tetragon_temple/36127_main.wikitext` | pending | **relevant** | # Tetragon Temple **Faction Profile**: Leader: Lillibet, Base: Tetragon Temple (Area), Allies: Ephor's Palace. {{About\|the [[Factions\|faction]]\|the location\|Tetragon Temple (Area)}} '''Tetragon Temple''', more commonly known as '''The Tetragon''', is a faction consisting of the Priestesses of [[Septimont]]. It is founded by the Head Priestess Lillibet and currently led by Iuno. The Temple is responsible for handling … |
+| 2 | `raw_wiki:31296:99397:cf04c89a577454a6:chunk:000` | `Characters/Resonators/iuno/31296_main.wikitext` | relevant | **relevant** | She is a prodigious and renowned Priestess of [[Septimont]]'s [[Tetragon Temple]], charged with delivering prophecies that shape the lives of its citizens. |
+| 3 | `raw_wiki:36127:136805:e24081106cc2ec69:chunk:000` | `Factions/tetragon_temple/36127_main.wikitext` | pending | **relevant** | # Tetragon Temple **Faction Profile**: Leader: Lillibet, Base: Tetragon Temple (Area), Allies: Ephor's Palace. {{About\|the [[Factions\|faction]]\|the location\|Tetragon Temple (Area)}} '''Tetragon Temple''', more commonly known as '''The Tetragon''', is a faction consisting of the Priestesses of [[Septimont]]. It is founded by the Head Priestess Lillibet and currently led by Iuno. The Temple is responsible for handling … |
+| 4 | `raw_wiki:26373:135203:7ce25d5efa8633f0:chunk:000` | `Locations/septimont/26373_main.wikitext` | pending | **relevant** | **Profile**: Title: Septimont, Origin: Rinascita. '''Septimont''' is a [[Region]] and city-state of [[Rinascita]]. Unlike [[Ragunna]], Septimont has a far more militant and irreligious culture, as it places far less importance on the primacy of the [[Sentinel]] [[Imperator]] and instead worships the [[Lioness of Glory]] Arsinosa. As a result, the Agons, competitive gladiatorial combat, are the pinnacle of Septimontes… |
+| 5 | `raw_wiki:31296:99397:cf04c89a577454a6:chunk:000` | `Characters/Resonators/iuno/31296_main.wikitext` | relevant | **relevant** | She is a prodigious and renowned Priestess of [[Septimont]]'s [[Tetragon Temple]], charged with delivering prophecies that shape the lives of its citizens. |
+
+## rw-031
+
+- Query: What martial art has Jianxin devoted her life to mastering?
+- Expected answer: Jianxin has devoted her life to mastering Fengyiquan.
+
+| Rank | Evidence | Source | Proposed | Human label | Source excerpt |
+|---:|---|---|---|---|---|
+| 1 | `raw_wiki:633:92941:f0bb12c836a8d2f8:chunk:000` | `Characters/Resonators/jianxin/633_main.wikitext` | relevant | **relevant** | successor to the art of {{Extra Effect\|Fengyiquan\|Fengyiquan\|A martial art embodying Taoist wisdom, where practitioners harmonize with nature's rhythms to develop balanced strength of body and mind.}} she has dedicated her life to mastering the ultimate martial art. |
+| 2 | `raw_wiki:588:99853:a4995516cd60ac47:chunk:000` | `Characters/Resonators/sanhua/588_main.wikitext` | pending | **relevant** | …lows her to cool the surrounding air and conjure snow. To maintain emotional stability and prevent Overclocking, Sanhua finds solace in the art of swordplay. This allows her to master her Forte with graceful ease and alleviates the burden on her body. > — [https://wutheringwaves.kurogames.com/en/main#resonators Her introduction on the Official Website.] |
+| 3 | `raw_wiki:624:92922:791b05ce14a56b51:chunk:000` | `Characters/Resonators/baizhi/624_main.wikitext` | pending | **relevant** | > I am Baizhi, a researcher at the Huaxu Academy. Let me witness where this encounter will take us. > — Baizhi She is a researcher in Remnant Ecoacoustics at Huaxu Academy. Baizhi's once unfulfilled wish has now manifested as her loyal companion. The Remnant Creature You'tan is her source of healing powers, and a lifelong research focus. ==Official Introduction== > Baizhi, a researcher at Huaxu Academy, is known for … |
+| 4 | `raw_wiki:7557:136952:45922d58511e4b39:chunk:000` | `Lore/timeline/7557_main.wikitext` | pending | **relevant** | This '''Timeline''' is a rough estimation of the universe of [[Wuthering Waves]]. LD (Landing Date) refers to the year that [[Rover]] lands in [[Solaris-3]] and starts the game's events. References are provided as much as possible. ==Pre-First Lament== *'''?''' &mdash; [[The Farwatcher]] and eight other interstellar probes are launched by the [[Pre-Lament Civilization]]. *'''?''' &mdash; The Tethys Institute proposes… |
+| 5 | `raw_wiki:28266:131321:5f2feb1a382c7763:chunk:000` | `Locations/lilyland/28266_main.wikitext` | pending | **relevant** | …s important in Lilyland, with products such as Upala Perfume and Efreeta Hair Conditioner, and Huanglong's rising fashion star [[Linglong]] has presented work at the fashion week. The Fisher family is highly important in Lilyland, akin to the [[Montelli Family\|Montellis]] or [[Fisalia Family\|Fisalias]] of Ragunna. They have commercial and legal ties with the Montellis, and run the largest art museum in the city-state… |
+
+## rw-032
+
+- Query: Jinhsi được Sentinel nào chọn làm Resonator?
+- Expected answer: Jinhsi is the appointed Resonator of Sentinel Jué.
+
+| Rank | Evidence | Source | Proposed | Human label | Source excerpt |
+|---:|---|---|---|---|---|
+| 1 | `raw_wiki:936:101013:20a1567cbe138350:chunk:000` | `Characters/Resonators/jinhsi/936_main.wikitext` | relevant | **relevant** | She is also the appointed [[Resonator]] of Sentinel [[Jué]] |
+| 2 | `raw_wiki:1012:123801:ecdcd6cae8d7c1f6:chunk:000` | `Lore/sentinel/1012_main.wikitext` | pending | **relevant** | …meland Civilization]], whose [[Exostrider\|Exostriders]] would deliver them to [[Solaris-3]]. Sentinels are only able to resonate with one [[Resonator]] at a time, and the breaking of this law will result in both the Sentinel and its current Resonator having their frequencies rent asunder, destroying them. ==Known Sentinels== ===Huanglong=== The Sentinels of [[Huanglong]] were originally one being before being split i… |
+| 3 | `raw_wiki:1012:123801:ecdcd6cae8d7c1f6:chunk:000` | `Lore/sentinel/1012_main.wikitext` | pending | **relevant** | …meland Civilization]], whose [[Exostrider\|Exostriders]] would deliver them to [[Solaris-3]]. Sentinels are only able to resonate with one [[Resonator]] at a time, and the breaking of this law will result in both the Sentinel and its current Resonator having their frequencies rent asunder, destroying them. ==Known Sentinels== ===Huanglong=== The Sentinels of [[Huanglong]] were originally one being before being split i… |
+| 4 | `raw_wiki:8689:130735:a3c36e894cf4a2c1:chunk:000` | `Locations/mt_firmament/8689_main.wikitext` | pending | **relevant** | **Profile**: Title: Mt. Firmament, Origin: Huanglong. {{Location Tabs\|Map:Mt. Firmament}} {{Intro/Location\|Mt. Firmament {{lang\|zh=乘霄山\|zh_rm=Chéngxiāo-shān}}}} It is a secluded region located in the southeastern seas of [[Jinzhou]]. It is historically significant as the ancestral home of Jinzhou's original settlers and the birthplace of the Magistrate and Sentinel Resonator, [[Jinhsi]]. The region is defined by uniqu… |
+| 5 | `raw_wiki:26888:99747:897732ef65d43d75:chunk:000` | `Lore/battle_beneath_the_crescent/26888_main.wikitext` | pending | **relevant** | **Profile**: Title: Battle Beneath the Crescent, Origin: Huanglong. > Those Phantoms... Illusions of both soldiers and those monsters... They were not real, but somehow they could injure and kill us. We had to strike them down to survive. But then... Our dead comrades, were coming back to life, ready to stab us behind our backs... It was chaos. We were terrified, couldn't tell friend from foe... > — Midnight Ranger T… |
+
+## rw-033
+
+- Query: Who selected Jiyan as general of the Midnight Rangers?
+- Expected answer: Jué, the Sentinel of Jinzhou, selected Jiyan.
+
+| Rank | Evidence | Source | Proposed | Human label | Source excerpt |
+|---:|---|---|---|---|---|
+| 1 | `raw_wiki:26888:99747:897732ef65d43d75:chunk:000` | `Lore/battle_beneath_the_crescent/26888_main.wikitext` | pending | **relevant** | …rades, were coming back to life, ready to stab us behind our backs... It was chaos. We were terrified, couldn't tell friend from foe... > — Midnight Ranger The '''Battle Beneath the Crescent''' is a crucial event in [[Jinzhou\|Jinzhou's]] history, taking place in the [[Norfall Barrens]] three years prior to the main story. The battle was fought between the [[Midnight Rangers]], the military force of Jinzhou, and [[Ova… |
+| 2 | `raw_wiki:525:136877:39d55ea5f72b29b4:chunk:000` | `Characters/Resonators/jiyan/525_main.wikitext` | relevant | **relevant** | He is the general of the [[Midnight Rangers]] selected by the sentinel of [[Jinzhou]], [[Jué]] |
+| 3 | `raw_wiki:26888:99747:897732ef65d43d75:chunk:000` | `Lore/battle_beneath_the_crescent/26888_main.wikitext` | pending | **relevant** | …rades, were coming back to life, ready to stab us behind our backs... It was chaos. We were terrified, couldn't tell friend from foe... > — Midnight Ranger The '''Battle Beneath the Crescent''' is a crucial event in [[Jinzhou\|Jinzhou's]] history, taking place in the [[Norfall Barrens]] three years prior to the main story. The battle was fought between the [[Midnight Rangers]], the military force of Jinzhou, and [[Ova… |
+| 4 | `raw_wiki:26888:99747:897732ef65d43d75:chunk:000` | `Lore/battle_beneath_the_crescent/26888_main.wikitext` | pending | **relevant** | …rades, were coming back to life, ready to stab us behind our backs... It was chaos. We were terrified, couldn't tell friend from foe... > — Midnight Ranger The '''Battle Beneath the Crescent''' is a crucial event in [[Jinzhou\|Jinzhou's]] history, taking place in the [[Norfall Barrens]] three years prior to the main story. The battle was fought between the [[Midnight Rangers]], the military force of Jinzhou, and [[Ova… |
+| 5 | `raw_wiki:896:99150:aa2a5187c5ebc08b:chunk:000` | `Factions/midnight_rangers/896_main.wikitext` | pending | **relevant** | # Midnight Rangers **Faction Profile**: Leader: Jiyan. The '''Midnight Rangers''' are the primary military force of the [[Jinzhou]] region, tasked with protecting the land from external threats. The military branch is integral to [[Huanglong]]'s defense strategy, deploying wherever the nation’s enemies pose a threat. They are under the jurisdiction of the Ministry of War, and led by General [[Jiyan]]. ==Organization=… |
+
+## rw-034
+
+- Query: Lingyang là sinh vật Suan'ni còn sống cuối cùng phải không?
+- Expected answer: Yes. Lingyang is described as the last living Suan'ni.
+
+| Rank | Evidence | Source | Proposed | Human label | Source excerpt |
+|---:|---|---|---|---|---|
+| 1 | `raw_wiki:900:99749:8adf6fa8df5985b0:chunk:000` | `Lore/suanni/900_main.wikitext` | pending | **relevant** | '''Suan'nis''' are mythical beasts, possessing Resonance Abilities akin to those of human [[Resonators]]. Having been driven to near extinction, [[Lingyang]], going by the alias "Jingle Beast," is believed to be the last living Suan'ni. == History== The Suan'nis used to live under the giant [[Violet Banyan]] tree in the [[Dim Forest]], far from human civilization. It is believed that Moon Lanterns on the Violet Banya… |
+| 2 | `raw_wiki:631:92944:69b041db40e5f9b9:chunk:000` | `Characters/Resonators/lingyang/631_main.wikitext` | relevant | **relevant** | He is a member of the Lion dance Troupe in [[Jinzhou]] and the last living [[Suan'ni]]. |
+| 3 | `raw_wiki:2960:99756:4c2d85a16f6eb409:chunk:000` | `Locations/dim_forest/2960_main.wikitext` | pending | **relevant** | **Profile**: Title: Dim Forest, Origin: Huanglong. '''Dim Forest''' is a region in [[Huanglong]]. It is a forest consisting of many unique flora, such as the [[Violet Banyan]] and [[Giant Banyan]], with hostile life inhabiting the [[Forbidden Forest]]. A number of Jinzhou scientists spend their time here to study Hoochiefs. ==Areas== {\| class="article-table alternating-colors-table tdc1" style="width: 100%;" ! style=… |
+| 4 | `raw_wiki:900:99749:8adf6fa8df5985b0:chunk:000` | `Lore/suanni/900_main.wikitext` | pending | **relevant** | '''Suan'nis''' are mythical beasts, possessing Resonance Abilities akin to those of human [[Resonators]]. Having been driven to near extinction, [[Lingyang]], going by the alias "Jingle Beast," is believed to be the last living Suan'ni. == History== The Suan'nis used to live under the giant [[Violet Banyan]] tree in the [[Dim Forest]], far from human civilization. It is believed that Moon Lanterns on the Violet Banya… |
+| 5 | `raw_wiki:42308:102539:fd8cd359be141d6c:chunk:000` | `Lore/remnant_creature/42308_main.wikitext` | pending | **relevant** | …scord\|imitations]]. When a Remnant Creature frequency decays, it can turn into a Tacet Discord. ==Known Remnant Creatures== *[[You'tan]] *[[Suan'ni]] Resonance Beast *[[Shorekeeper/Backstory\|Shorekeeper]] "a light blue crystal cocoon of Remnant Energy gathered from the Anchor" *[[Lorelei]] *[[Nimbus Wraith]] (Formerly) *[[Namipon]] *Xuanling Birds (Extinct) |
+
+## rw-035
+
+- Query: What is Lucilla's position at Startorch Academy?
+- Expected answer: Lucilla is the president and head of Startorch Academy.
+
+| Rank | Evidence | Source | Proposed | Human label | Source excerpt |
+|---:|---|---|---|---|---|
+| 1 | `raw_wiki:37391:136476:a3a41695657088cf:chunk:000` | `Factions/startorch_academy/37391_main.wikitext` | pending | **relevant** | # Startorch Academy **Faction Profile**: Leader: Lucilla, Base: Startorch Academy (Region). {{About\|the institution\|the region\|Startorch Academy (Region)}} '''Startorch Academy''' is a multinational school built by the [[Spacetrek Collective]] specifically for [[Resonator]]s in [[Lahai-Roi]]. It is known to contain the Exo Genesis Labs, Voidwatch Tower, Tactical Proving Grounds, and Simulator Cockpit. Its name comes … |
+| 2 | `raw_wiki:37391:136476:a3a41695657088cf:chunk:000` | `Factions/startorch_academy/37391_main.wikitext` | pending | **relevant** | # Startorch Academy **Faction Profile**: Leader: Lucilla, Base: Startorch Academy (Region). {{About\|the institution\|the region\|Startorch Academy (Region)}} '''Startorch Academy''' is a multinational school built by the [[Spacetrek Collective]] specifically for [[Resonator]]s in [[Lahai-Roi]]. It is known to contain the Exo Genesis Labs, Voidwatch Tower, Tactical Proving Grounds, and Simulator Cockpit. Its name comes … |
+| 3 | `raw_wiki:37391:136476:a3a41695657088cf:chunk:000` | `Factions/startorch_academy/37391_main.wikitext` | pending | **relevant** | # Startorch Academy **Faction Profile**: Leader: Lucilla, Base: Startorch Academy (Region). {{About\|the institution\|the region\|Startorch Academy (Region)}} '''Startorch Academy''' is a multinational school built by the [[Spacetrek Collective]] specifically for [[Resonator]]s in [[Lahai-Roi]]. It is known to contain the Exo Genesis Labs, Voidwatch Tower, Tactical Proving Grounds, and Simulator Cockpit. Its name comes … |
+| 4 | `raw_wiki:37543:136637:1b307d031f032102:chunk:000` | `Characters/Resonators/lynae/37543_main.wikitext` | pending | **relevant** | > Outlaw Blue, Apollo Orange, Hazard Yellow, Acid Green... Wanna guess what color is my next pick? > — Lynae She is a Preparatory Program student at [[Startorch Academy]] and a free spirit who lives every day to its fullest. Before attending Startorch, she was a mercenary from the [[Lawless Zone]] in the [[New Federation]]. In order to escape from the Lawless Zone and gain her freedom, she stole the identity of the r… |
+| 5 | `raw_wiki:37540:136639:46f5898638863eb0:chunk:000` | `Characters/Resonators/mornye/37540_main.wikitext` | pending | **relevant** | > I need not wait for a starry night, nor tilt my gaze to seek the sky. For I have placed it at my back, in my hands, and upon my eyelids. > — Mornye She is a researcher for the [[Spacetrek Collective]] and a professor for Exostrider Engineering at [[Startorch Academy]]. She was a student at Startorch Academy and an acquaintance of [[Rover]] 20 years before the [[Void Storm]] hit [[Lahai-Roi]]. With an unwavering dre… |
+
+## rw-036
+
+- Query: Lumi làm công việc gì tại Lollo Logistics?
+- Expected answer: Lumi is a navigator and leads a transport squad at Lollo Logistics.
+
+| Rank | Evidence | Source | Proposed | Human label | Source excerpt |
+|---:|---|---|---|---|---|
+| 1 | `raw_wiki:20501:99245:c417da3a3a4d4832:chunk:000` | `Characters/Resonators/lumi/20501_main.wikitext` | relevant | **relevant** | She is a navigator at [[Lollo Logistics]] and leader of a transport squad team. |
+| 2 | `raw_wiki:20501:99245:c417da3a3a4d4832:chunk:000` | `Characters/Resonators/lumi/20501_main.wikitext` | relevant | **relevant** | She is a navigator at [[Lollo Logistics]] and leader of a transport squad team. |
+| 3 | `raw_wiki:10459:95089:82fed37418e8019f:chunk:000` | `Factions/lollo_logistics/10459_main.wikitext` | pending | **relevant** | # Lollo Logistics Lollo Logistics is a trusted logistics company that delivers not only the tangible, but also the intangible.Whether it's sending sweet words to a loved one or retrieving lost memories, if it's ordered and can be delivered, Lollo Logistics will handle them with care. '''Lollo Logistics''' is a professional multinational logistics expertise, offering services for all items—tangible or intangible—as lo… |
+| 4 | `raw_wiki:10459:95089:82fed37418e8019f:chunk:000` | `Factions/lollo_logistics/10459_main.wikitext` | pending | **relevant** | # Lollo Logistics Lollo Logistics is a trusted logistics company that delivers not only the tangible, but also the intangible.Whether it's sending sweet words to a loved one or retrieving lost memories, if it's ordered and can be delivered, Lollo Logistics will handle them with care. '''Lollo Logistics''' is a professional multinational logistics expertise, offering services for all items—tangible or intangible—as lo… |
+| 5 | `raw_wiki:10459:95089:82fed37418e8019f:chunk:000` | `Factions/lollo_logistics/10459_main.wikitext` | pending | **relevant** | # Lollo Logistics Lollo Logistics is a trusted logistics company that delivers not only the tangible, but also the intangible.Whether it's sending sweet words to a loved one or retrieving lost memories, if it's ordered and can be delivered, Lollo Logistics will handle them with care. '''Lollo Logistics''' is a professional multinational logistics expertise, offering services for all items—tangible or intangible—as lo… |
+
+## rw-037
+
+- Query: Why is Lupa notable in Septimont's arena?
+- Expected answer: Lupa is an undefeated gladiator champion from Septimont.
+
+| Rank | Evidence | Source | Proposed | Human label | Source excerpt |
+|---:|---|---|---|---|---|
+| 1 | `raw_wiki:30940:96622:a0dca9f4d3d03fb9:chunk:000` | `Characters/Resonators/lupa/30940_main.wikitext` | relevant | **relevant** | She is a gladiator from [[Septimont]], a warrior and undefeated champion of the arena |
+| 2 | `raw_wiki:31852:72985:814ee00262cb4399:chunk:000` | `Factions/house_silva/31852_main.wikitext` | pending | **relevant** | # House Silva **Faction Profile**: Leader: Julia Silva, Base: Septimont (formerly). '''House Silva''' is one of the founding bloodlines of [[Septimont]] and a once prominent noble family, though their influence began waver with the rise of the new [[Augusta\|Ephor]]. During the most recent [[Great Agon]] the household and their head, Julia Silva, take part in match fixing and go as far as to sabotage [[Lupa]]'s equipm… |
+| 3 | `raw_wiki:27120:96278:b1047d1aa9a9b8d2:chunk:000` | `Lore/leviathan/27120_main.wikitext` | pending | **relevant** | **Profile**: Title: Leviathan, Origin: Rinascita, Affiliation: Threnodians. ''This article is about the NPC.&#x20;For the Weekly Boss, see [[Threnodian: Leviathan]].'' > "Fleurdelys, my Resonator, why dost thou persist? Why abandon thy oath? Why hinder the spread of my gospel? The one blessed by the Dark Tide shall return to us. Continue thy disobedience at the risk of insanity. My most beloved Resonator, why persist… |
+| 4 | `raw_wiki:26373:135203:7ce25d5efa8633f0:chunk:000` | `Locations/septimont/26373_main.wikitext` | pending | **relevant** | **Profile**: Title: Septimont, Origin: Rinascita. '''Septimont''' is a [[Region]] and city-state of [[Rinascita]]. Unlike [[Ragunna]], Septimont has a far more militant and irreligious culture, as it places far less importance on the primacy of the [[Sentinel]] [[Imperator]] and instead worships the [[Lioness of Glory]] Arsinosa. As a result, the Agons, competitive gladiatorial combat, are the pinnacle of Septimontes… |
+| 5 | `raw_wiki:26373:135203:7ce25d5efa8633f0:chunk:000` | `Locations/septimont/26373_main.wikitext` | pending | **relevant** | **Profile**: Title: Septimont, Origin: Rinascita. '''Septimont''' is a [[Region]] and city-state of [[Rinascita]]. Unlike [[Ragunna]], Septimont has a far more militant and irreligious culture, as it places far less importance on the primacy of the [[Sentinel]] [[Imperator]] and instead worships the [[Lioness of Glory]] Arsinosa. As a result, the Agons, competitive gladiatorial combat, are the pinnacle of Septimontes… |
+
+## rw-038
+
+- Query: Luuk Herssen phụ trách đơn vị nào ở Startorch Academy?
+- Expected answer: He heads the Resonator Nursing Unit at Startorch Academy.
+
+| Rank | Evidence | Source | Proposed | Human label | Source excerpt |
+|---:|---|---|---|---|---|
+| 1 | `raw_wiki:37544:136308:b6e43f908463ebaa:chunk:000` | `Characters/Resonators/luuk_herssen/37544_main.wikitext` | relevant | **relevant** | He is the head physician of the [[Resonator Nursing Unit]] at [[Startorch Academy]] |
+| 2 | `raw_wiki:37391:136476:a3a41695657088cf:chunk:000` | `Factions/startorch_academy/37391_main.wikitext` | pending | **relevant** | # Startorch Academy **Faction Profile**: Leader: Lucilla, Base: Startorch Academy (Region). {{About\|the institution\|the region\|Startorch Academy (Region)}} '''Startorch Academy''' is a multinational school built by the [[Spacetrek Collective]] specifically for [[Resonator]]s in [[Lahai-Roi]]. It is known to contain the Exo Genesis Labs, Voidwatch Tower, Tactical Proving Grounds, and Simulator Cockpit. Its name comes … |
+| 3 | `raw_wiki:7557:136952:45922d58511e4b39:chunk:000` | `Lore/timeline/7557_main.wikitext` | pending | **relevant** | This '''Timeline''' is a rough estimation of the universe of [[Wuthering Waves]]. LD (Landing Date) refers to the year that [[Rover]] lands in [[Solaris-3]] and starts the game's events. References are provided as much as possible. ==Pre-First Lament== *'''?''' &mdash; [[The Farwatcher]] and eight other interstellar probes are launched by the [[Pre-Lament Civilization]]. *'''?''' &mdash; The Tethys Institute proposes… |
+| 4 | `raw_wiki:37391:136476:a3a41695657088cf:chunk:000` | `Factions/startorch_academy/37391_main.wikitext` | pending | **relevant** | # Startorch Academy **Faction Profile**: Leader: Lucilla, Base: Startorch Academy (Region). {{About\|the institution\|the region\|Startorch Academy (Region)}} '''Startorch Academy''' is a multinational school built by the [[Spacetrek Collective]] specifically for [[Resonator]]s in [[Lahai-Roi]]. It is known to contain the Exo Genesis Labs, Voidwatch Tower, Tactical Proving Grounds, and Simulator Cockpit. Its name comes … |
+| 5 | `raw_wiki:37391:136476:a3a41695657088cf:chunk:000` | `Factions/startorch_academy/37391_main.wikitext` | pending | **relevant** | # Startorch Academy **Faction Profile**: Leader: Lucilla, Base: Startorch Academy (Region). {{About\|the institution\|the region\|Startorch Academy (Region)}} '''Startorch Academy''' is a multinational school built by the [[Spacetrek Collective]] specifically for [[Resonator]]s in [[Lahai-Roi]]. It is known to contain the Exo Genesis Labs, Voidwatch Tower, Tactical Proving Grounds, and Simulator Cockpit. Its name comes … |
+
+## rw-039
+
+- Query: What did Lynae do before attending Startorch Academy?
+- Expected answer: Before enrolling, Lynae was a mercenary from the New Federation's Lawless Zone.
+
+| Rank | Evidence | Source | Proposed | Human label | Source excerpt |
+|---:|---|---|---|---|---|
+| 1 | `raw_wiki:37543:136637:1b307d031f032102:chunk:000` | `Characters/Resonators/lynae/37543_main.wikitext` | relevant | **relevant** | Before attending Startorch, she was a mercenary from the [[Lawless Zone]] in the [[New Federation]]. |
+| 2 | `raw_wiki:37391:136476:a3a41695657088cf:chunk:000` | `Factions/startorch_academy/37391_main.wikitext` | pending | **relevant** | # Startorch Academy **Faction Profile**: Leader: Lucilla, Base: Startorch Academy (Region). {{About\|the institution\|the region\|Startorch Academy (Region)}} '''Startorch Academy''' is a multinational school built by the [[Spacetrek Collective]] specifically for [[Resonator]]s in [[Lahai-Roi]]. It is known to contain the Exo Genesis Labs, Voidwatch Tower, Tactical Proving Grounds, and Simulator Cockpit. Its name comes … |
+| 3 | `raw_wiki:37391:136476:a3a41695657088cf:chunk:000` | `Factions/startorch_academy/37391_main.wikitext` | pending | **relevant** | # Startorch Academy **Faction Profile**: Leader: Lucilla, Base: Startorch Academy (Region). {{About\|the institution\|the region\|Startorch Academy (Region)}} '''Startorch Academy''' is a multinational school built by the [[Spacetrek Collective]] specifically for [[Resonator]]s in [[Lahai-Roi]]. It is known to contain the Exo Genesis Labs, Voidwatch Tower, Tactical Proving Grounds, and Simulator Cockpit. Its name comes … |
+| 4 | `raw_wiki:38537:136632:f169b123e2bf1328:chunk:000` | `Characters/Resonators/aemeath/38537_main.wikitext` | pending | **relevant** | > Did you see me? > — Aemeath She is a Frostlands native from the [[Roya Tribe]] who was once a Synchronist at [[Startorch Academy]]. She became the [[Exostrider]]'s Resonator after overclocking in order to resonate with it, causing her to lose her body. She now roams throughout [[Lahai-Roi]] as a digital ghost invisible to everyone around her except for [[Rover]], whom she met with during her childhood. ==Trivia== *… |
+| 5 | `raw_wiki:37391:136476:a3a41695657088cf:chunk:000` | `Factions/startorch_academy/37391_main.wikitext` | pending | **relevant** | # Startorch Academy **Faction Profile**: Leader: Lucilla, Base: Startorch Academy (Region). {{About\|the institution\|the region\|Startorch Academy (Region)}} '''Startorch Academy''' is a multinational school built by the [[Spacetrek Collective]] specifically for [[Resonator]]s in [[Lahai-Roi]]. It is known to contain the Exo Genesis Labs, Voidwatch Tower, Tactical Proving Grounds, and Simulator Cockpit. Its name comes … |
+
+## rw-040
+
+- Query: Mornye từng biết Rover vào thời điểm nào?
+- Expected answer: Mornye knew Rover as an acquaintance 20 years before the Void Storm struck Lahai-Roi.
+
+| Rank | Evidence | Source | Proposed | Human label | Source excerpt |
+|---:|---|---|---|---|---|
+| 1 | `raw_wiki:7557:136952:45922d58511e4b39:chunk:000` | `Lore/timeline/7557_main.wikitext` | pending | **relevant** | This '''Timeline''' is a rough estimation of the universe of [[Wuthering Waves]]. LD (Landing Date) refers to the year that [[Rover]] lands in [[Solaris-3]] and starts the game's events. References are provided as much as possible. ==Pre-First Lament== *'''?''' &mdash; [[The Farwatcher]] and eight other interstellar probes are launched by the [[Pre-Lament Civilization]]. *'''?''' &mdash; The Tethys Institute proposes… |
+| 2 | `raw_wiki:7557:136952:45922d58511e4b39:chunk:000` | `Lore/timeline/7557_main.wikitext` | pending | **relevant** | This '''Timeline''' is a rough estimation of the universe of [[Wuthering Waves]]. LD (Landing Date) refers to the year that [[Rover]] lands in [[Solaris-3]] and starts the game's events. References are provided as much as possible. ==Pre-First Lament== *'''?''' &mdash; [[The Farwatcher]] and eight other interstellar probes are launched by the [[Pre-Lament Civilization]]. *'''?''' &mdash; The Tethys Institute proposes… |
+| 3 | `raw_wiki:37540:136639:46f5898638863eb0:chunk:000` | `Characters/Resonators/mornye/37540_main.wikitext` | relevant | **relevant** | She was a student at Startorch Academy and an acquaintance of [[Rover]] 20 years before the [[Void Storm]] hit [[Lahai-Roi]]. |
+| 4 | `raw_wiki:7557:136952:45922d58511e4b39:chunk:000` | `Lore/timeline/7557_main.wikitext` | pending | **relevant** | This '''Timeline''' is a rough estimation of the universe of [[Wuthering Waves]]. LD (Landing Date) refers to the year that [[Rover]] lands in [[Solaris-3]] and starts the game's events. References are provided as much as possible. ==Pre-First Lament== *'''?''' &mdash; [[The Farwatcher]] and eight other interstellar probes are launched by the [[Pre-Lament Civilization]]. *'''?''' &mdash; The Tethys Institute proposes… |
+| 5 | `raw_wiki:38537:136632:f169b123e2bf1328:chunk:000` | `Characters/Resonators/aemeath/38537_main.wikitext` | pending | **relevant** | > Did you see me? > — Aemeath She is a Frostlands native from the [[Roya Tribe]] who was once a Synchronist at [[Startorch Academy]]. She became the [[Exostrider]]'s Resonator after overclocking in order to resonate with it, causing her to lose her body. She now roams throughout [[Lahai-Roi]] as a digital ghost invisible to everyone around her except for [[Rover]], whom she met with during her childhood. ==Trivia== *… |
+
+## rw-041
+
+- Query: Which research branch does Mortefi lead at Huaxu Academy?
+- Expected answer: Mortefi heads the Branch of Tacetite Weaponry in the Department of Safety at Huaxu Academy's Jinzhou campus.
+
+| Rank | Evidence | Source | Proposed | Human label | Source excerpt |
+|---:|---|---|---|---|---|
+| 1 | `raw_wiki:594:99232:375b861a53702e76:chunk:000` | `Characters/Resonators/mortefi/594_main.wikitext` | relevant | **relevant** | the head of the Branch of Tacetite Weaponry within the Department of Safety in [[Huaxu Academy]] at [[Jinzhou]]. |
+| 2 | `raw_wiki:594:99232:375b861a53702e76:chunk:000` | `Characters/Resonators/mortefi/594_main.wikitext` | relevant | **relevant** | the head of the Branch of Tacetite Weaponry within the Department of Safety in [[Huaxu Academy]] at [[Jinzhou]]. |
+| 3 | `raw_wiki:898:136862:688bebbd18ed5936:chunk:000` | `Locations/jinzhou/898_main.wikitext` | pending | **relevant** | **Profile**: Title: Jinzhou, Origin: Huanglong. {{About\|the region\|the area\|Jinzhou (Area)\|the province\|Jinzhou (Province)}}{{Intro/Location\|Jinzhou}} It is the fortified capital city of the [[Jinzhou (Province)\|province of the same name]]. Jinzhou is the most recent city established in Huanglong, the only city in Outer Huanglong, and was founded by [[Rover]] during their previous awakening after the emergence of the… |
+| 4 | `raw_wiki:938:130729:103ceb2210a7890a:chunk:000` | `Factions/huaxu_academy/938_main.wikitext` | pending | **relevant** | # Huaxu Academy The state-run research institute of Huanglong, with branch organizations established in each city. '''Huaxu Academy''' is a research institute in [[Huanglong]] with state-run branches in each city. ==Jinzhou Campus' Organization== In the Jinzhou territory, "Huaxu Academy" specifically denotes its Jinzhou Campus. Specializing in Wutherology, Ecoacoustics, and Resonology, the Jinzhou Campus has signific… |
+| 5 | `raw_wiki:938:130729:103ceb2210a7890a:chunk:000` | `Factions/huaxu_academy/938_main.wikitext` | pending | **relevant** | # Huaxu Academy The state-run research institute of Huanglong, with branch organizations established in each city. '''Huaxu Academy''' is a research institute in [[Huanglong]] with state-run branches in each city. ==Jinzhou Campus' Organization== In the Jinzhou territory, "Huaxu Academy" specifically denotes its Jinzhou Campus. Specializing in Wutherology, Ecoacoustics, and Resonology, the Jinzhou Campus has signific… |
+
+## rw-042
+
+- Query: Phoebe là Acolyte của tổ chức nào?
+- Expected answer: Phoebe is an Acolyte of the Order of the Deep.
+
+| Rank | Evidence | Source | Proposed | Human label | Source excerpt |
+|---:|---|---|---|---|---|
+| 1 | `raw_wiki:24784:96617:ecee4ea626873787:chunk:000` | `Characters/Resonators/phoebe/24784_main.wikitext` | relevant | **relevant** | She is an [[Order of the Deep#Acolyte\|Acolyte]] of the [[Order of the Deep]]. |
+| 2 | `raw_wiki:24784:96617:ecee4ea626873787:chunk:000` | `Characters/Resonators/phoebe/24784_main.wikitext` | relevant | **relevant** | She is an [[Order of the Deep#Acolyte\|Acolyte]] of the [[Order of the Deep]]. |
+| 3 | `raw_wiki:25536:91984:eba4d3a4762e23f2:chunk:000` | `Factions/order_of_the_deep/25536_main.wikitext` | pending | **relevant** | # Order of the Deep **Faction Profile**: Leader: Vacant, Founder: Napoli II, Base: Cathedral of Mercury. {{About\|the [[Factions\|faction]]\|the location\|Order of the Deep (Area)}} The '''Order of the Deep''' is a [[Ragunna\|Ragunnesi]] faction that worships the [[Sentinel]], [[Imperator]], and claim to act as the Sentinel's representative. They serve as the ultimate authority in Ragunna. According to the city tradition,… |
+| 4 | `raw_wiki:25536:91984:eba4d3a4762e23f2:chunk:000` | `Factions/order_of_the_deep/25536_main.wikitext` | pending | **relevant** | # Order of the Deep **Faction Profile**: Leader: Vacant, Founder: Napoli II, Base: Cathedral of Mercury. {{About\|the [[Factions\|faction]]\|the location\|Order of the Deep (Area)}} The '''Order of the Deep''' is a [[Ragunna\|Ragunnesi]] faction that worships the [[Sentinel]], [[Imperator]], and claim to act as the Sentinel's representative. They serve as the ultimate authority in Ragunna. According to the city tradition,… |
+| 5 | `raw_wiki:25657:91989:d626dfb652418c20:chunk:000` | `Factions/troupe_of_fools/25657_main.wikitext` | pending | **relevant** | # Troupe of Fools **Faction Profile**: Leader: Brant. The '''Troupe of Fools''', or the ''Fool's Troupe'', is a carnevale-themed troupe based in [[Rinascita]]. They perform on tour across all of Rinascita, travelling on the back of [[Lario]], with their hidden refuge being located deep in a vast underground cavern on [[Penitent's End]] island. From every corner of the Rinascita Archipelago, playwrights and performers… |
+
+## rw-043
+
+- Query: What kinds of frequencies can Phrolova manipulate?
+- Expected answer: Phrolova can manipulate and transfigure the frequencies of humans, Echoes, and Tacet Discords.
+
+| Rank | Evidence | Source | Proposed | Human label | Source excerpt |
+|---:|---|---|---|---|---|
+| 1 | `raw_wiki:1074:99099:f1f00f7ba53c6ff4:chunk:000` | `Characters/Resonators/phrolova/1074_main.wikitext` | relevant | **relevant** | Her forte can manipulate and transfigure the frequencies of humans, Echoes, and Tacet Discords alike. |
+| 2 | `raw_wiki:1074:99099:f1f00f7ba53c6ff4:chunk:000` | `Characters/Resonators/phrolova/1074_main.wikitext` | relevant | **relevant** | Her forte can manipulate and transfigure the frequencies of humans, Echoes, and Tacet Discords alike. |
+| 3 | `raw_wiki:1074:99099:f1f00f7ba53c6ff4:chunk:000` | `Characters/Resonators/phrolova/1074_main.wikitext` | relevant | **relevant** | Her forte can manipulate and transfigure the frequencies of humans, Echoes, and Tacet Discords alike. |
+| 4 | `raw_wiki:8269:95612:1c103964f57b0be7:chunk:000` | `Lore/sonoro_sphere/8269_main.wikitext` | pending | **relevant** | …res exist, such as the [[Simulation Training]] that [[Midnight Rangers]] use, with the [[Nimbus Sanctum]] being a unique Sonoro Sphere that can be interacted in the physical plane. However, upon entering a Sonoro Sphere, information may become distorted and it becomes difficult to remove the interference from the original contents. There is also the possibility that when recording information, if the conditions are m… |
+| 5 | `raw_wiki:348:86837:3b43bd7a33ec8d89:chunk:000` | `Characters/Resonators/resonator/348_main.wikitext` | pending | **relevant** | **Profile**: Title: Resonator. {{CharacterSystemTabs}} '''Resonators''' are the obtainable playable characters of ''[[Wuthering Waves]]'', and individuals with the ability to resonate with certain objects or elements and manipulate their frequencies. ==Lore== A Resonator experiences their Awakening when they first resonate with the frequencies of something in the world and gain their Resonance Ability, also known as … |
+
+## rw-044
+
+- Query: Vì sao Qiuyuan trở thành người đào tẩu?
+- Expected answer: Qiuyuan was framed by the Grand Architect for murdering his master, making him a fugitive across Huanglong.
+
+| Rank | Evidence | Source | Proposed | Human label | Source excerpt |
+|---:|---|---|---|---|---|
+| 1 | `raw_wiki:31286:95380:0215bfb291304724:chunk:000` | `Characters/Resonators/qiuyuan/31286_main.wikitext` | relevant | **relevant** | He was framed by the [[Grand Architect]] for the murder of his master, and is now a fugitive throughout all of [[Huanglong]]. |
+| 2 | `raw_wiki:31286:95380:0215bfb291304724:chunk:000` | `Characters/Resonators/qiuyuan/31286_main.wikitext` | relevant | **relevant** | He was framed by the [[Grand Architect]] for the murder of his master, and is now a fugitive throughout all of [[Huanglong]]. |
+| 3 | `raw_wiki:31286:95380:0215bfb291304724:chunk:000` | `Characters/Resonators/qiuyuan/31286_main.wikitext` | relevant | **relevant** | He was framed by the [[Grand Architect]] for the murder of his master, and is now a fugitive throughout all of [[Huanglong]]. |
+| 4 | `raw_wiki:37078:90660:e28687f672074f5b:chunk:000` | `Factions/internal_security_agency/37078_main.wikitext` | pending | **relevant** | …round, the agency has developed specialized expertise in managing [[Resonator]]s. ==Members== ===Former Members=== * [[Liang Dongyuan]] * [[Qiuyuan]] (senior agent) |
+| 5 | `raw_wiki:37078:90660:e28687f672074f5b:chunk:000` | `Factions/internal_security_agency/37078_main.wikitext` | pending | **relevant** | …round, the agency has developed specialized expertise in managing [[Resonator]]s. ==Members== ===Former Members=== * [[Liang Dongyuan]] * [[Qiuyuan]] (senior agent) |
+
+## rw-045
+
+- Query: Roccia giữ vai trò gì trong Troupe of Fools?
+- Expected answer: Roccia is the First Mate of the Troupe of Fools.
+
+| Rank | Evidence | Source | Proposed | Human label | Source excerpt |
+|---:|---|---|---|---|---|
+| 1 | `raw_wiki:24789:103572:c7b9cc0a8a5cdfa6:chunk:000` | `Characters/Resonators/roccia/24789_main.wikitext` | relevant | **relevant** | She is a gifted improvisational comedian and the First Mate of the [[Troupe of Fools]]. |
+| 2 | `raw_wiki:24789:103572:c7b9cc0a8a5cdfa6:chunk:000` | `Characters/Resonators/roccia/24789_main.wikitext` | relevant | **relevant** | She is a gifted improvisational comedian and the First Mate of the [[Troupe of Fools]]. |
+| 3 | `raw_wiki:25657:91989:d626dfb652418c20:chunk:000` | `Factions/troupe_of_fools/25657_main.wikitext` | pending | **relevant** | # Troupe of Fools **Faction Profile**: Leader: Brant. The '''Troupe of Fools''', or the ''Fool's Troupe'', is a carnevale-themed troupe based in [[Rinascita]]. They perform on tour across all of Rinascita, travelling on the back of [[Lario]], with their hidden refuge being located deep in a vast underground cavern on [[Penitent's End]] island. From every corner of the Rinascita Archipelago, playwrights and performers… |
+| 4 | `raw_wiki:25657:91989:d626dfb652418c20:chunk:000` | `Factions/troupe_of_fools/25657_main.wikitext` | pending | **relevant** | # Troupe of Fools **Faction Profile**: Leader: Brant. The '''Troupe of Fools''', or the ''Fool's Troupe'', is a carnevale-themed troupe based in [[Rinascita]]. They perform on tour across all of Rinascita, travelling on the back of [[Lario]], with their hidden refuge being located deep in a vast underground cavern on [[Penitent's End]] island. From every corner of the Rinascita Archipelago, playwrights and performers… |
+| 5 | `raw_wiki:25657:91989:d626dfb652418c20:chunk:000` | `Factions/troupe_of_fools/25657_main.wikitext` | pending | **relevant** | # Troupe of Fools **Faction Profile**: Leader: Brant. The '''Troupe of Fools''', or the ''Fool's Troupe'', is a carnevale-themed troupe based in [[Rinascita]]. They perform on tour across all of Rinascita, travelling on the back of [[Lario]], with their hidden refuge being located deep in a vast underground cavern on [[Penitent's End]] island. From every corner of the Rinascita Archipelago, playwrights and performers… |
+
+## rw-046
+
+- Query: Who does Sanhua serve as a guard?
+- Expected answer: Sanhua is the guard of Jinzhou Magistrate Jinhsi.
+
+| Rank | Evidence | Source | Proposed | Human label | Source excerpt |
+|---:|---|---|---|---|---|
+| 1 | `raw_wiki:588:99853:a4995516cd60ac47:chunk:000` | `Characters/Resonators/sanhua/588_main.wikitext` | relevant | **relevant** | She is the loyal and reliable guard of Jinzhou Magistrate [[Jinhsi]] |
+| 2 | `raw_wiki:588:99853:a4995516cd60ac47:chunk:000` | `Characters/Resonators/sanhua/588_main.wikitext` | relevant | **relevant** | She is the loyal and reliable guard of Jinzhou Magistrate [[Jinhsi]] |
+| 3 | `raw_wiki:25536:91984:eba4d3a4762e23f2:chunk:000` | `Factions/order_of_the_deep/25536_main.wikitext` | pending | **relevant** | # Order of the Deep **Faction Profile**: Leader: Vacant, Founder: Napoli II, Base: Cathedral of Mercury. {{About\|the [[Factions\|faction]]\|the location\|Order of the Deep (Area)}} The '''Order of the Deep''' is a [[Ragunna\|Ragunnesi]] faction that worships the [[Sentinel]], [[Imperator]], and claim to act as the Sentinel's representative. They serve as the ultimate authority in Ragunna. According to the city tradition,… |
+| 4 | `raw_wiki:25536:91984:eba4d3a4762e23f2:chunk:000` | `Factions/order_of_the_deep/25536_main.wikitext` | pending | **relevant** | # Order of the Deep **Faction Profile**: Leader: Vacant, Founder: Napoli II, Base: Cathedral of Mercury. {{About\|the [[Factions\|faction]]\|the location\|Order of the Deep (Area)}} The '''Order of the Deep''' is a [[Ragunna\|Ragunnesi]] faction that worships the [[Sentinel]], [[Imperator]], and claim to act as the Sentinel's representative. They serve as the ultimate authority in Ragunna. According to the city tradition,… |
+| 5 | `raw_wiki:26196:99513:1106002e2cae6db6:chunk:000` | `Characters/Resonators/cartethyia/26196_main.wikitext` | pending | **relevant** | {{About\|the Resonator\|the Weekly Boss\|Fleurdelys}} > The crown of winds... has been engulfed by the sea. Tell me, are you the one who summoned this blade? > — Cartethyia Throughout [[Rinascita]], she is revered as '''Fleurdelys''', the "Blessed Maiden," and in some accounts, "The Martyred Maiden." As a key figure in the region’s history, she holds profound influence, with her connections to the [[Sentinel]] [[Imperat… |
+
+## rw-047
+
+- Query: Shorekeeper thực chất được cấu tạo từ gì?
+- Expected answer: Shorekeeper is a mythical entity composed of Sonoro Spheres and high-purity Remnant Energy crystals.
+
+| Rank | Evidence | Source | Proposed | Human label | Source excerpt |
+|---:|---|---|---|---|---|
+| 1 | `raw_wiki:10662:101177:8871332c765002d5:chunk:000` | `Characters/Resonators/shorekeeper/10662_main.wikitext` | relevant | **relevant** | is a mythical entity composed of [[Sonoro Spheres]] and high-purity [[Remnant]] Energy crystals |
+| 2 | `raw_wiki:7557:136952:45922d58511e4b39:chunk:000` | `Lore/timeline/7557_main.wikitext` | pending | **relevant** | This '''Timeline''' is a rough estimation of the universe of [[Wuthering Waves]]. LD (Landing Date) refers to the year that [[Rover]] lands in [[Solaris-3]] and starts the game's events. References are provided as much as possible. ==Pre-First Lament== *'''?''' &mdash; [[The Farwatcher]] and eight other interstellar probes are launched by the [[Pre-Lament Civilization]]. *'''?''' &mdash; The Tethys Institute proposes… |
+| 3 | `raw_wiki:1009:99745:d7056297fb95023e:chunk:000` | `Lore/remnant/1009_main.wikitext` | pending | **relevant** | … crafted into weapons that can damage [[Tacet Discord]]. Similarly, [[Resonant Calcite]] is an excellent conductor of Remnant Energy. The [[Shorekeeper]] is an entity of high-purity Remnant Energy crystals. ==Trivia== *[[Baizhi\|Baizhi's]] [[Resonance Spectrum Patterns\|Resonance Spectrum Pattern]] shows a certain level of similarity with the fluctuations of Remnant Energy. |
+| 4 | `raw_wiki:1007:135324:8f903f46d2fa3ca8:chunk:000` | `Factions/black_shores/1007_main.wikitext` | pending | **relevant** | …ition !Status \|- \|{{Character\|Rover\|notext=1\|nobr=1}} \|[[Rover]] \|Leader and Founder Chief Steward Astral Modulator \|Active \|- \|{{Character\|Shorekeeper\|notext=1\|nobr=1}} \|[[Shorekeeper]] \|Guardian Leader's Assistant Second-in-command \|Active \|- \|{{Character\|Camellya\|notext=1\|nobr=1}} \|[[Camellya]] \|Bloom Bearer Combat Tester \|Active \|- \|{{Character\|Aalto\|notext=1\|nobr=1}} \|[[Aalto]] \|Consultant \|Acti |
+| 5 | `raw_wiki:1007:135324:8f903f46d2fa3ca8:chunk:000` | `Factions/black_shores/1007_main.wikitext` | pending | **relevant** | …ition !Status \|- \|{{Character\|Rover\|notext=1\|nobr=1}} \|[[Rover]] \|Leader and Founder Chief Steward Astral Modulator \|Active \|- \|{{Character\|Shorekeeper\|notext=1\|nobr=1}} \|[[Shorekeeper]] \|Guardian Leader's Assistant Second-in-command \|Active \|- \|{{Character\|Camellya\|notext=1\|nobr=1}} \|[[Camellya]] \|Bloom Bearer Combat Tester \|Active \|- \|{{Character\|Aalto\|notext=1\|nobr=1}} \|[[Aalto]] \|Consultant \|Acti |
+
+## rw-048
+
+- Query: What authority does the Censorate exercise in Huanglong?
+- Expected answer: It jointly tries major cases and exercises significant supervisory power.
+
+| Rank | Evidence | Source | Proposed | Human label | Source excerpt |
+|---:|---|---|---|---|---|
+| 1 | `raw_wiki:42215:100630:75aa31f94d24503e:chunk:000` | `Factions/censorate/42215_main.wikitext` | relevant | **relevant** | It holds the authority to jointly try major cases and wields significant supervisory power |
+| 2 | `raw_wiki:8833:91979:75ddac21cdabcb6b:chunk:000` | `Factions/public_security_bureau/8833_main.wikitext` | pending | **relevant** | # Public Security Bureau The '''Public Security Bureau''' is in charge of the Patrollers, who act as the law enforcing authority of Jinzhou (and potentially the entirety of Huanglong). ==Notable Members== {\| class="article-table" !Icon!!Name!!Position \|- \|[[File:Resonator Yinlin.png\|50px]] \|[[Yinlin]] \|Patroller, Secret Agent \|- \|[[File:Resonator Chixia.png\|50px]] \|[[Chixia]] \|Junior Patroller, known as the "Jinzhou … |
+| 3 | `raw_wiki:37078:90660:e28687f672074f5b:chunk:000` | `Factions/internal_security_agency/37078_main.wikitext` | pending | **relevant** | # Internal Security Agency **Faction Profile**: Leader: Chief Commander, Base: Mingting. The '''Internal Security Agency''', or '''ISA''', is an institution that operates independently of the administrative, judicial, and military branches of [[Huanglong]]. Reporting directly to the [[Emperor of Huanglong]], it holds the authority to investigate any case, official, or criminal without approval from other agencies, wi… |
+| 4 | `raw_wiki:37606:95396:516e78ac4cb5e435:chunk:000` | `Factions/ministry_of_sentinel_affairs/37606_main.wikitext` | pending | **relevant** | # Ministry of Sentinel Affairs The '''Ministry of Sentinel Affairs''' is one of the governing bodies of [[Huanglong]]. A special agency responsible for monitoring Sentinels, astronomy, and calendars across Huanglong's various cities. Led by the Minister of Sentinel Affairs in [[Mingting]], it has subordinate bureaus in the other six cities, each headed by a Supervisor. While they hold independent authority on Sentine… |
+| 5 | `raw_wiki:570:100537:486bd778015163b6:chunk:000` | `Characters/Resonators/yinlin/570_main.wikitext` | pending | **relevant** | > What's that look on your face? Surprised to see me? > — Yinlin Once an outstanding Patroller who was suspended from her duties at the Public Security Bureau, Yinlin now pursues hidden evils in secrecy. |
+
+## rw-049
+
+- Query: Court of Savantae từng nghiên cứu lĩnh vực gì?
+- Expected answer: It researched the Lament and related phenomena at the cutting edge of the field.
+
+| Rank | Evidence | Source | Proposed | Human label | Source excerpt |
+|---:|---|---|---|---|---|
+| 1 | `raw_wiki:3150:93366:590fa68ddaf79966:chunk:000` | `Factions/court_of_savantae/3150_main.wikitext` | relevant | **relevant** | It was at the cutting edge of research into the Lament and related phenomena. |
+| 2 | `raw_wiki:3150:93366:590fa68ddaf79966:chunk:000` | `Factions/court_of_savantae/3150_main.wikitext` | relevant | **relevant** | It was at the cutting edge of research into the Lament and related phenomena. |
+| 3 | `raw_wiki:2589:93513:33215ce21d4c6e0d:chunk:000` | `Locations/whining_aixs_mire/2589_main.wikitext` | pending | **relevant** | …reas== {\| class="article-table alternating-colors-table tdc1" style="width: 100%;" ! style="width: 200px;" \|Name !Image !Description \|- id="Court of Savanatae" \|[[Court of Savantae Ruins]] \|[[File:Court ruins.png\|180px]] \|The ruins of the Court of Savantae's research building, where miracles were achieved. \|- id="Heron Wetland" \|[[Heron Wetland]] \|[[File:Heron Wetland.png\|180px]] \|Wetlands containing a strange impass… |
+| 4 | `raw_wiki:3150:93366:590fa68ddaf79966:chunk:000` | `Factions/court_of_savantae/3150_main.wikitext` | relevant | **relevant** | It was at the cutting edge of research into the Lament and related phenomena. |
+| 5 | `raw_wiki:938:130729:103ceb2210a7890a:chunk:000` | `Factions/huaxu_academy/938_main.wikitext` | pending | **relevant** | …tively engaging in academic exchanges with other institutions within Huanglong and beyond. In fact, it was once a key collaborator of the [[Court of Savantae]]. Comprised of four primary departments, each with  |
+
+## rw-050
+
+- Query: How is the Ephor of Septimont chosen?
+- Expected answer: The position is attained through combat merit by prevailing over the Great Agon, held every four years.
+
+| Rank | Evidence | Source | Proposed | Human label | Source excerpt |
+|---:|---|---|---|---|---|
+| 1 | `raw_wiki:35947:81917:0722434a53a692f3:chunk:000` | `Factions/ephors_palace/35947_main.wikitext` | relevant | **relevant** | whose position is attained through a form of combat merit gained from prevailing over the [[Great Agon]] that occurs once every four years. |
+| 2 | `raw_wiki:26373:135203:7ce25d5efa8633f0:chunk:000` | `Locations/septimont/26373_main.wikitext` | pending | **relevant** | **Profile**: Title: Septimont, Origin: Rinascita. '''Septimont''' is a [[Region]] and city-state of [[Rinascita]]. Unlike [[Ragunna]], Septimont has a far more militant and irreligious culture, as it places far less importance on the primacy of the [[Sentinel]] [[Imperator]] and instead worships the [[Lioness of Glory]] Arsinosa. As a result, the Agons, competitive gladiatorial combat, are the pinnacle of Septimontes… |
+| 3 | `raw_wiki:31310:99574:02e73eaeaa24eb2c:chunk:000` | `Characters/Resonators/augusta/31310_main.wikitext` | pending | **relevant** | > With the blazing sun as witness... Glory, bow before us. > — Augusta The fearless Ephor of [[Septimont]] with a will of iron, she remains a fiercely resilient yet humble leader despite the immeasurable hardships of her childhood and tenure as a Gladiator. Though a mere mortal, she has mastered the arts of combat, strategy, and her Forte through countless conflicts, reaching heights few others like her have ever att… |
+| 4 | `raw_wiki:26373:135203:7ce25d5efa8633f0:chunk:000` | `Locations/septimont/26373_main.wikitext` | pending | **relevant** | **Profile**: Title: Septimont, Origin: Rinascita. '''Septimont''' is a [[Region]] and city-state of [[Rinascita]]. Unlike [[Ragunna]], Septimont has a far more militant and irreligious culture, as it places far less importance on the primacy of the [[Sentinel]] [[Imperator]] and instead worships the [[Lioness of Glory]] Arsinosa. As a result, the Agons, competitive gladiatorial combat, are the pinnacle of Septimontes… |
+| 5 | `raw_wiki:31852:72985:814ee00262cb4399:chunk:000` | `Factions/house_silva/31852_main.wikitext` | pending | **relevant** | # House Silva **Faction Profile**: Leader: Julia Silva, Base: Septimont (formerly). '''House Silva''' is one of the founding bloodlines of [[Septimont]] and a once prominent noble family, though their influence began waver with the rise of the new [[Augusta\|Ephor]]. During the most recent [[Great Agon]] the household and their head, Julia Silva, take part in match fixing and go as far as to sabotage [[Lupa]]'s equipm… |
+
+## rw-051
+
+- Query: Các nhóm Exile có chung một ban lãnh đạo không?
+- Expected answer: No. Exiles are separate groups and do not have unified leadership.
+
+| Rank | Evidence | Source | Proposed | Human label | Source excerpt |
+|---:|---|---|---|---|---|
+| 1 | `raw_wiki:9136:91555:b4167fb1e8b24566:chunk:000` | `Factions/exiles/9136_main.wikitext` | relevant | **relevant** | the '''Exiles''' are different groups that reject the control of local authorities, and are not an organization with a unified leadership. |
+| 2 | `raw_wiki:632:99398:b84b4f87a9d9ade9:chunk:000` | `Characters/Resonators/calcharo/632_main.wikitext` | pending | **relevant** | > I'll handle your commission, alone. > — Calcharo He is a former Exile from the [[New Federation]]'s [[Lawless Zone]] and the leader of the [[Ghost Hounds]]. |
+| 3 | `raw_wiki:9136:91555:b4167fb1e8b24566:chunk:000` | `Factions/exiles/9136_main.wikitext` | relevant | **relevant** | the '''Exiles''' are different groups that reject the control of local authorities, and are not an organization with a unified leadership. |
+| 4 | `raw_wiki:9136:91555:b4167fb1e8b24566:chunk:000` | `Factions/exiles/9136_main.wikitext` | relevant | **relevant** | the '''Exiles''' are different groups that reject the control of local authorities, and are not an organization with a unified leadership. |
+| 5 | `raw_wiki:25643:131312:454e154acc0d2056:chunk:000` | `Locations/nimbus_sanctum/25643_main.wikitext` | pending | **relevant** | **Profile**: Title: Nimbus Sanctum, Origin: Rinascita. {{Intro/Location\|Nimbus Sanctum}} The sea of clouds lingering in this place is formed by concentrated Remnant Energy. Local legends of Ragunna speak of a serene, mirror-like area at the heart of Nimbus Sanctum, said to purify the darkest of thoughts and transform them into part of the clouds. At times, a haunting melody can be heard echoing from the depths of the… |
+
+## rw-052
+
+- Query: What are the Fisalia Family renowned for?
+- Expected answer: They are renowned for expertise in medicine and poison.
+
+| Rank | Evidence | Source | Proposed | Human label | Source excerpt |
+|---:|---|---|---|---|---|
+| 1 | `raw_wiki:25664:91980:9be7bfc0b0f78f80:chunk:000` | `Factions/fisalia_family/25664_main.wikitext` | relevant | **relevant** | renowned for their expertise in medicine and poison. |
+| 2 | `raw_wiki:25664:91980:9be7bfc0b0f78f80:chunk:000` | `Factions/fisalia_family/25664_main.wikitext` | relevant | **relevant** | renowned for their expertise in medicine and poison. |
+| 3 | `raw_wiki:25664:91980:9be7bfc0b0f78f80:chunk:000` | `Factions/fisalia_family/25664_main.wikitext` | relevant | **relevant** | renowned for their expertise in medicine and poison. |
+| 4 | `raw_wiki:27951:96619:ae0c99137282474b:chunk:000` | `Characters/Resonators/cantarella/27951_main.wikitext` | pending | **relevant** | > The sea is a mirror. It reflects the shape of your soul in its tides. > — Cantarella She is the thirty-sixth matriarch of the Fisalia family, and the former Blessed Maiden of [[Imperator]]. Her elegant, composed demeanor and captivating beauty conceal a dark and disturbing past, of which she is steadfastly searching for the means to liberate herself and her lineage. ==Official Introduction== > The Fisalia family's … |
+| 5 | `raw_wiki:25664:91980:9be7bfc0b0f78f80:chunk:000` | `Factions/fisalia_family/25664_main.wikitext` | relevant | **relevant** | renowned for their expertise in medicine and poison. |
+
+## rw-053
+
+- Query: Fractsidus muốn thúc đẩy sự kiện nào xảy ra?
+- Expected answer: Fractsidus aims to accelerate the next Lament, which it calls the True Lament, by resurrecting Threnodians.
+
+| Rank | Evidence | Source | Proposed | Human label | Source excerpt |
+|---:|---|---|---|---|---|
+| 1 | `raw_wiki:907:126835:49c5a92e82ee7ad1:chunk:000` | `Factions/fractsidus/907_main.wikitext` | relevant | **relevant** | Their aim is to accelerate the next [[The Lament\|Lament]] - dubbed the "True Lament" - by resurrecting the [[Threnodian]]s |
+| 2 | `raw_wiki:907:126835:49c5a92e82ee7ad1:chunk:000` | `Factions/fractsidus/907_main.wikitext` | relevant | **relevant** | Their aim is to accelerate the next [[The Lament\|Lament]] - dubbed the "True Lament" - by resurrecting the [[Threnodian]]s |
+| 3 | `raw_wiki:907:126835:49c5a92e82ee7ad1:chunk:000` | `Factions/fractsidus/907_main.wikitext` | relevant | **relevant** | Their aim is to accelerate the next [[The Lament\|Lament]] - dubbed the "True Lament" - by resurrecting the [[Threnodian]]s |
+| 4 | `raw_wiki:1074:99099:f1f00f7ba53c6ff4:chunk:000` | `Characters/Resonators/phrolova/1074_main.wikitext` | pending | **relevant** | > Come, let us finish this performance we've all been waiting for. Together. > — Phrolova She is a particularly powerful Resonator and a former Overseer of the [[Fractsidus]]. Her forte can manipulate and transfigure the frequencies of humans, Echoes, and Tacet Discords alike. A life filled with unexpected suffering, grief, and betrayal led this former musician to align with the Fractsidus, in which she seeks to reki… |
+| 5 | `raw_wiki:907:126835:49c5a92e82ee7ad1:chunk:000` | `Factions/fractsidus/907_main.wikitext` | relevant | **relevant** | Their aim is to accelerate the next [[The Lament\|Lament]] - dubbed the "True Lament" - by resurrecting the [[Threnodian]]s |
+
+## rw-054
+
+- Query: Where did the Ghost Hounds originate?
+- Expected answer: The multinational mercenary group is rooted in the New Federation's Lawless Zone and grew from the Underdogs gang.
+
+| Rank | Evidence | Source | Proposed | Human label | Source excerpt |
+|---:|---|---|---|---|---|
+| 1 | `raw_wiki:897:102549:c6a570ea76923091:chunk:000` | `Factions/ghost_hounds/897_main.wikitext` | relevant | **relevant** | The '''Ghost Hounds''' are a multinational mercenary group rooted in the [[New Federation]]'s [[Lawless Zone]], annexed from the gang known as "the Underdogs" |
+| 2 | `raw_wiki:632:99398:b84b4f87a9d9ade9:chunk:000` | `Characters/Resonators/calcharo/632_main.wikitext` | pending | **relevant** | > I'll handle your commission, alone. > — Calcharo He is a former Exile from the [[New Federation]]'s [[Lawless Zone]] and the leader of the [[Ghost Hounds]]. |
+| 3 | `raw_wiki:39521:92432:fd2f00aace31f993:chunk:000` | `Lore/who_are_the_outcasts_excerpt/39521_main.wikitext` | pending | **relevant** | …ill their own desires. Their actions were intolerable to the rest of the Roya. As a result, they were exiled and branded Outcasts. But they did not see this as a punishment, but a liberation, a chance to embrace their true natures. They spread across Lahai-Roi, becoming a force of unrestrained chaos. Their defiance was more than a simple rejection of tradition. They actively inverted it, mocking the old ways in every… |
+| 4 | `raw_wiki:897:102549:c6a570ea76923091:chunk:000` | `Factions/ghost_hounds/897_main.wikitext` | relevant | **relevant** | The '''Ghost Hounds''' are a multinational mercenary group rooted in the [[New Federation]]'s [[Lawless Zone]], annexed from the gang known as "the Underdogs" |
+| 5 | `raw_wiki:42446:101218:eba876c1698e83d3:chunk:000` | `Lore/fluffguin/42446_main.wikitext` | pending | **relevant** | **Profile**: Title: Fluffguin, Origin: Lahai-Roi. > "Goo-goo, ga-ga! Unclaimed, unknowable, and belonging to none!" > — -Fluffguin Stone A native bird of Lahai-Roi, it's believed they originally came from the Roya Frostlands. ==Scenery Record - Fluffguin Stone== {{Dialogue Start}} :'''Abby:''' Abby doesn't know either... :'''Rover:''' What's wrong? What are they arguing about? :'''Abby:''' They're arguing over that r… |
+
+## rw-055
+
+- Query: ISA báo cáo trực tiếp cho ai?
+- Expected answer: The Internal Security Agency reports directly to the Emperor of Huanglong.
+
+| Rank | Evidence | Source | Proposed | Human label | Source excerpt |
+|---:|---|---|---|---|---|
+| 1 | `raw_wiki:37078:90660:e28687f672074f5b:chunk:000` | `Factions/internal_security_agency/37078_main.wikitext` | relevant | **relevant** | Reporting directly to the [[Emperor of Huanglong]] |
+| 2 | `raw_wiki:40786:109692:8dbb3db64663105d:chunk:000` | `Locations/dimmr_deep/40786_main.wikitext` | pending | **relevant** | **Profile**: Title: Dimmr Deep, Origin: Roya Frostlands. {{Intro/Location\|Dimmr Deep}} ==Areas== {\| class="article-table alternating-colors-table tdc1" style="width: 100%;" ! style="width: 200px;" \|Name !Image !Description \|- id="Frostseize Isle" \|[[Frostseize Isle]] \|[[File:Frostseize Isle.png\|180px]] \| \|- id="Endreach Barrens" \|[[Endreach Barrens]] \|[[File:Endreach Barrens.png\|180px]] \| \|- id="Tomorrow's Horizon" \|… |
+| 3 | `raw_wiki:40856:136878:d51cccfe23ea5dcf:chunk:000` | `Characters/Resonators/rebecca/40856_main.wikitext` | pending | **relevant** | > C'mon, need to hit somethin'! > — Rebecca She is a part of the collaboration with Cyberpunk: Edgerunners. ===Collab Event=== *[[Instant Flashlight]] |
+| 4 | `raw_wiki:31283:102761:da0b008506be0f37:chunk:000` | `Characters/Resonators/chisa/31283_main.wikitext` | pending | **relevant** | > I will… sever this deadlock. > — Chisa Chisa is a conscientious, level-headed student from the [[Startorch Academy]]. To her, everything can be broken down, analyzed, and resolved, with the exception of human bonding. Bonds can be severed, but this fragility is what makes them precious. ==Trivia== * Chisa's last name, Kuchiba is likely a nod to the Uchiha Clan from Naruto. ===Etymology=== * Kuchiba (朽葉) means withe… |
+| 5 | `raw_wiki:40783:109689:be2950115b6ca0d2:chunk:000` | `Locations/solisia_landing/40783_main.wikitext` | pending | **relevant** | **Profile**: Title: Solisia Landing, Origin: Roya Frostlands. {{Intro/Location\|Solisia Landing}} It is the true destination of the Soliskin after they return to the Solistrees. They become warm sunlight, flowing down the roots and converging as sparks within the Solvein Heartwood to keep the encroaching Voidmatter at bay. ==Areas== {\| class="article-table alternating-colors-table tdc1" style="width: 100%;" ! style="w… |
+
+## rw-056
+
+- Query: What civic responsibilities does the Order of the Deep handle in Ragunna?
+- Expected answer: It handles city management, diplomacy, civil disputes, and oversight of Common Echoes to maintain safety and order.
+
+| Rank | Evidence | Source | Proposed | Human label | Source excerpt |
+|---:|---|---|---|---|---|
+| 1 | `raw_wiki:25536:91984:eba4d3a4762e23f2:chunk:000` | `Factions/order_of_the_deep/25536_main.wikitext` | relevant | **relevant** | handling various affairs, from city management, diplomacy, civil disputes, and overseeing all [[Common Echoes]]. |
+| 2 | `raw_wiki:25536:91984:eba4d3a4762e23f2:chunk:000` | `Factions/order_of_the_deep/25536_main.wikitext` | relevant | **relevant** | handling various affairs, from city management, diplomacy, civil disputes, and overseeing all [[Common Echoes]]. |
+| 3 | `raw_wiki:25536:91984:eba4d3a4762e23f2:chunk:000` | `Factions/order_of_the_deep/25536_main.wikitext` | relevant | **relevant** | handling various affairs, from city management, diplomacy, civil disputes, and overseeing all [[Common Echoes]]. |
+| 4 | `raw_wiki:25664:91980:9be7bfc0b0f78f80:chunk:000` | `Factions/fisalia_family/25664_main.wikitext` | pending | **relevant** | # Fisalia Family **Faction Profile**: Leader: Cantarella, Base: Porto-Veno Castle. The '''Fisalia Family''' is one of the oldest lineages in [[Rinascita]] and one of the most powerful families in [[Ragunna]] that maintain a close connection with the [[Order of the Deep]]. They are perceived to be "devout" believers of the Ragunnesi Sentinel, [[Imperator]], by most, and are often perceived as mystic nobles, skilled in… |
+| 5 | `raw_wiki:27120:96278:b1047d1aa9a9b8d2:chunk:000` | `Lore/leviathan/27120_main.wikitext` | pending | **relevant** | **Profile**: Title: Leviathan, Origin: Rinascita, Affiliation: Threnodians. ''This article is about the NPC.&#x20;For the Weekly Boss, see [[Threnodian: Leviathan]].'' > "Fleurdelys, my Resonator, why dost thou persist? Why abandon thy oath? Why hinder the spread of my gospel? The one blessed by the Dark Tide shall return to us. Continue thy disobedience at the risk of insanity. My most beloved Resonator, why persist… |
+
+## rw-057
+
+- Query: Nhiệm vụ cốt lõi của Spacetrek Collective là gì?
+- Expected answer: Its core mission is studying the Exostrider to advance and restart space-travel technology.
+
+| Rank | Evidence | Source | Proposed | Human label | Source excerpt |
+|---:|---|---|---|---|---|
+| 1 | `raw_wiki:37607:136469:8050e4ce70f7de3d:chunk:000` | `Factions/spacetrek_collective/37607_main.wikitext` | relevant | **relevant** | Its core mission is the study of the [[Exostrider]] for the purposes of advancing and re-instigating space travel technology. |
+| 2 | `raw_wiki:37607:136469:8050e4ce70f7de3d:chunk:000` | `Factions/spacetrek_collective/37607_main.wikitext` | relevant | **relevant** | Its core mission is the study of the [[Exostrider]] for the purposes of advancing and re-instigating space travel technology. |
+| 3 | `raw_wiki:37540:136639:46f5898638863eb0:chunk:000` | `Characters/Resonators/mornye/37540_main.wikitext` | pending | **relevant** | > I need not wait for a starry night, nor tilt my gaze to seek the sky. For I have placed it at my back, in my hands, and upon my eyelids. > — Mornye She is a researcher for the [[Spacetrek Collective]] and a professor for Exostrider Engineering at [[Startorch Academy]]. She was a student at Startorch Academy and an acquaintance of [[Rover]] 20 years before the [[Void Storm]] hit [[Lahai-Roi]]. With an unwavering dre… |
+| 4 | `raw_wiki:37607:136469:8050e4ce70f7de3d:chunk:000` | `Factions/spacetrek_collective/37607_main.wikitext` | relevant | **relevant** | Its core mission is the study of the [[Exostrider]] for the purposes of advancing and re-instigating space travel technology. |
+| 5 | `raw_wiki:37607:136469:8050e4ce70f7de3d:chunk:000` | `Factions/spacetrek_collective/37607_main.wikitext` | relevant | **relevant** | Its core mission is the study of the [[Exostrider]] for the purposes of advancing and re-instigating space travel technology. |
+
+## rw-058
+
+- Query: What services does Averardo Vault offer to the public?
+- Expected answer: It offers secure valuables storage, appraisals, and acquisition of rare collections.
+
+| Rank | Evidence | Source | Proposed | Human label | Source excerpt |
+|---:|---|---|---|---|---|
+| 1 | `raw_wiki:25647:136276:a53bc0e233f155a7:chunk:000` | `Locations/averardo_vault/25647_main.wikitext` | relevant | **relevant** | The vault also provides public services such as secure storage for valuables, appraisals, and acquisition of rare collections. |
+| 2 | `raw_wiki:25663:91985:b51f66944bdef37e:chunk:000` | `Factions/montelli_family/25663_main.wikitext` | pending | **relevant** | …ey are most prevalent in two locations within the Ragunna City: the [[Montelli Quarter]] that serves as their base of operations, and the [[Averardo Vault]], the leading bank in all of Rinascita. ==Archive Entry== One |
+| 3 | `raw_wiki:25663:91985:b51f66944bdef37e:chunk:000` | `Factions/montelli_family/25663_main.wikitext` | pending | **relevant** | …ey are most prevalent in two locations within the Ragunna City: the [[Montelli Quarter]] that serves as their base of operations, and the [[Averardo Vault]], the leading bank in all of Rinascita. ==Archive Entry== One |
+| 4 | `raw_wiki:27325:99766:36b887fc239c254f:chunk:000` | `Locations/vault_underground/27325_main.wikitext` | pending | **relevant** | **Profile**: Title: Vault Underground, Origin: Rinascita. {{Intro/Location\|Vault Underground}} Tucked beneath the Sea of Clouds lies a vast depository zone of the Averardo Vault. Each item moved to the Vault will be meticulously transported to its designated storage location, where it will be safeguarded with the utmost care and precision. ==Areas== {\| class="article-table alternating-colors-table tdc1" style="width:… |
+| 5 | `raw_wiki:24793:96620:402c2a2ea7770908:chunk:000` | `Characters/Resonators/zani/24793_main.wikitext` | pending | **relevant** | > Alright, what's the first thing on today's to-do list? > — Zani She is a staff member of the [[Montelli Family]]'s [[Averardo Bank]] in [[Ragunna]]. As a serious and reliable Montelli employee, Zani follows a strict routine and manages tasks with ease. For years, she has clocked in on time without fail, finding as much enjoyment in her well-ordered life as in her carefully planned moments of leisure. ==Official Int… |
+
+## rw-059
+
+- Query: Avinoleum trông như thế nào trên bầu trời?
+- Expected answer: It is a seminary suspended upside down in the sky behind a thin veil of clouds.
+
+| Rank | Evidence | Source | Proposed | Human label | Source excerpt |
+|---:|---|---|---|---|---|
+| 1 | `raw_wiki:28697:99385:4dd8afe17544fe65:chunk:000` | `Locations/avinoleum/28697_main.wikitext` | relevant | **relevant** | A seminary faintly visible through a thin veil of clouds. Suspended upside down in the sky |
+| 2 | `raw_wiki:28697:99385:4dd8afe17544fe65:chunk:000` | `Locations/avinoleum/28697_main.wikitext` | relevant | **relevant** | A seminary faintly visible through a thin veil of clouds. Suspended upside down in the sky |
+| 3 | `raw_wiki:1005:99743:9725a6704dccd755:chunk:000` | `Lore/waveworn_phenomenon/1005_main.wikitext` | pending | **relevant** | **Profile**: Title: Waveworn Phenomenon. > The anomalies that occurred after the Lament, including the formation of Tacet Fields, Etheric Sea, Retroact Rain, and gravity loss. These are collectively called the "Waveworn Phenomena" - and the Lament was the start of it all. > — [[Yangyang]] '''Waveworn Phenomenon''' (Chinese: 海蚀现象, ''"Coastal Erosion Phenomenon"'') is a collective term used to describe anomalies caused… |
+| 4 | `raw_wiki:27120:96278:b1047d1aa9a9b8d2:chunk:000` | `Lore/leviathan/27120_main.wikitext` | pending | **relevant** | **Profile**: Title: Leviathan, Origin: Rinascita, Affiliation: Threnodians. ''This article is about the NPC.&#x20;For the Weekly Boss, see [[Threnodian: Leviathan]].'' > "Fleurdelys, my Resonator, why dost thou persist? Why abandon thy oath? Why hinder the spread of my gospel? The one blessed by the Dark Tide shall return to us. Continue thy disobedience at the risk of insanity. My most beloved Resonator, why persist… |
+| 5 | `raw_wiki:28697:99385:4dd8afe17544fe65:chunk:000` | `Locations/avinoleum/28697_main.wikitext` | relevant | **relevant** | A seminary faintly visible through a thin veil of clouds. Suspended upside down in the sky |
+
+## rw-060
+
+- Query: Who lives in Bjartr Woods?
+- Expected answer: Bjartr Woods is home to the Roya Tribe and is the habitat of the Soliskin.
+
+| Rank | Evidence | Source | Proposed | Human label | Source excerpt |
+|---:|---|---|---|---|---|
+| 1 | `raw_wiki:39067:109671:72359e9e9ab9da76:chunk:000` | `Lore/soliskin/39067_main.wikitext` | pending | **relevant** | … [[Exostrider]]'s neural structures. They are believed to embody fragments of its consciousness. Soliskin can be found plentifully in the [[Bjartr Woods]], where they will rest and grow to return back to the Solistrees, although their true target is the great [[Solvein Heartwood]] further below. Large numbers of Soliskin can also be found in the [[Dimmr Plains]]. The Shepherds who act as their guides and caretakers a… |
+| 2 | `raw_wiki:39255:94532:a4b996534deab505:chunk:000` | `Lore/exoswarm/39255_main.wikitext` | pending | **relevant** | **Profile**: Title: Exoswarm, Origin: Lahai-Roi. '''Exoswarm''' are creatures found in [[Lahai-Roi]] that are formed from the remnants of the [[Exostrider]]. ==Types== ===Soliskin=== Soliskin are a unique type of Exoswarm formed from the Exostrider's neural structures that reside within [[Bjartr Woods]]. ==Enemies== {{Enemies by Category List\|Exoswarm Enemies}} ==Descriptions== Biomechanical creatures formed from the… |
+| 3 | `raw_wiki:39067:109671:72359e9e9ab9da76:chunk:000` | `Lore/soliskin/39067_main.wikitext` | pending | **relevant** | … [[Exostrider]]'s neural structures. They are believed to embody fragments of its consciousness. Soliskin can be found plentifully in the [[Bjartr Woods]], where they will rest and grow to return back to the Solistrees, although their true target is the great [[Solvein Heartwood]] further below. Large numbers of Soliskin can also be found in the [[Dimmr Plains]]. The Shepherds who act as their guides and caretakers a… |
+| 4 | `raw_wiki:39255:94532:a4b996534deab505:chunk:000` | `Lore/exoswarm/39255_main.wikitext` | pending | **relevant** | **Profile**: Title: Exoswarm, Origin: Lahai-Roi. '''Exoswarm''' are creatures found in [[Lahai-Roi]] that are formed from the remnants of the [[Exostrider]]. ==Types== ===Soliskin=== Soliskin are a unique type of Exoswarm formed from the Exostrider's neural structures that reside within [[Bjartr Woods]]. ==Enemies== {{Enemies by Category List\|Exoswarm Enemies}} ==Descriptions== Biomechanical creatures formed from the… |
+| 5 | `raw_wiki:38537:136632:f169b123e2bf1328:chunk:000` | `Characters/Resonators/aemeath/38537_main.wikitext` | pending | **relevant** | > Did you see me? > — Aemeath She is a Frostlands native from the [[Roya Tribe]] who was once a Synchronist at [[Startorch Academy]]. She became the [[Exostrider]]'s Resonator after overclocking in order to resonate with it, causing her to lose her body. She now roams throughout [[Lahai-Roi]] as a digital ghost invisible to everyone around her except for [[Rover]], whom she met with during her childhood. ==Trivia== *… |
+
+## rw-061
+
+- Query: What causes the eerie mist around the Black Shores Archipelago?
+- Expected answer: The Tacetite-formed isles constantly emit Remnant Energy, producing the mist.
+
+| Rank | Evidence | Source | Proposed | Human label | Source excerpt |
+|---:|---|---|---|---|---|
+| 1 | `raw_wiki:21831:100474:3c84649dd4a92bf0:chunk:000` | `Locations/black_shores_archipelago/21831_main.wikitext` | relevant | **relevant** | Formed from Tacetites, these isles constantly emanate Remnant Energy, casting an eerie "mist" that envelopes the region. |
+| 2 | `raw_wiki:21831:100474:3c84649dd4a92bf0:chunk:000` | `Locations/black_shores_archipelago/21831_main.wikitext` | relevant | **relevant** | Formed from Tacetites, these isles constantly emanate Remnant Energy, casting an eerie "mist" that envelopes the region. |
+| 3 | `raw_wiki:1007:135324:8f903f46d2fa3ca8:chunk:000` | `Factions/black_shores/1007_main.wikitext` | pending | **relevant** | # The Black Shores **Faction Profile**: Leader: Rover, Founder: Rover, Base: Black Shores Archipelago, Allies: Jinzhou;Montelli Family;Ephor's Palace;Startorch Academy, Enemies: Fractsidus. {{About\|the [[Factions\|faction]]\|the location\|The Black Shores}} The '''Black Shores''' is a global organization enshrouded in mysteries and turmoil, headquartered on the remote [[Black Shores Archipelago]] and built on a large pi… |
+| 4 | `raw_wiki:21831:100474:3c84649dd4a92bf0:chunk:000` | `Locations/black_shores_archipelago/21831_main.wikitext` | relevant | **relevant** | Formed from Tacetites, these isles constantly emanate Remnant Energy, casting an eerie "mist" that envelopes the region. |
+| 5 | `raw_wiki:1007:135324:8f903f46d2fa3ca8:chunk:000` | `Factions/black_shores/1007_main.wikitext` | pending | **relevant** | # The Black Shores **Faction Profile**: Leader: Rover, Founder: Rover, Base: Black Shores Archipelago, Allies: Jinzhou;Montelli Family;Ephor's Palace;Startorch Academy, Enemies: Fractsidus. {{About\|the [[Factions\|faction]]\|the location\|The Black Shores}} The '''Black Shores''' is a global organization enshrouded in mysteries and turmoil, headquartered on the remote [[Black Shores Archipelago]] and built on a large pi… |
+
+## rw-062
+
+- Query: Điều gì khiến Desorock Highland khô cạn?
+- Expected answer: After the Waveworn Phenomenon began, abnormal weather drained most of the area's water sources.
+
+| Rank | Evidence | Source | Proposed | Human label | Source excerpt |
+|---:|---|---|---|---|---|
+| 1 | `raw_wiki:4972:93386:0559269f28d2b45c:chunk:000` | `Locations/desorock_highland/4972_main.wikitext` | relevant | **relevant** | After the onset of the Waveworn Phenomenon, abnormal weather patterns drained most of these water sources, leaving the lake area dry |
+| 2 | `raw_wiki:4972:93386:0559269f28d2b45c:chunk:000` | `Locations/desorock_highland/4972_main.wikitext` | relevant | **relevant** | After the onset of the Waveworn Phenomenon, abnormal weather patterns drained most of these water sources, leaving the lake area dry |
+| 3 | `raw_wiki:4972:93386:0559269f28d2b45c:chunk:000` | `Locations/desorock_highland/4972_main.wikitext` | relevant | **relevant** | After the onset of the Waveworn Phenomenon, abnormal weather patterns drained most of these water sources, leaving the lake area dry |
+| 4 | `raw_wiki:7986:99744:d0fede1026c2811c:chunk:000` | `Lore/retroact_rain/7986_main.wikitext` | pending | **relevant** | **Profile**: Title: Retroact Rain. '''Retroact Rain''' is a form of [[Waveworn Phenomenon]]. ==Overview== Retroact Rain consists of condensed [[Remnant]] Energy from the [[Etheric Sea]]. Since Remnant Energy records events across time and space, the rain conjures illusions of past events to those exposed to it, and a stronger emotional connection to the affected area leads to experiencing more intense hallucinations.… |
+| 5 | `raw_wiki:4972:93386:0559269f28d2b45c:chunk:000` | `Locations/desorock_highland/4972_main.wikitext` | relevant | **relevant** | After the onset of the Waveworn Phenomenon, abnormal weather patterns drained most of these water sources, leaving the lake area dry |
+
+## rw-063
+
+- Query: Dim Forest có những loài thực vật đặc trưng nào?
+- Expected answer: Its distinctive flora include the Violet Banyan and Giant Banyan.
+
+| Rank | Evidence | Source | Proposed | Human label | Source excerpt |
+|---:|---|---|---|---|---|
+| 1 | `raw_wiki:2960:99756:4c2d85a16f6eb409:chunk:000` | `Locations/dim_forest/2960_main.wikitext` | relevant | **relevant** | It is a forest consisting of many unique flora, such as the [[Violet Banyan]] and [[Giant Banyan]] |
+| 2 | `raw_wiki:2960:99756:4c2d85a16f6eb409:chunk:000` | `Locations/dim_forest/2960_main.wikitext` | relevant | **relevant** | It is a forest consisting of many unique flora, such as the [[Violet Banyan]] and [[Giant Banyan]] |
+| 3 | `raw_wiki:2960:99756:4c2d85a16f6eb409:chunk:000` | `Locations/dim_forest/2960_main.wikitext` | relevant | **relevant** | It is a forest consisting of many unique flora, such as the [[Violet Banyan]] and [[Giant Banyan]] |
+| 4 | `raw_wiki:2960:99756:4c2d85a16f6eb409:chunk:000` | `Locations/dim_forest/2960_main.wikitext` | relevant | **relevant** | It is a forest consisting of many unique flora, such as the [[Violet Banyan]] and [[Giant Banyan]] |
+| 5 | `raw_wiki:2960:99756:4c2d85a16f6eb409:chunk:000` | `Locations/dim_forest/2960_main.wikitext` | relevant | **relevant** | It is a forest consisting of many unique flora, such as the [[Violet Banyan]] and [[Giant Banyan]] |
+
+## rw-064
+
+- Query: What happens to Common Echoes at the Fabricatorium of the Deep?
+- Expected answer: They are manufactured, recycled, and studied there.
+
+| Rank | Evidence | Source | Proposed | Human label | Source excerpt |
+|---:|---|---|---|---|---|
+| 1 | `raw_wiki:32741:94835:53882334e3c9aac2:chunk:000` | `Locations/fabricatorium_of_the_deep/32741_main.wikitext` | relevant | **relevant** | The Fabricatorium of the Deep is a facility hidden in the unfathomed depths of the sea, where Common Echoes are manufactured, recycled, and studied. |
+| 2 | `raw_wiki:32741:94835:53882334e3c9aac2:chunk:000` | `Locations/fabricatorium_of_the_deep/32741_main.wikitext` | relevant | **relevant** | The Fabricatorium of the Deep is a facility hidden in the unfathomed depths of the sea, where Common Echoes are manufactured, recycled, and studied. |
+| 3 | `raw_wiki:32741:94835:53882334e3c9aac2:chunk:000` | `Locations/fabricatorium_of_the_deep/32741_main.wikitext` | relevant | **relevant** | The Fabricatorium of the Deep is a facility hidden in the unfathomed depths of the sea, where Common Echoes are manufactured, recycled, and studied. |
+| 4 | `raw_wiki:1074:99099:f1f00f7ba53c6ff4:chunk:000` | `Characters/Resonators/phrolova/1074_main.wikitext` | pending | **relevant** | > Come, let us finish this performance we've all been waiting for. Together. > — Phrolova She is a particularly powerful Resonator and a former Overseer of the [[Fractsidus]]. Her forte can manipulate and transfigure the frequencies of humans, Echoes, and Tacet Discords alike. A life filled with unexpected suffering, grief, and betrayal led this former musician to align with the Fractsidus, in which she seeks to reki… |
+| 5 | `raw_wiki:25536:91984:eba4d3a4762e23f2:chunk:000` | `Factions/order_of_the_deep/25536_main.wikitext` | pending | **relevant** | …ng the city by ensuring safety and order by handling various affairs, from city management, diplomacy, civil disputes, and overseeing all [[Common Echoes]]. The Order's doctrines are: "Salvation," "Ascension," and "Unity" as per their Codex. ==Overview== The Order's clergy has declared themselves Imperator's earthly emissaries, ensuring the people remain faithful to {{not a typo\|Their}} (Imperator's) divine will. ===… |
+
+## rw-065
+
+- Query: Fagaceae Peninsula từng được dùng cho việc gì?
+- Expected answer: Rinascita's rulers once gathered there for secret councils.
+
+| Rank | Evidence | Source | Proposed | Human label | Source excerpt |
+|---:|---|---|---|---|---|
+| 1 | `raw_wiki:25641:91914:11721f78613de356:chunk:000` | `Locations/fagaceae_peninsula/25641_main.wikitext` | relevant | **relevant** | This peninsula thick with oak trees was once where Rinascita's rulers gathered for secret councils. |
+| 2 | `raw_wiki:25641:91914:11721f78613de356:chunk:000` | `Locations/fagaceae_peninsula/25641_main.wikitext` | relevant | **relevant** | This peninsula thick with oak trees was once where Rinascita's rulers gathered for secret councils. |
+| 3 | `raw_wiki:25641:91914:11721f78613de356:chunk:000` | `Locations/fagaceae_peninsula/25641_main.wikitext` | relevant | **relevant** | This peninsula thick with oak trees was once where Rinascita's rulers gathered for secret councils. |
+| 4 | `raw_wiki:21791:136363:e319b8b4954456ed:chunk:000` | `Lore/somnoire/21791_main.wikitext` | pending | **relevant** | **Profile**: Title: Somnoire. The '''Somnoire''' is a mysterious and relatively unknown realm deemed a myth by many in [[Solaris-3]] that is related to dreams. It can only be entered through a gateway that only appears at certain locations, guarded by the [[Ebony Gatekeeper\|Ebony]] and [[Ivory Gatekeeper]], and inhabited by other entities. According to the Ebony Gatekeeper, the realm was created by someone the Rover … |
+| 5 | `raw_wiki:27951:96619:ae0c99137282474b:chunk:000` | `Characters/Resonators/cantarella/27951_main.wikitext` | pending | **relevant** | > The sea is a mirror. It reflects the shape of your soul in its tides. > — Cantarella She is the thirty-sixth matriarch of the Fisalia family, and the former Blessed Maiden of [[Imperator]]. Her elegant, composed demeanor and captivating beauty conceal a dark and disturbing past, of which she is steadfastly searching for the means to liberate herself and her lineage. ==Official Introduction== > The Fisalia family's … |
+
+## rw-066
+
+- Query: How does Aleph-1 affect people differently from ordinary Tacet Discords?
+- Expected answer: Aleph-1 erases people's existence and memories, while ordinary Tacet Discords only petrify them.
+
+| Rank | Evidence | Source | Proposed | Human label | Source excerpt |
+|---:|---|---|---|---|---|
+| 1 | `raw_wiki:38339:136640:9d71c98f093fd140:chunk:000` | `Lore/aleph-1/38339_main.wikitext` | relevant | **relevant** | It is a [[Void Storm]] that erases people's existence and memories, unlike normal [[Tacet Discord]]s that just petrify them. |
+| 2 | `raw_wiki:38339:136640:9d71c98f093fd140:chunk:000` | `Lore/aleph-1/38339_main.wikitext` | relevant | **relevant** | It is a [[Void Storm]] that erases people's existence and memories, unlike normal [[Tacet Discord]]s that just petrify them. |
+| 3 | `raw_wiki:26165:131313:b22f8b2701be47df:chunk:000` | `Lore/dark_tide/26165_main.wikitext` | pending | **relevant** | …ing mass of clouds that gathers and eventually breaks, pouring down in torrents like a waterfall. Whenever the Dark Tide strikes, it spawns Tacet Discords, and the area around its point of origin becomes a new Tacet Field.There have been two significant Dark Tides in Ragunna's history. The first, according to the Order of the Deep, was stopped by Napoli II, the first Primus of the Order. The second was quelled by the… |
+| 4 | `raw_wiki:39212:96889:58a15a6051c28b88:chunk:000` | `Lore/void_storm/39212_main.wikitext` | pending | **relevant** | …ons reach a critical threshold, causing widespread destruction within a cyclical range that disrupts the frequencies around it before those affected by it find their existence fading away from both the physical world and the memories of others. This Waveworn Phenomenon is linked to the existence of  |
+| 5 | `raw_wiki:26165:131313:b22f8b2701be47df:chunk:000` | `Lore/dark_tide/26165_main.wikitext` | pending | **relevant** | …ing mass of clouds that gathers and eventually breaks, pouring down in torrents like a waterfall. Whenever the Dark Tide strikes, it spawns Tacet Discords, and the area around its point of origin becomes a new Tacet Field.There have been two significant Dark Tides in Ragunna's history. The first, according to the Order of the Deep, was stopped by Napoli II, the first Primus of the Order. The second was quelled by the… |
+
+## rw-067
+
+- Query: Arbiter có quyền gì đối với các Sentinel?
+- Expected answer: The Arbiter title grants decision-making authority over Sentinels.
+
+| Rank | Evidence | Source | Proposed | Human label | Source excerpt |
+|---:|---|---|---|---|---|
+| 1 | `raw_wiki:9279:92868:b7fb9fbd7f67e230:chunk:000` | `Lore/arbiter/9279_main.wikitext` | relevant | **relevant** | '''Arbiter''' is a title and position of power over the [[Sentinels]] that grants them decision making authority. |
+| 2 | `raw_wiki:9279:92868:b7fb9fbd7f67e230:chunk:000` | `Lore/arbiter/9279_main.wikitext` | relevant | **relevant** | '''Arbiter''' is a title and position of power over the [[Sentinels]] that grants them decision making authority. |
+| 3 | `raw_wiki:1012:123801:ecdcd6cae8d7c1f6:chunk:000` | `Lore/sentinel/1012_main.wikitext` | pending | **relevant** | **Profile**: Title: Sentinels. The '''Sentinels''', also called '''Oracle Engines''', stand at the brink of civilization and history, as guardians and guides. Their immortal existence has helped humanity through countless troubles, sharing prophecies and wisdom. As [[Rover]] embarks on a new journey after enduring the [[The Lament\|Lament]], the Sentinels remain humanity's record keeper and beacon in times of disaster… |
+| 4 | `raw_wiki:9279:92868:b7fb9fbd7f67e230:chunk:000` | `Lore/arbiter/9279_main.wikitext` | relevant | **relevant** | '''Arbiter''' is a title and position of power over the [[Sentinels]] that grants them decision making authority. |
+| 5 | `raw_wiki:329:136366:3ec40212bc841d78:chunk:000` | `Characters/Resonators/rover/329_main.wikitext` | pending | **relevant** | …n protagonist of ''[[Wuthering Waves]]''. Awakened with an unknown past by [[Mysterious Woman\|a mysterious entity]], Rover is an amnesiac [[Arbiter]] from [[Homeland Civilization\|another world]] who embarks on a journey to uncover the truth to regain their lost memories. As secrets are unveiled, they establish deeper connections with the [[Solaris-3]] and its nations. |
+
+## rw-068
+
+- Query: When and where did the Battle Beneath the Crescent take place?
+- Expected answer: It occurred in the Norfall Barrens three years before the main story.
+
+| Rank | Evidence | Source | Proposed | Human label | Source excerpt |
+|---:|---|---|---|---|---|
+| 1 | `raw_wiki:26888:99747:897732ef65d43d75:chunk:000` | `Lore/battle_beneath_the_crescent/26888_main.wikitext` | relevant | **relevant** | taking place in the [[Norfall Barrens]] three years prior to the main story. |
+| 2 | `raw_wiki:2495:95403:5f1aaaf7d623c0fb:chunk:000` | `Lore/ovathrax/2495_main.wikitext` | pending | **relevant** | …ight Rangers]], led by General [[Geshulin\|Geshu Lin]] fought against Ovathrax in the [[Norfall Barrens]], in an event known as the [[Battle Beneath the Crescent]]. However, Ovathrax was able to enhance the effects of the [[Retroact Rain]], projecting dangerous phantoms of both monsters and fallen soldiers. While the Midnight Rangers suffered great causalities along with the disappearance of their general Geshu Lin af… |
+| 3 | `raw_wiki:7986:99744:d0fede1026c2811c:chunk:000` | `Lore/retroact_rain/7986_main.wikitext` | pending | **relevant** | …e who die in the Retroact Rain will be trapped in the rain. ===Phantoms=== Phantoms refer to the projections conjured by the Retroact Rain. When it rains across a large area, it can project memories of multiple people at once, and in a battleground such as [[Jinzhou]], this would result in thousands of Phantoms of dead soldiers and Tacet Discords. During Threnodian-enhanced Retroact Rain, these Phantoms are given a p… |
+| 4 | `raw_wiki:7986:99744:d0fede1026c2811c:chunk:000` | `Lore/retroact_rain/7986_main.wikitext` | pending | **relevant** | …e who die in the Retroact Rain will be trapped in the rain. ===Phantoms=== Phantoms refer to the projections conjured by the Retroact Rain. When it rains across a large area, it can project memories of multiple people at once, and in a battleground such as [[Jinzhou]], this would result in thousands of Phantoms of dead soldiers and Tacet Discords. During Threnodian-enhanced Retroact Rain, these Phantoms are given a p… |
+| 5 | `raw_wiki:2495:95403:5f1aaaf7d623c0fb:chunk:000` | `Lore/ovathrax/2495_main.wikitext` | pending | **relevant** | …ight Rangers]], led by General [[Geshulin\|Geshu Lin]] fought against Ovathrax in the [[Norfall Barrens]], in an event known as the [[Battle Beneath the Crescent]]. However, Ovathrax was able to enhance the effects of the [[Retroact Rain]], projecting dangerous phantoms of both monsters and fallen soldiers. While the Midnight Rangers suffered great causalities along with the disappearance of their general Geshu Lin af… |
+
+## rw-069
+
+- Query: Blake Bloom tượng trưng cho điều gì?
+- Expected answer: A Blake Bloom is a symbol of identity for members of the Black Shores.
+
+| Rank | Evidence | Source | Proposed | Human label | Source excerpt |
+|---:|---|---|---|---|---|
+| 1 | `raw_wiki:20570:99750:24263a0b90c8239f:chunk:000` | `Lore/blake_bloom/20570_main.wikitext` | relevant | **relevant** | A '''Blake Bloom''' is the symbol of identity for the members of the [[Black Shores]]. |
+| 2 | `raw_wiki:21831:100474:3c84649dd4a92bf0:chunk:000` | `Locations/black_shores_archipelago/21831_main.wikitext` | pending | **relevant** | **Profile**: Title: Black Shores Archipelago, Origin: The Black Shores. {{Location Tabs\|Map:Black Shores Archipelago}} > An archipelago shrouded in the Stormy Sea of Solaris. Formed from Tacetites, these isles constantly emanate Remnant Energy, casting an eerie "mist" that envelopes the region. > — [https://wutheringwaves.kurogames.com/en/main#regions Wuthering Waves Official Website] {{Intro/Location\|Black Shores Ar… |
+| 3 | `raw_wiki:1007:135324:8f903f46d2fa3ca8:chunk:000` | `Factions/black_shores/1007_main.wikitext` | pending | **relevant** | …\|nobr=1}} \|[[Shorekeeper]] \|Guardian Leader's Assistant Second-in-command \|Active \|- \|{{Character\|Camellya\|notext=1\|nobr=1}} \|[[Camellya]] \|Bloom Bearer Combat Tester \|Active \|- \|{{Character\|Aalto\|notext=1\|nobr=1}} \|[[Aalto]] \|Consultant \|Acti |
+| 4 | `raw_wiki:21831:100474:3c84649dd4a92bf0:chunk:000` | `Locations/black_shores_archipelago/21831_main.wikitext` | pending | **relevant** | **Profile**: Title: Black Shores Archipelago, Origin: The Black Shores. {{Location Tabs\|Map:Black Shores Archipelago}} > An archipelago shrouded in the Stormy Sea of Solaris. Formed from Tacetites, these isles constantly emanate Remnant Energy, casting an eerie "mist" that envelopes the region. > — [https://wutheringwaves.kurogames.com/en/main#regions Wuthering Waves Official Website] {{Intro/Location\|Black Shores Ar… |
+| 5 | `raw_wiki:25663:91985:b51f66944bdef37e:chunk:000` | `Factions/montelli_family/25663_main.wikitext` | pending | **relevant** | # Montelli Family **Faction Profile**: Leader: Carlotta, Base: Montelli Quarter, Enemies: Fractsidus. The '''Montelli Family''' is a family-run organization and enterprise native to [[Rinascita]], localized primarily in the city-state of [[Ragunna City\|Ragunna]]. They are considered one of the families that influence the power dynamics of Ragunna, alongside the [[Fisalia Family]] and the [[Order of the Deep]]. As of … |
+
+## rw-070
+
+- Query: Why do people in Ragunna revere Common Echoes?
+- Expected answer: They believe Common Echoes are divine emissaries of Sentinel Imperator.
+
+| Rank | Evidence | Source | Proposed | Human label | Source excerpt |
+|---:|---|---|---|---|---|
+| 1 | `raw_wiki:26008:95284:8988a45bf257299b:chunk:000` | `Lore/common_echo/26008_main.wikitext` | relevant | **relevant** | The people of [[Ragunna]] treat Common Echoes with reverence, believing them to be divine emissaries of [[Sentinel]] [[Imperator]]. |
+| 2 | `raw_wiki:25536:91984:eba4d3a4762e23f2:chunk:000` | `Factions/order_of_the_deep/25536_main.wikitext` | pending | **relevant** | … ultimate authority in Ragunna. According to the city tradition, the Order's clergy serve as the Sentinel's earthly emissaries, guiding the people with Their divine word. The Order plays a crucial role in protecting the city by ensuring safety and order by handling various affairs, from city management, diplomacy, civil disputes, and overseeing all [[Common Echoes]]. The Order's doctrines are: "Salvation," "Ascension… |
+| 3 | `raw_wiki:25536:91984:eba4d3a4762e23f2:chunk:000` | `Factions/order_of_the_deep/25536_main.wikitext` | pending | **relevant** | … ultimate authority in Ragunna. According to the city tradition, the Order's clergy serve as the Sentinel's earthly emissaries, guiding the people with Their divine word. The Order plays a crucial role in protecting the city by ensuring safety and order by handling various affairs, from city management, diplomacy, civil disputes, and overseeing all [[Common Echoes]]. The Order's doctrines are: "Salvation," "Ascension… |
+| 4 | `raw_wiki:25536:91984:eba4d3a4762e23f2:chunk:000` | `Factions/order_of_the_deep/25536_main.wikitext` | pending | **relevant** | … ultimate authority in Ragunna. According to the city tradition, the Order's clergy serve as the Sentinel's earthly emissaries, guiding the people with Their divine word. The Order plays a crucial role in protecting the city by ensuring safety and order by handling various affairs, from city management, diplomacy, civil disputes, and overseeing all [[Common Echoes]]. The Order's doctrines are: "Salvation," "Ascension… |
+| 5 | `raw_wiki:25536:91984:eba4d3a4762e23f2:chunk:000` | `Factions/order_of_the_deep/25536_main.wikitext` | pending | **relevant** | … ultimate authority in Ragunna. According to the city tradition, the Order's clergy serve as the Sentinel's earthly emissaries, guiding the people with Their divine word. The Order plays a crucial role in protecting the city by ensuring safety and order by handling various affairs, from city management, diplomacy, civil disputes, and overseeing all [[Common Echoes]]. The Order's doctrines are: "Salvation," "Ascension… |
+
+## rw-071
+
+- Query: Dark Tide biểu hiện ra sao khi xuất hiện?
+- Expected answer: It appears as a dark swirling cloud mass that gathers, breaks, and pours down like a waterfall.
+
+| Rank | Evidence | Source | Proposed | Human label | Source excerpt |
+|---:|---|---|---|---|---|
+| 1 | `raw_wiki:1005:99743:9725a6704dccd755:chunk:000` | `Lore/waveworn_phenomenon/1005_main.wikitext` | pending | **relevant** | **Profile**: Title: Waveworn Phenomenon. > The anomalies that occurred after the Lament, including the formation of Tacet Fields, Etheric Sea, Retroact Rain, and gravity loss. These are collectively called the "Waveworn Phenomena" - and the Lament was the start of it all. > — [[Yangyang]] '''Waveworn Phenomenon''' (Chinese: 海蚀现象, ''"Coastal Erosion Phenomenon"'') is a collective term used to describe anomalies caused… |
+| 2 | `raw_wiki:27120:96278:b1047d1aa9a9b8d2:chunk:000` | `Lore/leviathan/27120_main.wikitext` | pending | **relevant** | **Profile**: Title: Leviathan, Origin: Rinascita, Affiliation: Threnodians. ''This article is about the NPC.&#x20;For the Weekly Boss, see [[Threnodian: Leviathan]].'' > "Fleurdelys, my Resonator, why dost thou persist? Why abandon thy oath? Why hinder the spread of my gospel? The one blessed by the Dark Tide shall return to us. Continue thy disobedience at the risk of insanity. My most beloved Resonator, why persist… |
+| 3 | `raw_wiki:26165:131313:b22f8b2701be47df:chunk:000` | `Lore/dark_tide/26165_main.wikitext` | relevant | **relevant** | It manifests as a dark, swirling mass of clouds that gathers and eventually breaks, pouring down in torrents like a waterfall. |
+| 4 | `raw_wiki:26165:131313:b22f8b2701be47df:chunk:000` | `Lore/dark_tide/26165_main.wikitext` | relevant | **relevant** | It manifests as a dark, swirling mass of clouds that gathers and eventually breaks, pouring down in torrents like a waterfall. |
+| 5 | `raw_wiki:26165:131313:b22f8b2701be47df:chunk:000` | `Lore/dark_tide/26165_main.wikitext` | relevant | **relevant** | It manifests as a dark, swirling mass of clouds that gathers and eventually breaks, pouring down in torrents like a waterfall. |
+
+## rw-072
+
+- Query: What can Dhalifa's Forte do to machines?
+- Expected answer: It can randomly affect machine performance, making one clock extremely precise while causing another to slow and resist recalibration.
+
+| Rank | Evidence | Source | Proposed | Human label | Source excerpt |
+|---:|---|---|---|---|---|
+| 1 | `raw_wiki:39515:92424:e9a79d8cabc6e6e2:chunk:000` | `Lore/dhalifas_forte_evaluation_report/39515_main.wikitext` | relevant | **relevant** | her Forte can randomly impact machine performance. For instance, a different clock affected by her Forte began running slowly, and became unresponsive to recalibration. |
+| 2 | `raw_wiki:3397:68336:55000dcfdd441514:chunk:000` | `Lore/forte/3397_main.wikitext` | pending | **relevant** | '''Forte''' is the Resonance Abilities that belongs to a resonator. ==Description== The Resonance Abilities of a [[Resonator]] are referred to as their '''Forte'''. In the world of ''Wuthering Waves'' there are as many different Forte's as there are Resonators. It is believed that a Resonator's past and subconscious mind influence their Forte, thus making their Fortes unique. As a part of what seems to be routine hea… |
+| 3 | `raw_wiki:39212:96889:58a15a6051c28b88:chunk:000` | `Lore/void_storm/39212_main.wikitext` | pending | **relevant** | …oid Storms''' are a form of [[Waveworn Phenomenon]] native to [[Lahai-Roi]], caused by the [[Threnodian]], [[Aleph-1]]. Void Storm activity can make local frequencies unstable with fluctuating Voidmatter Levels. == Archive Entries == The regional Waveworn Phenomenon of Lahai-Roi that disrupts the frequencies of anything around it. It happens in a somewhat cyclical pattern. A Waveworn Phenomenon unique to Lahai-Roi, e… |
+| 4 | `raw_wiki:3397:68336:55000dcfdd441514:chunk:000` | `Lore/forte/3397_main.wikitext` | pending | **relevant** | '''Forte''' is the Resonance Abilities that belongs to a resonator. ==Description== The Resonance Abilities of a [[Resonator]] are referred to as their '''Forte'''. In the world of ''Wuthering Waves'' there are as many different Forte's as there are Resonators. It is believed that a Resonator's past and subconscious mind influence their Forte, thus making their Fortes unique. As a part of what seems to be routine hea… |
+| 5 | `raw_wiki:348:86837:3b43bd7a33ec8d89:chunk:000` | `Characters/Resonators/resonator/348_main.wikitext` | pending | **relevant** | …r Awakening when they first resonate with the frequencies of something in the world and gain their Resonance Ability, also known as their [[Forte]]. When this happens, a symbol known as a [[Tacet Mark]] appears some place on their body, with its exact shape determined by what is called their [[Rabelle's Curve]]. For most Resonators, their Rabelle's Curve classifies them into one of the following categories: [[:Catego… |
+
+## rw-073
+
+- Query: Một Echo được tạo ra như thế nào sau khi Tacet Discord bị đánh bại?
+- Expected answer: A defeated Tacet Discord's remaining frequency may become an Echo through the Pangu Terminal's Data Bank.
+
+| Rank | Evidence | Source | Proposed | Human label | Source excerpt |
+|---:|---|---|---|---|---|
+| 1 | `raw_wiki:1008:99738:fa6acd585adb1d2a:chunk:000` | `Lore/tacet_discord/1008_main.wikitext` | pending | **relevant** | **Profile**: Title: Tacet Discord. '''Tacet Discords''' (abbreviated as TDs) are sentient beings formed by the residual chaotic frequency energy under the [[Waveworn Phenomenon]] with ever-changing, amorphous forms. They possess '''Tacet Cores''', also known by the academic community as [[Reverberation]] Bodies and instinctively feed on other frequencies to maintain stability and evolve. These creatures mimic the abi… |
+| 2 | `raw_wiki:1011:91978:42944d61edab4c7f:chunk:000` | `Lore/echo/1011_main.wikitext` | relevant | **relevant** | When a Tacet Discord is defeated, the remaining frequency may become an Echo. |
+| 3 | `raw_wiki:1008:99738:fa6acd585adb1d2a:chunk:000` | `Lore/tacet_discord/1008_main.wikitext` | pending | **relevant** | **Profile**: Title: Tacet Discord. '''Tacet Discords''' (abbreviated as TDs) are sentient beings formed by the residual chaotic frequency energy under the [[Waveworn Phenomenon]] with ever-changing, amorphous forms. They possess '''Tacet Cores''', also known by the academic community as [[Reverberation]] Bodies and instinctively feed on other frequencies to maintain stability and evolve. These creatures mimic the abi… |
+| 4 | `raw_wiki:1008:99738:fa6acd585adb1d2a:chunk:000` | `Lore/tacet_discord/1008_main.wikitext` | pending | **relevant** | **Profile**: Title: Tacet Discord. '''Tacet Discords''' (abbreviated as TDs) are sentient beings formed by the residual chaotic frequency energy under the [[Waveworn Phenomenon]] with ever-changing, amorphous forms. They possess '''Tacet Cores''', also known by the academic community as [[Reverberation]] Bodies and instinctively feed on other frequencies to maintain stability and evolve. These creatures mimic the abi… |
+| 5 | `raw_wiki:1074:99099:f1f00f7ba53c6ff4:chunk:000` | `Characters/Resonators/phrolova/1074_main.wikitext` | pending | **relevant** | > Come, let us finish this performance we've all been waiting for. Together. > — Phrolova She is a particularly powerful Resonator and a former Overseer of the [[Fractsidus]]. Her forte can manipulate and transfigure the frequencies of humans, Echoes, and Tacet Discords alike. A life filled with unexpected suffering, grief, and betrayal led this former musician to align with the Fractsidus, in which she seeks to reki… |
+
+## rw-074
+
+- Query: What stopped space exploration on Solaris-3?
+- Expected answer: The Etheric Sea blanketed the sky, cut Solaris off from the universe, and brought space exploration to a standstill.
+
+| Rank | Evidence | Source | Proposed | Human label | Source excerpt |
+|---:|---|---|---|---|---|
+| 1 | `raw_wiki:1006:99742:df733987b85d008a:chunk:000` | `Lore/the_lament/1006_main.wikitext` | pending | **relevant** | …ment" or "wail of sorrow"'') is a term used to describe a series of catastrophic mass-extinction phenomena that have affected the planet, [[Solaris-3]], and is one of the primary driving narratives in ''[[Wuthering Waves]]''. It serves as the general classification for all major disaster trends and [[Waveworn Phenomenon\|Waveworn Phenomena]] observed on the planet. Over the past 10,000 years, five global Lament events… |
+| 2 | `raw_wiki:10270:99746:c2d602cbf420f2ad:chunk:000` | `Lore/etheric_sea/10270_main.wikitext` | relevant | **relevant** | It now blankets [[Solaris-3\|Solaris's]] sky, cutting the planet off from the rest of the universe and bringing all space exploration to a complete standstill |
+| 3 | `raw_wiki:38339:136640:9d71c98f093fd140:chunk:000` | `Lore/aleph-1/38339_main.wikitext` | pending | **relevant** | … considered the strongest Threnodian due to its existential erasure power, potentially linked to the region's research focus and desire for space, causing people to forget their origins. Its appearance resembles that of a massive black hole, but with a blue iris flowing downwards as its center instead of an event horizon. Inside the center of its pupil is a tiny blue dot, and it has a white accretion disk. Aleph-1 se… |
+| 4 | `raw_wiki:38339:136640:9d71c98f093fd140:chunk:000` | `Lore/aleph-1/38339_main.wikitext` | pending | **relevant** | … considered the strongest Threnodian due to its existential erasure power, potentially linked to the region's research focus and desire for space, causing people to forget their origins. Its appearance resembles that of a massive black hole, but with a blue iris flowing downwards as its center instead of an event horizon. Inside the center of its pupil is a tiny blue dot, and it has a white accretion disk. Aleph-1 se… |
+| 5 | `raw_wiki:41913:136779:8670bd0697124da2:chunk:000` | `Lore/the_moon/41913_main.wikitext` | pending | **relevant** | …ear, although presumably the inhabitants of Solaris would not be able to confirm this destruction if it occurred after the fall of [[SkyArk Space Station]] and the envelopment of the Etheric Sea. Events in [[Dreaming Deep]], which may or may not be tales based on reality, imply that the Moon once visible from the surface was artificially placed in orbit. [[Wutherium Geographic: Lands and Waters — Extra Volume: Cultur… |
+
+## rw-075
+
+- Query: Exoswarm hình thành từ đâu?
+- Expected answer: Exoswarm are formed from remnants of the Exostrider.
+
+| Rank | Evidence | Source | Proposed | Human label | Source excerpt |
+|---:|---|---|---|---|---|
+| 1 | `raw_wiki:39255:94532:a4b996534deab505:chunk:000` | `Lore/exoswarm/39255_main.wikitext` | relevant | **relevant** | '''Exoswarm''' are creatures found in [[Lahai-Roi]] that are formed from the remnants of the [[Exostrider]]. |
+| 2 | `raw_wiki:39255:94532:a4b996534deab505:chunk:000` | `Lore/exoswarm/39255_main.wikitext` | relevant | **relevant** | '''Exoswarm''' are creatures found in [[Lahai-Roi]] that are formed from the remnants of the [[Exostrider]]. |
+| 3 | `raw_wiki:39255:94532:a4b996534deab505:chunk:000` | `Lore/exoswarm/39255_main.wikitext` | relevant | **relevant** | '''Exoswarm''' are creatures found in [[Lahai-Roi]] that are formed from the remnants of the [[Exostrider]]. |
+| 4 | `raw_wiki:39212:96889:58a15a6051c28b88:chunk:000` | `Lore/void_storm/39212_main.wikitext` | pending | **relevant** | **Profile**: Title: Void Storm, Origin: Lahai-Roi. {{About\|the [[Waveworn Phenomenon]]\|the [[Exploration]] challenge\|Void Storm Zone}} '''Void Storms''' are a form of [[Waveworn Phenomenon]] native to [[Lahai-Roi]], caused by the [[Threnodian]], [[Aleph-1]]. Void Storm activity can make local frequencies unstable with fluctuating Voidmatter Levels. == Archive Entries == The regional Waveworn Phenomenon of Lahai-Roi t… |
+| 5 | `raw_wiki:38339:136640:9d71c98f093fd140:chunk:000` | `Lore/aleph-1/38339_main.wikitext` | pending | **relevant** | **Profile**: Title: Aleph-1, Origin: Lahai-Roi, Affiliation: Threnodians. '''Aleph-1''', also known as '''Hvedrungr''', is the [[Threnodian]] of [[Lahai-Roi]] and the main antagonist of [[Chapter III\|Chapter III: To the Stars Yet to Shine]]. It is a [[Void Storm]] that erases people's existence and memories, unlike normal [[Tacet Discord]]s that just petrify them. It is considered the strongest Threnodian due to its … |
+
+## rw-076
+
+- Query: How do players unlock a region's Exploration Reports?
+- Expected answer: They unlock at 50% and 100% Exploration Progress in a region, except Chronorift Metropolis.
+
+| Rank | Evidence | Source | Proposed | Human label | Source excerpt |
+|---:|---|---|---|---|---|
+| 1 | `raw_wiki:27413:92077:9d707490d9c3d53c:chunk:000` | `Lore/exploration_report/27413_main.wikitext` | relevant | **relevant** | Each Region, except [[Chronorift Metropolis]], has 2 unlockable Exploration Reports, which the player can access upon reaching 50% and 100% completion in the region. |
+| 2 | `raw_wiki:27413:92077:9d707490d9c3d53c:chunk:000` | `Lore/exploration_report/27413_main.wikitext` | relevant | **relevant** | Each Region, except [[Chronorift Metropolis]], has 2 unlockable Exploration Reports, which the player can access upon reaching 50% and 100% completion in the region. |
+| 3 | `raw_wiki:38241:100321:abf33f122f8c975e:chunk:000` | `Locations/starward_riseway/38241_main.wikitext` | pending | **relevant** | … sea, surrounded by vivid holographic imagery and biomechanical plants. \|} ==Quests== {{Quest by Category List\|Starward Riseway Quests}} == Exploration Report == ===Pioneer Association Expedition Reports, |
+| 4 | `raw_wiki:38241:100321:abf33f122f8c975e:chunk:000` | `Locations/starward_riseway/38241_main.wikitext` | pending | **relevant** | … sea, surrounded by vivid holographic imagery and biomechanical plants. \|} ==Quests== {{Quest by Category List\|Starward Riseway Quests}} == Exploration Report == ===Pioneer Association Expedition Reports, |
+| 5 | `raw_wiki:38241:100321:abf33f122f8c975e:chunk:000` | `Locations/starward_riseway/38241_main.wikitext` | pending | **relevant** | … sea, surrounded by vivid holographic imagery and biomechanical plants. \|} ==Quests== {{Quest by Category List\|Starward Riseway Quests}} == Exploration Report == ===Pioneer Association Expedition Reports, |
+
+## rw-077
+
+- Query: Fleet Snowfluff làm gì ở Startorch Academy?
+- Expected answer: Fleet Snowfluff is a Startorch student and virtual campus idol who hosts online concerts.
+
+| Rank | Evidence | Source | Proposed | Human label | Source excerpt |
+|---:|---|---|---|---|---|
+| 1 | `raw_wiki:39056:98971:e98008a22b980baa:chunk:000` | `Lore/fleet_snowfluff/39056_main.wikitext` | relevant | **relevant** | '''Fleet Snowfluff''' is a [[Startorch Academy]] student and a campus virtual idol who hosts online concerts. |
+| 2 | `raw_wiki:37391:136476:a3a41695657088cf:chunk:000` | `Factions/startorch_academy/37391_main.wikitext` | pending | **relevant** | # Startorch Academy **Faction Profile**: Leader: Lucilla, Base: Startorch Academy (Region). {{About\|the institution\|the region\|Startorch Academy (Region)}} '''Startorch Academy''' is a multinational school built by the [[Spacetrek Collective]] specifically for [[Resonator]]s in [[Lahai-Roi]]. It is known to contain the Exo Genesis Labs, Voidwatch Tower, Tactical Proving Grounds, and Simulator Cockpit. Its name comes … |
+| 3 | `raw_wiki:37544:136308:b6e43f908463ebaa:chunk:000` | `Characters/Resonators/luuk_herssen/37544_main.wikitext` | pending | **relevant** | > I've already bid farewell to the self buried beneath the frostlands. When the snow thaws... we'll meet again among the new blooms of spring. > — Luuk Herssen He is the head physician of the [[Resonator Nursing Unit]] at [[Startorch Academy]], serving as an attending medical doctor and mental health counselor, with a mysterious past. |
+| 4 | `raw_wiki:37391:136476:a3a41695657088cf:chunk:000` | `Factions/startorch_academy/37391_main.wikitext` | pending | **relevant** | # Startorch Academy **Faction Profile**: Leader: Lucilla, Base: Startorch Academy (Region). {{About\|the institution\|the region\|Startorch Academy (Region)}} '''Startorch Academy''' is a multinational school built by the [[Spacetrek Collective]] specifically for [[Resonator]]s in [[Lahai-Roi]]. It is known to contain the Exo Genesis Labs, Voidwatch Tower, Tactical Proving Grounds, and Simulator Cockpit. Its name comes … |
+| 5 | `raw_wiki:37391:136476:a3a41695657088cf:chunk:000` | `Factions/startorch_academy/37391_main.wikitext` | pending | **relevant** | # Startorch Academy **Faction Profile**: Leader: Lucilla, Base: Startorch Academy (Region). {{About\|the institution\|the region\|Startorch Academy (Region)}} '''Startorch Academy''' is a multinational school built by the [[Spacetrek Collective]] specifically for [[Resonator]]s in [[Lahai-Roi]]. It is known to contain the Exo Genesis Labs, Voidwatch Tower, Tactical Proving Grounds, and Simulator Cockpit. Its name comes … |
+
+## rw-078
+
+- Query: Where are Fluffguins believed to have originated?
+- Expected answer: They are believed to have come from the Roya Frostlands.
+
+| Rank | Evidence | Source | Proposed | Human label | Source excerpt |
+|---:|---|---|---|---|---|
+| 1 | `raw_wiki:42446:101218:eba876c1698e83d3:chunk:000` | `Lore/fluffguin/42446_main.wikitext` | relevant | **relevant** | A native bird of Lahai-Roi, it's believed they originally came from the Roya Frostlands. |
+| 2 | `raw_wiki:42446:101218:eba876c1698e83d3:chunk:000` | `Lore/fluffguin/42446_main.wikitext` | relevant | **relevant** | A native bird of Lahai-Roi, it's believed they originally came from the Roya Frostlands. |
+| 3 | `raw_wiki:26165:131313:b22f8b2701be47df:chunk:000` | `Lore/dark_tide/26165_main.wikitext` | pending | **relevant** | …gathers and eventually breaks, pouring down in torrents like a waterfall. Whenever the Dark Tide strikes, it spawns Tacet Discords, and the area around its point of origin becomes a new Tacet Field.There have been two significant Dark Tides in Ragunna's history. The first, according to the Order of the Deep, was stopped by Napoli II, the first Primus of the Order. The second was quelled by the martyrdom of t |
+| 4 | `raw_wiki:42446:101218:eba876c1698e83d3:chunk:000` | `Lore/fluffguin/42446_main.wikitext` | relevant | **relevant** | A native bird of Lahai-Roi, it's believed they originally came from the Roya Frostlands. |
+| 5 | `raw_wiki:26165:131313:b22f8b2701be47df:chunk:000` | `Lore/dark_tide/26165_main.wikitext` | pending | **relevant** | …gathers and eventually breaks, pouring down in torrents like a waterfall. Whenever the Dark Tide strikes, it spawns Tacet Discords, and the area around its point of origin becomes a new Tacet Field.There have been two significant Dark Tides in Ragunna's history. The first, according to the Order of the Deep, was stopped by Napoli II, the first Primus of the Order. The second was quelled by the martyrdom of t |
+
+## rw-079
+
+- Query: Điều gì được cho là ảnh hưởng đến Forte của một Resonator?
+- Expected answer: A Resonator's past and subconscious mind are believed to influence their Forte.
+
+| Rank | Evidence | Source | Proposed | Human label | Source excerpt |
+|---:|---|---|---|---|---|
+| 1 | `raw_wiki:3397:68336:55000dcfdd441514:chunk:000` | `Lore/forte/3397_main.wikitext` | relevant | **relevant** | It is believed that a Resonator's past and subconscious mind influence their Forte |
+| 2 | `raw_wiki:348:86837:3b43bd7a33ec8d89:chunk:000` | `Characters/Resonators/resonator/348_main.wikitext` | pending | **relevant** | …r Awakening when they first resonate with the frequencies of something in the world and gain their Resonance Ability, also known as their [[Forte]]. When this happens, a symbol known as a [[Tacet Mark]] appears some place on their body, with its exact shape determined by what is called their [[Rabelle's Curve]]. For most Resonators, their Rabelle's Curve classifies them into one of the following categories: [[:Catego… |
+| 3 | `raw_wiki:3397:68336:55000dcfdd441514:chunk:000` | `Lore/forte/3397_main.wikitext` | relevant | **relevant** | It is believed that a Resonator's past and subconscious mind influence their Forte |
+| 4 | `raw_wiki:3397:68336:55000dcfdd441514:chunk:000` | `Lore/forte/3397_main.wikitext` | relevant | **relevant** | It is believed that a Resonator's past and subconscious mind influence their Forte |
+| 5 | `raw_wiki:24999:99250:79f12bc79353ca49:chunk:000` | `Lore/overclocking/24999_main.wikitext` | pending | **relevant** | **Profile**: Title: Overclocking. > When a Resonator's mental capacity is overwhelmed, they may lose control of their {{Rubi\|Forte\|power}}, causing an overflow of Resonance energy. > — [[Baizhi]] '''Overclocking''' is a state where a [[Resonator]] has lost control of their [[Forte]] as a result of overwhelming psychological stress or overexertion of their Resonance Ability. The loss of control causes the Resonator’s … |
+
+## rw-080
+
+- Query: What was the purpose of the Fortress and Gorges War?
+- Expected answer: It was fought to stop a large Tacet Discord outbreak from spreading into Huanglong through Xuanfang.
+
+| Rank | Evidence | Source | Proposed | Human label | Source excerpt |
+|---:|---|---|---|---|---|
+| 1 | `raw_wiki:58857:123826:fe87fa19ceeb0aaa:chunk:000` | `Lore/fortress_and_gorges_war/58857_main.wikitext` | relevant | **relevant** | was waged to prevent the spread of a large [[Tacet Discord]] outbreak that swept into [[Xuanfang]]. |
+| 2 | `raw_wiki:58857:123826:fe87fa19ceeb0aaa:chunk:000` | `Lore/fortress_and_gorges_war/58857_main.wikitext` | relevant | **relevant** | was waged to prevent the spread of a large [[Tacet Discord]] outbreak that swept into [[Xuanfang]]. |
+| 3 | `raw_wiki:62901:123831:ba80c16941f70a5d:chunk:000` | `Lore/xuanling_bird/62901_main.wikitext` | pending | **relevant** | A Remnant Creature said to carry human feelings and messages once lived in the Land of Xuanfang. It went extinct during the Fortress and Gorges War. To honor it, Artisans later built a mechanical imitation, the Rafter Kite. '''Xuanling Birds''' were a species of [[Remnant Creature]]s that went extinct during the [[Fortress and Gorges War]]. ==Overview== [[Xianling Village]] enshrined a longsword found on the battlefi… |
+| 4 | `raw_wiki:62901:123831:ba80c16941f70a5d:chunk:000` | `Lore/xuanling_bird/62901_main.wikitext` | pending | **relevant** | A Remnant Creature said to carry human feelings and messages once lived in the Land of Xuanfang. It went extinct during the Fortress and Gorges War. To honor it, Artisans later built a mechanical imitation, the Rafter Kite. '''Xuanling Birds''' were a species of [[Remnant Creature]]s that went extinct during the [[Fortress and Gorges War]]. ==Overview== [[Xianling Village]] enshrined a longsword found on the battlefi… |
+| 5 | `raw_wiki:38120:136663:32d09c1fe3aba7cc:chunk:000` | `Locations/xuanfang_hold/38120_main.wikitext` | pending | **relevant** | …s frontier court to contain and divide the [[Tacet Discord]] outbreak flowing from [[Norfall Barrens]]. It was built atop the ruins of Yuan Fortress after its destruction during the Fortress and Gorges War in collaboration with the [[Court of Savantae]]. One of its mountains is said to have a reclusive martial arts master living at the peak. ==Areas== {\| class="article-table alternating-colors-table tdc1" style="widt… |
+
+## rw-081
+
+- Query: Harbinger của Dark Tide bị Leviathan biến đổi như thế nào?
+- Expected answer: Chosen humans become corrupted, lose their identities, and act as puppets spreading Leviathan's influence.
+
+| Rank | Evidence | Source | Proposed | Human label | Source excerpt |
+|---:|---|---|---|---|---|
+| 1 | `raw_wiki:26165:131313:b22f8b2701be47df:chunk:000` | `Lore/dark_tide/26165_main.wikitext` | pending | **relevant** | …was brought about by historical wars between the early settlers of Rinascita, who were divided by their opposing faiths in the Threnodian [[Leviathan]] and the Sentinel [[Imperator]]. ==Archive Entry== The Dark Tide is a Waveworn Phenomenon native to Rinascita. It manifests as a dark, swirling mass of clouds that gathers and eventually breaks, pouring down in torrents like a waterfall. Whenever the Dark Tide strikes,… |
+| 2 | `raw_wiki:37304:100540:d9c41f8fbf72b2ba:chunk:000` | `Lore/harbinger/37304_main.wikitext` | relevant | **relevant** | Those chosen become corrupted and lose their identities as they become puppets to continue spreading Leviathan's influence until they perish. |
+| 3 | `raw_wiki:37304:100540:d9c41f8fbf72b2ba:chunk:000` | `Lore/harbinger/37304_main.wikitext` | relevant | **relevant** | Those chosen become corrupted and lose their identities as they become puppets to continue spreading Leviathan's influence until they perish. |
+| 4 | `raw_wiki:26165:131313:b22f8b2701be47df:chunk:000` | `Lore/dark_tide/26165_main.wikitext` | pending | **relevant** | …was brought about by historical wars between the early settlers of Rinascita, who were divided by their opposing faiths in the Threnodian [[Leviathan]] and the Sentinel [[Imperator]]. ==Archive Entry== The Dark Tide is a Waveworn Phenomenon native to Rinascita. It manifests as a dark, swirling mass of clouds that gathers and eventually breaks, pouring down in torrents like a waterfall. Whenever the Dark Tide strikes,… |
+| 5 | `raw_wiki:27120:96278:b1047d1aa9a9b8d2:chunk:000` | `Lore/leviathan/27120_main.wikitext` | pending | **relevant** | **Profile**: Title: Leviathan, Origin: Rinascita, Affiliation: Threnodians. ''This article is about the NPC.&#x20;For the Weekly Boss, see [[Threnodian: Leviathan]].'' > "Fleurdelys, my Resonator, why dost thou persist? Why abandon thy oath? Why hinder the spread of my gospel? The one blessed by the Dark Tide shall return to us. Continue thy disobedience at the risk of insanity. My most beloved Resonator, why persist… |

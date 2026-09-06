@@ -1,0 +1,21 @@
+**Profile**: Title: KU-Roro, Affiliation: Black Shores.
+
+> Ku... Ku... Ku...
+'''KU-Roro's ''' (aka Tethys Terminals) are box shaped robots that can be found at the [[Black Shores Archipelago]]. 
+
+==Archive==
+{{Readable|
+These unique robots, found throughout the Black Shores, serve as the physical terminals of the Tethys System. Their construction and performance capabilities remain largely unknown, yet they possess direct access to the system, second only to its administrator. Within the Black Shores, these robots function both as assistants and tools in the daily activities of its members.
+
+Each terminal has a distinct personality, and the study of these robots has advanced the field of cognitive psychology.
+
+The KU-robots found all over the island are directly linked to the Tethys System. The Tethys system gives them all their own personalities and voice frequencies are encoded into languages that humans can understand. The robots can be considered a living race of their own.|title=The Black Shores Robots; KU-Roro}}
+
+==NPCs==
+{{NPCs by Category List|KU-Roro Characters}}
+
+==Trivia==
+* They are ''[[Kuro Games]]'' mascots.
+** KU-Roro were first seen in the previous ''Kuro Games'' game, Punishing Gray Raven.
+* KU-Roro names are [[KU-Mamar|code names]], with their full name being numbers. 
+* While each KU-Roro have their own set of duties that are identifiable by their coatings, each individual differs still. Such example is a KU-Roro Gardener or KU-Roro Medic is capable of taking up arms during emergencies, while other KU-Roro's have zero self defense.

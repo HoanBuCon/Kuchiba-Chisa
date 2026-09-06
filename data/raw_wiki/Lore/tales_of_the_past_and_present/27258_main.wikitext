@@ -1,0 +1,16 @@
+**Profile**: Title: Tales of the Past and Present, Origin: Huanglong.
+
+{{CustomTabs
+|tab1 = Overview
+|tab2 = Quest Items (Completed Tales)
+
+'''Tales of the Past and Present''' is a group of hidden [[Side Quests]] that take place all around [[Solaris-3]]. Each quest is activated, when all [[Torn Pages and Abandoned Data Chips|Torn Pages or Abandoned Data Chips]] are collected from within a [[Region]]. Not all Regions have Torn pages or Abandoned Data Chips. Those that do have them, have 3 or 4. As a reward a data chip or a booklet is obtained. These chips and booklets contain [[Lore]] related to the Region it was collected from.
+
+==Quests In Different Nations==
+
+In [[Huanglong]] the collected Torn Pages or Abandoned Data Chips are taken to the [[Storyteller]], located in [[Jinzhou]] next to the Theater.
+
+In [[Ragunna]] the Torn pages are delivered to [[Fuling]] in [[Egla Town]]. Unlocking these Quests in Ragunna requires {{Quest|Immortal Blaze}} to be completed.
+
+==List of the Quests and Quest Items==
+{{Quest Items and Quests Table|Tales of the Past and Present}}

@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "purpose": "rag05_staging_evaluation",
+  "exceptions": [
+    {
+      "exception_id": "rag05-cse-25657-91989-e6aea8ff2e3bdf10",
+      "status": "approved",
+      "rule_id": "sensitive_disclosure",
+      "provenance": {
+        "source_id": "543b2265-40c0-5e2c-9bb5-f941e7d1094a",
+        "corpus_version": "raw-wiki-sha256:0efe04a586291c11c84c921a1839ac20be53f12c026e3ea2b43595e9a7d32c7a",
+        "page_id": 25657,
+        "revision_id": 91989,
+        "chunk_id": "06430a99-f538-5275-a5e2-23f8b49d3829"
+      },
+      "content_sha256": "e6aea8ff2e3bdf10bc052ef4785697dca9da0185c99effbceaba7d7f77cc5464",
+      "finding_fingerprint": "e6aea8ff2e3bdf10",
+      "curator_reason": "Human curator reviewed this fictional lore statement as a sensitive_disclosure false positive; the original finding remains recorded and no global safety rule is changed.",
+      "approved_by": "HoanBuCon",
+      "approved_at": "2026-09-05T18:50:17Z",
+      "approval_authority": "user/project owner"
+    }
+  ]
+}

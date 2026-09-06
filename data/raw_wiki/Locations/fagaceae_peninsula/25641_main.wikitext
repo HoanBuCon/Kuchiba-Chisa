@@ -1,0 +1,47 @@
+**Profile**: Title: Fagaceae Peninsula, Origin: Rinascita.
+
+{{Intro/Location|Fagaceae Peninsula}} This peninsula thick with oak trees was once where Rinascita's rulers gathered for secret councils. The Oracles carved into the stone and trees have withstood the passage of time, though their messages are now nearly impossible to distinguish.
+
+==Areas==
+{| class="article-table alternating-colors-table tdc1" style="width: 100%;"
+! style="width: 200px;" |Name
+!Image
+!Description
+|- id="Oakheart Highcourt"
+|[[Oakheart Highcourt]]
+|[[File:Oakheart Highcourt.png|180px]] 
+
+|
+|- id="Oakheart Highcourt: Lower Tier"
+|[[Oakheart Highcourt: Lower Tier]]
+|[[File:Oakheart Highcourt Lower Tier.png|180px]] 
+
+|
+|- id="Coast of Anticipation"
+|[[Coast of Anticipation]]
+|[[File:Coast of Anticipation.png|180px]] 
+
+|
+|- id="Shores of Last Breath"
+|[[Shores of Last Breath]]
+|[[File:Shores of Last Breath.png|180px]] 
+
+|}
+
+==Quests==
+{{Quest by Category List|Fagaceae Peninsula Quests}}
+
+== Exploration Report ==
+
+=== '''May the Sentinel Bless Rinascita I''' ===
+* Unlocked by reaching 50% exploration.
+
+=== '''May the Sentinel Bless Rinascita II''' ===
+* Unlocked by reaching 100% exploration.
+
+==Notable Features==
+===Tacet Fields===
+* [[Tacet Field: Fagaceae Peninsula]]
+===Bosses===
+* {{Enemy|Nightmare: Tempest Mephis}}
+===Resources===

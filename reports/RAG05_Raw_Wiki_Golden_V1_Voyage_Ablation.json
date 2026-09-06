@@ -1,0 +1,1674 @@
+{
+  "dataset_version": "rag05-raw-wiki-golden-v1-draft",
+  "corpus_checksum": "ae0d1f3a18b650a5741bf9f7b404ed90950ce15c354049301f79204f7c21a9bb",
+  "provider": "voyage",
+  "model": "rerank-3-lite",
+  "cases": 83,
+  "total_cases": 83,
+  "answerable_cases": 81,
+  "abstention_cases": 2,
+  "abstention_evaluation": "not_evaluable_at_retrieval_stage",
+  "candidate_corpus_documents": 214,
+  "candidate_document_representation": "normalized raw_wiki main revision prefix, first 1200 characters",
+  "retrieval_parity": {
+    "mode": "offline_raw_wiki_page_snapshot",
+    "production_equivalent": false,
+    "gaps": [
+      "production queries Qdrant named dense and BM25 sparse vectors with ACL filters",
+      "production applies score thresholds and bounded per-branch candidate limits",
+      "production hydrates versioned parent/child records after candidate retrieval"
+    ]
+  },
+  "baseline_deterministic_hybrid_rrf": {
+    "hit_at_1": 0.790123,
+    "hit_at_3": 0.975309,
+    "hit_at_5": 1.0,
+    "mrr_at_10": 0.882716,
+    "context_precision": "not_evaluable_label_incomplete"
+  },
+  "voyage_rerank": {
+    "hit_at_1": 0.950617,
+    "hit_at_3": 1.0,
+    "hit_at_5": 1.0,
+    "mrr_at_10": 0.975309,
+    "context_precision": "not_evaluable_label_incomplete"
+  },
+  "answerable_case_outcomes": {
+    "improved": [
+      "rw-006",
+      "rw-007",
+      "rw-010",
+      "rw-015",
+      "rw-017",
+      "rw-021",
+      "rw-030",
+      "rw-035",
+      "rw-036",
+      "rw-040",
+      "rw-051",
+      "rw-053",
+      "rw-054",
+      "rw-074",
+      "rw-078"
+    ],
+    "unchanged": [
+      "rw-001",
+      "rw-002",
+      "rw-003",
+      "rw-004",
+      "rw-005",
+      "rw-008",
+      "rw-009",
+      "rw-011",
+      "rw-012",
+      "rw-013",
+      "rw-014",
+      "rw-016",
+      "rw-018",
+      "rw-019",
+      "rw-020",
+      "rw-022",
+      "rw-023",
+      "rw-024",
+      "rw-025",
+      "rw-026",
+      "rw-027",
+      "rw-028",
+      "rw-029",
+      "rw-031",
+      "rw-032",
+      "rw-033",
+      "rw-037",
+      "rw-038",
+      "rw-039",
+      "rw-041",
+      "rw-042",
+      "rw-043",
+      "rw-044",
+      "rw-045",
+      "rw-046",
+      "rw-047",
+      "rw-048",
+      "rw-049",
+      "rw-050",
+      "rw-052",
+      "rw-055",
+      "rw-056",
+      "rw-057",
+      "rw-058",
+      "rw-059",
+      "rw-060",
+      "rw-061",
+      "rw-062",
+      "rw-063",
+      "rw-064",
+      "rw-065",
+      "rw-066",
+      "rw-067",
+      "rw-068",
+      "rw-069",
+      "rw-070",
+      "rw-071",
+      "rw-072",
+      "rw-073",
+      "rw-075",
+      "rw-076",
+      "rw-077",
+      "rw-079",
+      "rw-080",
+      "rw-081"
+    ],
+    "degraded": [
+      "rw-034"
+    ]
+  },
+  "provider_http_latency_ms": {
+    "min": 260.563,
+    "mean": 419.287,
+    "p50": 402.04,
+    "p95": 593.278,
+    "max": 905.555
+  },
+  "pacing_wait_ms": {
+    "total": 3019930.345,
+    "mean": 36384.703,
+    "p50": 58998.611,
+    "p95": 59531.778,
+    "paced_case_count": 61
+  },
+  "reranker_total_elapsed_ms": {
+    "min": 267.978,
+    "mean": 36819.499,
+    "p50": 59417.089,
+    "p95": 60000.615,
+    "max": 60062.401
+  },
+  "total_retrieval_latency_ms": {
+    "baseline": {
+      "min": 37.32,
+      "mean": 140.947,
+      "p50": 88.415,
+      "p95": 161.607,
+      "max": 2818.135
+    },
+    "with_reranker": {
+      "min": 367.105,
+      "mean": 36960.457,
+      "p50": 59488.704,
+      "p95": 60104.268,
+      "max": 60224.019
+    }
+  },
+  "processed_tokens": 313439,
+  "reserved_provider_tokens": 391827,
+  "estimated_cost_usd": 0.00626878,
+  "provider_calls": 83,
+  "provider_success_count": 83,
+  "provider_failure_counts": {
+    "timeout": 0,
+    "rate_limit": 0,
+    "provider": 0,
+    "invalid_response": 0,
+    "unavailable": 0
+  },
+  "timeout_rate": 0.0,
+  "rate_limit_rate": 0.0,
+  "error_rate": 0.0,
+  "fallback_rate": 0.0,
+  "quality_comparison_valid": true,
+  "privacy_policy_rejection_count": 0,
+  "first_stage_retrieval_misses": [],
+  "groundedness_and_citation": "not_applicable: retrieval-only ablation does not generate answers or citations",
+  "case_results": [
+    {
+      "case_id": "rw-001",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:585:101912:cdb1baf766c207e6:chunk:000"
+      ],
+      "baseline_rank": 1,
+      "voyage_rank": 1,
+      "fallback_rank": null,
+      "reranker_mode": "voyage",
+      "failure_kind": null,
+      "processed_token_estimate": 4509,
+      "pacing_wait_ms": 0.0,
+      "provider_http_latency_ms": 504.923,
+      "reranker_total_elapsed_ms": 667.74,
+      "total_retrieval_latency_ms": 757.49,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-002",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:624:92922:791b05ce14a56b51:chunk:000"
+      ],
+      "baseline_rank": 1,
+      "voyage_rank": 1,
+      "fallback_rank": null,
+      "reranker_mode": "voyage",
+      "failure_kind": null,
+      "processed_token_estimate": 4144,
+      "pacing_wait_ms": 0.0,
+      "provider_http_latency_ms": 369.257,
+      "reranker_total_elapsed_ms": 376.034,
+      "total_retrieval_latency_ms": 429.597,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-003",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:1126:100700:6b4973485554efd0:chunk:000"
+      ],
+      "baseline_rank": 1,
+      "voyage_rank": 1,
+      "fallback_rank": null,
+      "reranker_mode": "voyage",
+      "failure_kind": null,
+      "processed_token_estimate": 3995,
+      "pacing_wait_ms": 59020.098,
+      "provider_http_latency_ms": 345.761,
+      "reranker_total_elapsed_ms": 59371.997,
+      "total_retrieval_latency_ms": 59415.541,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-004",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:510:99239:2efdf295348ddd30:chunk:000"
+      ],
+      "baseline_rank": 1,
+      "voyage_rank": 1,
+      "fallback_rank": null,
+      "reranker_mode": "voyage",
+      "failure_kind": null,
+      "processed_token_estimate": 3944,
+      "pacing_wait_ms": 183.135,
+      "provider_http_latency_ms": 262.92,
+      "reranker_total_elapsed_ms": 453.708,
+      "total_retrieval_latency_ms": 491.035,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-005",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:632:99398:b84b4f87a9d9ade9:chunk:000"
+      ],
+      "baseline_rank": 2,
+      "voyage_rank": 2,
+      "fallback_rank": null,
+      "reranker_mode": "voyage",
+      "failure_kind": null,
+      "processed_token_estimate": 4374,
+      "pacing_wait_ms": 59114.227,
+      "provider_http_latency_ms": 516.285,
+      "reranker_total_elapsed_ms": 59636.889,
+      "total_retrieval_latency_ms": 59681.827,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-006",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:24786:99400:468ec49727209414:chunk:000"
+      ],
+      "baseline_rank": 4,
+      "voyage_rank": 2,
+      "fallback_rank": null,
+      "reranker_mode": "voyage",
+      "failure_kind": null,
+      "processed_token_estimate": 3514,
+      "pacing_wait_ms": 0.0,
+      "provider_http_latency_ms": 333.979,
+      "reranker_total_elapsed_ms": 339.784,
+      "total_retrieval_latency_ms": 385.679,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-007",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:599:96614:56f198042c315f7e:chunk:000"
+      ],
+      "baseline_rank": 2,
+      "voyage_rank": 1,
+      "fallback_rank": null,
+      "reranker_mode": "voyage",
+      "failure_kind": null,
+      "processed_token_estimate": 5085,
+      "pacing_wait_ms": 59034.102,
+      "provider_http_latency_ms": 437.503,
+      "reranker_total_elapsed_ms": 59479.629,
+      "total_retrieval_latency_ms": 59536.207,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-008",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:1007:135324:8f903f46d2fa3ca8:chunk:000"
+      ],
+      "baseline_rank": 1,
+      "voyage_rank": 1,
+      "fallback_rank": null,
+      "reranker_mode": "voyage",
+      "failure_kind": null,
+      "processed_token_estimate": 5159,
+      "pacing_wait_ms": 59515.835,
+      "provider_http_latency_ms": 371.205,
+      "reranker_total_elapsed_ms": 59894.124,
+      "total_retrieval_latency_ms": 59938.757,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-009",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:938:130729:103ceb2210a7890a:chunk:000"
+      ],
+      "baseline_rank": 1,
+      "voyage_rank": 1,
+      "fallback_rank": null,
+      "reranker_mode": "voyage",
+      "failure_kind": null,
+      "processed_token_estimate": 4439,
+      "pacing_wait_ms": 0.0,
+      "provider_http_latency_ms": 307.641,
+      "reranker_total_elapsed_ms": 313.988,
+      "total_retrieval_latency_ms": 402.41,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-010",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:896:99150:aa2a5187c5ebc08b:chunk:000"
+      ],
+      "baseline_rank": 2,
+      "voyage_rank": 1,
+      "fallback_rank": null,
+      "reranker_mode": "voyage",
+      "failure_kind": null,
+      "processed_token_estimate": 4115,
+      "pacing_wait_ms": 59158.781,
+      "provider_http_latency_ms": 593.278,
+      "reranker_total_elapsed_ms": 59762.861,
+      "total_retrieval_latency_ms": 59821.346,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-011",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:37391:136476:a3a41695657088cf:chunk:000"
+      ],
+      "baseline_rank": 1,
+      "voyage_rank": 1,
+      "fallback_rank": null,
+      "reranker_mode": "voyage",
+      "failure_kind": null,
+      "processed_token_estimate": 3723,
+      "pacing_wait_ms": 0.0,
+      "provider_http_latency_ms": 345.714,
+      "reranker_total_elapsed_ms": 381.132,
+      "total_retrieval_latency_ms": 479.936,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-012",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:24999:99250:79f12bc79353ca49:chunk:000"
+      ],
+      "baseline_rank": 1,
+      "voyage_rank": 1,
+      "fallback_rank": null,
+      "reranker_mode": "voyage",
+      "failure_kind": null,
+      "processed_token_estimate": 4939,
+      "pacing_wait_ms": 58820.498,
+      "provider_http_latency_ms": 424.133,
+      "reranker_total_elapsed_ms": 59261.946,
+      "total_retrieval_latency_ms": 59360.358,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-013",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:1008:99738:fa6acd585adb1d2a:chunk:000"
+      ],
+      "baseline_rank": 1,
+      "voyage_rank": 1,
+      "fallback_rank": null,
+      "reranker_mode": "voyage",
+      "failure_kind": null,
+      "processed_token_estimate": 4778,
+      "pacing_wait_ms": 230.591,
+      "provider_http_latency_ms": 339.752,
+      "reranker_total_elapsed_ms": 580.115,
+      "total_retrieval_latency_ms": 650.3,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-014",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:8269:95612:1c103964f57b0be7:chunk:000"
+      ],
+      "baseline_rank": 1,
+      "voyage_rank": 1,
+      "fallback_rank": null,
+      "reranker_mode": "voyage",
+      "failure_kind": null,
+      "processed_token_estimate": 5124,
+      "pacing_wait_ms": 58869.811,
+      "provider_http_latency_ms": 530.668,
+      "reranker_total_elapsed_ms": 59417.089,
+      "total_retrieval_latency_ms": 59472.576,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-015",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:585:101912:cdb1baf766c207e6:chunk:000"
+      ],
+      "baseline_rank": 2,
+      "voyage_rank": 1,
+      "fallback_rank": null,
+      "reranker_mode": "voyage",
+      "failure_kind": null,
+      "processed_token_estimate": 4984,
+      "pacing_wait_ms": 59322.581,
+      "provider_http_latency_ms": 427.461,
+      "reranker_total_elapsed_ms": 59773.65,
+      "total_retrieval_latency_ms": 59900.836,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-016",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:38537:136632:f169b123e2bf1328:chunk:000"
+      ],
+      "baseline_rank": 1,
+      "voyage_rank": 1,
+      "fallback_rank": null,
+      "reranker_mode": "voyage",
+      "failure_kind": null,
+      "processed_token_estimate": 4023,
+      "pacing_wait_ms": 0.0,
+      "provider_http_latency_ms": 299.963,
+      "reranker_total_elapsed_ms": 307.7,
+      "total_retrieval_latency_ms": 395.395,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-017",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:31310:99574:02e73eaeaa24eb2c:chunk:000"
+      ],
+      "baseline_rank": 4,
+      "voyage_rank": 1,
+      "fallback_rank": null,
+      "reranker_mode": "voyage",
+      "failure_kind": null,
+      "processed_token_estimate": 5484,
+      "pacing_wait_ms": 59086.631,
+      "provider_http_latency_ms": 364.695,
+      "reranker_total_elapsed_ms": 59468.06,
+      "total_retrieval_latency_ms": 59544.937,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-018",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:31556:97061:ae4ba2c13572f46c:chunk:000"
+      ],
+      "baseline_rank": 1,
+      "voyage_rank": 1,
+      "fallback_rank": null,
+      "reranker_mode": "voyage",
+      "failure_kind": null,
+      "processed_token_estimate": 5293,
+      "pacing_wait_ms": 59553.943,
+      "provider_http_latency_ms": 453.494,
+      "reranker_total_elapsed_ms": 60028.277,
+      "total_retrieval_latency_ms": 60106.686,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-019",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:27951:96619:ae0c99137282474b:chunk:000"
+      ],
+      "baseline_rank": 1,
+      "voyage_rank": 1,
+      "fallback_rank": null,
+      "reranker_mode": "voyage",
+      "failure_kind": null,
+      "processed_token_estimate": 4334,
+      "pacing_wait_ms": 0.0,
+      "provider_http_latency_ms": 318.279,
+      "reranker_total_elapsed_ms": 337.717,
+      "total_retrieval_latency_ms": 468.287,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-020",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:24790:96615:17a7637a393aa5fe:chunk:000"
+      ],
+      "baseline_rank": 1,
+      "voyage_rank": 1,
+      "fallback_rank": null,
+      "reranker_mode": "voyage",
+      "failure_kind": null,
+      "processed_token_estimate": 5892,
+      "pacing_wait_ms": 59541.615,
+      "provider_http_latency_ms": 401.825,
+      "reranker_total_elapsed_ms": 59961.776,
+      "total_retrieval_latency_ms": 60091.929,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-021",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:26196:99513:1106002e2cae6db6:chunk:000"
+      ],
+      "baseline_rank": 3,
+      "voyage_rank": 1,
+      "fallback_rank": null,
+      "reranker_mode": "voyage",
+      "failure_kind": null,
+      "processed_token_estimate": 5519,
+      "pacing_wait_ms": 59414.333,
+      "provider_http_latency_ms": 606.76,
+      "reranker_total_elapsed_ms": 60062.401,
+      "total_retrieval_latency_ms": 60224.019,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-022",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:31283:102761:da0b008506be0f37:chunk:000"
+      ],
+      "baseline_rank": 1,
+      "voyage_rank": 1,
+      "fallback_rank": null,
+      "reranker_mode": "voyage",
+      "failure_kind": null,
+      "processed_token_estimate": 4803,
+      "pacing_wait_ms": 59305.415,
+      "provider_http_latency_ms": 464.342,
+      "reranker_total_elapsed_ms": 59789.218,
+      "total_retrieval_latency_ms": 59875.766,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-023",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:28670:96621:ac4f9f01f5e3796b:chunk:000"
+      ],
+      "baseline_rank": 1,
+      "voyage_rank": 1,
+      "fallback_rank": null,
+      "reranker_mode": "voyage",
+      "failure_kind": null,
+      "processed_token_estimate": 5613,
+      "pacing_wait_ms": 59415.925,
+      "provider_http_latency_ms": 411.069,
+      "reranker_total_elapsed_ms": 59841.594,
+      "total_retrieval_latency_ms": 59953.598,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-024",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:530:92937:7837aba16c572cfb:chunk:000"
+      ],
+      "baseline_rank": 1,
+      "voyage_rank": 1,
+      "fallback_rank": null,
+      "reranker_mode": "voyage",
+      "failure_kind": null,
+      "processed_token_estimate": 4560,
+      "pacing_wait_ms": 59443.604,
+      "provider_http_latency_ms": 375.168,
+      "reranker_total_elapsed_ms": 59831.95,
+      "total_retrieval_latency_ms": 59980.37,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-025",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:39187:136635:e0a124eb457dfb82:chunk:000"
+      ],
+      "baseline_rank": 1,
+      "voyage_rank": 1,
+      "fallback_rank": null,
+      "reranker_mode": "voyage",
+      "failure_kind": null,
+      "processed_token_estimate": 4438,
+      "pacing_wait_ms": 0.0,
+      "provider_http_latency_ms": 297.914,
+      "reranker_total_elapsed_ms": 310.331,
+      "total_retrieval_latency_ms": 442.003,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-026",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:522:103593:65ac76a1400c1df9:chunk:000"
+      ],
+      "baseline_rank": 1,
+      "voyage_rank": 1,
+      "fallback_rank": null,
+      "reranker_mode": "voyage",
+      "failure_kind": null,
+      "processed_token_estimate": 5157,
+      "pacing_wait_ms": 59082.391,
+      "provider_http_latency_ms": 399.398,
+      "reranker_total_elapsed_ms": 59498.628,
+      "total_retrieval_latency_ms": 59591.585,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-027",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:31295:135376:0a70da2ff45c5134:chunk:000"
+      ],
+      "baseline_rank": 1,
+      "voyage_rank": 1,
+      "fallback_rank": null,
+      "reranker_mode": "voyage",
+      "failure_kind": null,
+      "processed_token_estimate": 4953,
+      "pacing_wait_ms": 59483.734,
+      "provider_http_latency_ms": 506.535,
+      "reranker_total_elapsed_ms": 60000.413,
+      "total_retrieval_latency_ms": 60114.471,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-028",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:40075:136638:d67583a80d55df95:chunk:000"
+      ],
+      "baseline_rank": 2,
+      "voyage_rank": 2,
+      "fallback_rank": null,
+      "reranker_mode": "voyage",
+      "failure_kind": null,
+      "processed_token_estimate": 3742,
+      "pacing_wait_ms": 0.0,
+      "provider_http_latency_ms": 336.477,
+      "reranker_total_elapsed_ms": 349.061,
+      "total_retrieval_latency_ms": 469.418,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-029",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:10962:102771:2a81d1750c1bd1aa:chunk:000"
+      ],
+      "baseline_rank": 1,
+      "voyage_rank": 1,
+      "fallback_rank": null,
+      "reranker_mode": "voyage",
+      "failure_kind": null,
+      "processed_token_estimate": 4200,
+      "pacing_wait_ms": 58917.513,
+      "provider_http_latency_ms": 447.239,
+      "reranker_total_elapsed_ms": 59376.576,
+      "total_retrieval_latency_ms": 59488.704,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-030",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:31296:99397:cf04c89a577454a6:chunk:000"
+      ],
+      "baseline_rank": 2,
+      "voyage_rank": 1,
+      "fallback_rank": null,
+      "reranker_mode": "voyage",
+      "failure_kind": null,
+      "processed_token_estimate": 5348,
+      "pacing_wait_ms": 115.986,
+      "provider_http_latency_ms": 377.036,
+      "reranker_total_elapsed_ms": 501.51,
+      "total_retrieval_latency_ms": 560.132,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-031",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:633:92941:f0bb12c836a8d2f8:chunk:000"
+      ],
+      "baseline_rank": 1,
+      "voyage_rank": 1,
+      "fallback_rank": null,
+      "reranker_mode": "voyage",
+      "failure_kind": null,
+      "processed_token_estimate": 3488,
+      "pacing_wait_ms": 58998.611,
+      "provider_http_latency_ms": 905.555,
+      "reranker_total_elapsed_ms": 60000.615,
+      "total_retrieval_latency_ms": 60079.437,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-032",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:936:101013:20a1567cbe138350:chunk:000"
+      ],
+      "baseline_rank": 1,
+      "voyage_rank": 1,
+      "fallback_rank": null,
+      "reranker_mode": "voyage",
+      "failure_kind": null,
+      "processed_token_estimate": 4425,
+      "pacing_wait_ms": 0.0,
+      "provider_http_latency_ms": 360.977,
+      "reranker_total_elapsed_ms": 369.354,
+      "total_retrieval_latency_ms": 1848.569,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-033",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:525:136877:39d55ea5f72b29b4:chunk:000"
+      ],
+      "baseline_rank": 1,
+      "voyage_rank": 1,
+      "fallback_rank": null,
+      "reranker_mode": "voyage",
+      "failure_kind": null,
+      "processed_token_estimate": 3377,
+      "pacing_wait_ms": 56921.512,
+      "provider_http_latency_ms": 822.522,
+      "reranker_total_elapsed_ms": 57757.43,
+      "total_retrieval_latency_ms": 57990.153,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-034",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:631:92944:69b041db40e5f9b9:chunk:000"
+      ],
+      "baseline_rank": 1,
+      "voyage_rank": 2,
+      "fallback_rank": null,
+      "reranker_mode": "voyage",
+      "failure_kind": null,
+      "processed_token_estimate": 5057,
+      "pacing_wait_ms": 0.0,
+      "provider_http_latency_ms": 651.88,
+      "reranker_total_elapsed_ms": 680.011,
+      "total_retrieval_latency_ms": 3498.157,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-035",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:37545:99389:e03a4665c08c9421:chunk:000"
+      ],
+      "baseline_rank": 2,
+      "voyage_rank": 1,
+      "fallback_rank": null,
+      "reranker_mode": "voyage",
+      "failure_kind": null,
+      "processed_token_estimate": 3660,
+      "pacing_wait_ms": 55580.774,
+      "provider_http_latency_ms": 359.252,
+      "reranker_total_elapsed_ms": 55950.736,
+      "total_retrieval_latency_ms": 56049.282,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-036",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:20501:99245:c417da3a3a4d4832:chunk:000"
+      ],
+      "baseline_rank": 2,
+      "voyage_rank": 1,
+      "fallback_rank": null,
+      "reranker_mode": "voyage",
+      "failure_kind": null,
+      "processed_token_estimate": 4458,
+      "pacing_wait_ms": 3207.587,
+      "provider_http_latency_ms": 266.754,
+      "reranker_total_elapsed_ms": 3485.748,
+      "total_retrieval_latency_ms": 3562.768,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-037",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:30940:96622:a0dca9f4d3d03fb9:chunk:000"
+      ],
+      "baseline_rank": 1,
+      "voyage_rank": 1,
+      "fallback_rank": null,
+      "reranker_mode": "voyage",
+      "failure_kind": null,
+      "processed_token_estimate": 4797,
+      "pacing_wait_ms": 55990.965,
+      "provider_http_latency_ms": 424.701,
+      "reranker_total_elapsed_ms": 56428.591,
+      "total_retrieval_latency_ms": 56507.9,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-038",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:37544:136308:b6e43f908463ebaa:chunk:000"
+      ],
+      "baseline_rank": 1,
+      "voyage_rank": 1,
+      "fallback_rank": null,
+      "reranker_mode": "voyage",
+      "failure_kind": null,
+      "processed_token_estimate": 3969,
+      "pacing_wait_ms": 3126.411,
+      "provider_http_latency_ms": 392.905,
+      "reranker_total_elapsed_ms": 3526.804,
+      "total_retrieval_latency_ms": 3618.709,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-039",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:37543:136637:1b307d031f032102:chunk:000"
+      ],
+      "baseline_rank": 1,
+      "voyage_rank": 1,
+      "fallback_rank": null,
+      "reranker_mode": "voyage",
+      "failure_kind": null,
+      "processed_token_estimate": 3874,
+      "pacing_wait_ms": 55863.32,
+      "provider_http_latency_ms": 357.715,
+      "reranker_total_elapsed_ms": 56231.96,
+      "total_retrieval_latency_ms": 56316.116,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-040",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:37540:136639:46f5898638863eb0:chunk:000"
+      ],
+      "baseline_rank": 3,
+      "voyage_rank": 1,
+      "fallback_rank": null,
+      "reranker_mode": "voyage",
+      "failure_kind": null,
+      "processed_token_estimate": 4730,
+      "pacing_wait_ms": 3203.878,
+      "provider_http_latency_ms": 347.908,
+      "reranker_total_elapsed_ms": 3564.829,
+      "total_retrieval_latency_ms": 3659.784,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-041",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:594:99232:375b861a53702e76:chunk:000"
+      ],
+      "baseline_rank": 1,
+      "voyage_rank": 1,
+      "fallback_rank": null,
+      "reranker_mode": "voyage",
+      "failure_kind": null,
+      "processed_token_estimate": 4128,
+      "pacing_wait_ms": 55904.972,
+      "provider_http_latency_ms": 470.456,
+      "reranker_total_elapsed_ms": 56387.212,
+      "total_retrieval_latency_ms": 56475.709,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-042",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:24784:96617:ecee4ea626873787:chunk:000"
+      ],
+      "baseline_rank": 1,
+      "voyage_rank": 1,
+      "fallback_rank": null,
+      "reranker_mode": "voyage",
+      "failure_kind": null,
+      "processed_token_estimate": 4987,
+      "pacing_wait_ms": 3075.093,
+      "provider_http_latency_ms": 368.829,
+      "reranker_total_elapsed_ms": 3465.967,
+      "total_retrieval_latency_ms": 3575.188,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-043",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:1074:99099:f1f00f7ba53c6ff4:chunk:000"
+      ],
+      "baseline_rank": 1,
+      "voyage_rank": 1,
+      "fallback_rank": null,
+      "reranker_mode": "voyage",
+      "failure_kind": null,
+      "processed_token_estimate": 5017,
+      "pacing_wait_ms": 59456.748,
+      "provider_http_latency_ms": 412.633,
+      "reranker_total_elapsed_ms": 59881.241,
+      "total_retrieval_latency_ms": 60044.055,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-044",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:31286:95380:0215bfb291304724:chunk:000"
+      ],
+      "baseline_rank": 1,
+      "voyage_rank": 1,
+      "fallback_rank": null,
+      "reranker_mode": "voyage",
+      "failure_kind": null,
+      "processed_token_estimate": 4767,
+      "pacing_wait_ms": 0.0,
+      "provider_http_latency_ms": 382.515,
+      "reranker_total_elapsed_ms": 394.331,
+      "total_retrieval_latency_ms": 486.262,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-045",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:24789:103572:c7b9cc0a8a5cdfa6:chunk:000"
+      ],
+      "baseline_rank": 1,
+      "voyage_rank": 1,
+      "fallback_rank": null,
+      "reranker_mode": "voyage",
+      "failure_kind": null,
+      "processed_token_estimate": 4450,
+      "pacing_wait_ms": 59020.36,
+      "provider_http_latency_ms": 434.552,
+      "reranker_total_elapsed_ms": 59467.257,
+      "total_retrieval_latency_ms": 59552.933,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-046",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:588:99853:a4995516cd60ac47:chunk:000"
+      ],
+      "baseline_rank": 1,
+      "voyage_rank": 1,
+      "fallback_rank": null,
+      "reranker_mode": "voyage",
+      "failure_kind": null,
+      "processed_token_estimate": 3869,
+      "pacing_wait_ms": 0.0,
+      "provider_http_latency_ms": 336.217,
+      "reranker_total_elapsed_ms": 349.125,
+      "total_retrieval_latency_ms": 444.877,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-047",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:10662:101177:8871332c765002d5:chunk:000"
+      ],
+      "baseline_rank": 1,
+      "voyage_rank": 1,
+      "fallback_rank": null,
+      "reranker_mode": "voyage",
+      "failure_kind": null,
+      "processed_token_estimate": 4853,
+      "pacing_wait_ms": 59022.705,
+      "provider_http_latency_ms": 473.405,
+      "reranker_total_elapsed_ms": 59507.814,
+      "total_retrieval_latency_ms": 59608.705,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-048",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:42215:100630:75aa31f94d24503e:chunk:000"
+      ],
+      "baseline_rank": 1,
+      "voyage_rank": 1,
+      "fallback_rank": null,
+      "reranker_mode": "voyage",
+      "failure_kind": null,
+      "processed_token_estimate": 4040,
+      "pacing_wait_ms": 0.0,
+      "provider_http_latency_ms": 311.932,
+      "reranker_total_elapsed_ms": 319.615,
+      "total_retrieval_latency_ms": 409.47,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-049",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:3150:93366:590fa68ddaf79966:chunk:000"
+      ],
+      "baseline_rank": 1,
+      "voyage_rank": 1,
+      "fallback_rank": null,
+      "reranker_mode": "voyage",
+      "failure_kind": null,
+      "processed_token_estimate": 4968,
+      "pacing_wait_ms": 59022.306,
+      "provider_http_latency_ms": 478.85,
+      "reranker_total_elapsed_ms": 59510.726,
+      "total_retrieval_latency_ms": 59594.359,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-050",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:35947:81917:0722434a53a692f3:chunk:000"
+      ],
+      "baseline_rank": 1,
+      "voyage_rank": 1,
+      "fallback_rank": null,
+      "reranker_mode": "voyage",
+      "failure_kind": null,
+      "processed_token_estimate": 4349,
+      "pacing_wait_ms": 0.0,
+      "provider_http_latency_ms": 305.474,
+      "reranker_total_elapsed_ms": 316.621,
+      "total_retrieval_latency_ms": 401.874,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-051",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:9136:91555:b4167fb1e8b24566:chunk:000"
+      ],
+      "baseline_rank": 2,
+      "voyage_rank": 1,
+      "fallback_rank": null,
+      "reranker_mode": "voyage",
+      "failure_kind": null,
+      "processed_token_estimate": 4975,
+      "pacing_wait_ms": 59020.85,
+      "provider_http_latency_ms": 464.807,
+      "reranker_total_elapsed_ms": 59499.072,
+      "total_retrieval_latency_ms": 59576.157,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-052",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:25664:91980:9be7bfc0b0f78f80:chunk:000"
+      ],
+      "baseline_rank": 1,
+      "voyage_rank": 1,
+      "fallback_rank": null,
+      "reranker_mode": "voyage",
+      "failure_kind": null,
+      "processed_token_estimate": 4565,
+      "pacing_wait_ms": 23.797,
+      "provider_http_latency_ms": 397.913,
+      "reranker_total_elapsed_ms": 437.376,
+      "total_retrieval_latency_ms": 524.815,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-053",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:907:126835:49c5a92e82ee7ad1:chunk:000"
+      ],
+      "baseline_rank": 2,
+      "voyage_rank": 1,
+      "fallback_rank": null,
+      "reranker_mode": "voyage",
+      "failure_kind": null,
+      "processed_token_estimate": 5470,
+      "pacing_wait_ms": 59503.985,
+      "provider_http_latency_ms": 474.469,
+      "reranker_total_elapsed_ms": 59994.602,
+      "total_retrieval_latency_ms": 60097.708,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-054",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:897:102549:c6a570ea76923091:chunk:000"
+      ],
+      "baseline_rank": 2,
+      "voyage_rank": 1,
+      "fallback_rank": null,
+      "reranker_mode": "voyage",
+      "failure_kind": null,
+      "processed_token_estimate": 3717,
+      "pacing_wait_ms": 0.0,
+      "provider_http_latency_ms": 360.983,
+      "reranker_total_elapsed_ms": 378.25,
+      "total_retrieval_latency_ms": 502.664,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-055",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:37078:90660:e28687f672074f5b:chunk:000"
+      ],
+      "baseline_rank": 1,
+      "voyage_rank": 1,
+      "fallback_rank": null,
+      "reranker_mode": "voyage",
+      "failure_kind": null,
+      "processed_token_estimate": 4324,
+      "pacing_wait_ms": 58908.787,
+      "provider_http_latency_ms": 442.601,
+      "reranker_total_elapsed_ms": 59367.512,
+      "total_retrieval_latency_ms": 59463.995,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-056",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:25536:91984:eba4d3a4762e23f2:chunk:000"
+      ],
+      "baseline_rank": 1,
+      "voyage_rank": 1,
+      "fallback_rank": null,
+      "reranker_mode": "voyage",
+      "failure_kind": null,
+      "processed_token_estimate": 5069,
+      "pacing_wait_ms": 22.71,
+      "provider_http_latency_ms": 358.873,
+      "reranker_total_elapsed_ms": 396.829,
+      "total_retrieval_latency_ms": 550.458,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-057",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:37607:136469:8050e4ce70f7de3d:chunk:000"
+      ],
+      "baseline_rank": 1,
+      "voyage_rank": 1,
+      "fallback_rank": null,
+      "reranker_mode": "voyage",
+      "failure_kind": null,
+      "processed_token_estimate": 4939,
+      "pacing_wait_ms": 59531.778,
+      "provider_http_latency_ms": 506.274,
+      "reranker_total_elapsed_ms": 60052.948,
+      "total_retrieval_latency_ms": 60169.633,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-058",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:25647:136276:a53bc0e233f155a7:chunk:000"
+      ],
+      "baseline_rank": 1,
+      "voyage_rank": 1,
+      "fallback_rank": null,
+      "reranker_mode": "voyage",
+      "failure_kind": null,
+      "processed_token_estimate": 3794,
+      "pacing_wait_ms": 0.0,
+      "provider_http_latency_ms": 260.563,
+      "reranker_total_elapsed_ms": 267.978,
+      "total_retrieval_latency_ms": 367.105,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-059",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:28697:99385:4dd8afe17544fe65:chunk:000"
+      ],
+      "baseline_rank": 1,
+      "voyage_rank": 1,
+      "fallback_rank": null,
+      "reranker_mode": "voyage",
+      "failure_kind": null,
+      "processed_token_estimate": 5550,
+      "pacing_wait_ms": 59008.949,
+      "provider_http_latency_ms": 442.615,
+      "reranker_total_elapsed_ms": 59461.986,
+      "total_retrieval_latency_ms": 59578.346,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-060",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:37654:102567:739b9476d8734adf:chunk:000"
+      ],
+      "baseline_rank": 1,
+      "voyage_rank": 1,
+      "fallback_rank": null,
+      "reranker_mode": "voyage",
+      "failure_kind": null,
+      "processed_token_estimate": 4893,
+      "pacing_wait_ms": 59464.33,
+      "provider_http_latency_ms": 475.579,
+      "reranker_total_elapsed_ms": 59953.683,
+      "total_retrieval_latency_ms": 60054.007,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-061",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:21831:100474:3c84649dd4a92bf0:chunk:000"
+      ],
+      "baseline_rank": 1,
+      "voyage_rank": 1,
+      "fallback_rank": null,
+      "reranker_mode": "voyage",
+      "failure_kind": null,
+      "processed_token_estimate": 5135,
+      "pacing_wait_ms": 59403.69,
+      "provider_http_latency_ms": 391.518,
+      "reranker_total_elapsed_ms": 59806.807,
+      "total_retrieval_latency_ms": 59932.7,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-062",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:4972:93386:0559269f28d2b45c:chunk:000"
+      ],
+      "baseline_rank": 1,
+      "voyage_rank": 1,
+      "fallback_rank": null,
+      "reranker_mode": "voyage",
+      "failure_kind": null,
+      "processed_token_estimate": 5863,
+      "pacing_wait_ms": 59471.063,
+      "provider_http_latency_ms": 494.88,
+      "reranker_total_elapsed_ms": 59980.214,
+      "total_retrieval_latency_ms": 60102.692,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-063",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:2960:99756:4c2d85a16f6eb409:chunk:000"
+      ],
+      "baseline_rank": 1,
+      "voyage_rank": 1,
+      "fallback_rank": null,
+      "reranker_mode": "voyage",
+      "failure_kind": null,
+      "processed_token_estimate": 6164,
+      "pacing_wait_ms": 59338.659,
+      "provider_http_latency_ms": 436.287,
+      "reranker_total_elapsed_ms": 59787.616,
+      "total_retrieval_latency_ms": 59945.934,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-064",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:32741:94835:53882334e3c9aac2:chunk:000"
+      ],
+      "baseline_rank": 1,
+      "voyage_rank": 1,
+      "fallback_rank": null,
+      "reranker_mode": "voyage",
+      "failure_kind": null,
+      "processed_token_estimate": 4948,
+      "pacing_wait_ms": 59464.727,
+      "provider_http_latency_ms": 390.24,
+      "reranker_total_elapsed_ms": 59869.153,
+      "total_retrieval_latency_ms": 59957.566,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-065",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:25641:91914:11721f78613de356:chunk:000"
+      ],
+      "baseline_rank": 1,
+      "voyage_rank": 1,
+      "fallback_rank": null,
+      "reranker_mode": "voyage",
+      "failure_kind": null,
+      "processed_token_estimate": 5914,
+      "pacing_wait_ms": 59459.723,
+      "provider_http_latency_ms": 500.34,
+      "reranker_total_elapsed_ms": 59977.962,
+      "total_retrieval_latency_ms": 60104.268,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-066",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:38339:136640:9d71c98f093fd140:chunk:000"
+      ],
+      "baseline_rank": 1,
+      "voyage_rank": 1,
+      "fallback_rank": null,
+      "reranker_mode": "voyage",
+      "failure_kind": null,
+      "processed_token_estimate": 5077,
+      "pacing_wait_ms": 59371.857,
+      "provider_http_latency_ms": 404.393,
+      "reranker_total_elapsed_ms": 59789.038,
+      "total_retrieval_latency_ms": 59920.008,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-067",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:9279:92868:b7fb9fbd7f67e230:chunk:000"
+      ],
+      "baseline_rank": 1,
+      "voyage_rank": 1,
+      "fallback_rank": null,
+      "reranker_mode": "voyage",
+      "failure_kind": null,
+      "processed_token_estimate": 5019,
+      "pacing_wait_ms": 59490.549,
+      "provider_http_latency_ms": 462.275,
+      "reranker_total_elapsed_ms": 59963.239,
+      "total_retrieval_latency_ms": 60065.741,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-068",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:26888:99747:897732ef65d43d75:chunk:000"
+      ],
+      "baseline_rank": 1,
+      "voyage_rank": 1,
+      "fallback_rank": null,
+      "reranker_mode": "voyage",
+      "failure_kind": null,
+      "processed_token_estimate": 4534,
+      "pacing_wait_ms": 0.0,
+      "provider_http_latency_ms": 371.247,
+      "reranker_total_elapsed_ms": 379.468,
+      "total_retrieval_latency_ms": 452.568,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-069",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:20570:99750:24263a0b90c8239f:chunk:000"
+      ],
+      "baseline_rank": 1,
+      "voyage_rank": 1,
+      "fallback_rank": null,
+      "reranker_mode": "voyage",
+      "failure_kind": null,
+      "processed_token_estimate": 4570,
+      "pacing_wait_ms": 59031.505,
+      "provider_http_latency_ms": 402.04,
+      "reranker_total_elapsed_ms": 59441.219,
+      "total_retrieval_latency_ms": 59507.862,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-070",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:26008:95284:8988a45bf257299b:chunk:000"
+      ],
+      "baseline_rank": 1,
+      "voyage_rank": 1,
+      "fallback_rank": null,
+      "reranker_mode": "voyage",
+      "failure_kind": null,
+      "processed_token_estimate": 5175,
+      "pacing_wait_ms": 68.793,
+      "provider_http_latency_ms": 361.858,
+      "reranker_total_elapsed_ms": 438.366,
+      "total_retrieval_latency_ms": 493.242,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-071",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:26165:131313:b22f8b2701be47df:chunk:000"
+      ],
+      "baseline_rank": 1,
+      "voyage_rank": 1,
+      "fallback_rank": null,
+      "reranker_mode": "voyage",
+      "failure_kind": null,
+      "processed_token_estimate": 5459,
+      "pacing_wait_ms": 59567.245,
+      "provider_http_latency_ms": 423.472,
+      "reranker_total_elapsed_ms": 60003.289,
+      "total_retrieval_latency_ms": 60057.73,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-072",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:39515:92424:e9a79d8cabc6e6e2:chunk:000"
+      ],
+      "baseline_rank": 1,
+      "voyage_rank": 1,
+      "fallback_rank": null,
+      "reranker_mode": "voyage",
+      "failure_kind": null,
+      "processed_token_estimate": 4517,
+      "pacing_wait_ms": 0.0,
+      "provider_http_latency_ms": 343.233,
+      "reranker_total_elapsed_ms": 350.694,
+      "total_retrieval_latency_ms": 408.156,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-073",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:1011:91978:42944d61edab4c7f:chunk:000"
+      ],
+      "baseline_rank": 1,
+      "voyage_rank": 1,
+      "fallback_rank": null,
+      "reranker_mode": "voyage",
+      "failure_kind": null,
+      "processed_token_estimate": 5290,
+      "pacing_wait_ms": 59111.998,
+      "provider_http_latency_ms": 444.081,
+      "reranker_total_elapsed_ms": 59563.005,
+      "total_retrieval_latency_ms": 59615.784,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-074",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:10270:99746:c2d602cbf420f2ad:chunk:000"
+      ],
+      "baseline_rank": 2,
+      "voyage_rank": 1,
+      "fallback_rank": null,
+      "reranker_mode": "voyage",
+      "failure_kind": null,
+      "processed_token_estimate": 4768,
+      "pacing_wait_ms": 59499.583,
+      "provider_http_latency_ms": 469.768,
+      "reranker_total_elapsed_ms": 59977.246,
+      "total_retrieval_latency_ms": 60030.406,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-075",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:39255:94532:a4b996534deab505:chunk:000"
+      ],
+      "baseline_rank": 1,
+      "voyage_rank": 1,
+      "fallback_rank": null,
+      "reranker_mode": "voyage",
+      "failure_kind": null,
+      "processed_token_estimate": 5597,
+      "pacing_wait_ms": 59487.133,
+      "provider_http_latency_ms": 442.432,
+      "reranker_total_elapsed_ms": 59938.362,
+      "total_retrieval_latency_ms": 59984.754,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-076",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:27413:92077:9d707490d9c3d53c:chunk:000"
+      ],
+      "baseline_rank": 1,
+      "voyage_rank": 1,
+      "fallback_rank": null,
+      "reranker_mode": "voyage",
+      "failure_kind": null,
+      "processed_token_estimate": 5400,
+      "pacing_wait_ms": 59486.176,
+      "provider_http_latency_ms": 423.428,
+      "reranker_total_elapsed_ms": 59918.772,
+      "total_retrieval_latency_ms": 59983.289,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-077",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:39056:98971:e98008a22b980baa:chunk:000"
+      ],
+      "baseline_rank": 1,
+      "voyage_rank": 1,
+      "fallback_rank": null,
+      "reranker_mode": "voyage",
+      "failure_kind": null,
+      "processed_token_estimate": 3969,
+      "pacing_wait_ms": 0.0,
+      "provider_http_latency_ms": 301.993,
+      "reranker_total_elapsed_ms": 310.344,
+      "total_retrieval_latency_ms": 368.733,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-078",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:42446:101218:eba876c1698e83d3:chunk:000"
+      ],
+      "baseline_rank": 3,
+      "voyage_rank": 1,
+      "fallback_rank": null,
+      "reranker_mode": "voyage",
+      "failure_kind": null,
+      "processed_token_estimate": 4587,
+      "pacing_wait_ms": 59140.678,
+      "provider_http_latency_ms": 485.878,
+      "reranker_total_elapsed_ms": 59636.875,
+      "total_retrieval_latency_ms": 59695.823,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-079",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:3397:68336:55000dcfdd441514:chunk:000"
+      ],
+      "baseline_rank": 1,
+      "voyage_rank": 1,
+      "fallback_rank": null,
+      "reranker_mode": "voyage",
+      "failure_kind": null,
+      "processed_token_estimate": 4893,
+      "pacing_wait_ms": 0.0,
+      "provider_http_latency_ms": 349.259,
+      "reranker_total_elapsed_ms": 359.174,
+      "total_retrieval_latency_ms": 416.187,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-080",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:58857:123826:fe87fa19ceeb0aaa:chunk:000"
+      ],
+      "baseline_rank": 1,
+      "voyage_rank": 1,
+      "fallback_rank": null,
+      "reranker_mode": "voyage",
+      "failure_kind": null,
+      "processed_token_estimate": 4985,
+      "pacing_wait_ms": 59054.102,
+      "provider_http_latency_ms": 581.272,
+      "reranker_total_elapsed_ms": 59642.62,
+      "total_retrieval_latency_ms": 59695.982,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-081",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:37304:100540:d9c41f8fbf72b2ba:chunk:000"
+      ],
+      "baseline_rank": 1,
+      "voyage_rank": 1,
+      "fallback_rank": null,
+      "reranker_mode": "voyage",
+      "failure_kind": null,
+      "processed_token_estimate": 5113,
+      "pacing_wait_ms": 59348.991,
+      "provider_http_latency_ms": 426.215,
+      "reranker_total_elapsed_ms": 59784.217,
+      "total_retrieval_latency_ms": 59858.517,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-082",
+      "expected_behavior": "abstain",
+      "relevant_evidence_ids": [],
+      "baseline_rank": null,
+      "voyage_rank": null,
+      "fallback_rank": null,
+      "reranker_mode": "voyage",
+      "failure_kind": null,
+      "processed_token_estimate": 4774,
+      "pacing_wait_ms": 0.0,
+      "provider_http_latency_ms": 306.735,
+      "reranker_total_elapsed_ms": 318.196,
+      "total_retrieval_latency_ms": 398.6,
+      "abstention_evaluation": "not_evaluable_at_retrieval_stage"
+    },
+    {
+      "case_id": "rw-083",
+      "expected_behavior": "abstain",
+      "relevant_evidence_ids": [],
+      "baseline_rank": null,
+      "voyage_rank": null,
+      "fallback_rank": null,
+      "reranker_mode": "voyage",
+      "failure_kind": null,
+      "processed_token_estimate": 5332,
+      "pacing_wait_ms": 59622.694,
+      "provider_http_latency_ms": 367.564,
+      "reranker_total_elapsed_ms": 60000.404,
+      "total_retrieval_latency_ms": 60080.963,
+      "abstention_evaluation": "not_evaluable_at_retrieval_stage"
+    }
+  ]
+}

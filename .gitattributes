@@ -1,0 +1,2 @@
+# Preserve byte-exact raw corpus revisions: evidence IDs include content checksums.
+data/raw_wiki/** -text -whitespace

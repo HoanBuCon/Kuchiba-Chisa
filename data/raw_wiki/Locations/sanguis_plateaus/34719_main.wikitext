@@ -1,0 +1,96 @@
+**Profile**: Title: Sanguis Plateaus, Origin: Rinascita.
+
+{{Intro/Location|Sanguis Plateaus}}
+
+==Areas==
+{| class="article-table alternating-colors-table tdc1" style="width: 100%;"
+! style="width: 200px;" |Name
+!Image
+!Description
+|- id="Atilius Canyon"
+|[[Atilius Canyon]] 
+|[[File:Atilius Canyon.png|180px]]
+|
+|- id="Hunter's Den"
+|[[Hunter's Den]] 
+|[[File:Hunter's Den.png|180px]]
+|
+|- id="Tetragon Temple"
+|[[Tetragon Temple (Area)|Tetragon Temple]] 
+|[[File:Tetragon Temple Area.png|180px]]
+|
+|- id="Howlfang Lair"
+|[[Howlfang Lair]] 
+|[[File:Howlfang Lair.png|180px]]
+|
+|- id="Rustblood Pass"
+|[[Rustblood Pass]] 
+|[[File:Rustblood Pass.png|180px]]
+|
+|- id="Maroonwood"
+|[[Maroonwood]] 
+|[[File:Maroonwood.png|180px]]
+|
+|- id="Asphodel Barrens"
+|[[Asphodel Barrens]] 
+|[[File:Asphodel Barrens.png|180px]]
+|
+|- id="Erosion Cavern"
+|[[Erosion Cavern]] 
+|[[File:Erosion Cavern.png|180px]]
+|
+|- id="Tideline Verge"
+|[[Tideline Verge]] 
+|[[File:Tideline Verge.png|180px]]
+|
+|- id="The Wastelands"
+|[[The Wastelands]] 
+|[[File:The Wastelands.png|180px]]
+|
+|- id="Murmurstown"
+|[[Murmurstown]] 
+|[[File:Murmurstown.png|180px]]
+|
+|- id="Earthrend Wedge"
+|[[Earthrend Wedge]] 
+|[[File:Earthrend Wedge.png|180px]]
+|
+|- id="Three Heroes' Crest"
+|[[Three Heroes' Crest]] 
+|[[File:Three Heroes Crest.png|180px]]
+|
+|}
+
+==Quests==
+{{Quest by Category List|Sanguis Plateaus Quests}}
+
+==Exploration Report==
+===Sanguis Plateaus Hunter's Notes - Part I===
+* Unlocked by reaching 50% exploration.
+
+===Sanguis Plateaus Hunter's Notes - Part II===
+* Unlocked by reaching 100% exploration.
+
+==Notable Features==
+===Nightmare Nests===
+* [[The Wastelands Nightmare Nest]]
+* [[Tideline Verge Nightmare Nest]]
+* [[Three Heroes' Crest Nightmare Nest]]
+
+===Bosses===
+* {{Enemy|The False Sovereign}}
+* {{Enemy|Threnodian: Leviathan}}
+
+===Enemies===
+====Elite Class====
+* {{Enemy|Corrosaurus}}
+
+===Common Class===
+*
+
+===Resources===
+* {{Item|Luminous Calendula}}
+* {{Item|Sliverglow Bloom}}
+* {{Item|Stone Rose}}
+
+===Videos===

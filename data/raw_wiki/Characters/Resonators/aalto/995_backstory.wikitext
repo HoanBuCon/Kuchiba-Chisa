@@ -1,0 +1,222 @@
+> Well, if it isn't my loyal patron! What do you wish to inquire about today?
+> — Aalto
+> Aalto is an enigmatic Information Broker, known for his elusive nature and welcoming smile.
+Rumor has it he'll provide any information at the right price.
+He was invited to join the Black Shores, a mysterious organization based on an isolated island, for his intel-gathering expertise.
+Both working for the Black Shores as Consultants, Aalto and Encore have become an inseparable and lively duo during missions.
+Despite his skittish demeanor, Aalto's true character shines through as a reliable and attentive individual.
+> — Description from the Official Website
+
+==Developer's Notes==
+2023-09-26 
+
+Aalto is a Congenital Resonator. He was born in the New Federation amidst a rare fog that had not been seen for years.
+===A Street Magician that Brings Joy===
+Aalto often entertains those with a long face with his magic tricks. In those performances, he shapes little animals with the mist created by his Forte, bringing joy to his audience. Sometimes they take the form of cute bunnies, other times majestic falcons, and even Encore's woolies.
+He is flexible like mist and sensitive like air. Aalto can read others' feelings, enveloping them in a lighthearted atmosphere, much like mist. Wherever he goes, cheers and joy always follow him.
+===A Shrouded Man=== 
+Aalto's Forte allows him to conjure mist, shaping it into various forms, or briefly dissolving into it.
+Much like the ever-shifting mist, his personality is erratic and unpredictable as well. One can hardly tell his true intentions. After all, for an intelligence broker, concealing weaknesses and veiling true emotions is always the wisest choice.
+Yet, when Rover clears up the mist, Aalto's flippant and unreliable facade will be unveiled as mere camouflage. He is thoughtful and meticulous, always allowing him to resolve crises at critical moments. It is safe to conclude that Aalto is, in fact, a dependable man, contrary to what he appears to be.
+=== A Scale of Transaction===
+On the surface, Aalto appears to be a greedy, venal broker, willing to strike deals with anyone for the right price. However, deep down, he knows well that intelligence can do either good or evil. This realization has led him to establish his own unique pricing criteria — his scale to determine the value of everything. No one can hustle a deal if it involves intelligence Aalto does not want to sell.
+Despite Aalto's catchphrase, "Availability depends on remuneration", speculating the ideal offer for his intelligence — that is, ideal to Aalto — is never an easy task. Those with unrealistic dreams of amassing wealth by acquiring a piece of vital intelligence will find Aalto's quote astronomically high, whereas a lost girl can easily secure her mother's whereabouts from Aalto by offering him a piece of candy. No one knows what tips the balance on Aalto's scale to obtain the intelligence they desire. However, one thing is certain: you can never attempt to take advantage of Aalto or obtain anything from him that you don't rightfully deserve.
+===A Perfect Duo===
+Encore, a whimsical girl, is Aalto's best partner. Together, they embark on journeys filled with bustles while working on quests in the Black Shores. The odd pairing of an unreliable adult and a sensible child may seem peculiar to others, but surprisingly, it works.
+Whenever Aalto comes up with his wild plans, Encore is always the first to support him. Having been partners for a long time, she understands that there are always deeper meanings behind his ideas.
+To make things easier and gain the trust of people, the two would occasionally pose as a family, with Encore in charge of acting cute and Aalto being her miserable guardian. Although the two often squabble with each other, Aalto would always put Encore's safety first.
+===Aalto's Appearance===
+
+The devices on Aalto's shoulders strengthen and store the mist he creates. Sometimes Aalto jokingly calls it fire spray on the go.
+
+A seemingly inconspicuous bone flute that is, in fact, a tape recorder that Aalto has owned since he was a child. Aalto carries it with him on various occasions, and this small device has gathered a substantial amount of valuable intelligence for him. 
+
+A pair of sunglasses that Aalto always takes with him. They are essential for him when he wants to appear cool. 
+
+Aalto wears a Blake Bloom on his right shoulder to signify his membership with the Black Shores. Only individuals who receive Blake Blooms as invitations are allowed to set foot on the Black Shores' soil. Aalto's Terminal is Black Shores custom-made.
+
+It shares a modernist design style with the organization's buildings.
+===Aalto's Fighting Style===
+On the battlefield, Aalto's role is not that of a frontline warrior engaging enemies in close combat. Instead, he adopts a more strategic approach, maneuvering around the battle to support his allies. He can create Mist Avatars to taunt the enemies, and allow his teammates to deal damage safely. His Resonance Liberation creates a Gate of Quandary, which enhances ranged attacks launched from behind the Gate.
+==Archives==
+
+**Resonance Power**: Mistcloak Strike
+
+### Forte Examination Report
+Evaluation Basis: [Resonance Assessment 1617-G]According to Resonator Aalto's reports, there was a rare occurrence of heavy fog on the day of his birth. Aalto's Tacet Mark is located on the left side of his neck. Other than gaining the ability to briefly transform into a mist-like form, no significant physical changes have been observed in Aalto's body after his Awakening.Resonator Aalto excels in the art of camouflage and transformation, often assuming an elusive and fluctuating physical state, akin to the characteristics of mist. Further tests conducted to ascertain the properties of the mist he conjures yielded inconclusive results.The Resonance Spectrum Pattern of Aalto matches our known Spectrum Patterns of fog. Strong Syntony Reactions have been observed during testing, confirming the connection between fog and Aalto's Awakening. Additionally, analysis of test samples has revealed a non-convergent Rabelle's Curve with a noticeable periodic waveform, which classifies Aalto as a Congenital Resonator.Researcher's Annotation: As stated in the report, this Resonator is cunning and a master of disguises, thus rendering the credibility of his recounts questionable.Annotation to the annotation: As a broker honoring integrity. I, Aalto, solemnly swear that the recount I presented is 100% truth. Nothing more, nothing less.
+
+### Overclock Diagnostic Report
+Resonator Aalto's waveform graph shows displays stable elliptical fluctuations in the Time Domain with no abnormal patterns. Upon examination, all results fall within normal parameters.In terms of Resonant Criticality, Resonator Aalto ranks at a moderate level with high stability, resulting in a low risk of Overclocking.Resonator Aalto disappeared halfway through the Overclock diagnosis, thus no Overclock history records were obtained.
+
+### Character Profile
+Aalto is an enigmatic Information Broker, known for his elusive nature and welcoming smile. Rumor has it he'll provide any information at the right price.
+
+==Character Stories==
+### A Bad Deal
+A bad deal.
+
+Or so it seemed.
+
+One day, Aalto became known for the intel he had on some ancient treasure. From naughty children to old men in their sixties, many wanted to buy that intel from him, but he politely turned down every offer. 
+
+“Hey, little one. Better not spend your allowance on this. Let’s get you home.”
+
+“Sorry, gramps. I don’t accept retirement funds.” 
+
+These people all assumed they didn’t offer enough to pique Aalto’s interest, but actually, he was simply waiting for the right buyer. 
+
+Then, one day, that very buyer finally appeared, cloaked in layers. The man struck the deal with Aalto at a shockingly low price. Others were baffled by Aalto’s willingness to accept such a bad offer. 
+
+Days later, an electronic display in the New Federation police department office broadcasted the latest news: the long-sought theft ring had finally been caught. 
+
+A cloud of mist crept into the police chief’s office, obscuring the display.
+
+“Enough TV. It’s time to settle our deal.”
+
+The chief slammed a folder of files onto the desk, along with a suitcase filled with Credits.
+
+“That’s quite a trick you pulled off back there. Tell me, Mr. Aalto, how were you so sure they’d take the bait? Touting valuable intel about the legendary treasure in broad daylight, weren’t you worried about catching their suspicion?”
+
+“Don’t underestimate cash-chasing gamblers. They’ll risk it all, even their lives. Profit is worth any danger to them.”
+
+The police chief pushed the files and suitcase towards Aalto.
+
+“Here’s your payment, and the list of names you requested. Pleasure doing business.”
+
+“Same to you.” 
+
+Aalto opened the suitcase, took out a single piece of Shell Credit, and flipped it into the air. Before the Credit could touch the ground, he had already transformed into mist, vanishing from sight.
+
+### A Fair Exchange
+A fair exchange.
+
+Under Aalto’s rules.
+
+According to Aalto, every customer is equal. Be it a high-ranking official, an aristocrat, a commoner on city streets, or an Exile shunned by society, they are no different. Aalto never categorizes his customers into ranks — no high and low; no rich and poor. Treating every customer equally has always been his unwavering principle.
+
+Yet, there would always be those who try to test his limit.
+
+“Aalto, right? You’re comin’ with us.”
+
+Aalto sensed the ill intention behind the visitor’s approach, but he put on a welcoming smile as usual.
+
+“Aww... Sorry, pal, but that’s a no-can-do. This customer right here was in line first.”
+
+Suddenly, the other client was shoved aside as the thugs barged in, causing chaos and panic in the crowded room. The other patrons all fled, fearful of injury.
+
+Aalto quickly came to the victim’s aid, guiding them to safety with a gentle hand. With a calm demeanor, he righted a toppled chair and casually draped an arm around the agitated thug’s shoulder.
+
+“Listen, buddy, everything has its rules. I’ve got mine written down right here, see? ‘First come, first served. No pushing or shoving.’ What am I supposed to do with you breaking two rules in one go?” 
+
+The thug shook his arm off, “If our boss wants to see someone, he gets what he wants. That’s the rule we go by.”
+
+Mist obscured the crowd as Aalto’s words ended. He swiftly incited chaos, causing the thugs to turn on each other in panic.
+
+“Oops, my bad. I forgot to mention another rule: ‘No hustling deals.’ Let your boss know not to break any rules next time. Can’t do business without them.”
+
+With their tails tucked between their legs, the thugs fled, leaving Aalto to return to his usual welcoming smile. 
+
+“Alrighty then! Let’s pick up where we left off. What was it you wanted to inquire about again, good sir?”
+
+### A Perfect Duo
+A perfect duo.
+
+That’s how they dub themselves.
+
+Whenever Aalto the information broker is brought up, people can’t help but think of that little girl with pink ponytails. The two are almost inseparable, and their presence brings a burst of noise wherever they go.
+
+Outside a heavily guarded building, a man in sunglasses leaned casually against the wall, while the little girl next to him used her hands as binoculars to scan the area.
+
+“See the target? The one we’re after.”
+
+“Yuppers! Target sighted. Encore will get it done real quick, as long as Aalto doesn’t drag behind me!” 
+
+“Aw. Encore, you broke my heart. My plan is flawle—”
+
+Before he could finish, Encore had already dashed out with Cloudy and Cosmos, leaving Aalto’s words hanging in the air.
+
+In the distance, Aalto could see Encore talking to the guard, making big gestures in the air, and occasionally pointing at him. 
+
+When Aalto got there, the guard let him in and patted his shoulder. He looked sympathetic.
+
+“Buddy, must be hard raising your daughter alone all these years.” 
+
+Aalto simply nodded along in silent camaraderie. He took Encore inside the building without encountering any problems. 
+
+“Why do people always believe your stories, Aalto? They all sound so fake!”
+
+“You see, my stories are tailor-made for each situation.”
+
+“What’s that supposed to mean?”
+
+“He’s a single dad. He’d find that heartbreaking family tale you told super relatable. Also, what do you mean my stories are fake? “
+
+Cloudy and Cosmos jumped onto Encore’s shoulders and sang a chorus of “Baa, baa baa.”
+
+“Look! The Woolies think they sound super fake, too.” 
+
+“Well, fake or not, they got the job done just fine. Alright, here comes the real deal. Time to bring out your A game.”
+
+“Woolies Adventure time. Let’s do this!”
+
+### A Free Service
+A service free of charge.
+
+At least, that’s how Encore saw it.
+
+Aalto is well-known to be a profit-driven broker. Pay enough money and he’d readily provide any information. And so, his potential customers always come with a hefty sum of money prepared.
+
+However, his desired payments can sometimes be unpredictable and bizarre — ranging from a black pearl to a cloud in the sky or even a piece of music.
+
+Some may throw a tantrum over the seemingly ridiculous request, but Aalto would simply show them the door with a polite smile.
+
+“My dear customer, ever heard of the saying ‘amiability makes you rich’? You really need to mind your language. Besides, it’s just business, not charity. If you can’t be bothered with the payment, then I’m afraid we’ll just have to do business at another time.” 
+
+Once, a ragged little boy paced back and forth of Aalto’s door for several days.
+
+“Howdy, little man, what’s with the long face? Let me guess. Lost your puppy?”
+
+“Wow! You really know everything! So, do you know where Pebbles went?”
+
+“You know, there’s no such thing as a free lunch. You want my help, then you’ll have to pay up.”
+
+The boy shook his head, disappointed,"But I don’t have anything on me."
+
+“Well, that’s rather unfortunate... Let’s see. How about you pay me after I find Pebbles for you?”
+
+Aalto’s mist soon spread to every corner. Eventually, he found the lost puppy outside the city and safely brought it back.
+
+Beneath the twinkling night stars, a happy puppy ran to the little boy, wagging its tail in excitement. 
+
+As today’s story came to an end, Encore couldn’t help but ask, “I didn’t know you’d help people for free!”
+
+Aalto responded with a smile, idly twirling a small marble in his hand. On its surface was a roughly carved smiley face, reminiscent of a young boy’s crafting.
+
+### Water the Flowers, Dear Guest
+"Welcome to the Black Shores! Would you like to start by watering the flowers, or saving humanity?"
+
+The Black Shores is situated on a remote island. Aside from the regular monsoons, currents, and butterflies, the island is only ever visited by the rising and falling tides. This uncharted area is not found on any world map.
+
+This secretive organization is dedicated to the lofty goals of world salvation: the kind people would only expect to see in tales.
+
+It's no wonder that people often struggle to believe Aalto, a seemingly unserious and elusive figure, is tied to this enigmatic group.
+
+To truly understand Aalto, one needs to see through his enigmatic exterior to uncover the kind and steadfast heart beating within.
+
+He was well aware that his mist alone could never hide the permanent wounds inflicted by the Lament on this planet.
+
+This is why he readily agreed to a long-term cooperation with the Black Shores upon first setting foot on the island through an invitation.
+
+So far, he has provided the Black Shores with a wealth of intelligence and helped them recruit trustworthy candidates to bolster their Think Tank.
+
+He will aid the Black Shores in putting together their plans... Until that person returns.
+
+==Cherished Items==
+### Wind Chimes
+A seemingly inconspicuous bone flute that is, in fact, a tape recorder that Aalto has owned since he was a child. Aalto carries it with him on various occasions, and this small device has gathered a substantial amount of valuable intelligence for him.
+
+### Intelligence Network
+Aalto is a master at building connections and gathering information. He sees everyone as a potential asset in his intelligence network, making business cards highly valued. True friends are rare, but Aalto knows the key to success lies in knowing more people.
+
+### Vintage Console
+A retro-style gaming console. This console may only offer simple, old-school pixel games, but it ignited the competitive spirit within Aalto and Encore. Both of them have been trying to seize every opportunity to secretly play and outdo each other's high scores on the console. However, for Aalto, the greatest joy comes from having his own records surpassed.

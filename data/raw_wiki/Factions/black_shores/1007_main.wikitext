@@ -1,0 +1,187 @@
+# The Black Shores
+
+**Faction Profile**: Leader: Rover, Founder: Rover, Base: Black Shores Archipelago, Allies: Jinzhou;Montelli Family;Ephor's Palace;Startorch Academy, Enemies: Fractsidus.
+
+{{About|the [[Factions|faction]]|the location|The Black Shores}}
+
+The '''Black Shores''' is a global organization enshrouded in mysteries and turmoil, headquartered on the remote [[Black Shores Archipelago]] and built on a large piece of [[Tacetite]] ore land mass that remains sealed away from the world in thick digital fog. They are dedicated to the hefty goal of world salvation. It is still uncertain when or who will lift its veil, allowing it to once more shoulder the task of connecting the world.
+
+{{TOC limit}}
+
+==Members==
+===Notable Personnel===
+{| class="article-table sortable"
+!Icon!!Member!!Position
+!Status
+|-
+|{{Character|Rover|notext=1|nobr=1}}
+|[[Rover]]
+|Leader and Founder
+Chief Steward
+Astral Modulator
+|Active
+|-
+|{{Character|Shorekeeper|notext=1|nobr=1}}
+|[[Shorekeeper]]
+|Guardian
+Leader's Assistant
+Second-in-command
+|Active
+|-
+|{{Character|Camellya|notext=1|nobr=1}}
+|[[Camellya]]
+|Bloom Bearer
+Combat Tester
+|Active
+|-
+|{{Character|Aalto|notext=1|nobr=1}}
+|[[Aalto]]
+|Consultant
+|Active
+|-
+|{{Character|Encore|notext=1|nobr=1}}
+|[[Encore]]
+|Consultant
+|Active
+|-
+|{{Character|Galbrena|notext=1|nobr=1}}
+|[[Galbrena]]
+|Consultant
+|Active
+|-
+|{{Character|Buling|notext=1|nobr=1}}
+|[[Buling]]
+|Consultant
+|Active
+|}
+
+===Consultants===
+*[[Arno]]
+*[[Valentina]] (Remote Commander of the Emergency Response Team)
+*[[Yhoran]] (Emergency Response Team Member)
+*[[Yuri]] (Emergency Response Team Member)
+
+===Bloom Bearers===
+{{Column|2|
+*[[Adrian]]
+*[[Aleksei]] †
+*[[Ariosto]]
+*[[Artemisia]]
+*[[Bangor]] †
+*[[Beatrice]]
+*[[Chengshi]] (Plant Breeder)
+*[[Constantine]]
+*[[Eleanor]] (Gardener)
+*[[Fran]]
+*[[Fritz]] †
+*[[Gedao]]
+*[[Gliese]]
+*[[Hoda]] † (Field Medic)
+*[[Huanliu]]
+*[[Igor]] †
+*[[Isidora]]
+*[[Jiuri]]
+*[[Kepler]]
+*[[Kresser]] †
+*[[Leclerc]] (Cognitive Behaviorist)
+*[[Lester]]
+*[[Margo]] †
+*[[Meiji]] †
+*[[Monica]] (Chief Administrator)
+*[[Morisha]]
+*[[Nessa]] †
+*[[Niya]] †
+*[[Panoram]] (Gardener)
+*[[Paranora]] (Gardener)
+*[[Platya]]
+*[[Ria]]
+*[[Schubert]]
+*[[Suellen]] †
+*[[Sumika]] †
+*[[Tykwer]]
+*[[Valery]] †
+*[[Vicki]]
+*[[Villeneuve]]
+*[[Weidenfeller]] †
+*[[Weyl]] (Courier for [[Lollo Logistics]])
+*[[Zhenjian]]
+
+===KU-Roro===
+{{Column|2|
+*[[KU-Bert]]
+*[[KU-Cass]]
+*[[KU-Clinic]]
+*[[KU-Cook]]
+*[[KU-Flora]]
+*[[KU-Goodie]]
+*[[KU-Haha]]
+*[[KU-HeeHee]]
+*[[KU-Hehe]]
+*[[KU-Key]]
+*[[KU-Mamar]]
+*[[KU-Money]]
+*[[KU-Ponder]]
+*[[KU-Repair]]
+*[[KU-Rio]]
+*[[KU-Shosho]]
+*[[KU-Splash]]
+*[[KU-Sprinkle]]
+*[[KU-Uigon]]
+
+==Organization & Operations==
+The Black Shores cannot be accessed from any known lands. Only those recognized by the Black Shores or who have received an invitation and guidance can navigate their way to this hidden place. The frequencies from the Tacetite and of the mist distorts human perception and jams all forms of communication, making the archipelago inaccessible to most. Communication with the outside world is only possible via the Black Shores' Beacon relay system.
+
+Members of the Black Shores who operate abroad, frequently traversing various lands, are known as "Consultants". Those stationed at the headquarters are referred to as "Bloom Bearers". Apart from these fundamental duties, the Black Shores also accommodates a plethora of other specialized roles.
+
+With a mission to combat the destructive Lament, the Black Shores has fostered strong partnerships with nations across Solaris-3. Though the Black Shores openly shares its advanced technologies with its partners, even its own members remain unaware of the true origins of these innovations.
+
+[[File:Item Peculiar Blake Bloom.png|thumb|175px|Blake Bloom]]
+
+The organization has a secretive membership process and most members of the organization keep their identities hidden. Their symbol is a [[Blake Bloom]], a Remnant plant with energy from the island and each member wears it on their person. Only those who wear it can step on their soil.
+
+===Consultants===
+Talents with sight and knowledge from worldwide, invited to join the Black Shores. They operate abroad, frequently traversing various lands. Though excelling in different expertise, they act with a consensus to counter the threat of the Lament. 
+
+===Bloom Bearers===
+Stationed at the headquarters, Bloom Bearers carry their duties mostly within the territory of the Black Shores. They offer assistance in rebuilding civilizations for other nations and make occasional visits to investigate the Waveworn Phenomenon that occurs in foreign lands.
+
+===Gardeners===
+In charge of administrative duties such as organizing the information of new candidates.
+
+===The Shorekeeper===
+A mysterious lifeform that rests beneath the Black Shores' subterranean galaxy. Her physical structure and age are shrouded in mystery. In the complicated coding language of the Tethys System, the name "Shorekeeper" also means "Guardian of Secrets". She chose to call herself "Shorekeeper" to symbolize her role in watching over those who venture away from the shores into faraway lands.
+
+==Equipment & Technology==
+They have developed a [[The Lament|Lament]] prediction system and have established mutual partnerships with nations worldwide. The [[Resonance Beacon]]s are set up to monitor the Lament, collecting data in real-time. They use monitoring registers that they had placed around the world to monitor the [[Sentinels]]. The TD observatory is used to monitor Tacet Discords across Solaris, it handles collection, storage and transmission of anything related to TDs.  
+
+===The Tethys System===
+The [[Tethys System]], also known as the Civilization Simulation Sand Table, is a supercomputer unique to the Black Shores. The Tethys System has no discernible energy source, physical infrastructure, or processing core, but is instead powered entirely by the Tacetite land mass upon which the Black Shores Archipelago was built upon. Its coding language is extremely complex, and it is only known that its terminals take the form of various autonomous robots. In essence, the Tethys System is almost akin to a natural phenomenon, with an origin that remains entirely mysterious. The results generated by the Tethys System are projected as a starry sky within the underground of the Black Shores, made possible by multiple Anchors and underground Data Hubs. This has earned the underground region the title "City of Eternal Night".
+
+===The Black Shores Robots===
+These unique robots, found throughout the Black Shores, serve as the physical terminals of the Tethys System. Their construction and performance capabilities remain largely unknown, yet they possess direct access to the system, second only to its administrator. Within the Black Shores, these robots function both as assistants and tools in the daily activities of its members.
+
+Each terminal has a distinct personality, and the study of these robots has advanced the field of cognitive psychology.
+
+The KU-robots found all over the island are directly linked to the Tethys System. The Tethys system gives them all their own personalities and voice frequencies are encoded into languages that humans can understand. The robots can be considered a living race of their own.  
+
+===Stellar Matrix===
+Based on the computational protocols of the Tethys System, the Stellar Matrix is a data package format that functions similarly to a highly compressed file. It has the capacity to store immense amounts of information and even simulate a Lament.
+
+Certain individuals can access these matrices under specific circumstances, making them an integral part of the Tethys System's operational framework. The first member to define a Stellar Matrix noted that standards of observing and evaluating one are similar to the astronomical standards of Solaris-3.
+
+====Necrostar====
+A type of Stellar Matrix. Inside the Tethys System, a celestial body called Necrostar swallows the faulty data in its wake, a black hole where forsaken Matrices find their end. Even the newfound science of Tacetite could not provide explanations for its fundamental nature, as all are subject to the gravity within it.
+
+===Tethys' Space Anchors===
+Stabilizing devices called Anchors are strategically positioned throughout the above and underground parts of the Black Shores. Their primary function is to calibrate and stabilize the frequencies of the giant Tacetite that makes up the island, effectively isolating the Tethys System's virtual layer from reality. Additionally, these Anchors facilitate communication and carry the responsibility of observing the [[Etheric Sea]], eliminating the need for building a Nexus Tower in the Black Shores. The Anchors are independently developed and designed by the Black Shores, drawing inspiration from the reactor control rods used in pre-Lament reactor engineering. They are considered exemplary models of the Black Shores' minimalist engineering design. 
+
+===Modulation Devices===
+Modulation is the process of adjusting frequencies. In Solaris-3, frequencies serve as a crucial tool for uncovering the truth about reality. By altering these frequencies, one can delve into the very core of existence. At the Black Shores, modulating Stellar Matrices, collection of stars, is crucial for tracing and analyzing the Lament. Over the course of the Black Shores' history, only one individual has even been honored with the title of [[Rover|"The Modulator"]].  
+
+==History==
+''TBA''
+
+===Videos===
+
+==Trivia==
+*[[Xiangli Yao]] was invited to join the Black Shores by [[Aalto]], but he denied the invitation.

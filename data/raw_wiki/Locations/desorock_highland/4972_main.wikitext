@@ -1,0 +1,60 @@
+**Profile**: Title: Desorock Highland, Origin: Huanglong.
+
+{{Location Tabs|Map:Desorock Highland}}
+
+Desorock Highland, once a fertile river valley, was the source of many streams that nourished the lands downstream. After the onset of the Waveworn Phenomenon, abnormal weather patterns drained most of these water sources, leaving the lake area dry and giving rise to Tacet Fields and TDs.
+'''Desorock Highland''' is a region in [[Huanglong]]. The region is in northwestern Jinzhou and borders the [[Central Plains]] and [[Norfall Barrens]]. The area features a frontline where many battles against TDs were fought, and there are multiple military bases and exile camps in the region. 
+
+==Areas== 
+{| class="article-table alternating-colors-table tdc1" style="width: 100%;"
+! style="width: 200px;" | Name
+! Image
+! Description
+|- id="Camp Overwatch"
+| [[Camp Overwatch]]
+| [[File:Camp Overwatch.png|180px]]
+
+| The Midnight Rangers' frontline base near [[Norfall Barrens]].
+|- id="Misty Coast"
+| [[Misty Coast]]
+| [[File:Misty Coast.png|180px]]
+
+| The Eastern side of region, littered with exiles. 
+|- id="Rearguard Base"
+| [[Rearguard Base]]
+| [[File:Rearguard Base.png|180px]]
+
+| A Midnight Ranger base on the south side of Desorock Highland, closer to Jinzhou.
+|- id="Withering Frontline"
+| [[Withering Frontline]]
+| [[File:Withering Frontline.png|180px]]
+
+| A large Tacet Field, home to the [[Thundering Mephis]].
+|}
+==Quests==
+{{Quest by Category List|Desorock Highland}}
+
+==Exploration Report==
+===Flocks of the Extraordinary I===
+Unlocked by reaching 50% exploration.
+
+===Flocks of the Extraordinary II===
+Unlocked by reaching 100% exploration.
+
+==Notable Features==
+Desorock Highland is home to the [[Torn Pages from Desorock Highland]] series. The [[Gallery#Sceneries|Viewpoint]] "Raindrops of the Past" is found on the southern edge of the Withering Frontline.
+
+===Domains===
+* [[Perspective Bender]]
+
+===Tacet Fields===
+* [[Tacet Field: Desorock Highland I]]
+* [[Tacet Field: Desorock Highland II]]
+
+===Bosses===
+====Overlord Class====
+*{{Enemy|Thundering Mephis}}
+*{{Enemy|Impermanence Heron}}
+
+===Resources===
+*{{Item|Umbragricus}}

@@ -1,0 +1,44 @@
+**Profile**: Title: Western Fang Peaks, Origin: Huanglong.
+
+{{Intro/Location|Western Fang Peaks}} 
+
+==Areas==
+{| class="article-table alternating-colors-table tdc1" style="width: 100%;"
+! style="width: 200px;" |Name
+! Description
+|-
+|[[File:Thousandfold Foundry Skyflow Lines.png|180px]]
+[[Thousandfold Foundry: Skyflow Lines]]
+|
+|-
+|[[File:Thousandfold Foundry Ruination Grounds.png|180px]]
+[[Thousandfold Foundry: Ruination Grounds]]
+|
+|-
+|[[File:Thousandfold Foundry Assembly Bay.png|180px]]
+[[Thousandfold Foundry: Assembly Bay]]
+|The hub where the Skyworks' assembly lines converge. Here, components are fused to form Autopuppets of all kinds. At the far end of this vast mechanical network lies the core of the Myriad Snare—the Snare Platform.
+|-
+|[[File:Snare Platform.png|180px]]
+[[Snare Platform]]
+|
+|}
+
+==Quests==
+{{Quest by Category List|Western Fang Peaks Quests}}
+
+==Notable Features==
+===Challenges===
+*[[Western Fang Peaks Tacet Field]]
+
+===Bosses===
+*{{Enemy|Myriad Snare: Rustfire Chassis}}
+
+===Resources===
+*{{Item|Jade Hexahedron}}
+*{{Item|White Jade Beauty}}
+*{{Item|Uncracked Jade}}
+*{{Item|Leafweaver}}
+
+==Soundtracks==
+{{Soundtracks by Category Table|type=location}}

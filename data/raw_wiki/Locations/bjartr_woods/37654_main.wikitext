@@ -1,0 +1,68 @@
+**Profile**: Title: Bjartr Woods, Origin: Roya Frostlands.
+
+{{Intro/Location|Bjartr Woods}} It is home to the [[Roya Tribe]] and the habitat of the [[Soliskin]]. 
+
+==Areas==
+{| class="article-table alternating-colors-table tdc1" style="width: 100%;"
+! style="width: 200px;" |Name
+!Image
+!Description
+|- id="Haldarheim"
+|[[Haldarheim]]
+|[[File:Haldarheim.png|180px]]
+|
+|- id="Soliseed Plains"
+|[[Soliseed Plains]]
+|[[File:Soliseed Plains.png|180px]]
+|
+|- id="Solisylum"
+|[[Solisylum]]
+|[[File:Solisylum.png|180px]]
+|
+
+|- id="First Solistree"
+|[[First Solistree]]
+|[[File:First Solistree.png|180px]]
+|
+|- id="Second Solistree"
+|[[Second Solistree]]
+|[[File:Second Solistree.png|180px]]
+|
+|- id="Third Solistree"
+|[[Third Solistree]]
+|[[File:Third Solistree.png|180px]]
+|
+|- id="Fourth Solistree"
+|[[Fourth Solistree]]
+|[[File:Fourth Solistree.png|180px]]
+|
+|- id="The Solistree's Core"
+|[[The Solistree's Core]]
+|[[File:The Solistree's Core.png|180px]]
+|
+|}
+
+==Quests==
+{{Quest by Category List|Bjartr Woods Quests}}
+
+==Exploration Report==
+==="Where Glommoths Once Roamed" (Excerpt I)===
+* Achieve 50% Area Exploration Progress to unlock the full report. 
+
+==="Where Glommoths Once Roamed" (Excerpt II)===
+* Achieve 100% Area Exploration Progress to unlock the full report. 
+
+==Notable Features==
+===Resources===
+* {{Item|Arithmetic Shell}}
+* {{Item|Fern Spore}}
+* {{Item|Pine Cone}}
+
+==Descriptions==
+A sacred homeland of the Roya and the habitat of the Soliskin. Bathed in the radiance of the Reactor Drive, its towering trees reach hungrily toward the light, their deep, interwoven roots returning that energy to the earth.
+
+The forest where the Soliskin dwell. Bathed in the light of the Reactor Drive, the woods remain untouched by the ravages of Void Storms.
+
+==Trivia==
+===Etymology===
+* "Bjartr" is an Old Norse word meaning "bright".

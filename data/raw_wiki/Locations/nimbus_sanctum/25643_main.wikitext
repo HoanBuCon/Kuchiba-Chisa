@@ -1,0 +1,48 @@
+**Profile**: Title: Nimbus Sanctum, Origin: Rinascita.
+
+{{Intro/Location|Nimbus Sanctum}} The sea of clouds lingering in this place is formed by concentrated Remnant Energy. Local legends of Ragunna speak of a serene, mirror-like area at the heart of Nimbus Sanctum, said to purify the darkest of thoughts and transform them into part of the clouds. At times, a haunting melody can be heard echoing from the depths of the sanctum.
+
+==Description==
+The Nimbus Sanctum is the only Sonoro Sphere that exists in the physical world, where mist and clouds are formed by concentrated Remnant Energy.The sea of clouds that envelop the Sanctum is believed to be the lingering aftermath of the first Dark Tide. As the mist rose, it gradually submerged the former headquarters of the Order of the Deep, the Seminary of the Forgotten, forcing them to relocate to the Cathedral of Mercury in Ragunna City.Local legends of Ragunna speak of a serene, mirror-like area at the heart of Nimbus Sanctum, said to purify the darkest of thoughts and transform them into part of the clouds. Many pilgrims, drawn by this tale, journey here in search of inner peace.
+
+==Areas==
+{| class="article-table alternating-colors-table tdc1" style="width: 100%;"
+! style="width: 200px;" |Name
+!Image
+!Description
+|- id="Mistveil Bay"
+|[[Mistveil Bay]]
+|[[File:Mistveil Bay.png|180px]] 
+
+|
+|- id="Atrium of Reflections"
+|[[Atrium of Reflections]]
+|[[File:Atrium of Reflections.png|180px]] 
+
+|
+|- id="Gold's Landing"
+|[[Gold's Landing]]
+|[[File:Gold's Landing.png|180px]] 
+
+|}
+
+==Quests==
+{{Quest by Category List|Nimbus Sanctum Quests}}
+
+==Exploration Report==
+
+==='''Within Nimbus Sanctum I'''===
+* Unlocked by reaching 50% exploration.
+
+==='''Within Nimbus Sanctum II'''===
+* Unlocked by reaching 100% exploration.
+
+==Notable Features==
+===Enemies===
+====Overlord Class====
+* {{Enemy|Lorelei}}
+* {{Enemy|Nightmare: Mourning Aix}}
+====Elite Class====
+====Common Class====
+
+===Resources===

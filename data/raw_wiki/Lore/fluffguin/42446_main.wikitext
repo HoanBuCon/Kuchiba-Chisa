@@ -1,0 +1,16 @@
+**Profile**: Title: Fluffguin, Origin: Lahai-Roi.
+
+> "Goo-goo, ga-ga! Unclaimed, unknowable, and belonging to none!"
+> — -Fluffguin Stone
+A native bird of Lahai-Roi, it's believed they originally came from the Roya Frostlands.
+
+==Scenery Record - Fluffguin Stone==
+{{Dialogue Start}} 
+:'''Abby:''' Abby doesn't know either...
+:'''Rover:''' What's wrong? What are they arguing about?
+:'''Abby:''' They're arguing over that round, chubby thing... trying to decide who actually laid the egg.
+{{Dialogue End}} 
+
+==Trivia==
+*Their appearance seems to matches Fiordland Crested Penquin.
+*[https://evangelion.fandom.com/wiki/Pen_Pen Pen Pen] from Evangelion is a Fiordland Crested Penquin.

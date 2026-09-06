@@ -1,0 +1,49 @@
+**Profile**: Title: Stagnant Run, Origin: Roya Frostlands.
+
+{{Intro/Location|Stagnant Run}}
+
+==Areas==
+{| class="article-table alternating-colors-table tdc1" style="width: 100%;"
+! style="width: 200px;" |Name
+!Image
+!Description
+|- id="Atuja Camp"
+|[[Atuja Camp]]
+|[[File:Atuja Camp.png|180px]]
+|
+|- id="Jetrified Ridge"
+|[[Jetrified Ridge]]
+|[[File:Jetrified Ridge.png|180px]]
+|
+|- id="Jetray Marsh"
+|[[Jetray Marsh]]
+|[[File:Jetray Marsh.png|180px]]
+|
+|- id="Argentflare Drapese"
+|[[Argentflare Drapes]]
+|[[File:Argentflare Drapes.png|180px]]
+|
+|}
+
+==Quests==
+{{Quest by Category List|Stagnant Run Quests}}
+
+== Exploration Report ==
+
+===A Study of Royan History (Excerpt I)===
+* Unlocked by reaching 50% exploration.
+
+===A Study of Royan History (Excerpt II)===
+* Unlocked by reaching 100% exploration.
+
+==Notable Features==
+===Challenges===
+* [[Tacet Field: Stagnant Run]]
+* [[Stagnant Run Tacet Discord Nest]]
+* [[Forgery Challenge: Lesson in Embers]]
+
+===Resources===
+* {{Item|Gemini Spore}}
+* {{Item|Cradle Lichen}}
+* {{Item|Jade Wood}}
+* {{Item|Pine Cone}}

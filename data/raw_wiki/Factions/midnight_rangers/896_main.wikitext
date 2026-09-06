@@ -1,0 +1,92 @@
+# Midnight Rangers
+
+**Faction Profile**: Leader: Jiyan.
+
+The '''Midnight Rangers''' are the primary military force of the [[Jinzhou]] region, tasked with protecting the land from external threats. The military branch is integral to [[Huanglong]]'s defense strategy, deploying wherever the nation’s enemies pose a threat. They are under the jurisdiction of the Ministry of War, and led by General [[Jiyan]].
+
+==Organization==
+===Vanguard===
+The Vanguard is responsible for conducting offensive combat operations against Tacet Discords. They have stopped recruiting non-Resonators in recent years due to the advent of increasingly intense battles.
+
+===Rearguard===
+The Rearguard protect the city and conduct a number of non-combat roles such as logistics, transport, maintenance and medical care to support the Vanguard on the frontline.
+
+===Outriders===
+The Outriders is a detachment unit that operate independently from the main troop, focusing on gathering vital information about enemy territories. Their mobility and combat prowess make them essential in navigating uncharted territories and uncovering potential threats. They mostly consist of volunteers or reservists. 
+
+==Notable Personnel==
+{| class="article-table"
+!Icon!!Personnel!!Position
+|-
+|[[File:Resonator Jiyan.png|50px]]
+|[[Jiyan]]
+|General
+|-
+|[[File:Yhan_headshot.png|50px]]
+|[[Yhan]]
+|Simulation Training Instructor
+|-
+|[[File:Resonator Yangyang.png|50px]]
+|[[Yangyang]]
+|Outrider
+|-
+|[[File:Resonator Danjin.png|50px]]
+|[[Danjin]]
+|Unknown
+|}
+===Other Known Personnel===
+{{NPCs by Category List
+|Midnight Rangers
+|header = Midnight Rangers
+
+*[[Ke Ni]]
+*[[Xinyu]]
+*[[Yanwu]]
+
+==Former Personnel==
+{| class="article-table"
+!Personnel !!Position!!Status!!Last Active
+|-
+|[[Geshulin|Geshu Lin]]
+|General
+|Missing
+|3 years ago
+|-
+|[[Jingzhu]]
+|Vanguard Member
+|Veteran
+|Unknown
+|-
+|[[Linghan]]
+|Vanguard Captain
+|Veteran
+|Unknown
+|-
+|[[Gongmin]]
+|Unknown
+|Veteran
+|Unknown
+|-
+|[[Zongye]]
+|Unknown
+|Veteran
+|Unknown
+|}
+
+==Known Connected Weapons==
+*[[Amity Accord]]
+*[[Commando of Conviction]]
+*[[Dauntless Evernight]]
+*[[Jinzhou Keeper]]
+*[[Undying Flame]]
+
+==Related Documents==
+*[[Gorges of Spirits Tacet Discord Battle Report]]
+*[[Outrider Squad's Norfall Valley Investigation Logs I]]
+*[[Outrider Squad's Norfall Valley Investigation Logs II]]
+
+=== Videos===
+
+==Trivia==
+* During their first lesson, new recruits of the Midnight Rangers must pay tribute to fallen soldiers in Knell Square before they are allowed on the battlefield.
+* Due to their presence on the frontlines, Midnight Rangers have only very few opportunities for leisure and fun, one of which is the [[Riverside Games]].

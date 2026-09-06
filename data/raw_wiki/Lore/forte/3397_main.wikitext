@@ -1,0 +1,78 @@
+'''Forte''' is the Resonance Abilities that belongs to a resonator.
+
+==Description==
+The Resonance Abilities of a [[Resonator]] are referred to as their '''Forte'''. In the world of ''Wuthering Waves'' there are as many different Forte's as there are Resonators. It is believed that a Resonator's past and subconscious mind influence their Forte, thus making their Fortes unique. 
+
+As a part of what seems to be routine health monitoring of Resonators (and as a preventative safety measure) each Resonator goes through an examination and is then written a [[:Category:Character Forte Examination Report|Forte Examination Report]] that provides information on their Forte and status as a Resonator.
+
+While Lorewise not all Fortes seem to be suitable for combat, in the [[Combat System]] of ''Wuthering Waves'' a playable Resonator's set of '''Combat Skills''' is synonymous to their Forte.
+
+==Combat Skills==
+There are six Fortes that all playable Resonators possess:
+* [[Basic Attack]]
+* [[Resonance Skill]]
+* [[Resonance Liberation]]
+* [[Forte Circuit]]
+* [[Inherent Skill]]
+* [[Intro Skill]]/[[Outro Skill]]
+----
+===Basic Attack===
+[[File:Skill Broadblade.png|50px|right|[[Broadblade]]]]
+[[File:Skill Gauntlets.png|50px|right|[[Gauntlets]]]]
+[[File:Skill Pistols.png|50px|right|[[Pistols]]]]
+[[File:Skill Rectifier.png|50px|right|[[Rectifier]]]]
+[[File:Skill Sword.png|50px|right|[[Sword]]]]
+[[Basic Attack]]s refer to Resonators' normal attacks, usually consisting of a repeated combo that deals their respective [[Attribute]]'s DMG.
+
+Other than their basic attack combo sequence, there are three other types of attacks that the Basic Attack can deal:
+*[[Heavy Attack]]: Holding a Basic Attack will consume [[Stamina]] and deal increased [[Attribute]] DMG.
+*[[Mid-Air Attack]]: Performing a Basic Attack whilst in the air will consume [[Stamina]] to plunge from mid-air and deal increased [[Attribute]] DMG.
+*[[Dodge Counter]]: After a successful [[Dodge]], performing a [[Basic Attack]] in quick succession will cause a Resonator to perform a Counterattack, dealing increased [[Attribute]] DMG.
+
+''Some Resonators might deviate from this pattern.''
+----
+===Resonance Skill===
+[[Resonance Skill]], is a [[Forte]] that regenerates energy for the usage of [[Resonance Liberation]]. The exact details of a Resonance Skill depends on the Resonator.
+
+Whilst most Resonance Skills have [[CD]]s, some Resonators' are an exception to this rule and don't have a [[CD]] for their Skills.
+
+''E.g. [[Danjin]]'s Resonance Skill - [[Crimson Fragment]].''
+----
+===Forte Circuit===
+'''Forte Circuits''' are unique to each character, both in ways to use and ways to increase (e.g. [[Danjin]]'s usage of her skill or [[Mortefi]] dealing DMG to increase his "Annoyance"). The usage of Forte Circuits is beneficial to combat all around, providing buffed output when used.
+----
+===Resonance Liberation ===
+'''Resonance Liberation''', used by clicking R, is a Forte that is released by using accumulated energy. They tend to be much more powerful than the Resonance Skills.
+----
+===Intro/Outro Skills===
+'''Intro''' and '''Outro Skills''' are Fortes that are used by switching characters after building a set amount of Concerto Energy. Resonators will do a joint attack after swapping with full Concerto Energy, dealing increased DMG, with the leaving character either giving a buff or dealing a massive amount of damage.
+
+*Changli's [[Strategy of Duality]] gives 20% Fusion DMG Bonus and 25% Resonance Liberation DMG Bonus.
+----
+===Concerto Energy===
+'''Concerto Energy''' is increased by dealing damage to enemies.
+----
+==Tutorials==
+
+There are '''11''' Tutorials related to Fortes and their use in [[Combat]]
+====Resonance Liberation====
+
+====Outro Skill & Intro Skill====
+
+====Dodge====
+
+====Counterattack====
+
+====Counter Skill====
+
+====Aero Erosion Effect====
+
+====Electro Flare Effect====
+
+====Glacio Chafe Effect====
+
+====Fusion Burst Effect====
+
+====Spectro Frazzle Effect====
+
+====Havoc Bane Effect====

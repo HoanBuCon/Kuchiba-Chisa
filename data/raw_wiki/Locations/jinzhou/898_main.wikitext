@@ -1,0 +1,82 @@
+**Profile**: Title: Jinzhou, Origin: Huanglong.
+
+{{About|the region|the area|Jinzhou (Area)|the province|Jinzhou (Province)}}{{Intro/Location|Jinzhou}} It is the fortified capital city of the [[Jinzhou (Province)|province of the same name]]. Jinzhou is the most recent city established in Huanglong, the only city in Outer Huanglong, and was founded by [[Rover]] during their previous awakening after the emergence of the Sentinel [[Jué]].
+
+According to [[Chixia]] and [[Sanhua]], it is also neither the biggest nor the most populated of the seven major cities. Situated on a lake, its gates and narrow bridges protect the lower city from invasion to the north and west, while the upper city and harbour are embedded into the mountain framing the city. In the event of a catastrophic collapse of the city's defense, a dam near Lake Heights can be used to flood the lower city and protect what remains from the Tacet Discord threat.
+
+==Areas==
+{| class="article-table alternating-colors-table tdc1" style="width: 100%;"
+! style="width: 200px;" |Name
+! Description
+|- id="Jinzhou (Area)"
+|[[File:Jinzhou.png|180px]]
+[[Jinzhou (Area)]]
+|The city proper, and centre of all culture in the province.
+|- id="Lake Heights"
+|[[File:Lake Heights.png|180px]]
+[[Lake Heights]]
+|A hill near the city where fallen warriors lay at rest.
+|- id="Shade Ridge"
+|[[File:Shade Ridge.png|180px]]
+[[Shade Ridge]]
+|The most important mountain of Jinzhou and its highest point.
+|- id="Sky Ray"
+|[[File:Sky Ray.png|180px]]
+[[Sky Ray]]
+|A series of waterfalls cascading down to the sea.
+|}
+===Points of Interest===
+{| class="article-table alternating-colors-table tdc1" style="width: 100%;"
+! style="width: 200px;" |Name
+!Description
+|- id="City Hall"
+|[[File:City Hall.png|180px]]
+[[Jinzhou City Hall]]
+|Located in the highest position in Jinzhou, the City Hall stands as the paramount political hub, housing the vital data repository — the Grand Library. Since the establishment of Jinzhou, it has served as the residence of every Jinzhou Magistrate. The current Magistrate of Jinzhou is Jinhsi.
+|- id="Jinzhou Huaxu Academy"
+|[[File:Huaxu Academy.png|180px]]
+[[Jinzhou Huaxu Academy]]
+|Huaxu Academy is a collective of researchers dedicated to inventing new ways to aid the prosperity of Huanglong, as well as uncovering the mysteries of the world. Focused on discerning the truth from remnants of ancient knowledge, echoes of the world, and the enigmatic frozen tundra, the researchers at Huaxu Academy delve into the depths of understanding.
+|- id="Pioneer Association"
+| [[File:Pioneer Association Jinzhou.png|180px]]
+[[Jinzhou Pioneer Association]]
+|The Pioneer Association, founded before the Lament, is a prestigious organization in science and education.
+
+The Pioneer Association continues to collaborate with scientists, photographers, and journalists to explore and document the world's wonders after the Ebb Tide.
+
+Their hard work leads to groundbreaking discoveries that captivate global audiences through mediums like magazines, maps, books, entertainment, and interactive media.
+|}
+
+==Quests==
+{{Quest by Category List|Jinzhou Quests}}
+
+==Exploration Report==
+===Jinzhou City Construction Project Report I===
+
+*Unlocked by reaching 50% exploration.
+
+===Jinzhou City Construction Project Report II===
+*Unlocked by reaching 100% exploration.
+
+==Notable Features==
+===Resources===
+*{{Item|Angelica}}
+*{{Item|Bittberry}}
+*{{Item|Bunnywort}}
+*{{Item|Caltrop}}
+*{{Item|Climbing Fig}}
+*{{Item|Dewvetch}}
+*{{Item|Gemberry}}
+*{{Item|Gloom Slough}}
+*{{Item|Lemongrass}}
+*{{Item|Lotus Seeds}}
+*{{Item|Pearl Leaf}}
+*{{Item|Perilla}}
+*{{Item|Umbragricus}}
+*{{Item|Waterlamp}}
+
+==Soundtracks==
+{{Soundtracks by Category Table|type=location}}
+
+==Trivia==
+*Jinzhou was known as Tiānchéng in [[Version/Closed Beta I|CBT1]].

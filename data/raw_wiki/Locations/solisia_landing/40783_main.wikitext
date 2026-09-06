@@ -1,0 +1,51 @@
+**Profile**: Title: Solisia Landing, Origin: Roya Frostlands.
+
+{{Intro/Location|Solisia Landing}} It is the true destination of the Soliskin after they return to the Solistrees. They become warm sunlight, flowing down the roots and converging as sparks within the Solvein Heartwood to keep the encroaching Voidmatter at bay.
+
+==Areas==
+{| class="article-table alternating-colors-table tdc1" style="width: 100%;"
+! style="width: 200px;" |Name
+!Image
+!Description
+|- id="Dimmr Plains Shaft"
+|[[Dimmr Plains Shaft]]
+|[[File:Dimmr Plains Shaft.png|180px]]
+|
+|- id="Base Camp"
+|[[Base Camp]]
+|[[File:Base Camp lvl2.png|180px]]
+|
+|- id="Rustbound Hillside"
+|[[Rustbound Hillside]]
+|[[File:Rustbound Hillside.png|180px]]
+|
+|- id="Twilight Woodlands"
+|[[Twilight Woodlands]]
+|[[File:Twilight Woodlands.png|180px]]
+|
+|- id="Stalaglow Cavern"
+|[[Stalaglow Cavern]]
+|[[File:Stalaglow Cavern.png|180px]]
+|
+|}
+
+==Quests==
+{{Quest by Category List|Solisia Landing Quests}}
+
+==Exploration Report==
+===Trip Recording: Dimmr Plains Survey Team 1 (Excerpt One)===
+* Achieve 50% Area Exploration Progress to unlock the full report.
+
+===Trip Recording: Dimmr Plains Survey Team 1 (Excerpt Two)===
+* Achieve 100% Area Exploration Progress to unlock the full report.
+
+==Notable Features==
+===Challenges===
+* [[Tacet Field: Solisia Landing]]
+
+===Resources===
+* {{Item|Redbell}}
+* {{Item|Foxtail Kelp}}
+* {{Item|Luxite}}
+* {{Item|Meteoric Iron}}
+* {{Item|Waxweaver Web}}

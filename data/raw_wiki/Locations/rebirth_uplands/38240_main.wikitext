@@ -1,0 +1,36 @@
+**Profile**: Title: Rebirth Uplands, Origin: Roya Frostlands.
+
+{{Intro/Location|Rebirth Uplands}}
+
+==Areas==
+{| class="article-table alternating-colors-table tdc1" style="width: 100%;"
+! style="width: 200px;" |Name
+!Image
+!Description
+|- id="Golden Spiral"
+|[[Golden Spiral]]
+|[[File:Golden Spiral.png|180px]]
+|
+|- id="Lightfall Tunnel"
+|[[Lightfall Tunnel]]
+|[[File:Lightfall Tunnel.png|180px]]
+|
+|- id="Ribcage Bends"
+|[[Ribcage Bends]]
+|[[File:Ribcage Bends.png|180px]]
+|
+|}
+
+==Quests==
+{{Quest by Category List|Rebirth Uplands Quests}}
+
+== Exploration Report ==
+===Research Recording: Sundermere Lakebed - Aleph-1 (Damaged Section)===
+* Unlocked by reaching 50% exploration.
+
+===Audio Transcript: Polar Collective Restructuring Council (Unreleased)===
+* Unlocked by reaching 100% exploration.
+
+==Notable Features==
+===Challenges===
+* [[Rebirth Uplands Tacet Discord Nest]]

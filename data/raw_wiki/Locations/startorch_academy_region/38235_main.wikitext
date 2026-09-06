@@ -1,0 +1,60 @@
+**Profile**: Title: Startorch Academy, Origin: Roya Frostlands.
+
+{{About|the region|the institution|Startorch Academy}}
+
+'''Startorch Academy''' is a [[Region]] located in [[Roya Frostlands]]. It contains the primary settlement and education institute of Lahai-Roi, [[Startorch Academy]].
+
+==Areas==
+{| class="article-table alternating-colors-table tdc1" style="width: 100%;"
+! style="width: 200px;" |Name
+!Image
+!Description
+|- id="Square"
+|[[Square]]
+|[[File:Startorch Academy - Square.png|180px]]
+|The grand square of the Academy, its grand arches welcoming students to the world of discovery and enlightenment.
+|- id="Teaching Zone"
+|[[Teaching Zone]]
+|[[File:Startorch Academy - Teaching Zone.png|180px]]
+|The rooms where educational prowess is grown, nurtured, and tested.
+|- id="Freight Zone"
+|[[Freight Zone]]
+|[[File:Startorch Academy - Freight Zone.png|180px]]
+|The Academy's logistics gate to the outside world, for biking students or those taking the train to the frostlands.
+|- id="Spacetrek Archive - Recreational Zone"
+|[[Spacetrek Archive - Recreational Zone]]
+|[[File:Startorch Academy - Recreational Zone.png|180px]]
+|A place for rest and relaxation, or inquiry with the resourceful I.R.I.S.
+|}
+
+==Quests==
+{{Quest by Category List|Startorch Academy (Region) Quests}}
+
+==Exploration Report==
+===Startorch Academy Student Handbook: Orientation Guide (Excerpt)===
+* Achieve 50% Exploration Progress to unlock the full report.
+
+===Dr. Scott Rabelle's Address on the Founding of Startorch Academy===
+* Achieve 100% Exploration Progress to unlock the full report.
+
+==Notable Features==
+* [[Academy Dormitory]]
+* [[Academy's Dark Side]]
+* [[Auditorium]]
+* [[Auto Parking & Engineering Xpertise]]
+* [[Culinary Station]]
+* [[Rabelle College]]
+* [[Resonator Nursing Unit]]
+* [[Royan Market]]
+* [[Spacetrek Archive]]
+* [[Synth Armament Crafting Bay]]
+
+===Challenges===
+* [[Simulation Training#Lahai-Roi|B.1.N.G.O.]]
+* [[Tactical Hologram: Synchronization]]
+
+===Resources===
+* {{Item|Past Reveries}}
+
+==Soundtracks==
+{{Soundtracks by Category Table|type=location}}

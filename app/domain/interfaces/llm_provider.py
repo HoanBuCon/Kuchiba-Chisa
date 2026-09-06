@@ -23,6 +23,7 @@ class StructuredPrompt(BaseModel):
     retrieved_lore: list[str] = []
     retrieved_evidence: list[Evidence] = Field(default_factory=list)
     rag_decisions: dict[str, bool] = {}
+    output_contract_name: str | None = None
 
 
 class LLMResponse(BaseModel):

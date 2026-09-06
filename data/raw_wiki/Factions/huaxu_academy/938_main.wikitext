@@ -1,0 +1,86 @@
+# Huaxu Academy
+
+The state-run research institute of Huanglong, with branch organizations established in each city.
+'''Huaxu Academy''' is a research institute in [[Huanglong]] with state-run branches in each city. 
+
+==Jinzhou Campus' Organization==
+In the Jinzhou territory, "Huaxu Academy" specifically denotes its Jinzhou Campus. Specializing in Wutherology, Ecoacoustics, and Resonology, the Jinzhou Campus has significantly advanced through achievements such as the development of [[Pangu Terminal]] and the construction of regional [[Resonance Beacons]]. 
+
+==General==
+Huaxu Academy, a renowned scientific research center in Jinzhou, boasts a rich academic heritage and cutting-edge technology. 
+
+As a branch of Huanglong Huaxu Academy, it has produced numerous groundbreaking research results due to its focus on advancing science and technology in the face of the ongoing war against Tacet Discord. 
+
+The academy maintains a high level of independence in its research pursuits, while also actively engaging in academic exchanges with other institutions within Huanglong and beyond. In fact, it was once a key collaborator of the [[Court of Savantae]]. 
+
+Comprised of four primary departments, each with its own specialized functions, Huaxu Academy conducts parallel and cooperative research initiatives. 
+
+Ad hoc project teams are also formed to tackle major challenges as they arise. While the president oversees administrative affairs, the Principle Investigator serves as the academic leader of the academy. 
+
+Comprised of four primary departments, each with its own specialized functions, Huaxu Academy conducts parallel and cooperative research initiatives. 
+
+===Department of Anomaly Studies===
+The Department of Anomaly Studies researches and analyzes abnormal occurrences, constructs theories based on these events, and devises preventative measures. This includes the [[Resonance Beacon]] network model and Wutherological Climate studies in [[Jinzhou]].  
+* Main Disciplines: Wutherology, Remnant Ecoacoustics. 
+
+===Department of Laboratory Evaluation===
+The Department of Laboratory Evaluation analyzes and simulates anomalies using different theories to find optimal solutions. They also design the internal structure of Resonance Beacon and [[Terminal]] for effective use.
+* Main Disciplines: N/A
+
+===Department of Safety===
+The Department of Safety researches and supports the elimination of [[Tacet Discord]]. They design [[Tacetite]] Weapon models for [[Resonators]] and create countermeasure equipment for civilians.
+* Main Disciplines: TD Ecoacoustics, Resonology. 
+
+===Department of Resources===
+The Department of Resources primarily studies [[Waveworn]] substances, processes field materials for research samples, and contributes to the Departments of Laboratory Evolution and Safety.
+* Main Disciplines: Wuthermaterials, TD Ecoacoustics, Plant Ecoacoustics. 
+
+==Branches==
+* [[Jinzhou]] - [[Jinzhou Huaxu Academy]]
+* [[Xuanfang]] - [[Xuanfang Huaxu Academy]] 
+
+==Members==
+===Jinzhou Campus===
+====Notable Personnel====
+{| class="article-table"
+!Icon!!Name!!Department!!Role
+|-
+|[[File:Resonator Xiangli Yao.png|50px]]
+|[[Xiangli Yao]]
+|Unknown
+|Principal Investigator
+Automata Mechanics Researcher
+|-
+|[[File:Resonator Baizhi.png|50px]]
+|[[Baizhi]]
+|Anomaly Studies
+|Remnant Ecoacoustics Researcher
+|-
+|[[File:Resonator Mortefi.png|50px]]
+|[[Mortefi]]
+|Safety
+|Tacetite Weapons Researcher
+|} 
+
+====Other Personnel====
+{{column|2|
+*[[Guowei]]
+*[[Jiuyue]]
+*[[Liuqin]]
+*[[Lizhu]]
+*[[Mingjing]]
+*[[Siqi]]
+*[[Yeyhe]]
+*[[Yuancai]]
+*[[Zhanghua]]
+*[[Zhixiu]]
+
+===Mengzhou Campus===
+====Personnel====
+{{column|2|
+*[[Baizhi]] (temporary transfer)
+*[[Dr. Jin]]
+*[[Fuchang]]
+*[[Jixing]] (temporary transfer)
+*[[Mortefi]] (temporary transfer)
+*[[Yuandai]]

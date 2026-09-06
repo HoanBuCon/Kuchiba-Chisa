@@ -1,0 +1,52 @@
+**Profile**: Title: Gorges of Spirits, Origin: Huanglong.
+
+> 
+The '''Gorges of Spirits''' is a region in [[Jinzhou (Province)|Jinzhou]], [[Huanglong]]. It is the starting point of the game's events.
+==Areas== 
+{| class="article-table alternating-colors-table tdc1" style="width: 100%;"
+! style="width: 200px;" |Name
+! Image
+! Description
+|- id="Bell-Borne Ravine"
+|[[Bell-Borne Ravine]]
+|[[File:Bell-Borne Ravine.png|180px]]
+
+|A ravine infested with ice, ending in a waterfall. Lying in the depths is the great [[Bell-Borne Geochelone]].
+|- id="Clouded Cliffs"
+|[[Clouded Cliffs]]
+|[[File:Clouded Cliffs.png|180px]]
+
+|A Midnight Rangers base defending the path to Inner Huanglong. The site of a great battle years before.
+|- id="Memento Square"
+|[[Memento Square]]
+|[[File:Memento Square.png|180px]]
+
+|A square featuring a large statue of [[Jué]] that is still under construction.
+|- id="Dreaming Cavern"
+|[[Dreaming Cavern]]
+|[[File:Dreaming Cavern.png|180px]]
+
+|A cavern connecting Jinzhou to the land of Xuanfang.
+|}
+
+==Quests==
+{{Quest by Category List|Gorges of Spirits}}
+
+==Exploration Report==
+===Golden Scales of Outer Huanglong I===
+Unlocked by reaching 50% exploration.
+
+===Golden Scales of Outer Huanglong II===
+Unlocked by reaching 100% exploration.
+
+==Notable Features==
+===Bosses===
+*{{Enemy|Bell-Borne Geochelone}}
+===Resources===
+*{{Item|Angelica}}
+*{{Item|Dewvetch}}
+*{{Item|Lemongrass}}
+*{{Item|Lotus Seeds}}
+*{{Item|Noctemint}}
+*{{Item|Pearl Leaf}}
+*{{Item|Wintry Bell}}

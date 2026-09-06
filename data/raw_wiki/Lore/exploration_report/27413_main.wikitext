@@ -1,0 +1,10 @@
+**Profile**: Title: Exploration Report.
+
+'''Exploration Reports''' are in-universe text excerpts unlocked through [[Exploration Progress]] in each [[Region]].
+
+==Overview==
+Each Region, except [[Chronorift Metropolis]], has 2 unlockable Exploration Reports, which the player can access upon reaching 50% and 100% completion in the region. Exploration Reports can be viewed through selecting the book icon on any Region's Exploration Progress menu.
+
+==List==
+
+category=Exploration Report

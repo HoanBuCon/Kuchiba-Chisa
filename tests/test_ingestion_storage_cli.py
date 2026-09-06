@@ -1,6 +1,7 @@
 """Smoke test for PHA 5: State Management & CLI Subcommands."""
 
 import sys
+import uuid
 from datetime import datetime
 from pathlib import Path
 
@@ -10,6 +11,8 @@ if hasattr(sys.stdout, "reconfigure"):
 
 from click.testing import CliRunner
 
+from app.application.ingestion.orchestrator import IngestionRunResult
+from app.infrastructure.ingestion import cli as ingestion_cli
 from app.infrastructure.ingestion.cli import cli
 from app.infrastructure.ingestion.models import Chunk, PageTypeEnum
 from app.infrastructure.ingestion.storage import (
@@ -119,89 +122,50 @@ def test_collection_mapping():
     print("  PASS\n")
 
 
-def test_cli_end_to_end():
-    print("=== Test 4: CLI End-to-End Execution ===")
+def test_cli_exposes_only_canonical_dag(monkeypatch):
+    print("=== Test 4: Canonical CLI contract ===")
     runner = CliRunner()
 
-    raw_test_dir = Path("scratch/test_cli/raw")
-    raw_test_dir.mkdir(parents=True, exist_ok=True)
-    sample_file = raw_test_dir / "test_page.wikitext"
-    sample_file.write_text(
-        "== Startorch Academy ==\nStartorch Academy is a comprehensive research facility and educational institution "
-        "built by the Spacetrek Collective for Resonators in Lahai-Roi. It trains Synchronists and conducts advanced research.",
-        encoding="utf-8"
-    )
+    help_result = runner.invoke(cli, ["--help"])
+    assert help_result.exit_code == 0
+    assert "run-dag" in help_result.output
+    for legacy_command in (
+        "build-canonical",
+        "process-chunks",
+        "sync-qdrant",
+        "cleanup-orphans",
+        "run-pipeline",
+    ):
+        assert legacy_command not in help_result.output
 
-    # 1. status command
-    res_status = runner.invoke(cli, ["status"])
-    assert res_status.exit_code == 0
-    assert "Kuchiba Chisa" in res_status.output
+    async def acknowledged_run(request):
+        assert str(request.source_id) == "c7ad47e2-41a1-5a88-8a88-bc3c0b9c0638"
+        assert request.staging_collection == "world_lore__v20260906"
+        return IngestionRunResult(
+            job_id=uuid.UUID("00000000-0000-0000-0000-000000000001"),
+            release_id=uuid.UUID("00000000-0000-0000-0000-000000000002"),
+            downloaded_pages=1,
+            parsed_pages=1,
+            parent_documents=1,
+            staged_chunks=1,
+            acknowledged_vectors=1,
+            parent_manifest_checksum="parent-checksum",
+            vector_manifest_checksum="vector-checksum",
+        )
 
-    # 2. build-canonical command
-    res_build = runner.invoke(
+    monkeypatch.setattr(ingestion_cli, "run_application_dag", acknowledged_run)
+    result = runner.invoke(
         cli,
         [
-            "build-canonical",
-            "--raw-dir",
-            str(raw_test_dir),
-            "--output",
-            "scratch/test_cli/canonical.jsonl",
+            "run-dag",
+            "--source-id",
+            "c7ad47e2-41a1-5a88-8a88-bc3c0b9c0638",
+            "--staging-collection",
+            "world_lore__v20260906",
         ],
     )
-    assert res_build.exit_code == 0
-    assert "Successfully wrote" in res_build.output
-
-    # 3. process-chunks command
-    res_chunks = runner.invoke(
-        cli,
-        [
-            "process-chunks",
-            "--input",
-            "scratch/test_cli/canonical.jsonl",
-            "--output",
-            "scratch/test_cli/chunks.jsonl",
-            "--target-size",
-            "200",
-        ],
-    )
-    assert res_chunks.exit_code == 0
-    assert "Total" in res_chunks.output
-
-    # 4. sync-qdrant command
-    res_sync = runner.invoke(
-        cli,
-        [
-            "sync-qdrant",
-            "--input",
-            "scratch/test_cli/chunks.jsonl",
-            "--db",
-            "scratch/test_cli/ingestion.sqlite",
-            "--staging-version",
-            "cli_test",
-        ],
-    )
-    if res_sync.exit_code != 0:
-        print(f"res_sync output: {res_sync.output}")
-        print(f"res_sync exception: {res_sync.exception}")
-    assert res_sync.exit_code == 0
-    assert "Staged and acknowledged" in res_sync.output
-
-    # 5. cleanup-orphans command
-    res_clean = runner.invoke(
-        cli,
-        [
-            "cleanup-orphans",
-            "--db",
-            "scratch/test_cli/ingestion.sqlite",
-        ],
-    )
-    assert res_clean.exit_code == 0
-
-    print("  CLI build-canonical: OK")
-    print("  CLI process-chunks: OK")
-    print("  CLI sync-qdrant: OK")
-    print("  CLI cleanup-orphans: OK")
-    print("  CLI status: OK")
+    assert result.exit_code == 0
+    assert "[ACKNOWLEDGED]" in result.output
     print("  PASS\n")
 
 
@@ -209,7 +173,6 @@ if __name__ == "__main__":
     test_state_db_basic()
     test_orphan_detection()
     test_collection_mapping()
-    test_cli_end_to_end()
     print("=" * 55)
-    print("ALL 4 TESTS PASSED — PHA 5 COMPLETE")
+    print("DIRECT STORAGE CHECKS PASSED")
     print("=" * 55)

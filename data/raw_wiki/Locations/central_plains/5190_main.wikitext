@@ -1,0 +1,93 @@
+**Profile**: Title: Central Plains, Origin: Huanglong.
+
+The '''Central Plains''' is a region in [[Huanglong]].   
+
+==Areas==
+
+{| class="article-table alternating-colors-table tdc1" style="width: 100%;"
+! style="width: 200px;" |Name
+!Image
+!Description
+|- id="Gubei Pass"
+|[[Gubei Pass]]
+|[[File:Gubei Pass.png|180px]]
+
+|A road lined with various exile camps. 
+|- id="Fireflies Sea"
+|[[Fireflies Sea]]
+|[[File:Fireflies Sea.png|180px]]
+
+|A large lake with several islands and an exile camp at its centre. 
+|- id="Loong's Gaze Suburbs"
+|[[Loong's Gaze Suburbs]]
+|[[File:Loong's Gaze Suburbs.png|180px]]
+
+|A hilly area with caves leading towards the Gorges of Spirits.
+|- id="Stone Pile Plain"
+|[[Stone Pile Plain]]
+|[[File:Stone Pile Plain.png|180px]]
+
+|A dangerous Tacet Field that suddenly appeared.
+|- id="Taoyuan Vale"
+|[[Taoyuan Vale]]
+|[[File:Taoyuan Vale.png|180px]]
+
+|A beautiful village nestled amongst a cliffside tree and a flowing river.
+|- id="Tiderise Cliff"
+|[[Tiderise Cliff]]
+|[[File:Tiderise Cliff.png|180px]]
+
+|A large cliff with a lighthouse stretching into the sky above the beach.
+|- id="Tower of Adversity"
+|[[Tower of Adversity (Area)|Tower of Adversity]]
+|[[File:Tower of Adversity.png|180px]]
+
+|A combat project by Huaxu Academy, repurposed from an abandoned experiment site once used by the Court of Savantae.
+|- id="Qichi Village"
+|[[Qichi Village]]
+|[[File:Qichi Village.png|180px]]
+
+|A former village in the Central Plains where a tragedy occurred.
+|- id="Xiehua Village"
+|[[Xiehua Village]]
+|[[File:Yeming Slide.png|180px]]
+
+|A small village overlooking the Fireflies Sea.
+|}
+
+==Quests==
+{{Quest by Category List|Central Plains}}
+
+==Exploration Report==
+===Lonely SOL-3: Central Plains I===
+
+*Unlocked by reaching 50% exploration.
+
+===Lonely SOL-3: Central Plains II===
+
+*Unlocked by reaching 100% exploration.
+
+==Notable Features ==
+===Challenges===
+*[[Forgery Challenge: Marigold Woods]]
+*[[Parallel Perception]]
+*[[Tacet Field: Central Plains]]
+*[[Tower of Adversity]]
+===Bosses===
+*{{Enemy|Scar/Boss}}
+*{{Enemy|Crownless}}
+*{{Enemy|Tempest Mephis}}
+===Resources===
+*{{Item|Angelica}}
+*{{Item|Bittberry}}
+*{{Item|Cliffrecluse}}
+*{{Item|Dewvetch}}
+*{{Item|Dripsnail}}
+*{{Item|Erodorchid}}
+*{{Item|Floramber}}
+*{{Item|Lemongrass}}
+*{{Item|Noctemint}}
+*{{Item|Pearl Leaf}}
+*{{Item|Pecok Flower}}
+*{{Item|Perilla}}
+*{{Item|Waterlamp}}

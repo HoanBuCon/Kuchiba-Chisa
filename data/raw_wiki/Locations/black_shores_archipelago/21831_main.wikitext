@@ -1,0 +1,52 @@
+**Profile**: Title: Black Shores Archipelago, Origin: The Black Shores.
+
+{{Location Tabs|Map:Black Shores Archipelago}}
+
+> An archipelago shrouded in the Stormy Sea of Solaris. Formed from Tacetites, these isles constantly emanate Remnant Energy, casting an eerie "mist" that envelopes the region.
+> — [https://wutheringwaves.kurogames.com/en/main#regions Wuthering Waves Official Website]
+{{Intro/Location|Black Shores Archipelago}} Access is unlocked during [[Hidden Between the Waves]].
+
+==Areas==
+{| class="article-table alternating-colors-table tdc1" style="width: 100%;"
+! style="width: 200px;" |Name
+!Image
+! Description
+|- id="Haven of Sprouts"
+|[[Haven of Sprouts]] 
+|[[File:Haven of Sprouts.png|180px]]
+
+|The living quarters of the Black Shores staff, tailored to reflect their tastes. From arcade machines to rare collections from around the world, anything they like can be found here.
+|- id="Tethys Hub"
+|[[Tethys Hub]]
+|[[File:Tethys Hub.png|180px]]
+
+|An archipelago shrouded in the Stormy Sea of Solaris. Formed from Tacetites, these isles constantly emanate Remnant Energy, casting an eerie "mist" that envelopes the region. This mist distorts human perception and jams all forms of communication, making the archipelago inaccessible to most. Only those recognized or invited by the Black Shores can navigate their way to this mysterious place.
+|- id="TD Observatory"
+|[[TD Observatory]]
+|[[File:TD Observatory.png|180px]]
+
+|The TD Observatory is where Black Shores stores TD data gathered from around the world.
+The data will then be converted into digital Reverberations and transferred to the Tethys System underground as the building blocks of the data space within the Infinite Reality Sandbox.
+|}
+
+==Notes and Points of Interest==
+===[[Stargate]]===
+Stargate is a gateway hidden beneath the central waters of the Black Shores archipelago, where data surges endlessly downward like a torrent. Descend through the Stargate, and when gravity reverses its hold, [[Tethys' Deep]] shall reveal itself. From here data turns into stars, lighting up the sky beneath.
+
+===Communication Interference===
+The frequencies emitted by the Tacetites disrupt standard communication signals. Communication with the outside world is only possible via the Black Shores' Beacon relay system.
+
+===Blake Bloom===
+Shaped by the unique environment of the Black Shores, the rare Remnant plant has since become the region's symbol. Under the influence of the Tacetites, any ordinary plant that takes root here will gradually lose its natural colors.
+
+==Quests==
+{{Quest by Category List|Black Shores Archipelago Quests}}
+
+==Exploration Report==
+===Basic Introduction to the Black Shores I===
+
+*Unlocked by reaching 50% exploration.
+
+===Basic Introduction to the Black Shores II===
+
+*Unlocked by reaching 100% exploration.

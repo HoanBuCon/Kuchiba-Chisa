@@ -1,0 +1,57 @@
+# Spacetrek Collective
+
+**Faction Profile**: Base: Spacetrek Collective (Area), Allies: Roya Tribe.
+
+The '''Spacetrek Collective''' is a non-profit international scientific organization jointly established by various nations and organizations of [[Solaris-3]]. It oversees the research, development, and construction work in [[Lahai-Roi]]. They built the [[Spacetrek Collective Research Institute|Research Institute]], [[Startorch Academy]], [[Starward Riseway]] in the vast space beneath the frostlands. Its core mission is the study of the [[Exostrider]] for the purposes of advancing and re-instigating space travel technology.
+
+==History==
+Formed by the [[Pioneer Association]]'s head of states, the Spacetrek Collective was initially named the Polar Collective. After a mutual agreement amongst multiple nations, the Polar Collective established a formal alliance with the [[Roya Tribe]] and the Association was forbidden from carrying out any activities that would harm or disrupt Royan society.
+
+==Members==
+===Notable Personnel===
+{| class="article-table"
+!Icon!!Name!!Position
+|-
+|
+|Chase
+|Director
+|-
+|
+|Professor [[Warren]]
+|Head of the Spacetrek Collective Research Institute
+|-
+|[[File:Resonator Lucilla.png|50px]]
+|[[Lucilla]]
+|President of Startorch Academy
+|-
+|[[File:Resonator Hiyuki.png|50px]]
+|[[Hiyuki]]
+|Leader of the Special Response Force
+|-
+|[[File:Resonator Luuk Herssen.png|50px]]
+|Dr. [[Luuk Herssen]]
+|Doctor and Counselor of the Resonator Nursing Unit
+|-
+|[[File:Resonator Mornye.png|50px]]
+|Professor [[Mornye]]
+|Researcher & Professor
+|}
+===Other Personnel===
+{{Column|2|
+* [[Adonis]]
+* [[Bori]]
+* [[Hieros]]
+* [[Jingyue]]
+* [[Rogate]]
+
+==Descriptions==
+The international scientific organization jointly established by various nations and organizations of Solaris. It oversees the research, development, and construction work in Lahai-Roi. It was the Spacetrek Collective that built the Research Institute and the Startorch Academy in the vast space beneath the frostlands.
+==Creations==
+*[[Hyvatia]]
+*[[Spacetrek Explorer]]
+*[[Twin Nova: Collapsar Blade]]
+*[[Twin Nova: Nebulous Cannon]]
+*[[Geospider S4]]
+
+==Trivia==
+* The Spacetrek Collective logo strongly resembles the patches of the Soviet cosmonauts in the .

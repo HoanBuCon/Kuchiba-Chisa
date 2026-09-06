@@ -1,0 +1,35 @@
+**Profile**: Title: Giant's Gaze, Origin: Roya Frostlands.
+
+{{Intro/Location|Giant's Gaze}}
+
+==Areas==
+{| class="article-table alternating-colors-table tdc1" style="width: 100%;"
+! style="width: 200px;" |Name
+!Image
+!Description
+|- id="Spacetrek Observatory"
+|[[Spacetrek Observatory]]
+|[[File:Spacetrek Observatory.png|180px]]
+|
+|- id="Orbit Valley Pass"
+|[[Orbit Valley Pass]]
+|[[File:Orbit Valley Pass.png|180px]]
+|
+|}
+
+==Quests==
+{{Quest by Category List|Giant's Gaze Quests}}
+
+==Exploration Report==
+==="A Study of Royan Mythology" (Excerpt)===
+* Achieve 50% Area Exploration Progress to unlock the full report.
+
+==="The Royan Concept of Time" (Excerpt)===
+* Achieve 100% Area Exploration Progress to unlock the full report.
+
+==Notable Features==
+===Challenges===
+* [[Forgery Challenge: Lesson in Void]]
+
+===Resources===
+* {{Item|Pine Cone}}

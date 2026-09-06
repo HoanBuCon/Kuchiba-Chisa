@@ -1,0 +1,5 @@
+'''Unknown''' is an affiliation and location classification unique to [[Rover]]. Due to their shrouded past and the limited memories they hold, the details of their life are largely unknown aside from snippets of information gained through the [[Main Quest|story]].
+
+It is used on the official website where Resonators are listed by either their nation or most prominent affiliation and on Rover's in-game profile.
+
+It is also used by the collaboration characters [[Lucy]] and [[Rebecca]], as their true birthplaces are not on Solaris.

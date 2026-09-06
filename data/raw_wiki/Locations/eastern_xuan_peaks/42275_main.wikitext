@@ -1,0 +1,44 @@
+**Profile**: Title: Eastern Xuan Peaks, Origin: Huanglong.
+
+{{Intro/Location|Eastern Xuan Peaks}} 
+
+==Areas==
+{| class="article-table alternating-colors-table tdc1" style="width: 100%;"
+! style="width: 200px;" |Name
+! Description
+|-
+|[[File:Xianling Village.png|180px]]
+[[Xianling Village]]
+|
+|-
+|[[File:Fogveil Pagoda.png|180px]]
+[[Fogveil Pagoda]]
+|
+|-
+|[[File:Tranquil Ruins.png|180px]]
+[[Tranquil Ruins]]
+|
+|-
+|[[File:Boughrest Ridge.png|180px]]
+[[Boughrest Ridge]]
+|
+|}
+
+==Quests==
+{{Quest by Category List|Eastern Xuan Peaks Quests}}
+
+==Notable Features==
+===Challenges===
+*[[Eastern Xuan Peaks Tacet Field]]
+*[[Tactical Hologram: Sparring]]
+
+===Bosses===
+*{{Enemy|Thousand-Puppet Pavilion}}
+
+===Resources===
+*{{Item|Cloudperch Seed}}
+*{{Item|Flowborne Dream}}
+*{{Item|Blade Blossom}}
+*{{Item|Climber Shoots}}
+*{{Item|Floral Crest Jade}}
+*{{Item|Opus Stone}}

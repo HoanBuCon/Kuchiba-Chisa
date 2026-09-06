@@ -1,0 +1,40 @@
+**Profile**: Title: Sealed Fissure, Origin: Roya Frostlands.
+
+{{Intro/Location|Sealed Fissure}}
+
+==Areas==
+{| class="article-table alternating-colors-table tdc1" style="width: 100%;"
+! style="width: 200px;" |Name
+!Image
+!Description
+|- id="Petalfold Recess"
+|[[Petalfold Recess]]
+|[[File:Petalfold Recess.png|180px]]
+|
+|- id="Ceased Court"
+|[[Ceased Court]]
+|[[File:Ceased Court.png|180px]]
+|
+|- id="Nevermore Halls"
+|[[Nevermore Halls]]
+|[[File:Nevermore Halls.png|180px]]
+|
+|}
+
+==Quests==
+{{Quest by Category List|Sealed Fissure Quests}}
+
+==Exploration Report==
+===Report on Recent Conditions at the Sealed Fissure in the Dimmr Plains===
+* Achieve 50% Area Exploration Progress to unlock the full report.
+
+===Chat History of Shashou Cafe Official (Excerpt)===
+* Achieve 100% Area Exploration Progress to unlock the full report.
+
+==Notable Features==
+
+===Resources===
+* {{Item|Redbell}}
+* {{Item|Forget-Me-Not}}
+* {{Item|Frostwort}}
+* {{Item|Meteoric Iron}}

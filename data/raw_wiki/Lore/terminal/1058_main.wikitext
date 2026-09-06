@@ -1,0 +1,31 @@
+**Profile**: Title: Terminal.
+
+'''Terminal''' is a device used by [[Resonator|Resonators]]. Each Terminal has various functions that aid Resonators in exploration, navigation and collection in [[Solaris-3]]. Terminals vary in appearance and function depending on the nation, as can be visually seen in the difference between the Terminals of Resonators from [[Huanglong]], [[Rinascita]], [[The Black Shores]] and the [[Fractsidus]]. The [[Rover]] carries a unique version of the Terminal that can be upgraded. 
+
+==Functions==
+The primary function of the Terminal is to collect and record [[Reverberation|Reverberations]]. These Reverberations are turned into [[Echoes]] by the Terminal, which can then be directed as needed. The [[Data Bank]] module of the Terminal allows Resonators to replicate the combat abilities of these Echoes in battle. Additionally, some Echoes enable Resonators to briefly transform into the shapes of the [[Tacet Discord|Tacet Discords]] that are stored. 
+
+It also has a [[Utility]] module, with features such as Grapple, Sensor, and Levitator. 
+
+Each Terminal carries a unique Terminal ID which allows the Rover to unlock portions of the Map via Huanglong's Nexus Towers and Rinascita's Genesis Nexus.  
+
+==Pangu Terminal==
+> "... A celestial being descended, commanding the Quiankun's boundless (universe) power. Assuming mortal form, they condensed the primordial essence, creating Pangu. Cleaving heaven and earth apart, they aligned the celestial and terrestrial. Their radiance encompassed the four corners… Thus began the illustrious annals of Huanglong, as provinces were first demarcated.”
+> — Yangyang, ''Comprehensive Mirror for Historians''
+[[File:Pangu Terminal.png|thumb|213x213px|The Pangu Terminal unique to [[Huanglong]]]]
+The '''Pangu Terminal''' is unique to the nation of [[Huanglong]] and is studied by the [[Huaxu Academy]] of Jinzhou. The Rover's Terminal is currently configured to the upgrades from this iteration of the Terminal.
+
+This terminal features a gourd-shaped design with a chrome finish. Its body is adorned with various design elements in gold, including concentric waves at its base and a singular white motif reminiscent of a ''loong''.
+
+In [[Jinzhou]], the Utility Function of the Terminal has upgraded modules with regards to security and communication. An example of such module is used for '''Access Pass Authorization,''' upgraded by [[Sanhua]]. This contains the contact information for all public services, such as Patrol Stations, and provides unlimited access to all regions in Jinzhou.
+
+==Reserved Terminal==
+[[File:Reserved Terminal.png|thumb|213x213px|The Reserved Terminal unique to [[Rinascita]]]]
+The [[Montelli Family]] earned recognition for their pursuit of Echoes beyond [[Rinascita]]’s borders—Echoes not bound by the Genesis Nexus, which was provided by the Sentinel Imperator. This led to the development of Reserved Terminals, which evolved from a basic Terminal discovered in the Montellis' early trade dealings. Their investment in this technology was driven by the need for Echoes independent of the Genesis Nexus, capable of seafaring and defending against Tacet Discord encounters in open waters—an area where Common Echoes falter due to their inability to travel beyond the Genesis Nexus' range.
+
+In the early years, the family patriarch, [[Francesco Montelli]], learned to modify Terminals during his ventures in the [[New Federation]]. Unlike other regions where Terminals were freely traded, Rinascita’s Terminals were strictly controlled by the Order. The Montellis, however, developed a modified lantern-type Terminal that appeared ornamental but contained advanced tech modules. These modifications allowed the family to supply Terminals to Resonators at fair prices, effectively breaking the Order's monopoly.
+
+Only a select few Resonators are permitted to carry a Reserved Terminal and while it is still a sensitive subject in public, at least the people are free to explore in the wild and gather Echoes as they please. Guests of the Montelli family are granted permission to bring their Reserved Terminal into Rinascita.
+
+==Frequency Cassette Recorder==
+[[File:Frequency Cassette Recorder.png|thumb|213x213px|The Frequency Cassette Recorder unique to [[Lahai-Roi]]]]

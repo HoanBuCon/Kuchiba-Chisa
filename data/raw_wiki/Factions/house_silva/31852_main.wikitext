@@ -1,0 +1,25 @@
+# House Silva
+
+**Faction Profile**: Leader: Julia Silva, Base: Septimont (formerly).
+
+'''House Silva''' is one of the founding bloodlines of [[Septimont]] and a once prominent noble family, though their influence began waver with the rise of the new [[Augusta|Ephor]]. 
+
+During the most recent [[Great Agon]] the household and their head, Julia Silva, take part in match fixing and go as far as to sabotage [[Lupa]]'s equipment in the semi-final match after she leaves the household's gladiator team. After their sabotage is brought to Ephor Augusta and confirmed by Priestess [[Iuno]] they are banished from Septimont.
+
+The house sponsored the gladiator team "Bough of Legions", which previously consisted of Lupa and [[Emilio]] prior to Lupa leaving.
+
+== Glossary ==
+The House Lupa fights for. One of Septimont's founding bloodlines, House Silva's roots once ran deep in the city's spire of influence. But with the rise of the new Ephor, such past glories have begun to wane. 
+
+==Members==
+===Playable Resonators===
+{| class="article-table"
+!Icon!!Member!!Position
+|-
+|[[File:Resonator Lupa.png|50px]]
+|[[Lupa]]
+|Gladiator (formerly)
+|} 
+{{NPCs by Category List
+|House Silva
+|header = House Silva Members

@@ -1,0 +1,39 @@
+**Profile**: Title: Starward Riseway, Origin: Roya Frostlands.
+
+{{Intro/Location|Starward Riseway}} A colossal lift linking Lahai-Roi to the Roya Frostlands, its structure resembling a spine piercing both heaven and earth. Powered by orbital-acceleration technology, it plummets and ascends through the deep cavern, serving as one of Lahai-Roi's most important transportation hubs.
+
+==Areas==
+{| class="article-table alternating-colors-table tdc1" style="width: 100%;"
+! style="width: 200px;" |Name
+!Image
+!Description
+|- id="Spacetrek Collective"
+|[[Spacetrek Collective (Area)|Spacetrek Collective]]
+|[[File:Spacetrek Collective (Area).png|180px]]
+|The collective's premiere research institute and the gateway to the frosty surface.
+|- id="Sundermere"
+|[[Sundermere]]
+|[[File:Sundermere.png|180px]]
+|A lake at the point where the Exostrider's blade strikes the earth, sealing the void within.
+|- id="Submerged Tunnel"
+|[[Submerged Tunnel]]
+|[[File:Submerged Tunnel.png|180px]]
+|A tunnel under the sea, surrounded by vivid holographic imagery and biomechanical plants.
+|}
+
+==Quests==
+{{Quest by Category List|Starward Riseway Quests}}
+
+== Exploration Report ==
+===Pioneer Association Expedition Reports, Lahai-Roi Region - Excerpt I===
+* Unlocked by reaching 50% exploration.
+
+===Pioneer Association Expedition Reports, Lahai-Roi Region - Excerpt II===
+* Unlocked by reaching 100% exploration.
+
+==Notable Features==
+===Bosses===
+* {{Enemy|Hyvatia}}
+
+===Resources===
+* {{Item|Rimewisp}}

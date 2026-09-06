@@ -1,0 +1,42 @@
+**Profile**: Title: Silent Crag, Origin: Roya Frostlands.
+
+{{Intro/Location|Silent Crag}}
+
+==Areas==
+{| class="article-table alternating-colors-table tdc1" style="width: 100%;"
+! style="width: 200px;" |Name
+!Image
+!Description
+|- id="Skyrelic Cascade"
+|[[Skyrelic Cascade]]
+|[[File:Skyrelic Cascade.png|180px]]
+|
+|- id="Ljos Isle"
+|[[Ljos Isle]]
+|[[File:Ljos Isle.png|180px]]
+|
+|- id="Voidthirst Cradle"
+|[[Voidthirst Cradle]]
+|[[File:Voidthirst Cradle.png|180px]]
+|
+|}
+
+==Quests==
+{{Quest by Category List|Silent Crag Quests}}
+
+==Exploration Report==
+===Traceability Analysis Report on Abnormal Accumulation in the Dimmr Plains Region===
+* Achieve 50% Area Exploration Progress to unlock the full report.
+
+===Unknown Recording: Voidthirst Cradle===
+* Achieve 100% Area Exploration Progress to unlock the full report.
+
+==Notable Features==
+
+===Resources===
+* {{Item|Dream of Stars}}
+* {{Item|Forget-Me-Not}}
+* {{Item|Cradle Lichen}}
+* {{Item|Fern Spore}}
+* {{Item|Luxite}}
+* {{Item|Waxweaver Web}}

@@ -37,9 +37,11 @@ class _LLM:
     def __init__(self, parsed: dict[str, object]) -> None:
         self._parsed = parsed
         self.calls = 0
+        self.last_prompt: StructuredPrompt | None = None
 
-    async def generate(self, _: StructuredPrompt) -> LLMResponse:
+    async def generate(self, prompt: StructuredPrompt) -> LLMResponse:
         self.calls += 1
+        self.last_prompt = prompt
         return LLMResponse(raw_content="{}", parsed=self._parsed)
 
 
@@ -65,7 +67,10 @@ def _context(evidence: list[Evidence]) -> ChatContext:
             system="unmodified test system content",
             history=[],
             user_message="Tell me the lore",
-            response_schema={"type": "object"},
+            response_schema={
+                "type": "object",
+                "properties": {"sentiment": {"type": "object"}},
+            },
             retrieved_evidence=evidence,
         ),
     )
@@ -135,14 +140,18 @@ async def test_grounded_claim_is_accepted_only_when_cited_evidence_supports_it()
     evidence = _evidence().model_copy(
         update={"text": "Jinhsi is the magistrate of Jinzhou."}
     )
-    stage = LLMGenerationStage(
-        llm=_LLM(
+    llm = _LLM(
             {
-                "response": "Jinhsi is magistrate of Jinzhou.",
-                "citations": ["lore:approved"],
+                    "decision": "answer",
+                    "claims": [{
+                    "text": "Jinhsi is magistrate of Jinzhou.",
+                    "evidence_id": "lore:approved",
+                    "evidence_quote": "Jinhsi is the magistrate of Jinzhou.",
+                }],
+                "sentiment": {},
             }
         )
-    )
+    stage = LLMGenerationStage(llm=llm)
 
     result = await stage.process(_factual_context([evidence]))
 
@@ -152,44 +161,62 @@ async def test_grounded_claim_is_accepted_only_when_cited_evidence_supports_it()
         "unsupported_claims": 0,
         "minimum_claim_score": 1.0,
     }
+    assert llm.last_prompt is not None
+    assert llm.last_prompt.temperature == 0.0
+    assert llm.last_prompt.output_contract_name == "submit_grounded_answer"
 
 
 @pytest.mark.asyncio
-async def test_unsupported_factual_claim_is_rejected_even_with_a_valid_citation_id() -> None:
+async def test_unsupported_factual_claim_is_removed_before_delivery() -> None:
     evidence = _evidence().model_copy(
         update={"text": "Jinhsi is the magistrate of Jinzhou."}
     )
     stage = LLMGenerationStage(
         llm=_LLM(
-            {
-                "response": "Jinhsi lives in Black Shores.",
-                "citations": ["lore:approved"],
+                {
+                    "decision": "answer",
+                    "claims": [{
+                    "text": "Jinhsi lives in Black Shores.",
+                    "evidence_id": "lore:approved",
+                    "evidence_quote": "Jinhsi is the magistrate of Jinzhou.",
+                }],
+                "sentiment": {},
             }
         )
     )
 
-    with pytest.raises(LLMInvalidResponseError, match="grounding checks"):
-        await stage.process(_factual_context([evidence]))
+    result = await stage.process(_factual_context([evidence]))
+
+    assert result.chisa_reply == "Jinhsi is the magistrate of Jinzhou."
+    assert "Black Shores" not in result.chisa_reply
+    assert result.tool_res["generation_contract"]["extractive_claims"] == 1
 
 
 @pytest.mark.asyncio
-async def test_numeric_claim_requires_the_same_number_in_cited_evidence() -> None:
+async def test_numeric_hallucination_is_removed_before_delivery() -> None:
     evidence = _evidence().model_copy(update={"text": "Jinhsi has 1 verified title."})
     stage = LLMGenerationStage(
         llm=_LLM(
-            {
-                "response": "Jinhsi has 2 verified titles.",
-                "citations": ["lore:approved"],
+                {
+                    "decision": "answer",
+                    "claims": [{
+                    "text": "Jinhsi has 2 verified titles.",
+                    "evidence_id": "lore:approved",
+                    "evidence_quote": "Jinhsi has 1 verified title.",
+                }],
+                "sentiment": {},
             }
         )
     )
 
-    with pytest.raises(LLMInvalidResponseError, match="grounding checks"):
-        await stage.process(_factual_context([evidence]))
+    result = await stage.process(_factual_context([evidence]))
+
+    assert "2" not in result.chisa_reply
+    assert result.chisa_reply == "Jinhsi has 1 verified title."
 
 
 @pytest.mark.asyncio
-async def test_streaming_unsupported_claim_is_rejected_before_any_token_reaches_sink() -> None:
+async def test_streaming_unsupported_claim_never_reaches_sink() -> None:
     evidence = _evidence().model_copy(
         update={"text": "Jinhsi is the magistrate of Jinzhou."}
     )
@@ -198,14 +225,45 @@ async def test_streaming_unsupported_claim_is_rejected_before_any_token_reaches_
     context.on_token = emitted.append
     stage = LLMGenerationStage(
         llm=_StreamingLLM(
-            {
-                "response": "Jinhsi lives in Black Shores.",
-                "citations": ["lore:approved"],
+                {
+                    "decision": "answer",
+                    "claims": [{
+                    "text": "Jinhsi lives in Black Shores.",
+                    "evidence_id": "lore:approved",
+                    "evidence_quote": "Jinhsi is the magistrate of Jinzhou.",
+                }],
+                "sentiment": {},
             }
         )
     )
 
-    with pytest.raises(LLMInvalidResponseError, match="grounding checks"):
-        await stage.process(context)
+    result = await stage.process(context)
 
-    assert emitted == []
+    assert "Black Shores" not in "".join(emitted)
+    assert "".join(emitted) == result.chisa_reply
+
+
+@pytest.mark.asyncio
+async def test_invalid_grounded_quote_returns_safe_abstention() -> None:
+    evidence = _evidence().model_copy(
+        update={"text": "Jinhsi is the magistrate of Jinzhou."}
+    )
+    stage = LLMGenerationStage(
+        llm=_LLM(
+            {
+                "decision": "answer",
+                "claims": [{
+                    "text": "Jinhsi rules the Black Shores.",
+                    "evidence_id": "lore:approved",
+                    "evidence_quote": "Jinhsi rules the Black Shores.",
+                }],
+                "sentiment": {},
+            }
+        )
+    )
+
+    result = await stage.process(_factual_context([evidence]))
+
+    assert "Black Shores" not in result.chisa_reply
+    assert result.citation_ids == []
+    assert result.tool_res["grounding"]["status"] == "abstained_invalid_grounding"

@@ -1,0 +1,3032 @@
+{
+  "task": "RAG-05 production-equivalent staging Voyage ablation",
+  "executed_at": "2026-09-05T20:39:06.085107+00:00",
+  "dataset_version": "rag05-raw-wiki-golden-v1-draft",
+  "approved_content_sha256": "01cababd2e9912a1b435869afc500dc44d727d045f6bafe868c3be4bc6004976",
+  "corpus_version": "raw-wiki-sha256:0efe04a586291c11c84c921a1839ac20be53f12c026e3ea2b43595e9a7d32c7a",
+  "staging_pipeline_fingerprint": "41a2cbe0acc39133bf5c6804363e10f2f5ced475dd10c96129de9e51aa24a102",
+  "staging_version": "rag05eval_01cababd2e_20260905192227",
+  "production_equivalent_first_stage": true,
+  "end_to_end_production_equivalent": false,
+  "total_cases": 83,
+  "answerable_cases": 81,
+  "abstention_cases": 2,
+  "abstention_evaluation": "not_evaluable_at_retrieval_stage",
+  "context_precision": "not_evaluable_label_incomplete",
+  "configuration": {
+    "embedding_model": "intfloat/multilingual-e5-small",
+    "embedding_dimension": 384,
+    "document_embedding_path": "BatchEmbeddingStage current production default",
+    "query_embedding_prefix": "query: ",
+    "top_k": 5,
+    "score_threshold": 0.35,
+    "candidate_multiplier": 10,
+    "rrf_k": 60,
+    "dense_weight": 1.0,
+    "sparse_weight": 1.0,
+    "reranker_enabled": false,
+    "access_scope": "public",
+    "provider": "voyage",
+    "model": "rerank-3-lite",
+    "reranker_top_k": 15,
+    "provider_timeout_seconds": 1.5
+  },
+  "staging_collections": {
+    "character_lore": "character_lore__rag05eval_01cababd2e_20260905192227",
+    "world_lore": "world_lore__rag05eval_01cababd2e_20260905192227",
+    "story_lore": "story_lore__rag05eval_01cababd2e_20260905192227"
+  },
+  "namespace_before": {
+    "collections": [
+      "character_lore__rag05eval_01cababd2e_20260905192227",
+      "story_lore__rag05eval_01cababd2e_20260905192227",
+      "world_lore__rag05eval_01cababd2e_20260905192227"
+    ],
+    "aliases": []
+  },
+  "namespace_after": {
+    "collections": [
+      "character_lore__rag05eval_01cababd2e_20260905192227",
+      "story_lore__rag05eval_01cababd2e_20260905192227",
+      "world_lore__rag05eval_01cababd2e_20260905192227"
+    ],
+    "aliases": []
+  },
+  "namespace_unchanged": true,
+  "retrieval_modes": {
+    "hybrid_rrf": 1079
+  },
+  "baseline_production_equivalent": {
+    "hit_at_1": 0.679012,
+    "hit_at_3": 0.901235,
+    "hit_at_5": 0.950617,
+    "mrr_at_10": 0.788889,
+    "context_precision": "not_evaluable_label_incomplete"
+  },
+  "voyage_rerank": null,
+  "answerable_case_outcomes": {
+    "improved": [
+      "rw-002",
+      "rw-006",
+      "rw-007",
+      "rw-012",
+      "rw-013",
+      "rw-016",
+      "rw-022",
+      "rw-027",
+      "rw-030",
+      "rw-037",
+      "rw-041",
+      "rw-045",
+      "rw-046",
+      "rw-051",
+      "rw-066",
+      "rw-073",
+      "rw-074",
+      "rw-078",
+      "rw-081"
+    ],
+    "unchanged": [
+      "rw-001",
+      "rw-003",
+      "rw-009",
+      "rw-010",
+      "rw-011",
+      "rw-014",
+      "rw-015",
+      "rw-017",
+      "rw-018",
+      "rw-020",
+      "rw-021",
+      "rw-024",
+      "rw-025",
+      "rw-026",
+      "rw-029",
+      "rw-031",
+      "rw-033",
+      "rw-034",
+      "rw-035",
+      "rw-038",
+      "rw-039",
+      "rw-042",
+      "rw-043",
+      "rw-047",
+      "rw-048",
+      "rw-050",
+      "rw-052",
+      "rw-053",
+      "rw-054",
+      "rw-056",
+      "rw-057",
+      "rw-058",
+      "rw-060",
+      "rw-061",
+      "rw-062",
+      "rw-064",
+      "rw-065",
+      "rw-067",
+      "rw-068",
+      "rw-069",
+      "rw-070",
+      "rw-072",
+      "rw-075",
+      "rw-076",
+      "rw-079",
+      "rw-080"
+    ],
+    "degraded": [
+      "rw-005"
+    ]
+  },
+  "first_stage_retrieval_misses": [
+    "rw-013",
+    "rw-035",
+    "rw-041",
+    "rw-060"
+  ],
+  "recovered_into_top_k": [
+    "rw-013",
+    "rw-041"
+  ],
+  "unrecoverable_candidate_pool_misses": [
+    "rw-035",
+    "rw-060"
+  ],
+  "provider": {
+    "calls": 83,
+    "validated_responses": 68,
+    "failure_counts": {
+      "timeout": 0,
+      "rate_limit": 15,
+      "provider": 0,
+      "invalid_response": 0,
+      "unavailable": 0
+    },
+    "fallback_count": 15,
+    "privacy_policy_rejection_count": 0,
+    "processed_token_estimate": 168006,
+    "reserved_token_estimate": 200337,
+    "estimated_cost_usd": 0.00336012
+  },
+  "latency_ms": {
+    "provider_http": {
+      "min": 231.891,
+      "mean": 331.464,
+      "p50": 324.276,
+      "p95": 446.094,
+      "max": 519.13
+    },
+    "pacing": {
+      "total": 1595128.792,
+      "mean": 19218.419,
+      "p50": 200.462,
+      "p95": 58953.794,
+      "paced_cases": 69
+    },
+    "reranker_total": {
+      "min": 236.711,
+      "mean": 19535.017,
+      "p50": 476.325,
+      "p95": 59336.112,
+      "max": 59849.868
+    },
+    "first_stage_retrieval": {
+      "min": 1579.954,
+      "mean": 1659.221,
+      "p50": 1619.64,
+      "p95": 1643.064,
+      "max": 5000.839
+    },
+    "total_retrieval": {
+      "min": 1858.44,
+      "mean": 21194.238,
+      "p50": 2103.937,
+      "p95": 60933.124,
+      "max": 61476.227
+    }
+  },
+  "quality_comparison_valid": false,
+  "srs_comparison": {
+    "nfr_rag_006_hit_at_5": "NOT_EVALUABLE",
+    "nfr_rag_006_mrr_at_10": "NOT_EVALUABLE",
+    "nfr_perf_006_provider_http_p95": "PASS",
+    "meaningful_improvement": "NOT_EVALUABLE_INCOMPLETE_PROVIDER_SUCCESS",
+    "provider_reliability": "FAIL",
+    "grounding_citation_generation": "NOT_EVALUATED",
+    "final_answer_abstention": "NOT_EVALUATED",
+    "leakage_adversarial": "NOT_EVALUATED"
+  },
+  "case_results": [
+    {
+      "case_id": "rw-001",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:585:101912:cdb1baf766c207e6:chunk:000"
+      ],
+      "candidate_pool_fingerprint": "772ec0ed60909b6323c2abdc0353b6e3b67abbf68b2d466024b035872860672f",
+      "candidate_count": 13,
+      "baseline_top_k_evidence_ids": [
+        "raw_wiki:585:101912:cdb1baf766c207e6:chunk:000",
+        "raw_wiki:28266:131321:5f2feb1a382c7763:chunk:000",
+        "raw_wiki:585:101912:cdb1baf766c207e6:chunk:000",
+        "raw_wiki:522:103593:65ac76a1400c1df9:chunk:000",
+        "raw_wiki:7557:136952:45922d58511e4b39:chunk:000"
+      ],
+      "voyage_top_k_evidence_ids": [
+        "raw_wiki:585:101912:cdb1baf766c207e6:chunk:000",
+        "raw_wiki:585:101912:cdb1baf766c207e6:chunk:000",
+        "raw_wiki:522:103593:65ac76a1400c1df9:chunk:000",
+        "raw_wiki:28266:131321:5f2feb1a382c7763:chunk:000",
+        "raw_wiki:585:101912:cdb1baf766c207e6:chunk:000"
+      ],
+      "baseline_rank": 1,
+      "candidate_pool_rank": 1,
+      "voyage_rank": 1,
+      "provider_status": "voyage_validated",
+      "failure_kind": null,
+      "processed_token_estimate": 2874,
+      "first_stage_retrieval_latency_ms": 5000.839,
+      "pacing_wait_ms": 0.0,
+      "provider_http_latency_ms": 387.701,
+      "reranker_total_elapsed_ms": 389.265,
+      "total_retrieval_latency_ms": 5390.104,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-002",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:624:92922:791b05ce14a56b51:chunk:000"
+      ],
+      "candidate_pool_fingerprint": "664ca61300cc6d597dbc74fc71bf05e4c285292d9389e9bd1aacb62a4813bacb",
+      "candidate_count": 13,
+      "baseline_top_k_evidence_ids": [
+        "raw_wiki:938:130729:103ceb2210a7890a:chunk:000",
+        "raw_wiki:624:92922:791b05ce14a56b51:chunk:000",
+        "raw_wiki:938:130729:103ceb2210a7890a:chunk:000",
+        "raw_wiki:624:92922:791b05ce14a56b51:chunk:000",
+        "raw_wiki:938:130729:103ceb2210a7890a:chunk:000"
+      ],
+      "voyage_top_k_evidence_ids": [
+        "raw_wiki:624:92922:791b05ce14a56b51:chunk:000",
+        "raw_wiki:624:92922:791b05ce14a56b51:chunk:000",
+        "raw_wiki:938:130729:103ceb2210a7890a:chunk:000",
+        "raw_wiki:1567:101748:f9ba41dcd5878b94:chunk:000",
+        "raw_wiki:594:99232:375b861a53702e76:chunk:000"
+      ],
+      "baseline_rank": 2,
+      "candidate_pool_rank": 2,
+      "voyage_rank": 1,
+      "provider_status": "voyage_validated",
+      "failure_kind": null,
+      "processed_token_estimate": 1998,
+      "first_stage_retrieval_latency_ms": 1623.96,
+      "pacing_wait_ms": 0.0,
+      "provider_http_latency_ms": 303.3,
+      "reranker_total_elapsed_ms": 304.242,
+      "total_retrieval_latency_ms": 1928.203,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-003",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:1126:100700:6b4973485554efd0:chunk:000"
+      ],
+      "candidate_pool_fingerprint": "bb028fe574bede20895cc89724d35cd1238b78f217df7ce3e24ca2af6c37d5a5",
+      "candidate_count": 13,
+      "baseline_top_k_evidence_ids": [
+        "raw_wiki:1126:100700:6b4973485554efd0:chunk:000",
+        "raw_wiki:26888:99747:897732ef65d43d75:chunk:000",
+        "raw_wiki:26888:99747:897732ef65d43d75:chunk:000",
+        "raw_wiki:936:101013:20a1567cbe138350:chunk:000",
+        "raw_wiki:42446:101218:eba876c1698e83d3:chunk:000"
+      ],
+      "voyage_top_k_evidence_ids": [
+        "raw_wiki:1126:100700:6b4973485554efd0:chunk:000",
+        "raw_wiki:26888:99747:897732ef65d43d75:chunk:000",
+        "raw_wiki:26888:99747:897732ef65d43d75:chunk:000",
+        "raw_wiki:936:101013:20a1567cbe138350:chunk:000",
+        "raw_wiki:588:99853:a4995516cd60ac47:chunk:000"
+      ],
+      "baseline_rank": 1,
+      "candidate_pool_rank": 1,
+      "voyage_rank": 1,
+      "provider_status": "voyage_validated",
+      "failure_kind": null,
+      "processed_token_estimate": 2568,
+      "first_stage_retrieval_latency_ms": 1623.004,
+      "pacing_wait_ms": 0.0,
+      "provider_http_latency_ms": 340.127,
+      "reranker_total_elapsed_ms": 341.44,
+      "total_retrieval_latency_ms": 1964.443,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-004",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:510:99239:2efdf295348ddd30:chunk:000"
+      ],
+      "candidate_pool_fingerprint": "78123810093e05acdcd729782e0c18e8c474e0d3513dd62952665cd928055841",
+      "candidate_count": 13,
+      "baseline_top_k_evidence_ids": [
+        "raw_wiki:898:136862:688bebbd18ed5936:chunk:000",
+        "raw_wiki:510:99239:2efdf295348ddd30:chunk:000",
+        "raw_wiki:3150:93366:590fa68ddaf79966:chunk:000",
+        "raw_wiki:510:99239:2efdf295348ddd30:chunk:000",
+        "raw_wiki:898:136862:688bebbd18ed5936:chunk:000"
+      ],
+      "voyage_top_k_evidence_ids": null,
+      "baseline_rank": 2,
+      "candidate_pool_rank": 2,
+      "voyage_rank": null,
+      "provider_status": "fallback",
+      "failure_kind": "rate_limit",
+      "processed_token_estimate": 2653,
+      "first_stage_retrieval_latency_ms": 1594.515,
+      "pacing_wait_ms": 58960.597,
+      "provider_http_latency_ms": null,
+      "reranker_total_elapsed_ms": 59338.609,
+      "total_retrieval_latency_ms": 60933.124,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-005",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:632:99398:b84b4f87a9d9ade9:chunk:000"
+      ],
+      "candidate_pool_fingerprint": "15d7b6297ac64806e764befa1b5e5b0e734017e9d5ea2dec30e691499df6bddf",
+      "candidate_count": 13,
+      "baseline_top_k_evidence_ids": [
+        "raw_wiki:632:99398:b84b4f87a9d9ade9:chunk:000",
+        "raw_wiki:897:102549:c6a570ea76923091:chunk:000",
+        "raw_wiki:897:102549:c6a570ea76923091:chunk:000",
+        "raw_wiki:42446:101218:eba876c1698e83d3:chunk:000",
+        "raw_wiki:42446:101218:eba876c1698e83d3:chunk:000"
+      ],
+      "voyage_top_k_evidence_ids": [
+        "raw_wiki:897:102549:c6a570ea76923091:chunk:000",
+        "raw_wiki:632:99398:b84b4f87a9d9ade9:chunk:000",
+        "raw_wiki:897:102549:c6a570ea76923091:chunk:000",
+        "raw_wiki:907:126835:49c5a92e82ee7ad1:chunk:000",
+        "raw_wiki:25643:131312:454e154acc0d2056:chunk:000"
+      ],
+      "baseline_rank": 1,
+      "candidate_pool_rank": 1,
+      "voyage_rank": 2,
+      "provider_status": "voyage_validated",
+      "failure_kind": null,
+      "processed_token_estimate": 910,
+      "first_stage_retrieval_latency_ms": 1629.253,
+      "pacing_wait_ms": 22.358,
+      "provider_http_latency_ms": 294.626,
+      "reranker_total_elapsed_ms": 317.436,
+      "total_retrieval_latency_ms": 1946.689,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-006",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:24786:99400:468ec49727209414:chunk:000"
+      ],
+      "candidate_pool_fingerprint": "11f79fbaee0ad9903a039710036cb93c94c4de6980e1e3222b3fb528fc31505e",
+      "candidate_count": 13,
+      "baseline_top_k_evidence_ids": [
+        "raw_wiki:25657:91989:d626dfb652418c20:chunk:000",
+        "raw_wiki:25657:91989:d626dfb652418c20:chunk:000",
+        "raw_wiki:24786:99400:468ec49727209414:chunk:000",
+        "raw_wiki:26166:100313:e86c3e53552bfa24:chunk:000",
+        "raw_wiki:24789:103572:c7b9cc0a8a5cdfa6:chunk:000"
+      ],
+      "voyage_top_k_evidence_ids": [
+        "raw_wiki:25657:91989:d626dfb652418c20:chunk:000",
+        "raw_wiki:24786:99400:468ec49727209414:chunk:000",
+        "raw_wiki:24786:99400:468ec49727209414:chunk:000",
+        "raw_wiki:25657:91989:d626dfb652418c20:chunk:000",
+        "raw_wiki:26166:100313:e86c3e53552bfa24:chunk:000"
+      ],
+      "baseline_rank": 3,
+      "candidate_pool_rank": 3,
+      "voyage_rank": 2,
+      "provider_status": "voyage_validated",
+      "failure_kind": null,
+      "processed_token_estimate": 1839,
+      "first_stage_retrieval_latency_ms": 1579.954,
+      "pacing_wait_ms": 0.0,
+      "provider_http_latency_ms": 293.188,
+      "reranker_total_elapsed_ms": 294.194,
+      "total_retrieval_latency_ms": 1874.148,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-007",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:599:96614:56f198042c315f7e:chunk:000"
+      ],
+      "candidate_pool_fingerprint": "20ee4df85ebf55f777f49d2cc52439ecd6e7e613bfe67b9943a891cc0e6d14dc",
+      "candidate_count": 13,
+      "baseline_top_k_evidence_ids": [
+        "raw_wiki:7557:136952:45922d58511e4b39:chunk:000",
+        "raw_wiki:599:96614:56f198042c315f7e:chunk:000",
+        "raw_wiki:599:96614:56f198042c315f7e:chunk:000",
+        "raw_wiki:1007:135324:8f903f46d2fa3ca8:chunk:000",
+        "raw_wiki:7557:136952:45922d58511e4b39:chunk:000"
+      ],
+      "voyage_top_k_evidence_ids": [
+        "raw_wiki:599:96614:56f198042c315f7e:chunk:000",
+        "raw_wiki:599:96614:56f198042c315f7e:chunk:000",
+        "raw_wiki:7557:136952:45922d58511e4b39:chunk:000",
+        "raw_wiki:7557:136952:45922d58511e4b39:chunk:000",
+        "raw_wiki:7557:136952:45922d58511e4b39:chunk:000"
+      ],
+      "baseline_rank": 2,
+      "candidate_pool_rank": 2,
+      "voyage_rank": 1,
+      "provider_status": "voyage_validated",
+      "failure_kind": null,
+      "processed_token_estimate": 2865,
+      "first_stage_retrieval_latency_ms": 1626.425,
+      "pacing_wait_ms": 59011.4,
+      "provider_http_latency_ms": 407.362,
+      "reranker_total_elapsed_ms": 59420.578,
+      "total_retrieval_latency_ms": 61047.003,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-008",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:1007:135324:8f903f46d2fa3ca8:chunk:000"
+      ],
+      "candidate_pool_fingerprint": "eb6708bdff9edb83c0db5dcdcf8a10957d83cb83554d4f4e5ebedbc88e639b3c",
+      "candidate_count": 13,
+      "baseline_top_k_evidence_ids": [
+        "raw_wiki:1007:135324:8f903f46d2fa3ca8:chunk:000",
+        "raw_wiki:10662:101177:8871332c765002d5:chunk:000",
+        "raw_wiki:1007:135324:8f903f46d2fa3ca8:chunk:000",
+        "raw_wiki:522:103593:65ac76a1400c1df9:chunk:000",
+        "raw_wiki:7557:136952:45922d58511e4b39:chunk:000"
+      ],
+      "voyage_top_k_evidence_ids": null,
+      "baseline_rank": 1,
+      "candidate_pool_rank": 1,
+      "voyage_rank": null,
+      "provider_status": "fallback",
+      "failure_kind": "rate_limit",
+      "processed_token_estimate": 1999,
+      "first_stage_retrieval_latency_ms": 1621.729,
+      "pacing_wait_ms": 0.0,
+      "provider_http_latency_ms": null,
+      "reranker_total_elapsed_ms": 236.711,
+      "total_retrieval_latency_ms": 1858.44,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-009",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:938:130729:103ceb2210a7890a:chunk:000"
+      ],
+      "candidate_pool_fingerprint": "a2a2f2862d2392a1c5c58fcd3f42de9124735c1f310a92bfe72864f53e409ec9",
+      "candidate_count": 13,
+      "baseline_top_k_evidence_ids": [
+        "raw_wiki:938:130729:103ceb2210a7890a:chunk:000",
+        "raw_wiki:1567:101748:f9ba41dcd5878b94:chunk:000",
+        "raw_wiki:938:130729:103ceb2210a7890a:chunk:000",
+        "raw_wiki:594:99232:375b861a53702e76:chunk:000",
+        "raw_wiki:938:130729:103ceb2210a7890a:chunk:000"
+      ],
+      "voyage_top_k_evidence_ids": [
+        "raw_wiki:938:130729:103ceb2210a7890a:chunk:000",
+        "raw_wiki:938:130729:103ceb2210a7890a:chunk:000",
+        "raw_wiki:1567:101748:f9ba41dcd5878b94:chunk:000",
+        "raw_wiki:898:136862:688bebbd18ed5936:chunk:000",
+        "raw_wiki:898:136862:688bebbd18ed5936:chunk:000"
+      ],
+      "baseline_rank": 1,
+      "candidate_pool_rank": 1,
+      "voyage_rank": 1,
+      "provider_status": "voyage_validated",
+      "failure_kind": null,
+      "processed_token_estimate": 2134,
+      "first_stage_retrieval_latency_ms": 1626.302,
+      "pacing_wait_ms": 61.122,
+      "provider_http_latency_ms": 322.661,
+      "reranker_total_elapsed_ms": 385.548,
+      "total_retrieval_latency_ms": 2011.85,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-010",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:896:99150:aa2a5187c5ebc08b:chunk:000"
+      ],
+      "candidate_pool_fingerprint": "e528e1aa25aefb04c18b072c2742d9807bcdd346ef1c170d047f0da8279ad28b",
+      "candidate_count": 13,
+      "baseline_top_k_evidence_ids": [
+        "raw_wiki:896:99150:aa2a5187c5ebc08b:chunk:000",
+        "raw_wiki:525:136877:39d55ea5f72b29b4:chunk:000",
+        "raw_wiki:896:99150:aa2a5187c5ebc08b:chunk:000",
+        "raw_wiki:525:136877:39d55ea5f72b29b4:chunk:000",
+        "raw_wiki:896:99150:aa2a5187c5ebc08b:chunk:000"
+      ],
+      "voyage_top_k_evidence_ids": [
+        "raw_wiki:896:99150:aa2a5187c5ebc08b:chunk:000",
+        "raw_wiki:2495:95403:5f1aaaf7d623c0fb:chunk:000",
+        "raw_wiki:525:136877:39d55ea5f72b29b4:chunk:000",
+        "raw_wiki:525:136877:39d55ea5f72b29b4:chunk:000",
+        "raw_wiki:26888:99747:897732ef65d43d75:chunk:000"
+      ],
+      "baseline_rank": 1,
+      "candidate_pool_rank": 1,
+      "voyage_rank": 1,
+      "provider_status": "voyage_validated",
+      "failure_kind": null,
+      "processed_token_estimate": 1820,
+      "first_stage_retrieval_latency_ms": 1626.177,
+      "pacing_wait_ms": 58959.137,
+      "provider_http_latency_ms": 375.634,
+      "reranker_total_elapsed_ms": 59335.694,
+      "total_retrieval_latency_ms": 60961.872,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-011",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:37391:136476:a3a41695657088cf:chunk:000"
+      ],
+      "candidate_pool_fingerprint": "e9a8fe85581210c379bbee2a4cd96faa378e8c45f1dff3364a0cf607e9a7e0d3",
+      "candidate_count": 13,
+      "baseline_top_k_evidence_ids": [
+        "raw_wiki:37391:136476:a3a41695657088cf:chunk:000",
+        "raw_wiki:37391:136476:a3a41695657088cf:chunk:000",
+        "raw_wiki:37391:136476:a3a41695657088cf:chunk:000",
+        "raw_wiki:37543:136637:1b307d031f032102:chunk:000",
+        "raw_wiki:37541:136636:74112a929ceb38f7:chunk:000"
+      ],
+      "voyage_top_k_evidence_ids": [
+        "raw_wiki:37391:136476:a3a41695657088cf:chunk:000",
+        "raw_wiki:37391:136476:a3a41695657088cf:chunk:000",
+        "raw_wiki:38235:100618:8025f2e9981c401e:chunk:000",
+        "raw_wiki:37543:136637:1b307d031f032102:chunk:000",
+        "raw_wiki:37541:136636:74112a929ceb38f7:chunk:000"
+      ],
+      "baseline_rank": 1,
+      "candidate_pool_rank": 1,
+      "voyage_rank": 1,
+      "provider_status": "voyage_validated",
+      "failure_kind": null,
+      "processed_token_estimate": 2129,
+      "first_stage_retrieval_latency_ms": 1608.82,
+      "pacing_wait_ms": 56.07,
+      "provider_http_latency_ms": 292.637,
+      "reranker_total_elapsed_ms": 350.328,
+      "total_retrieval_latency_ms": 1959.148,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-012",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:24999:99250:79f12bc79353ca49:chunk:000"
+      ],
+      "candidate_pool_fingerprint": "3e7a73d09a03a331a40959b3d886b7a3f48f6f3e11c15116e5d960e18abaabee",
+      "candidate_count": 13,
+      "baseline_top_k_evidence_ids": [
+        "raw_wiki:348:86837:3b43bd7a33ec8d89:chunk:000",
+        "raw_wiki:24999:99250:79f12bc79353ca49:chunk:000",
+        "raw_wiki:24999:99250:79f12bc79353ca49:chunk:000",
+        "raw_wiki:24999:99250:79f12bc79353ca49:chunk:000",
+        "raw_wiki:348:86837:3b43bd7a33ec8d89:chunk:000"
+      ],
+      "voyage_top_k_evidence_ids": [
+        "raw_wiki:24999:99250:79f12bc79353ca49:chunk:000",
+        "raw_wiki:348:86837:3b43bd7a33ec8d89:chunk:000",
+        "raw_wiki:24999:99250:79f12bc79353ca49:chunk:000",
+        "raw_wiki:24999:99250:79f12bc79353ca49:chunk:000",
+        "raw_wiki:24999:99250:79f12bc79353ca49:chunk:000"
+      ],
+      "baseline_rank": 2,
+      "candidate_pool_rank": 2,
+      "voyage_rank": 1,
+      "provider_status": "voyage_validated",
+      "failure_kind": null,
+      "processed_token_estimate": 3418,
+      "first_stage_retrieval_latency_ms": 1623.634,
+      "pacing_wait_ms": 0.0,
+      "provider_http_latency_ms": 315.074,
+      "reranker_total_elapsed_ms": 316.652,
+      "total_retrieval_latency_ms": 1940.286,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-013",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:1008:99738:fa6acd585adb1d2a:chunk:000"
+      ],
+      "candidate_pool_fingerprint": "261e6f230c445a3f9ae379e8c64dff97c8116389d5960531fcd226e0e52524f9",
+      "candidate_count": 13,
+      "baseline_top_k_evidence_ids": [
+        "raw_wiki:1005:99743:9725a6704dccd755:chunk:000",
+        "raw_wiki:26165:131313:b22f8b2701be47df:chunk:000",
+        "raw_wiki:1005:99743:9725a6704dccd755:chunk:000",
+        "raw_wiki:26165:131313:b22f8b2701be47df:chunk:000",
+        "raw_wiki:1074:99099:f1f00f7ba53c6ff4:chunk:000"
+      ],
+      "voyage_top_k_evidence_ids": [
+        "raw_wiki:1008:99738:fa6acd585adb1d2a:chunk:000",
+        "raw_wiki:1005:99743:9725a6704dccd755:chunk:000",
+        "raw_wiki:1005:99743:9725a6704dccd755:chunk:000",
+        "raw_wiki:26165:131313:b22f8b2701be47df:chunk:000",
+        "raw_wiki:26165:131313:b22f8b2701be47df:chunk:000"
+      ],
+      "baseline_rank": null,
+      "candidate_pool_rank": 6,
+      "voyage_rank": 1,
+      "provider_status": "voyage_validated",
+      "failure_kind": null,
+      "processed_token_estimate": 3020,
+      "first_stage_retrieval_latency_ms": 1635.021,
+      "pacing_wait_ms": 58953.794,
+      "provider_http_latency_ms": 385.224,
+      "reranker_total_elapsed_ms": 59340.945,
+      "total_retrieval_latency_ms": 60975.966,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-014",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:8269:95612:1c103964f57b0be7:chunk:000"
+      ],
+      "candidate_pool_fingerprint": "da33f1133d6dd630e15371649c1af8b5c87cfbefbf1f899d5d4bab16266795b0",
+      "candidate_count": 13,
+      "baseline_top_k_evidence_ids": [
+        "raw_wiki:8269:95612:1c103964f57b0be7:chunk:000",
+        "raw_wiki:8269:95612:1c103964f57b0be7:chunk:000",
+        "raw_wiki:8269:95612:1c103964f57b0be7:chunk:000",
+        "raw_wiki:8269:95612:1c103964f57b0be7:chunk:000",
+        "raw_wiki:8269:95612:1c103964f57b0be7:chunk:000"
+      ],
+      "voyage_top_k_evidence_ids": [
+        "raw_wiki:8269:95612:1c103964f57b0be7:chunk:000",
+        "raw_wiki:8269:95612:1c103964f57b0be7:chunk:000",
+        "raw_wiki:10662:101177:8871332c765002d5:chunk:000",
+        "raw_wiki:8269:95612:1c103964f57b0be7:chunk:000",
+        "raw_wiki:1074:99099:f1f00f7ba53c6ff4:chunk:000"
+      ],
+      "baseline_rank": 1,
+      "candidate_pool_rank": 1,
+      "voyage_rank": 1,
+      "provider_status": "voyage_validated",
+      "failure_kind": null,
+      "processed_token_estimate": 2100,
+      "first_stage_retrieval_latency_ms": 1611.665,
+      "pacing_wait_ms": 57.165,
+      "provider_http_latency_ms": 329.977,
+      "reranker_total_elapsed_ms": 388.411,
+      "total_retrieval_latency_ms": 2000.076,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-015",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:585:101912:cdb1baf766c207e6:chunk:000"
+      ],
+      "candidate_pool_fingerprint": "3fb58e01653c4c93e17d4fce134956ec2e94cb7a6288b3c017963c5410bee123",
+      "candidate_count": 13,
+      "baseline_top_k_evidence_ids": [
+        "raw_wiki:585:101912:cdb1baf766c207e6:chunk:000",
+        "raw_wiki:37391:136476:a3a41695657088cf:chunk:000",
+        "raw_wiki:1074:99099:f1f00f7ba53c6ff4:chunk:000",
+        "raw_wiki:26165:131313:b22f8b2701be47df:chunk:000",
+        "raw_wiki:585:101912:cdb1baf766c207e6:chunk:000"
+      ],
+      "voyage_top_k_evidence_ids": [
+        "raw_wiki:585:101912:cdb1baf766c207e6:chunk:000",
+        "raw_wiki:522:103593:65ac76a1400c1df9:chunk:000",
+        "raw_wiki:585:101912:cdb1baf766c207e6:chunk:000",
+        "raw_wiki:585:101912:cdb1baf766c207e6:chunk:000",
+        "raw_wiki:1010:123798:8f9ec690e3b88c0c:chunk:000"
+      ],
+      "baseline_rank": 1,
+      "candidate_pool_rank": 1,
+      "voyage_rank": 1,
+      "provider_status": "voyage_validated",
+      "failure_kind": null,
+      "processed_token_estimate": 4238,
+      "first_stage_retrieval_latency_ms": 1614.096,
+      "pacing_wait_ms": 0.0,
+      "provider_http_latency_ms": 349.588,
+      "reranker_total_elapsed_ms": 351.779,
+      "total_retrieval_latency_ms": 1965.875,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-016",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:38537:136632:f169b123e2bf1328:chunk:000"
+      ],
+      "candidate_pool_fingerprint": "783d2fcd21e97f688a96beac88e1e2a73e72caf0c8ecee5e6a0bccc8f78099c3",
+      "candidate_count": 13,
+      "baseline_top_k_evidence_ids": [
+        "raw_wiki:37543:136637:1b307d031f032102:chunk:000",
+        "raw_wiki:37391:136476:a3a41695657088cf:chunk:000",
+        "raw_wiki:38537:136632:f169b123e2bf1328:chunk:000",
+        "raw_wiki:37391:136476:a3a41695657088cf:chunk:000",
+        "raw_wiki:37391:136476:a3a41695657088cf:chunk:000"
+      ],
+      "voyage_top_k_evidence_ids": [
+        "raw_wiki:38537:136632:f169b123e2bf1328:chunk:000",
+        "raw_wiki:37543:136637:1b307d031f032102:chunk:000",
+        "raw_wiki:37391:136476:a3a41695657088cf:chunk:000",
+        "raw_wiki:37391:136476:a3a41695657088cf:chunk:000",
+        "raw_wiki:37540:136639:46f5898638863eb0:chunk:000"
+      ],
+      "baseline_rank": 3,
+      "candidate_pool_rank": 3,
+      "voyage_rank": 1,
+      "provider_status": "voyage_validated",
+      "failure_kind": null,
+      "processed_token_estimate": 4159,
+      "first_stage_retrieval_latency_ms": 1626.359,
+      "pacing_wait_ms": 59328.191,
+      "provider_http_latency_ms": 519.13,
+      "reranker_total_elapsed_ms": 59849.868,
+      "total_retrieval_latency_ms": 61476.227,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-017",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:31310:99574:02e73eaeaa24eb2c:chunk:000"
+      ],
+      "candidate_pool_fingerprint": "5c623ddb5d61723073a2caacb565007d6a1ccde7c863862e443daf8733a0ffc5",
+      "candidate_count": 13,
+      "baseline_top_k_evidence_ids": [
+        "raw_wiki:31310:99574:02e73eaeaa24eb2c:chunk:000",
+        "raw_wiki:26373:135203:7ce25d5efa8633f0:chunk:000",
+        "raw_wiki:35947:81917:0722434a53a692f3:chunk:000",
+        "raw_wiki:31310:99574:02e73eaeaa24eb2c:chunk:000",
+        "raw_wiki:31852:72985:814ee00262cb4399:chunk:000"
+      ],
+      "voyage_top_k_evidence_ids": [
+        "raw_wiki:31310:99574:02e73eaeaa24eb2c:chunk:000",
+        "raw_wiki:26373:135203:7ce25d5efa8633f0:chunk:000",
+        "raw_wiki:35947:81917:0722434a53a692f3:chunk:000",
+        "raw_wiki:26165:131313:b22f8b2701be47df:chunk:000",
+        "raw_wiki:31310:99574:02e73eaeaa24eb2c:chunk:000"
+      ],
+      "baseline_rank": 1,
+      "candidate_pool_rank": 1,
+      "voyage_rank": 1,
+      "provider_status": "voyage_validated",
+      "failure_kind": null,
+      "processed_token_estimate": 1999,
+      "first_stage_retrieval_latency_ms": 1616.004,
+      "pacing_wait_ms": 0.0,
+      "provider_http_latency_ms": 244.538,
+      "reranker_total_elapsed_ms": 245.542,
+      "total_retrieval_latency_ms": 1861.545,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-018",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:31556:97061:ae4ba2c13572f46c:chunk:000"
+      ],
+      "candidate_pool_fingerprint": "394a1dc4f464f67d10d117ab9e62d19eb48001fa172b391f0036b3bc640320b6",
+      "candidate_count": 13,
+      "baseline_top_k_evidence_ids": [
+        "raw_wiki:31556:97061:ae4ba2c13572f46c:chunk:000",
+        "raw_wiki:31556:97061:ae4ba2c13572f46c:chunk:000",
+        "raw_wiki:42446:101218:eba876c1698e83d3:chunk:000",
+        "raw_wiki:41351:136925:90323859e9cee427:chunk:000",
+        "raw_wiki:42446:101218:eba876c1698e83d3:chunk:000"
+      ],
+      "voyage_top_k_evidence_ids": [
+        "raw_wiki:31556:97061:ae4ba2c13572f46c:chunk:000",
+        "raw_wiki:31556:97061:ae4ba2c13572f46c:chunk:000",
+        "raw_wiki:41351:136925:90323859e9cee427:chunk:000",
+        "raw_wiki:8689:130735:a3c36e894cf4a2c1:chunk:000",
+        "raw_wiki:20501:99245:c417da3a3a4d4832:chunk:000"
+      ],
+      "baseline_rank": 1,
+      "candidate_pool_rank": 1,
+      "voyage_rank": 1,
+      "provider_status": "voyage_validated",
+      "failure_kind": null,
+      "processed_token_estimate": 1213,
+      "first_stage_retrieval_latency_ms": 1608.142,
+      "pacing_wait_ms": 0.0,
+      "provider_http_latency_ms": 285.38,
+      "reranker_total_elapsed_ms": 285.885,
+      "total_retrieval_latency_ms": 1894.027,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-019",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:27951:96619:ae0c99137282474b:chunk:000"
+      ],
+      "candidate_pool_fingerprint": "4f02f0e356a5f52f52611d6c5906b8053395f976cc0649b8c6bcb921f9369c9e",
+      "candidate_count": 13,
+      "baseline_top_k_evidence_ids": [
+        "raw_wiki:27951:96619:ae0c99137282474b:chunk:000",
+        "raw_wiki:25664:91980:9be7bfc0b0f78f80:chunk:000",
+        "raw_wiki:25664:91980:9be7bfc0b0f78f80:chunk:000",
+        "raw_wiki:27951:96619:ae0c99137282474b:chunk:000",
+        "raw_wiki:25664:91980:9be7bfc0b0f78f80:chunk:000"
+      ],
+      "voyage_top_k_evidence_ids": null,
+      "baseline_rank": 1,
+      "candidate_pool_rank": 1,
+      "voyage_rank": null,
+      "provider_status": "fallback",
+      "failure_kind": "rate_limit",
+      "processed_token_estimate": 1837,
+      "first_stage_retrieval_latency_ms": 1642.101,
+      "pacing_wait_ms": 58944.502,
+      "provider_http_latency_ms": null,
+      "reranker_total_elapsed_ms": 59234.569,
+      "total_retrieval_latency_ms": 60876.67,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-020",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:24790:96615:17a7637a393aa5fe:chunk:000"
+      ],
+      "candidate_pool_fingerprint": "8d8d47690dc62bc15668ab33275fcfe69b034a4c7cc3ce6d83e42764d2a77579",
+      "candidate_count": 13,
+      "baseline_top_k_evidence_ids": [
+        "raw_wiki:24790:96615:17a7637a393aa5fe:chunk:000",
+        "raw_wiki:25663:91985:b51f66944bdef37e:chunk:000",
+        "raw_wiki:27120:96278:b1047d1aa9a9b8d2:chunk:000",
+        "raw_wiki:24790:96615:17a7637a393aa5fe:chunk:000",
+        "raw_wiki:25663:91985:b51f66944bdef37e:chunk:000"
+      ],
+      "voyage_top_k_evidence_ids": [
+        "raw_wiki:24790:96615:17a7637a393aa5fe:chunk:000",
+        "raw_wiki:25663:91985:b51f66944bdef37e:chunk:000",
+        "raw_wiki:24790:96615:17a7637a393aa5fe:chunk:000",
+        "raw_wiki:25663:91985:b51f66944bdef37e:chunk:000",
+        "raw_wiki:27120:96278:b1047d1aa9a9b8d2:chunk:000"
+      ],
+      "baseline_rank": 1,
+      "candidate_pool_rank": 1,
+      "voyage_rank": 1,
+      "provider_status": "voyage_validated",
+      "failure_kind": null,
+      "processed_token_estimate": 2827,
+      "first_stage_retrieval_latency_ms": 1630.997,
+      "pacing_wait_ms": 248.895,
+      "provider_http_latency_ms": 319.247,
+      "reranker_total_elapsed_ms": 570.088,
+      "total_retrieval_latency_ms": 2201.085,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-021",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:26196:99513:1106002e2cae6db6:chunk:000"
+      ],
+      "candidate_pool_fingerprint": "bf5e38c6d42bf5a091dce327e7f3b94a39c1ce7d7fdefd27c9c337d436ee09c3",
+      "candidate_count": 13,
+      "baseline_top_k_evidence_ids": [
+        "raw_wiki:26196:99513:1106002e2cae6db6:chunk:000",
+        "raw_wiki:26165:131313:b22f8b2701be47df:chunk:000",
+        "raw_wiki:1012:123801:ecdcd6cae8d7c1f6:chunk:000",
+        "raw_wiki:26165:131313:b22f8b2701be47df:chunk:000",
+        "raw_wiki:27120:96278:b1047d1aa9a9b8d2:chunk:000"
+      ],
+      "voyage_top_k_evidence_ids": [
+        "raw_wiki:26196:99513:1106002e2cae6db6:chunk:000",
+        "raw_wiki:1012:123801:ecdcd6cae8d7c1f6:chunk:000",
+        "raw_wiki:27120:96278:b1047d1aa9a9b8d2:chunk:000",
+        "raw_wiki:26165:131313:b22f8b2701be47df:chunk:000",
+        "raw_wiki:26165:131313:b22f8b2701be47df:chunk:000"
+      ],
+      "baseline_rank": 1,
+      "candidate_pool_rank": 1,
+      "voyage_rank": 1,
+      "provider_status": "voyage_validated",
+      "failure_kind": null,
+      "processed_token_estimate": 3724,
+      "first_stage_retrieval_latency_ms": 1627.981,
+      "pacing_wait_ms": 0.0,
+      "provider_http_latency_ms": 328.886,
+      "reranker_total_elapsed_ms": 330.851,
+      "total_retrieval_latency_ms": 1958.832,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-022",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:31283:102761:da0b008506be0f37:chunk:000"
+      ],
+      "candidate_pool_fingerprint": "312d721df771c059c6b37966d8fc3e0af4cf424991e41f913e51fbedfee5bef2",
+      "candidate_count": 13,
+      "baseline_top_k_evidence_ids": [
+        "raw_wiki:42446:101218:eba876c1698e83d3:chunk:000",
+        "raw_wiki:31283:102761:da0b008506be0f37:chunk:000",
+        "raw_wiki:37391:136476:a3a41695657088cf:chunk:000",
+        "raw_wiki:31283:102761:da0b008506be0f37:chunk:000",
+        "raw_wiki:42446:101218:eba876c1698e83d3:chunk:000"
+      ],
+      "voyage_top_k_evidence_ids": [
+        "raw_wiki:31283:102761:da0b008506be0f37:chunk:000",
+        "raw_wiki:37391:136476:a3a41695657088cf:chunk:000",
+        "raw_wiki:37391:136476:a3a41695657088cf:chunk:000",
+        "raw_wiki:7557:136952:45922d58511e4b39:chunk:000",
+        "raw_wiki:31283:102761:da0b008506be0f37:chunk:000"
+      ],
+      "baseline_rank": 2,
+      "candidate_pool_rank": 2,
+      "voyage_rank": 1,
+      "provider_status": "voyage_validated",
+      "failure_kind": null,
+      "processed_token_estimate": 2412,
+      "first_stage_retrieval_latency_ms": 1632.622,
+      "pacing_wait_ms": 58802.104,
+      "provider_http_latency_ms": 358.136,
+      "reranker_total_elapsed_ms": 59161.815,
+      "total_retrieval_latency_ms": 60794.437,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-023",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:28670:96621:ac4f9f01f5e3796b:chunk:000"
+      ],
+      "candidate_pool_fingerprint": "e4ab2c7576a4b614c72104f155f0dc3b83a222f8ca322c42887268f8a0a4f9fe",
+      "candidate_count": 13,
+      "baseline_top_k_evidence_ids": [
+        "raw_wiki:28670:96621:ac4f9f01f5e3796b:chunk:000",
+        "raw_wiki:1005:99743:9725a6704dccd755:chunk:000",
+        "raw_wiki:42446:101218:eba876c1698e83d3:chunk:000",
+        "raw_wiki:599:96614:56f198042c315f7e:chunk:000",
+        "raw_wiki:37304:100540:d9c41f8fbf72b2ba:chunk:000"
+      ],
+      "voyage_top_k_evidence_ids": null,
+      "baseline_rank": 1,
+      "candidate_pool_rank": 1,
+      "voyage_rank": null,
+      "provider_status": "fallback",
+      "failure_kind": "rate_limit",
+      "processed_token_estimate": 3223,
+      "first_stage_retrieval_latency_ms": 1620.807,
+      "pacing_wait_ms": 200.462,
+      "provider_http_latency_ms": null,
+      "reranker_total_elapsed_ms": 398.94,
+      "total_retrieval_latency_ms": 2019.747,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-024",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:530:92937:7837aba16c572cfb:chunk:000"
+      ],
+      "candidate_pool_fingerprint": "34f2b3aea3ec5ed8d3f414fde76d6a4ce737c4b907d2fca7f0d1cc7b4c2105bb",
+      "candidate_count": 13,
+      "baseline_top_k_evidence_ids": [
+        "raw_wiki:530:92937:7837aba16c572cfb:chunk:000",
+        "raw_wiki:3397:68336:55000dcfdd441514:chunk:000",
+        "raw_wiki:42446:101218:eba876c1698e83d3:chunk:000",
+        "raw_wiki:42446:101218:eba876c1698e83d3:chunk:000",
+        "raw_wiki:3397:68336:55000dcfdd441514:chunk:000"
+      ],
+      "voyage_top_k_evidence_ids": [
+        "raw_wiki:530:92937:7837aba16c572cfb:chunk:000",
+        "raw_wiki:896:99150:aa2a5187c5ebc08b:chunk:000",
+        "raw_wiki:3397:68336:55000dcfdd441514:chunk:000",
+        "raw_wiki:3397:68336:55000dcfdd441514:chunk:000",
+        "raw_wiki:3397:68336:55000dcfdd441514:chunk:000"
+      ],
+      "baseline_rank": 1,
+      "candidate_pool_rank": 1,
+      "voyage_rank": 1,
+      "provider_status": "voyage_validated",
+      "failure_kind": null,
+      "processed_token_estimate": 1714,
+      "first_stage_retrieval_latency_ms": 1623.11,
+      "pacing_wait_ms": 125.809,
+      "provider_http_latency_ms": 307.56,
+      "reranker_total_elapsed_ms": 434.495,
+      "total_retrieval_latency_ms": 2057.606,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-025",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:39187:136635:e0a124eb457dfb82:chunk:000"
+      ],
+      "candidate_pool_fingerprint": "1eb57cef02e61754ba00678ab33d853fdf936d1138d46b481d7241b05e210f02",
+      "candidate_count": 13,
+      "baseline_top_k_evidence_ids": [
+        "raw_wiki:39187:136635:e0a124eb457dfb82:chunk:000",
+        "raw_wiki:38339:136640:9d71c98f093fd140:chunk:000",
+        "raw_wiki:1074:99099:f1f00f7ba53c6ff4:chunk:000",
+        "raw_wiki:37391:136476:a3a41695657088cf:chunk:000",
+        "raw_wiki:37391:136476:a3a41695657088cf:chunk:000"
+      ],
+      "voyage_top_k_evidence_ids": [
+        "raw_wiki:39187:136635:e0a124eb457dfb82:chunk:000",
+        "raw_wiki:37391:136476:a3a41695657088cf:chunk:000",
+        "raw_wiki:37391:136476:a3a41695657088cf:chunk:000",
+        "raw_wiki:38339:136640:9d71c98f093fd140:chunk:000",
+        "raw_wiki:907:126835:49c5a92e82ee7ad1:chunk:000"
+      ],
+      "baseline_rank": 1,
+      "candidate_pool_rank": 1,
+      "voyage_rank": 1,
+      "provider_status": "voyage_validated",
+      "failure_kind": null,
+      "processed_token_estimate": 2438,
+      "first_stage_retrieval_latency_ms": 1599.47,
+      "pacing_wait_ms": 58798.5,
+      "provider_http_latency_ms": 391.213,
+      "reranker_total_elapsed_ms": 59191.928,
+      "total_retrieval_latency_ms": 60791.398,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-026",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:522:103593:65ac76a1400c1df9:chunk:000"
+      ],
+      "candidate_pool_fingerprint": "b388b475db5913e78997f649ace4f397911816dcaf59aca091a44a61abed0d1b",
+      "candidate_count": 13,
+      "baseline_top_k_evidence_ids": [
+        "raw_wiki:522:103593:65ac76a1400c1df9:chunk:000",
+        "raw_wiki:522:103593:65ac76a1400c1df9:chunk:000",
+        "raw_wiki:1007:135324:8f903f46d2fa3ca8:chunk:000",
+        "raw_wiki:585:101912:cdb1baf766c207e6:chunk:000",
+        "raw_wiki:21832:136283:293336c736128dae:chunk:000"
+      ],
+      "voyage_top_k_evidence_ids": [
+        "raw_wiki:522:103593:65ac76a1400c1df9:chunk:000",
+        "raw_wiki:585:101912:cdb1baf766c207e6:chunk:000",
+        "raw_wiki:522:103593:65ac76a1400c1df9:chunk:000",
+        "raw_wiki:1007:135324:8f903f46d2fa3ca8:chunk:000",
+        "raw_wiki:10459:95089:82fed37418e8019f:chunk:000"
+      ],
+      "baseline_rank": 1,
+      "candidate_pool_rank": 1,
+      "voyage_rank": 1,
+      "provider_status": "voyage_validated",
+      "failure_kind": null,
+      "processed_token_estimate": 1583,
+      "first_stage_retrieval_latency_ms": 1627.084,
+      "pacing_wait_ms": 180.858,
+      "provider_http_latency_ms": 253.613,
+      "reranker_total_elapsed_ms": 435.651,
+      "total_retrieval_latency_ms": 2062.736,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-027",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:31295:135376:0a70da2ff45c5134:chunk:000"
+      ],
+      "candidate_pool_fingerprint": "3df59e16835f64ffeb9e79c78bac8ca09f5ecec8c510fb39889e0253752f6469",
+      "candidate_count": 13,
+      "baseline_top_k_evidence_ids": [
+        "raw_wiki:1005:99743:9725a6704dccd755:chunk:000",
+        "raw_wiki:1005:99743:9725a6704dccd755:chunk:000",
+        "raw_wiki:31295:135376:0a70da2ff45c5134:chunk:000",
+        "raw_wiki:26165:131313:b22f8b2701be47df:chunk:000",
+        "raw_wiki:37304:100540:d9c41f8fbf72b2ba:chunk:000"
+      ],
+      "voyage_top_k_evidence_ids": [
+        "raw_wiki:31295:135376:0a70da2ff45c5134:chunk:000",
+        "raw_wiki:26165:131313:b22f8b2701be47df:chunk:000",
+        "raw_wiki:26165:131313:b22f8b2701be47df:chunk:000",
+        "raw_wiki:1074:99099:f1f00f7ba53c6ff4:chunk:000",
+        "raw_wiki:1005:99743:9725a6704dccd755:chunk:000"
+      ],
+      "baseline_rank": 3,
+      "candidate_pool_rank": 3,
+      "voyage_rank": 1,
+      "provider_status": "voyage_validated",
+      "failure_kind": null,
+      "processed_token_estimate": 3508,
+      "first_stage_retrieval_latency_ms": 1610.636,
+      "pacing_wait_ms": 69.346,
+      "provider_http_latency_ms": 342.379,
+      "reranker_total_elapsed_ms": 414.27,
+      "total_retrieval_latency_ms": 2024.906,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-028",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:40075:136638:d67583a80d55df95:chunk:000"
+      ],
+      "candidate_pool_fingerprint": "59c28d7fa4ae8c412437fa8cb9aa5763296ae7eab1f2c7ce5280e733672c6a59",
+      "candidate_count": 13,
+      "baseline_top_k_evidence_ids": [
+        "raw_wiki:40075:136638:d67583a80d55df95:chunk:000",
+        "raw_wiki:40510:100543:5d386e6f565fcdd8:chunk:000",
+        "raw_wiki:40657:97698:cab5f6a8c2e733e8:chunk:000",
+        "raw_wiki:40075:136638:d67583a80d55df95:chunk:000",
+        "raw_wiki:40075:136638:d67583a80d55df95:chunk:000"
+      ],
+      "voyage_top_k_evidence_ids": null,
+      "baseline_rank": 1,
+      "candidate_pool_rank": 1,
+      "voyage_rank": null,
+      "provider_status": "fallback",
+      "failure_kind": "rate_limit",
+      "processed_token_estimate": 1418,
+      "first_stage_retrieval_latency_ms": 1627.236,
+      "pacing_wait_ms": 58763.989,
+      "provider_http_latency_ms": null,
+      "reranker_total_elapsed_ms": 59048.158,
+      "total_retrieval_latency_ms": 60675.393,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-029",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:10962:102771:2a81d1750c1bd1aa:chunk:000"
+      ],
+      "candidate_pool_fingerprint": "67a382f85ab6ef62d5964d163b98801a53a35cc37f4c4f8775e68a6dc2a762ab",
+      "candidate_count": 13,
+      "baseline_top_k_evidence_ids": [
+        "raw_wiki:10962:102771:2a81d1750c1bd1aa:chunk:000",
+        "raw_wiki:1012:123801:ecdcd6cae8d7c1f6:chunk:000",
+        "raw_wiki:1012:123801:ecdcd6cae8d7c1f6:chunk:000",
+        "raw_wiki:41913:136779:8670bd0697124da2:chunk:000",
+        "raw_wiki:41351:136925:90323859e9cee427:chunk:000"
+      ],
+      "voyage_top_k_evidence_ids": [
+        "raw_wiki:10962:102771:2a81d1750c1bd1aa:chunk:000",
+        "raw_wiki:1012:123801:ecdcd6cae8d7c1f6:chunk:000",
+        "raw_wiki:1012:123801:ecdcd6cae8d7c1f6:chunk:000",
+        "raw_wiki:41913:136779:8670bd0697124da2:chunk:000",
+        "raw_wiki:900:99749:8adf6fa8df5985b0:chunk:000"
+      ],
+      "baseline_rank": 1,
+      "candidate_pool_rank": 1,
+      "voyage_rank": 1,
+      "provider_status": "voyage_validated",
+      "failure_kind": null,
+      "processed_token_estimate": 3178,
+      "first_stage_retrieval_latency_ms": 1686.713,
+      "pacing_wait_ms": 287.418,
+      "provider_http_latency_ms": 327.814,
+      "reranker_total_elapsed_ms": 617.122,
+      "total_retrieval_latency_ms": 2303.835,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-030",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:31296:99397:cf04c89a577454a6:chunk:000"
+      ],
+      "candidate_pool_fingerprint": "0b84edab19e621ccd532bc14edd5f0626d6c1294188a07ff4021425f6efa548a",
+      "candidate_count": 13,
+      "baseline_top_k_evidence_ids": [
+        "raw_wiki:36127:136805:e24081106cc2ec69:chunk:000",
+        "raw_wiki:31296:99397:cf04c89a577454a6:chunk:000",
+        "raw_wiki:36127:136805:e24081106cc2ec69:chunk:000",
+        "raw_wiki:35947:81917:0722434a53a692f3:chunk:000",
+        "raw_wiki:31296:99397:cf04c89a577454a6:chunk:000"
+      ],
+      "voyage_top_k_evidence_ids": [
+        "raw_wiki:31296:99397:cf04c89a577454a6:chunk:000",
+        "raw_wiki:36127:136805:e24081106cc2ec69:chunk:000",
+        "raw_wiki:36127:136805:e24081106cc2ec69:chunk:000",
+        "raw_wiki:31296:99397:cf04c89a577454a6:chunk:000",
+        "raw_wiki:26373:135203:7ce25d5efa8633f0:chunk:000"
+      ],
+      "baseline_rank": 2,
+      "candidate_pool_rank": 2,
+      "voyage_rank": 1,
+      "provider_status": "voyage_validated",
+      "failure_kind": null,
+      "processed_token_estimate": 1448,
+      "first_stage_retrieval_latency_ms": 1630.992,
+      "pacing_wait_ms": 0.0,
+      "provider_http_latency_ms": 240.342,
+      "reranker_total_elapsed_ms": 241.009,
+      "total_retrieval_latency_ms": 1872.001,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-031",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:633:92941:f0bb12c836a8d2f8:chunk:000"
+      ],
+      "candidate_pool_fingerprint": "27c5c13b9f8612fe9e2e036d81ae1f7656585ee42a80126ccf3d7e646c359d9c",
+      "candidate_count": 13,
+      "baseline_top_k_evidence_ids": [
+        "raw_wiki:633:92941:f0bb12c836a8d2f8:chunk:000",
+        "raw_wiki:28266:131321:5f2feb1a382c7763:chunk:000",
+        "raw_wiki:624:92922:791b05ce14a56b51:chunk:000",
+        "raw_wiki:42446:101218:eba876c1698e83d3:chunk:000",
+        "raw_wiki:7557:136952:45922d58511e4b39:chunk:000"
+      ],
+      "voyage_top_k_evidence_ids": [
+        "raw_wiki:633:92941:f0bb12c836a8d2f8:chunk:000",
+        "raw_wiki:624:92922:791b05ce14a56b51:chunk:000",
+        "raw_wiki:588:99853:a4995516cd60ac47:chunk:000",
+        "raw_wiki:43220:135228:76d0661608cd2925:chunk:000",
+        "raw_wiki:7557:136952:45922d58511e4b39:chunk:000"
+      ],
+      "baseline_rank": 1,
+      "candidate_pool_rank": 1,
+      "voyage_rank": 1,
+      "provider_status": "voyage_validated",
+      "failure_kind": null,
+      "processed_token_estimate": 3417,
+      "first_stage_retrieval_latency_ms": 1624.454,
+      "pacing_wait_ms": 58864.728,
+      "provider_http_latency_ms": 427.869,
+      "reranker_total_elapsed_ms": 59295.101,
+      "total_retrieval_latency_ms": 60919.555,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-032",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:936:101013:20a1567cbe138350:chunk:000"
+      ],
+      "candidate_pool_fingerprint": "61e19826948ae1e28757e39c4e2e880363c4d992e1d843380a25e474bed8943f",
+      "candidate_count": 13,
+      "baseline_top_k_evidence_ids": [
+        "raw_wiki:936:101013:20a1567cbe138350:chunk:000",
+        "raw_wiki:1012:123801:ecdcd6cae8d7c1f6:chunk:000",
+        "raw_wiki:1012:123801:ecdcd6cae8d7c1f6:chunk:000",
+        "raw_wiki:8689:130735:a3c36e894cf4a2c1:chunk:000",
+        "raw_wiki:348:86837:3b43bd7a33ec8d89:chunk:000"
+      ],
+      "voyage_top_k_evidence_ids": null,
+      "baseline_rank": 1,
+      "candidate_pool_rank": 1,
+      "voyage_rank": null,
+      "provider_status": "fallback",
+      "failure_kind": "rate_limit",
+      "processed_token_estimate": 3158,
+      "first_stage_retrieval_latency_ms": 1621.515,
+      "pacing_wait_ms": 126.069,
+      "provider_http_latency_ms": null,
+      "reranker_total_elapsed_ms": 318.166,
+      "total_retrieval_latency_ms": 1939.68,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-033",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:525:136877:39d55ea5f72b29b4:chunk:000"
+      ],
+      "candidate_pool_fingerprint": "9dc64203d4779f83d5fb765bfdebb89ee32a5b2e82d7003b2eb00b005b6147ce",
+      "candidate_count": 13,
+      "baseline_top_k_evidence_ids": [
+        "raw_wiki:26888:99747:897732ef65d43d75:chunk:000",
+        "raw_wiki:26888:99747:897732ef65d43d75:chunk:000",
+        "raw_wiki:525:136877:39d55ea5f72b29b4:chunk:000",
+        "raw_wiki:896:99150:aa2a5187c5ebc08b:chunk:000",
+        "raw_wiki:530:92937:7837aba16c572cfb:chunk:000"
+      ],
+      "voyage_top_k_evidence_ids": [
+        "raw_wiki:26888:99747:897732ef65d43d75:chunk:000",
+        "raw_wiki:26888:99747:897732ef65d43d75:chunk:000",
+        "raw_wiki:525:136877:39d55ea5f72b29b4:chunk:000",
+        "raw_wiki:896:99150:aa2a5187c5ebc08b:chunk:000",
+        "raw_wiki:525:136877:39d55ea5f72b29b4:chunk:000"
+      ],
+      "baseline_rank": 3,
+      "candidate_pool_rank": 3,
+      "voyage_rank": 3,
+      "provider_status": "voyage_validated",
+      "failure_kind": null,
+      "processed_token_estimate": 2032,
+      "first_stage_retrieval_latency_ms": 1614.521,
+      "pacing_wait_ms": 148.232,
+      "provider_http_latency_ms": 291.99,
+      "reranker_total_elapsed_ms": 441.503,
+      "total_retrieval_latency_ms": 2056.024,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-034",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:631:92944:69b041db40e5f9b9:chunk:000"
+      ],
+      "candidate_pool_fingerprint": "13bd60b1508bfe6d7927bd48dd86c5e38111e1f0bd6b6b559a471e1c04f15f1f",
+      "candidate_count": 13,
+      "baseline_top_k_evidence_ids": [
+        "raw_wiki:900:99749:8adf6fa8df5985b0:chunk:000",
+        "raw_wiki:631:92944:69b041db40e5f9b9:chunk:000",
+        "raw_wiki:900:99749:8adf6fa8df5985b0:chunk:000",
+        "raw_wiki:2960:99756:4c2d85a16f6eb409:chunk:000",
+        "raw_wiki:42446:101218:eba876c1698e83d3:chunk:000"
+      ],
+      "voyage_top_k_evidence_ids": [
+        "raw_wiki:900:99749:8adf6fa8df5985b0:chunk:000",
+        "raw_wiki:631:92944:69b041db40e5f9b9:chunk:000",
+        "raw_wiki:2960:99756:4c2d85a16f6eb409:chunk:000",
+        "raw_wiki:900:99749:8adf6fa8df5985b0:chunk:000",
+        "raw_wiki:42308:102539:fd8cd359be141d6c:chunk:000"
+      ],
+      "baseline_rank": 2,
+      "candidate_pool_rank": 2,
+      "voyage_rank": 2,
+      "provider_status": "voyage_validated",
+      "failure_kind": null,
+      "processed_token_estimate": 1450,
+      "first_stage_retrieval_latency_ms": 1622.902,
+      "pacing_wait_ms": 58809.645,
+      "provider_http_latency_ms": 350.852,
+      "reranker_total_elapsed_ms": 59161.286,
+      "total_retrieval_latency_ms": 60784.189,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-035",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:37545:99389:e03a4665c08c9421:chunk:000"
+      ],
+      "candidate_pool_fingerprint": "b5868ad5999e1cfb2680a0860fe4a67d153518f72d277d4f3b1ed42a559fa4a1",
+      "candidate_count": 13,
+      "baseline_top_k_evidence_ids": [
+        "raw_wiki:37391:136476:a3a41695657088cf:chunk:000",
+        "raw_wiki:37543:136637:1b307d031f032102:chunk:000",
+        "raw_wiki:37391:136476:a3a41695657088cf:chunk:000",
+        "raw_wiki:37541:136636:74112a929ceb38f7:chunk:000",
+        "raw_wiki:37540:136639:46f5898638863eb0:chunk:000"
+      ],
+      "voyage_top_k_evidence_ids": [
+        "raw_wiki:37391:136476:a3a41695657088cf:chunk:000",
+        "raw_wiki:37391:136476:a3a41695657088cf:chunk:000",
+        "raw_wiki:37540:136639:46f5898638863eb0:chunk:000",
+        "raw_wiki:38537:136632:f169b123e2bf1328:chunk:000",
+        "raw_wiki:37541:136636:74112a929ceb38f7:chunk:000"
+      ],
+      "baseline_rank": null,
+      "candidate_pool_rank": null,
+      "voyage_rank": null,
+      "provider_status": "voyage_validated",
+      "failure_kind": null,
+      "processed_token_estimate": 3543,
+      "first_stage_retrieval_latency_ms": 1607.901,
+      "pacing_wait_ms": 216.931,
+      "provider_http_latency_ms": 277.938,
+      "reranker_total_elapsed_ms": 497.429,
+      "total_retrieval_latency_ms": 2105.33,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-036",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:20501:99245:c417da3a3a4d4832:chunk:000"
+      ],
+      "candidate_pool_fingerprint": "10b10e277f71065b406dc990673d9daae775c52ff79b2f513b1e7916e184cc90",
+      "candidate_count": 13,
+      "baseline_top_k_evidence_ids": [
+        "raw_wiki:10459:95089:82fed37418e8019f:chunk:000",
+        "raw_wiki:20501:99245:c417da3a3a4d4832:chunk:000",
+        "raw_wiki:10459:95089:82fed37418e8019f:chunk:000",
+        "raw_wiki:20501:99245:c417da3a3a4d4832:chunk:000",
+        "raw_wiki:10459:95089:82fed37418e8019f:chunk:000"
+      ],
+      "voyage_top_k_evidence_ids": null,
+      "baseline_rank": 2,
+      "candidate_pool_rank": 2,
+      "voyage_rank": null,
+      "provider_status": "fallback",
+      "failure_kind": "rate_limit",
+      "processed_token_estimate": 1254,
+      "first_stage_retrieval_latency_ms": 1636.85,
+      "pacing_wait_ms": 58.773,
+      "provider_http_latency_ms": null,
+      "reranker_total_elapsed_ms": 244.728,
+      "total_retrieval_latency_ms": 1881.578,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-037",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:30940:96622:a0dca9f4d3d03fb9:chunk:000"
+      ],
+      "candidate_pool_fingerprint": "d6da8e0e35d3c44801cffe738fe76ba25872476baef364ddbe6dd5f3c50f303b",
+      "candidate_count": 13,
+      "baseline_top_k_evidence_ids": [
+        "raw_wiki:27120:96278:b1047d1aa9a9b8d2:chunk:000",
+        "raw_wiki:30940:96622:a0dca9f4d3d03fb9:chunk:000",
+        "raw_wiki:26373:135203:7ce25d5efa8633f0:chunk:000",
+        "raw_wiki:31296:99397:cf04c89a577454a6:chunk:000",
+        "raw_wiki:31852:72985:814ee00262cb4399:chunk:000"
+      ],
+      "voyage_top_k_evidence_ids": [
+        "raw_wiki:30940:96622:a0dca9f4d3d03fb9:chunk:000",
+        "raw_wiki:31852:72985:814ee00262cb4399:chunk:000",
+        "raw_wiki:30940:96622:a0dca9f4d3d03fb9:chunk:000",
+        "raw_wiki:30940:96622:a0dca9f4d3d03fb9:chunk:000",
+        "raw_wiki:31296:99397:cf04c89a577454a6:chunk:000"
+      ],
+      "baseline_rank": 2,
+      "candidate_pool_rank": 2,
+      "voyage_rank": 1,
+      "provider_status": "voyage_validated",
+      "failure_kind": null,
+      "processed_token_estimate": 2452,
+      "first_stage_retrieval_latency_ms": 1587.86,
+      "pacing_wait_ms": 58899.162,
+      "provider_http_latency_ms": 434.817,
+      "reranker_total_elapsed_ms": 59336.112,
+      "total_retrieval_latency_ms": 60923.972,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-038",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:37544:136308:b6e43f908463ebaa:chunk:000"
+      ],
+      "candidate_pool_fingerprint": "b0e497d57786b8f89b67aa9c3d8fe9f54fe7beb9eca59573ddc147e5d5eff9fb",
+      "candidate_count": 13,
+      "baseline_top_k_evidence_ids": [
+        "raw_wiki:37544:136308:b6e43f908463ebaa:chunk:000",
+        "raw_wiki:37391:136476:a3a41695657088cf:chunk:000",
+        "raw_wiki:37391:136476:a3a41695657088cf:chunk:000",
+        "raw_wiki:37391:136476:a3a41695657088cf:chunk:000",
+        "raw_wiki:37391:136476:a3a41695657088cf:chunk:000"
+      ],
+      "voyage_top_k_evidence_ids": [
+        "raw_wiki:37544:136308:b6e43f908463ebaa:chunk:000",
+        "raw_wiki:37391:136476:a3a41695657088cf:chunk:000",
+        "raw_wiki:37391:136476:a3a41695657088cf:chunk:000",
+        "raw_wiki:37391:136476:a3a41695657088cf:chunk:000",
+        "raw_wiki:37391:136476:a3a41695657088cf:chunk:000"
+      ],
+      "baseline_rank": 1,
+      "candidate_pool_rank": 1,
+      "voyage_rank": 1,
+      "provider_status": "voyage_validated",
+      "failure_kind": null,
+      "processed_token_estimate": 2739,
+      "first_stage_retrieval_latency_ms": 1606.31,
+      "pacing_wait_ms": 150.448,
+      "provider_http_latency_ms": 378.022,
+      "reranker_total_elapsed_ms": 530.708,
+      "total_retrieval_latency_ms": 2137.017,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-039",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:37543:136637:1b307d031f032102:chunk:000"
+      ],
+      "candidate_pool_fingerprint": "ee7dc66437e6f65d6901ad4aeabcd41fcf452fc6d65a5f70f2bba1ceed7e5db0",
+      "candidate_count": 13,
+      "baseline_top_k_evidence_ids": [
+        "raw_wiki:37543:136637:1b307d031f032102:chunk:000",
+        "raw_wiki:37391:136476:a3a41695657088cf:chunk:000",
+        "raw_wiki:38235:100618:8025f2e9981c401e:chunk:000",
+        "raw_wiki:37391:136476:a3a41695657088cf:chunk:000",
+        "raw_wiki:38537:136632:f169b123e2bf1328:chunk:000"
+      ],
+      "voyage_top_k_evidence_ids": [
+        "raw_wiki:37543:136637:1b307d031f032102:chunk:000",
+        "raw_wiki:38537:136632:f169b123e2bf1328:chunk:000",
+        "raw_wiki:37391:136476:a3a41695657088cf:chunk:000",
+        "raw_wiki:37540:136639:46f5898638863eb0:chunk:000",
+        "raw_wiki:37391:136476:a3a41695657088cf:chunk:000"
+      ],
+      "baseline_rank": 1,
+      "candidate_pool_rank": 1,
+      "voyage_rank": 1,
+      "provider_status": "voyage_validated",
+      "failure_kind": null,
+      "processed_token_estimate": 3075,
+      "first_stage_retrieval_latency_ms": 1596.885,
+      "pacing_wait_ms": 0.0,
+      "provider_http_latency_ms": 334.249,
+      "reranker_total_elapsed_ms": 335.821,
+      "total_retrieval_latency_ms": 1932.706,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-040",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:37540:136639:46f5898638863eb0:chunk:000"
+      ],
+      "candidate_pool_fingerprint": "0b36e9127841f5b2c8220db93718007dbe502e1e93e9fad91ce0c395dcff2069",
+      "candidate_count": 13,
+      "baseline_top_k_evidence_ids": [
+        "raw_wiki:7557:136952:45922d58511e4b39:chunk:000",
+        "raw_wiki:37540:136639:46f5898638863eb0:chunk:000",
+        "raw_wiki:7557:136952:45922d58511e4b39:chunk:000",
+        "raw_wiki:42446:101218:eba876c1698e83d3:chunk:000",
+        "raw_wiki:329:136366:3ec40212bc841d78:chunk:000"
+      ],
+      "voyage_top_k_evidence_ids": null,
+      "baseline_rank": 2,
+      "candidate_pool_rank": 2,
+      "voyage_rank": null,
+      "provider_status": "fallback",
+      "failure_kind": "rate_limit",
+      "processed_token_estimate": 2854,
+      "first_stage_retrieval_latency_ms": 1621.079,
+      "pacing_wait_ms": 58699.532,
+      "provider_http_latency_ms": null,
+      "reranker_total_elapsed_ms": 59024.542,
+      "total_retrieval_latency_ms": 60645.622,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-041",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:594:99232:375b861a53702e76:chunk:000"
+      ],
+      "candidate_pool_fingerprint": "ceaf8b6fa67aa4809d3d789db3d492d62c562c9e8c5843feea73f8f6e0c9e22f",
+      "candidate_count": 13,
+      "baseline_top_k_evidence_ids": [
+        "raw_wiki:898:136862:688bebbd18ed5936:chunk:000",
+        "raw_wiki:624:92922:791b05ce14a56b51:chunk:000",
+        "raw_wiki:898:136862:688bebbd18ed5936:chunk:000",
+        "raw_wiki:1567:101748:f9ba41dcd5878b94:chunk:000",
+        "raw_wiki:938:130729:103ceb2210a7890a:chunk:000"
+      ],
+      "voyage_top_k_evidence_ids": [
+        "raw_wiki:594:99232:375b861a53702e76:chunk:000",
+        "raw_wiki:594:99232:375b861a53702e76:chunk:000",
+        "raw_wiki:938:130729:103ceb2210a7890a:chunk:000",
+        "raw_wiki:624:92922:791b05ce14a56b51:chunk:000",
+        "raw_wiki:938:130729:103ceb2210a7890a:chunk:000"
+      ],
+      "baseline_rank": null,
+      "candidate_pool_rank": 8,
+      "voyage_rank": 1,
+      "provider_status": "voyage_validated",
+      "failure_kind": null,
+      "processed_token_estimate": 2148,
+      "first_stage_retrieval_latency_ms": 1630.401,
+      "pacing_wait_ms": 278.68,
+      "provider_http_latency_ms": 303.496,
+      "reranker_total_elapsed_ms": 584.081,
+      "total_retrieval_latency_ms": 2214.481,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-042",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:24784:96617:ecee4ea626873787:chunk:000"
+      ],
+      "candidate_pool_fingerprint": "4d35732f6af3587e9abcc6654c24be7aa6546418638494c5782f7dfe32f93907",
+      "candidate_count": 13,
+      "baseline_top_k_evidence_ids": [
+        "raw_wiki:24784:96617:ecee4ea626873787:chunk:000",
+        "raw_wiki:24784:96617:ecee4ea626873787:chunk:000",
+        "raw_wiki:42446:101218:eba876c1698e83d3:chunk:000",
+        "raw_wiki:42446:101218:eba876c1698e83d3:chunk:000",
+        "raw_wiki:25536:91984:eba4d3a4762e23f2:chunk:000"
+      ],
+      "voyage_top_k_evidence_ids": [
+        "raw_wiki:24784:96617:ecee4ea626873787:chunk:000",
+        "raw_wiki:24784:96617:ecee4ea626873787:chunk:000",
+        "raw_wiki:25536:91984:eba4d3a4762e23f2:chunk:000",
+        "raw_wiki:25657:91989:d626dfb652418c20:chunk:000",
+        "raw_wiki:31852:72985:814ee00262cb4399:chunk:000"
+      ],
+      "baseline_rank": 1,
+      "candidate_pool_rank": 1,
+      "voyage_rank": 1,
+      "provider_status": "voyage_validated",
+      "failure_kind": null,
+      "processed_token_estimate": 1247,
+      "first_stage_retrieval_latency_ms": 1591.379,
+      "pacing_wait_ms": 50.533,
+      "provider_http_latency_ms": 299.521,
+      "reranker_total_elapsed_ms": 350.779,
+      "total_retrieval_latency_ms": 1942.157,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-043",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:1074:99099:f1f00f7ba53c6ff4:chunk:000"
+      ],
+      "candidate_pool_fingerprint": "d294d4c8ecab3fff97cf3a7bb3d525cae02263dec6a95c0466c137a33a4634dd",
+      "candidate_count": 13,
+      "baseline_top_k_evidence_ids": [
+        "raw_wiki:1074:99099:f1f00f7ba53c6ff4:chunk:000",
+        "raw_wiki:1074:99099:f1f00f7ba53c6ff4:chunk:000",
+        "raw_wiki:8269:95612:1c103964f57b0be7:chunk:000",
+        "raw_wiki:1074:99099:f1f00f7ba53c6ff4:chunk:000",
+        "raw_wiki:21791:136363:e319b8b4954456ed:chunk:000"
+      ],
+      "voyage_top_k_evidence_ids": [
+        "raw_wiki:1074:99099:f1f00f7ba53c6ff4:chunk:000",
+        "raw_wiki:1074:99099:f1f00f7ba53c6ff4:chunk:000",
+        "raw_wiki:1074:99099:f1f00f7ba53c6ff4:chunk:000",
+        "raw_wiki:8269:95612:1c103964f57b0be7:chunk:000",
+        "raw_wiki:348:86837:3b43bd7a33ec8d89:chunk:000"
+      ],
+      "baseline_rank": 1,
+      "candidate_pool_rank": 1,
+      "voyage_rank": 1,
+      "provider_status": "voyage_validated",
+      "failure_kind": null,
+      "processed_token_estimate": 3969,
+      "first_stage_retrieval_latency_ms": 1591.625,
+      "pacing_wait_ms": 58762.152,
+      "provider_http_latency_ms": 385.251,
+      "reranker_total_elapsed_ms": 59149.955,
+      "total_retrieval_latency_ms": 60741.581,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-044",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:31286:95380:0215bfb291304724:chunk:000"
+      ],
+      "candidate_pool_fingerprint": "8d22052ca0c27533bf6d1190517bfdeb84479a4fc2acf9ed20109c0838a663fb",
+      "candidate_count": 13,
+      "baseline_top_k_evidence_ids": [
+        "raw_wiki:31286:95380:0215bfb291304724:chunk:000",
+        "raw_wiki:37078:90660:e28687f672074f5b:chunk:000",
+        "raw_wiki:31286:95380:0215bfb291304724:chunk:000",
+        "raw_wiki:37078:90660:e28687f672074f5b:chunk:000",
+        "raw_wiki:31286:95380:0215bfb291304724:chunk:000"
+      ],
+      "voyage_top_k_evidence_ids": null,
+      "baseline_rank": 1,
+      "candidate_pool_rank": 1,
+      "voyage_rank": null,
+      "provider_status": "fallback",
+      "failure_kind": "rate_limit",
+      "processed_token_estimate": 1754,
+      "first_stage_retrieval_latency_ms": 1605.381,
+      "pacing_wait_ms": 196.827,
+      "provider_http_latency_ms": null,
+      "reranker_total_elapsed_ms": 375.379,
+      "total_retrieval_latency_ms": 1980.76,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-045",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:24789:103572:c7b9cc0a8a5cdfa6:chunk:000"
+      ],
+      "candidate_pool_fingerprint": "8ac460bd7fbafa76f901b5950a0ee412b554faadef28321470d1494eb16fd9f5",
+      "candidate_count": 13,
+      "baseline_top_k_evidence_ids": [
+        "raw_wiki:25657:91989:d626dfb652418c20:chunk:000",
+        "raw_wiki:25657:91989:d626dfb652418c20:chunk:000",
+        "raw_wiki:25657:91989:d626dfb652418c20:chunk:000",
+        "raw_wiki:24789:103572:c7b9cc0a8a5cdfa6:chunk:000",
+        "raw_wiki:25657:91989:d626dfb652418c20:chunk:000"
+      ],
+      "voyage_top_k_evidence_ids": [
+        "raw_wiki:24789:103572:c7b9cc0a8a5cdfa6:chunk:000",
+        "raw_wiki:24789:103572:c7b9cc0a8a5cdfa6:chunk:000",
+        "raw_wiki:25657:91989:d626dfb652418c20:chunk:000",
+        "raw_wiki:24789:103572:c7b9cc0a8a5cdfa6:chunk:000",
+        "raw_wiki:25657:91989:d626dfb652418c20:chunk:000"
+      ],
+      "baseline_rank": 4,
+      "candidate_pool_rank": 4,
+      "voyage_rank": 1,
+      "provider_status": "voyage_validated",
+      "failure_kind": null,
+      "processed_token_estimate": 2008,
+      "first_stage_retrieval_latency_ms": 1605.321,
+      "pacing_wait_ms": 178.248,
+      "provider_http_latency_ms": 254.926,
+      "reranker_total_elapsed_ms": 434.58,
+      "total_retrieval_latency_ms": 2039.901,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-046",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:588:99853:a4995516cd60ac47:chunk:000"
+      ],
+      "candidate_pool_fingerprint": "cc9f0983a1d00c211b88204bd0692fc2642c646c65284280c4b93b9c2c53b208",
+      "candidate_count": 13,
+      "baseline_top_k_evidence_ids": [
+        "raw_wiki:25536:91984:eba4d3a4762e23f2:chunk:000",
+        "raw_wiki:25536:91984:eba4d3a4762e23f2:chunk:000",
+        "raw_wiki:588:99853:a4995516cd60ac47:chunk:000",
+        "raw_wiki:588:99853:a4995516cd60ac47:chunk:000",
+        "raw_wiki:42446:101218:eba876c1698e83d3:chunk:000"
+      ],
+      "voyage_top_k_evidence_ids": [
+        "raw_wiki:588:99853:a4995516cd60ac47:chunk:000",
+        "raw_wiki:588:99853:a4995516cd60ac47:chunk:000",
+        "raw_wiki:25536:91984:eba4d3a4762e23f2:chunk:000",
+        "raw_wiki:25536:91984:eba4d3a4762e23f2:chunk:000",
+        "raw_wiki:21791:136363:e319b8b4954456ed:chunk:000"
+      ],
+      "baseline_rank": 3,
+      "candidate_pool_rank": 3,
+      "voyage_rank": 1,
+      "provider_status": "voyage_validated",
+      "failure_kind": null,
+      "processed_token_estimate": 3587,
+      "first_stage_retrieval_latency_ms": 1643.445,
+      "pacing_wait_ms": 58801.179,
+      "provider_http_latency_ms": 446.094,
+      "reranker_total_elapsed_ms": 59249.565,
+      "total_retrieval_latency_ms": 60893.01,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-047",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:10662:101177:8871332c765002d5:chunk:000"
+      ],
+      "candidate_pool_fingerprint": "cc7e469b2e33f7d09269723d8cfb442bcdbf23f25130815e3432d288fcd47f66",
+      "candidate_count": 13,
+      "baseline_top_k_evidence_ids": [
+        "raw_wiki:10662:101177:8871332c765002d5:chunk:000",
+        "raw_wiki:1007:135324:8f903f46d2fa3ca8:chunk:000",
+        "raw_wiki:10662:101177:8871332c765002d5:chunk:000",
+        "raw_wiki:1007:135324:8f903f46d2fa3ca8:chunk:000",
+        "raw_wiki:42446:101218:eba876c1698e83d3:chunk:000"
+      ],
+      "voyage_top_k_evidence_ids": [
+        "raw_wiki:10662:101177:8871332c765002d5:chunk:000",
+        "raw_wiki:7557:136952:45922d58511e4b39:chunk:000",
+        "raw_wiki:1009:99745:d7056297fb95023e:chunk:000",
+        "raw_wiki:7557:136952:45922d58511e4b39:chunk:000",
+        "raw_wiki:1007:135324:8f903f46d2fa3ca8:chunk:000"
+      ],
+      "baseline_rank": 1,
+      "candidate_pool_rank": 1,
+      "voyage_rank": 1,
+      "provider_status": "voyage_validated",
+      "failure_kind": null,
+      "processed_token_estimate": 2718,
+      "first_stage_retrieval_latency_ms": 1609.102,
+      "pacing_wait_ms": 153.93,
+      "provider_http_latency_ms": 320.593,
+      "reranker_total_elapsed_ms": 476.325,
+      "total_retrieval_latency_ms": 2085.428,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-048",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:42215:100630:75aa31f94d24503e:chunk:000"
+      ],
+      "candidate_pool_fingerprint": "e8201ed71190d20c5eefd5dd04683d3b43490e9f7f5a61ade66ef2451a72f231",
+      "candidate_count": 13,
+      "baseline_top_k_evidence_ids": [
+        "raw_wiki:42215:100630:75aa31f94d24503e:chunk:000",
+        "raw_wiki:898:136862:688bebbd18ed5936:chunk:000",
+        "raw_wiki:42446:101218:eba876c1698e83d3:chunk:000",
+        "raw_wiki:570:100537:486bd778015163b6:chunk:000",
+        "raw_wiki:37606:95396:516e78ac4cb5e435:chunk:000"
+      ],
+      "voyage_top_k_evidence_ids": [
+        "raw_wiki:42215:100630:75aa31f94d24503e:chunk:000",
+        "raw_wiki:37078:90660:e28687f672074f5b:chunk:000",
+        "raw_wiki:8833:91979:75ddac21cdabcb6b:chunk:000",
+        "raw_wiki:37606:95396:516e78ac4cb5e435:chunk:000",
+        "raw_wiki:898:136862:688bebbd18ed5936:chunk:000"
+      ],
+      "baseline_rank": 1,
+      "candidate_pool_rank": 1,
+      "voyage_rank": 1,
+      "provider_status": "voyage_validated",
+      "failure_kind": null,
+      "processed_token_estimate": 1447,
+      "first_stage_retrieval_latency_ms": 1628.194,
+      "pacing_wait_ms": 19.745,
+      "provider_http_latency_ms": 324.276,
+      "reranker_total_elapsed_ms": 344.865,
+      "total_retrieval_latency_ms": 1973.059,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-049",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:3150:93366:590fa68ddaf79966:chunk:000"
+      ],
+      "candidate_pool_fingerprint": "67140babb893dab5c2d76fd359f42fe366ed8de10db31583bda241be7206980e",
+      "candidate_count": 13,
+      "baseline_top_k_evidence_ids": [
+        "raw_wiki:3150:93366:590fa68ddaf79966:chunk:000",
+        "raw_wiki:3150:93366:590fa68ddaf79966:chunk:000",
+        "raw_wiki:3150:93366:590fa68ddaf79966:chunk:000",
+        "raw_wiki:2589:93513:33215ce21d4c6e0d:chunk:000",
+        "raw_wiki:938:130729:103ceb2210a7890a:chunk:000"
+      ],
+      "voyage_top_k_evidence_ids": null,
+      "baseline_rank": 1,
+      "candidate_pool_rank": 1,
+      "voyage_rank": null,
+      "provider_status": "fallback",
+      "failure_kind": "rate_limit",
+      "processed_token_estimate": 2544,
+      "first_stage_retrieval_latency_ms": 1629.445,
+      "pacing_wait_ms": 58727.969,
+      "provider_http_latency_ms": null,
+      "reranker_total_elapsed_ms": 58981.409,
+      "total_retrieval_latency_ms": 60610.854,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-050",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:35947:81917:0722434a53a692f3:chunk:000"
+      ],
+      "candidate_pool_fingerprint": "a68e93383a5baa54c316386de111117f5ff3403dff1e9115e6118bcadbf2925e",
+      "candidate_count": 13,
+      "baseline_top_k_evidence_ids": [
+        "raw_wiki:35947:81917:0722434a53a692f3:chunk:000",
+        "raw_wiki:31310:99574:02e73eaeaa24eb2c:chunk:000",
+        "raw_wiki:26373:135203:7ce25d5efa8633f0:chunk:000",
+        "raw_wiki:26373:135203:7ce25d5efa8633f0:chunk:000",
+        "raw_wiki:31296:99397:cf04c89a577454a6:chunk:000"
+      ],
+      "voyage_top_k_evidence_ids": [
+        "raw_wiki:35947:81917:0722434a53a692f3:chunk:000",
+        "raw_wiki:26373:135203:7ce25d5efa8633f0:chunk:000",
+        "raw_wiki:26373:135203:7ce25d5efa8633f0:chunk:000",
+        "raw_wiki:31310:99574:02e73eaeaa24eb2c:chunk:000",
+        "raw_wiki:31852:72985:814ee00262cb4399:chunk:000"
+      ],
+      "baseline_rank": 1,
+      "candidate_pool_rank": 1,
+      "voyage_rank": 1,
+      "provider_status": "voyage_validated",
+      "failure_kind": null,
+      "processed_token_estimate": 1727,
+      "first_stage_retrieval_latency_ms": 1610.747,
+      "pacing_wait_ms": 352.71,
+      "provider_http_latency_ms": 251.768,
+      "reranker_total_elapsed_ms": 605.702,
+      "total_retrieval_latency_ms": 2216.449,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-051",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:9136:91555:b4167fb1e8b24566:chunk:000"
+      ],
+      "candidate_pool_fingerprint": "e91db045aea4317c22447783881fa9836670fbbbe5e2591cf845364283f9b485",
+      "candidate_count": 13,
+      "baseline_top_k_evidence_ids": [
+        "raw_wiki:632:99398:b84b4f87a9d9ade9:chunk:000",
+        "raw_wiki:9136:91555:b4167fb1e8b24566:chunk:000",
+        "raw_wiki:42446:101218:eba876c1698e83d3:chunk:000",
+        "raw_wiki:9136:91555:b4167fb1e8b24566:chunk:000",
+        "raw_wiki:42446:101218:eba876c1698e83d3:chunk:000"
+      ],
+      "voyage_top_k_evidence_ids": [
+        "raw_wiki:9136:91555:b4167fb1e8b24566:chunk:000",
+        "raw_wiki:9136:91555:b4167fb1e8b24566:chunk:000",
+        "raw_wiki:632:99398:b84b4f87a9d9ade9:chunk:000",
+        "raw_wiki:9136:91555:b4167fb1e8b24566:chunk:000",
+        "raw_wiki:9136:91555:b4167fb1e8b24566:chunk:000"
+      ],
+      "baseline_rank": 2,
+      "candidate_pool_rank": 2,
+      "voyage_rank": 1,
+      "provider_status": "voyage_validated",
+      "failure_kind": null,
+      "processed_token_estimate": 1537,
+      "first_stage_retrieval_latency_ms": 1622.166,
+      "pacing_wait_ms": 100.725,
+      "provider_http_latency_ms": 333.329,
+      "reranker_total_elapsed_ms": 435.324,
+      "total_retrieval_latency_ms": 2057.49,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-052",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:25664:91980:9be7bfc0b0f78f80:chunk:000"
+      ],
+      "candidate_pool_fingerprint": "7516c18daed45188d429df556831065249aab6cdffa865263d185060a8ad88c6",
+      "candidate_count": 13,
+      "baseline_top_k_evidence_ids": [
+        "raw_wiki:25664:91980:9be7bfc0b0f78f80:chunk:000",
+        "raw_wiki:25664:91980:9be7bfc0b0f78f80:chunk:000",
+        "raw_wiki:27951:96619:ae0c99137282474b:chunk:000",
+        "raw_wiki:25664:91980:9be7bfc0b0f78f80:chunk:000",
+        "raw_wiki:27951:96619:ae0c99137282474b:chunk:000"
+      ],
+      "voyage_top_k_evidence_ids": [
+        "raw_wiki:25664:91980:9be7bfc0b0f78f80:chunk:000",
+        "raw_wiki:25664:91980:9be7bfc0b0f78f80:chunk:000",
+        "raw_wiki:25664:91980:9be7bfc0b0f78f80:chunk:000",
+        "raw_wiki:25664:91980:9be7bfc0b0f78f80:chunk:000",
+        "raw_wiki:25664:91980:9be7bfc0b0f78f80:chunk:000"
+      ],
+      "baseline_rank": 1,
+      "candidate_pool_rank": 1,
+      "voyage_rank": 1,
+      "provider_status": "voyage_validated",
+      "failure_kind": null,
+      "processed_token_estimate": 1740,
+      "first_stage_retrieval_latency_ms": 1626.214,
+      "pacing_wait_ms": 58717.277,
+      "provider_http_latency_ms": 347.76,
+      "reranker_total_elapsed_ms": 59066.417,
+      "total_retrieval_latency_ms": 60692.631,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-053",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:907:126835:49c5a92e82ee7ad1:chunk:000"
+      ],
+      "candidate_pool_fingerprint": "79fb311cad9143574b3e87703d754ed704e68c997059748ce619f28f667e80ec",
+      "candidate_count": 13,
+      "baseline_top_k_evidence_ids": [
+        "raw_wiki:907:126835:49c5a92e82ee7ad1:chunk:000",
+        "raw_wiki:1074:99099:f1f00f7ba53c6ff4:chunk:000",
+        "raw_wiki:907:126835:49c5a92e82ee7ad1:chunk:000",
+        "raw_wiki:39187:136635:e0a124eb457dfb82:chunk:000",
+        "raw_wiki:42446:101218:eba876c1698e83d3:chunk:000"
+      ],
+      "voyage_top_k_evidence_ids": [
+        "raw_wiki:907:126835:49c5a92e82ee7ad1:chunk:000",
+        "raw_wiki:907:126835:49c5a92e82ee7ad1:chunk:000",
+        "raw_wiki:1074:99099:f1f00f7ba53c6ff4:chunk:000",
+        "raw_wiki:907:126835:49c5a92e82ee7ad1:chunk:000",
+        "raw_wiki:1074:99099:f1f00f7ba53c6ff4:chunk:000"
+      ],
+      "baseline_rank": 1,
+      "candidate_pool_rank": 1,
+      "voyage_rank": 1,
+      "provider_status": "voyage_validated",
+      "failure_kind": null,
+      "processed_token_estimate": 2222,
+      "first_stage_retrieval_latency_ms": 1643.064,
+      "pacing_wait_ms": 240.508,
+      "provider_http_latency_ms": 256.391,
+      "reranker_total_elapsed_ms": 498.767,
+      "total_retrieval_latency_ms": 2141.831,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-054",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:897:102549:c6a570ea76923091:chunk:000"
+      ],
+      "candidate_pool_fingerprint": "0b10e006022335832e93ed06d2d78c5d91aef501bd760ff753e8b3b7f3cedb0a",
+      "candidate_count": 13,
+      "baseline_top_k_evidence_ids": [
+        "raw_wiki:897:102549:c6a570ea76923091:chunk:000",
+        "raw_wiki:632:99398:b84b4f87a9d9ade9:chunk:000",
+        "raw_wiki:897:102549:c6a570ea76923091:chunk:000",
+        "raw_wiki:38537:136632:f169b123e2bf1328:chunk:000",
+        "raw_wiki:31556:97061:ae4ba2c13572f46c:chunk:000"
+      ],
+      "voyage_top_k_evidence_ids": [
+        "raw_wiki:897:102549:c6a570ea76923091:chunk:000",
+        "raw_wiki:632:99398:b84b4f87a9d9ade9:chunk:000",
+        "raw_wiki:42446:101218:eba876c1698e83d3:chunk:000",
+        "raw_wiki:897:102549:c6a570ea76923091:chunk:000",
+        "raw_wiki:42446:101218:eba876c1698e83d3:chunk:000"
+      ],
+      "baseline_rank": 1,
+      "candidate_pool_rank": 1,
+      "voyage_rank": 1,
+      "provider_status": "voyage_validated",
+      "failure_kind": null,
+      "processed_token_estimate": 2222,
+      "first_stage_retrieval_latency_ms": 1598.115,
+      "pacing_wait_ms": 98.821,
+      "provider_http_latency_ms": 355.888,
+      "reranker_total_elapsed_ms": 456.359,
+      "total_retrieval_latency_ms": 2054.474,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-055",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:37078:90660:e28687f672074f5b:chunk:000"
+      ],
+      "candidate_pool_fingerprint": "9b8ed4db11d1fc29bc4ed7bcde31e2ab2dfe3fd412ed1e154eeecb404e720692",
+      "candidate_count": 13,
+      "baseline_top_k_evidence_ids": [
+        "raw_wiki:37078:90660:e28687f672074f5b:chunk:000",
+        "raw_wiki:42446:101218:eba876c1698e83d3:chunk:000",
+        "raw_wiki:40856:136878:d51cccfe23ea5dcf:chunk:000",
+        "raw_wiki:42446:101218:eba876c1698e83d3:chunk:000",
+        "raw_wiki:31283:102761:da0b008506be0f37:chunk:000"
+      ],
+      "voyage_top_k_evidence_ids": null,
+      "baseline_rank": 1,
+      "candidate_pool_rank": 1,
+      "voyage_rank": null,
+      "provider_status": "fallback",
+      "failure_kind": "rate_limit",
+      "processed_token_estimate": 1189,
+      "first_stage_retrieval_latency_ms": 1596.485,
+      "pacing_wait_ms": 58687.991,
+      "provider_http_latency_ms": null,
+      "reranker_total_elapsed_ms": 58921.212,
+      "total_retrieval_latency_ms": 60517.697,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-056",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:25536:91984:eba4d3a4762e23f2:chunk:000"
+      ],
+      "candidate_pool_fingerprint": "15966a6b27165d45ae387f4462866e13fd2962fc726f4937ca97ab358b72fcf5",
+      "candidate_count": 13,
+      "baseline_top_k_evidence_ids": [
+        "raw_wiki:25536:91984:eba4d3a4762e23f2:chunk:000",
+        "raw_wiki:25536:91984:eba4d3a4762e23f2:chunk:000",
+        "raw_wiki:25536:91984:eba4d3a4762e23f2:chunk:000",
+        "raw_wiki:24784:96617:ecee4ea626873787:chunk:000",
+        "raw_wiki:25664:91980:9be7bfc0b0f78f80:chunk:000"
+      ],
+      "voyage_top_k_evidence_ids": [
+        "raw_wiki:25536:91984:eba4d3a4762e23f2:chunk:000",
+        "raw_wiki:25536:91984:eba4d3a4762e23f2:chunk:000",
+        "raw_wiki:25536:91984:eba4d3a4762e23f2:chunk:000",
+        "raw_wiki:25664:91980:9be7bfc0b0f78f80:chunk:000",
+        "raw_wiki:27120:96278:b1047d1aa9a9b8d2:chunk:000"
+      ],
+      "baseline_rank": 1,
+      "candidate_pool_rank": 1,
+      "voyage_rank": 1,
+      "provider_status": "voyage_validated",
+      "failure_kind": null,
+      "processed_token_estimate": 2873,
+      "first_stage_retrieval_latency_ms": 1617.941,
+      "pacing_wait_ms": 370.251,
+      "provider_http_latency_ms": 272.263,
+      "reranker_total_elapsed_ms": 644.382,
+      "total_retrieval_latency_ms": 2262.323,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-057",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:37607:136469:8050e4ce70f7de3d:chunk:000"
+      ],
+      "candidate_pool_fingerprint": "294c8efa048b09a1bc295cd5d0e2dd342466ade4b7ee00b68dc8b6834b3e9602",
+      "candidate_count": 13,
+      "baseline_top_k_evidence_ids": [
+        "raw_wiki:37607:136469:8050e4ce70f7de3d:chunk:000",
+        "raw_wiki:37540:136639:46f5898638863eb0:chunk:000",
+        "raw_wiki:37607:136469:8050e4ce70f7de3d:chunk:000",
+        "raw_wiki:37607:136469:8050e4ce70f7de3d:chunk:000",
+        "raw_wiki:37607:136469:8050e4ce70f7de3d:chunk:000"
+      ],
+      "voyage_top_k_evidence_ids": [
+        "raw_wiki:37607:136469:8050e4ce70f7de3d:chunk:000",
+        "raw_wiki:37607:136469:8050e4ce70f7de3d:chunk:000",
+        "raw_wiki:37540:136639:46f5898638863eb0:chunk:000",
+        "raw_wiki:37607:136469:8050e4ce70f7de3d:chunk:000",
+        "raw_wiki:37607:136469:8050e4ce70f7de3d:chunk:000"
+      ],
+      "baseline_rank": 1,
+      "candidate_pool_rank": 1,
+      "voyage_rank": 1,
+      "provider_status": "voyage_validated",
+      "failure_kind": null,
+      "processed_token_estimate": 1504,
+      "first_stage_retrieval_latency_ms": 1614.032,
+      "pacing_wait_ms": 83.045,
+      "provider_http_latency_ms": 231.891,
+      "reranker_total_elapsed_ms": 316.335,
+      "total_retrieval_latency_ms": 1930.367,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-058",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:25647:136276:a53bc0e233f155a7:chunk:000"
+      ],
+      "candidate_pool_fingerprint": "979cb30ac79aaed9662399988845c722c9e885bcf44fbb68ebf6a4d6307dae57",
+      "candidate_count": 13,
+      "baseline_top_k_evidence_ids": [
+        "raw_wiki:25647:136276:a53bc0e233f155a7:chunk:000",
+        "raw_wiki:27325:99766:36b887fc239c254f:chunk:000",
+        "raw_wiki:570:100537:486bd778015163b6:chunk:000",
+        "raw_wiki:25663:91985:b51f66944bdef37e:chunk:000",
+        "raw_wiki:42446:101218:eba876c1698e83d3:chunk:000"
+      ],
+      "voyage_top_k_evidence_ids": [
+        "raw_wiki:25647:136276:a53bc0e233f155a7:chunk:000",
+        "raw_wiki:25663:91985:b51f66944bdef37e:chunk:000",
+        "raw_wiki:27325:99766:36b887fc239c254f:chunk:000",
+        "raw_wiki:25663:91985:b51f66944bdef37e:chunk:000",
+        "raw_wiki:25663:91985:b51f66944bdef37e:chunk:000"
+      ],
+      "baseline_rank": 1,
+      "candidate_pool_rank": 1,
+      "voyage_rank": 1,
+      "provider_status": "voyage_validated",
+      "failure_kind": null,
+      "processed_token_estimate": 2269,
+      "first_stage_retrieval_latency_ms": 1613.763,
+      "pacing_wait_ms": 58802.612,
+      "provider_http_latency_ms": 351.665,
+      "reranker_total_elapsed_ms": 59156.033,
+      "total_retrieval_latency_ms": 60769.797,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-059",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:28697:99385:4dd8afe17544fe65:chunk:000"
+      ],
+      "candidate_pool_fingerprint": "e304483ca694235cc5d01d26681d291a6eecf390db59697f6171a9dc869938d7",
+      "candidate_count": 13,
+      "baseline_top_k_evidence_ids": [
+        "raw_wiki:28697:99385:4dd8afe17544fe65:chunk:000",
+        "raw_wiki:28697:99385:4dd8afe17544fe65:chunk:000",
+        "raw_wiki:42446:101218:eba876c1698e83d3:chunk:000",
+        "raw_wiki:28697:99385:4dd8afe17544fe65:chunk:000",
+        "raw_wiki:37540:136639:46f5898638863eb0:chunk:000"
+      ],
+      "voyage_top_k_evidence_ids": null,
+      "baseline_rank": 1,
+      "candidate_pool_rank": 1,
+      "voyage_rank": null,
+      "provider_status": "fallback",
+      "failure_kind": "rate_limit",
+      "processed_token_estimate": 1497,
+      "first_stage_retrieval_latency_ms": 1612.454,
+      "pacing_wait_ms": 264.405,
+      "provider_http_latency_ms": null,
+      "reranker_total_elapsed_ms": 491.484,
+      "total_retrieval_latency_ms": 2103.937,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-060",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:37654:102567:739b9476d8734adf:chunk:000"
+      ],
+      "candidate_pool_fingerprint": "9c71ed97c7661d9363d0dcddf93dd2f60fad3af806e02119e5df477331b496bf",
+      "candidate_count": 13,
+      "baseline_top_k_evidence_ids": [
+        "raw_wiki:39067:109671:72359e9e9ab9da76:chunk:000",
+        "raw_wiki:39604:98386:1980d9db5ade6dee:chunk:000",
+        "raw_wiki:39255:94532:a4b996534deab505:chunk:000",
+        "raw_wiki:39255:94532:a4b996534deab505:chunk:000",
+        "raw_wiki:37543:136637:1b307d031f032102:chunk:000"
+      ],
+      "voyage_top_k_evidence_ids": [
+        "raw_wiki:39255:94532:a4b996534deab505:chunk:000",
+        "raw_wiki:39067:109671:72359e9e9ab9da76:chunk:000",
+        "raw_wiki:39255:94532:a4b996534deab505:chunk:000",
+        "raw_wiki:39067:109671:72359e9e9ab9da76:chunk:000",
+        "raw_wiki:39604:98386:1980d9db5ade6dee:chunk:000"
+      ],
+      "baseline_rank": null,
+      "candidate_pool_rank": null,
+      "voyage_rank": null,
+      "provider_status": "voyage_validated",
+      "failure_kind": null,
+      "processed_token_estimate": 1624,
+      "first_stage_retrieval_latency_ms": 1625.384,
+      "pacing_wait_ms": 129.478,
+      "provider_http_latency_ms": 260.925,
+      "reranker_total_elapsed_ms": 392.201,
+      "total_retrieval_latency_ms": 2017.585,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-061",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:21831:100474:3c84649dd4a92bf0:chunk:000"
+      ],
+      "candidate_pool_fingerprint": "1cea399c6e97bd3ad96e5189ac80732a3bab2bd2de7a147612e0f8333c7db500",
+      "candidate_count": 13,
+      "baseline_top_k_evidence_ids": [
+        "raw_wiki:21831:100474:3c84649dd4a92bf0:chunk:000",
+        "raw_wiki:21831:100474:3c84649dd4a92bf0:chunk:000",
+        "raw_wiki:21831:100474:3c84649dd4a92bf0:chunk:000",
+        "raw_wiki:1007:135324:8f903f46d2fa3ca8:chunk:000",
+        "raw_wiki:1007:135324:8f903f46d2fa3ca8:chunk:000"
+      ],
+      "voyage_top_k_evidence_ids": [
+        "raw_wiki:21831:100474:3c84649dd4a92bf0:chunk:000",
+        "raw_wiki:21831:100474:3c84649dd4a92bf0:chunk:000",
+        "raw_wiki:1007:135324:8f903f46d2fa3ca8:chunk:000",
+        "raw_wiki:1007:135324:8f903f46d2fa3ca8:chunk:000",
+        "raw_wiki:21831:100474:3c84649dd4a92bf0:chunk:000"
+      ],
+      "baseline_rank": 1,
+      "candidate_pool_rank": 1,
+      "voyage_rank": 1,
+      "provider_status": "voyage_validated",
+      "failure_kind": null,
+      "processed_token_estimate": 2219,
+      "first_stage_retrieval_latency_ms": 1612.576,
+      "pacing_wait_ms": 58767.441,
+      "provider_http_latency_ms": 459.92,
+      "reranker_total_elapsed_ms": 59228.804,
+      "total_retrieval_latency_ms": 60841.381,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-062",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:4972:93386:0559269f28d2b45c:chunk:000"
+      ],
+      "candidate_pool_fingerprint": "bb553fec607b40a10b169f516a3a86d2de7722d464ef686f044a38baf34d7cd0",
+      "candidate_count": 13,
+      "baseline_top_k_evidence_ids": [
+        "raw_wiki:4972:93386:0559269f28d2b45c:chunk:000",
+        "raw_wiki:4972:93386:0559269f28d2b45c:chunk:000",
+        "raw_wiki:4972:93386:0559269f28d2b45c:chunk:000",
+        "raw_wiki:4972:93386:0559269f28d2b45c:chunk:000",
+        "raw_wiki:7986:99744:d0fede1026c2811c:chunk:000"
+      ],
+      "voyage_top_k_evidence_ids": [
+        "raw_wiki:4972:93386:0559269f28d2b45c:chunk:000",
+        "raw_wiki:7986:99744:d0fede1026c2811c:chunk:000",
+        "raw_wiki:4972:93386:0559269f28d2b45c:chunk:000",
+        "raw_wiki:4972:93386:0559269f28d2b45c:chunk:000",
+        "raw_wiki:4972:93386:0559269f28d2b45c:chunk:000"
+      ],
+      "baseline_rank": 1,
+      "candidate_pool_rank": 1,
+      "voyage_rank": 1,
+      "provider_status": "voyage_validated",
+      "failure_kind": null,
+      "processed_token_estimate": 1522,
+      "first_stage_retrieval_latency_ms": 1611.963,
+      "pacing_wait_ms": 158.851,
+      "provider_http_latency_ms": 285.61,
+      "reranker_total_elapsed_ms": 445.748,
+      "total_retrieval_latency_ms": 2057.711,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-063",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:2960:99756:4c2d85a16f6eb409:chunk:000"
+      ],
+      "candidate_pool_fingerprint": "f92c7314c1b5e7df4a062c7b3aad91b457338773d097f5cb7f5854365e9ea173",
+      "candidate_count": 13,
+      "baseline_top_k_evidence_ids": [
+        "raw_wiki:2960:99756:4c2d85a16f6eb409:chunk:000",
+        "raw_wiki:2960:99756:4c2d85a16f6eb409:chunk:000",
+        "raw_wiki:2960:99756:4c2d85a16f6eb409:chunk:000",
+        "raw_wiki:2960:99756:4c2d85a16f6eb409:chunk:000",
+        "raw_wiki:2960:99756:4c2d85a16f6eb409:chunk:000"
+      ],
+      "voyage_top_k_evidence_ids": null,
+      "baseline_rank": 1,
+      "candidate_pool_rank": 1,
+      "voyage_rank": null,
+      "provider_status": "fallback",
+      "failure_kind": "rate_limit",
+      "processed_token_estimate": 1324,
+      "first_stage_retrieval_latency_ms": 1607.701,
+      "pacing_wait_ms": 56.099,
+      "provider_http_latency_ms": null,
+      "reranker_total_elapsed_ms": 286.685,
+      "total_retrieval_latency_ms": 1894.386,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-064",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:32741:94835:53882334e3c9aac2:chunk:000"
+      ],
+      "candidate_pool_fingerprint": "a1c62b740c70201fe91f1c85b5a71c6f0a6c8486cb5ef3df88bd7d1432cf0f2f",
+      "candidate_count": 13,
+      "baseline_top_k_evidence_ids": [
+        "raw_wiki:32741:94835:53882334e3c9aac2:chunk:000",
+        "raw_wiki:32741:94835:53882334e3c9aac2:chunk:000",
+        "raw_wiki:25536:91984:eba4d3a4762e23f2:chunk:000",
+        "raw_wiki:25536:91984:eba4d3a4762e23f2:chunk:000",
+        "raw_wiki:32741:94835:53882334e3c9aac2:chunk:000"
+      ],
+      "voyage_top_k_evidence_ids": [
+        "raw_wiki:32741:94835:53882334e3c9aac2:chunk:000",
+        "raw_wiki:32741:94835:53882334e3c9aac2:chunk:000",
+        "raw_wiki:25536:91984:eba4d3a4762e23f2:chunk:000",
+        "raw_wiki:25536:91984:eba4d3a4762e23f2:chunk:000",
+        "raw_wiki:32741:94835:53882334e3c9aac2:chunk:000"
+      ],
+      "baseline_rank": 1,
+      "candidate_pool_rank": 1,
+      "voyage_rank": 1,
+      "provider_status": "voyage_validated",
+      "failure_kind": null,
+      "processed_token_estimate": 3108,
+      "first_stage_retrieval_latency_ms": 1623.178,
+      "pacing_wait_ms": 58804.503,
+      "provider_http_latency_ms": 323.724,
+      "reranker_total_elapsed_ms": 59130.185,
+      "total_retrieval_latency_ms": 60753.363,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-065",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:25641:91914:11721f78613de356:chunk:000"
+      ],
+      "candidate_pool_fingerprint": "9c1e0c71bd4fd13aa9bc0c15613987342ebdbe91cda46349a2827c47c0a3124e",
+      "candidate_count": 13,
+      "baseline_top_k_evidence_ids": [
+        "raw_wiki:25641:91914:11721f78613de356:chunk:000",
+        "raw_wiki:25641:91914:11721f78613de356:chunk:000",
+        "raw_wiki:25641:91914:11721f78613de356:chunk:000",
+        "raw_wiki:42446:101218:eba876c1698e83d3:chunk:000",
+        "raw_wiki:27951:96619:ae0c99137282474b:chunk:000"
+      ],
+      "voyage_top_k_evidence_ids": [
+        "raw_wiki:25641:91914:11721f78613de356:chunk:000",
+        "raw_wiki:25641:91914:11721f78613de356:chunk:000",
+        "raw_wiki:25641:91914:11721f78613de356:chunk:000",
+        "raw_wiki:21791:136363:e319b8b4954456ed:chunk:000",
+        "raw_wiki:42446:101218:eba876c1698e83d3:chunk:000"
+      ],
+      "baseline_rank": 1,
+      "candidate_pool_rank": 1,
+      "voyage_rank": 1,
+      "provider_status": "voyage_validated",
+      "failure_kind": null,
+      "processed_token_estimate": 1720,
+      "first_stage_retrieval_latency_ms": 1613.003,
+      "pacing_wait_ms": 306.62,
+      "provider_http_latency_ms": 299.121,
+      "reranker_total_elapsed_ms": 606.969,
+      "total_retrieval_latency_ms": 2219.972,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-066",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:38339:136640:9d71c98f093fd140:chunk:000"
+      ],
+      "candidate_pool_fingerprint": "1ff490f08cdab939f2d3b7ac81f6ef55485ece4681df2a52bbc07e2ae6cdd91b",
+      "candidate_count": 13,
+      "baseline_top_k_evidence_ids": [
+        "raw_wiki:26165:131313:b22f8b2701be47df:chunk:000",
+        "raw_wiki:26165:131313:b22f8b2701be47df:chunk:000",
+        "raw_wiki:38339:136640:9d71c98f093fd140:chunk:000",
+        "raw_wiki:1074:99099:f1f00f7ba53c6ff4:chunk:000",
+        "raw_wiki:1074:99099:f1f00f7ba53c6ff4:chunk:000"
+      ],
+      "voyage_top_k_evidence_ids": [
+        "raw_wiki:38339:136640:9d71c98f093fd140:chunk:000",
+        "raw_wiki:38339:136640:9d71c98f093fd140:chunk:000",
+        "raw_wiki:39212:96889:58a15a6051c28b88:chunk:000",
+        "raw_wiki:26165:131313:b22f8b2701be47df:chunk:000",
+        "raw_wiki:26165:131313:b22f8b2701be47df:chunk:000"
+      ],
+      "baseline_rank": 3,
+      "candidate_pool_rank": 3,
+      "voyage_rank": 1,
+      "provider_status": "voyage_validated",
+      "failure_kind": null,
+      "processed_token_estimate": 3997,
+      "first_stage_retrieval_latency_ms": 1609.999,
+      "pacing_wait_ms": 38.156,
+      "provider_http_latency_ms": 299.077,
+      "reranker_total_elapsed_ms": 339.787,
+      "total_retrieval_latency_ms": 1949.786,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-067",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:9279:92868:b7fb9fbd7f67e230:chunk:000"
+      ],
+      "candidate_pool_fingerprint": "f2660476d841bf3d72c2fe9824d0ddb84e715d4afbb44377c61e8e1c253743f0",
+      "candidate_count": 13,
+      "baseline_top_k_evidence_ids": [
+        "raw_wiki:9279:92868:b7fb9fbd7f67e230:chunk:000",
+        "raw_wiki:1012:123801:ecdcd6cae8d7c1f6:chunk:000",
+        "raw_wiki:24784:96617:ecee4ea626873787:chunk:000",
+        "raw_wiki:329:136366:3ec40212bc841d78:chunk:000",
+        "raw_wiki:1012:123801:ecdcd6cae8d7c1f6:chunk:000"
+      ],
+      "voyage_top_k_evidence_ids": [
+        "raw_wiki:9279:92868:b7fb9fbd7f67e230:chunk:000",
+        "raw_wiki:9279:92868:b7fb9fbd7f67e230:chunk:000",
+        "raw_wiki:1012:123801:ecdcd6cae8d7c1f6:chunk:000",
+        "raw_wiki:1012:123801:ecdcd6cae8d7c1f6:chunk:000",
+        "raw_wiki:9279:92868:b7fb9fbd7f67e230:chunk:000"
+      ],
+      "baseline_rank": 1,
+      "candidate_pool_rank": 1,
+      "voyage_rank": 1,
+      "provider_status": "voyage_validated",
+      "failure_kind": null,
+      "processed_token_estimate": 2200,
+      "first_stage_retrieval_latency_ms": 1609.231,
+      "pacing_wait_ms": 58738.474,
+      "provider_http_latency_ms": 340.186,
+      "reranker_total_elapsed_ms": 59080.217,
+      "total_retrieval_latency_ms": 60689.447,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-068",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:26888:99747:897732ef65d43d75:chunk:000"
+      ],
+      "candidate_pool_fingerprint": "156e990687c88ddad70a7d7a529bac9dcf1294bccf5be652c3536b6bb06c5679",
+      "candidate_count": 13,
+      "baseline_top_k_evidence_ids": [
+        "raw_wiki:26888:99747:897732ef65d43d75:chunk:000",
+        "raw_wiki:7986:99744:d0fede1026c2811c:chunk:000",
+        "raw_wiki:2495:95403:5f1aaaf7d623c0fb:chunk:000",
+        "raw_wiki:2495:95403:5f1aaaf7d623c0fb:chunk:000",
+        "raw_wiki:7986:99744:d0fede1026c2811c:chunk:000"
+      ],
+      "voyage_top_k_evidence_ids": [
+        "raw_wiki:26888:99747:897732ef65d43d75:chunk:000",
+        "raw_wiki:2495:95403:5f1aaaf7d623c0fb:chunk:000",
+        "raw_wiki:7986:99744:d0fede1026c2811c:chunk:000",
+        "raw_wiki:2495:95403:5f1aaaf7d623c0fb:chunk:000",
+        "raw_wiki:7986:99744:d0fede1026c2811c:chunk:000"
+      ],
+      "baseline_rank": 1,
+      "candidate_pool_rank": 1,
+      "voyage_rank": 1,
+      "provider_status": "voyage_validated",
+      "failure_kind": null,
+      "processed_token_estimate": 3022,
+      "first_stage_retrieval_latency_ms": 1614.69,
+      "pacing_wait_ms": 293.597,
+      "provider_http_latency_ms": 333.566,
+      "reranker_total_elapsed_ms": 629.15,
+      "total_retrieval_latency_ms": 2243.84,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-069",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:20570:99750:24263a0b90c8239f:chunk:000"
+      ],
+      "candidate_pool_fingerprint": "317e330be841d15bfd09ffa7bc39708dceb78ca54eb19a26158e4fea1987f815",
+      "candidate_count": 13,
+      "baseline_top_k_evidence_ids": [
+        "raw_wiki:20570:99750:24263a0b90c8239f:chunk:000",
+        "raw_wiki:21831:100474:3c84649dd4a92bf0:chunk:000",
+        "raw_wiki:1007:135324:8f903f46d2fa3ca8:chunk:000",
+        "raw_wiki:21831:100474:3c84649dd4a92bf0:chunk:000",
+        "raw_wiki:25663:91985:b51f66944bdef37e:chunk:000"
+      ],
+      "voyage_top_k_evidence_ids": [
+        "raw_wiki:20570:99750:24263a0b90c8239f:chunk:000",
+        "raw_wiki:21831:100474:3c84649dd4a92bf0:chunk:000",
+        "raw_wiki:21831:100474:3c84649dd4a92bf0:chunk:000",
+        "raw_wiki:1007:135324:8f903f46d2fa3ca8:chunk:000",
+        "raw_wiki:25663:91985:b51f66944bdef37e:chunk:000"
+      ],
+      "baseline_rank": 1,
+      "candidate_pool_rank": 1,
+      "voyage_rank": 1,
+      "provider_status": "voyage_validated",
+      "failure_kind": null,
+      "processed_token_estimate": 2102,
+      "first_stage_retrieval_latency_ms": 1600.709,
+      "pacing_wait_ms": 0.0,
+      "provider_http_latency_ms": 300.923,
+      "reranker_total_elapsed_ms": 301.988,
+      "total_retrieval_latency_ms": 1902.696,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-070",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:26008:95284:8988a45bf257299b:chunk:000"
+      ],
+      "candidate_pool_fingerprint": "e8dd269d9cab6660ab54b3b1c10f5bce9759d8209f2a5ba9cf3fdd356815f1d9",
+      "candidate_count": 13,
+      "baseline_top_k_evidence_ids": [
+        "raw_wiki:26008:95284:8988a45bf257299b:chunk:000",
+        "raw_wiki:25536:91984:eba4d3a4762e23f2:chunk:000",
+        "raw_wiki:25536:91984:eba4d3a4762e23f2:chunk:000",
+        "raw_wiki:25536:91984:eba4d3a4762e23f2:chunk:000",
+        "raw_wiki:25536:91984:eba4d3a4762e23f2:chunk:000"
+      ],
+      "voyage_top_k_evidence_ids": [
+        "raw_wiki:26008:95284:8988a45bf257299b:chunk:000",
+        "raw_wiki:25536:91984:eba4d3a4762e23f2:chunk:000",
+        "raw_wiki:25536:91984:eba4d3a4762e23f2:chunk:000",
+        "raw_wiki:25536:91984:eba4d3a4762e23f2:chunk:000",
+        "raw_wiki:25536:91984:eba4d3a4762e23f2:chunk:000"
+      ],
+      "baseline_rank": 1,
+      "candidate_pool_rank": 1,
+      "voyage_rank": 1,
+      "provider_status": "voyage_validated",
+      "failure_kind": null,
+      "processed_token_estimate": 3067,
+      "first_stage_retrieval_latency_ms": 1613.487,
+      "pacing_wait_ms": 58727.073,
+      "provider_http_latency_ms": 447.722,
+      "reranker_total_elapsed_ms": 59176.631,
+      "total_retrieval_latency_ms": 60790.118,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-071",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:26165:131313:b22f8b2701be47df:chunk:000"
+      ],
+      "candidate_pool_fingerprint": "5aa004d1c2046b534a130dba0baa6100f3f9236e16392eb573dc1d53c1e8a946",
+      "candidate_count": 13,
+      "baseline_top_k_evidence_ids": [
+        "raw_wiki:26165:131313:b22f8b2701be47df:chunk:000",
+        "raw_wiki:27120:96278:b1047d1aa9a9b8d2:chunk:000",
+        "raw_wiki:26196:99513:1106002e2cae6db6:chunk:000",
+        "raw_wiki:26165:131313:b22f8b2701be47df:chunk:000",
+        "raw_wiki:27951:96619:ae0c99137282474b:chunk:000"
+      ],
+      "voyage_top_k_evidence_ids": null,
+      "baseline_rank": 1,
+      "candidate_pool_rank": 1,
+      "voyage_rank": null,
+      "provider_status": "fallback",
+      "failure_kind": "rate_limit",
+      "processed_token_estimate": 2732,
+      "first_stage_retrieval_latency_ms": 1641.239,
+      "pacing_wait_ms": 179.564,
+      "provider_http_latency_ms": null,
+      "reranker_total_elapsed_ms": 384.279,
+      "total_retrieval_latency_ms": 2025.518,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-072",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:39515:92424:e9a79d8cabc6e6e2:chunk:000"
+      ],
+      "candidate_pool_fingerprint": "f7e0589cca0b14722674710cf864dd26fe2a88896e80dd6b8cb7993fe9b17bef",
+      "candidate_count": 13,
+      "baseline_top_k_evidence_ids": [
+        "raw_wiki:39515:92424:e9a79d8cabc6e6e2:chunk:000",
+        "raw_wiki:1084:100118:75a288862a10382c:chunk:000",
+        "raw_wiki:348:86837:3b43bd7a33ec8d89:chunk:000",
+        "raw_wiki:24999:99250:79f12bc79353ca49:chunk:000",
+        "raw_wiki:3397:68336:55000dcfdd441514:chunk:000"
+      ],
+      "voyage_top_k_evidence_ids": [
+        "raw_wiki:39515:92424:e9a79d8cabc6e6e2:chunk:000",
+        "raw_wiki:39212:96889:58a15a6051c28b88:chunk:000",
+        "raw_wiki:3397:68336:55000dcfdd441514:chunk:000",
+        "raw_wiki:1074:99099:f1f00f7ba53c6ff4:chunk:000",
+        "raw_wiki:1084:100118:75a288862a10382c:chunk:000"
+      ],
+      "baseline_rank": 1,
+      "candidate_pool_rank": 1,
+      "voyage_rank": 1,
+      "provider_status": "voyage_validated",
+      "failure_kind": null,
+      "processed_token_estimate": 3222,
+      "first_stage_retrieval_latency_ms": 1610.662,
+      "pacing_wait_ms": 150.779,
+      "provider_http_latency_ms": 305.868,
+      "reranker_total_elapsed_ms": 458.876,
+      "total_retrieval_latency_ms": 2069.538,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-073",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:1011:91978:42944d61edab4c7f:chunk:000"
+      ],
+      "candidate_pool_fingerprint": "911f2d278be56fd50733e52da39e2ca992f0ca3ecdbb6fcb5fa0c78d60881c0a",
+      "candidate_count": 13,
+      "baseline_top_k_evidence_ids": [
+        "raw_wiki:1008:99738:fa6acd585adb1d2a:chunk:000",
+        "raw_wiki:1008:99738:fa6acd585adb1d2a:chunk:000",
+        "raw_wiki:1074:99099:f1f00f7ba53c6ff4:chunk:000",
+        "raw_wiki:1074:99099:f1f00f7ba53c6ff4:chunk:000",
+        "raw_wiki:1011:91978:42944d61edab4c7f:chunk:000"
+      ],
+      "voyage_top_k_evidence_ids": [
+        "raw_wiki:1008:99738:fa6acd585adb1d2a:chunk:000",
+        "raw_wiki:1011:91978:42944d61edab4c7f:chunk:000",
+        "raw_wiki:1008:99738:fa6acd585adb1d2a:chunk:000",
+        "raw_wiki:1005:99743:9725a6704dccd755:chunk:000",
+        "raw_wiki:1074:99099:f1f00f7ba53c6ff4:chunk:000"
+      ],
+      "baseline_rank": 5,
+      "candidate_pool_rank": 5,
+      "voyage_rank": 2,
+      "provider_status": "voyage_validated",
+      "failure_kind": null,
+      "processed_token_estimate": 2358,
+      "first_stage_retrieval_latency_ms": 1615.163,
+      "pacing_wait_ms": 58714.838,
+      "provider_http_latency_ms": 332.454,
+      "reranker_total_elapsed_ms": 59048.824,
+      "total_retrieval_latency_ms": 60663.987,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-074",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:10270:99746:c2d602cbf420f2ad:chunk:000"
+      ],
+      "candidate_pool_fingerprint": "7ae605bc69b8de76c5a305539ec1ada1a319d696df6fc05f67a710b2044aa9d4",
+      "candidate_count": 13,
+      "baseline_top_k_evidence_ids": [
+        "raw_wiki:1006:99742:df733987b85d008a:chunk:000",
+        "raw_wiki:10270:99746:c2d602cbf420f2ad:chunk:000",
+        "raw_wiki:37540:136639:46f5898638863eb0:chunk:000",
+        "raw_wiki:38339:136640:9d71c98f093fd140:chunk:000",
+        "raw_wiki:41913:136779:8670bd0697124da2:chunk:000"
+      ],
+      "voyage_top_k_evidence_ids": [
+        "raw_wiki:10270:99746:c2d602cbf420f2ad:chunk:000",
+        "raw_wiki:1006:99742:df733987b85d008a:chunk:000",
+        "raw_wiki:38339:136640:9d71c98f093fd140:chunk:000",
+        "raw_wiki:38339:136640:9d71c98f093fd140:chunk:000",
+        "raw_wiki:41913:136779:8670bd0697124da2:chunk:000"
+      ],
+      "baseline_rank": 2,
+      "candidate_pool_rank": 2,
+      "voyage_rank": 1,
+      "provider_status": "voyage_validated",
+      "failure_kind": null,
+      "processed_token_estimate": 3707,
+      "first_stage_retrieval_latency_ms": 1601.927,
+      "pacing_wait_ms": 283.394,
+      "provider_http_latency_ms": 351.902,
+      "reranker_total_elapsed_ms": 637.858,
+      "total_retrieval_latency_ms": 2239.784,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-075",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:39255:94532:a4b996534deab505:chunk:000"
+      ],
+      "candidate_pool_fingerprint": "945426eea6fec72ff70703267d59ce385964549baf9d9384b3f09abc8cc121fe",
+      "candidate_count": 13,
+      "baseline_top_k_evidence_ids": [
+        "raw_wiki:39255:94532:a4b996534deab505:chunk:000",
+        "raw_wiki:39255:94532:a4b996534deab505:chunk:000",
+        "raw_wiki:39255:94532:a4b996534deab505:chunk:000",
+        "raw_wiki:42446:101218:eba876c1698e83d3:chunk:000",
+        "raw_wiki:39212:96889:58a15a6051c28b88:chunk:000"
+      ],
+      "voyage_top_k_evidence_ids": [
+        "raw_wiki:39255:94532:a4b996534deab505:chunk:000",
+        "raw_wiki:39255:94532:a4b996534deab505:chunk:000",
+        "raw_wiki:39255:94532:a4b996534deab505:chunk:000",
+        "raw_wiki:38339:136640:9d71c98f093fd140:chunk:000",
+        "raw_wiki:39212:96889:58a15a6051c28b88:chunk:000"
+      ],
+      "baseline_rank": 1,
+      "candidate_pool_rank": 1,
+      "voyage_rank": 1,
+      "provider_status": "voyage_validated",
+      "failure_kind": null,
+      "processed_token_estimate": 1563,
+      "first_stage_retrieval_latency_ms": 1632.653,
+      "pacing_wait_ms": 0.0,
+      "provider_http_latency_ms": 337.727,
+      "reranker_total_elapsed_ms": 338.54,
+      "total_retrieval_latency_ms": 1971.193,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-076",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:27413:92077:9d707490d9c3d53c:chunk:000"
+      ],
+      "candidate_pool_fingerprint": "6a3855a2d09e5b215e4c430dd390355e8cacbd5058fbb33398e5dfae252925b8",
+      "candidate_count": 13,
+      "baseline_top_k_evidence_ids": [
+        "raw_wiki:27413:92077:9d707490d9c3d53c:chunk:000",
+        "raw_wiki:27413:92077:9d707490d9c3d53c:chunk:000",
+        "raw_wiki:348:86837:3b43bd7a33ec8d89:chunk:000",
+        "raw_wiki:38241:100321:abf33f122f8c975e:chunk:000",
+        "raw_wiki:38241:100321:abf33f122f8c975e:chunk:000"
+      ],
+      "voyage_top_k_evidence_ids": [
+        "raw_wiki:27413:92077:9d707490d9c3d53c:chunk:000",
+        "raw_wiki:27413:92077:9d707490d9c3d53c:chunk:000",
+        "raw_wiki:38241:100321:abf33f122f8c975e:chunk:000",
+        "raw_wiki:38241:100321:abf33f122f8c975e:chunk:000",
+        "raw_wiki:38241:100321:abf33f122f8c975e:chunk:000"
+      ],
+      "baseline_rank": 1,
+      "candidate_pool_rank": 1,
+      "voyage_rank": 1,
+      "provider_status": "voyage_validated",
+      "failure_kind": null,
+      "processed_token_estimate": 1660,
+      "first_stage_retrieval_latency_ms": 1645.233,
+      "pacing_wait_ms": 58679.658,
+      "provider_http_latency_ms": 404.521,
+      "reranker_total_elapsed_ms": 59085.167,
+      "total_retrieval_latency_ms": 60730.4,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-077",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:39056:98971:e98008a22b980baa:chunk:000"
+      ],
+      "candidate_pool_fingerprint": "5585a8ceacfe4a536ddbce7b33061015c668673ff92653fc359ed3812cb283bc",
+      "candidate_count": 13,
+      "baseline_top_k_evidence_ids": [
+        "raw_wiki:39056:98971:e98008a22b980baa:chunk:000",
+        "raw_wiki:37391:136476:a3a41695657088cf:chunk:000",
+        "raw_wiki:37391:136476:a3a41695657088cf:chunk:000",
+        "raw_wiki:37391:136476:a3a41695657088cf:chunk:000",
+        "raw_wiki:37543:136637:1b307d031f032102:chunk:000"
+      ],
+      "voyage_top_k_evidence_ids": null,
+      "baseline_rank": 1,
+      "candidate_pool_rank": 1,
+      "voyage_rank": null,
+      "provider_status": "fallback",
+      "failure_kind": "rate_limit",
+      "processed_token_estimate": 2895,
+      "first_stage_retrieval_latency_ms": 1637.803,
+      "pacing_wait_ms": 231.073,
+      "provider_http_latency_ms": null,
+      "reranker_total_elapsed_ms": 438.523,
+      "total_retrieval_latency_ms": 2076.326,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-078",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:42446:101218:eba876c1698e83d3:chunk:000"
+      ],
+      "candidate_pool_fingerprint": "97ec89ad0af7c7e80393695902f2e3763537309c7dc1c3e4e211426c83e8af93",
+      "candidate_count": 13,
+      "baseline_top_k_evidence_ids": [
+        "raw_wiki:39067:109671:72359e9e9ab9da76:chunk:000",
+        "raw_wiki:42444:101216:e096b87c4d10d6e8:chunk:000",
+        "raw_wiki:30940:96622:a0dca9f4d3d03fb9:chunk:000",
+        "raw_wiki:30940:96622:a0dca9f4d3d03fb9:chunk:000",
+        "raw_wiki:42446:101218:eba876c1698e83d3:chunk:000"
+      ],
+      "voyage_top_k_evidence_ids": [
+        "raw_wiki:42446:101218:eba876c1698e83d3:chunk:000",
+        "raw_wiki:42446:101218:eba876c1698e83d3:chunk:000",
+        "raw_wiki:39067:109671:72359e9e9ab9da76:chunk:000",
+        "raw_wiki:42444:101216:e096b87c4d10d6e8:chunk:000",
+        "raw_wiki:42446:101218:eba876c1698e83d3:chunk:000"
+      ],
+      "baseline_rank": 5,
+      "candidate_pool_rank": 5,
+      "voyage_rank": 1,
+      "provider_status": "voyage_validated",
+      "failure_kind": null,
+      "processed_token_estimate": 3528,
+      "first_stage_retrieval_latency_ms": 1619.64,
+      "pacing_wait_ms": 146.889,
+      "provider_http_latency_ms": 298.938,
+      "reranker_total_elapsed_ms": 448.845,
+      "total_retrieval_latency_ms": 2068.485,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-079",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:3397:68336:55000dcfdd441514:chunk:000"
+      ],
+      "candidate_pool_fingerprint": "eb153806a6c4b61be0054bc83b6746da7916bf3038587d9c1e2d38fb156e42fc",
+      "candidate_count": 13,
+      "baseline_top_k_evidence_ids": [
+        "raw_wiki:3397:68336:55000dcfdd441514:chunk:000",
+        "raw_wiki:24999:99250:79f12bc79353ca49:chunk:000",
+        "raw_wiki:348:86837:3b43bd7a33ec8d89:chunk:000",
+        "raw_wiki:24999:99250:79f12bc79353ca49:chunk:000",
+        "raw_wiki:3397:68336:55000dcfdd441514:chunk:000"
+      ],
+      "voyage_top_k_evidence_ids": [
+        "raw_wiki:3397:68336:55000dcfdd441514:chunk:000",
+        "raw_wiki:348:86837:3b43bd7a33ec8d89:chunk:000",
+        "raw_wiki:24999:99250:79f12bc79353ca49:chunk:000",
+        "raw_wiki:3397:68336:55000dcfdd441514:chunk:000",
+        "raw_wiki:24999:99250:79f12bc79353ca49:chunk:000"
+      ],
+      "baseline_rank": 1,
+      "candidate_pool_rank": 1,
+      "voyage_rank": 1,
+      "provider_status": "voyage_validated",
+      "failure_kind": null,
+      "processed_token_estimate": 3038,
+      "first_stage_retrieval_latency_ms": 1626.015,
+      "pacing_wait_ms": 58703.486,
+      "provider_http_latency_ms": 335.057,
+      "reranker_total_elapsed_ms": 59041.071,
+      "total_retrieval_latency_ms": 60667.087,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-080",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:58857:123826:fe87fa19ceeb0aaa:chunk:000"
+      ],
+      "candidate_pool_fingerprint": "acc5ceeffdc345c5a053abae4d4359d9214936c29b8e6fd81231884d2a83ff6f",
+      "candidate_count": 13,
+      "baseline_top_k_evidence_ids": [
+        "raw_wiki:58857:123826:fe87fa19ceeb0aaa:chunk:000",
+        "raw_wiki:62901:123831:ba80c16941f70a5d:chunk:000",
+        "raw_wiki:62901:123831:ba80c16941f70a5d:chunk:000",
+        "raw_wiki:38120:136663:32d09c1fe3aba7cc:chunk:000",
+        "raw_wiki:39187:136635:e0a124eb457dfb82:chunk:000"
+      ],
+      "voyage_top_k_evidence_ids": [
+        "raw_wiki:58857:123826:fe87fa19ceeb0aaa:chunk:000",
+        "raw_wiki:38120:136663:32d09c1fe3aba7cc:chunk:000",
+        "raw_wiki:62901:123831:ba80c16941f70a5d:chunk:000",
+        "raw_wiki:62901:123831:ba80c16941f70a5d:chunk:000",
+        "raw_wiki:58857:123826:fe87fa19ceeb0aaa:chunk:000"
+      ],
+      "baseline_rank": 1,
+      "candidate_pool_rank": 1,
+      "voyage_rank": 1,
+      "provider_status": "voyage_validated",
+      "failure_kind": null,
+      "processed_token_estimate": 2022,
+      "first_stage_retrieval_latency_ms": 1608.627,
+      "pacing_wait_ms": 298.458,
+      "provider_http_latency_ms": 298.511,
+      "reranker_total_elapsed_ms": 598.656,
+      "total_retrieval_latency_ms": 2207.282,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-081",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:37304:100540:d9c41f8fbf72b2ba:chunk:000"
+      ],
+      "candidate_pool_fingerprint": "686727f5cd9f4c2cbd17b07c8122c20d895612633c1014146fc36569f3a9c97c",
+      "candidate_count": 13,
+      "baseline_top_k_evidence_ids": [
+        "raw_wiki:26165:131313:b22f8b2701be47df:chunk:000",
+        "raw_wiki:26165:131313:b22f8b2701be47df:chunk:000",
+        "raw_wiki:26196:99513:1106002e2cae6db6:chunk:000",
+        "raw_wiki:37304:100540:d9c41f8fbf72b2ba:chunk:000",
+        "raw_wiki:37304:100540:d9c41f8fbf72b2ba:chunk:000"
+      ],
+      "voyage_top_k_evidence_ids": [
+        "raw_wiki:37304:100540:d9c41f8fbf72b2ba:chunk:000",
+        "raw_wiki:26165:131313:b22f8b2701be47df:chunk:000",
+        "raw_wiki:26165:131313:b22f8b2701be47df:chunk:000",
+        "raw_wiki:37304:100540:d9c41f8fbf72b2ba:chunk:000",
+        "raw_wiki:27120:96278:b1047d1aa9a9b8d2:chunk:000"
+      ],
+      "baseline_rank": 4,
+      "candidate_pool_rank": 4,
+      "voyage_rank": 1,
+      "provider_status": "voyage_validated",
+      "failure_kind": null,
+      "processed_token_estimate": 3354,
+      "first_stage_retrieval_latency_ms": 1625.965,
+      "pacing_wait_ms": 69.665,
+      "provider_http_latency_ms": 304.077,
+      "reranker_total_elapsed_ms": 376.357,
+      "total_retrieval_latency_ms": 2002.322,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-082",
+      "expected_behavior": "abstain",
+      "relevant_evidence_ids": [],
+      "candidate_pool_fingerprint": "1ae96d45b36eb6b0ef3561a7b08113e1d04f3d95dd0146703ddf80ece26b373f",
+      "candidate_count": 13,
+      "baseline_top_k_evidence_ids": [
+        "raw_wiki:26165:131313:b22f8b2701be47df:chunk:000",
+        "raw_wiki:27951:96619:ae0c99137282474b:chunk:000",
+        "raw_wiki:26165:131313:b22f8b2701be47df:chunk:000",
+        "raw_wiki:348:86837:3b43bd7a33ec8d89:chunk:000",
+        "raw_wiki:26165:131313:b22f8b2701be47df:chunk:000"
+      ],
+      "voyage_top_k_evidence_ids": [
+        "raw_wiki:8269:95612:1c103964f57b0be7:chunk:000",
+        "raw_wiki:37304:100540:d9c41f8fbf72b2ba:chunk:000",
+        "raw_wiki:26165:131313:b22f8b2701be47df:chunk:000",
+        "raw_wiki:348:86837:3b43bd7a33ec8d89:chunk:000",
+        "raw_wiki:26165:131313:b22f8b2701be47df:chunk:000"
+      ],
+      "baseline_rank": null,
+      "candidate_pool_rank": null,
+      "voyage_rank": null,
+      "provider_status": "voyage_validated",
+      "failure_kind": null,
+      "processed_token_estimate": 2919,
+      "first_stage_retrieval_latency_ms": 1609.868,
+      "pacing_wait_ms": 58697.654,
+      "provider_http_latency_ms": 373.481,
+      "reranker_total_elapsed_ms": 59073.149,
+      "total_retrieval_latency_ms": 60683.017,
+      "abstention_evaluation": "not_evaluable_at_retrieval_stage"
+    },
+    {
+      "case_id": "rw-083",
+      "expected_behavior": "abstain",
+      "relevant_evidence_ids": [],
+      "candidate_pool_fingerprint": "6f2fb5527c4ff1920aabc15978ccd7c741d14797a926a369e311a015f0453878",
+      "candidate_count": 13,
+      "baseline_top_k_evidence_ids": [
+        "raw_wiki:40856:136878:d51cccfe23ea5dcf:chunk:000",
+        "raw_wiki:42446:101218:eba876c1698e83d3:chunk:000",
+        "raw_wiki:27028:60495:cbfe73d49673eeef:chunk:000",
+        "raw_wiki:42446:101218:eba876c1698e83d3:chunk:000",
+        "raw_wiki:8269:95612:1c103964f57b0be7:chunk:000"
+      ],
+      "voyage_top_k_evidence_ids": [
+        "raw_wiki:40856:136878:d51cccfe23ea5dcf:chunk:000",
+        "raw_wiki:10459:95089:82fed37418e8019f:chunk:000",
+        "raw_wiki:27028:60495:cbfe73d49673eeef:chunk:000",
+        "raw_wiki:8269:95612:1c103964f57b0be7:chunk:000",
+        "raw_wiki:512:101909:dc765966106af760:chunk:000"
+      ],
+      "baseline_rank": null,
+      "candidate_pool_rank": null,
+      "voyage_rank": null,
+      "provider_status": "voyage_validated",
+      "failure_kind": null,
+      "processed_token_estimate": 2012,
+      "first_stage_retrieval_latency_ms": 1613.432,
+      "pacing_wait_ms": 260.195,
+      "provider_http_latency_ms": 300.076,
+      "reranker_total_elapsed_ms": 561.53,
+      "total_retrieval_latency_ms": 2174.962,
+      "abstention_evaluation": "not_evaluable_at_retrieval_stage"
+    }
+  ]
+}

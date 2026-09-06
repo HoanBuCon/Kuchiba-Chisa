@@ -65,6 +65,18 @@ def aggregate(ranks: list[int | None]) -> dict[str, float]:
     }
 
 
+def latency_summary(values: list[float]) -> dict[str, float]:
+    if not values:
+        return {"min": 0.0, "mean": 0.0, "p50": 0.0, "p95": 0.0, "max": 0.0}
+    return {
+        "min": round(min(values), 3),
+        "mean": round(sum(values) / len(values), 3),
+        "p50": _percentile(values, 50),
+        "p95": _percentile(values, 95),
+        "max": round(max(values), 3),
+    }
+
+
 async def run() -> dict[str, Any]:
     pilot = json.loads(PILOT.read_text(encoding="utf-8"))
     if pilot.get("approval", {}).get("status") != "draft":
@@ -82,9 +94,12 @@ async def run() -> dict[str, Any]:
     pacer = VoyageTierZeroPacer()
     baseline_ranks: list[int | None] = []
     voyage_ranks: list[int | None] = []
-    rerank_latencies: list[float] = []
+    pacing_waits: list[float] = []
+    provider_http_latencies: list[float] = []
+    reranker_total_elapsed: list[float] = []
     total_latencies: list[float] = []
     processed_tokens = 0
+    provider_calls = 0
     failures: dict[str, int] = {
         "rate_limit": 0,
         "timeout": 0,
@@ -115,9 +130,15 @@ async def run() -> dict[str, Any]:
             candidates = [document_by_id[item] for item in baseline_ids]
             estimate = _conservative_provider_token_estimate(case["query"], candidates)
             rerank_started = time.perf_counter()
+            pacing_wait_ms = 0.0
+            provider_http_latency_ms: float | None = None
             try:
-                await pacer.reserve(estimate)
+                pacing_wait_ms = await pacer.reserve(estimate)
+                provider_calls += 1
                 scores = await reranker.rerank(case["query"], [item.text for item in candidates])
+                provider_http_latency_ms = reranker.last_http_latency_ms
+                if provider_http_latency_ms is None:
+                    raise RuntimeError("successful reranker call did not publish HTTP latency")
                 after_ids = [
                     item.document_id
                     for item, _ in sorted(
@@ -127,6 +148,7 @@ async def run() -> dict[str, Any]:
                 after = rank(case["evidence_ids"], after_ids)
                 voyage_ranks.append(after)
                 status = "success"
+                provider_http_latencies.append(provider_http_latency_ms)
                 processed_tokens += sum(
                     TokenEstimator.estimate(item.text) for item in candidates
                 ) + TokenEstimator.estimate(case["query"]) * len(candidates)
@@ -135,8 +157,9 @@ async def run() -> dict[str, Any]:
                 after = None
                 status = f"degraded:{error.failure_kind.value}"
                 failures[error.failure_kind.value] += 1
-            rerank_latency = (time.perf_counter() - rerank_started) * 1000
-            rerank_latencies.append(rerank_latency)
+            reranker_elapsed_ms = (time.perf_counter() - rerank_started) * 1000
+            pacing_waits.append(pacing_wait_ms)
+            reranker_total_elapsed.append(reranker_elapsed_ms)
             total_latencies.append((time.perf_counter() - started) * 1000)
             results.append(
                 {
@@ -151,11 +174,34 @@ async def run() -> dict[str, Any]:
                     "voyage_reciprocal_rank": (1 / after if after else 0),
                     "provider_status": status,
                     "processed_token_estimate": estimate,
-                    "reranker_latency_ms": round(rerank_latency, 3),
+                    "pacing_wait_ms": round(pacing_wait_ms, 3),
+                    "provider_http_latency_ms": (
+                        round(provider_http_latency_ms, 3)
+                        if provider_http_latency_ms is not None
+                        else None
+                    ),
+                    "reranker_total_elapsed_ms": round(reranker_elapsed_ms, 3),
                     "total_retrieval_latency_ms": round(total_latencies[-1], 3),
                 }
             )
     successful = [item for item in results if item["provider_status"] == "success"]
+    improved = [
+        item["case_id"]
+        for item in successful
+        if item["voyage_rank"] is not None
+        and (item["baseline_rank"] is None or item["voyage_rank"] < item["baseline_rank"])
+    ]
+    unchanged = [
+        item["case_id"]
+        for item in successful
+        if item["voyage_rank"] == item["baseline_rank"]
+    ]
+    degraded = [
+        item["case_id"]
+        for item in successful
+        if item["baseline_rank"] is not None
+        and (item["voyage_rank"] is None or item["voyage_rank"] > item["baseline_rank"])
+    ]
     return {
         "mode": "authorized-pilot-diagnostic",
         "formal_rag05_acceptance": False,
@@ -165,16 +211,27 @@ async def run() -> dict[str, Any]:
         "cases": results,
         "baseline": aggregate(baseline_ranks),
         "voyage": aggregate(voyage_ranks) if len(successful) == len(cases) else None,
-        "reranker_latency_ms": {
-            "average": sum(rerank_latencies) / len(rerank_latencies),
-            "p50": _percentile(rerank_latencies, 50),
-            "p95": _percentile(rerank_latencies, 95),
+        "context_precision": "not_evaluable_label_incomplete",
+        "case_outcomes": {
+            "improved": improved,
+            "unchanged": unchanged,
+            "degraded": degraded,
         },
+        "provider_http_latency_ms": latency_summary(provider_http_latencies),
+        "pacing_wait_ms": {
+            "total": round(sum(pacing_waits), 3),
+            "mean": round(sum(pacing_waits) / len(pacing_waits), 3),
+            "p50": _percentile(pacing_waits, 50),
+            "p95": _percentile(pacing_waits, 95),
+            "paced_case_count": sum(wait > 0 for wait in pacing_waits),
+        },
+        "reranker_total_elapsed_ms": latency_summary(reranker_total_elapsed),
         "total_retrieval_latency_ms": {
             "p50": _percentile(total_latencies, 50),
             "p95": _percentile(total_latencies, 95),
         },
-        "provider_calls": len(cases),
+        "provider_calls": provider_calls,
+        "provider_success_count": len(successful),
         "processed_tokens": processed_tokens,
         "estimated_cost_usd": round(processed_tokens * 0.02 / 1_000_000, 8),
         "failures": failures,

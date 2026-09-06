@@ -1,0 +1,203 @@
+# Startorch Academy
+
+**Faction Profile**: Leader: Lucilla, Base: Startorch Academy (Region).
+
+{{About|the institution|the region|Startorch Academy (Region)}}
+
+'''Startorch Academy''' is a multinational school built by the [[Spacetrek Collective]] specifically for [[Resonator]]s in [[Lahai-Roi]].
+
+It is known to contain the Exo Genesis Labs, Voidwatch Tower, Tactical Proving Grounds, and Simulator Cockpit. Its name comes from the phrase "Let Knowledge Be Your Guiding '''Star''', Raise High the '''Torch''' of Tomorrow".
+
+All students (except Synchronists admitted to Rabelle College) begin with a cross-disciplinary curriculum, which covers foundational sciences, humanities, and essential survival skills for life in Lahai-Roi. Students' specialized department placement is determined at the end of Year 2, based on their stated interest and academic performance.
+
+==Descriptions==
+Startorch Academy is a comprehensive research facility that doesn't belong to any country, built with the goal of collaborative scientific research. It is an academic metroplis driven solely by educational and research pursuits. Compared to its official title of "Startorch Academy," the people of Solaris prefer to call it the "Resonator Academy."
+
+Officially titled the Spacetrek Collective: Startorch Academy, this borderless academic metropolis trains Synchronists and spearheads research into the giant mech known as the Exostrider. Its name embodies its core ethos: "to carry the flame of inquiry and ignite the torch of civilization." Here, seekers of knowledge from across the world gather, knowledge flows freely, and cultures meet in harmony.
+
+==Members==
+===Staff===
+{| class="article-table"
+!Icon!!Name!!Position
+|-
+|[[File:Resonator Lucilla.png|50px]]
+|[[Lucilla]]
+|
+* President of Startorch Academy
+*Professor (Implied to be a history professor)
+|-
+|[[File:Resonator Mornye.png|50px]]
+|[[Mornye]]
+|
+* Department of Exostrider Engineering Professor
+**Teaches Synth Armament Studies
+* Biomatic Club Consultant
+|-
+|[[File:Resonator Luuk Herssen.png|50px]]
+|[[Luuk Herssen]]
+|
+* Doctor and Counselor of the Resonator Nursing Unit (ReNU)
+* Multi-Turret Club Consultant
+|}
+
+=== Other Professors ===
+* '''Professor Anslem''': Anslem is a Exostrider Engineering professor and also served as a member of the team launching the reactor drive for the new Helios, showing that he is a prominent member of the '''Research Institute.''' He worked with Professor Warren on Augmented Resonance, and was used by the latter in his plans for the Fractsidus.
+* '''Professor Calith'''
+* '''Professor Cuvier'''
+* '''Professor Dennis'''
+* '''Professor Edgar'''
+* '''Professor Festa'''
+* '''Professor Karl''': Karl is an old and respected professor. He is shown to be harsh on his students. He, like Professor Sevi, is also against Lucilla being the President of the Academy saying that "she is a good teacher but is an average resonator with no expertise", and that there are better figures for the position: scholarship wise, geniuses like Mornye and leardership wise, like the investors with more expertise.
+* '''Professor Maeva:''' She is a young professor who had traveled to New Federation before for research. Now she is busy, claiming her schedule is dictated by TARD-E Units, studying 'superfoods' in the Dimmer Plains, collecting bio samples for her research about food development  and food mutation in extreme environments.
+* '''Professor Sakya''': Sakya is a Synchronization Professor and Consultant. She was [[Aemeath]]'s teacher and thesis supervisor 10 years ago when she was a Synchronist at Rabelle College.
+* '''Professor Sevi''': Sevi is an old and respected professor from the Department of Engineering and a past recipient of the Spacetrek Collective's Startorch Prize. He had created multiple brilliant instruments. Sevi is also a memory-type resonator with a forte that helps him track past memories. He has a reputation of treating students like his own kids. Despite his great pride and rigor in scientific research he had also shown to have good morals against the [[Fractsidus]]'s temptations. Sevi, like Professor Karl, dislikes Lucilla and is against her being the President of the Academy.
+* '''Professor Voss''': Ms. Voss is a Voidmatter Professor and a member of the '''Academy's Council'''. She was both Lynae and Rover's teacher.
+* '''Professor [[Warren]]''' (former): He was the previous head of the '''Research Institute''' and a member of the '''Academy's Council'''. He was shown to have expertise in various fields from Exostrider Engineering to Voidmatters to Synchronization. However, he was expelled after he was to have been colluding with the Fractsidus. After the events of [[Ode to the Second Sunrise]] he went into hiding only to get killed later by [[Schwarzloch]].
+* '''Professor Whitney'''
+
+=== Automatons ===
+* [[B.1.N.G.O.]] - Battle Interface for Next-Gen Operations
+* [[I.R.I.S.]] - Intelligent Retrieval & Indexing System
+* [[N.A.N.A.]] - Nightingale Autonomous Nursing Assistant
+* [[S.I.G.M.A.]] - Signal Intelligent Guidance & Management Automaton
+
+===Students===
+{| class="article-table"
+!Icon!!Name!!Position
+|-
+|[[File:Resonator Denia.png|50px]]
+|[[Denia]]
+|
+* Third-Year Student
+* Department of Voidmatters
+**Division of Spatial Warping
+|-
+|[[File:Resonator Sigrika.png|50px]]
+|[[Sigrika]]
+|
+* Second-Year Student
+* Preparatory Program
+* Birding Fan Club Member
+|-
+|[[File:Resonator Chisa.png|50px]]
+|[[Chisa]]
+|
+*First-Year Student
+* Department of Exostrider Engineering
+** Tactical Development Program
+|-
+|[[File:Resonator Rover.png|50px]]
+|[[Rover]]
+|
+* First-Year Student
+* Rabelle's College Synchronist
+|-
+|[[File:Resonator Lynae.png|50px]]
+|[[Lynae]]
+|
+* First-Year Student
+* Preparatory Program
+|}
+====Former Students====
+{| class="article-table"
+!Icon!!Name!!Position
+|-
+|[[File:Resonator Aemeath.png|50px]]
+|[[Aemeath]]
+|
+*Rabelle's College Synchronist
+|}
+
+==Departments==
+==={{Icon|Exostrider Engineering}} Department of Exostrider Engineering===
+A department dedicated to the study and research of the giant humanoid mech known as [[Exostrider]]. Known for its radical approach, the department's research efforts have seen translational applications in fields such as vehicle and humanoid mech engineering, Tacetite weaponry, and strategic equipment development. The department has two major divisions: the Division of Resonator-Mech Synchronization and the Division of Tactical Development.
+====Department Professors====
+*Anslem
+*[[File:Resonator Mornye.png|20px]] [[Mornye]]
+*Sevi
+
+====Divisions====
+* Division of Resonator-Mech Synchronization
+* Division of Tactical Development
+**[[File:Resonator Chisa.png|20px]] [[Chisa]]
+
+==={{Icon|Rabelle College}} Rabelle College===
+Also known as Synchronist College, the Rabelle College is named after Mr. Rabelle, the pioneer of Rabelle's Curve - the now-standardised scale for characterising a Resonator's frequency pattern. With a pedagogy rooted in empirical data and quantitative research, the College is dedicated to discovering and cultivating future Synchronists. In addition to general education, the College runs the Synchronist Development Program, operating independently of all departments and disciplines. All quasi-Synchronists are granted unrestricted access to the campus's facilities.
+====Department Professors====
+*Sakya
+
+====Divisions====
+* Division of Ancient Studies
+* Division of Synchronization Training (colloquially known as the Synchronist Department)
+**[[File:Resonator Aemeath.png|20px]] [[Aemeath]]
+**[[File:Resonator Rover.png|20px]] [[Rover]]
+**Lenie
+* Resonator Nursing Unit (affiliated)
+**[[File:Resonator Luuk Herssen.png|20px]] [[Luuk Herssen]]
+
+==={{Icon|Light Energy Sciences}} Department of Light Energy Sciences===
+This department focuses on the conversion of the light energy from the Reactor Drive for industrial production and biological cycling. The department has two academic divisions: the Division of Light Array Engineering and the Division of Ecology Conservation. Here houses the Academy's largest solis lens and largest Resonance Nexus - Telesto Lens. From the centre of the department, the Telesto Lens incessantly converts the light energy emanating from the Reactor Drive to energy supply and powers the operation of all facilities on the campus.
+
+====Divisions====
+* Division of Light Array Engineering
+* Division of Ecology Conservation
+
+==={{Icon|Voidmatters}} Department of Voidmatters===
+An academic organisation established strategically in response to the threat of Void Storms, this department is tasked with their monitoring and prevention. Its main building is the Academy's tallest signal tower, at the top of which the central observatory can be found. Researchers here carry the vital mission of investigating the origins and mechanisms of Void Storms, while developing advanced communication and spatial anchoring technologies designed for the extreme environments within a Void Storm and beyond the Stridergate. These innovations enable the transdimensional localisation of the Exostrider and real-time monitoring of Synchronists' vitals.
+
+====Department Professors====
+*Voss
+
+====Divisions====
+* Division of Spatial Warping
+**[[File:Resonator Denia.png|20px]] [[Denia]]
+*Others:
+**Natasha
+
+==Campus Life==
+
+=== Food, Utilities & Energy Lounge ===
+Startorch Food, Utilities & Energy Lounge (FUEL) is open 24h to all students and staff, providing fully-automatic, intelligent, customisable catering services. Powered by intelligent solutions such as the "Human Energy Assessment and Replenishment System," FUEL offers finely curated menus that balance nutrition and flavour. No matter your dietary options, they make sure every dish on the menu meets both nutritional and personal needs. No more worrying about what to eat - FUEL has you covered.
+===Resonator Nursing Unit===
+Resonator Nursing Unit (ReNU) is the Academy's infirmary, operating as an affiliate of Rabelle College. It is renowned for its specialisation in Frequency Theraputics. ReNU combines cutting edge medical facilities with frontrunning expertise in treating a wide range of medical conditions. For Startorch students, who undergo intensive training from enrollment through graduation, ReNU offers not only medical support but also a space for stress relief. Resident physician Dr. Luuk Herssen makes sure every student receives close medical attention for their physical and mental wellbeing. The unit members include:
+
+* Dr. Luuk Herssen - Doctor and head of the ReNU
+* N.A.N.A. - Nightingale Autonomous Nursing Assistant
+* Arman
+
+===Academy Dorm===
+The Startorch Academy dorms offer every student their own private space to relax and recharge. Every space in the building is thoughtfully designed to meet a variety of needs. The resting area creates a calming environment that helps even insomniacs rest with ease. Soundproofed walls minimise noise complaints, ensuring peace of mind. Students are also free to rearrange or decorate their rooms as they like - so long as it's within school regulations.
+===Auto-Clean Pod===
+Auto-Clean Pods are the Academy's intelligent modules that offer highly efficient, fully automated laundromat services that integrate garment cleaning with nano-repair technology. It automatically identifies fabric types and applies tailored care programs, effectively repairing damage and extending garment lifespan. The academy encourages faculty and students to make active use of this facility.
+===Uniform Consult & Design===
+UNICODE is the Academy's uniform store, where students and staff visit for bespoke uniform tailoring services. The store's intelligent fitting systems ensure each uniform is measured and tailored to the customer. The measurement data is encrypted and accessible only with authorisation, ensuring full protection of customer privacy.
+===Recreative Program Generator===
+RPGs are modular entertainment units found around the residential quarter of the Academy where the "tenth art" is on full display. According to Rabelle College studies, when combined with Frequency Modulation technologies, video games can help students relieve stress, regulate mood, and restore cognitive wellbeing. The Academy encourages students to balance their academic effort with entertainment to achieve better results.
+===Startorch Can & Tin===
+The Academy's official convenience store branch that brings grocery shopping right to students and staff's doorstep. From snacks to stationery, the stores carry everything you need for daily life. Every item is handpicked and carefully stocked to ensure consistent quality. "Startorch Can & Tin - bringing you joyful surprises, just like opening a can." It is also where the Gastro-Alchemist Fan Club hangs.
+===Auto Parking & Engineering Xpertise===
+Auto Parking & Engineering Xpertise (APEX) is a comprehensive space that offers parking and vehicle modification services. Here, students and staff can access not only comprehensive facilities that meet diverse demands but also professional maintenance and vehicle customisation support.
+===Auditorium===
+The public auditorium in Startorch Academy that serves as the primary venue for large-scale indoor events. It is available for student activities. To host an event here, student societies or fan clubs must submit a proposal and application to the Student Council at least three working days in advance. Upon approval, the event will be officially registered and circulated.
+
+== Fan Clubs ==
+According to Bjarki's 'Freshmen Essential: Startorch's Top Fan Club Picks', these are the Startorch Academy Fan Clubs:
+
+===== '''Birding Fan Club''' =====
+Its club members include: Sigrika and Nivora.
+
+===== '''Argus Workshop Club''' =====
+''"Where modern technology and ancient Traditions meet, a paradise for arms and armament enthusiasts! Want to craft a legendary weapon by your own hands? Curious about Resonator-weapon-making craftsmanship? Come to Argus Workshop, where everything you need can be found. Note: This fan club meets the Academy's Crafting Bay. For more details, please contact the Fan Club leader, Garris."''Argus Workshop is described as a weapon crafting (specifically classical arsenal like swords and broadblades) club inspired by 'Septimonian traditions' but unlike those which use furnaces and anvils, they use the Crafting Bay. Its club members: Garris and Katarina.
+
+===== '''Gastro-Alchemist Fan Club''' =====
+Gastro-Alchemist Fan Club is considered to be the 'wierdest' but 'most practical' fan club. Their club's 'grand mission' is to improve Academy Food, not through food engineering or nutrition research, but through methods of combining food you can buy on campus to make it 'taste better'. That is why they hang around Startorch Can & Tin. Its club members include an unknown leader who's in the infirmary for stomach ache and Felicia. They wish to recruit Luuk Hersson to their club.
+
+===== '''Paranormal Activity Club''' =====
+Club Members include Mayo and Rover.
+
+===== '''Peaks of Prestige Fan Club''' =====
+''"Mr. Furious of Septimont, creator of the one and only Peaks of Prestige, invites you to experience his masterfully crafted Echo Battle strategy game! Fight thrilling duels, use bold all-or-nothing tactics to defeat powerful foes, and be honored as a true duelist."''Peaks of Prestige fan club is a dueling card game club. Mr. Furious of Septiment is its creator and leader. Anita is the division manager of Lahai Roi Ranked Tournament. It's considered the most popular fan club. Other club Members include: Aldo, Andrius, Ashild, Aya, Bream, Chessa, Eloni, Eyvind, Garcia, I.R.I.S., Italo, Joanna, John, Jonna, Katrina, Lagerith, Lana, Luanquan, N.A.N.A., Odgier, Professor Calith, Professor Dennis, Professor Festa, Sverre, Ursula, Zahira and Rover.
+
+===== '''Psychological Threshold Alternative Therapy Society''' =====
+
+==[[Wutherium Geographic: Lands and Waters — Lahai-Roi Vol. 1]]==

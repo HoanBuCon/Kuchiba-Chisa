@@ -1,0 +1,53 @@
+**Profile**: Title: Dimmr Deep, Origin: Roya Frostlands.
+
+{{Intro/Location|Dimmr Deep}}
+
+==Areas==
+{| class="article-table alternating-colors-table tdc1" style="width: 100%;"
+! style="width: 200px;" |Name
+!Image
+!Description
+|- id="Frostseize Isle"
+|[[Frostseize Isle]]
+|[[File:Frostseize Isle.png|180px]]
+|
+|- id="Endreach Barrens"
+|[[Endreach Barrens]]
+|[[File:Endreach Barrens.png|180px]]
+|
+|- id="Tomorrow's Horizon"
+|[[Tomorrow's Horizon]]
+|[[File:Tomorrow's Horizon.png|180px]]
+|
+|- id="Keystone"
+|[[Keystone]]
+|[[File:Keystone.png|180px]]
+|
+|- id="Solvein Heartwood"
+|[[Solvein Heartwood]]
+|[[File:Solvein Heartwood.png|180px]]
+|
+|}
+
+==Quests==
+{{Quest by Category List|Dimmr Deep Quests}}
+
+==Exploration Report==
+===Mr. Chase's Speech Following the Stridergate Incident (Excerpt One)===
+* Achieve 50% Area Exploration Progress to unlock the full report.
+
+===Mr. Chase's Speech Following the Stridergate Incident (Excerpt Two)===
+* Achieve 100% Area Exploration Progress to unlock the full report.
+
+==Notable Features==
+
+===Enemies===
+====Elite Class====
+* {{Enemy|Kronaclaw}}
+
+===Resources===
+* {{Item|Dream of Stars}}
+* {{Item|Cradle Lichen}}
+* {{Item|Foxtail Kelp}}
+* {{Item|Luxite}}
+* {{Item|Meteoric Iron}}

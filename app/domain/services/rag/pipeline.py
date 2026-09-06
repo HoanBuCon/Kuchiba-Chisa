@@ -21,6 +21,7 @@ from app.domain.services.rag.base import (
     memory_evidence,
 )
 from app.domain.services.rag.entity_resolver import EntityResolver
+from app.domain.services.rag.lore_fusion import fuse_lore_collection_buckets
 from app.domain.services.rag.retriever_guild_memory import GuildMemoryRetriever
 from app.domain.services.rag.retriever_image_memory import ImageMemoryRetriever
 from app.domain.services.rag.retriever_lore import LoreRetriever
@@ -366,28 +367,8 @@ class RAGPipeline:
                                     continue
                                 collection_buckets[col_name].append((text, score, meta))
 
-                    # Apply RRF and Interleaving to prevent single-collection starvation
-                    scored_by_text: dict[str, tuple[float, dict]] = {}
-                    for items in collection_buckets.values():
-                        for rank, (text, score, meta) in enumerate(items, start=1):
-                            rrf_component = (1.0 / (60.0 + rank)) * 10.0
-                            rrf_score = rrf_component + score
-                            evidence_metadata = {**meta, "rrf_score": round(rrf_component, 6)}
-                            if text not in scored_by_text:
-                                scored_by_text[text] = (rrf_score, evidence_metadata)
-                            else:
-                                existing_score, existing_meta = scored_by_text[text]
-                                evidence_metadata["rrf_score"] = round(
-                                    float(existing_meta.get("rrf_score", 0.0)) + rrf_component,
-                                    6,
-                                )
-                                scored_by_text[text] = (
-                                    existing_score + rrf_score,
-                                    {**existing_meta, **evidence_metadata},
-                                )
-
-                    lore_scored = [(t, s, m) for t, (s, m) in scored_by_text.items()]
-                    lore_scored.sort(key=lambda x: x[1], reverse=True)
+                    # Apply the shared runtime fusion to prevent collection starvation.
+                    lore_scored = fuse_lore_collection_buckets(collection_buckets)
                     lore_chunks = [x[0] for x in lore_scored[:RAGTuning.TOP_K]]
                     for text, score, metadata in lore_scored[:RAGTuning.TOP_K]:
                         evidence.append(

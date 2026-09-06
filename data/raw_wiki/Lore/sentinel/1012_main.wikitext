@@ -1,0 +1,91 @@
+**Profile**: Title: Sentinels.
+
+The '''Sentinels''', also called '''Oracle Engines''', stand at the brink of civilization and history, as guardians and guides. Their immortal existence has helped humanity through countless troubles, sharing prophecies and wisdom. As [[Rover]] embarks on a new journey after enduring the [[The Lament|Lament]], the Sentinels remain humanity's record keeper and beacon in times of disaster. They were created by the [[Homeland Civilization]], whose [[Exostrider|Exostriders]] would deliver them to [[Solaris-3]].
+
+Sentinels are only able to resonate with one [[Resonator]] at a time, and the breaking of this law will result in both the Sentinel and its current Resonator having their frequencies rent asunder, destroying them.
+
+==Known Sentinels==
+===Huanglong===
+The Sentinels of [[Huanglong]] were originally one being before being split into seven, each guarding a province of the nation. They are likely named after the seven astrological mansions of the Azure Dragon.
+{| class="article-table alternating-colors-table tdc1" style="width: 100%;"
+! style="width: 200px;" |Image
+!Name
+!Area
+!Connected Resonators
+!Status
+|-
+|[[File:Jué Icon.png|180px]]
+|[[Jué]]
+("Horn")
+|[[Jinzhou]]
+|
+*[[File:Resonator Jinhsi.png|25px]] [[Jinhsi]] - Chosen Magistrate & Current Resonator
+*[[File:Resonator Jiyan.png|25px]] [[Jiyan]] - Appointed General
+*[[Geshu Lin]] - Previously Appointed General
+*[[File:Resonator Rover.png|25px]] [[Rover]] - Arbiter
+|Alive (Recovering)
+|-
+|[[File:Resonator Hsin.png|180px]]
+|[[Hsin]] the Moon Fox
+("Heart")
+|[[Mengzhou]]
+|Unknown
+|Unknown
+|-
+|TBA
+|[[Fang]] the Sun Hare
+("Room")
+|Unknown
+|Unknown
+|Unknown
+|}
+
+===Rinascita===
+Rinascita is said to only have one Sentinel.
+{| class="article-table alternating-colors-table tdc1" style="width: 100%;"
+! style="width: 200px;" |Image
+!Name
+!Area
+!Connected Resonators
+!Status
+|-
+|[[File:Imperator Icon.png|150px]]
+|[[Imperator]]
+(Pegasus) 
+|[[Rinascita]]
+|
+* [[Napoli II]] - First Resonator
+*[[File:Fenrico Icon.png|25px]] [[Fenrico]] - Former Primus, fraudulent "Enlightened One"
+*[[File:Resonator Cartethyia.png|25px]] [[Cartethyia]] (Fleurdelys) - Blessed Maiden, Resonator of merged Imperator and [[Leviathan]], Current Resonator
+*[[File:Resonator Cantarella.png|25px]] [[Cantarella]] - Chosen Resonator, relinquished powers to Imperator and ceded title to Cartethyia
+*[[File:Resonator Rover.png|25px]] [[Rover]] - Arbiter
+|Deceased
+|}
+
+===Lahai-Roi===
+[[Lahai-Roi]] is originally a nation without a Sentinel, with the closest thing being the [[Exostrider]]; a mechanoid made of the same technology as the Sentinels. It is one of many Exostriders that were created to transport Sentinels from the [[Homeland Civilization]] across space to [[Solaris-3]], but this one in particular was intercepted by [[Aleph-1]] in space and sealed the Threnodian with the help of [[Aemeath]].
+
+After the events of the [[Version 3.3]] main quest, the Exostrider is upgraded to Sentinel status and takes the name Lahai-Roi.
+
+{|class="article-table alternating-colors-table tdc1" style="width: 100%;"
+! style="width: 200px;" |Image
+!Name
+!Area
+!Connected Resonators
+!Status
+|-
+|[[File:Exostrider Icon.png|150px]]
+|[[Exostrider]]
+Lahai-Roi
+Baldur (formerly)
+|[[Lahai-Roi]]
+|
+*[[File:Resonator Aemeath.png|25px]] [[Aemeath]] - Exostrider's Synchronist & Resonator
+*[[File:Resonator Rover.png|25px]] [[Rover]] - Arbiter
+|Active
+|}
+
+===Others===
+The Sentinel [[Promeus]] is of unknown origin, thus far only known in the prayers of a [[Startorch Academy]] student.
+
+English-language descriptions suggest that [[Ashinohara]] may have several Sentinels that left the [[Legacy Talismans]] in the country for safekeeping. As none have been named however it remains possible that these Sentinels left the country after bestowing the Talismans to it.

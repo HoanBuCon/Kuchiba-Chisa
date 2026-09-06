@@ -1,0 +1,74 @@
+**Profile**: Title: Ragunna City, Origin: Rinascita.
+
+{{About|the region|the city-state|Ragunna}}
+{{Location Tabs}}{{Intro/Location|Ragunna City}} Ragunna City, the administrative center of the Ragunna city-state in Rinascita, is a thriving port city by the sea, its districts linked by winding waterways. It is also the city with the strongest link to the [[Sentinel]], thus the Ragunnesi are devout followers of the Sentinel, [[Imperator]], and believe [[Common Echoes]] to be gifts from the Sentinel carrying Their divine will.
+
+==Areas==
+{| class="article-table alternating-colors-table tdc1" style="width: 100%;"
+! style="width: 200px;" |Name
+! Image
+! Description
+|- id="City Square"
+|[[City Square]]
+|[[File:City Square.png|180px]] 
+
+|The central spine of city life. Consists of both the small square around the Genesis Nexus where travellers are screened by the Order, and the central plaza with restaurants, music, the Pioneer Association, clothing boutiques, and fountains.
+|- id="Bank Street"
+|[[Bank Street]]
+|[[File:Bank Street.png|180px]] 
+
+|A wealthy district of the city, containing facilities for travellers such as Averardo Bank, Trattoria Margherita, and hotels.
+|- id="Montelli Quarter"
+|[[Montelli Quarter]]
+|[[File:Montelli Quarter.png|180px]] 
+
+|A district owned by the wealthy Montelli family. Aside from serving as a base for their wealthy mercantile empire, it contains restaurants and a pool for relaxation.
+|- id="Order of the Deep"
+|[[Order of the Deep (Area)|Order of the Deep]]
+|[[File:Order of the Deep (Area).png|180px]] 
+
+|The headquarters of the Order of the Deep and the location of its most impressive church, the Cathedral of Mercury.
+|}
+===Points of Interest===
+{| class="article-table alternating-colors-table tdc1" style="width: 100%;"
+! style="width: 200px;" |Name
+!Description
+|- id="Trattoria Margherita"
+|[[File:Trattoria Margherita.png|180px]]
+[[Trattoria Margherita]]
+|
+|- id="Gondola Market"
+|[[File:NPC Gondola Market.png|180px]]
+[[Gondola Market]]
+|
+|- id="Ragunna Pioneer Association"
+| [[File:Pioneer Association Ragunna.png|180px]]
+[[Ragunna Pioneer Association]]
+|
+|- id="Rosemary's Apothecary"
+| [[File:Rosemary's Apothecary.png|180px]]
+[[Rosemary's Apothecary]]
+|
+|- id="Masked Reverie"
+| [[File:Masked Reverie.png|180px]]
+[[Masked Reverie]]
+|
+|}
+
+==Quests==
+{{Quest by Category List|Ragunna City Quests}}
+
+==Exploration Report==
+===Codex of the Deep: Order Philosophy I===
+* Unlocked by reaching 50% exploration.
+
+===Codex of the Deep: Order Philosophy II===
+* Unlocked by reaching 100% exploration.
+
+==Notable Features==
+===Challenges===
+*[[Simulation Training#Rinascita|Gladiator's Portrait]]
+===Bosses===
+*{{Enemy|Hecate}}
+===Resources===
+*{{Item|Sword Acorus}}

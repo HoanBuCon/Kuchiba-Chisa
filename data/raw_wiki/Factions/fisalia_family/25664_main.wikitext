@@ -1,0 +1,41 @@
+# Fisalia Family
+
+**Faction Profile**: Leader: Cantarella, Base: Porto-Veno Castle.
+
+The '''Fisalia Family''' is one of the oldest lineages in [[Rinascita]] and one of the most powerful families in [[Ragunna]] that maintain a close connection with the [[Order of the Deep]].  
+
+They are perceived to be "devout" believers of the Ragunnesi Sentinel, [[Imperator]], by most, and are often perceived as mystic nobles, skilled in the art of poison and delighting in the schemes of power. However, few are aware of their true intentions.  
+
+[[Cantarella]], the current head of the Fisalia family, resides in the ancient and eerie Porto-Veno Castle. Rumor has it that she frequently dances alone within her mansion. With each step she takes, she seems to radiate an overwhelming warmth.
+
+== Archive Entry==
+One of the most powerful, and certainly the oldest and most traditional, families in Ragunna, renowned for their expertise in medicine and poison. Their devotion to Sentinel Imperator is clear to all who know them. A faction within the Fisalia family believes that the Montelli family's embrace of openness and the privatization of Echoes is a direct affront to Imperator's teachings, threatening to lead Ragunna into an abyss of heresy. They have directly opposed the Montellis through various means, shaking the family's longstanding image of dignified respectability. Yet, the head of the Fisalia family residing in Porto-Veno Castle seems disturbingly indifferent to the repercussions of these bold and provocative actions.
+
+==Overview==
+According to some rumors from the bard, Ciaccona, the ancestors of the Fisalia Family were the first to arrive in the islands of Rinascita and the first to establish order. They are said to predate the Order of the Deep thus their close ties with the religious order. Their craft of extracting toxins from aquatic plants is a legacy passed down in their family.
+
+The oldest family in Ragunna, the Fisalia Family's ancestors once ignited a war, but were defeated and driven out of the city.
+
+The current Fisalia Residencies in Ragunna are near the [[Cathedral of Mercury]]. As the subject of many notorious rumors, their name is unwelcomed by citizens, who call them the "Poison of Ragunna". 
+
+==Members==
+===Playable Resonators===
+{| class="article-table"
+!Icon!!Member!!Position
+|-
+|[[File:Resonator Cantarella.png|50px]]
+|[[Cantarella]]
+|Matriarch of the Fisalia Family
+|} 
+{{NPCs by Category List
+|Fisalia Family
+|header = Fisalia Family Members
+
+*[[Timoteo]]
+*Lady Carolina Fisalia
+*Chloe Fisalia
+*Marina Fisalia
+
+==Trivia==
+===Etymology===
+*Fisalia is likely derived from [https://en.wikipedia.org/wiki/Physalia Physalia], the scientific name of the Portuguese man o’ war, a highly venomous sea creature that closely resembles a jellyfish but is actually a colonial organism.

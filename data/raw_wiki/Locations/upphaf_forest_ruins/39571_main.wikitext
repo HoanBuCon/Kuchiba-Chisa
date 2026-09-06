@@ -1,0 +1,48 @@
+**Profile**: Title: Upphaf Forest Ruins, Origin: Roya Frostlands.
+
+{{Intro/Location|Upphaf Forest Ruins}}
+
+==Areas==
+{| class="article-table alternating-colors-table tdc1" style="width: 100%;"
+! style="width: 200px;" |Name
+!Image
+!Description
+|- id="Upphaf Forest Excavation Site"
+|[[Upphaf Forest Excavation Site]]
+|[[File:Upphaf Forest Excavation Site.png|180px]]
+|
+|- id="Upphaf Life Chamber"
+|[[Upphaf Life Chamber]]
+|[[File:Upphaf Life Chamber.png|180px]]
+|
+|- id="Provenance Enclave"
+|[[Provenance Enclave]]
+|[[File:Provenance Enclave.png|180px]]
+|
+|}
+
+==Quests==
+{{Quest by Category List|Upphaf Forest Ruins Quests}}
+
+==Exploration Report==
+===An Introduction to Lahai-Roi Historical Geography - Excerpt I===
+* Achieve 50% Area Exploration Progress to unlock the full report. 
+
+===An Introduction to Lahai-Roi Historical Geography - Excerpt II===
+* Achieve 100% Area Exploration Progress to unlock the full report. 
+
+==Notable Features==
+===Challenges===
+* [[Frostlands Surface - Void Storm Zone V]]
+
+===Enemies===
+*{{Enemy|Glacio Dreadmane}}
+*{{Enemy|Sabercat Reaver}}
+*{{Enemy|Twin Nova: Nebulous Cannon}}
+*{{Enemy|Twin Nova: Collapsar Blade}}
+*{{Enemy|Glommoth}}
+*{{Enemy|Kronaclaw}}
+*{{Enemy|Iceglint Dancer}}
+
+===Resources===
+* {{Item|Frostwort}}

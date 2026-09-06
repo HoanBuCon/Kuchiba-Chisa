@@ -1,0 +1,2337 @@
+{
+  "dataset_version": "rag05-raw-wiki-golden-v1-draft",
+  "methodology": "fact-reviewed from raw_wiki main-revision text",
+  "approval": {
+    "status": "approved",
+    "approved_by": "HoanBuCon",
+    "approved_at": "2026-09-05T16:18:36Z"
+  },
+  "label_status": "approved",
+  "evidence_scope": "public",
+  "corpus_version": "raw-wiki-sha256:0efe04a586291c11c84c921a1839ac20be53f12c026e3ea2b43595e9a7d32c7a",
+  "case_count": 83,
+  "cases": [
+    {
+      "id": "rw-001",
+      "query": "What organization is Aalto affiliated with?",
+      "language": "en",
+      "category": "affiliation",
+      "difficulty": "easy",
+      "expected_behavior": "retrieve",
+      "expected_answer_summary": "Aalto is a Consultant of the Black Shores.",
+      "expected_answer_excerpt": "He is an information broker from the [[New Federation]] and a Consultant of the [[Black Shores]].",
+      "relevant_evidence_ids": [
+        "raw_wiki:585:101912:cdb1baf766c207e6:chunk:000"
+      ],
+      "evidence": [
+        {
+          "evidence_id": "raw_wiki:585:101912:cdb1baf766c207e6:chunk:000",
+          "page_id": 585,
+          "revision_id": 101912,
+          "checksum": "cdb1baf766c207e6",
+          "source_path": "Characters/Resonators/aalto/585_main.wikitext",
+          "source_title": "Aalto",
+          "supporting_excerpt": "He is an information broker from the [[New Federation]] and a Consultant of the [[Black Shores]]."
+        }
+      ],
+      "proposed_relevance_grade": "primary",
+      "rationale": "The excerpt explicitly states the affiliation.",
+      "reviewer_status": "approved",
+      "reviewer_notes": null
+    },
+    {
+      "id": "rw-002",
+      "query": "Baizhi làm việc trong lĩnh vực nào ở Huaxu Academy?",
+      "language": "vi",
+      "category": "character_background",
+      "difficulty": "easy",
+      "expected_behavior": "retrieve",
+      "expected_answer_summary": "Baizhi researches Remnant Ecoacoustics at Huaxu Academy.",
+      "expected_answer_excerpt": "She is a researcher in Remnant Ecoacoustics at Huaxu Academy.",
+      "relevant_evidence_ids": [
+        "raw_wiki:624:92922:791b05ce14a56b51:chunk:000"
+      ],
+      "evidence": [
+        {
+          "evidence_id": "raw_wiki:624:92922:791b05ce14a56b51:chunk:000",
+          "page_id": 624,
+          "revision_id": 92922,
+          "checksum": "791b05ce14a56b51",
+          "source_path": "Characters/Resonators/baizhi/624_main.wikitext",
+          "source_title": "Baizhi",
+          "supporting_excerpt": "She is a researcher in Remnant Ecoacoustics at Huaxu Academy."
+        }
+      ],
+      "proposed_relevance_grade": "primary",
+      "rationale": "The role, field, and institution are explicit.",
+      "reviewer_status": "approved",
+      "reviewer_notes": null
+    },
+    {
+      "id": "rw-003",
+      "query": "Changli giữ vai trò gì tại Jinzhou?",
+      "language": "vi",
+      "category": "relationship",
+      "difficulty": "easy",
+      "expected_behavior": "retrieve",
+      "expected_answer_summary": "Changli serves as Counselor to Jinzhou Magistrate Jinhsi.",
+      "expected_answer_excerpt": "now serves as Counselor to [[Jinzhou]] Magistrate, [[Jinhsi]].",
+      "relevant_evidence_ids": [
+        "raw_wiki:1126:100700:6b4973485554efd0:chunk:000"
+      ],
+      "evidence": [
+        {
+          "evidence_id": "raw_wiki:1126:100700:6b4973485554efd0:chunk:000",
+          "page_id": 1126,
+          "revision_id": 100700,
+          "checksum": "6b4973485554efd0",
+          "source_path": "Characters/Resonators/changli/1126_main.wikitext",
+          "source_title": "Changli",
+          "supporting_excerpt": "now serves as Counselor to [[Jinzhou]] Magistrate, [[Jinhsi]]."
+        }
+      ],
+      "proposed_relevance_grade": "primary",
+      "rationale": "The Changli–Jinhsi professional relationship is explicitly stated.",
+      "reviewer_status": "approved",
+      "reviewer_notes": null
+    },
+    {
+      "id": "rw-004",
+      "query": "What job does Chixia have in Jinzhou?",
+      "language": "en",
+      "category": "character_background",
+      "difficulty": "easy",
+      "expected_behavior": "retrieve",
+      "expected_answer_summary": "Chixia is a young Patroller in Jinzhou.",
+      "expected_answer_excerpt": "She is a young Patroller who casts her jubilant figure along the streets of Jinzhou city.",
+      "relevant_evidence_ids": [
+        "raw_wiki:510:99239:2efdf295348ddd30:chunk:000"
+      ],
+      "evidence": [
+        {
+          "evidence_id": "raw_wiki:510:99239:2efdf295348ddd30:chunk:000",
+          "page_id": 510,
+          "revision_id": 99239,
+          "checksum": "2efdf295348ddd30",
+          "source_path": "Characters/Resonators/chixia/510_main.wikitext",
+          "source_title": "Chixia",
+          "supporting_excerpt": "She is a young Patroller who casts her jubilant figure along the streets of Jinzhou city."
+        }
+      ],
+      "proposed_relevance_grade": "primary",
+      "rationale": "The occupation and city are explicit.",
+      "reviewer_status": "approved",
+      "reviewer_notes": null
+    },
+    {
+      "id": "rw-005",
+      "query": "Calcharo lãnh đạo nhóm nào?",
+      "language": "vi",
+      "category": "affiliation",
+      "difficulty": "easy",
+      "expected_behavior": "retrieve",
+      "expected_answer_summary": "Calcharo leads the Ghost Hounds.",
+      "expected_answer_excerpt": "He is a former Exile from the [[New Federation]]'s [[Lawless Zone]] and the leader of the [[Ghost Hounds]].",
+      "relevant_evidence_ids": [
+        "raw_wiki:632:99398:b84b4f87a9d9ade9:chunk:000"
+      ],
+      "evidence": [
+        {
+          "evidence_id": "raw_wiki:632:99398:b84b4f87a9d9ade9:chunk:000",
+          "page_id": 632,
+          "revision_id": 99398,
+          "checksum": "b84b4f87a9d9ade9",
+          "source_path": "Characters/Resonators/calcharo/632_main.wikitext",
+          "source_title": "Calcharo",
+          "supporting_excerpt": "He is a former Exile from the [[New Federation]]'s [[Lawless Zone]] and the leader of the [[Ghost Hounds]]."
+        }
+      ],
+      "proposed_relevance_grade": "primary",
+      "rationale": "The leadership relation is explicit.",
+      "reviewer_status": "approved",
+      "reviewer_notes": null
+    },
+    {
+      "id": "rw-006",
+      "query": "Who leads the Troupe of Fools?",
+      "language": "en",
+      "category": "relationship",
+      "difficulty": "easy",
+      "expected_behavior": "retrieve",
+      "expected_answer_summary": "Brant is the captain of the Troupe of Fools.",
+      "expected_answer_excerpt": "He is the captain of the [[Troupe of Fools]], exuding a carefree, easygoing charm and charisma, unbound by convention.",
+      "relevant_evidence_ids": [
+        "raw_wiki:24786:99400:468ec49727209414:chunk:000"
+      ],
+      "evidence": [
+        {
+          "evidence_id": "raw_wiki:24786:99400:468ec49727209414:chunk:000",
+          "page_id": 24786,
+          "revision_id": 99400,
+          "checksum": "468ec49727209414",
+          "source_path": "Characters/Resonators/brant/24786_main.wikitext",
+          "source_title": "Brant",
+          "supporting_excerpt": "He is the captain of the [[Troupe of Fools]], exuding a carefree, easygoing charm and charisma, unbound by convention."
+        }
+      ],
+      "proposed_relevance_grade": "primary",
+      "rationale": "The leader-to-organization relation is explicit.",
+      "reviewer_status": "approved",
+      "reviewer_notes": null
+    },
+    {
+      "id": "rw-007",
+      "query": "Camellya phụ trách việc gì ở Black Shores?",
+      "language": "vi",
+      "category": "affiliation",
+      "difficulty": "medium",
+      "expected_behavior": "retrieve",
+      "expected_answer_summary": "Camellya is a Bloom Bearer who handles combat-oriented germination tests for new candidates.",
+      "expected_answer_excerpt": "She is a Bloom Bearer of the [[Black Shores]], and handles the combat-oriented germination tests given to new candidates.",
+      "relevant_evidence_ids": [
+        "raw_wiki:599:96614:56f198042c315f7e:chunk:000"
+      ],
+      "evidence": [
+        {
+          "evidence_id": "raw_wiki:599:96614:56f198042c315f7e:chunk:000",
+          "page_id": 599,
+          "revision_id": 96614,
+          "checksum": "56f198042c315f7e",
+          "source_path": "Characters/Resonators/camellya/599_main.wikitext",
+          "source_title": "Camellya",
+          "supporting_excerpt": "She is a Bloom Bearer of the [[Black Shores]], and handles the combat-oriented germination tests given to new candidates."
+        }
+      ],
+      "proposed_relevance_grade": "primary",
+      "rationale": "Both organization and responsibility are explicit.",
+      "reviewer_status": "approved",
+      "reviewer_notes": null
+    },
+    {
+      "id": "rw-008",
+      "query": "Ai là lãnh đạo và người sáng lập Black Shores?",
+      "language": "vi",
+      "category": "relationship",
+      "difficulty": "easy",
+      "expected_behavior": "retrieve",
+      "expected_answer_summary": "Rover is both Leader and Founder of the Black Shores.",
+      "expected_answer_excerpt": "**Faction Profile**: Leader: Rover, Founder: Rover",
+      "relevant_evidence_ids": [
+        "raw_wiki:1007:135324:8f903f46d2fa3ca8:chunk:000"
+      ],
+      "evidence": [
+        {
+          "evidence_id": "raw_wiki:1007:135324:8f903f46d2fa3ca8:chunk:000",
+          "page_id": 1007,
+          "revision_id": 135324,
+          "checksum": "8f903f46d2fa3ca8",
+          "source_path": "Factions/black_shores/1007_main.wikitext",
+          "source_title": "Black Shores",
+          "supporting_excerpt": "**Faction Profile**: Leader: Rover, Founder: Rover"
+        }
+      ],
+      "proposed_relevance_grade": "primary",
+      "rationale": "The faction profile explicitly records both roles.",
+      "reviewer_status": "approved",
+      "reviewer_notes": null
+    },
+    {
+      "id": "rw-009",
+      "query": "What fields does Huaxu Academy's Jinzhou Campus specialize in?",
+      "language": "en",
+      "category": "faction_lore",
+      "difficulty": "medium",
+      "expected_behavior": "retrieve",
+      "expected_answer_summary": "It specializes in Wutherology, Ecoacoustics, and Resonology.",
+      "expected_answer_excerpt": "Specializing in Wutherology, Ecoacoustics, and Resonology",
+      "relevant_evidence_ids": [
+        "raw_wiki:938:130729:103ceb2210a7890a:chunk:000"
+      ],
+      "evidence": [
+        {
+          "evidence_id": "raw_wiki:938:130729:103ceb2210a7890a:chunk:000",
+          "page_id": 938,
+          "revision_id": 130729,
+          "checksum": "103ceb2210a7890a",
+          "source_path": "Factions/huaxu_academy/938_main.wikitext",
+          "source_title": "Huaxu Academy",
+          "supporting_excerpt": "Specializing in Wutherology, Ecoacoustics, and Resonology"
+        }
+      ],
+      "proposed_relevance_grade": "primary",
+      "rationale": "The fields are enumerated in the text.",
+      "reviewer_status": "approved",
+      "reviewer_notes": null
+    },
+    {
+      "id": "rw-010",
+      "query": "Midnight Rangers có nhiệm vụ gì ở Jinzhou?",
+      "language": "vi",
+      "category": "faction_lore",
+      "difficulty": "medium",
+      "expected_behavior": "retrieve",
+      "expected_answer_summary": "They are Jinzhou's primary military force and protect the land from external threats.",
+      "expected_answer_excerpt": "The '''Midnight Rangers''' are the primary military force of the [[Jinzhou]] region, tasked with protecting the land from external threats.",
+      "relevant_evidence_ids": [
+        "raw_wiki:896:99150:aa2a5187c5ebc08b:chunk:000"
+      ],
+      "evidence": [
+        {
+          "evidence_id": "raw_wiki:896:99150:aa2a5187c5ebc08b:chunk:000",
+          "page_id": 896,
+          "revision_id": 99150,
+          "checksum": "aa2a5187c5ebc08b",
+          "source_path": "Factions/midnight_rangers/896_main.wikitext",
+          "source_title": "Midnight Rangers",
+          "supporting_excerpt": "The '''Midnight Rangers''' are the primary military force of the [[Jinzhou]] region, tasked with protecting the land from external threats."
+        }
+      ],
+      "proposed_relevance_grade": "primary",
+      "rationale": "The mission and region are explicit.",
+      "reviewer_status": "approved",
+      "reviewer_notes": null
+    },
+    {
+      "id": "rw-011",
+      "query": "What kind of school is Startorch Academy?",
+      "language": "en",
+      "category": "faction_lore",
+      "difficulty": "medium",
+      "expected_behavior": "retrieve",
+      "expected_answer_summary": "It is a multinational school built by the Spacetrek Collective for Resonators in Lahai-Roi.",
+      "expected_answer_excerpt": "'''Startorch Academy''' is a multinational school built by the [[Spacetrek Collective]] specifically for [[Resonator]]s in [[Lahai-Roi]].",
+      "relevant_evidence_ids": [
+        "raw_wiki:37391:136476:a3a41695657088cf:chunk:000"
+      ],
+      "evidence": [
+        {
+          "evidence_id": "raw_wiki:37391:136476:a3a41695657088cf:chunk:000",
+          "page_id": 37391,
+          "revision_id": 136476,
+          "checksum": "a3a41695657088cf",
+          "source_path": "Factions/startorch_academy/37391_main.wikitext",
+          "source_title": "Startorch Academy",
+          "supporting_excerpt": "'''Startorch Academy''' is a multinational school built by the [[Spacetrek Collective]] specifically for [[Resonator]]s in [[Lahai-Roi]]."
+        }
+      ],
+      "proposed_relevance_grade": "primary",
+      "rationale": "The institution, builder, audience, and location are explicit.",
+      "reviewer_status": "approved",
+      "reviewer_notes": null
+    },
+    {
+      "id": "rw-012",
+      "query": "Điều gì có thể khiến một Resonator bị Overclocking?",
+      "language": "vi",
+      "category": "lore_event",
+      "difficulty": "medium",
+      "expected_behavior": "retrieve",
+      "expected_answer_summary": "Overwhelming psychological stress or overexertion of a Resonance Ability can cause loss of Forte control.",
+      "expected_answer_excerpt": "'''Overclocking''' is a state where a [[Resonator]] has lost control of their [[Forte]] as a result of overwhelming psychological stress or overexertion of their Resonance Ability.",
+      "relevant_evidence_ids": [
+        "raw_wiki:24999:99250:79f12bc79353ca49:chunk:000"
+      ],
+      "evidence": [
+        {
+          "evidence_id": "raw_wiki:24999:99250:79f12bc79353ca49:chunk:000",
+          "page_id": 24999,
+          "revision_id": 99250,
+          "checksum": "79f12bc79353ca49",
+          "source_path": "Lore/overclocking/24999_main.wikitext",
+          "source_title": "Overclocking",
+          "supporting_excerpt": "'''Overclocking''' is a state where a [[Resonator]] has lost control of their [[Forte]] as a result of overwhelming psychological stress or overexertion of their Resonance Ability."
+        }
+      ],
+      "proposed_relevance_grade": "primary",
+      "rationale": "The causal conditions are explicit.",
+      "reviewer_status": "approved",
+      "reviewer_notes": null
+    },
+    {
+      "id": "rw-013",
+      "query": "What are Tacet Discords formed from?",
+      "language": "en",
+      "category": "lore_event",
+      "difficulty": "medium",
+      "expected_behavior": "retrieve",
+      "expected_answer_summary": "They are formed by residual chaotic frequency energy under the Waveworn Phenomenon.",
+      "expected_answer_excerpt": "'''Tacet Discords''' (abbreviated as TDs) are sentient beings formed by the residual chaotic frequency energy under the [[Waveworn Phenomenon]] with ever-changing, amorphous forms.",
+      "relevant_evidence_ids": [
+        "raw_wiki:1008:99738:fa6acd585adb1d2a:chunk:000"
+      ],
+      "evidence": [
+        {
+          "evidence_id": "raw_wiki:1008:99738:fa6acd585adb1d2a:chunk:000",
+          "page_id": 1008,
+          "revision_id": 99738,
+          "checksum": "fa6acd585adb1d2a",
+          "source_path": "Lore/tacet_discord/1008_main.wikitext",
+          "source_title": "Tacet Discord",
+          "supporting_excerpt": "'''Tacet Discords''' (abbreviated as TDs) are sentient beings formed by the residual chaotic frequency energy under the [[Waveworn Phenomenon]] with ever-changing, amorphous forms."
+        }
+      ],
+      "proposed_relevance_grade": "primary",
+      "rationale": "The formation mechanism is explicit.",
+      "reviewer_status": "approved",
+      "reviewer_notes": null
+    },
+    {
+      "id": "rw-014",
+      "query": "Sonoro Sphere là gì vậy?",
+      "language": "vi_informal",
+      "category": "paraphrase",
+      "difficulty": "medium",
+      "expected_behavior": "retrieve",
+      "expected_answer_summary": "Sonoro Spheres are spaces with dense Remnant Energy that preserve transdimensional information.",
+      "expected_answer_excerpt": "Sonoro Spheres are spaces of dense abundant [[Remnant]] Energy, capable of preserving transdimensional information.",
+      "relevant_evidence_ids": [
+        "raw_wiki:8269:95612:1c103964f57b0be7:chunk:000"
+      ],
+      "evidence": [
+        {
+          "evidence_id": "raw_wiki:8269:95612:1c103964f57b0be7:chunk:000",
+          "page_id": 8269,
+          "revision_id": 95612,
+          "checksum": "1c103964f57b0be7",
+          "source_path": "Lore/sonoro_sphere/8269_main.wikitext",
+          "source_title": "Sonoro Sphere",
+          "supporting_excerpt": "Sonoro Spheres are spaces of dense abundant [[Remnant]] Energy, capable of preserving transdimensional information."
+        }
+      ],
+      "proposed_relevance_grade": "primary",
+      "rationale": "The informal query asks for the definition stated verbatim.",
+      "reviewer_status": "approved",
+      "reviewer_notes": null
+    },
+    {
+      "id": "rw-015",
+      "query": "Why are Aalto and Encore described as a duo?",
+      "language": "en",
+      "category": "relationship",
+      "difficulty": "medium",
+      "expected_behavior": "retrieve",
+      "expected_answer_summary": "They both work as Black Shores Consultants and became an inseparable, lively duo during missions.",
+      "expected_answer_excerpt": "Both working for the Black Shores as Consultants, Aalto and Encore have become an inseparable and lively duo during missions.",
+      "relevant_evidence_ids": [
+        "raw_wiki:585:101912:cdb1baf766c207e6:chunk:000"
+      ],
+      "evidence": [
+        {
+          "evidence_id": "raw_wiki:585:101912:cdb1baf766c207e6:chunk:000",
+          "page_id": 585,
+          "revision_id": 101912,
+          "checksum": "cdb1baf766c207e6",
+          "source_path": "Characters/Resonators/aalto/585_main.wikitext",
+          "source_title": "Aalto",
+          "supporting_excerpt": "Both working for the Black Shores as Consultants, Aalto and Encore have become an inseparable and lively duo during missions."
+        }
+      ],
+      "proposed_relevance_grade": "primary",
+      "rationale": "The source explicitly states both their shared role and their relationship.",
+      "reviewer_status": "approved",
+      "reviewer_notes": null
+    },
+    {
+      "id": "rw-016",
+      "query": "Where did Aemeath come from before attending Startorch Academy?",
+      "language": "en",
+      "category": "character_background",
+      "difficulty": "medium",
+      "expected_behavior": "retrieve",
+      "expected_answer_summary": "Aemeath is a Frostlands native from the Roya Tribe and was once a Synchronist at Startorch Academy.",
+      "expected_answer_excerpt": "She is a Frostlands native from the [[Roya Tribe]] who was once a Synchronist at [[Startorch Academy]].",
+      "relevant_evidence_ids": [
+        "raw_wiki:38537:136632:f169b123e2bf1328:chunk:000"
+      ],
+      "evidence": [
+        {
+          "evidence_id": "raw_wiki:38537:136632:f169b123e2bf1328:chunk:000",
+          "page_id": 38537,
+          "revision_id": 136632,
+          "checksum": "f169b123e2bf1328",
+          "source_path": "Characters/Resonators/aemeath/38537_main.wikitext",
+          "source_title": "Aemeath",
+          "supporting_excerpt": "She is a Frostlands native from the [[Roya Tribe]] who was once a Synchronist at [[Startorch Academy]]."
+        }
+      ],
+      "proposed_relevance_grade": "primary",
+      "rationale": "The sentence explicitly gives both her origin and former academic role.",
+      "reviewer_status": "approved",
+      "reviewer_notes": null
+    },
+    {
+      "id": "rw-017",
+      "query": "Augusta giữ vị trí gì ở Septimont?",
+      "language": "vi",
+      "category": "character_background",
+      "difficulty": "easy",
+      "expected_behavior": "retrieve",
+      "expected_answer_summary": "Augusta is the Ephor of Septimont.",
+      "expected_answer_excerpt": "The fearless Ephor of [[Septimont]] with a will of iron",
+      "relevant_evidence_ids": [
+        "raw_wiki:31310:99574:02e73eaeaa24eb2c:chunk:000"
+      ],
+      "evidence": [
+        {
+          "evidence_id": "raw_wiki:31310:99574:02e73eaeaa24eb2c:chunk:000",
+          "page_id": 31310,
+          "revision_id": 99574,
+          "checksum": "02e73eaeaa24eb2c",
+          "source_path": "Characters/Resonators/augusta/31310_main.wikitext",
+          "source_title": "Augusta",
+          "supporting_excerpt": "The fearless Ephor of [[Septimont]] with a will of iron"
+        }
+      ],
+      "proposed_relevance_grade": "primary",
+      "rationale": "The source explicitly identifies Augusta as Septimont's Ephor.",
+      "reviewer_status": "approved",
+      "reviewer_notes": null
+    },
+    {
+      "id": "rw-018",
+      "query": "Buling được biết đến với danh xưng nào?",
+      "language": "vi",
+      "category": "character_background",
+      "difficulty": "easy",
+      "expected_behavior": "retrieve",
+      "expected_answer_summary": "Buling is known as the Spiritchaser Taoist.",
+      "expected_answer_excerpt": "She is a [[Black Shores]] Consultant, known as the \"Spiritchaser Taoist,\"",
+      "relevant_evidence_ids": [
+        "raw_wiki:31556:97061:ae4ba2c13572f46c:chunk:000"
+      ],
+      "evidence": [
+        {
+          "evidence_id": "raw_wiki:31556:97061:ae4ba2c13572f46c:chunk:000",
+          "page_id": 31556,
+          "revision_id": 97061,
+          "checksum": "ae4ba2c13572f46c",
+          "source_path": "Characters/Resonators/buling/31556_main.wikitext",
+          "source_title": "Buling",
+          "supporting_excerpt": "She is a [[Black Shores]] Consultant, known as the \"Spiritchaser Taoist,\""
+        }
+      ],
+      "proposed_relevance_grade": "primary",
+      "rationale": "The quoted title is stated directly.",
+      "reviewer_status": "approved",
+      "reviewer_notes": null
+    },
+    {
+      "id": "rw-019",
+      "query": "Who is the thirty-sixth matriarch of the Fisalia family?",
+      "language": "en",
+      "category": "relationship",
+      "difficulty": "easy",
+      "expected_behavior": "retrieve",
+      "expected_answer_summary": "Cantarella is the thirty-sixth matriarch of the Fisalia family.",
+      "expected_answer_excerpt": "She is the thirty-sixth matriarch of the Fisalia family",
+      "relevant_evidence_ids": [
+        "raw_wiki:27951:96619:ae0c99137282474b:chunk:000"
+      ],
+      "evidence": [
+        {
+          "evidence_id": "raw_wiki:27951:96619:ae0c99137282474b:chunk:000",
+          "page_id": 27951,
+          "revision_id": 96619,
+          "checksum": "ae0c99137282474b",
+          "source_path": "Characters/Resonators/cantarella/27951_main.wikitext",
+          "source_title": "Cantarella",
+          "supporting_excerpt": "She is the thirty-sixth matriarch of the Fisalia family"
+        }
+      ],
+      "proposed_relevance_grade": "primary",
+      "rationale": "The family leadership relationship is explicit.",
+      "reviewer_status": "approved",
+      "reviewer_notes": null
+    },
+    {
+      "id": "rw-020",
+      "query": "Carlotta thuộc gia tộc nào ở Rinascita?",
+      "language": "vi",
+      "category": "affiliation",
+      "difficulty": "easy",
+      "expected_behavior": "retrieve",
+      "expected_answer_summary": "Carlotta is the second daughter of the Montelli Family of Rinascita.",
+      "expected_answer_excerpt": "She is the second daughter of the esteemed [[Montelli Family]] of [[Rinascita]]",
+      "relevant_evidence_ids": [
+        "raw_wiki:24790:96615:17a7637a393aa5fe:chunk:000"
+      ],
+      "evidence": [
+        {
+          "evidence_id": "raw_wiki:24790:96615:17a7637a393aa5fe:chunk:000",
+          "page_id": 24790,
+          "revision_id": 96615,
+          "checksum": "17a7637a393aa5fe",
+          "source_path": "Characters/Resonators/carlotta/24790_main.wikitext",
+          "source_title": "Carlotta",
+          "supporting_excerpt": "She is the second daughter of the esteemed [[Montelli Family]] of [[Rinascita]]"
+        }
+      ],
+      "proposed_relevance_grade": "primary",
+      "rationale": "The source directly states her family and region.",
+      "reviewer_status": "approved",
+      "reviewer_notes": null
+    },
+    {
+      "id": "rw-021",
+      "query": "What names is Cartethyia revered by across Rinascita?",
+      "language": "en",
+      "category": "character_background",
+      "difficulty": "medium",
+      "expected_behavior": "retrieve",
+      "expected_answer_summary": "She is revered as Fleurdelys, the Blessed Maiden, and in some accounts the Martyred Maiden.",
+      "expected_answer_excerpt": "Throughout [[Rinascita]], she is revered as '''Fleurdelys''', the \"Blessed Maiden,\" and in some accounts, \"The Martyred Maiden.\"",
+      "relevant_evidence_ids": [
+        "raw_wiki:26196:99513:1106002e2cae6db6:chunk:000"
+      ],
+      "evidence": [
+        {
+          "evidence_id": "raw_wiki:26196:99513:1106002e2cae6db6:chunk:000",
+          "page_id": 26196,
+          "revision_id": 99513,
+          "checksum": "1106002e2cae6db6",
+          "source_path": "Characters/Resonators/cartethyia/26196_main.wikitext",
+          "source_title": "Cartethyia",
+          "supporting_excerpt": "Throughout [[Rinascita]], she is revered as '''Fleurdelys''', the \"Blessed Maiden,\" and in some accounts, \"The Martyred Maiden.\""
+        }
+      ],
+      "proposed_relevance_grade": "primary",
+      "rationale": "All three names are enumerated in one statement.",
+      "reviewer_status": "approved",
+      "reviewer_notes": null
+    },
+    {
+      "id": "rw-022",
+      "query": "Chisa học ở đâu?",
+      "language": "vi_informal",
+      "category": "affiliation",
+      "difficulty": "easy",
+      "expected_behavior": "retrieve",
+      "expected_answer_summary": "Chisa is a student at Startorch Academy.",
+      "expected_answer_excerpt": "Chisa is a conscientious, level-headed student from the [[Startorch Academy]].",
+      "relevant_evidence_ids": [
+        "raw_wiki:31283:102761:da0b008506be0f37:chunk:000"
+      ],
+      "evidence": [
+        {
+          "evidence_id": "raw_wiki:31283:102761:da0b008506be0f37:chunk:000",
+          "page_id": 31283,
+          "revision_id": 102761,
+          "checksum": "da0b008506be0f37",
+          "source_path": "Characters/Resonators/chisa/31283_main.wikitext",
+          "source_title": "Chisa",
+          "supporting_excerpt": "Chisa is a conscientious, level-headed student from the [[Startorch Academy]]."
+        }
+      ],
+      "proposed_relevance_grade": "primary",
+      "rationale": "The school affiliation is directly stated.",
+      "reviewer_status": "approved",
+      "reviewer_notes": null
+    },
+    {
+      "id": "rw-023",
+      "query": "What does Ciaccona travel around Rinascita looking for?",
+      "language": "en",
+      "category": "character_background",
+      "difficulty": "easy",
+      "expected_behavior": "retrieve",
+      "expected_answer_summary": "Ciaccona wanders Rinascita in search of inspiration.",
+      "expected_answer_excerpt": "She is a free-spirited, romantic, sincere, and whimsical bard wandering [[Rinascita]] in search of inspiration.",
+      "relevant_evidence_ids": [
+        "raw_wiki:28670:96621:ac4f9f01f5e3796b:chunk:000"
+      ],
+      "evidence": [
+        {
+          "evidence_id": "raw_wiki:28670:96621:ac4f9f01f5e3796b:chunk:000",
+          "page_id": 28670,
+          "revision_id": 96621,
+          "checksum": "ac4f9f01f5e3796b",
+          "source_path": "Characters/Resonators/ciaccona/28670_main.wikitext",
+          "source_title": "Ciaccona",
+          "supporting_excerpt": "She is a free-spirited, romantic, sincere, and whimsical bard wandering [[Rinascita]] in search of inspiration."
+        }
+      ],
+      "proposed_relevance_grade": "primary",
+      "rationale": "The purpose of her travels is explicit.",
+      "reviewer_status": "approved",
+      "reviewer_notes": null
+    },
+    {
+      "id": "rw-024",
+      "query": "Danjin săn đuổi những ai, và để làm gì?",
+      "language": "vi",
+      "category": "character_background",
+      "difficulty": "medium",
+      "expected_behavior": "retrieve",
+      "expected_answer_summary": "Danjin hunts thieves and bandits to bring them to justice.",
+      "expected_answer_excerpt": "She is a member of the [[Midnight Rangers]] and hunts down thieves and bandits in order to bring them to justice.",
+      "relevant_evidence_ids": [
+        "raw_wiki:530:92937:7837aba16c572cfb:chunk:000"
+      ],
+      "evidence": [
+        {
+          "evidence_id": "raw_wiki:530:92937:7837aba16c572cfb:chunk:000",
+          "page_id": 530,
+          "revision_id": 92937,
+          "checksum": "7837aba16c572cfb",
+          "source_path": "Characters/Resonators/danjin/530_main.wikitext",
+          "source_title": "Danjin",
+          "supporting_excerpt": "She is a member of the [[Midnight Rangers]] and hunts down thieves and bandits in order to bring them to justice."
+        }
+      ],
+      "proposed_relevance_grade": "primary",
+      "rationale": "The targets and motivation are both explicit.",
+      "reviewer_status": "approved",
+      "reviewer_notes": null
+    },
+    {
+      "id": "rw-025",
+      "query": "Denia secretly works for which organization?",
+      "language": "en",
+      "category": "affiliation",
+      "difficulty": "medium",
+      "expected_behavior": "retrieve",
+      "expected_answer_summary": "Denia secretly serves as an agent for the Fractsidus.",
+      "expected_answer_excerpt": "who secretly serves as an agent for the [[Fractsidus]].",
+      "relevant_evidence_ids": [
+        "raw_wiki:39187:136635:e0a124eb457dfb82:chunk:000"
+      ],
+      "evidence": [
+        {
+          "evidence_id": "raw_wiki:39187:136635:e0a124eb457dfb82:chunk:000",
+          "page_id": 39187,
+          "revision_id": 136635,
+          "checksum": "e0a124eb457dfb82",
+          "source_path": "Characters/Resonators/denia/39187_main.wikitext",
+          "source_title": "Denia",
+          "supporting_excerpt": "who secretly serves as an agent for the [[Fractsidus]]."
+        }
+      ],
+      "proposed_relevance_grade": "primary",
+      "rationale": "The covert affiliation is stated directly.",
+      "reviewer_status": "approved",
+      "reviewer_notes": null
+    },
+    {
+      "id": "rw-026",
+      "query": "Encore tìm khách hàng mới cho Black Shores cùng với ai?",
+      "language": "vi",
+      "category": "relationship",
+      "difficulty": "medium",
+      "expected_behavior": "retrieve",
+      "expected_answer_summary": "Encore finds new clients alongside Aalto, her fellow Consultant and brother figure.",
+      "expected_answer_excerpt": "she is responsible for finding new clients for the Black Shores alongside her fellow Consultant and brother figure [[Aalto]].",
+      "relevant_evidence_ids": [
+        "raw_wiki:522:103593:65ac76a1400c1df9:chunk:000"
+      ],
+      "evidence": [
+        {
+          "evidence_id": "raw_wiki:522:103593:65ac76a1400c1df9:chunk:000",
+          "page_id": 522,
+          "revision_id": 103593,
+          "checksum": "65ac76a1400c1df9",
+          "source_path": "Characters/Resonators/encore/522_main.wikitext",
+          "source_title": "Encore",
+          "supporting_excerpt": "she is responsible for finding new clients for the Black Shores alongside her fellow Consultant and brother figure [[Aalto]]."
+        }
+      ],
+      "proposed_relevance_grade": "primary",
+      "rationale": "The working and brother-figure relationship is explicit.",
+      "reviewer_status": "approved",
+      "reviewer_notes": null
+    },
+    {
+      "id": "rw-027",
+      "query": "What unusual ability does Galbrena use against Tacet Discords?",
+      "language": "en",
+      "category": "character_background",
+      "difficulty": "medium",
+      "expected_behavior": "retrieve",
+      "expected_answer_summary": "Galbrena can consume the frequencies and powers of the Tacet Discords she hunts.",
+      "expected_answer_excerpt": "she is now a formidable \"Discord Slayer\" who wields the ability to consume the frequencies and powers of Tacet Discords she hunts across [[Solaris-3]]",
+      "relevant_evidence_ids": [
+        "raw_wiki:31295:135376:0a70da2ff45c5134:chunk:000"
+      ],
+      "evidence": [
+        {
+          "evidence_id": "raw_wiki:31295:135376:0a70da2ff45c5134:chunk:000",
+          "page_id": 31295,
+          "revision_id": 135376,
+          "checksum": "0a70da2ff45c5134",
+          "source_path": "Characters/Resonators/galbrena/31295_main.wikitext",
+          "source_title": "Galbrena",
+          "supporting_excerpt": "she is now a formidable \"Discord Slayer\" who wields the ability to consume the frequencies and powers of Tacet Discords she hunts across [[Solaris-3]]"
+        }
+      ],
+      "proposed_relevance_grade": "primary",
+      "rationale": "The ability and its targets are directly described.",
+      "reviewer_status": "approved",
+      "reviewer_notes": null
+    },
+    {
+      "id": "rw-028",
+      "query": "Suzu cho Hiyuki khả năng gì?",
+      "language": "vi",
+      "category": "character_background",
+      "difficulty": "medium",
+      "expected_behavior": "retrieve",
+      "expected_answer_summary": "Suzu lets Hiyuki perceive and use certain possibilities of herself.",
+      "expected_answer_excerpt": "which grants the bearer the ability to perceive and utilize \"certain possibilities\" of oneself.",
+      "relevant_evidence_ids": [
+        "raw_wiki:40075:136638:d67583a80d55df95:chunk:000"
+      ],
+      "evidence": [
+        {
+          "evidence_id": "raw_wiki:40075:136638:d67583a80d55df95:chunk:000",
+          "page_id": 40075,
+          "revision_id": 136638,
+          "checksum": "d67583a80d55df95",
+          "source_path": "Characters/Resonators/hiyuki/40075_main.wikitext",
+          "source_title": "Hiyuki",
+          "supporting_excerpt": "which grants the bearer the ability to perceive and utilize \"certain possibilities\" of oneself."
+        }
+      ],
+      "proposed_relevance_grade": "primary",
+      "rationale": "The talisman's granted ability is explicit.",
+      "reviewer_status": "approved",
+      "reviewer_notes": null
+    },
+    {
+      "id": "rw-029",
+      "query": "Which Huanglong Sentinel is known as the Moon Fox?",
+      "language": "en",
+      "category": "character_background",
+      "difficulty": "medium",
+      "expected_behavior": "retrieve",
+      "expected_answer_summary": "Hsin, the Sentinel located in Mengzhou, is known as the Moon Fox.",
+      "expected_answer_excerpt": "She is also known as \"The Moon Fox\" or Hsin (Heart), and is one of [[Huanglong|Huanglong's]] seven [[Sentinel]]s who is located in [[Mengzhou]].",
+      "relevant_evidence_ids": [
+        "raw_wiki:10962:102771:2a81d1750c1bd1aa:chunk:000"
+      ],
+      "evidence": [
+        {
+          "evidence_id": "raw_wiki:10962:102771:2a81d1750c1bd1aa:chunk:000",
+          "page_id": 10962,
+          "revision_id": 102771,
+          "checksum": "2a81d1750c1bd1aa",
+          "source_path": "Characters/Resonators/hsin/10962_main.wikitext",
+          "source_title": "Hsin",
+          "supporting_excerpt": "She is also known as \"The Moon Fox\" or Hsin (Heart), and is one of [[Huanglong|Huanglong's]] seven [[Sentinel]]s who is located in [[Mengzhou]]."
+        }
+      ],
+      "proposed_relevance_grade": "primary",
+      "rationale": "The alias, status, and location appear together.",
+      "reviewer_status": "approved",
+      "reviewer_notes": null
+    },
+    {
+      "id": "rw-030",
+      "query": "Iuno có trách nhiệm gì tại Tetragon Temple?",
+      "language": "vi",
+      "category": "character_background",
+      "difficulty": "medium",
+      "expected_behavior": "retrieve",
+      "expected_answer_summary": "Iuno is a priestess charged with delivering prophecies that shape Septimont citizens' lives.",
+      "expected_answer_excerpt": "She is a prodigious and renowned Priestess of [[Septimont]]'s [[Tetragon Temple]], charged with delivering prophecies that shape the lives of its citizens.",
+      "relevant_evidence_ids": [
+        "raw_wiki:31296:99397:cf04c89a577454a6:chunk:000"
+      ],
+      "evidence": [
+        {
+          "evidence_id": "raw_wiki:31296:99397:cf04c89a577454a6:chunk:000",
+          "page_id": 31296,
+          "revision_id": 99397,
+          "checksum": "cf04c89a577454a6",
+          "source_path": "Characters/Resonators/iuno/31296_main.wikitext",
+          "source_title": "Iuno",
+          "supporting_excerpt": "She is a prodigious and renowned Priestess of [[Septimont]]'s [[Tetragon Temple]], charged with delivering prophecies that shape the lives of its citizens."
+        }
+      ],
+      "proposed_relevance_grade": "primary",
+      "rationale": "The institutional role and duty are direct.",
+      "reviewer_status": "approved",
+      "reviewer_notes": null
+    },
+    {
+      "id": "rw-031",
+      "query": "What martial art has Jianxin devoted her life to mastering?",
+      "language": "en",
+      "category": "character_background",
+      "difficulty": "easy",
+      "expected_behavior": "retrieve",
+      "expected_answer_summary": "Jianxin has devoted her life to mastering Fengyiquan.",
+      "expected_answer_excerpt": "successor to the art of {{Extra Effect|Fengyiquan|Fengyiquan|A martial art embodying Taoist wisdom, where practitioners harmonize with nature's rhythms to develop balanced strength of body and mind.}} she has dedicated her life to mastering the ultimate martial art.",
+      "relevant_evidence_ids": [
+        "raw_wiki:633:92941:f0bb12c836a8d2f8:chunk:000"
+      ],
+      "evidence": [
+        {
+          "evidence_id": "raw_wiki:633:92941:f0bb12c836a8d2f8:chunk:000",
+          "page_id": 633,
+          "revision_id": 92941,
+          "checksum": "f0bb12c836a8d2f8",
+          "source_path": "Characters/Resonators/jianxin/633_main.wikitext",
+          "source_title": "Jianxin",
+          "supporting_excerpt": "successor to the art of {{Extra Effect|Fengyiquan|Fengyiquan|A martial art embodying Taoist wisdom, where practitioners harmonize with nature's rhythms to develop balanced strength of body and mind.}} she has dedicated her life to mastering the ultimate martial art."
+        }
+      ],
+      "proposed_relevance_grade": "primary",
+      "rationale": "The named martial art is explicitly stated.",
+      "reviewer_status": "approved",
+      "reviewer_notes": null
+    },
+    {
+      "id": "rw-032",
+      "query": "Jinhsi được Sentinel nào chọn làm Resonator?",
+      "language": "vi",
+      "category": "relationship",
+      "difficulty": "medium",
+      "expected_behavior": "retrieve",
+      "expected_answer_summary": "Jinhsi is the appointed Resonator of Sentinel Jué.",
+      "expected_answer_excerpt": "She is also the appointed [[Resonator]] of Sentinel [[Jué]]",
+      "relevant_evidence_ids": [
+        "raw_wiki:936:101013:20a1567cbe138350:chunk:000"
+      ],
+      "evidence": [
+        {
+          "evidence_id": "raw_wiki:936:101013:20a1567cbe138350:chunk:000",
+          "page_id": 936,
+          "revision_id": 101013,
+          "checksum": "20a1567cbe138350",
+          "source_path": "Characters/Resonators/jinhsi/936_main.wikitext",
+          "source_title": "Jinhsi",
+          "supporting_excerpt": "She is also the appointed [[Resonator]] of Sentinel [[Jué]]"
+        }
+      ],
+      "proposed_relevance_grade": "primary",
+      "rationale": "The Resonator–Sentinel relationship is explicit.",
+      "reviewer_status": "approved",
+      "reviewer_notes": null
+    },
+    {
+      "id": "rw-033",
+      "query": "Who selected Jiyan as general of the Midnight Rangers?",
+      "language": "en",
+      "category": "relationship",
+      "difficulty": "medium",
+      "expected_behavior": "retrieve",
+      "expected_answer_summary": "Jué, the Sentinel of Jinzhou, selected Jiyan.",
+      "expected_answer_excerpt": "He is the general of the [[Midnight Rangers]] selected by the sentinel of [[Jinzhou]], [[Jué]]",
+      "relevant_evidence_ids": [
+        "raw_wiki:525:136877:39d55ea5f72b29b4:chunk:000"
+      ],
+      "evidence": [
+        {
+          "evidence_id": "raw_wiki:525:136877:39d55ea5f72b29b4:chunk:000",
+          "page_id": 525,
+          "revision_id": 136877,
+          "checksum": "39d55ea5f72b29b4",
+          "source_path": "Characters/Resonators/jiyan/525_main.wikitext",
+          "source_title": "Jiyan",
+          "supporting_excerpt": "He is the general of the [[Midnight Rangers]] selected by the sentinel of [[Jinzhou]], [[Jué]]"
+        }
+      ],
+      "proposed_relevance_grade": "primary",
+      "rationale": "The selecting entity and resulting role are stated directly.",
+      "reviewer_status": "approved",
+      "reviewer_notes": null
+    },
+    {
+      "id": "rw-034",
+      "query": "Lingyang là sinh vật Suan'ni còn sống cuối cùng phải không?",
+      "language": "vi_informal",
+      "category": "character_background",
+      "difficulty": "easy",
+      "expected_behavior": "retrieve",
+      "expected_answer_summary": "Yes. Lingyang is described as the last living Suan'ni.",
+      "expected_answer_excerpt": "He is a member of the Lion dance Troupe in [[Jinzhou]] and the last living [[Suan'ni]].",
+      "relevant_evidence_ids": [
+        "raw_wiki:631:92944:69b041db40e5f9b9:chunk:000"
+      ],
+      "evidence": [
+        {
+          "evidence_id": "raw_wiki:631:92944:69b041db40e5f9b9:chunk:000",
+          "page_id": 631,
+          "revision_id": 92944,
+          "checksum": "69b041db40e5f9b9",
+          "source_path": "Characters/Resonators/lingyang/631_main.wikitext",
+          "source_title": "Lingyang",
+          "supporting_excerpt": "He is a member of the Lion dance Troupe in [[Jinzhou]] and the last living [[Suan'ni]]."
+        }
+      ],
+      "proposed_relevance_grade": "primary",
+      "rationale": "The claim is explicit in the source.",
+      "reviewer_status": "approved",
+      "reviewer_notes": null
+    },
+    {
+      "id": "rw-035",
+      "query": "What is Lucilla's position at Startorch Academy?",
+      "language": "en",
+      "category": "character_background",
+      "difficulty": "easy",
+      "expected_behavior": "retrieve",
+      "expected_answer_summary": "Lucilla is the president and head of Startorch Academy.",
+      "expected_answer_excerpt": "She is the president and the head of [[Startorch Academy]].",
+      "relevant_evidence_ids": [
+        "raw_wiki:37545:99389:e03a4665c08c9421:chunk:000"
+      ],
+      "evidence": [
+        {
+          "evidence_id": "raw_wiki:37545:99389:e03a4665c08c9421:chunk:000",
+          "page_id": 37545,
+          "revision_id": 99389,
+          "checksum": "e03a4665c08c9421",
+          "source_path": "Characters/Resonators/lucilla/37545_main.wikitext",
+          "source_title": "Lucilla",
+          "supporting_excerpt": "She is the president and the head of [[Startorch Academy]]."
+        }
+      ],
+      "proposed_relevance_grade": "primary",
+      "rationale": "Both titles are directly stated.",
+      "reviewer_status": "approved",
+      "reviewer_notes": null
+    },
+    {
+      "id": "rw-036",
+      "query": "Lumi làm công việc gì tại Lollo Logistics?",
+      "language": "vi",
+      "category": "character_background",
+      "difficulty": "easy",
+      "expected_behavior": "retrieve",
+      "expected_answer_summary": "Lumi is a navigator and leads a transport squad at Lollo Logistics.",
+      "expected_answer_excerpt": "She is a navigator at [[Lollo Logistics]] and leader of a transport squad team.",
+      "relevant_evidence_ids": [
+        "raw_wiki:20501:99245:c417da3a3a4d4832:chunk:000"
+      ],
+      "evidence": [
+        {
+          "evidence_id": "raw_wiki:20501:99245:c417da3a3a4d4832:chunk:000",
+          "page_id": 20501,
+          "revision_id": 99245,
+          "checksum": "c417da3a3a4d4832",
+          "source_path": "Characters/Resonators/lumi/20501_main.wikitext",
+          "source_title": "Lumi",
+          "supporting_excerpt": "She is a navigator at [[Lollo Logistics]] and leader of a transport squad team."
+        }
+      ],
+      "proposed_relevance_grade": "primary",
+      "rationale": "Her two job responsibilities are explicit.",
+      "reviewer_status": "approved",
+      "reviewer_notes": null
+    },
+    {
+      "id": "rw-037",
+      "query": "Why is Lupa notable in Septimont's arena?",
+      "language": "en",
+      "category": "character_background",
+      "difficulty": "easy",
+      "expected_behavior": "retrieve",
+      "expected_answer_summary": "Lupa is an undefeated gladiator champion from Septimont.",
+      "expected_answer_excerpt": "She is a gladiator from [[Septimont]], a warrior and undefeated champion of the arena",
+      "relevant_evidence_ids": [
+        "raw_wiki:30940:96622:a0dca9f4d3d03fb9:chunk:000"
+      ],
+      "evidence": [
+        {
+          "evidence_id": "raw_wiki:30940:96622:a0dca9f4d3d03fb9:chunk:000",
+          "page_id": 30940,
+          "revision_id": 96622,
+          "checksum": "a0dca9f4d3d03fb9",
+          "source_path": "Characters/Resonators/lupa/30940_main.wikitext",
+          "source_title": "Lupa",
+          "supporting_excerpt": "She is a gladiator from [[Septimont]], a warrior and undefeated champion of the arena"
+        }
+      ],
+      "proposed_relevance_grade": "primary",
+      "rationale": "The source directly states why she is notable.",
+      "reviewer_status": "approved",
+      "reviewer_notes": null
+    },
+    {
+      "id": "rw-038",
+      "query": "Luuk Herssen phụ trách đơn vị nào ở Startorch Academy?",
+      "language": "vi",
+      "category": "character_background",
+      "difficulty": "medium",
+      "expected_behavior": "retrieve",
+      "expected_answer_summary": "He heads the Resonator Nursing Unit at Startorch Academy.",
+      "expected_answer_excerpt": "He is the head physician of the [[Resonator Nursing Unit]] at [[Startorch Academy]]",
+      "relevant_evidence_ids": [
+        "raw_wiki:37544:136308:b6e43f908463ebaa:chunk:000"
+      ],
+      "evidence": [
+        {
+          "evidence_id": "raw_wiki:37544:136308:b6e43f908463ebaa:chunk:000",
+          "page_id": 37544,
+          "revision_id": 136308,
+          "checksum": "b6e43f908463ebaa",
+          "source_path": "Characters/Resonators/luuk_herssen/37544_main.wikitext",
+          "source_title": "Luuk Herssen",
+          "supporting_excerpt": "He is the head physician of the [[Resonator Nursing Unit]] at [[Startorch Academy]]"
+        }
+      ],
+      "proposed_relevance_grade": "primary",
+      "rationale": "The unit and leadership role are explicit.",
+      "reviewer_status": "approved",
+      "reviewer_notes": null
+    },
+    {
+      "id": "rw-039",
+      "query": "What did Lynae do before attending Startorch Academy?",
+      "language": "en",
+      "category": "character_background",
+      "difficulty": "medium",
+      "expected_behavior": "retrieve",
+      "expected_answer_summary": "Before enrolling, Lynae was a mercenary from the New Federation's Lawless Zone.",
+      "expected_answer_excerpt": "Before attending Startorch, she was a mercenary from the [[Lawless Zone]] in the [[New Federation]].",
+      "relevant_evidence_ids": [
+        "raw_wiki:37543:136637:1b307d031f032102:chunk:000"
+      ],
+      "evidence": [
+        {
+          "evidence_id": "raw_wiki:37543:136637:1b307d031f032102:chunk:000",
+          "page_id": 37543,
+          "revision_id": 136637,
+          "checksum": "1b307d031f032102",
+          "source_path": "Characters/Resonators/lynae/37543_main.wikitext",
+          "source_title": "Lynae",
+          "supporting_excerpt": "Before attending Startorch, she was a mercenary from the [[Lawless Zone]] in the [[New Federation]]."
+        }
+      ],
+      "proposed_relevance_grade": "primary",
+      "rationale": "The former occupation and origin are directly stated.",
+      "reviewer_status": "approved",
+      "reviewer_notes": null
+    },
+    {
+      "id": "rw-040",
+      "query": "Mornye từng biết Rover vào thời điểm nào?",
+      "language": "vi",
+      "category": "relationship",
+      "difficulty": "medium",
+      "expected_behavior": "retrieve",
+      "expected_answer_summary": "Mornye knew Rover as an acquaintance 20 years before the Void Storm struck Lahai-Roi.",
+      "expected_answer_excerpt": "She was a student at Startorch Academy and an acquaintance of [[Rover]] 20 years before the [[Void Storm]] hit [[Lahai-Roi]].",
+      "relevant_evidence_ids": [
+        "raw_wiki:37540:136639:46f5898638863eb0:chunk:000"
+      ],
+      "evidence": [
+        {
+          "evidence_id": "raw_wiki:37540:136639:46f5898638863eb0:chunk:000",
+          "page_id": 37540,
+          "revision_id": 136639,
+          "checksum": "46f5898638863eb0",
+          "source_path": "Characters/Resonators/mornye/37540_main.wikitext",
+          "source_title": "Mornye",
+          "supporting_excerpt": "She was a student at Startorch Academy and an acquaintance of [[Rover]] 20 years before the [[Void Storm]] hit [[Lahai-Roi]]."
+        }
+      ],
+      "proposed_relevance_grade": "primary",
+      "rationale": "The relationship and its timing are explicit.",
+      "reviewer_status": "approved",
+      "reviewer_notes": null
+    },
+    {
+      "id": "rw-041",
+      "query": "Which research branch does Mortefi lead at Huaxu Academy?",
+      "language": "en",
+      "category": "character_background",
+      "difficulty": "medium",
+      "expected_behavior": "retrieve",
+      "expected_answer_summary": "Mortefi heads the Branch of Tacetite Weaponry in the Department of Safety at Huaxu Academy's Jinzhou campus.",
+      "expected_answer_excerpt": "the head of the Branch of Tacetite Weaponry within the Department of Safety in [[Huaxu Academy]] at [[Jinzhou]].",
+      "relevant_evidence_ids": [
+        "raw_wiki:594:99232:375b861a53702e76:chunk:000"
+      ],
+      "evidence": [
+        {
+          "evidence_id": "raw_wiki:594:99232:375b861a53702e76:chunk:000",
+          "page_id": 594,
+          "revision_id": 99232,
+          "checksum": "375b861a53702e76",
+          "source_path": "Characters/Resonators/mortefi/594_main.wikitext",
+          "source_title": "Mortefi",
+          "supporting_excerpt": "the head of the Branch of Tacetite Weaponry within the Department of Safety in [[Huaxu Academy]] at [[Jinzhou]]."
+        }
+      ],
+      "proposed_relevance_grade": "primary",
+      "rationale": "The complete branch and department are stated.",
+      "reviewer_status": "approved",
+      "reviewer_notes": null
+    },
+    {
+      "id": "rw-042",
+      "query": "Phoebe là Acolyte của tổ chức nào?",
+      "language": "vi",
+      "category": "affiliation",
+      "difficulty": "easy",
+      "expected_behavior": "retrieve",
+      "expected_answer_summary": "Phoebe is an Acolyte of the Order of the Deep.",
+      "expected_answer_excerpt": "She is an [[Order of the Deep#Acolyte|Acolyte]] of the [[Order of the Deep]].",
+      "relevant_evidence_ids": [
+        "raw_wiki:24784:96617:ecee4ea626873787:chunk:000"
+      ],
+      "evidence": [
+        {
+          "evidence_id": "raw_wiki:24784:96617:ecee4ea626873787:chunk:000",
+          "page_id": 24784,
+          "revision_id": 96617,
+          "checksum": "ecee4ea626873787",
+          "source_path": "Characters/Resonators/phoebe/24784_main.wikitext",
+          "source_title": "Phoebe",
+          "supporting_excerpt": "She is an [[Order of the Deep#Acolyte|Acolyte]] of the [[Order of the Deep]]."
+        }
+      ],
+      "proposed_relevance_grade": "primary",
+      "rationale": "The role and organization are explicit.",
+      "reviewer_status": "approved",
+      "reviewer_notes": null
+    },
+    {
+      "id": "rw-043",
+      "query": "What kinds of frequencies can Phrolova manipulate?",
+      "language": "en",
+      "category": "character_background",
+      "difficulty": "medium",
+      "expected_behavior": "retrieve",
+      "expected_answer_summary": "Phrolova can manipulate and transfigure the frequencies of humans, Echoes, and Tacet Discords.",
+      "expected_answer_excerpt": "Her forte can manipulate and transfigure the frequencies of humans, Echoes, and Tacet Discords alike.",
+      "relevant_evidence_ids": [
+        "raw_wiki:1074:99099:f1f00f7ba53c6ff4:chunk:000"
+      ],
+      "evidence": [
+        {
+          "evidence_id": "raw_wiki:1074:99099:f1f00f7ba53c6ff4:chunk:000",
+          "page_id": 1074,
+          "revision_id": 99099,
+          "checksum": "f1f00f7ba53c6ff4",
+          "source_path": "Characters/Resonators/phrolova/1074_main.wikitext",
+          "source_title": "Phrolova",
+          "supporting_excerpt": "Her forte can manipulate and transfigure the frequencies of humans, Echoes, and Tacet Discords alike."
+        }
+      ],
+      "proposed_relevance_grade": "primary",
+      "rationale": "The three affected frequency types are enumerated.",
+      "reviewer_status": "approved",
+      "reviewer_notes": null
+    },
+    {
+      "id": "rw-044",
+      "query": "Vì sao Qiuyuan trở thành người đào tẩu?",
+      "language": "vi",
+      "category": "character_background",
+      "difficulty": "medium",
+      "expected_behavior": "retrieve",
+      "expected_answer_summary": "Qiuyuan was framed by the Grand Architect for murdering his master, making him a fugitive across Huanglong.",
+      "expected_answer_excerpt": "He was framed by the [[Grand Architect]] for the murder of his master, and is now a fugitive throughout all of [[Huanglong]].",
+      "relevant_evidence_ids": [
+        "raw_wiki:31286:95380:0215bfb291304724:chunk:000"
+      ],
+      "evidence": [
+        {
+          "evidence_id": "raw_wiki:31286:95380:0215bfb291304724:chunk:000",
+          "page_id": 31286,
+          "revision_id": 95380,
+          "checksum": "0215bfb291304724",
+          "source_path": "Characters/Resonators/qiuyuan/31286_main.wikitext",
+          "source_title": "Qiuyuan",
+          "supporting_excerpt": "He was framed by the [[Grand Architect]] for the murder of his master, and is now a fugitive throughout all of [[Huanglong]]."
+        }
+      ],
+      "proposed_relevance_grade": "primary",
+      "rationale": "The source explicitly connects the framing to his fugitive status.",
+      "reviewer_status": "approved",
+      "reviewer_notes": null
+    },
+    {
+      "id": "rw-045",
+      "query": "Roccia giữ vai trò gì trong Troupe of Fools?",
+      "language": "vi",
+      "category": "affiliation",
+      "difficulty": "easy",
+      "expected_behavior": "retrieve",
+      "expected_answer_summary": "Roccia is the First Mate of the Troupe of Fools.",
+      "expected_answer_excerpt": "She is a gifted improvisational comedian and the First Mate of the [[Troupe of Fools]].",
+      "relevant_evidence_ids": [
+        "raw_wiki:24789:103572:c7b9cc0a8a5cdfa6:chunk:000"
+      ],
+      "evidence": [
+        {
+          "evidence_id": "raw_wiki:24789:103572:c7b9cc0a8a5cdfa6:chunk:000",
+          "page_id": 24789,
+          "revision_id": 103572,
+          "checksum": "c7b9cc0a8a5cdfa6",
+          "source_path": "Characters/Resonators/roccia/24789_main.wikitext",
+          "source_title": "Roccia",
+          "supporting_excerpt": "She is a gifted improvisational comedian and the First Mate of the [[Troupe of Fools]]."
+        }
+      ],
+      "proposed_relevance_grade": "primary",
+      "rationale": "Her troupe position is directly stated.",
+      "reviewer_status": "approved",
+      "reviewer_notes": null
+    },
+    {
+      "id": "rw-046",
+      "query": "Who does Sanhua serve as a guard?",
+      "language": "en",
+      "category": "relationship",
+      "difficulty": "easy",
+      "expected_behavior": "retrieve",
+      "expected_answer_summary": "Sanhua is the guard of Jinzhou Magistrate Jinhsi.",
+      "expected_answer_excerpt": "She is the loyal and reliable guard of Jinzhou Magistrate [[Jinhsi]]",
+      "relevant_evidence_ids": [
+        "raw_wiki:588:99853:a4995516cd60ac47:chunk:000"
+      ],
+      "evidence": [
+        {
+          "evidence_id": "raw_wiki:588:99853:a4995516cd60ac47:chunk:000",
+          "page_id": 588,
+          "revision_id": 99853,
+          "checksum": "a4995516cd60ac47",
+          "source_path": "Characters/Resonators/sanhua/588_main.wikitext",
+          "source_title": "Sanhua",
+          "supporting_excerpt": "She is the loyal and reliable guard of Jinzhou Magistrate [[Jinhsi]]"
+        }
+      ],
+      "proposed_relevance_grade": "primary",
+      "rationale": "The guard relationship is explicit.",
+      "reviewer_status": "approved",
+      "reviewer_notes": null
+    },
+    {
+      "id": "rw-047",
+      "query": "Shorekeeper thực chất được cấu tạo từ gì?",
+      "language": "vi_informal",
+      "category": "character_background",
+      "difficulty": "hard",
+      "expected_behavior": "retrieve",
+      "expected_answer_summary": "Shorekeeper is a mythical entity composed of Sonoro Spheres and high-purity Remnant Energy crystals.",
+      "expected_answer_excerpt": "is a mythical entity composed of [[Sonoro Spheres]] and high-purity [[Remnant]] Energy crystals",
+      "relevant_evidence_ids": [
+        "raw_wiki:10662:101177:8871332c765002d5:chunk:000"
+      ],
+      "evidence": [
+        {
+          "evidence_id": "raw_wiki:10662:101177:8871332c765002d5:chunk:000",
+          "page_id": 10662,
+          "revision_id": 101177,
+          "checksum": "8871332c765002d5",
+          "source_path": "Characters/Resonators/shorekeeper/10662_main.wikitext",
+          "source_title": "Shorekeeper",
+          "supporting_excerpt": "is a mythical entity composed of [[Sonoro Spheres]] and high-purity [[Remnant]] Energy crystals"
+        }
+      ],
+      "proposed_relevance_grade": "primary",
+      "rationale": "The composition is directly described.",
+      "reviewer_status": "approved",
+      "reviewer_notes": null
+    },
+    {
+      "id": "rw-048",
+      "query": "What authority does the Censorate exercise in Huanglong?",
+      "language": "en",
+      "category": "faction_lore",
+      "difficulty": "medium",
+      "expected_behavior": "retrieve",
+      "expected_answer_summary": "It jointly tries major cases and exercises significant supervisory power.",
+      "expected_answer_excerpt": "It holds the authority to jointly try major cases and wields significant supervisory power",
+      "relevant_evidence_ids": [
+        "raw_wiki:42215:100630:75aa31f94d24503e:chunk:000"
+      ],
+      "evidence": [
+        {
+          "evidence_id": "raw_wiki:42215:100630:75aa31f94d24503e:chunk:000",
+          "page_id": 42215,
+          "revision_id": 100630,
+          "checksum": "75aa31f94d24503e",
+          "source_path": "Factions/censorate/42215_main.wikitext",
+          "source_title": "Censorate",
+          "supporting_excerpt": "It holds the authority to jointly try major cases and wields significant supervisory power"
+        }
+      ],
+      "proposed_relevance_grade": "primary",
+      "rationale": "The institution's authority is explicit.",
+      "reviewer_status": "approved",
+      "reviewer_notes": null
+    },
+    {
+      "id": "rw-049",
+      "query": "Court of Savantae từng nghiên cứu lĩnh vực gì?",
+      "language": "vi",
+      "category": "faction_lore",
+      "difficulty": "medium",
+      "expected_behavior": "retrieve",
+      "expected_answer_summary": "It researched the Lament and related phenomena at the cutting edge of the field.",
+      "expected_answer_excerpt": "It was at the cutting edge of research into the Lament and related phenomena.",
+      "relevant_evidence_ids": [
+        "raw_wiki:3150:93366:590fa68ddaf79966:chunk:000"
+      ],
+      "evidence": [
+        {
+          "evidence_id": "raw_wiki:3150:93366:590fa68ddaf79966:chunk:000",
+          "page_id": 3150,
+          "revision_id": 93366,
+          "checksum": "590fa68ddaf79966",
+          "source_path": "Factions/court_of_savantae/3150_main.wikitext",
+          "source_title": "Court of Savantae",
+          "supporting_excerpt": "It was at the cutting edge of research into the Lament and related phenomena."
+        }
+      ],
+      "proposed_relevance_grade": "primary",
+      "rationale": "The research focus is stated directly.",
+      "reviewer_status": "approved",
+      "reviewer_notes": null
+    },
+    {
+      "id": "rw-050",
+      "query": "How is the Ephor of Septimont chosen?",
+      "language": "en",
+      "category": "faction_lore",
+      "difficulty": "hard",
+      "expected_behavior": "retrieve",
+      "expected_answer_summary": "The position is attained through combat merit by prevailing over the Great Agon, held every four years.",
+      "expected_answer_excerpt": "whose position is attained through a form of combat merit gained from prevailing over the [[Great Agon]] that occurs once every four years.",
+      "relevant_evidence_ids": [
+        "raw_wiki:35947:81917:0722434a53a692f3:chunk:000"
+      ],
+      "evidence": [
+        {
+          "evidence_id": "raw_wiki:35947:81917:0722434a53a692f3:chunk:000",
+          "page_id": 35947,
+          "revision_id": 81917,
+          "checksum": "0722434a53a692f3",
+          "source_path": "Factions/ephors_palace/35947_main.wikitext",
+          "source_title": "Ephor's Palace",
+          "supporting_excerpt": "whose position is attained through a form of combat merit gained from prevailing over the [[Great Agon]] that occurs once every four years."
+        }
+      ],
+      "proposed_relevance_grade": "primary",
+      "rationale": "The selection mechanism and interval are explicit.",
+      "reviewer_status": "approved",
+      "reviewer_notes": null
+    },
+    {
+      "id": "rw-051",
+      "query": "Các nhóm Exile có chung một ban lãnh đạo không?",
+      "language": "vi",
+      "category": "faction_lore",
+      "difficulty": "medium",
+      "expected_behavior": "retrieve",
+      "expected_answer_summary": "No. Exiles are separate groups and do not have unified leadership.",
+      "expected_answer_excerpt": "the '''Exiles''' are different groups that reject the control of local authorities, and are not an organization with a unified leadership.",
+      "relevant_evidence_ids": [
+        "raw_wiki:9136:91555:b4167fb1e8b24566:chunk:000"
+      ],
+      "evidence": [
+        {
+          "evidence_id": "raw_wiki:9136:91555:b4167fb1e8b24566:chunk:000",
+          "page_id": 9136,
+          "revision_id": 91555,
+          "checksum": "b4167fb1e8b24566",
+          "source_path": "Factions/exiles/9136_main.wikitext",
+          "source_title": "Exiles",
+          "supporting_excerpt": "the '''Exiles''' are different groups that reject the control of local authorities, and are not an organization with a unified leadership."
+        }
+      ],
+      "proposed_relevance_grade": "primary",
+      "rationale": "The lack of unified leadership is explicit.",
+      "reviewer_status": "approved",
+      "reviewer_notes": null
+    },
+    {
+      "id": "rw-052",
+      "query": "What are the Fisalia Family renowned for?",
+      "language": "en",
+      "category": "faction_lore",
+      "difficulty": "medium",
+      "expected_behavior": "retrieve",
+      "expected_answer_summary": "They are renowned for expertise in medicine and poison.",
+      "expected_answer_excerpt": "renowned for their expertise in medicine and poison.",
+      "relevant_evidence_ids": [
+        "raw_wiki:25664:91980:9be7bfc0b0f78f80:chunk:000"
+      ],
+      "evidence": [
+        {
+          "evidence_id": "raw_wiki:25664:91980:9be7bfc0b0f78f80:chunk:000",
+          "page_id": 25664,
+          "revision_id": 91980,
+          "checksum": "9be7bfc0b0f78f80",
+          "source_path": "Factions/fisalia_family/25664_main.wikitext",
+          "source_title": "Fisalia Family",
+          "supporting_excerpt": "renowned for their expertise in medicine and poison."
+        }
+      ],
+      "proposed_relevance_grade": "primary",
+      "rationale": "Both areas of expertise are stated directly.",
+      "reviewer_status": "approved",
+      "reviewer_notes": null
+    },
+    {
+      "id": "rw-053",
+      "query": "Fractsidus muốn thúc đẩy sự kiện nào xảy ra?",
+      "language": "vi",
+      "category": "faction_lore",
+      "difficulty": "medium",
+      "expected_behavior": "retrieve",
+      "expected_answer_summary": "Fractsidus aims to accelerate the next Lament, which it calls the True Lament, by resurrecting Threnodians.",
+      "expected_answer_excerpt": "Their aim is to accelerate the next [[The Lament|Lament]] - dubbed the \"True Lament\" - by resurrecting the [[Threnodian]]s",
+      "relevant_evidence_ids": [
+        "raw_wiki:907:126835:49c5a92e82ee7ad1:chunk:000"
+      ],
+      "evidence": [
+        {
+          "evidence_id": "raw_wiki:907:126835:49c5a92e82ee7ad1:chunk:000",
+          "page_id": 907,
+          "revision_id": 126835,
+          "checksum": "49c5a92e82ee7ad1",
+          "source_path": "Factions/fractsidus/907_main.wikitext",
+          "source_title": "Fractsidus",
+          "supporting_excerpt": "Their aim is to accelerate the next [[The Lament|Lament]] - dubbed the \"True Lament\" - by resurrecting the [[Threnodian]]s"
+        }
+      ],
+      "proposed_relevance_grade": "primary",
+      "rationale": "The organization's objective and method are explicit.",
+      "reviewer_status": "approved",
+      "reviewer_notes": null
+    },
+    {
+      "id": "rw-054",
+      "query": "Where did the Ghost Hounds originate?",
+      "language": "en",
+      "category": "faction_lore",
+      "difficulty": "medium",
+      "expected_behavior": "retrieve",
+      "expected_answer_summary": "The multinational mercenary group is rooted in the New Federation's Lawless Zone and grew from the Underdogs gang.",
+      "expected_answer_excerpt": "The '''Ghost Hounds''' are a multinational mercenary group rooted in the [[New Federation]]'s [[Lawless Zone]], annexed from the gang known as \"the Underdogs\"",
+      "relevant_evidence_ids": [
+        "raw_wiki:897:102549:c6a570ea76923091:chunk:000"
+      ],
+      "evidence": [
+        {
+          "evidence_id": "raw_wiki:897:102549:c6a570ea76923091:chunk:000",
+          "page_id": 897,
+          "revision_id": 102549,
+          "checksum": "c6a570ea76923091",
+          "source_path": "Factions/ghost_hounds/897_main.wikitext",
+          "source_title": "Ghost Hounds",
+          "supporting_excerpt": "The '''Ghost Hounds''' are a multinational mercenary group rooted in the [[New Federation]]'s [[Lawless Zone]], annexed from the gang known as \"the Underdogs\""
+        }
+      ],
+      "proposed_relevance_grade": "primary",
+      "rationale": "The geographic and organizational origin are stated.",
+      "reviewer_status": "approved",
+      "reviewer_notes": null
+    },
+    {
+      "id": "rw-055",
+      "query": "ISA báo cáo trực tiếp cho ai?",
+      "language": "vi_informal",
+      "category": "faction_lore",
+      "difficulty": "medium",
+      "expected_behavior": "retrieve",
+      "expected_answer_summary": "The Internal Security Agency reports directly to the Emperor of Huanglong.",
+      "expected_answer_excerpt": "Reporting directly to the [[Emperor of Huanglong]]",
+      "relevant_evidence_ids": [
+        "raw_wiki:37078:90660:e28687f672074f5b:chunk:000"
+      ],
+      "evidence": [
+        {
+          "evidence_id": "raw_wiki:37078:90660:e28687f672074f5b:chunk:000",
+          "page_id": 37078,
+          "revision_id": 90660,
+          "checksum": "e28687f672074f5b",
+          "source_path": "Factions/internal_security_agency/37078_main.wikitext",
+          "source_title": "Internal Security Agency",
+          "supporting_excerpt": "Reporting directly to the [[Emperor of Huanglong]]"
+        }
+      ],
+      "proposed_relevance_grade": "primary",
+      "rationale": "The reporting line is explicit.",
+      "reviewer_status": "approved",
+      "reviewer_notes": null
+    },
+    {
+      "id": "rw-056",
+      "query": "What civic responsibilities does the Order of the Deep handle in Ragunna?",
+      "language": "en",
+      "category": "faction_lore",
+      "difficulty": "hard",
+      "expected_behavior": "retrieve",
+      "expected_answer_summary": "It handles city management, diplomacy, civil disputes, and oversight of Common Echoes to maintain safety and order.",
+      "expected_answer_excerpt": "handling various affairs, from city management, diplomacy, civil disputes, and overseeing all [[Common Echoes]].",
+      "relevant_evidence_ids": [
+        "raw_wiki:25536:91984:eba4d3a4762e23f2:chunk:000"
+      ],
+      "evidence": [
+        {
+          "evidence_id": "raw_wiki:25536:91984:eba4d3a4762e23f2:chunk:000",
+          "page_id": 25536,
+          "revision_id": 91984,
+          "checksum": "eba4d3a4762e23f2",
+          "source_path": "Factions/order_of_the_deep/25536_main.wikitext",
+          "source_title": "Order of the Deep",
+          "supporting_excerpt": "handling various affairs, from city management, diplomacy, civil disputes, and overseeing all [[Common Echoes]]."
+        }
+      ],
+      "proposed_relevance_grade": "primary",
+      "rationale": "The responsibilities are enumerated in the source.",
+      "reviewer_status": "approved",
+      "reviewer_notes": null
+    },
+    {
+      "id": "rw-057",
+      "query": "Nhiệm vụ cốt lõi của Spacetrek Collective là gì?",
+      "language": "vi",
+      "category": "faction_lore",
+      "difficulty": "medium",
+      "expected_behavior": "retrieve",
+      "expected_answer_summary": "Its core mission is studying the Exostrider to advance and restart space-travel technology.",
+      "expected_answer_excerpt": "Its core mission is the study of the [[Exostrider]] for the purposes of advancing and re-instigating space travel technology.",
+      "relevant_evidence_ids": [
+        "raw_wiki:37607:136469:8050e4ce70f7de3d:chunk:000"
+      ],
+      "evidence": [
+        {
+          "evidence_id": "raw_wiki:37607:136469:8050e4ce70f7de3d:chunk:000",
+          "page_id": 37607,
+          "revision_id": 136469,
+          "checksum": "8050e4ce70f7de3d",
+          "source_path": "Factions/spacetrek_collective/37607_main.wikitext",
+          "source_title": "Spacetrek Collective",
+          "supporting_excerpt": "Its core mission is the study of the [[Exostrider]] for the purposes of advancing and re-instigating space travel technology."
+        }
+      ],
+      "proposed_relevance_grade": "primary",
+      "rationale": "The organization's core mission is directly stated.",
+      "reviewer_status": "approved",
+      "reviewer_notes": null
+    },
+    {
+      "id": "rw-058",
+      "query": "What services does Averardo Vault offer to the public?",
+      "language": "en",
+      "category": "place",
+      "difficulty": "medium",
+      "expected_behavior": "retrieve",
+      "expected_answer_summary": "It offers secure valuables storage, appraisals, and acquisition of rare collections.",
+      "expected_answer_excerpt": "The vault also provides public services such as secure storage for valuables, appraisals, and acquisition of rare collections.",
+      "relevant_evidence_ids": [
+        "raw_wiki:25647:136276:a53bc0e233f155a7:chunk:000"
+      ],
+      "evidence": [
+        {
+          "evidence_id": "raw_wiki:25647:136276:a53bc0e233f155a7:chunk:000",
+          "page_id": 25647,
+          "revision_id": 136276,
+          "checksum": "a53bc0e233f155a7",
+          "source_path": "Locations/averardo_vault/25647_main.wikitext",
+          "source_title": "Averardo Vault",
+          "supporting_excerpt": "The vault also provides public services such as secure storage for valuables, appraisals, and acquisition of rare collections."
+        }
+      ],
+      "proposed_relevance_grade": "primary",
+      "rationale": "The public services are explicitly listed.",
+      "reviewer_status": "approved",
+      "reviewer_notes": null
+    },
+    {
+      "id": "rw-059",
+      "query": "Avinoleum trông như thế nào trên bầu trời?",
+      "language": "vi",
+      "category": "place",
+      "difficulty": "medium",
+      "expected_behavior": "retrieve",
+      "expected_answer_summary": "It is a seminary suspended upside down in the sky behind a thin veil of clouds.",
+      "expected_answer_excerpt": "A seminary faintly visible through a thin veil of clouds. Suspended upside down in the sky",
+      "relevant_evidence_ids": [
+        "raw_wiki:28697:99385:4dd8afe17544fe65:chunk:000"
+      ],
+      "evidence": [
+        {
+          "evidence_id": "raw_wiki:28697:99385:4dd8afe17544fe65:chunk:000",
+          "page_id": 28697,
+          "revision_id": 99385,
+          "checksum": "4dd8afe17544fe65",
+          "source_path": "Locations/avinoleum/28697_main.wikitext",
+          "source_title": "Avinoleum",
+          "supporting_excerpt": "A seminary faintly visible through a thin veil of clouds. Suspended upside down in the sky"
+        }
+      ],
+      "proposed_relevance_grade": "primary",
+      "rationale": "The visible setting and orientation are explicit.",
+      "reviewer_status": "approved",
+      "reviewer_notes": null
+    },
+    {
+      "id": "rw-060",
+      "query": "Who lives in Bjartr Woods?",
+      "language": "en",
+      "category": "place",
+      "difficulty": "easy",
+      "expected_behavior": "retrieve",
+      "expected_answer_summary": "Bjartr Woods is home to the Roya Tribe and is the habitat of the Soliskin.",
+      "expected_answer_excerpt": "It is home to the [[Roya Tribe]] and the habitat of the [[Soliskin]].",
+      "relevant_evidence_ids": [
+        "raw_wiki:37654:102567:739b9476d8734adf:chunk:000"
+      ],
+      "evidence": [
+        {
+          "evidence_id": "raw_wiki:37654:102567:739b9476d8734adf:chunk:000",
+          "page_id": 37654,
+          "revision_id": 102567,
+          "checksum": "739b9476d8734adf",
+          "source_path": "Locations/bjartr_woods/37654_main.wikitext",
+          "source_title": "Bjartr Woods",
+          "supporting_excerpt": "It is home to the [[Roya Tribe]] and the habitat of the [[Soliskin]]."
+        }
+      ],
+      "proposed_relevance_grade": "primary",
+      "rationale": "Both inhabitants are directly named.",
+      "reviewer_status": "approved",
+      "reviewer_notes": null
+    },
+    {
+      "id": "rw-061",
+      "query": "What causes the eerie mist around the Black Shores Archipelago?",
+      "language": "en",
+      "category": "place",
+      "difficulty": "hard",
+      "expected_behavior": "retrieve",
+      "expected_answer_summary": "The Tacetite-formed isles constantly emit Remnant Energy, producing the mist.",
+      "expected_answer_excerpt": "Formed from Tacetites, these isles constantly emanate Remnant Energy, casting an eerie \"mist\" that envelopes the region.",
+      "relevant_evidence_ids": [
+        "raw_wiki:21831:100474:3c84649dd4a92bf0:chunk:000"
+      ],
+      "evidence": [
+        {
+          "evidence_id": "raw_wiki:21831:100474:3c84649dd4a92bf0:chunk:000",
+          "page_id": 21831,
+          "revision_id": 100474,
+          "checksum": "3c84649dd4a92bf0",
+          "source_path": "Locations/black_shores_archipelago/21831_main.wikitext",
+          "source_title": "Black Shores Archipelago",
+          "supporting_excerpt": "Formed from Tacetites, these isles constantly emanate Remnant Energy, casting an eerie \"mist\" that envelopes the region."
+        }
+      ],
+      "proposed_relevance_grade": "primary",
+      "rationale": "The sentence explicitly links the emissions to the mist.",
+      "reviewer_status": "approved",
+      "reviewer_notes": null
+    },
+    {
+      "id": "rw-062",
+      "query": "Điều gì khiến Desorock Highland khô cạn?",
+      "language": "vi",
+      "category": "place",
+      "difficulty": "medium",
+      "expected_behavior": "retrieve",
+      "expected_answer_summary": "After the Waveworn Phenomenon began, abnormal weather drained most of the area's water sources.",
+      "expected_answer_excerpt": "After the onset of the Waveworn Phenomenon, abnormal weather patterns drained most of these water sources, leaving the lake area dry",
+      "relevant_evidence_ids": [
+        "raw_wiki:4972:93386:0559269f28d2b45c:chunk:000"
+      ],
+      "evidence": [
+        {
+          "evidence_id": "raw_wiki:4972:93386:0559269f28d2b45c:chunk:000",
+          "page_id": 4972,
+          "revision_id": 93386,
+          "checksum": "0559269f28d2b45c",
+          "source_path": "Locations/desorock_highland/4972_main.wikitext",
+          "source_title": "Desorock Highland",
+          "supporting_excerpt": "After the onset of the Waveworn Phenomenon, abnormal weather patterns drained most of these water sources, leaving the lake area dry"
+        }
+      ],
+      "proposed_relevance_grade": "primary",
+      "rationale": "The stated cause and outcome answer the question.",
+      "reviewer_status": "approved",
+      "reviewer_notes": null
+    },
+    {
+      "id": "rw-063",
+      "query": "Dim Forest có những loài thực vật đặc trưng nào?",
+      "language": "vi",
+      "category": "place",
+      "difficulty": "easy",
+      "expected_behavior": "retrieve",
+      "expected_answer_summary": "Its distinctive flora include the Violet Banyan and Giant Banyan.",
+      "expected_answer_excerpt": "It is a forest consisting of many unique flora, such as the [[Violet Banyan]] and [[Giant Banyan]]",
+      "relevant_evidence_ids": [
+        "raw_wiki:2960:99756:4c2d85a16f6eb409:chunk:000"
+      ],
+      "evidence": [
+        {
+          "evidence_id": "raw_wiki:2960:99756:4c2d85a16f6eb409:chunk:000",
+          "page_id": 2960,
+          "revision_id": 99756,
+          "checksum": "4c2d85a16f6eb409",
+          "source_path": "Locations/dim_forest/2960_main.wikitext",
+          "source_title": "Dim Forest",
+          "supporting_excerpt": "It is a forest consisting of many unique flora, such as the [[Violet Banyan]] and [[Giant Banyan]]"
+        }
+      ],
+      "proposed_relevance_grade": "primary",
+      "rationale": "The examples are directly named.",
+      "reviewer_status": "approved",
+      "reviewer_notes": null
+    },
+    {
+      "id": "rw-064",
+      "query": "What happens to Common Echoes at the Fabricatorium of the Deep?",
+      "language": "en",
+      "category": "place",
+      "difficulty": "medium",
+      "expected_behavior": "retrieve",
+      "expected_answer_summary": "They are manufactured, recycled, and studied there.",
+      "expected_answer_excerpt": "The Fabricatorium of the Deep is a facility hidden in the unfathomed depths of the sea, where Common Echoes are manufactured, recycled, and studied.",
+      "relevant_evidence_ids": [
+        "raw_wiki:32741:94835:53882334e3c9aac2:chunk:000"
+      ],
+      "evidence": [
+        {
+          "evidence_id": "raw_wiki:32741:94835:53882334e3c9aac2:chunk:000",
+          "page_id": 32741,
+          "revision_id": 94835,
+          "checksum": "53882334e3c9aac2",
+          "source_path": "Locations/fabricatorium_of_the_deep/32741_main.wikitext",
+          "source_title": "Fabricatorium of the Deep",
+          "supporting_excerpt": "The Fabricatorium of the Deep is a facility hidden in the unfathomed depths of the sea, where Common Echoes are manufactured, recycled, and studied."
+        }
+      ],
+      "proposed_relevance_grade": "primary",
+      "rationale": "The three activities are directly stated.",
+      "reviewer_status": "approved",
+      "reviewer_notes": null
+    },
+    {
+      "id": "rw-065",
+      "query": "Fagaceae Peninsula từng được dùng cho việc gì?",
+      "language": "vi",
+      "category": "place",
+      "difficulty": "medium",
+      "expected_behavior": "retrieve",
+      "expected_answer_summary": "Rinascita's rulers once gathered there for secret councils.",
+      "expected_answer_excerpt": "This peninsula thick with oak trees was once where Rinascita's rulers gathered for secret councils.",
+      "relevant_evidence_ids": [
+        "raw_wiki:25641:91914:11721f78613de356:chunk:000"
+      ],
+      "evidence": [
+        {
+          "evidence_id": "raw_wiki:25641:91914:11721f78613de356:chunk:000",
+          "page_id": 25641,
+          "revision_id": 91914,
+          "checksum": "11721f78613de356",
+          "source_path": "Locations/fagaceae_peninsula/25641_main.wikitext",
+          "source_title": "Fagaceae Peninsula",
+          "supporting_excerpt": "This peninsula thick with oak trees was once where Rinascita's rulers gathered for secret councils."
+        }
+      ],
+      "proposed_relevance_grade": "primary",
+      "rationale": "The location's former use is explicit.",
+      "reviewer_status": "approved",
+      "reviewer_notes": null
+    },
+    {
+      "id": "rw-066",
+      "query": "How does Aleph-1 affect people differently from ordinary Tacet Discords?",
+      "language": "en",
+      "category": "lore_concept",
+      "difficulty": "hard",
+      "expected_behavior": "retrieve",
+      "expected_answer_summary": "Aleph-1 erases people's existence and memories, while ordinary Tacet Discords only petrify them.",
+      "expected_answer_excerpt": "It is a [[Void Storm]] that erases people's existence and memories, unlike normal [[Tacet Discord]]s that just petrify them.",
+      "relevant_evidence_ids": [
+        "raw_wiki:38339:136640:9d71c98f093fd140:chunk:000"
+      ],
+      "evidence": [
+        {
+          "evidence_id": "raw_wiki:38339:136640:9d71c98f093fd140:chunk:000",
+          "page_id": 38339,
+          "revision_id": 136640,
+          "checksum": "9d71c98f093fd140",
+          "source_path": "Lore/aleph-1/38339_main.wikitext",
+          "source_title": "Aleph-1",
+          "supporting_excerpt": "It is a [[Void Storm]] that erases people's existence and memories, unlike normal [[Tacet Discord]]s that just petrify them."
+        }
+      ],
+      "proposed_relevance_grade": "primary",
+      "rationale": "The source makes the contrast explicitly.",
+      "reviewer_status": "approved",
+      "reviewer_notes": null
+    },
+    {
+      "id": "rw-067",
+      "query": "Arbiter có quyền gì đối với các Sentinel?",
+      "language": "vi",
+      "category": "lore_concept",
+      "difficulty": "medium",
+      "expected_behavior": "retrieve",
+      "expected_answer_summary": "The Arbiter title grants decision-making authority over Sentinels.",
+      "expected_answer_excerpt": "'''Arbiter''' is a title and position of power over the [[Sentinels]] that grants them decision making authority.",
+      "relevant_evidence_ids": [
+        "raw_wiki:9279:92868:b7fb9fbd7f67e230:chunk:000"
+      ],
+      "evidence": [
+        {
+          "evidence_id": "raw_wiki:9279:92868:b7fb9fbd7f67e230:chunk:000",
+          "page_id": 9279,
+          "revision_id": 92868,
+          "checksum": "b7fb9fbd7f67e230",
+          "source_path": "Lore/arbiter/9279_main.wikitext",
+          "source_title": "Arbiter",
+          "supporting_excerpt": "'''Arbiter''' is a title and position of power over the [[Sentinels]] that grants them decision making authority."
+        }
+      ],
+      "proposed_relevance_grade": "primary",
+      "rationale": "The authority is stated in the definition.",
+      "reviewer_status": "approved",
+      "reviewer_notes": null
+    },
+    {
+      "id": "rw-068",
+      "query": "When and where did the Battle Beneath the Crescent take place?",
+      "language": "en",
+      "category": "lore_event",
+      "difficulty": "medium",
+      "expected_behavior": "retrieve",
+      "expected_answer_summary": "It occurred in the Norfall Barrens three years before the main story.",
+      "expected_answer_excerpt": "taking place in the [[Norfall Barrens]] three years prior to the main story.",
+      "relevant_evidence_ids": [
+        "raw_wiki:26888:99747:897732ef65d43d75:chunk:000"
+      ],
+      "evidence": [
+        {
+          "evidence_id": "raw_wiki:26888:99747:897732ef65d43d75:chunk:000",
+          "page_id": 26888,
+          "revision_id": 99747,
+          "checksum": "897732ef65d43d75",
+          "source_path": "Lore/battle_beneath_the_crescent/26888_main.wikitext",
+          "source_title": "Battle Beneath the Crescent",
+          "supporting_excerpt": "taking place in the [[Norfall Barrens]] three years prior to the main story."
+        }
+      ],
+      "proposed_relevance_grade": "primary",
+      "rationale": "Both location and relative date are explicit.",
+      "reviewer_status": "approved",
+      "reviewer_notes": null
+    },
+    {
+      "id": "rw-069",
+      "query": "Blake Bloom tượng trưng cho điều gì?",
+      "language": "vi",
+      "category": "lore_concept",
+      "difficulty": "easy",
+      "expected_behavior": "retrieve",
+      "expected_answer_summary": "A Blake Bloom is a symbol of identity for members of the Black Shores.",
+      "expected_answer_excerpt": "A '''Blake Bloom''' is the symbol of identity for the members of the [[Black Shores]].",
+      "relevant_evidence_ids": [
+        "raw_wiki:20570:99750:24263a0b90c8239f:chunk:000"
+      ],
+      "evidence": [
+        {
+          "evidence_id": "raw_wiki:20570:99750:24263a0b90c8239f:chunk:000",
+          "page_id": 20570,
+          "revision_id": 99750,
+          "checksum": "24263a0b90c8239f",
+          "source_path": "Lore/blake_bloom/20570_main.wikitext",
+          "source_title": "Blake Bloom",
+          "supporting_excerpt": "A '''Blake Bloom''' is the symbol of identity for the members of the [[Black Shores]]."
+        }
+      ],
+      "proposed_relevance_grade": "primary",
+      "rationale": "The symbolic meaning is the direct definition.",
+      "reviewer_status": "approved",
+      "reviewer_notes": null
+    },
+    {
+      "id": "rw-070",
+      "query": "Why do people in Ragunna revere Common Echoes?",
+      "language": "en",
+      "category": "lore_concept",
+      "difficulty": "medium",
+      "expected_behavior": "retrieve",
+      "expected_answer_summary": "They believe Common Echoes are divine emissaries of Sentinel Imperator.",
+      "expected_answer_excerpt": "The people of [[Ragunna]] treat Common Echoes with reverence, believing them to be divine emissaries of [[Sentinel]] [[Imperator]].",
+      "relevant_evidence_ids": [
+        "raw_wiki:26008:95284:8988a45bf257299b:chunk:000"
+      ],
+      "evidence": [
+        {
+          "evidence_id": "raw_wiki:26008:95284:8988a45bf257299b:chunk:000",
+          "page_id": 26008,
+          "revision_id": 95284,
+          "checksum": "8988a45bf257299b",
+          "source_path": "Lore/common_echo/26008_main.wikitext",
+          "source_title": "Common Echo",
+          "supporting_excerpt": "The people of [[Ragunna]] treat Common Echoes with reverence, believing them to be divine emissaries of [[Sentinel]] [[Imperator]]."
+        }
+      ],
+      "proposed_relevance_grade": "primary",
+      "rationale": "The belief causing that reverence is explicit.",
+      "reviewer_status": "approved",
+      "reviewer_notes": null
+    },
+    {
+      "id": "rw-071",
+      "query": "Dark Tide biểu hiện ra sao khi xuất hiện?",
+      "language": "vi",
+      "category": "lore_concept",
+      "difficulty": "medium",
+      "expected_behavior": "retrieve",
+      "expected_answer_summary": "It appears as a dark swirling cloud mass that gathers, breaks, and pours down like a waterfall.",
+      "expected_answer_excerpt": "It manifests as a dark, swirling mass of clouds that gathers and eventually breaks, pouring down in torrents like a waterfall.",
+      "relevant_evidence_ids": [
+        "raw_wiki:26165:131313:b22f8b2701be47df:chunk:000"
+      ],
+      "evidence": [
+        {
+          "evidence_id": "raw_wiki:26165:131313:b22f8b2701be47df:chunk:000",
+          "page_id": 26165,
+          "revision_id": 131313,
+          "checksum": "b22f8b2701be47df",
+          "source_path": "Lore/dark_tide/26165_main.wikitext",
+          "source_title": "Dark Tide",
+          "supporting_excerpt": "It manifests as a dark, swirling mass of clouds that gathers and eventually breaks, pouring down in torrents like a waterfall."
+        }
+      ],
+      "proposed_relevance_grade": "primary",
+      "rationale": "The manifestation is described directly.",
+      "reviewer_status": "approved",
+      "reviewer_notes": null
+    },
+    {
+      "id": "rw-072",
+      "query": "What can Dhalifa's Forte do to machines?",
+      "language": "en",
+      "category": "lore_concept",
+      "difficulty": "hard",
+      "expected_behavior": "retrieve",
+      "expected_answer_summary": "It can randomly affect machine performance, making one clock extremely precise while causing another to slow and resist recalibration.",
+      "expected_answer_excerpt": "her Forte can randomly impact machine performance. For instance, a different clock affected by her Forte began running slowly, and became unresponsive to recalibration.",
+      "relevant_evidence_ids": [
+        "raw_wiki:39515:92424:e9a79d8cabc6e6e2:chunk:000"
+      ],
+      "evidence": [
+        {
+          "evidence_id": "raw_wiki:39515:92424:e9a79d8cabc6e6e2:chunk:000",
+          "page_id": 39515,
+          "revision_id": 92424,
+          "checksum": "e9a79d8cabc6e6e2",
+          "source_path": "Lore/dhalifas_forte_evaluation_report/39515_main.wikitext",
+          "source_title": "Dhalifa's Forte Evaluation Report",
+          "supporting_excerpt": "her Forte can randomly impact machine performance. For instance, a different clock affected by her Forte began running slowly, and became unresponsive to recalibration."
+        }
+      ],
+      "proposed_relevance_grade": "primary",
+      "rationale": "The general effect and an observed example are explicit.",
+      "reviewer_status": "approved",
+      "reviewer_notes": null
+    },
+    {
+      "id": "rw-073",
+      "query": "Một Echo được tạo ra như thế nào sau khi Tacet Discord bị đánh bại?",
+      "language": "vi",
+      "category": "lore_concept",
+      "difficulty": "hard",
+      "expected_behavior": "retrieve",
+      "expected_answer_summary": "A defeated Tacet Discord's remaining frequency may become an Echo through the Pangu Terminal's Data Bank.",
+      "expected_answer_excerpt": "When a Tacet Discord is defeated, the remaining frequency may become an Echo.",
+      "relevant_evidence_ids": [
+        "raw_wiki:1011:91978:42944d61edab4c7f:chunk:000"
+      ],
+      "evidence": [
+        {
+          "evidence_id": "raw_wiki:1011:91978:42944d61edab4c7f:chunk:000",
+          "page_id": 1011,
+          "revision_id": 91978,
+          "checksum": "42944d61edab4c7f",
+          "source_path": "Lore/echo/1011_main.wikitext",
+          "source_title": "Echo",
+          "supporting_excerpt": "When a Tacet Discord is defeated, the remaining frequency may become an Echo."
+        }
+      ],
+      "proposed_relevance_grade": "primary",
+      "rationale": "The transformation condition is directly stated.",
+      "reviewer_status": "approved",
+      "reviewer_notes": null
+    },
+    {
+      "id": "rw-074",
+      "query": "What stopped space exploration on Solaris-3?",
+      "language": "en",
+      "category": "lore_event",
+      "difficulty": "medium",
+      "expected_behavior": "retrieve",
+      "expected_answer_summary": "The Etheric Sea blanketed the sky, cut Solaris off from the universe, and brought space exploration to a standstill.",
+      "expected_answer_excerpt": "It now blankets [[Solaris-3|Solaris's]] sky, cutting the planet off from the rest of the universe and bringing all space exploration to a complete standstill",
+      "relevant_evidence_ids": [
+        "raw_wiki:10270:99746:c2d602cbf420f2ad:chunk:000"
+      ],
+      "evidence": [
+        {
+          "evidence_id": "raw_wiki:10270:99746:c2d602cbf420f2ad:chunk:000",
+          "page_id": 10270,
+          "revision_id": 99746,
+          "checksum": "c2d602cbf420f2ad",
+          "source_path": "Lore/etheric_sea/10270_main.wikitext",
+          "source_title": "Etheric Sea",
+          "supporting_excerpt": "It now blankets [[Solaris-3|Solaris's]] sky, cutting the planet off from the rest of the universe and bringing all space exploration to a complete standstill"
+        }
+      ],
+      "proposed_relevance_grade": "primary",
+      "rationale": "The cause and result are explicit.",
+      "reviewer_status": "approved",
+      "reviewer_notes": null
+    },
+    {
+      "id": "rw-075",
+      "query": "Exoswarm hình thành từ đâu?",
+      "language": "vi",
+      "category": "lore_concept",
+      "difficulty": "easy",
+      "expected_behavior": "retrieve",
+      "expected_answer_summary": "Exoswarm are formed from remnants of the Exostrider.",
+      "expected_answer_excerpt": "'''Exoswarm''' are creatures found in [[Lahai-Roi]] that are formed from the remnants of the [[Exostrider]].",
+      "relevant_evidence_ids": [
+        "raw_wiki:39255:94532:a4b996534deab505:chunk:000"
+      ],
+      "evidence": [
+        {
+          "evidence_id": "raw_wiki:39255:94532:a4b996534deab505:chunk:000",
+          "page_id": 39255,
+          "revision_id": 94532,
+          "checksum": "a4b996534deab505",
+          "source_path": "Lore/exoswarm/39255_main.wikitext",
+          "source_title": "Exoswarm",
+          "supporting_excerpt": "'''Exoswarm''' are creatures found in [[Lahai-Roi]] that are formed from the remnants of the [[Exostrider]]."
+        }
+      ],
+      "proposed_relevance_grade": "primary",
+      "rationale": "The origin is directly defined.",
+      "reviewer_status": "approved",
+      "reviewer_notes": null
+    },
+    {
+      "id": "rw-076",
+      "query": "How do players unlock a region's Exploration Reports?",
+      "language": "en",
+      "category": "lore_concept",
+      "difficulty": "medium",
+      "expected_behavior": "retrieve",
+      "expected_answer_summary": "They unlock at 50% and 100% Exploration Progress in a region, except Chronorift Metropolis.",
+      "expected_answer_excerpt": "Each Region, except [[Chronorift Metropolis]], has 2 unlockable Exploration Reports, which the player can access upon reaching 50% and 100% completion in the region.",
+      "relevant_evidence_ids": [
+        "raw_wiki:27413:92077:9d707490d9c3d53c:chunk:000"
+      ],
+      "evidence": [
+        {
+          "evidence_id": "raw_wiki:27413:92077:9d707490d9c3d53c:chunk:000",
+          "page_id": 27413,
+          "revision_id": 92077,
+          "checksum": "9d707490d9c3d53c",
+          "source_path": "Lore/exploration_report/27413_main.wikitext",
+          "source_title": "Exploration Report",
+          "supporting_excerpt": "Each Region, except [[Chronorift Metropolis]], has 2 unlockable Exploration Reports, which the player can access upon reaching 50% and 100% completion in the region."
+        }
+      ],
+      "proposed_relevance_grade": "primary",
+      "rationale": "The unlock thresholds and exception are explicit.",
+      "reviewer_status": "approved",
+      "reviewer_notes": null
+    },
+    {
+      "id": "rw-077",
+      "query": "Fleet Snowfluff làm gì ở Startorch Academy?",
+      "language": "vi_informal",
+      "category": "lore_concept",
+      "difficulty": "easy",
+      "expected_behavior": "retrieve",
+      "expected_answer_summary": "Fleet Snowfluff is a Startorch student and virtual campus idol who hosts online concerts.",
+      "expected_answer_excerpt": "'''Fleet Snowfluff''' is a [[Startorch Academy]] student and a campus virtual idol who hosts online concerts.",
+      "relevant_evidence_ids": [
+        "raw_wiki:39056:98971:e98008a22b980baa:chunk:000"
+      ],
+      "evidence": [
+        {
+          "evidence_id": "raw_wiki:39056:98971:e98008a22b980baa:chunk:000",
+          "page_id": 39056,
+          "revision_id": 98971,
+          "checksum": "e98008a22b980baa",
+          "source_path": "Lore/fleet_snowfluff/39056_main.wikitext",
+          "source_title": "Fleet Snowfluff",
+          "supporting_excerpt": "'''Fleet Snowfluff''' is a [[Startorch Academy]] student and a campus virtual idol who hosts online concerts."
+        }
+      ],
+      "proposed_relevance_grade": "primary",
+      "rationale": "The campus role and activity are explicit.",
+      "reviewer_status": "approved",
+      "reviewer_notes": null
+    },
+    {
+      "id": "rw-078",
+      "query": "Where are Fluffguins believed to have originated?",
+      "language": "en",
+      "category": "world_building",
+      "difficulty": "easy",
+      "expected_behavior": "retrieve",
+      "expected_answer_summary": "They are believed to have come from the Roya Frostlands.",
+      "expected_answer_excerpt": "A native bird of Lahai-Roi, it's believed they originally came from the Roya Frostlands.",
+      "relevant_evidence_ids": [
+        "raw_wiki:42446:101218:eba876c1698e83d3:chunk:000"
+      ],
+      "evidence": [
+        {
+          "evidence_id": "raw_wiki:42446:101218:eba876c1698e83d3:chunk:000",
+          "page_id": 42446,
+          "revision_id": 101218,
+          "checksum": "eba876c1698e83d3",
+          "source_path": "Lore/fluffguin/42446_main.wikitext",
+          "source_title": "Fluffguin",
+          "supporting_excerpt": "A native bird of Lahai-Roi, it's believed they originally came from the Roya Frostlands."
+        }
+      ],
+      "proposed_relevance_grade": "primary",
+      "rationale": "The stated believed origin answers the question without strengthening certainty.",
+      "reviewer_status": "approved",
+      "reviewer_notes": null
+    },
+    {
+      "id": "rw-079",
+      "query": "Điều gì được cho là ảnh hưởng đến Forte của một Resonator?",
+      "language": "vi",
+      "category": "lore_concept",
+      "difficulty": "medium",
+      "expected_behavior": "retrieve",
+      "expected_answer_summary": "A Resonator's past and subconscious mind are believed to influence their Forte.",
+      "expected_answer_excerpt": "It is believed that a Resonator's past and subconscious mind influence their Forte",
+      "relevant_evidence_ids": [
+        "raw_wiki:3397:68336:55000dcfdd441514:chunk:000"
+      ],
+      "evidence": [
+        {
+          "evidence_id": "raw_wiki:3397:68336:55000dcfdd441514:chunk:000",
+          "page_id": 3397,
+          "revision_id": 68336,
+          "checksum": "55000dcfdd441514",
+          "source_path": "Lore/forte/3397_main.wikitext",
+          "source_title": "Forte",
+          "supporting_excerpt": "It is believed that a Resonator's past and subconscious mind influence their Forte"
+        }
+      ],
+      "proposed_relevance_grade": "primary",
+      "rationale": "The source qualifies and states both influences.",
+      "reviewer_status": "approved",
+      "reviewer_notes": null
+    },
+    {
+      "id": "rw-080",
+      "query": "What was the purpose of the Fortress and Gorges War?",
+      "language": "en",
+      "category": "lore_event",
+      "difficulty": "medium",
+      "expected_behavior": "retrieve",
+      "expected_answer_summary": "It was fought to stop a large Tacet Discord outbreak from spreading into Huanglong through Xuanfang.",
+      "expected_answer_excerpt": "was waged to prevent the spread of a large [[Tacet Discord]] outbreak that swept into [[Xuanfang]].",
+      "relevant_evidence_ids": [
+        "raw_wiki:58857:123826:fe87fa19ceeb0aaa:chunk:000"
+      ],
+      "evidence": [
+        {
+          "evidence_id": "raw_wiki:58857:123826:fe87fa19ceeb0aaa:chunk:000",
+          "page_id": 58857,
+          "revision_id": 123826,
+          "checksum": "fe87fa19ceeb0aaa",
+          "source_path": "Lore/fortress_and_gorges_war/58857_main.wikitext",
+          "source_title": "Fortress and Gorges War",
+          "supporting_excerpt": "was waged to prevent the spread of a large [[Tacet Discord]] outbreak that swept into [[Xuanfang]]."
+        }
+      ],
+      "proposed_relevance_grade": "primary",
+      "rationale": "The war's stated purpose is explicit.",
+      "reviewer_status": "approved",
+      "reviewer_notes": null
+    },
+    {
+      "id": "rw-081",
+      "query": "Harbinger của Dark Tide bị Leviathan biến đổi như thế nào?",
+      "language": "vi",
+      "category": "lore_concept",
+      "difficulty": "hard",
+      "expected_behavior": "retrieve",
+      "expected_answer_summary": "Chosen humans become corrupted, lose their identities, and act as puppets spreading Leviathan's influence.",
+      "expected_answer_excerpt": "Those chosen become corrupted and lose their identities as they become puppets to continue spreading Leviathan's influence until they perish.",
+      "relevant_evidence_ids": [
+        "raw_wiki:37304:100540:d9c41f8fbf72b2ba:chunk:000"
+      ],
+      "evidence": [
+        {
+          "evidence_id": "raw_wiki:37304:100540:d9c41f8fbf72b2ba:chunk:000",
+          "page_id": 37304,
+          "revision_id": 100540,
+          "checksum": "d9c41f8fbf72b2ba",
+          "source_path": "Lore/harbinger/37304_main.wikitext",
+          "source_title": "Harbinger",
+          "supporting_excerpt": "Those chosen become corrupted and lose their identities as they become puppets to continue spreading Leviathan's influence until they perish."
+        }
+      ],
+      "proposed_relevance_grade": "primary",
+      "rationale": "The transformation and loss of agency are directly stated.",
+      "reviewer_status": "approved",
+      "reviewer_notes": null
+    },
+    {
+      "id": "rw-082",
+      "query": "What rewards do I get for completing Dawn Breaks on Dark Tides?",
+      "language": "en",
+      "category": "abstention",
+      "difficulty": "hard",
+      "expected_behavior": "abstain",
+      "expected_answer_summary": "Insufficient evidence in the available raw_wiki main-revision corpus.",
+      "expected_answer_excerpt": null,
+      "relevant_evidence_ids": [],
+      "evidence": [],
+      "inspected_non_answer_sources": [
+        {
+          "evidence_id": "raw_wiki:1074:99099:f1f00f7ba53c6ff4:chunk:000",
+          "page_id": 1074,
+          "revision_id": 99099,
+          "checksum": "f1f00f7ba53c6ff4",
+          "source_path": "Characters/Resonators/phrolova/1074_main.wikitext",
+          "source_title": "Phrolova",
+          "supporting_excerpt": "Following its completion in {{Quest|Dawn Breaks on Dark Tides}}, she left the organization to find her own path."
+        }
+      ],
+      "proposed_relevance_grade": "none",
+      "rationale": "The only main-revision mention records a story consequence for Phrolova; it does not specify any quest rewards.",
+      "reviewer_status": "approved",
+      "reviewer_notes": null
+    },
+    {
+      "id": "rw-083",
+      "query": "Quest Instant Flashlight cần hoàn thành những mục tiêu nào?",
+      "language": "vi",
+      "category": "abstention",
+      "difficulty": "hard",
+      "expected_behavior": "abstain",
+      "expected_answer_summary": "Insufficient evidence in the available raw_wiki main-revision corpus.",
+      "expected_answer_excerpt": null,
+      "relevant_evidence_ids": [],
+      "evidence": [],
+      "inspected_non_answer_sources": [
+        {
+          "evidence_id": "raw_wiki:40856:136878:d51cccfe23ea5dcf:chunk:000",
+          "page_id": 40856,
+          "revision_id": 136878,
+          "checksum": "d51cccfe23ea5dcf",
+          "source_path": "Characters/Resonators/rebecca/40856_main.wikitext",
+          "source_title": "Rebecca",
+          "supporting_excerpt": "*[[Instant Flashlight]]"
+        }
+      ],
+      "proposed_relevance_grade": "none",
+      "rationale": "The title appears only as a list item in the available main revision; no quest objectives are supplied.",
+      "reviewer_status": "approved",
+      "reviewer_notes": null
+    }
+  ]
+}

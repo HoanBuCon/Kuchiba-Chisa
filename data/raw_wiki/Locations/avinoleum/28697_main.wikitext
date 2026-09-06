@@ -1,0 +1,65 @@
+**Profile**: Title: Avinoleum, Origin: Rinascita.
+
+> Once a theological seminary of Rinascita, it now rests in the boundless expanse of clouds. It once recorded Rinascita's glory and grandeur, along with countless unspeakable secrets.
+{{Intro/Location|Avinoleum}} A seminary faintly visible through a thin veil of clouds. Suspended upside down in the sky, it stands solemn and silent, as though carrying the weight of the Blessed Maiden's life.
+
+==Areas==
+{| class="article-table alternating-colors-table tdc1" style="width: 100%;"
+! style="width: 200px;" |Name
+! Image
+! Description
+|- id="Tower of Ascension"
+|[[Tower of Ascension]]
+|[[File:Tower of Ascension.png|180px]]
+|
+|- id="Titular Repository: Ruins"
+|[[Titular Repository: Ruins]]
+|[[File:Titular Repository Ruins.png|180px]]
+|
+|- id="Tower of Salvation"
+|[[Tower of Salvation]]
+|[[File:Tower of Salvation.png|180px]]
+|"The mortal world is a vast and mysterious ocean, wherein all souls are doomed to drown and sink to the depths. Those who refuse to be swallowed must learn to rise, climbing upward until their heads break the surface. Only then shall they glimpse the realm of the divine."
+|- id="Zargon Garden"
+|[[Zargon Garden: Ruins|Zargon Garden]]
+|[[File:Zargon Garden.png|180px]]
+|Once the dwelling of dragons, this place witnessed those ancient, mighty beings soaring through the sky.
+Now, wild vines and flowers steadily consume the garden's former glory while the buried history of dragons slumbers in cursed lairs.
+|- id="Tower of Unity"
+|[[Tower of Unity]]
+|[[File:Tower of Unity.png|180px]]
+|
+|- id="Hall of Swordsmanship: Ruins"
+|[[Hall of Swordsmanship: Ruins]]
+|[[File:Hall of Swordsmanship Ruins.png|180px]]
+|
+|- id="Path of Bestowal"
+|[[Path of Bestowal]]
+|[[File:Path of Bestowal.png|180px]]
+|Majestic and serene, ancient yet still sacred. This is the coronation platform prepared for the Blessed Maiden, though an aura of control lingers above. When the heavy weight of "divine right" falls upon one's head, it feels as if all choices have already been made.
+|- id="Holy Spire of Confluence"
+|[[Holy Spire of Confluence]]
+|[[File:Holy Spire of Confluence.png|180px]]
+|
+|}
+
+==Quests==
+{{Quest by Category List|Avinoleum}}
+
+==Exploration Report==
+
+==='''Avinoleum Code I'''===
+* Unlocked by reaching 50% exploration.
+
+==='''Seminary Code II'''===
+* Unlocked by reaching 100% exploration.
+
+==Notable Features==
+===Bosses===
+====Calamity Class====
+* {{Enemy|Fleurdelys}}
+===Resources===
+* {{Item|Seaside Cendrelis}}
+
+==Soundtracks==
+{{Soundtracks by Category Table}}

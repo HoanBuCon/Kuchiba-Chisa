@@ -1,0 +1,106 @@
+# Xuanfang Wardens
+
+**Faction Profile**: Leader: Qiuhong.
+
+The '''Xuanfang Wardens''' are the primary military force of the frontier region of Xuanfang within [[Mengzhou]] province, who stand as the final bulwark protecting the Hold alongside the Autopuppets. Legally their power is derived from the Ministry of War established by Mengzhou City Hall. Among their ranks serves the Xuan Watchers, an elite formation forged to confront only the most formidable Tacet Discords. The Wardens and the Xuan Triad are led by Warden Commander [[Qiuhong]].
+
+The Xuan Paragon [[Qingxiao]] is seldom seen within the Hold, yet whenever calamity looms, she always appears to stand as Xuanfang's protector. In response to the disappearances occurring throughout the Hold, Yangyang, an Outrider from Jinzhou, has been temporarily transferred to the Wardens. Serving as one of the Xuan Watchers, she lends her expertise in support of the Land of Xuanfang.
+
+===Notable Personnel===
+{| class="article-table"
+!Icon!!Personnel!!Position
+|-
+||[[File:Resonator Qingxiao.png|50px]]
+|Qingxiao
+|Paragon
+|-
+|
+|Qiuhong
+|Warden Commander
+|-
+|
+|Liaoxun
+|Training Captain
+|-
+|
+|Liangyu
+|Xuan Triad
+|-
+||[[File:Resonator Yangyang Xuanling.png|50px]]
+|Yangyang
+|Temporary Xuan Watcher
+|-
+|
+|Wuxie
+|Warden Captain
+|-
+|
+|Xuanjie
+|Xuanfang Warden
+|-
+|
+|Jingwan
+|Xuanfang Warden
+|-
+|
+|Kaoshi
+|Xuanfang Warden
+|-
+|
+|Luchong
+|Xuanfang Warden
+|-
+|
+|Zhengzhuang
+|Xuanfang Warden
+|-
+|
+|Chijue
+|Xuanfang Warden
+|-
+|
+|Wenrong
+|Xuanfang Warden
+|-
+|
+|Yanyun
+|Xuanfang Warden
+|-
+|
+|Gengjing
+|Xuanfang Warden
+|-
+|
+|Mingzhong
+|Xuanfang Warden
+|}
+
+===Other Known Personnel===
+{{NPCs by Category List
+|Xuanfang Wardens
+|header = Xuanfang Wardens
+
+===Former Personnel===
+{| class="article-table"
+!Personnel !!Position!!Status!!Last Active
+|-
+|Duzhong
+|Xuan Watcher
+|Deceased
+|A few days before [[Chapter IV]]
+|-
+|Qingzhi
+|Xuan Watcher
+|Deceased
+|A few days before [[Chapter IV]]
+|-
+|Yanlang
+|Xuanfang Warden
+|Deceased
+|[[The Wind Before the Storm]]
+|-
+|Mingyu
+|Xuanfang Warden
+|Deceased
+|[[The Wind Before the Storm]]
+|}

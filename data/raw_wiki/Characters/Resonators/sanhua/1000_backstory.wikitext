@@ -1,0 +1,220 @@
+> Please don't stay too far away from me. I am confident to not let you get harmed in the slightest.
+> — Sanhua
+> A loyal and reliable guard for Jinhsi, Sanhua is composed and reserved. Sanhua perceives a world distinctly different from that in the eyes of others, and her body temperature is below normal. Her Forte allows her to cool the surrounding air and conjure snow. To maintain emotional stability and prevent Overclocking, Sanhua finds solace in the art of swordplay. This allows her to master her Forte with graceful ease and alleviates the burden on her body.
+> — Description from the Official Website
+
+==Developer's Notes==
+
+2023-09-05 
+
+===Sanhua's Backstory===
+
+Sanhua is a Resonator who rarely lets her emotions show. You can sense a certain distance when you first meet her. Sanhua is also careful not to burden others with her actions. Perhaps, her personality stems from her tragic past.
+Sanhua's tragedy started with a heavy snowfall. A sudden emergence of the Waveworn Phenomenon consumed the town where she resided. Sanhua was the sole survivor of this devastating catastrophe. While she managed to escape the clutches of the Tacet Discords, her right eye was injured. Sanhua was born blind, but the erosion of Waveworn Phenomenon gave her terrifying and anomalous vision.
+In addition to her anomalous vision, this catastrophe also granted her a powerful Forte of ice manipulation. In her youth, Sanhua struggled to keep her Forte under control. Her body always emitted an unconscious, chilling coldness that repelled those around her.
+Her life changed when she met Jinhsi — the first person who appeared normal and untwisted in Sanhua's eyes. Jinhsi gave her hope that destruction could also bring a new birth. As a result, Sanhua wholeheartedly pledged her loyalty to Jinhsi,  and she has been tirelessly working towards creating the future they both dream of.
+With the arrival of you, the Rover, Sanhua's world is poised for new and transformative changes: In her eyes, your frequency resonates with the same beauty and clarity that she once saw in Jinhsi.
+
+===An All-round Guard===
+
+As Jinhsi's guard, there's no doubt that Sanhua demonstrates exceptional physical prowess. In fact, she's capable of a lot more than that — Sanhua has a vast reserve of knowledge that enables her to respond fluently to any query. Her outstanding ability to remain composed enables her to handle emergencies flexibly. Furthermore, she boasts excellent cooking skills on par with a seasoned chef, and her adeptness in negotiations paves the way for successful deals.
+
+Sanhua's capabilities extend beyond guarding— she's a proficient secretary as well. For example, she can finish all the paperwork for the next three months in a couple of days, and Jinhsi would joke how Sanhua left her "nothing to do"; she can also deliver all three meals to Jinhsi's doorway quietly, without ever being noticed... These tasks constitute her daily routine.
+
+It's important to note that Sanhua wasn't inherently an all-rounder. Her versatility is a testament to her remarkable fast-learning ability. If she believes that a skill will help Jinhsi, she is going to master it quickly without hesitation.
+
+=== A Walking Ice Machine===
+
+Although Sanhua has fully mastered her Forte now, the changes in her mood continue to influence the temperature around her.
+
+When Sanhua senses a lurking danger or unfriendly situation, delicate snowflakes materialize around her, serving as a clear sign that she is becoming defensive. Sometimes, these snowflakes appear not only in response to danger but also when she feels embarrassed or anxious. It is difficult for others to discern the exact trigger behind the emergence of these snowflakes, as Sanhua maintains a poker face.
+=== R&D Master of Loong Buns===
+
+Sanhua has a deep passion for improving her cooking abilities, especially when it comes to making Loong Buns. She is particularly motivated because Jinhsi loves Loong Buns so much. Sanhua enjoys experimenting with various fillings to create different types of Loong Buns, just to listen to Jinhsi's happy sigh as she savors the delicious treats. Now, Sanhua has a new "customer", and that's the Rover. Sanhua aims to share the delightful taste of her Loong Buns with you. Therefore, her dedication to honing her cooking skills is stronger than ever.
+=== A Hidden Side Revealed by Flower Beverage===
+
+Sanhua enjoys a unique beverage made from flower petals. However, she doesn't consume it regularly because she knows it can affect her work. When she drinks it, she becomes more lively and uninhibited. Although she appears normal on the outside, she speaks openly and reacts more slowly. She even resists taking breaks and can remain in this dreamy state for an entire day.
+
+===Appearance===
+
+Sanhua's tragic past and her role as a guard naturally paint her as low-key and distant. This led us to choose black as the dominant color to accentuate this aspect. The pairing of black and gold, both muted colors, enhances their respective textures. With black as the dominant color, it effectively highlights the metallic and glossy essence of gold. Therefore, we adopted plenty of golden elements as embellishments in Sanhua's details. The golden pendant featuring the wave pattern further brings out Sanhua's heroic bearing on the battlefield.
+
+Originally, Sanhua's eyes were gray. However, the influence of Tacet Discord's frequency transformed them both to striking crimson. Her Tacet Mark is located in her right eye's pupil and only appears when Sanhua uses her Resonance Skill.
+
+===Clothing===
+For her clothing style, we harmonized classical and contemporary elements. We chose a pure black beret for Sanhua, as it ensures that her silver hair doesn't attract excessive attention while aligning seamlessly with her attire. This fashion item brings out a cool and neat image of Sanhua. When it comes to Sanhua's clothing and decorations, we incorporated a lot of "Wave Patterns". Different from the "Cloud Patterns" that adorns Yangyang, these patterns yet share a similar style, adding a classical touch to the characters.
+
+===Sanhua's Fighting Style===
+
+Sanhua engages in battles with a calm demeanor, always striving to end the battle swiftly. Her skills are simple yet powerful. She mainly deals damage by denotating the ice creations created by her Normal Attacks and skills through enhanced Heavy Attacks. Once Sanhua sheaths her sword, the very traces of ice and snow that once existed vanish.
+
+==Archives==
+
+**Resonance Power**: Snow Waltz
+
+### Forte Examination Report
+Evaluation Basis: [Resonance Assessment 2105-G]Based on Resonator Sanhua's reports, Sanhua was born with abnormal eye structure resulting in blindness of both eyes. The later Tacet Discord encounter during a blizzard caused by Waveworn Phenomenon left frequency erosions to her right eye, leading to Sanhua's abnormal vision and the subsequent Awakening of Forte.Resonator Sanhua's Tacet Mark is located in her right pupil, only visible when she exerts her Forte. After analyzing Sanhua's testimonies and medical tests, we've pinpointed physical changes following her Awakening. These include a chaotic frequency reaction of her right pupil near the Tacet Mark, appearing red. The erosion is also advancing, evident in the color shift from grey to red in her left pupil.Sanhua has gained abnormal vision and control over snow through her Forte, its strength tied to her focus. After analyzing her explanations, our initial conclusion is that her sight differs from the norm, allowing her to perceive object frequencies directly. Frequency tests show 99.64% accuracy in her visualization.Sanhua's Resonance Spectrum Pattern is identical to that of the snow. Additionally, the spectrum patterns of her pupils are identical to the Frequency Fluctuation interval of known TDs. Both tests revealed strong Syntony reactions, and the exact cause of her Awakening remains unclear.Analysis of test samples has revealed a non-convergent Rabelle's Curve with a steep rise in its middle section. Therefore, Sanhua is classified as a Mutant Resonator.
+
+### Overclock Diagnostic Report
+The waveform graph for Resonator Sanhua displays elliptical fluctuations. The pattern of Time Domain is stable with no abnormal waveforms. Examination results are determined to be within normal parameters. However, Sanhua's risk of Overclocking persists.Resonant Criticality: Very stable. Yet constantly verges on the Criticality level. Risk of Overclocking remains high.Resonator Sanhua has a documented history of Overclocking. Maximum Overclock rating: Moderate.Sanhua's past Overclocks caused Level 2 blizzards due to her extended periods of verging on Resonance Criticality and extreme Frequency Fluctuation reactions. No civilian casualties were reported in these incidents. These series of events are currently documented under code EX01521, classified as Class 3 hazard events.Sanhua's frequency fluctuates due to erosion, causing energy outbursts and altered perception. Her Overclocking leads to quicker erosion spread and changes her left pupil from grey to red.Due to Resonator Sanhua's past Overclocking tendencies, close monitoring of her psychological and physical condition is advised. Routine counseling and examinations are required.
+
+### Character Profile
+The bodyguard of Jinzhou’s Magistrate, known for having an icy personality.Once regarded as the Asura of Calamity, Sanhua is now a taciturn guardian. She has learned to maintain inner calmness amidst the chaotic frequencies, and the things that once frightened her now fuel her determination.
+
+==Character Stories==
+### The Magistrate's Bodyguard
+Instead of her name, Sanhua is more commonly referred to as "the Magistrate's bodyguard".
+
+Sanhua is always seen standing silently behind Jinhsi, maintaining an adequate distance. She stands tall and poised, hidden in the periphery of others' gazes, like a sharp blade ready to be unsheathed at any moment.
+
+Although the majority of voices opposing Jinhsi have already subsided, there are still a handful of individuals who would attempt to challenge her authority. Because Jinhsi still held the title of Jinzhou's Magistrate, the seemingly blunt and inflexible bodyguard by her side seemed the easier target for pressure. Or so they assumed. 
+
+Regardless of how impossible the ill-intended demands sounded, Sanhua can always flawlessly execute them to the utmost perfection. 
+
+With her impeccable time management, sharp intellect, cool under-pressure demeanor, and savvy negotiation skills... even the harshest critics were left stunned.
+
+As the Magistrate's bodyguard, Sanhua handles both unruly daytime guests, and those uninvited guests who lurk in the shadows.
+
+Being Jinzhou's Magistrate, Jinhsi is a prime target with a high price on her head. Unwelcome guests sought more than just a cup of tea, but they would soon learn their mistake: instead of hot tea, they were met with the razor-sharp blade of her bodyguard. The crimson-eyed bodyguard seemed to possess an uncanny ability to detect lies. Within seconds, she transformed into a fearsome Asura ready to strike. 
+
+One quick slash revealed shivering limbs as severed trouser legs fell in the cold air. This alone was enough to scare off most of the unwanted guests. Naturally, once the blade returned to its sheath, all shadows and shady dealings would be erased. Jinhsi's radiance would remain untainted, free from contamination.
+
+But sometimes, even Sanhua meets surprises in life... 
+
+"Hello. You must be Madam Magistrate's bodyguard?" 
+
+So asked the strange resonator standing before her, who bears the same beautiful human-shaped frequency as Jinhsi.
+
+Her world was suddenly filled with new ripples.
+
+### Sudden Snowfall
+Sanhua's story began with the snow.
+
+Her birthplace was destroyed by a Waveworn disaster, fueled by an unforgiving blizzard and the emergence of deadly Tacet Discords. 
+
+Within moments, all forms of life were crushed by the anomalous blizzard, only to be reshaped into a colossal TD standing atop the snowy mountain-turned-Tacet Field. The sight was both awe-inspiring and horrendous, as the entrenched TD loomed over the devastated landscape, 
+
+both divine and demonic in its presence. It resembled a giant statue of the Asura.
+
+The Midnight Rangers did everything in their power to finally defeat the colossal TD. Finally, it collapsed and disintegrated in piercing roars. While cleaning the battlefield, they were shocked to find a frozen infant amidst the wreckage, her body cold and tinted blue.
+
+The infant was still breathing faintly. 
+
+No one could imagine how she could have survived such a cataclysm, nor did anyone have the time to ponder such thoughts. The Rangers wiped the bloodstains from their hands and carefully lifted her from the rubble. They shouted, "We found a baby! A survivor! She's alive!" 
+
+Their excited cries echoed far beyond the frontlines, instilling courage in every soldier and spreading their love for life across the battlefield, a comforting balm for their worn-out spirits. People believed this to be "a miracle of divine favor".
+
+Several days later, the girl rescued from the depths of hell opened her captivating odd-colored eyes for the first time. Tacet Discords did not take her life, but instead corroded her right eye. The lingering frequencies miraculously reconfigured themselves into a new eye, allowing her, who was born blind, to directly see the frequencies of all things in the world. 
+
+— Unbeknownst to everyone back then, it was also a "Curse of the Lament". The curse distorted everything in her eyes into grotesque, eerie, and cacophonous apparitions, disturbing her senses and shattering her perception of existence in the world. She saw no lies, but neither did she ever see light. 
+
+She relived that snowy night endlessly, struggling to escape hell only to fall back into it again, until she became an Asura herself. In a way, she was never truly rescued from that battlefield. Her world was a painting of purgatory, and she was doomed to be haunted by the Tacet Discords for the rest of her life, unable to break free.
+
+### Lingering Coldness
+Sanhua occasionally dreamt of the snow.
+
+Since a young age, Sanhua had been silent and reserved, and not particularly good at social interactions. A chilling aura always enveloped her, cutting her off from others. Passersby were wary of the inexplicable frostbite it caused. 
+
+She was vigilant, dangerous, and unreadable. It might be hard for others to imagine that someone like Sanhua would have recurring nightmares about snow.
+
+In her dreams, she was always lost in endless darkness, searching for a field of snow, or a glimmer of light. But in the next instant, she would be lying on the snowy ground, surrounded by twisted monsters. They gnawed at her as she lay among hundreds of shattered corpses. As they gouged out her eyes, darkness descended and only their flickering shadows remained. And then she woke up with a start.
+
+As she grew older, her Forte became increasingly powerful. The restless demon lurked within her, urging her to follow TDs' instinctive hunger to consume frequencies: the power of snow became harder for her to contain, and even the frequencies between humans and TDs grew ever so challenging to distinguish. 
+
+At times, Sanhua thought she had escaped the nightmare, only to realize she was still trapped within and had been transformed into a monster. Was it her lack of compassion or the harshness of the snow that caused this? Or maybe, she was simply a part of the snow all along.
+
+Confronting an inevitable fate entwined with demons, Sanhua embarked on a journey of self-imposed exile. 
+
+Recently, Sanhua still dreamt of the snow. 
+
+Sanhua never needed lights in her room; she could see perfectly in the darkness. So when she was jostled awake from another nightmare and noticed the presence of light, she immediately realized that it must be Jinhsi still working on her documents. 
+
+"Forgive me, my lady..." Sanhua apologized for not fulfilling her duty. 
+
+A young woman was writing vigorously at the lamp. Noticing movement, she raised her head, "I believe I asked you to rest up, Sanhua. I couldn't finish half by tomorrow morning without your help. You stayed up all night sorting them out."
+
+"My lady, you must rest. Please let me handle these."
+
+"Please, Sanhua. Would I really let you handle those boring papers alone? Not a chance." Jinhsi pondered for a moment, then offered a mischievous smile, "If you want to help, just stay and chat with me for a while. I'll be finishing up soon."
+
+"Of course. What would you like to talk about? Shall I recite the Heart Sutra for you?" 
+
+"Oh, then tell me what you dreamt of? I believe I heard you mumbling in your sleep." 
+
+"Perhaps I was reciting the Heart Sutra in my dream, then."
+
+"...Do we have to keep going back to that? Truth be told, working on these documents does begin to tire me..." 
+
+"Hmm... I dreamt of you, my lady. You were standing in the snow... You looked beautiful." 
+
+Sanhua responded with a warm smile. Her journey ahead was no longer alone.
+
+### Falling Petals
+Sanhua had seen the snow before.
+
+Sanhua traversed various places during her exile. She journeyed to remote mountains and plains, gazing over a desolate, uncharted expanse from a cliff.
+
+She witnessed star-shaped fissures spread across the land — The Tacet Marks, from which TDs continuously were hatched. They corroded the land humanity relies on for survival, like how they once corroded her eyes. 
+
+Sanhua tried to slay the monsters but found no solace. The never-ending chaos of noise tormented her, day and night. Her only motivation was survival, pushing her forward despite the constant assault on her senses.
+
+She was like a kite floating atop the wilderness, guided only by a thin thread that would seem to break at any moment. She let the snow pummel her, lost and directionless. Wherever she roamed, blizzards would ravage everything in their path. She became a calamity. 
+
+As word of Sanhua's notoriety spread, people came after her. She didn't know who they were, or why they were trying to kill her. She somehow realized she must contain the devil within, but panic always prevailed and she would always fight before fleeing in distress.
+
+Until one day, she was cornered and trapped in the mountains. It was then that she finally "saw" the snow – a golden shower of radiant snowflakes, like petals falling from the sky. 
+
+The sight was mesmerizing. She forgot her dilemma and pain, drawn by a deep, magical voice that calmed her mind. As the blizzard cleared, she found herself surrounded by golden snow. A man appeared and revealed himself to be the abbot. She soon realized it was all an illusion meant to enlighten her.
+
+"All conditioned phenomena are like a dream, an illusion, a bubble, a shadow; like dew or a flash of lightning. Thus one should contemplate them in this way. What you perceive as suffering, yet you do not know that suffering leads to salvation... Only with one's karma, may one's cause and outcome arise."
+
+Sanhua barely understood the meaning of those words, yet she did not attempt to escape. The abbot accepted her... or rather, she was captured and taken into the temple, like a stray cat. No one could have predicted that she would be tamed not by force, but by the silent falling flowers and a piece of advice. 
+
+In the temple, she was bestowed the dharma name "Sanhua". She practiced swordsmanship and recited the Heart Sutra daily with the other monks.
+
+Sanhua wondered: If karma helps hatching every cause into its fated outcome, then to what outcome will her own karma lead her?
+
+### Thawing Frost
+Sanhua stood once again on the battlefield, where blood and fire intertwined, ready to fight for what was taken from her. Years ago, they took her eyes and her once-home, when she couldn't fight back. But now, she was on the battlefield as a warrior, with the snow as her curse, as her blade.
+
+Her eyes were starting to strain from the overwhelming TD frequencies, and her ears were filled with deafening screams. Through the blizzard, she saw a horrific sight that resembled her previous nightmare, one that she hadn't dreamed of in years.
+
+Hundreds of corpses piled together to form a massive Asura before her, but upon closer inspection, she recognized the faces of those she called companions...
+
+She was trapped in an illusion, watching helplessly as the demon within her consumed her with vicious force. Her abilities, once a source of power, now controlled and devoured her. The curse that gave her strength seemed futile against the overwhelming force of the Lament.
+
+"...In the end, nothing ever changed."
+
+Sanhua collapsed from exhaustion, overwhelmed by monsters and hallucinations. She muttered quietly to herself as she hit the ground.
+
+She lost count of how many injuries she had sustained, only feeling warmth slipping away from her. She was back in the nightmare of her childhood, lying once again on that snow field. Coldness consumed her body as she melted into the icy ground.
+
+As the world descended into a state of complete silence and darkness, a fleck of white entered her blurry vision.
+
+"...Snow..."
+
+Sanhua reached out, longing to touch that coldness, but her fingertips were greeted by warmth instead.
+
+...No, it was not a snowflake.
+
+Sanhua struggled to blink as the clear sight of a young woman gradually emerged in her vision. It was a frequency she had never seen before.
+
+The young woman stood before Sanhua, shielding her from harm. Lightning seemed to flow at her fingertips. The chaotic blizzard that swirled around Sanhua was drawn towards her, and she guided those frequencies, gradually bringing them to stability. The seasons changed around them, distant thunder and winds signaling its arrival. Like a divine child responding to prayers, she eradicated all the Tacet Discords with her dazzling lightning. 
+
+Following the melting of ice, the piercing cries in Sanhua's ears gradually subsided. She no longer heard the painful screams of the battlefield, but the sounds of blowing wind, chirping birds, and the rejuvenating earth. It was at that moment when she finally broke free from that snowy night, and the once-frozen time started flowing again in her life.
+
+That was when Sanhua finally understood what karma had in store for her."Only with one's karma, may one's cause and outcome arise." Jinhsi has shown Sanhua the power of rebirth in destruction. Jinhsi... She may be the guiding light for all people during this devastating time.
+
+The future Jinhsi has demonstrated is precisely where her fate lies. The light she has been pursuing in the darkness all this time.
+
+Sanhua took up her blade again. This time, she has transformed her demons into the power for protection.
+
+==Cherished Items==
+### Mala Beads
+Before leaving the temple, Sanhua received a string of Mala beads from the abbot. These precious beads hold the blessing and guidance of the abbot, serving as a constant reminder for Sanhua. In times of turmoil, she finds comfort in running her fingers over the smooth beads, using them as a meditative tool to recite the Heart Sutra and bring peace to her mind.
+
+### The Amorphous
+Jinhsi wanted to see the world through Sanhua's eyes, so Sanhua sought the guidance of a famous shadow puppet master, Huanglong, to show Jinhsi a corner of the hell she had seen in this way. But this bizarre world unexpectedly won Jinhsi's favor, which occasionally gave Sanhua the illusion that she could also fall in love with this hell. Unlike the rough monster shadow puppets, there is also a pair of delicate human shadow puppets that Sanhua keeps as a private collection.
+
+### Ksana
+Sanhua used to believe that transience was the root of all beauty in the world. Just like snow and ice, so pure and captivating, but destined to melt. But sometimes, as she holds a frozen flower in her hand, she wonders - is she admiring its fleeting beauty or mourning its inevitable demise? She freezes the frosty blossom, determined to preserve it for just a little longer. Just like this moment with all its precious memories and beauty that she vows to protect forever.

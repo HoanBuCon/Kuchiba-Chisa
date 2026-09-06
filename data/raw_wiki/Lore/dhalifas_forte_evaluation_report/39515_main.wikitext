@@ -1,0 +1,25 @@
+**Profile**: Origin: Lahai-Roi.
+
+'''''' is a note found during [[Operation: Frontier Renewal]] and is added to its Archives, Spacetrek Observatory Files.
+
+==Text==
+Forte Evaluation Report – Bridge and Static
+Evaluation Basis: Dhalifa's Medical Report
+
+The patient's Tacet Mark is located on the upper right arm. The precise time of Awakening cannot be determined. Upon admission, the patient was conscious but non-communicative. When asked about her Forte, she applied it to a clock in the ward, increasing its accuracy to within femtoseconds.
+
+The patient later clarified, via a caregiver robot, that her Forte can randomly impact machine performance. For instance, a different clock affected by her Forte began running slowly, and became unresponsive to recalibration.
+
+As inquiries were made solely to ensure treatment safety, no further investigation is planned.
+
+"A femtosecond is one quadrillionth of a second. The precision is astonishing. Send this clock to Startorch Academy. They'll know what to do with it."
+
+Conclusion: Resonant Criticality is moderate. Patient stability is also moderate, with minimal risk of Overclocking.
+A prior history of Overclocking is documented.
+Maximum severity rating: Moderate.
+
+The patient previously Overclocked during a Void Storm, drawing Exoswarm material to her body to replace contaminated tissue, which enabled her survival. The embedded material now shows no Exoswarm frequency and functions solely as prosthetic tissue.
+
+The patient currently demonstrates unusually stable emotional states considering her trauma and injuries. Regular evaluation and psychological support are recommended.
+
+"Dhalifa survived only by Overclocking. This is not an ability that can counter Void Storms! Make sure the Department of Voidmatters leaves her alone!"

@@ -1,0 +1,23 @@
+== '''Jiyan's Forte Examination Report''' ==
+
+=== '''Resonance Evaluation Report''' ===
+**Resonance Power**: Windborne Rider
+
+**Evaluation Basis**: [Resonance Assessment 2141-G]
+
+Resonator Jiyan's Forte-Awakening was observed at the Yuanwang Camp located in Desorock Highland. This event was characterized by the accumulation of air currents around his body, forming a distinctive lance.
+
+Jiyan bears a distinctive Tacet Mark situated atop his dorsal ridge. Post-Awakening observations found some growths that resemble Loong scale on his left jaw. No indications of progressive expansion have been detected.
+
+Resonator Jiyan possesses the ability to manipulate wind energy, which he can channel into a "Qingloong" that aids him in battle. Additionally, he possesses exceptional perception and leadership skills, utilizing his connection to the winds to gather and analyze battlefield information with astonishing accuracy. Empirical testing has shown an impressive accuracy rate of 99.12% in evaluating dynamic situations.
+
+Jiyan's [[Resonance Spectrum Patterns|Resonance Spectrum Pattern]] shows no resemblance to known samples. The cause of his Awakening remains unknown.
+
+Analysis of test samples has revealed a non-convergent [[Rabelle's Curve]] with a steep rise in its middle section. Resonator Jiyan is thereby classified as a [[:Category:Mutant Resonators|Mutant Resonator]].
+
+=== '''Overclock Diagnostic Report''' ===
+The waveform graph for Resonator Jiyan shows non-periodic rectangular pulse fluctuations, with sustained peak values during specific time intervals. These waveforms demonstrate rapid and substantial changes within a short temporal span. There are two distinct waveforms identified, each with exceptionally high peak values.
+
+**Resonant Criticality**: Relatively high. Resonator Jiyan's frequency displays high stability with a low risk of Overclocking.
+
+No history of Overclocking has been documented. Routine examinations and counseling are recommended.

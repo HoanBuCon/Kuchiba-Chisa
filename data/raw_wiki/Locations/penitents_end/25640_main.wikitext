@@ -1,0 +1,51 @@
+**Profile**: Title: Penitent's End, Origin: Rinascita.
+
+{{Location Tabs|Penitent's End|Interactive Map}}
+{{Intro/Location|Penitent's End}} This forsaken island, shrouded in dense sea mist, is dominated by steep cliffs with giant ringed structures. Ships caught in the currents often end up stranded on the island's treacherous shores. For those lucky enough to survive the wreck, even greater horrors await...
+
+It is the destination of the [[Pilgrim's Sail]], as well as the home of the [[Troupe of Fools]].
+
+==Areas==
+{| class="article-table alternating-colors-table tdc1" style="width: 100%;"
+! style="width: 200px;" |Name
+!Image
+!Description
+|- id="Wailing Ascent"
+|[[Wailing Ascent]]
+|[[File:Wailing Ascent.png|180px]] 
+
+|
+|- id="Fool's Elysium"
+|[[Fool's Elysium]]
+|[[File:Fool's Elysium.png|180px]] 
+
+|The Fool's Troupe travels across all of Rinascita, but their base sits in a vast cavern on Penitent's End. Their creed is freedom, their treasure is laughter, and their gift to every city they visit is a new tale.
+|- id="Figurehead's Shrine"
+|[[Figurehead's Shrine]]
+|[[File:Figurehead's Shrine.png|180px]] 
+
+|
+|- id="The Strand"
+|[[The Strand]]
+|[[File:The Strand.png|180px]] 
+
+|}
+
+==Quests==
+{{Quest by Category List|Penitent's End Quests}}
+
+==Exploration Report==
+
+==='''Ragunna: A Minority Report I'''===
+* Unlocked by reaching 50% exploration.
+
+=== '''Ragunna: A Minority Report II''' ===
+* Unlocked by reaching 100% exploration.
+
+==Notable Features==
+===Tacet Fields===
+* [[Tacet Field: Penitent's End]]
+===Bosses===
+* {{Enemy|Dragon of Dirge}}
+* {{Enemy|Nightmare: Crownless}}
+===Resources===

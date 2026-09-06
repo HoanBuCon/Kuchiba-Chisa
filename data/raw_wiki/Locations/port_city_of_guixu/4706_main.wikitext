@@ -1,0 +1,59 @@
+**Profile**: Title: Port City of Guixu, Origin: Huanglong.
+
+{{Location Tabs|Map:Port City of Guixu}}
+
+The '''Port City of Guixu''' was a former settlement located on the western coast of Outer [[Huanglong]]. Hundreds of years ago, it hosted the world's tallest building. The Incinero Petal Toxin from the Sea of Flames caused the destruction and mass evacuation of the city. Before the Lament descended upon the city, leaving nothing but ruin, Guixu had an outdoor music venue at Nostalgia Isle, as well as a record shop within the city. Its remains now float in the air with a menacing black hole behind it, reminding all of Jinzhou what came before.
+
+==Areas==
+{| class="article-table alternating-colors-table tdc1" style="width: 100%;"
+! style="width: 200px;" |Name
+!Image
+!Description
+|- id="Donglu Research Station"
+|[[Donglu Research Station]]
+|[[File:Donglu Research Station.png|180px]]
+|A research base built around the ruins of a dilapidated skyscraper.
+|- id="Nostalgia Isle"
+|[[Nostalgia Isle]]
+|[[File:Nostalgia Isle.png|180px]]
+|A large outdoor music venue situated on an island next to the Sea of Flames.
+|- id="Sea of Flames"
+|[[Sea of Flames]]
+|[[File:Sea of Flames.png|180px]]
+|The ruins of the city of Guixu, now destroyed by the Lament.
+|- id="Settle Range"
+|[[Settle Range]]
+|[[File:Settle Range.png|180px]]
+|Ruins of the past hide amongst the hills.
+|}
+
+==Quests==
+{{Quest by Category List|Port City of Guixu}}
+
+==Exploration Report==
+===An Unfaded Recording I===
+
+*Unlocked by reaching 50% exploration.
+
+===An Unfaded Recording II===
+
+*Unlocked by reaching 100% exploration.
+
+==Notable Features==
+===Challenges===
+*[[Forgery Challenge: Flaming Remnants]]
+*[[Tacet Field: Port City of Guixu]]
+===Bosses===
+*{{Enemy|Inferno Rider}}
+===Resources===
+*{{Item|Angelica}}
+*{{Item|Belle Poppy}}
+*{{Item|Edodes}}
+*{{Item|Erodorchid}}
+*{{Item|Floramber}}
+*{{Item|Honeysuckle}}
+*{{Item|Indigoite}}
+*{{Item|Noctemint}}
+*{{Item|Viola}}
+
+There is a [[Dauntless Evernight]] on the roof of one of the floating buildings in the Sea of Flames.

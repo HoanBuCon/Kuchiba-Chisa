@@ -1,0 +1,18 @@
+{
+  "schema_version": "rag06-final-answer-review-v1",
+  "status": "PASS",
+  "structurally_valid": true,
+  "semantic_evaluation": "NOT_EVALUATED_PENDING_HUMAN_REVIEW",
+  "case_count": 38,
+  "answerable_cases": 36,
+  "abstention_cases": 2,
+  "evidence_items": 190,
+  "provider_http_responses_captured": 38,
+  "prompt_leakage_candidates_redacted": 0,
+  "pending_human_reviews": 38,
+  "golden_set_fingerprint_unchanged": true,
+  "retrieval_or_reranker_tuning": 0,
+  "corpus_or_index_mutations": 0,
+  "semantic_auto_scores": 0,
+  "errors": []
+}

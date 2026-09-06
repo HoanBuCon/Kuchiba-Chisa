@@ -1,0 +1,36 @@
+**Profile**: Title: Etching Plains, Origin: Roya Frostlands.
+
+{{Intro/Location|Etching Plains}}
+
+==Areas==
+{| class="article-table alternating-colors-table tdc1" style="width: 100%;"
+! style="width: 200px;" |Name
+!Image
+!Description
+|- id="Collapsed Arcbend Ravine"
+|[[Collapsed Arcbend Ravine]]
+|[[File:Collapsed Arcbend Ravine.png|180px]]
+|
+|}
+
+==Quests==
+{{Quest by Category List|Giant's Gaze Quests}}
+
+==Exploration Report==
+===P.C.–LH–R/0987 Lahai-Roi Interim Research Briefing===
+* Achieve 50% Area Exploration Progress to unlock the full report.
+
+===P.C.–LH–R/0988 Lahai-Roi Interim Research Briefing===
+* Achieve 100% Area Exploration Progress to unlock the full report.
+
+==Notable Features==
+===Challenges===
+* [[Forgery Challenge: Fallen Sanctum]]
+* [[Forgery Challenge: Lesson in Sunset]]
+===Bosses===
+*{{Enemy|Nightmare: Adam Smasher}}
+
+===Resources===
+* {{Item|Dusk Honeypot}}
+* {{Item|Gemini Spore}}
+* {{Item|Rimewisp}}

@@ -1,0 +1,52 @@
+**Profile**: Origin: Huanglong.
+
+'''Norfall Barrens''' is a region in [[Huanglong]]. It is a dangerous area with hostile Tacet Discords. The area consists of a narrow passageway from [[Desorock Highland]] reaching down into the central area of the barrens. It contains the titanic [[Ovathrax]] statue along with many floating buildings. 
+
+==Areas==
+{| class="article-table alternating-colors-table tdc1" style="width: 100%;"
+! style="width: 200px;" |Name
+! Image
+! Description
+|- id="Norfall Valley"
+|[[Norfall Valley]]
+|[[File:Norfall Valley.png|180px]] 
+
+|A pass from which the rest of Norfall Barrens can be accessed.
+|- id="Suspended Ruins"
+|[[Suspended Ruins]]
+|[[File:Suspended ruins.png|180px]]
+
+|Ruins floating in the air, disturbed by the Threnodian.
+|}
+
+==Quests==
+{{Quest by Category List|Norfall Barrens Quests}}
+
+==Exploration Report==
+===Outrider Squad's Norfall Valley Investigation Logs I===
+
+*Unlocked by reaching 50% exploration.
+
+===Outrider Squad's Norfall Valley Investigation Logs II===
+
+*Unlocked by reaching 100% exploration.
+
+==Notable Features==
+===Bosses===
+*{{Enemy|Dreamless}}
+
+===Resources===
+*{{Item|Angelica}}
+*{{Item|Chromeshell}}
+*{{Item|Cliffrecluse}}
+*{{Item|Dewvetch}}
+*{{Item|Edodes}}
+*{{Item|Erodorchid}}
+*{{Item|Floramber}}
+*{{Item|Indigoite}}
+*{{Item|Noctemint}}
+*{{Item|Pearl Leaf}}
+*{{Item|Perilla}}
+*{{Item|Umbragricus}}
+*{{Item|Violet Coral}}
+*{{Item|Waterlamp}}

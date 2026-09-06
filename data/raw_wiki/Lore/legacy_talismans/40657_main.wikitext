@@ -1,0 +1,26 @@
+**Profile**: Title: Legacy Talismans, Origin: Ashinohara.
+
+The '''Legacy Talismans''' are five relics left behind by the [[Sentinels]] in [[Ashinohara]] that were distributed amongst the nation's internal factions for safekeeping.
+
+==Suzu==
+The Suzu is a talisman in the shape of a bell that's described as being able to grant its bearer the power to 'draw upon the future'. The futures that are able to be drawn upon, however, are not limitless and continuous and excessive use of the Suzu shortens the bearer's lifespan.
+
+The bearer of the Suzu is referred to by the title "Miko of Flaming Sakura".
+
+===Bearers===
+{| class="article-table"
+!Icon!!Personnel!!Title!!Status
+|-
+|[[File:Resonator Hiyuki.png|50px]]
+|[[Hiyuki]]
+|Miko of Eternal Flaming Sakura
+Lady Miko
+Ghost Miko
+|Active
+|-
+|-
+|[[File:NPC Gyokuro.jpg|50px]]
+|[[Gyokuro]]
+|Miko of Flaming Sakura
+|Inactive (deceased)
+|}

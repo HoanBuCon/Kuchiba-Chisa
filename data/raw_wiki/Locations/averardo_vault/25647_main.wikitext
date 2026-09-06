@@ -1,0 +1,43 @@
+**Profile**: Title: Averardo Vault, Origin: Rinascita.
+
+{{Intro/Location|Averardo Vault}} Built by the [[Montelli Family]], Averardo Vault stands like a heavily guarded fortress on the outskirts of the city. Within its walls lies the family's vast collection of treasures, including precious metals, artworks, and rare Echoes. The vault also provides public services such as secure storage for valuables, appraisals, and acquisition of rare collections.
+
+==Areas==
+{| class="article-table alternating-colors-table tdc1" style="width: 100%;"
+! style="width: 200px;" |Name
+!Image
+!Description
+|- id="Averardo Vault (Area)"
+|[[Averardo Vault (Area)]]
+|[[File:Averardo Vault.png|180px]] 
+
+|
+|- id="A Hidden Place"
+|[[A Hidden Place]]
+|[[File:A Hidden Place.png|180px]] 
+
+|
+|- id="Underground Vault"
+|[[Vault Underground]]
+|[[File:Vault Underground.png|180px]] 
+
+|
+|}
+
+==Quests==
+{{Quest by Category List|Averardo Vault}}
+
+== Exploration Report ==
+
+==='''The Gentlemen at the Door I''' ===
+* Unlocked by reaching 50% exploration.
+
+=== '''The Gentlemen at the Door II''' ===
+* Unlocked by reaching 100% exploration.
+
+==Notable Features==
+===Bosses===
+====Overlord Class====
+* {{Enemy|Sentry Construct}}
+* {{Enemy|Nightmare: Inferno Rider}}
+===Resources===

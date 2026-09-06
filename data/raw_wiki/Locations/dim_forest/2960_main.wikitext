@@ -1,0 +1,71 @@
+**Profile**: Title: Dim Forest, Origin: Huanglong.
+
+'''Dim Forest''' is a region in [[Huanglong]]. It is a forest consisting of many unique flora, such as the [[Violet Banyan]] and [[Giant Banyan]], with hostile life inhabiting the [[Forbidden Forest]]. A number of Jinzhou scientists spend their time here to study Hoochiefs.
+
+==Areas==
+{| class="article-table alternating-colors-table tdc1" style="width: 100%;"
+! style="width: 200px;" | Name
+! Image
+! Description
+|- id="" Forbidden Forest
+| [[Forbidden Forest]]
+|[[File:Forbidden Forest.png|180px]]
+
+|A mist-filled forest, where the trees whisper crying tears.
+|- id="Giant Banyan"
+|[[Giant Banyan]]
+|[[File:Dim Forest Loading Screen.png|180px]]
+
+|A large tree in the center of the Dim Forest, spreading a toxic infection throughout the woods.
+|- id="Thorny Passage"
+|[[Thorny Passage]]
+|[[File:Thorny Passage.png|180px]]
+
+|A passage under the hills separating Dim Forest from the world.
+|- id="Violet Banyan"
+|[[Violet Banyan]]
+|[[File:Violet Banyan.png|180px]]
+
+|A large willow with multiple moon-shaped lamps hanging from its branches.
+|- id="Wenye Beach"
+|[[Wenye Beach]]
+|[[File:Wenye Beach.png|180px]]
+
+|A large swath of area reaching from the coast to the woodland. There is a cave with a research camp set up in this area.
+|}
+==Quests==
+{{Quest by Category List|Dim Forest Quests}}
+
+==Exploration Report==
+===A Behavioral Report on the Hoochiefs in Dim Forest I===
+
+*Unlocked by reaching 50% exploration.
+
+===A Behavioral Report on the Hoochiefs in Dim Forest II===
+
+==Notable Features==
+===Challenges===
+*[[Forgery Challenge: Misty Forest]]
+*[[Tacet Field: Dim Forest]]
+
+===Bosses===
+*{{Enemy|Feilian Beringal}}
+
+===Resources===
+*{{Item|Angelica}}
+*{{Item|Bunnywort}}
+*{{Item|Chromeshell}}
+*{{Item|Coriolus}}
+*{{Item|Edodes}}
+*{{Item|Floramber}}
+*{{Item|Lemongrass}}
+*{{Item|Pearl Leaf}}
+*{{Item|Perilla}}
+*{{Item|Scarletthorn}}
+
+==Soundtracks==
+{{Soundtracks by Category Table|type=location}}
+
+==Trivia==
+*[[Suan'ni]] are said to have lived in the Violet Banyan.
+*The Banyan's moon shaped lamps are suggested to be made by [[Lingyang]] and his grandmother.

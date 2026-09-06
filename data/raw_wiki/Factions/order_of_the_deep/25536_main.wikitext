@@ -1,0 +1,77 @@
+# Order of the Deep
+
+**Faction Profile**: Leader: Vacant, Founder: Napoli II, Base: Cathedral of Mercury.
+
+{{About|the [[Factions|faction]]|the location|Order of the Deep (Area)}}
+
+The '''Order of the Deep''' is a [[Ragunna|Ragunnesi]] faction that worships the [[Sentinel]], [[Imperator]], and claim to act as the Sentinel's representative. They serve as the ultimate authority in Ragunna. According to the city tradition, the Order's clergy serve as the Sentinel's earthly emissaries, guiding the people with Their divine word. 
+
+The Order plays a crucial role in protecting the city by ensuring safety and order by handling various affairs, from city management, diplomacy, civil disputes, and overseeing all [[Common Echoes]]. The Order's doctrines are: "Salvation," "Ascension," and "Unity" as per their Codex. 
+
+==Overview==
+The Order's clergy has declared themselves Imperator's earthly emissaries, ensuring the people remain faithful to {{not a typo|Their}} (Imperator's) divine will.
+
+===Organization===
+The Order of the Deep's leader is known as the Primus, who governs over Ragunna. The order's previous Primus, [[Fenrico]], has also declared himself to be Imperator's Appointed Resonator, referred to as the "Enlightened One" in Rinascita. No other Primus has made such a declaration in the history of the Order. 
+
+Serving beneath the Primus, Priests oversee the rites and sacred duties of the Order, while the Acolytes dedicate their lives to the study of the Codex and spreading Imperator's teachings throughout Ragunna.
+
+====Echoes ====
+Describing [[Echoes]] as a gift from the Sentinel, the Order employs many in their service, both to assist in various duties, as well as for ceremonial purpose.
+
+The [[La Guardia]] are armed Common Echoes that stand guard around the city and only respond to the Order's command, while the [[Lucerna]] are Echo lanterns that monitor citizens. [[Vox Sanctus]] is a type of ceremonial Echo that cannot move on its own, but preaches doctrine day and night to the people of Ragunna.
+
+Members of the Order are instructed not to get too close to Echoes, in order to remain objective in matters pertaining to sharing knowledge about them. 
+
+===Regulation===
+In Ragunna, the Order controls all Terminals for Echo use. They store Echoes in their Data Bank and only grant access after thorough screening, thus only a select few Resonators are permitted to carry a [[Ragunna Terminal]] of their own, deemed Reserved Terminals in Ragunna. For that reason, most Ragunnesi rely on the Genesis Nexus and Common Echoes, and do not know much of other Echoes, referred to as Reserved Echoes.
+
+Those who break the law in Ragunna are sent to the Order Tribunal at the Penitentiary for sentencing, and those who violate sacred doctrines are branded as Fools and sent away on the [[Pilgrim's Sail]] for "salvation". This does not exclude children.
+
+==Branches==
+===Order Tribunal===
+The Order's secular judicial body that handles civil and criminal matters between families and commoners. 
+
+===Chamber of Discipline ===
+The Order's executive arm that commands the military to enforce the law. The Chamber heavily employs Echoes in combat, and its enforcers are often called "Inquisitors." 
+
+===Order Penitentiary===
+The Order's religious court that trials heretics and faithless who question and defy the divine teachings of the Sentinel.
+
+==Known Members==
+===Playable Resonators===
+{| class="article-table"
+!Icon!!Member!!Position
+|-
+|[[File:Resonator Cartethyia.png|50px]]
+|[[Cartethyia]]
+|Blessed Maiden "Fleurdelys" (formerly)
+|-
+|[[File:Resonator Phoebe.png|50px]]
+|[[Phoebe]]
+|Acolyte
+|}
+
+===Other Members===
+{{NPCs by Category List
+|Order of the Deep
+|not1 = Deceased Characters
+|header = Order of the Deep Members
+
+===Former Members===
+* [[Napoli II]] (Deceased, First Primus, founder of the Order)
+* [[Fenrico]] (Deceased, Previous Primus)
+
+===Echoes===
+* [[La Guardia]]
+* [[Lucerna]]
+* [[Vox Sanctus]]
+
+==Official Doctrine== 
+*[[Codex of the Deep: Preface (137th Edition)]]
+*[[Codex of the Deep: Order Philosophy I]]
+*[[Codex of the Deep: Order Philosophy II]]
+
+==Trivia==
+*Upon joining the Order, all Acolytes are given a new name, known as their 'holy name'.
+*Samples of Rinascita dreams found by the [[Strange White Cat]] showed very few dreams among members of the Order.

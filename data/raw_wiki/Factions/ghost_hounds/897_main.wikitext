@@ -1,0 +1,16 @@
+**Faction Profile**: Leader: Calcharo, Founder: Calcharo.
+
+The '''Ghost Hounds''' are a multinational mercenary group rooted in the [[New Federation]]'s [[Lawless Zone]], annexed from the gang known as "the Underdogs", both led by Calcharo.
+
+==Notable Members==
+{| class="article-table"
+!Icon!!Name!!Position
+|-
+|[[File:Resonator Calcharo.png|50px]]
+|[[Calcharo]]
+|Leader and founder
+|}
+
+== Trivia ==
+
+* [[Galbrena]] was once invited by Calcharo to join Ghost Hounds, but she declined.

@@ -1,0 +1,65 @@
+**Faction Profile**: Base: Multiple.
+
+> As we reconstruct the civilization to its former prosperity, the Pioneer Association brings back from the field signs that proves the world is getting better.
+> — Maqi
+
+The '''Pioneer Association''' is an organization that provides players rewards for their [[/Exploration Progress|Exploration Progress]].
+
+==History==
+The Pioneer Association was founded before the Lament, and is a prestigious organization in science and education. Previously known as the '''Universal Geographic Society''', their primary goal is to explore and understand the world, as well as provide graphic documentation that humanity is moving towards a better future.  They collaborate with scientists, photographers, and journalists to document the world's wonders after the Ebb Tide.
+
+The organization has a deep history, and new members are required to participate in regular 'Fireside Chats' to learn and share it with each other. Among the more notable stories is that of the Icebreakers, members who go expeditions to survey distant and dangerous places, and were the first to witness many powerful [[Tacet Discord|Tacet Discords]]. 
+
+They have made countless discoveries and have amassed a global audience through the release of magazines, maps, books, and entertainment, and interactive media.
+
+==Branches==
+* [[Huanglong]]
+**[[Jinzhou]]
+*[[New Federation]]
+*[[Rinascita]]
+**[[Ragunna City]]
+
+==Members==
+===Jinzhou Branch=== 
+*[[Maqi]] - Receptionist
+*[[Ganxue]] - Shop Receptionist
+*[[Shangwen]] - Explorer
+*[[Bei Shi]] - Explorer
+* [[Xianchen]] - Explorer
+*[[Zhuyi]] - Intern photographer
+* [[Bowen]] - Journalist
+*[[Yuzhou]] - Mt. Firmament Receptionist
+
+====Ragunna Branch====
+The Pioneer Association of Ragunna operates under the Wutherium Film studio, the visual production division, dedicated through capturing reality through film.
+
+* [[Fulmine]]
+* [[Alannah]]
+
+====Former Members====
+*[[Uncle Li]] 
+===Unknown Branch===
+*[[Wuli]] - Explorer
+*[[Siran]] - Intern Journalist
+
+===New Federation===
+====Former Members====
+{| class="article-table"
+!Icon!!Name!!Position
+|-
+|[[File:Resonator Verina.png|50px]]
+|[[Verina]]
+|Rigg's Explorers Expedition Team Member
+|-
+|[[File:Resonator Lucilla.png|50px]]
+|[[Lucilla]]
+|Former scholar with the Pioneer Association
+|}
+
+==Weapons==
+The Pioneer Association provides the following weapons for its members:   
+*[[Pistols of Voyager]]
+*[[Gauntlets of Voyager]]
+*[[Broadblade of Voyager]]
+*[[Rectifier of Voyager]]
+*[[Sword of Voyager]]

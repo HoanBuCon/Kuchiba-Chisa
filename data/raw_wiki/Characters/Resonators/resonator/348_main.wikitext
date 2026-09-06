@@ -1,0 +1,26 @@
+**Profile**: Title: Resonator.
+
+{{CharacterSystemTabs}}
+
+'''Resonators''' are the obtainable playable characters of ''[[Wuthering Waves]]'', and individuals with the ability to resonate with certain objects or elements and manipulate their frequencies.
+
+==Lore==
+A Resonator experiences their Awakening when they first resonate with the frequencies of something in the world and gain their Resonance Ability, also known as their [[Forte]]. When this happens, a symbol known as a [[Tacet Mark]] appears some place on their body, with its exact shape determined by what is called their [[Rabelle's Curve]]. 
+
+For most Resonators, their Rabelle's Curve classifies them into one of the following categories: [[:Category:Natural Resonators|Natural]], [[:Category:Mutant Resonators|Mutant]], or [[:Category:Congenital Resonators|Congenital]]. These categorizations generally follow a pattern of when and how the Resonator experienced their Awakening.
+
+Experts believe that a Resonator's past experiences and subconscious mind influence their Forte. Their genetic information evolves Post-Awakening, and thus their unique [[Resonance Spectrum Patterns]] can be compared to samples of Spectrum Patterns of other existing things to determine what they have resonated with.
+
+Exerting one's mental capacity, an exhausted emotional state, as well as other circumstances, can lead to a Resonator to [[Overclocking|Overclock]]; losing control of their Forte and endangering themselves and others. The exact triggers and effects of Overclocking are unique to each Resonator.
+
+Each Resonator has a [[:Category:Character Forte Examination Report|Forte Examination Report]] that provides information on their status as a Resonator. 
+
+==How to Obtain==
+
+The primary method of obtaining Resonators is through using {{Item|Radiant Tide|20|text=Radiant Tide}} or {{Item|Lustrous Tide|20|text=Lustrous Tide}} to [[Convene]]. Players can obtain Convene Tokens from:
+*Rewards from completing [[Exploration Progress]] and [[Event]]s
+*Rewards from Level Bundles
+*Rewards from the Insider Channel in the [[Pioneer Podcast]]
+*Bought for {{Item|Astrite|20|x=160}} in the Tidal Exchange
+*Bought for {{Item|Afterglow Coral|20|x=8}} in the Item Exchange
+*Bought for {{Item|Oscillated Coral|20|x=70}} in the Item Exchange (Limit of 7 each per [[Version|patch]])
