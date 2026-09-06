@@ -27,7 +27,7 @@ class GroundedModelPayload(BaseModel):
     sentiment: dict[str, Any]
 
     @model_validator(mode="after")
-    def validate_decision_claims(self) -> "GroundedModelPayload":
+    def validate_decision_claims(self) -> GroundedModelPayload:
         if self.decision == "answer" and not self.claims:
             raise ValueError("answer decision requires at least one claim")
         if self.decision == "abstain" and self.claims:
