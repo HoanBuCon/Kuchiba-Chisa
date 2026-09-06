@@ -1,0 +1,37 @@
+{
+  "result": "PASS",
+  "golden_set_fingerprint_unchanged": true,
+  "jina_artifact_fingerprint_unchanged": true,
+  "answerable_cases": 81,
+  "abstention_cases_excluded": 2,
+  "annotation_items": 405,
+  "proposed_counts": {
+    "pending": 245,
+    "relevant": 160
+  },
+  "human_label_counts": {
+    "relevant": 405,
+    "irrelevant": 0,
+    "ambiguous": 0,
+    "pending": 0
+  },
+  "context_precision": 1.0,
+  "evaluated_items": 405,
+  "srs_threshold": 0.75,
+  "srs_comparison": "PASS",
+  "duplicate_annotation_ids": [],
+  "invalid_evidence_ids": [],
+  "rank_evidence_mismatches": [],
+  "invalid_source_excerpts": [],
+  "invalid_labels": [],
+  "invalid_proposed_labels": [],
+  "incomplete_reviewer_provenance": [],
+  "abstention_annotations": [],
+  "incomplete_answerable_cases": [],
+  "unexpected_cases": [],
+  "pending_or_ambiguous_counted_as_irrelevant": 0,
+  "provider_calls": 0,
+  "corpus_or_index_mutations": 0,
+  "errors": [],
+  "approval_errors": []
+}

@@ -7,6 +7,7 @@ from app.domain.interfaces.repositories import ILoreParentRepository
 from app.domain.interfaces.reranker import (
     ICrossEncoderReranker,
     RerankerDataBoundary,
+    RerankerFailureKind,
     RerankerUnavailableError,
 )
 from app.domain.interfaces.vector_store import IVectorStore
@@ -325,12 +326,26 @@ class LoreRetriever:
             cross_encoder_scores = await self.cross_encoder_reranker.rerank(
                 query_text, documents
             )
-        except (RerankerUnavailableError, TimeoutError) as error:
+        except RerankerUnavailableError as error:
             log.warning(
                 "Cross-encoder reranking unavailable; using deterministic fallback",
                 error_type=type(error).__name__,
+                failure_kind=error.failure_kind.value,
             )
-            return self._apply_cross_encoder_fallback(scored_candidates, "unavailable")
+            return self._apply_cross_encoder_fallback(
+                scored_candidates,
+                self._provider_failure_reason(error.failure_kind),
+            )
+        except TimeoutError as error:
+            log.warning(
+                "Cross-encoder reranking unavailable; using deterministic fallback",
+                error_type=type(error).__name__,
+                failure_kind="timeout",
+            )
+            return self._apply_cross_encoder_fallback(
+                scored_candidates,
+                "provider_timeout",
+            )
         if len(cross_encoder_scores) != len(rerankable) or not all(
             math.isfinite(score) for score in cross_encoder_scores
         ):
@@ -367,6 +382,16 @@ class LoreRetriever:
             reason=reason,
             degraded=degraded,
         )
+
+    @staticmethod
+    def _provider_failure_reason(failure_kind: RerankerFailureKind) -> str:
+        return {
+            RerankerFailureKind.TIMEOUT: "provider_timeout",
+            RerankerFailureKind.RATE_LIMIT: "provider_rate_limit",
+            RerankerFailureKind.PROVIDER: "provider_unavailable",
+            RerankerFailureKind.INVALID_RESPONSE: "provider_invalid_response",
+            RerankerFailureKind.UNAVAILABLE: "provider_unavailable",
+        }[failure_kind]
 
     def _reranker_requires_public_evidence(self) -> bool:
         """Treat an unlabelled adapter as remote until it proves otherwise."""

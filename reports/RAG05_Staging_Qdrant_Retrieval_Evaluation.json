@@ -1,0 +1,3009 @@
+{
+  "task": "RAG-05 production-equivalent first-stage retrieval evaluation",
+  "executed_at": "2026-09-05T19:39:13.372196+00:00",
+  "dataset_version": "rag05-raw-wiki-golden-v1-draft",
+  "approved_content_sha256": "01cababd2e9912a1b435869afc500dc44d727d045f6bafe868c3be4bc6004976",
+  "corpus_version": "raw-wiki-sha256:0efe04a586291c11c84c921a1839ac20be53f12c026e3ea2b43595e9a7d32c7a",
+  "pipeline_fingerprint": "41a2cbe0acc39133bf5c6804363e10f2f5ced475dd10c96129de9e51aa24a102",
+  "total_cases": 83,
+  "answerable_cases": 81,
+  "abstention_cases": 2,
+  "abstention_evaluation": "not_evaluable_at_retrieval_stage",
+  "context_precision": "not_evaluable_label_incomplete",
+  "production_equivalent": true,
+  "environment": {
+    "qdrant_url": "http://localhost:16333",
+    "database": "localhost:55432/chisa_test"
+  },
+  "configuration": {
+    "embedding_model": "intfloat/multilingual-e5-small",
+    "embedding_dimension": 384,
+    "document_embedding_path": "BatchEmbeddingStage current production default",
+    "query_embedding_prefix": "query: ",
+    "top_k": 5,
+    "score_threshold": 0.35,
+    "candidate_multiplier": 10,
+    "rrf_k": 60,
+    "dense_weight": 1.0,
+    "sparse_weight": 1.0,
+    "reranker_enabled": false,
+    "access_scope": "public"
+  },
+  "corpus": {
+    "raw_revisions": 214,
+    "parents": 1020,
+    "chunks": 1078,
+    "identity": "raw_wiki page/revision/checksum mapped from retrieved chunk payload",
+    "parent_child": "production parent IDs, persisted parent rows, windowed hydration"
+  },
+  "index": {
+    "staging_version": "rag05eval_01cababd2e_20260905192227",
+    "physical_collections": {
+      "character_lore": "character_lore__rag05eval_01cababd2e_20260905192227",
+      "world_lore": "world_lore__rag05eval_01cababd2e_20260905192227",
+      "story_lore": "story_lore__rag05eval_01cababd2e_20260905192227"
+    },
+    "indexed_counts": {
+      "character_lore": 142,
+      "world_lore": 933,
+      "story_lore": 3
+    },
+    "aliases_published": false
+  },
+  "quality": {
+    "identical_top_k_cases": 0,
+    "ranking_changed_cases": [
+      "rw-002",
+      "rw-004",
+      "rw-005",
+      "rw-006",
+      "rw-010",
+      "rw-012",
+      "rw-013",
+      "rw-015",
+      "rw-016",
+      "rw-017",
+      "rw-021",
+      "rw-022",
+      "rw-027",
+      "rw-028",
+      "rw-033",
+      "rw-034",
+      "rw-035",
+      "rw-037",
+      "rw-040",
+      "rw-041",
+      "rw-045",
+      "rw-046",
+      "rw-053",
+      "rw-054",
+      "rw-060",
+      "rw-066",
+      "rw-073",
+      "rw-078",
+      "rw-081"
+    ],
+    "newly_missed_cases": [
+      "rw-013",
+      "rw-035",
+      "rw-041",
+      "rw-060"
+    ],
+    "recovered_cases": [],
+    "offline_metrics": {
+      "hit_at_1": 0.790123,
+      "hit_at_3": 0.975309,
+      "hit_at_5": 1.0,
+      "mrr_at_10": 0.882716,
+      "context_precision": "not_evaluable_label_incomplete"
+    },
+    "staging_metrics": {
+      "hit_at_1": 0.679012,
+      "hit_at_3": 0.901235,
+      "hit_at_5": 0.950617,
+      "mrr_at_10": 0.788889,
+      "context_precision": "not_evaluable_label_incomplete"
+    },
+    "staging_first_stage_misses": [
+      "rw-013",
+      "rw-035",
+      "rw-041",
+      "rw-060"
+    ],
+    "offline_first_stage_misses": [],
+    "hydration_mismatches": [],
+    "retrieval_modes": {
+      "hybrid_rrf": 415
+    },
+    "query_latency_ms": {
+      "mean": 1701.27,
+      "p50": 1626.773,
+      "p95": 1853.325,
+      "max": 4835.635
+    }
+  },
+  "comparison": {
+    "identical_top_k_cases": 0,
+    "ranking_changed_cases": [
+      "rw-002",
+      "rw-004",
+      "rw-005",
+      "rw-006",
+      "rw-010",
+      "rw-012",
+      "rw-013",
+      "rw-015",
+      "rw-016",
+      "rw-017",
+      "rw-021",
+      "rw-022",
+      "rw-027",
+      "rw-028",
+      "rw-033",
+      "rw-034",
+      "rw-035",
+      "rw-037",
+      "rw-040",
+      "rw-041",
+      "rw-045",
+      "rw-046",
+      "rw-053",
+      "rw-054",
+      "rw-060",
+      "rw-066",
+      "rw-073",
+      "rw-078",
+      "rw-081"
+    ],
+    "newly_missed_cases": [
+      "rw-013",
+      "rw-035",
+      "rw-041",
+      "rw-060"
+    ],
+    "recovered_cases": [],
+    "offline_metrics": {
+      "hit_at_1": 0.790123,
+      "hit_at_3": 0.975309,
+      "hit_at_5": 1.0,
+      "mrr_at_10": 0.882716,
+      "context_precision": "not_evaluable_label_incomplete"
+    }
+  },
+  "safety": {
+    "namespace_before": {
+      "collections": [],
+      "aliases": []
+    },
+    "namespace_after": {
+      "collections": [
+        "character_lore__rag05eval_01cababd2e_20260905192227",
+        "story_lore__rag05eval_01cababd2e_20260905192227",
+        "world_lore__rag05eval_01cababd2e_20260905192227"
+      ],
+      "aliases": []
+    },
+    "aliases_unchanged": true,
+    "unexpected_collection_changes": [],
+    "active_alias_mutations": 0
+  },
+  "case_results": [
+    {
+      "case_id": "rw-001",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:585:101912:cdb1baf766c207e6:chunk:000"
+      ],
+      "offline_top_k_evidence_ids": [
+        "raw_wiki:585:101912:cdb1baf766c207e6:chunk:000",
+        "raw_wiki:28266:131321:5f2feb1a382c7763:chunk:000",
+        "raw_wiki:2950:136664:e95d89fd5baab650:chunk:000",
+        "raw_wiki:522:103593:65ac76a1400c1df9:chunk:000",
+        "raw_wiki:594:99232:375b861a53702e76:chunk:000"
+      ],
+      "staging_top_k_evidence_ids": [
+        "raw_wiki:585:101912:cdb1baf766c207e6:chunk:000",
+        "raw_wiki:28266:131321:5f2feb1a382c7763:chunk:000",
+        "raw_wiki:585:101912:cdb1baf766c207e6:chunk:000",
+        "raw_wiki:522:103593:65ac76a1400c1df9:chunk:000",
+        "raw_wiki:7557:136952:45922d58511e4b39:chunk:000"
+      ],
+      "offline_rank": 1,
+      "staging_rank": 1,
+      "identical_top_k": false,
+      "candidate_set_added": [
+        "raw_wiki:7557:136952:45922d58511e4b39:chunk:000"
+      ],
+      "candidate_set_removed": [
+        "raw_wiki:2950:136664:e95d89fd5baab650:chunk:000",
+        "raw_wiki:594:99232:375b861a53702e76:chunk:000"
+      ],
+      "query_latency_ms": 4835.635,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-002",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:624:92922:791b05ce14a56b51:chunk:000"
+      ],
+      "offline_top_k_evidence_ids": [
+        "raw_wiki:624:92922:791b05ce14a56b51:chunk:000",
+        "raw_wiki:1567:101748:f9ba41dcd5878b94:chunk:000",
+        "raw_wiki:938:130729:103ceb2210a7890a:chunk:000",
+        "raw_wiki:594:99232:375b861a53702e76:chunk:000",
+        "raw_wiki:38235:100618:8025f2e9981c401e:chunk:000"
+      ],
+      "staging_top_k_evidence_ids": [
+        "raw_wiki:938:130729:103ceb2210a7890a:chunk:000",
+        "raw_wiki:624:92922:791b05ce14a56b51:chunk:000",
+        "raw_wiki:938:130729:103ceb2210a7890a:chunk:000",
+        "raw_wiki:624:92922:791b05ce14a56b51:chunk:000",
+        "raw_wiki:938:130729:103ceb2210a7890a:chunk:000"
+      ],
+      "offline_rank": 1,
+      "staging_rank": 2,
+      "identical_top_k": false,
+      "candidate_set_added": [],
+      "candidate_set_removed": [
+        "raw_wiki:1567:101748:f9ba41dcd5878b94:chunk:000",
+        "raw_wiki:38235:100618:8025f2e9981c401e:chunk:000",
+        "raw_wiki:594:99232:375b861a53702e76:chunk:000"
+      ],
+      "query_latency_ms": 1800.019,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-003",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:1126:100700:6b4973485554efd0:chunk:000"
+      ],
+      "offline_top_k_evidence_ids": [
+        "raw_wiki:1126:100700:6b4973485554efd0:chunk:000",
+        "raw_wiki:898:136862:688bebbd18ed5936:chunk:000",
+        "raw_wiki:936:101013:20a1567cbe138350:chunk:000",
+        "raw_wiki:510:99239:2efdf295348ddd30:chunk:000",
+        "raw_wiki:8833:91979:75ddac21cdabcb6b:chunk:000"
+      ],
+      "staging_top_k_evidence_ids": [
+        "raw_wiki:1126:100700:6b4973485554efd0:chunk:000",
+        "raw_wiki:26888:99747:897732ef65d43d75:chunk:000",
+        "raw_wiki:26888:99747:897732ef65d43d75:chunk:000",
+        "raw_wiki:936:101013:20a1567cbe138350:chunk:000",
+        "raw_wiki:42446:101218:eba876c1698e83d3:chunk:000"
+      ],
+      "offline_rank": 1,
+      "staging_rank": 1,
+      "identical_top_k": false,
+      "candidate_set_added": [
+        "raw_wiki:26888:99747:897732ef65d43d75:chunk:000",
+        "raw_wiki:42446:101218:eba876c1698e83d3:chunk:000"
+      ],
+      "candidate_set_removed": [
+        "raw_wiki:510:99239:2efdf295348ddd30:chunk:000",
+        "raw_wiki:8833:91979:75ddac21cdabcb6b:chunk:000",
+        "raw_wiki:898:136862:688bebbd18ed5936:chunk:000"
+      ],
+      "query_latency_ms": 2049.992,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-004",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:510:99239:2efdf295348ddd30:chunk:000"
+      ],
+      "offline_top_k_evidence_ids": [
+        "raw_wiki:510:99239:2efdf295348ddd30:chunk:000",
+        "raw_wiki:898:136862:688bebbd18ed5936:chunk:000",
+        "raw_wiki:8833:91979:75ddac21cdabcb6b:chunk:000",
+        "raw_wiki:525:136877:39d55ea5f72b29b4:chunk:000",
+        "raw_wiki:32481:129772:e7ccfc67c470284f:chunk:000"
+      ],
+      "staging_top_k_evidence_ids": [
+        "raw_wiki:898:136862:688bebbd18ed5936:chunk:000",
+        "raw_wiki:510:99239:2efdf295348ddd30:chunk:000",
+        "raw_wiki:3150:93366:590fa68ddaf79966:chunk:000",
+        "raw_wiki:510:99239:2efdf295348ddd30:chunk:000",
+        "raw_wiki:898:136862:688bebbd18ed5936:chunk:000"
+      ],
+      "offline_rank": 1,
+      "staging_rank": 2,
+      "identical_top_k": false,
+      "candidate_set_added": [
+        "raw_wiki:3150:93366:590fa68ddaf79966:chunk:000"
+      ],
+      "candidate_set_removed": [
+        "raw_wiki:32481:129772:e7ccfc67c470284f:chunk:000",
+        "raw_wiki:525:136877:39d55ea5f72b29b4:chunk:000",
+        "raw_wiki:8833:91979:75ddac21cdabcb6b:chunk:000"
+      ],
+      "query_latency_ms": 1657.448,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-005",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:632:99398:b84b4f87a9d9ade9:chunk:000"
+      ],
+      "offline_top_k_evidence_ids": [
+        "raw_wiki:897:102549:c6a570ea76923091:chunk:000",
+        "raw_wiki:632:99398:b84b4f87a9d9ade9:chunk:000",
+        "raw_wiki:1007:135324:8f903f46d2fa3ca8:chunk:000",
+        "raw_wiki:20501:99245:c417da3a3a4d4832:chunk:000",
+        "raw_wiki:1126:100700:6b4973485554efd0:chunk:000"
+      ],
+      "staging_top_k_evidence_ids": [
+        "raw_wiki:632:99398:b84b4f87a9d9ade9:chunk:000",
+        "raw_wiki:897:102549:c6a570ea76923091:chunk:000",
+        "raw_wiki:897:102549:c6a570ea76923091:chunk:000",
+        "raw_wiki:42446:101218:eba876c1698e83d3:chunk:000",
+        "raw_wiki:42446:101218:eba876c1698e83d3:chunk:000"
+      ],
+      "offline_rank": 2,
+      "staging_rank": 1,
+      "identical_top_k": false,
+      "candidate_set_added": [
+        "raw_wiki:42446:101218:eba876c1698e83d3:chunk:000"
+      ],
+      "candidate_set_removed": [
+        "raw_wiki:1007:135324:8f903f46d2fa3ca8:chunk:000",
+        "raw_wiki:1126:100700:6b4973485554efd0:chunk:000",
+        "raw_wiki:20501:99245:c417da3a3a4d4832:chunk:000"
+      ],
+      "query_latency_ms": 1624.107,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-006",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:24786:99400:468ec49727209414:chunk:000"
+      ],
+      "offline_top_k_evidence_ids": [
+        "raw_wiki:25657:91989:d626dfb652418c20:chunk:000",
+        "raw_wiki:24789:103572:c7b9cc0a8a5cdfa6:chunk:000",
+        "raw_wiki:631:92944:69b041db40e5f9b9:chunk:000",
+        "raw_wiki:24786:99400:468ec49727209414:chunk:000",
+        "raw_wiki:41347:136483:fa9dacb31cfc56c4:chunk:000"
+      ],
+      "staging_top_k_evidence_ids": [
+        "raw_wiki:25657:91989:d626dfb652418c20:chunk:000",
+        "raw_wiki:25657:91989:d626dfb652418c20:chunk:000",
+        "raw_wiki:24786:99400:468ec49727209414:chunk:000",
+        "raw_wiki:26166:100313:e86c3e53552bfa24:chunk:000",
+        "raw_wiki:24789:103572:c7b9cc0a8a5cdfa6:chunk:000"
+      ],
+      "offline_rank": 4,
+      "staging_rank": 3,
+      "identical_top_k": false,
+      "candidate_set_added": [
+        "raw_wiki:26166:100313:e86c3e53552bfa24:chunk:000"
+      ],
+      "candidate_set_removed": [
+        "raw_wiki:41347:136483:fa9dacb31cfc56c4:chunk:000",
+        "raw_wiki:631:92944:69b041db40e5f9b9:chunk:000"
+      ],
+      "query_latency_ms": 1640.529,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-007",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:599:96614:56f198042c315f7e:chunk:000"
+      ],
+      "offline_top_k_evidence_ids": [
+        "raw_wiki:1007:135324:8f903f46d2fa3ca8:chunk:000",
+        "raw_wiki:599:96614:56f198042c315f7e:chunk:000",
+        "raw_wiki:21831:100474:3c84649dd4a92bf0:chunk:000",
+        "raw_wiki:522:103593:65ac76a1400c1df9:chunk:000",
+        "raw_wiki:10662:101177:8871332c765002d5:chunk:000"
+      ],
+      "staging_top_k_evidence_ids": [
+        "raw_wiki:7557:136952:45922d58511e4b39:chunk:000",
+        "raw_wiki:599:96614:56f198042c315f7e:chunk:000",
+        "raw_wiki:599:96614:56f198042c315f7e:chunk:000",
+        "raw_wiki:1007:135324:8f903f46d2fa3ca8:chunk:000",
+        "raw_wiki:7557:136952:45922d58511e4b39:chunk:000"
+      ],
+      "offline_rank": 2,
+      "staging_rank": 2,
+      "identical_top_k": false,
+      "candidate_set_added": [
+        "raw_wiki:7557:136952:45922d58511e4b39:chunk:000"
+      ],
+      "candidate_set_removed": [
+        "raw_wiki:10662:101177:8871332c765002d5:chunk:000",
+        "raw_wiki:21831:100474:3c84649dd4a92bf0:chunk:000",
+        "raw_wiki:522:103593:65ac76a1400c1df9:chunk:000"
+      ],
+      "query_latency_ms": 1776.068,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-008",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:1007:135324:8f903f46d2fa3ca8:chunk:000"
+      ],
+      "offline_top_k_evidence_ids": [
+        "raw_wiki:1007:135324:8f903f46d2fa3ca8:chunk:000",
+        "raw_wiki:20570:99750:24263a0b90c8239f:chunk:000",
+        "raw_wiki:21831:100474:3c84649dd4a92bf0:chunk:000",
+        "raw_wiki:10662:101177:8871332c765002d5:chunk:000",
+        "raw_wiki:522:103593:65ac76a1400c1df9:chunk:000"
+      ],
+      "staging_top_k_evidence_ids": [
+        "raw_wiki:1007:135324:8f903f46d2fa3ca8:chunk:000",
+        "raw_wiki:10662:101177:8871332c765002d5:chunk:000",
+        "raw_wiki:1007:135324:8f903f46d2fa3ca8:chunk:000",
+        "raw_wiki:522:103593:65ac76a1400c1df9:chunk:000",
+        "raw_wiki:7557:136952:45922d58511e4b39:chunk:000"
+      ],
+      "offline_rank": 1,
+      "staging_rank": 1,
+      "identical_top_k": false,
+      "candidate_set_added": [
+        "raw_wiki:7557:136952:45922d58511e4b39:chunk:000"
+      ],
+      "candidate_set_removed": [
+        "raw_wiki:20570:99750:24263a0b90c8239f:chunk:000",
+        "raw_wiki:21831:100474:3c84649dd4a92bf0:chunk:000"
+      ],
+      "query_latency_ms": 1633.257,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-009",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:938:130729:103ceb2210a7890a:chunk:000"
+      ],
+      "offline_top_k_evidence_ids": [
+        "raw_wiki:938:130729:103ceb2210a7890a:chunk:000",
+        "raw_wiki:898:136862:688bebbd18ed5936:chunk:000",
+        "raw_wiki:38120:136663:32d09c1fe3aba7cc:chunk:000",
+        "raw_wiki:1567:101748:f9ba41dcd5878b94:chunk:000",
+        "raw_wiki:624:92922:791b05ce14a56b51:chunk:000"
+      ],
+      "staging_top_k_evidence_ids": [
+        "raw_wiki:938:130729:103ceb2210a7890a:chunk:000",
+        "raw_wiki:1567:101748:f9ba41dcd5878b94:chunk:000",
+        "raw_wiki:938:130729:103ceb2210a7890a:chunk:000",
+        "raw_wiki:594:99232:375b861a53702e76:chunk:000",
+        "raw_wiki:938:130729:103ceb2210a7890a:chunk:000"
+      ],
+      "offline_rank": 1,
+      "staging_rank": 1,
+      "identical_top_k": false,
+      "candidate_set_added": [
+        "raw_wiki:594:99232:375b861a53702e76:chunk:000"
+      ],
+      "candidate_set_removed": [
+        "raw_wiki:38120:136663:32d09c1fe3aba7cc:chunk:000",
+        "raw_wiki:624:92922:791b05ce14a56b51:chunk:000",
+        "raw_wiki:898:136862:688bebbd18ed5936:chunk:000"
+      ],
+      "query_latency_ms": 1616.663,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-010",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:896:99150:aa2a5187c5ebc08b:chunk:000"
+      ],
+      "offline_top_k_evidence_ids": [
+        "raw_wiki:525:136877:39d55ea5f72b29b4:chunk:000",
+        "raw_wiki:896:99150:aa2a5187c5ebc08b:chunk:000",
+        "raw_wiki:26888:99747:897732ef65d43d75:chunk:000",
+        "raw_wiki:2495:95403:5f1aaaf7d623c0fb:chunk:000",
+        "raw_wiki:530:92937:7837aba16c572cfb:chunk:000"
+      ],
+      "staging_top_k_evidence_ids": [
+        "raw_wiki:896:99150:aa2a5187c5ebc08b:chunk:000",
+        "raw_wiki:525:136877:39d55ea5f72b29b4:chunk:000",
+        "raw_wiki:896:99150:aa2a5187c5ebc08b:chunk:000",
+        "raw_wiki:525:136877:39d55ea5f72b29b4:chunk:000",
+        "raw_wiki:896:99150:aa2a5187c5ebc08b:chunk:000"
+      ],
+      "offline_rank": 2,
+      "staging_rank": 1,
+      "identical_top_k": false,
+      "candidate_set_added": [],
+      "candidate_set_removed": [
+        "raw_wiki:2495:95403:5f1aaaf7d623c0fb:chunk:000",
+        "raw_wiki:26888:99747:897732ef65d43d75:chunk:000",
+        "raw_wiki:530:92937:7837aba16c572cfb:chunk:000"
+      ],
+      "query_latency_ms": 1607.302,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-011",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:37391:136476:a3a41695657088cf:chunk:000"
+      ],
+      "offline_top_k_evidence_ids": [
+        "raw_wiki:37391:136476:a3a41695657088cf:chunk:000",
+        "raw_wiki:38235:100618:8025f2e9981c401e:chunk:000",
+        "raw_wiki:37545:99389:e03a4665c08c9421:chunk:000",
+        "raw_wiki:37543:136637:1b307d031f032102:chunk:000",
+        "raw_wiki:74510:136497:08b9987b991645d1:chunk:000"
+      ],
+      "staging_top_k_evidence_ids": [
+        "raw_wiki:37391:136476:a3a41695657088cf:chunk:000",
+        "raw_wiki:37391:136476:a3a41695657088cf:chunk:000",
+        "raw_wiki:37391:136476:a3a41695657088cf:chunk:000",
+        "raw_wiki:37543:136637:1b307d031f032102:chunk:000",
+        "raw_wiki:37541:136636:74112a929ceb38f7:chunk:000"
+      ],
+      "offline_rank": 1,
+      "staging_rank": 1,
+      "identical_top_k": false,
+      "candidate_set_added": [
+        "raw_wiki:37541:136636:74112a929ceb38f7:chunk:000"
+      ],
+      "candidate_set_removed": [
+        "raw_wiki:37545:99389:e03a4665c08c9421:chunk:000",
+        "raw_wiki:38235:100618:8025f2e9981c401e:chunk:000",
+        "raw_wiki:74510:136497:08b9987b991645d1:chunk:000"
+      ],
+      "query_latency_ms": 1615.117,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-012",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:24999:99250:79f12bc79353ca49:chunk:000"
+      ],
+      "offline_top_k_evidence_ids": [
+        "raw_wiki:24999:99250:79f12bc79353ca49:chunk:000",
+        "raw_wiki:3397:68336:55000dcfdd441514:chunk:000",
+        "raw_wiki:348:86837:3b43bd7a33ec8d89:chunk:000",
+        "raw_wiki:3396:100702:28996f331293b5d4:chunk:000",
+        "raw_wiki:39515:92424:e9a79d8cabc6e6e2:chunk:000"
+      ],
+      "staging_top_k_evidence_ids": [
+        "raw_wiki:348:86837:3b43bd7a33ec8d89:chunk:000",
+        "raw_wiki:24999:99250:79f12bc79353ca49:chunk:000",
+        "raw_wiki:24999:99250:79f12bc79353ca49:chunk:000",
+        "raw_wiki:24999:99250:79f12bc79353ca49:chunk:000",
+        "raw_wiki:348:86837:3b43bd7a33ec8d89:chunk:000"
+      ],
+      "offline_rank": 1,
+      "staging_rank": 2,
+      "identical_top_k": false,
+      "candidate_set_added": [],
+      "candidate_set_removed": [
+        "raw_wiki:3396:100702:28996f331293b5d4:chunk:000",
+        "raw_wiki:3397:68336:55000dcfdd441514:chunk:000",
+        "raw_wiki:39515:92424:e9a79d8cabc6e6e2:chunk:000"
+      ],
+      "query_latency_ms": 1630.06,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-013",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:1008:99738:fa6acd585adb1d2a:chunk:000"
+      ],
+      "offline_top_k_evidence_ids": [
+        "raw_wiki:1008:99738:fa6acd585adb1d2a:chunk:000",
+        "raw_wiki:1083:99739:cbdfd02257976eaa:chunk:000",
+        "raw_wiki:26008:95284:8988a45bf257299b:chunk:000",
+        "raw_wiki:37304:100540:d9c41f8fbf72b2ba:chunk:000",
+        "raw_wiki:1084:100118:75a288862a10382c:chunk:000"
+      ],
+      "staging_top_k_evidence_ids": [
+        "raw_wiki:1005:99743:9725a6704dccd755:chunk:000",
+        "raw_wiki:26165:131313:b22f8b2701be47df:chunk:000",
+        "raw_wiki:1005:99743:9725a6704dccd755:chunk:000",
+        "raw_wiki:26165:131313:b22f8b2701be47df:chunk:000",
+        "raw_wiki:1074:99099:f1f00f7ba53c6ff4:chunk:000"
+      ],
+      "offline_rank": 1,
+      "staging_rank": null,
+      "identical_top_k": false,
+      "candidate_set_added": [
+        "raw_wiki:1005:99743:9725a6704dccd755:chunk:000",
+        "raw_wiki:1074:99099:f1f00f7ba53c6ff4:chunk:000",
+        "raw_wiki:26165:131313:b22f8b2701be47df:chunk:000"
+      ],
+      "candidate_set_removed": [
+        "raw_wiki:1008:99738:fa6acd585adb1d2a:chunk:000",
+        "raw_wiki:1083:99739:cbdfd02257976eaa:chunk:000",
+        "raw_wiki:1084:100118:75a288862a10382c:chunk:000",
+        "raw_wiki:26008:95284:8988a45bf257299b:chunk:000",
+        "raw_wiki:37304:100540:d9c41f8fbf72b2ba:chunk:000"
+      ],
+      "query_latency_ms": 1613.469,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-014",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:8269:95612:1c103964f57b0be7:chunk:000"
+      ],
+      "offline_top_k_evidence_ids": [
+        "raw_wiki:8269:95612:1c103964f57b0be7:chunk:000",
+        "raw_wiki:1009:99745:d7056297fb95023e:chunk:000",
+        "raw_wiki:25643:131312:454e154acc0d2056:chunk:000",
+        "raw_wiki:42308:102539:fd8cd359be141d6c:chunk:000",
+        "raw_wiki:43216:103597:56c6d36978ca3e8a:chunk:000"
+      ],
+      "staging_top_k_evidence_ids": [
+        "raw_wiki:8269:95612:1c103964f57b0be7:chunk:000",
+        "raw_wiki:8269:95612:1c103964f57b0be7:chunk:000",
+        "raw_wiki:8269:95612:1c103964f57b0be7:chunk:000",
+        "raw_wiki:8269:95612:1c103964f57b0be7:chunk:000",
+        "raw_wiki:8269:95612:1c103964f57b0be7:chunk:000"
+      ],
+      "offline_rank": 1,
+      "staging_rank": 1,
+      "identical_top_k": false,
+      "candidate_set_added": [],
+      "candidate_set_removed": [
+        "raw_wiki:1009:99745:d7056297fb95023e:chunk:000",
+        "raw_wiki:25643:131312:454e154acc0d2056:chunk:000",
+        "raw_wiki:42308:102539:fd8cd359be141d6c:chunk:000",
+        "raw_wiki:43216:103597:56c6d36978ca3e8a:chunk:000"
+      ],
+      "query_latency_ms": 1611.38,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-015",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:585:101912:cdb1baf766c207e6:chunk:000"
+      ],
+      "offline_top_k_evidence_ids": [
+        "raw_wiki:522:103593:65ac76a1400c1df9:chunk:000",
+        "raw_wiki:585:101912:cdb1baf766c207e6:chunk:000",
+        "raw_wiki:3397:68336:55000dcfdd441514:chunk:000",
+        "raw_wiki:24789:103572:c7b9cc0a8a5cdfa6:chunk:000",
+        "raw_wiki:26196:99513:1106002e2cae6db6:chunk:000"
+      ],
+      "staging_top_k_evidence_ids": [
+        "raw_wiki:585:101912:cdb1baf766c207e6:chunk:000",
+        "raw_wiki:37391:136476:a3a41695657088cf:chunk:000",
+        "raw_wiki:1074:99099:f1f00f7ba53c6ff4:chunk:000",
+        "raw_wiki:26165:131313:b22f8b2701be47df:chunk:000",
+        "raw_wiki:585:101912:cdb1baf766c207e6:chunk:000"
+      ],
+      "offline_rank": 2,
+      "staging_rank": 1,
+      "identical_top_k": false,
+      "candidate_set_added": [
+        "raw_wiki:1074:99099:f1f00f7ba53c6ff4:chunk:000",
+        "raw_wiki:26165:131313:b22f8b2701be47df:chunk:000",
+        "raw_wiki:37391:136476:a3a41695657088cf:chunk:000"
+      ],
+      "candidate_set_removed": [
+        "raw_wiki:24789:103572:c7b9cc0a8a5cdfa6:chunk:000",
+        "raw_wiki:26196:99513:1106002e2cae6db6:chunk:000",
+        "raw_wiki:3397:68336:55000dcfdd441514:chunk:000",
+        "raw_wiki:522:103593:65ac76a1400c1df9:chunk:000"
+      ],
+      "query_latency_ms": 1628.75,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-016",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:38537:136632:f169b123e2bf1328:chunk:000"
+      ],
+      "offline_top_k_evidence_ids": [
+        "raw_wiki:38537:136632:f169b123e2bf1328:chunk:000",
+        "raw_wiki:38235:100618:8025f2e9981c401e:chunk:000",
+        "raw_wiki:37545:99389:e03a4665c08c9421:chunk:000",
+        "raw_wiki:37543:136637:1b307d031f032102:chunk:000",
+        "raw_wiki:37391:136476:a3a41695657088cf:chunk:000"
+      ],
+      "staging_top_k_evidence_ids": [
+        "raw_wiki:37543:136637:1b307d031f032102:chunk:000",
+        "raw_wiki:37391:136476:a3a41695657088cf:chunk:000",
+        "raw_wiki:38537:136632:f169b123e2bf1328:chunk:000",
+        "raw_wiki:37391:136476:a3a41695657088cf:chunk:000",
+        "raw_wiki:37391:136476:a3a41695657088cf:chunk:000"
+      ],
+      "offline_rank": 1,
+      "staging_rank": 3,
+      "identical_top_k": false,
+      "candidate_set_added": [],
+      "candidate_set_removed": [
+        "raw_wiki:37545:99389:e03a4665c08c9421:chunk:000",
+        "raw_wiki:38235:100618:8025f2e9981c401e:chunk:000"
+      ],
+      "query_latency_ms": 1626.773,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-017",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:31310:99574:02e73eaeaa24eb2c:chunk:000"
+      ],
+      "offline_top_k_evidence_ids": [
+        "raw_wiki:35947:81917:0722434a53a692f3:chunk:000",
+        "raw_wiki:26373:135203:7ce25d5efa8633f0:chunk:000",
+        "raw_wiki:31852:72985:814ee00262cb4399:chunk:000",
+        "raw_wiki:31310:99574:02e73eaeaa24eb2c:chunk:000",
+        "raw_wiki:36127:136805:e24081106cc2ec69:chunk:000"
+      ],
+      "staging_top_k_evidence_ids": [
+        "raw_wiki:31310:99574:02e73eaeaa24eb2c:chunk:000",
+        "raw_wiki:26373:135203:7ce25d5efa8633f0:chunk:000",
+        "raw_wiki:35947:81917:0722434a53a692f3:chunk:000",
+        "raw_wiki:31310:99574:02e73eaeaa24eb2c:chunk:000",
+        "raw_wiki:31852:72985:814ee00262cb4399:chunk:000"
+      ],
+      "offline_rank": 4,
+      "staging_rank": 1,
+      "identical_top_k": false,
+      "candidate_set_added": [],
+      "candidate_set_removed": [
+        "raw_wiki:36127:136805:e24081106cc2ec69:chunk:000"
+      ],
+      "query_latency_ms": 1616.294,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-018",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:31556:97061:ae4ba2c13572f46c:chunk:000"
+      ],
+      "offline_top_k_evidence_ids": [
+        "raw_wiki:31556:97061:ae4ba2c13572f46c:chunk:000",
+        "raw_wiki:41351:136925:90323859e9cee427:chunk:000",
+        "raw_wiki:10962:102771:2a81d1750c1bd1aa:chunk:000",
+        "raw_wiki:2194:93487:38b47940345289fb:chunk:000",
+        "raw_wiki:2589:93513:33215ce21d4c6e0d:chunk:000"
+      ],
+      "staging_top_k_evidence_ids": [
+        "raw_wiki:31556:97061:ae4ba2c13572f46c:chunk:000",
+        "raw_wiki:31556:97061:ae4ba2c13572f46c:chunk:000",
+        "raw_wiki:42446:101218:eba876c1698e83d3:chunk:000",
+        "raw_wiki:41351:136925:90323859e9cee427:chunk:000",
+        "raw_wiki:42446:101218:eba876c1698e83d3:chunk:000"
+      ],
+      "offline_rank": 1,
+      "staging_rank": 1,
+      "identical_top_k": false,
+      "candidate_set_added": [
+        "raw_wiki:42446:101218:eba876c1698e83d3:chunk:000"
+      ],
+      "candidate_set_removed": [
+        "raw_wiki:10962:102771:2a81d1750c1bd1aa:chunk:000",
+        "raw_wiki:2194:93487:38b47940345289fb:chunk:000",
+        "raw_wiki:2589:93513:33215ce21d4c6e0d:chunk:000"
+      ],
+      "query_latency_ms": 1631.707,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-019",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:27951:96619:ae0c99137282474b:chunk:000"
+      ],
+      "offline_top_k_evidence_ids": [
+        "raw_wiki:27951:96619:ae0c99137282474b:chunk:000",
+        "raw_wiki:25664:91980:9be7bfc0b0f78f80:chunk:000",
+        "raw_wiki:25663:91985:b51f66944bdef37e:chunk:000",
+        "raw_wiki:28266:131321:5f2feb1a382c7763:chunk:000",
+        "raw_wiki:37545:99389:e03a4665c08c9421:chunk:000"
+      ],
+      "staging_top_k_evidence_ids": [
+        "raw_wiki:27951:96619:ae0c99137282474b:chunk:000",
+        "raw_wiki:25664:91980:9be7bfc0b0f78f80:chunk:000",
+        "raw_wiki:25664:91980:9be7bfc0b0f78f80:chunk:000",
+        "raw_wiki:27951:96619:ae0c99137282474b:chunk:000",
+        "raw_wiki:25664:91980:9be7bfc0b0f78f80:chunk:000"
+      ],
+      "offline_rank": 1,
+      "staging_rank": 1,
+      "identical_top_k": false,
+      "candidate_set_added": [],
+      "candidate_set_removed": [
+        "raw_wiki:25663:91985:b51f66944bdef37e:chunk:000",
+        "raw_wiki:28266:131321:5f2feb1a382c7763:chunk:000",
+        "raw_wiki:37545:99389:e03a4665c08c9421:chunk:000"
+      ],
+      "query_latency_ms": 1624.048,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-020",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:24790:96615:17a7637a393aa5fe:chunk:000"
+      ],
+      "offline_top_k_evidence_ids": [
+        "raw_wiki:24790:96615:17a7637a393aa5fe:chunk:000",
+        "raw_wiki:25663:91985:b51f66944bdef37e:chunk:000",
+        "raw_wiki:26373:135203:7ce25d5efa8633f0:chunk:000",
+        "raw_wiki:27328:91925:a28bd8b7df1bbaf6:chunk:000",
+        "raw_wiki:28670:96621:ac4f9f01f5e3796b:chunk:000"
+      ],
+      "staging_top_k_evidence_ids": [
+        "raw_wiki:24790:96615:17a7637a393aa5fe:chunk:000",
+        "raw_wiki:25663:91985:b51f66944bdef37e:chunk:000",
+        "raw_wiki:27120:96278:b1047d1aa9a9b8d2:chunk:000",
+        "raw_wiki:24790:96615:17a7637a393aa5fe:chunk:000",
+        "raw_wiki:25663:91985:b51f66944bdef37e:chunk:000"
+      ],
+      "offline_rank": 1,
+      "staging_rank": 1,
+      "identical_top_k": false,
+      "candidate_set_added": [
+        "raw_wiki:27120:96278:b1047d1aa9a9b8d2:chunk:000"
+      ],
+      "candidate_set_removed": [
+        "raw_wiki:26373:135203:7ce25d5efa8633f0:chunk:000",
+        "raw_wiki:27328:91925:a28bd8b7df1bbaf6:chunk:000",
+        "raw_wiki:28670:96621:ac4f9f01f5e3796b:chunk:000"
+      ],
+      "query_latency_ms": 1625.586,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-021",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:26196:99513:1106002e2cae6db6:chunk:000"
+      ],
+      "offline_top_k_evidence_ids": [
+        "raw_wiki:27120:96278:b1047d1aa9a9b8d2:chunk:000",
+        "raw_wiki:26165:131313:b22f8b2701be47df:chunk:000",
+        "raw_wiki:26196:99513:1106002e2cae6db6:chunk:000",
+        "raw_wiki:25640:101922:f3c187e67e6d767a:chunk:000",
+        "raw_wiki:24790:96615:17a7637a393aa5fe:chunk:000"
+      ],
+      "staging_top_k_evidence_ids": [
+        "raw_wiki:26196:99513:1106002e2cae6db6:chunk:000",
+        "raw_wiki:26165:131313:b22f8b2701be47df:chunk:000",
+        "raw_wiki:1012:123801:ecdcd6cae8d7c1f6:chunk:000",
+        "raw_wiki:26165:131313:b22f8b2701be47df:chunk:000",
+        "raw_wiki:27120:96278:b1047d1aa9a9b8d2:chunk:000"
+      ],
+      "offline_rank": 3,
+      "staging_rank": 1,
+      "identical_top_k": false,
+      "candidate_set_added": [
+        "raw_wiki:1012:123801:ecdcd6cae8d7c1f6:chunk:000"
+      ],
+      "candidate_set_removed": [
+        "raw_wiki:24790:96615:17a7637a393aa5fe:chunk:000",
+        "raw_wiki:25640:101922:f3c187e67e6d767a:chunk:000"
+      ],
+      "query_latency_ms": 1614.769,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-022",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:31283:102761:da0b008506be0f37:chunk:000"
+      ],
+      "offline_top_k_evidence_ids": [
+        "raw_wiki:31283:102761:da0b008506be0f37:chunk:000",
+        "raw_wiki:1567:101748:f9ba41dcd5878b94:chunk:000",
+        "raw_wiki:10962:102771:2a81d1750c1bd1aa:chunk:000",
+        "raw_wiki:10663:99243:9c4ba06310831f64:chunk:000",
+        "raw_wiki:21832:136283:293336c736128dae:chunk:000"
+      ],
+      "staging_top_k_evidence_ids": [
+        "raw_wiki:42446:101218:eba876c1698e83d3:chunk:000",
+        "raw_wiki:31283:102761:da0b008506be0f37:chunk:000",
+        "raw_wiki:37391:136476:a3a41695657088cf:chunk:000",
+        "raw_wiki:31283:102761:da0b008506be0f37:chunk:000",
+        "raw_wiki:42446:101218:eba876c1698e83d3:chunk:000"
+      ],
+      "offline_rank": 1,
+      "staging_rank": 2,
+      "identical_top_k": false,
+      "candidate_set_added": [
+        "raw_wiki:37391:136476:a3a41695657088cf:chunk:000",
+        "raw_wiki:42446:101218:eba876c1698e83d3:chunk:000"
+      ],
+      "candidate_set_removed": [
+        "raw_wiki:10663:99243:9c4ba06310831f64:chunk:000",
+        "raw_wiki:10962:102771:2a81d1750c1bd1aa:chunk:000",
+        "raw_wiki:1567:101748:f9ba41dcd5878b94:chunk:000",
+        "raw_wiki:21832:136283:293336c736128dae:chunk:000"
+      ],
+      "query_latency_ms": 1617.243,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-023",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:28670:96621:ac4f9f01f5e3796b:chunk:000"
+      ],
+      "offline_top_k_evidence_ids": [
+        "raw_wiki:28670:96621:ac4f9f01f5e3796b:chunk:000",
+        "raw_wiki:26008:95284:8988a45bf257299b:chunk:000",
+        "raw_wiki:24785:136671:712b3f900b1e25df:chunk:000",
+        "raw_wiki:26165:131313:b22f8b2701be47df:chunk:000",
+        "raw_wiki:27120:96278:b1047d1aa9a9b8d2:chunk:000"
+      ],
+      "staging_top_k_evidence_ids": [
+        "raw_wiki:28670:96621:ac4f9f01f5e3796b:chunk:000",
+        "raw_wiki:1005:99743:9725a6704dccd755:chunk:000",
+        "raw_wiki:42446:101218:eba876c1698e83d3:chunk:000",
+        "raw_wiki:599:96614:56f198042c315f7e:chunk:000",
+        "raw_wiki:37304:100540:d9c41f8fbf72b2ba:chunk:000"
+      ],
+      "offline_rank": 1,
+      "staging_rank": 1,
+      "identical_top_k": false,
+      "candidate_set_added": [
+        "raw_wiki:1005:99743:9725a6704dccd755:chunk:000",
+        "raw_wiki:37304:100540:d9c41f8fbf72b2ba:chunk:000",
+        "raw_wiki:42446:101218:eba876c1698e83d3:chunk:000",
+        "raw_wiki:599:96614:56f198042c315f7e:chunk:000"
+      ],
+      "candidate_set_removed": [
+        "raw_wiki:24785:136671:712b3f900b1e25df:chunk:000",
+        "raw_wiki:26008:95284:8988a45bf257299b:chunk:000",
+        "raw_wiki:26165:131313:b22f8b2701be47df:chunk:000",
+        "raw_wiki:27120:96278:b1047d1aa9a9b8d2:chunk:000"
+      ],
+      "query_latency_ms": 1623.054,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-024",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:530:92937:7837aba16c572cfb:chunk:000"
+      ],
+      "offline_top_k_evidence_ids": [
+        "raw_wiki:530:92937:7837aba16c572cfb:chunk:000",
+        "raw_wiki:1010:123798:8f9ec690e3b88c0c:chunk:000",
+        "raw_wiki:1007:135324:8f903f46d2fa3ca8:chunk:000",
+        "raw_wiki:10663:99243:9c4ba06310831f64:chunk:000",
+        "raw_wiki:10962:102771:2a81d1750c1bd1aa:chunk:000"
+      ],
+      "staging_top_k_evidence_ids": [
+        "raw_wiki:530:92937:7837aba16c572cfb:chunk:000",
+        "raw_wiki:3397:68336:55000dcfdd441514:chunk:000",
+        "raw_wiki:42446:101218:eba876c1698e83d3:chunk:000",
+        "raw_wiki:42446:101218:eba876c1698e83d3:chunk:000",
+        "raw_wiki:3397:68336:55000dcfdd441514:chunk:000"
+      ],
+      "offline_rank": 1,
+      "staging_rank": 1,
+      "identical_top_k": false,
+      "candidate_set_added": [
+        "raw_wiki:3397:68336:55000dcfdd441514:chunk:000",
+        "raw_wiki:42446:101218:eba876c1698e83d3:chunk:000"
+      ],
+      "candidate_set_removed": [
+        "raw_wiki:1007:135324:8f903f46d2fa3ca8:chunk:000",
+        "raw_wiki:1010:123798:8f9ec690e3b88c0c:chunk:000",
+        "raw_wiki:10663:99243:9c4ba06310831f64:chunk:000",
+        "raw_wiki:10962:102771:2a81d1750c1bd1aa:chunk:000"
+      ],
+      "query_latency_ms": 1594.421,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-025",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:39187:136635:e0a124eb457dfb82:chunk:000"
+      ],
+      "offline_top_k_evidence_ids": [
+        "raw_wiki:39187:136635:e0a124eb457dfb82:chunk:000",
+        "raw_wiki:1074:99099:f1f00f7ba53c6ff4:chunk:000",
+        "raw_wiki:27951:96619:ae0c99137282474b:chunk:000",
+        "raw_wiki:578:92959:015f94367d7cca18:chunk:000",
+        "raw_wiki:2950:136664:e95d89fd5baab650:chunk:000"
+      ],
+      "staging_top_k_evidence_ids": [
+        "raw_wiki:39187:136635:e0a124eb457dfb82:chunk:000",
+        "raw_wiki:38339:136640:9d71c98f093fd140:chunk:000",
+        "raw_wiki:1074:99099:f1f00f7ba53c6ff4:chunk:000",
+        "raw_wiki:37391:136476:a3a41695657088cf:chunk:000",
+        "raw_wiki:37391:136476:a3a41695657088cf:chunk:000"
+      ],
+      "offline_rank": 1,
+      "staging_rank": 1,
+      "identical_top_k": false,
+      "candidate_set_added": [
+        "raw_wiki:37391:136476:a3a41695657088cf:chunk:000",
+        "raw_wiki:38339:136640:9d71c98f093fd140:chunk:000"
+      ],
+      "candidate_set_removed": [
+        "raw_wiki:27951:96619:ae0c99137282474b:chunk:000",
+        "raw_wiki:2950:136664:e95d89fd5baab650:chunk:000",
+        "raw_wiki:578:92959:015f94367d7cca18:chunk:000"
+      ],
+      "query_latency_ms": 1640.627,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-026",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:522:103593:65ac76a1400c1df9:chunk:000"
+      ],
+      "offline_top_k_evidence_ids": [
+        "raw_wiki:522:103593:65ac76a1400c1df9:chunk:000",
+        "raw_wiki:1007:135324:8f903f46d2fa3ca8:chunk:000",
+        "raw_wiki:21831:100474:3c84649dd4a92bf0:chunk:000",
+        "raw_wiki:585:101912:cdb1baf766c207e6:chunk:000",
+        "raw_wiki:10662:101177:8871332c765002d5:chunk:000"
+      ],
+      "staging_top_k_evidence_ids": [
+        "raw_wiki:522:103593:65ac76a1400c1df9:chunk:000",
+        "raw_wiki:522:103593:65ac76a1400c1df9:chunk:000",
+        "raw_wiki:1007:135324:8f903f46d2fa3ca8:chunk:000",
+        "raw_wiki:585:101912:cdb1baf766c207e6:chunk:000",
+        "raw_wiki:21832:136283:293336c736128dae:chunk:000"
+      ],
+      "offline_rank": 1,
+      "staging_rank": 1,
+      "identical_top_k": false,
+      "candidate_set_added": [
+        "raw_wiki:21832:136283:293336c736128dae:chunk:000"
+      ],
+      "candidate_set_removed": [
+        "raw_wiki:10662:101177:8871332c765002d5:chunk:000",
+        "raw_wiki:21831:100474:3c84649dd4a92bf0:chunk:000"
+      ],
+      "query_latency_ms": 1638.269,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-027",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:31295:135376:0a70da2ff45c5134:chunk:000"
+      ],
+      "offline_top_k_evidence_ids": [
+        "raw_wiki:31295:135376:0a70da2ff45c5134:chunk:000",
+        "raw_wiki:1008:99738:fa6acd585adb1d2a:chunk:000",
+        "raw_wiki:1011:91978:42944d61edab4c7f:chunk:000",
+        "raw_wiki:1084:100118:75a288862a10382c:chunk:000",
+        "raw_wiki:1083:99739:cbdfd02257976eaa:chunk:000"
+      ],
+      "staging_top_k_evidence_ids": [
+        "raw_wiki:1005:99743:9725a6704dccd755:chunk:000",
+        "raw_wiki:1005:99743:9725a6704dccd755:chunk:000",
+        "raw_wiki:31295:135376:0a70da2ff45c5134:chunk:000",
+        "raw_wiki:26165:131313:b22f8b2701be47df:chunk:000",
+        "raw_wiki:37304:100540:d9c41f8fbf72b2ba:chunk:000"
+      ],
+      "offline_rank": 1,
+      "staging_rank": 3,
+      "identical_top_k": false,
+      "candidate_set_added": [
+        "raw_wiki:1005:99743:9725a6704dccd755:chunk:000",
+        "raw_wiki:26165:131313:b22f8b2701be47df:chunk:000",
+        "raw_wiki:37304:100540:d9c41f8fbf72b2ba:chunk:000"
+      ],
+      "candidate_set_removed": [
+        "raw_wiki:1008:99738:fa6acd585adb1d2a:chunk:000",
+        "raw_wiki:1011:91978:42944d61edab4c7f:chunk:000",
+        "raw_wiki:1083:99739:cbdfd02257976eaa:chunk:000",
+        "raw_wiki:1084:100118:75a288862a10382c:chunk:000"
+      ],
+      "query_latency_ms": 1624.148,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-028",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:40075:136638:d67583a80d55df95:chunk:000"
+      ],
+      "offline_top_k_evidence_ids": [
+        "raw_wiki:40510:100543:5d386e6f565fcdd8:chunk:000",
+        "raw_wiki:40075:136638:d67583a80d55df95:chunk:000",
+        "raw_wiki:40657:97698:cab5f6a8c2e733e8:chunk:000",
+        "raw_wiki:10663:99243:9c4ba06310831f64:chunk:000",
+        "raw_wiki:1007:135324:8f903f46d2fa3ca8:chunk:000"
+      ],
+      "staging_top_k_evidence_ids": [
+        "raw_wiki:40075:136638:d67583a80d55df95:chunk:000",
+        "raw_wiki:40510:100543:5d386e6f565fcdd8:chunk:000",
+        "raw_wiki:40657:97698:cab5f6a8c2e733e8:chunk:000",
+        "raw_wiki:40075:136638:d67583a80d55df95:chunk:000",
+        "raw_wiki:40075:136638:d67583a80d55df95:chunk:000"
+      ],
+      "offline_rank": 2,
+      "staging_rank": 1,
+      "identical_top_k": false,
+      "candidate_set_added": [],
+      "candidate_set_removed": [
+        "raw_wiki:1007:135324:8f903f46d2fa3ca8:chunk:000",
+        "raw_wiki:10663:99243:9c4ba06310831f64:chunk:000"
+      ],
+      "query_latency_ms": 1616.101,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-029",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:10962:102771:2a81d1750c1bd1aa:chunk:000"
+      ],
+      "offline_top_k_evidence_ids": [
+        "raw_wiki:10962:102771:2a81d1750c1bd1aa:chunk:000",
+        "raw_wiki:37606:95396:516e78ac4cb5e435:chunk:000",
+        "raw_wiki:900:99749:8adf6fa8df5985b0:chunk:000",
+        "raw_wiki:8689:130735:a3c36e894cf4a2c1:chunk:000",
+        "raw_wiki:41913:136779:8670bd0697124da2:chunk:000"
+      ],
+      "staging_top_k_evidence_ids": [
+        "raw_wiki:10962:102771:2a81d1750c1bd1aa:chunk:000",
+        "raw_wiki:1012:123801:ecdcd6cae8d7c1f6:chunk:000",
+        "raw_wiki:1012:123801:ecdcd6cae8d7c1f6:chunk:000",
+        "raw_wiki:41913:136779:8670bd0697124da2:chunk:000",
+        "raw_wiki:41351:136925:90323859e9cee427:chunk:000"
+      ],
+      "offline_rank": 1,
+      "staging_rank": 1,
+      "identical_top_k": false,
+      "candidate_set_added": [
+        "raw_wiki:1012:123801:ecdcd6cae8d7c1f6:chunk:000",
+        "raw_wiki:41351:136925:90323859e9cee427:chunk:000"
+      ],
+      "candidate_set_removed": [
+        "raw_wiki:37606:95396:516e78ac4cb5e435:chunk:000",
+        "raw_wiki:8689:130735:a3c36e894cf4a2c1:chunk:000",
+        "raw_wiki:900:99749:8adf6fa8df5985b0:chunk:000"
+      ],
+      "query_latency_ms": 1627.632,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-030",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:31296:99397:cf04c89a577454a6:chunk:000"
+      ],
+      "offline_top_k_evidence_ids": [
+        "raw_wiki:36127:136805:e24081106cc2ec69:chunk:000",
+        "raw_wiki:31296:99397:cf04c89a577454a6:chunk:000",
+        "raw_wiki:35947:81917:0722434a53a692f3:chunk:000",
+        "raw_wiki:34719:91929:0304da9d3799a321:chunk:000",
+        "raw_wiki:10962:102771:2a81d1750c1bd1aa:chunk:000"
+      ],
+      "staging_top_k_evidence_ids": [
+        "raw_wiki:36127:136805:e24081106cc2ec69:chunk:000",
+        "raw_wiki:31296:99397:cf04c89a577454a6:chunk:000",
+        "raw_wiki:36127:136805:e24081106cc2ec69:chunk:000",
+        "raw_wiki:35947:81917:0722434a53a692f3:chunk:000",
+        "raw_wiki:31296:99397:cf04c89a577454a6:chunk:000"
+      ],
+      "offline_rank": 2,
+      "staging_rank": 2,
+      "identical_top_k": false,
+      "candidate_set_added": [],
+      "candidate_set_removed": [
+        "raw_wiki:10962:102771:2a81d1750c1bd1aa:chunk:000",
+        "raw_wiki:34719:91929:0304da9d3799a321:chunk:000"
+      ],
+      "query_latency_ms": 1629.18,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-031",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:633:92941:f0bb12c836a8d2f8:chunk:000"
+      ],
+      "offline_top_k_evidence_ids": [
+        "raw_wiki:633:92941:f0bb12c836a8d2f8:chunk:000",
+        "raw_wiki:936:101013:20a1567cbe138350:chunk:000",
+        "raw_wiki:578:92959:015f94367d7cca18:chunk:000",
+        "raw_wiki:624:92922:791b05ce14a56b51:chunk:000",
+        "raw_wiki:588:99853:a4995516cd60ac47:chunk:000"
+      ],
+      "staging_top_k_evidence_ids": [
+        "raw_wiki:633:92941:f0bb12c836a8d2f8:chunk:000",
+        "raw_wiki:28266:131321:5f2feb1a382c7763:chunk:000",
+        "raw_wiki:624:92922:791b05ce14a56b51:chunk:000",
+        "raw_wiki:42446:101218:eba876c1698e83d3:chunk:000",
+        "raw_wiki:7557:136952:45922d58511e4b39:chunk:000"
+      ],
+      "offline_rank": 1,
+      "staging_rank": 1,
+      "identical_top_k": false,
+      "candidate_set_added": [
+        "raw_wiki:28266:131321:5f2feb1a382c7763:chunk:000",
+        "raw_wiki:42446:101218:eba876c1698e83d3:chunk:000",
+        "raw_wiki:7557:136952:45922d58511e4b39:chunk:000"
+      ],
+      "candidate_set_removed": [
+        "raw_wiki:578:92959:015f94367d7cca18:chunk:000",
+        "raw_wiki:588:99853:a4995516cd60ac47:chunk:000",
+        "raw_wiki:936:101013:20a1567cbe138350:chunk:000"
+      ],
+      "query_latency_ms": 1626.44,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-032",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:936:101013:20a1567cbe138350:chunk:000"
+      ],
+      "offline_top_k_evidence_ids": [
+        "raw_wiki:936:101013:20a1567cbe138350:chunk:000",
+        "raw_wiki:9279:92868:b7fb9fbd7f67e230:chunk:000",
+        "raw_wiki:1012:123801:ecdcd6cae8d7c1f6:chunk:000",
+        "raw_wiki:26196:99513:1106002e2cae6db6:chunk:000",
+        "raw_wiki:3397:68336:55000dcfdd441514:chunk:000"
+      ],
+      "staging_top_k_evidence_ids": [
+        "raw_wiki:936:101013:20a1567cbe138350:chunk:000",
+        "raw_wiki:1012:123801:ecdcd6cae8d7c1f6:chunk:000",
+        "raw_wiki:1012:123801:ecdcd6cae8d7c1f6:chunk:000",
+        "raw_wiki:8689:130735:a3c36e894cf4a2c1:chunk:000",
+        "raw_wiki:348:86837:3b43bd7a33ec8d89:chunk:000"
+      ],
+      "offline_rank": 1,
+      "staging_rank": 1,
+      "identical_top_k": false,
+      "candidate_set_added": [
+        "raw_wiki:348:86837:3b43bd7a33ec8d89:chunk:000",
+        "raw_wiki:8689:130735:a3c36e894cf4a2c1:chunk:000"
+      ],
+      "candidate_set_removed": [
+        "raw_wiki:26196:99513:1106002e2cae6db6:chunk:000",
+        "raw_wiki:3397:68336:55000dcfdd441514:chunk:000",
+        "raw_wiki:9279:92868:b7fb9fbd7f67e230:chunk:000"
+      ],
+      "query_latency_ms": 1642.623,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-033",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:525:136877:39d55ea5f72b29b4:chunk:000"
+      ],
+      "offline_top_k_evidence_ids": [
+        "raw_wiki:525:136877:39d55ea5f72b29b4:chunk:000",
+        "raw_wiki:2495:95403:5f1aaaf7d623c0fb:chunk:000",
+        "raw_wiki:896:99150:aa2a5187c5ebc08b:chunk:000",
+        "raw_wiki:26888:99747:897732ef65d43d75:chunk:000",
+        "raw_wiki:41346:135480:64a4b70df725824f:chunk:000"
+      ],
+      "staging_top_k_evidence_ids": [
+        "raw_wiki:26888:99747:897732ef65d43d75:chunk:000",
+        "raw_wiki:26888:99747:897732ef65d43d75:chunk:000",
+        "raw_wiki:525:136877:39d55ea5f72b29b4:chunk:000",
+        "raw_wiki:896:99150:aa2a5187c5ebc08b:chunk:000",
+        "raw_wiki:530:92937:7837aba16c572cfb:chunk:000"
+      ],
+      "offline_rank": 1,
+      "staging_rank": 3,
+      "identical_top_k": false,
+      "candidate_set_added": [
+        "raw_wiki:530:92937:7837aba16c572cfb:chunk:000"
+      ],
+      "candidate_set_removed": [
+        "raw_wiki:2495:95403:5f1aaaf7d623c0fb:chunk:000",
+        "raw_wiki:41346:135480:64a4b70df725824f:chunk:000"
+      ],
+      "query_latency_ms": 1615.338,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-034",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:631:92944:69b041db40e5f9b9:chunk:000"
+      ],
+      "offline_top_k_evidence_ids": [
+        "raw_wiki:631:92944:69b041db40e5f9b9:chunk:000",
+        "raw_wiki:900:99749:8adf6fa8df5985b0:chunk:000",
+        "raw_wiki:42308:102539:fd8cd359be141d6c:chunk:000",
+        "raw_wiki:1012:123801:ecdcd6cae8d7c1f6:chunk:000",
+        "raw_wiki:2495:95403:5f1aaaf7d623c0fb:chunk:000"
+      ],
+      "staging_top_k_evidence_ids": [
+        "raw_wiki:900:99749:8adf6fa8df5985b0:chunk:000",
+        "raw_wiki:631:92944:69b041db40e5f9b9:chunk:000",
+        "raw_wiki:900:99749:8adf6fa8df5985b0:chunk:000",
+        "raw_wiki:2960:99756:4c2d85a16f6eb409:chunk:000",
+        "raw_wiki:42446:101218:eba876c1698e83d3:chunk:000"
+      ],
+      "offline_rank": 1,
+      "staging_rank": 2,
+      "identical_top_k": false,
+      "candidate_set_added": [
+        "raw_wiki:2960:99756:4c2d85a16f6eb409:chunk:000",
+        "raw_wiki:42446:101218:eba876c1698e83d3:chunk:000"
+      ],
+      "candidate_set_removed": [
+        "raw_wiki:1012:123801:ecdcd6cae8d7c1f6:chunk:000",
+        "raw_wiki:2495:95403:5f1aaaf7d623c0fb:chunk:000",
+        "raw_wiki:42308:102539:fd8cd359be141d6c:chunk:000"
+      ],
+      "query_latency_ms": 1619.972,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-035",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:37545:99389:e03a4665c08c9421:chunk:000"
+      ],
+      "offline_top_k_evidence_ids": [
+        "raw_wiki:37391:136476:a3a41695657088cf:chunk:000",
+        "raw_wiki:37545:99389:e03a4665c08c9421:chunk:000",
+        "raw_wiki:37543:136637:1b307d031f032102:chunk:000",
+        "raw_wiki:38235:100618:8025f2e9981c401e:chunk:000",
+        "raw_wiki:39056:98971:e98008a22b980baa:chunk:000"
+      ],
+      "staging_top_k_evidence_ids": [
+        "raw_wiki:37391:136476:a3a41695657088cf:chunk:000",
+        "raw_wiki:37543:136637:1b307d031f032102:chunk:000",
+        "raw_wiki:37391:136476:a3a41695657088cf:chunk:000",
+        "raw_wiki:37541:136636:74112a929ceb38f7:chunk:000",
+        "raw_wiki:37540:136639:46f5898638863eb0:chunk:000"
+      ],
+      "offline_rank": 2,
+      "staging_rank": null,
+      "identical_top_k": false,
+      "candidate_set_added": [
+        "raw_wiki:37540:136639:46f5898638863eb0:chunk:000",
+        "raw_wiki:37541:136636:74112a929ceb38f7:chunk:000"
+      ],
+      "candidate_set_removed": [
+        "raw_wiki:37545:99389:e03a4665c08c9421:chunk:000",
+        "raw_wiki:38235:100618:8025f2e9981c401e:chunk:000",
+        "raw_wiki:39056:98971:e98008a22b980baa:chunk:000"
+      ],
+      "query_latency_ms": 1623.885,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-036",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:20501:99245:c417da3a3a4d4832:chunk:000"
+      ],
+      "offline_top_k_evidence_ids": [
+        "raw_wiki:10459:95089:82fed37418e8019f:chunk:000",
+        "raw_wiki:20501:99245:c417da3a3a4d4832:chunk:000",
+        "raw_wiki:10663:99243:9c4ba06310831f64:chunk:000",
+        "raw_wiki:39520:92431:04b764f58c74add4:chunk:000",
+        "raw_wiki:1007:135324:8f903f46d2fa3ca8:chunk:000"
+      ],
+      "staging_top_k_evidence_ids": [
+        "raw_wiki:10459:95089:82fed37418e8019f:chunk:000",
+        "raw_wiki:20501:99245:c417da3a3a4d4832:chunk:000",
+        "raw_wiki:10459:95089:82fed37418e8019f:chunk:000",
+        "raw_wiki:20501:99245:c417da3a3a4d4832:chunk:000",
+        "raw_wiki:10459:95089:82fed37418e8019f:chunk:000"
+      ],
+      "offline_rank": 2,
+      "staging_rank": 2,
+      "identical_top_k": false,
+      "candidate_set_added": [],
+      "candidate_set_removed": [
+        "raw_wiki:1007:135324:8f903f46d2fa3ca8:chunk:000",
+        "raw_wiki:10663:99243:9c4ba06310831f64:chunk:000",
+        "raw_wiki:39520:92431:04b764f58c74add4:chunk:000"
+      ],
+      "query_latency_ms": 1633.326,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-037",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:30940:96622:a0dca9f4d3d03fb9:chunk:000"
+      ],
+      "offline_top_k_evidence_ids": [
+        "raw_wiki:30940:96622:a0dca9f4d3d03fb9:chunk:000",
+        "raw_wiki:31852:72985:814ee00262cb4399:chunk:000",
+        "raw_wiki:36127:136805:e24081106cc2ec69:chunk:000",
+        "raw_wiki:28266:131321:5f2feb1a382c7763:chunk:000",
+        "raw_wiki:31310:99574:02e73eaeaa24eb2c:chunk:000"
+      ],
+      "staging_top_k_evidence_ids": [
+        "raw_wiki:27120:96278:b1047d1aa9a9b8d2:chunk:000",
+        "raw_wiki:30940:96622:a0dca9f4d3d03fb9:chunk:000",
+        "raw_wiki:26373:135203:7ce25d5efa8633f0:chunk:000",
+        "raw_wiki:31296:99397:cf04c89a577454a6:chunk:000",
+        "raw_wiki:31852:72985:814ee00262cb4399:chunk:000"
+      ],
+      "offline_rank": 1,
+      "staging_rank": 2,
+      "identical_top_k": false,
+      "candidate_set_added": [
+        "raw_wiki:26373:135203:7ce25d5efa8633f0:chunk:000",
+        "raw_wiki:27120:96278:b1047d1aa9a9b8d2:chunk:000",
+        "raw_wiki:31296:99397:cf04c89a577454a6:chunk:000"
+      ],
+      "candidate_set_removed": [
+        "raw_wiki:28266:131321:5f2feb1a382c7763:chunk:000",
+        "raw_wiki:31310:99574:02e73eaeaa24eb2c:chunk:000",
+        "raw_wiki:36127:136805:e24081106cc2ec69:chunk:000"
+      ],
+      "query_latency_ms": 1627.774,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-038",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:37544:136308:b6e43f908463ebaa:chunk:000"
+      ],
+      "offline_top_k_evidence_ids": [
+        "raw_wiki:37544:136308:b6e43f908463ebaa:chunk:000",
+        "raw_wiki:38235:100618:8025f2e9981c401e:chunk:000",
+        "raw_wiki:37545:99389:e03a4665c08c9421:chunk:000",
+        "raw_wiki:37391:136476:a3a41695657088cf:chunk:000",
+        "raw_wiki:39056:98971:e98008a22b980baa:chunk:000"
+      ],
+      "staging_top_k_evidence_ids": [
+        "raw_wiki:37544:136308:b6e43f908463ebaa:chunk:000",
+        "raw_wiki:37391:136476:a3a41695657088cf:chunk:000",
+        "raw_wiki:37391:136476:a3a41695657088cf:chunk:000",
+        "raw_wiki:37391:136476:a3a41695657088cf:chunk:000",
+        "raw_wiki:37391:136476:a3a41695657088cf:chunk:000"
+      ],
+      "offline_rank": 1,
+      "staging_rank": 1,
+      "identical_top_k": false,
+      "candidate_set_added": [],
+      "candidate_set_removed": [
+        "raw_wiki:37545:99389:e03a4665c08c9421:chunk:000",
+        "raw_wiki:38235:100618:8025f2e9981c401e:chunk:000",
+        "raw_wiki:39056:98971:e98008a22b980baa:chunk:000"
+      ],
+      "query_latency_ms": 1615.901,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-039",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:37543:136637:1b307d031f032102:chunk:000"
+      ],
+      "offline_top_k_evidence_ids": [
+        "raw_wiki:37543:136637:1b307d031f032102:chunk:000",
+        "raw_wiki:38235:100618:8025f2e9981c401e:chunk:000",
+        "raw_wiki:37391:136476:a3a41695657088cf:chunk:000",
+        "raw_wiki:39056:98971:e98008a22b980baa:chunk:000",
+        "raw_wiki:37545:99389:e03a4665c08c9421:chunk:000"
+      ],
+      "staging_top_k_evidence_ids": [
+        "raw_wiki:37543:136637:1b307d031f032102:chunk:000",
+        "raw_wiki:37391:136476:a3a41695657088cf:chunk:000",
+        "raw_wiki:38235:100618:8025f2e9981c401e:chunk:000",
+        "raw_wiki:37391:136476:a3a41695657088cf:chunk:000",
+        "raw_wiki:38537:136632:f169b123e2bf1328:chunk:000"
+      ],
+      "offline_rank": 1,
+      "staging_rank": 1,
+      "identical_top_k": false,
+      "candidate_set_added": [
+        "raw_wiki:38537:136632:f169b123e2bf1328:chunk:000"
+      ],
+      "candidate_set_removed": [
+        "raw_wiki:37545:99389:e03a4665c08c9421:chunk:000",
+        "raw_wiki:39056:98971:e98008a22b980baa:chunk:000"
+      ],
+      "query_latency_ms": 1773.087,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-040",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:37540:136639:46f5898638863eb0:chunk:000"
+      ],
+      "offline_top_k_evidence_ids": [
+        "raw_wiki:329:136366:3ec40212bc841d78:chunk:000",
+        "raw_wiki:9279:92868:b7fb9fbd7f67e230:chunk:000",
+        "raw_wiki:37540:136639:46f5898638863eb0:chunk:000",
+        "raw_wiki:1531:97322:da67790219d933f3:chunk:000",
+        "raw_wiki:39607:95482:5362fe20f1565eb6:chunk:000"
+      ],
+      "staging_top_k_evidence_ids": [
+        "raw_wiki:7557:136952:45922d58511e4b39:chunk:000",
+        "raw_wiki:37540:136639:46f5898638863eb0:chunk:000",
+        "raw_wiki:7557:136952:45922d58511e4b39:chunk:000",
+        "raw_wiki:42446:101218:eba876c1698e83d3:chunk:000",
+        "raw_wiki:329:136366:3ec40212bc841d78:chunk:000"
+      ],
+      "offline_rank": 3,
+      "staging_rank": 2,
+      "identical_top_k": false,
+      "candidate_set_added": [
+        "raw_wiki:42446:101218:eba876c1698e83d3:chunk:000",
+        "raw_wiki:7557:136952:45922d58511e4b39:chunk:000"
+      ],
+      "candidate_set_removed": [
+        "raw_wiki:1531:97322:da67790219d933f3:chunk:000",
+        "raw_wiki:39607:95482:5362fe20f1565eb6:chunk:000",
+        "raw_wiki:9279:92868:b7fb9fbd7f67e230:chunk:000"
+      ],
+      "query_latency_ms": 1617.493,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-041",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:594:99232:375b861a53702e76:chunk:000"
+      ],
+      "offline_top_k_evidence_ids": [
+        "raw_wiki:594:99232:375b861a53702e76:chunk:000",
+        "raw_wiki:938:130729:103ceb2210a7890a:chunk:000",
+        "raw_wiki:1567:101748:f9ba41dcd5878b94:chunk:000",
+        "raw_wiki:624:92922:791b05ce14a56b51:chunk:000",
+        "raw_wiki:37391:136476:a3a41695657088cf:chunk:000"
+      ],
+      "staging_top_k_evidence_ids": [
+        "raw_wiki:898:136862:688bebbd18ed5936:chunk:000",
+        "raw_wiki:624:92922:791b05ce14a56b51:chunk:000",
+        "raw_wiki:898:136862:688bebbd18ed5936:chunk:000",
+        "raw_wiki:1567:101748:f9ba41dcd5878b94:chunk:000",
+        "raw_wiki:938:130729:103ceb2210a7890a:chunk:000"
+      ],
+      "offline_rank": 1,
+      "staging_rank": null,
+      "identical_top_k": false,
+      "candidate_set_added": [
+        "raw_wiki:898:136862:688bebbd18ed5936:chunk:000"
+      ],
+      "candidate_set_removed": [
+        "raw_wiki:37391:136476:a3a41695657088cf:chunk:000",
+        "raw_wiki:594:99232:375b861a53702e76:chunk:000"
+      ],
+      "query_latency_ms": 1612.787,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-042",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:24784:96617:ecee4ea626873787:chunk:000"
+      ],
+      "offline_top_k_evidence_ids": [
+        "raw_wiki:24784:96617:ecee4ea626873787:chunk:000",
+        "raw_wiki:1007:135324:8f903f46d2fa3ca8:chunk:000",
+        "raw_wiki:10663:99243:9c4ba06310831f64:chunk:000",
+        "raw_wiki:1074:99099:f1f00f7ba53c6ff4:chunk:000",
+        "raw_wiki:25641:91914:11721f78613de356:chunk:000"
+      ],
+      "staging_top_k_evidence_ids": [
+        "raw_wiki:24784:96617:ecee4ea626873787:chunk:000",
+        "raw_wiki:24784:96617:ecee4ea626873787:chunk:000",
+        "raw_wiki:42446:101218:eba876c1698e83d3:chunk:000",
+        "raw_wiki:42446:101218:eba876c1698e83d3:chunk:000",
+        "raw_wiki:25536:91984:eba4d3a4762e23f2:chunk:000"
+      ],
+      "offline_rank": 1,
+      "staging_rank": 1,
+      "identical_top_k": false,
+      "candidate_set_added": [
+        "raw_wiki:25536:91984:eba4d3a4762e23f2:chunk:000",
+        "raw_wiki:42446:101218:eba876c1698e83d3:chunk:000"
+      ],
+      "candidate_set_removed": [
+        "raw_wiki:1007:135324:8f903f46d2fa3ca8:chunk:000",
+        "raw_wiki:10663:99243:9c4ba06310831f64:chunk:000",
+        "raw_wiki:1074:99099:f1f00f7ba53c6ff4:chunk:000",
+        "raw_wiki:25641:91914:11721f78613de356:chunk:000"
+      ],
+      "query_latency_ms": 2816.741,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-043",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:1074:99099:f1f00f7ba53c6ff4:chunk:000"
+      ],
+      "offline_top_k_evidence_ids": [
+        "raw_wiki:1074:99099:f1f00f7ba53c6ff4:chunk:000",
+        "raw_wiki:1011:91978:42944d61edab4c7f:chunk:000",
+        "raw_wiki:38669:100541:65d87a2d3459e078:chunk:000",
+        "raw_wiki:26008:95284:8988a45bf257299b:chunk:000",
+        "raw_wiki:11350:99751:2e37cb3c31f1baa7:chunk:000"
+      ],
+      "staging_top_k_evidence_ids": [
+        "raw_wiki:1074:99099:f1f00f7ba53c6ff4:chunk:000",
+        "raw_wiki:1074:99099:f1f00f7ba53c6ff4:chunk:000",
+        "raw_wiki:8269:95612:1c103964f57b0be7:chunk:000",
+        "raw_wiki:1074:99099:f1f00f7ba53c6ff4:chunk:000",
+        "raw_wiki:21791:136363:e319b8b4954456ed:chunk:000"
+      ],
+      "offline_rank": 1,
+      "staging_rank": 1,
+      "identical_top_k": false,
+      "candidate_set_added": [
+        "raw_wiki:21791:136363:e319b8b4954456ed:chunk:000",
+        "raw_wiki:8269:95612:1c103964f57b0be7:chunk:000"
+      ],
+      "candidate_set_removed": [
+        "raw_wiki:1011:91978:42944d61edab4c7f:chunk:000",
+        "raw_wiki:11350:99751:2e37cb3c31f1baa7:chunk:000",
+        "raw_wiki:26008:95284:8988a45bf257299b:chunk:000",
+        "raw_wiki:38669:100541:65d87a2d3459e078:chunk:000"
+      ],
+      "query_latency_ms": 1887.527,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-044",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:31286:95380:0215bfb291304724:chunk:000"
+      ],
+      "offline_top_k_evidence_ids": [
+        "raw_wiki:31286:95380:0215bfb291304724:chunk:000",
+        "raw_wiki:1010:123798:8f9ec690e3b88c0c:chunk:000",
+        "raw_wiki:10663:99243:9c4ba06310831f64:chunk:000",
+        "raw_wiki:1005:99743:9725a6704dccd755:chunk:000",
+        "raw_wiki:1007:135324:8f903f46d2fa3ca8:chunk:000"
+      ],
+      "staging_top_k_evidence_ids": [
+        "raw_wiki:31286:95380:0215bfb291304724:chunk:000",
+        "raw_wiki:37078:90660:e28687f672074f5b:chunk:000",
+        "raw_wiki:31286:95380:0215bfb291304724:chunk:000",
+        "raw_wiki:37078:90660:e28687f672074f5b:chunk:000",
+        "raw_wiki:31286:95380:0215bfb291304724:chunk:000"
+      ],
+      "offline_rank": 1,
+      "staging_rank": 1,
+      "identical_top_k": false,
+      "candidate_set_added": [
+        "raw_wiki:37078:90660:e28687f672074f5b:chunk:000"
+      ],
+      "candidate_set_removed": [
+        "raw_wiki:1005:99743:9725a6704dccd755:chunk:000",
+        "raw_wiki:1007:135324:8f903f46d2fa3ca8:chunk:000",
+        "raw_wiki:1010:123798:8f9ec690e3b88c0c:chunk:000",
+        "raw_wiki:10663:99243:9c4ba06310831f64:chunk:000"
+      ],
+      "query_latency_ms": 1622.54,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-045",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:24789:103572:c7b9cc0a8a5cdfa6:chunk:000"
+      ],
+      "offline_top_k_evidence_ids": [
+        "raw_wiki:24789:103572:c7b9cc0a8a5cdfa6:chunk:000",
+        "raw_wiki:25657:91989:d626dfb652418c20:chunk:000",
+        "raw_wiki:24786:99400:468ec49727209414:chunk:000",
+        "raw_wiki:631:92944:69b041db40e5f9b9:chunk:000",
+        "raw_wiki:25640:101922:f3c187e67e6d767a:chunk:000"
+      ],
+      "staging_top_k_evidence_ids": [
+        "raw_wiki:25657:91989:d626dfb652418c20:chunk:000",
+        "raw_wiki:25657:91989:d626dfb652418c20:chunk:000",
+        "raw_wiki:25657:91989:d626dfb652418c20:chunk:000",
+        "raw_wiki:24789:103572:c7b9cc0a8a5cdfa6:chunk:000",
+        "raw_wiki:25657:91989:d626dfb652418c20:chunk:000"
+      ],
+      "offline_rank": 1,
+      "staging_rank": 4,
+      "identical_top_k": false,
+      "candidate_set_added": [],
+      "candidate_set_removed": [
+        "raw_wiki:24786:99400:468ec49727209414:chunk:000",
+        "raw_wiki:25640:101922:f3c187e67e6d767a:chunk:000",
+        "raw_wiki:631:92944:69b041db40e5f9b9:chunk:000"
+      ],
+      "query_latency_ms": 1598.934,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-046",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:588:99853:a4995516cd60ac47:chunk:000"
+      ],
+      "offline_top_k_evidence_ids": [
+        "raw_wiki:588:99853:a4995516cd60ac47:chunk:000",
+        "raw_wiki:10962:102771:2a81d1750c1bd1aa:chunk:000",
+        "raw_wiki:43220:135228:76d0661608cd2925:chunk:000",
+        "raw_wiki:1126:100700:6b4973485554efd0:chunk:000",
+        "raw_wiki:530:92937:7837aba16c572cfb:chunk:000"
+      ],
+      "staging_top_k_evidence_ids": [
+        "raw_wiki:25536:91984:eba4d3a4762e23f2:chunk:000",
+        "raw_wiki:25536:91984:eba4d3a4762e23f2:chunk:000",
+        "raw_wiki:588:99853:a4995516cd60ac47:chunk:000",
+        "raw_wiki:588:99853:a4995516cd60ac47:chunk:000",
+        "raw_wiki:42446:101218:eba876c1698e83d3:chunk:000"
+      ],
+      "offline_rank": 1,
+      "staging_rank": 3,
+      "identical_top_k": false,
+      "candidate_set_added": [
+        "raw_wiki:25536:91984:eba4d3a4762e23f2:chunk:000",
+        "raw_wiki:42446:101218:eba876c1698e83d3:chunk:000"
+      ],
+      "candidate_set_removed": [
+        "raw_wiki:10962:102771:2a81d1750c1bd1aa:chunk:000",
+        "raw_wiki:1126:100700:6b4973485554efd0:chunk:000",
+        "raw_wiki:43220:135228:76d0661608cd2925:chunk:000",
+        "raw_wiki:530:92937:7837aba16c572cfb:chunk:000"
+      ],
+      "query_latency_ms": 1620.664,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-047",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:10662:101177:8871332c765002d5:chunk:000"
+      ],
+      "offline_top_k_evidence_ids": [
+        "raw_wiki:10662:101177:8871332c765002d5:chunk:000",
+        "raw_wiki:1009:99745:d7056297fb95023e:chunk:000",
+        "raw_wiki:42308:102539:fd8cd359be141d6c:chunk:000",
+        "raw_wiki:1007:135324:8f903f46d2fa3ca8:chunk:000",
+        "raw_wiki:10663:99243:9c4ba06310831f64:chunk:000"
+      ],
+      "staging_top_k_evidence_ids": [
+        "raw_wiki:10662:101177:8871332c765002d5:chunk:000",
+        "raw_wiki:1007:135324:8f903f46d2fa3ca8:chunk:000",
+        "raw_wiki:10662:101177:8871332c765002d5:chunk:000",
+        "raw_wiki:1007:135324:8f903f46d2fa3ca8:chunk:000",
+        "raw_wiki:42446:101218:eba876c1698e83d3:chunk:000"
+      ],
+      "offline_rank": 1,
+      "staging_rank": 1,
+      "identical_top_k": false,
+      "candidate_set_added": [
+        "raw_wiki:42446:101218:eba876c1698e83d3:chunk:000"
+      ],
+      "candidate_set_removed": [
+        "raw_wiki:1009:99745:d7056297fb95023e:chunk:000",
+        "raw_wiki:10663:99243:9c4ba06310831f64:chunk:000",
+        "raw_wiki:42308:102539:fd8cd359be141d6c:chunk:000"
+      ],
+      "query_latency_ms": 1619.123,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-048",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:42215:100630:75aa31f94d24503e:chunk:000"
+      ],
+      "offline_top_k_evidence_ids": [
+        "raw_wiki:42215:100630:75aa31f94d24503e:chunk:000",
+        "raw_wiki:37078:90660:e28687f672074f5b:chunk:000",
+        "raw_wiki:37606:95396:516e78ac4cb5e435:chunk:000",
+        "raw_wiki:8833:91979:75ddac21cdabcb6b:chunk:000",
+        "raw_wiki:898:136862:688bebbd18ed5936:chunk:000"
+      ],
+      "staging_top_k_evidence_ids": [
+        "raw_wiki:42215:100630:75aa31f94d24503e:chunk:000",
+        "raw_wiki:898:136862:688bebbd18ed5936:chunk:000",
+        "raw_wiki:42446:101218:eba876c1698e83d3:chunk:000",
+        "raw_wiki:570:100537:486bd778015163b6:chunk:000",
+        "raw_wiki:37606:95396:516e78ac4cb5e435:chunk:000"
+      ],
+      "offline_rank": 1,
+      "staging_rank": 1,
+      "identical_top_k": false,
+      "candidate_set_added": [
+        "raw_wiki:42446:101218:eba876c1698e83d3:chunk:000",
+        "raw_wiki:570:100537:486bd778015163b6:chunk:000"
+      ],
+      "candidate_set_removed": [
+        "raw_wiki:37078:90660:e28687f672074f5b:chunk:000",
+        "raw_wiki:8833:91979:75ddac21cdabcb6b:chunk:000"
+      ],
+      "query_latency_ms": 1632.682,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-049",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:3150:93366:590fa68ddaf79966:chunk:000"
+      ],
+      "offline_top_k_evidence_ids": [
+        "raw_wiki:3150:93366:590fa68ddaf79966:chunk:000",
+        "raw_wiki:2589:93513:33215ce21d4c6e0d:chunk:000",
+        "raw_wiki:938:130729:103ceb2210a7890a:chunk:000",
+        "raw_wiki:38120:136663:32d09c1fe3aba7cc:chunk:000",
+        "raw_wiki:7557:136952:45922d58511e4b39:chunk:000"
+      ],
+      "staging_top_k_evidence_ids": [
+        "raw_wiki:3150:93366:590fa68ddaf79966:chunk:000",
+        "raw_wiki:3150:93366:590fa68ddaf79966:chunk:000",
+        "raw_wiki:3150:93366:590fa68ddaf79966:chunk:000",
+        "raw_wiki:2589:93513:33215ce21d4c6e0d:chunk:000",
+        "raw_wiki:938:130729:103ceb2210a7890a:chunk:000"
+      ],
+      "offline_rank": 1,
+      "staging_rank": 1,
+      "identical_top_k": false,
+      "candidate_set_added": [],
+      "candidate_set_removed": [
+        "raw_wiki:38120:136663:32d09c1fe3aba7cc:chunk:000",
+        "raw_wiki:7557:136952:45922d58511e4b39:chunk:000"
+      ],
+      "query_latency_ms": 1628.831,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-050",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:35947:81917:0722434a53a692f3:chunk:000"
+      ],
+      "offline_top_k_evidence_ids": [
+        "raw_wiki:35947:81917:0722434a53a692f3:chunk:000",
+        "raw_wiki:36127:136805:e24081106cc2ec69:chunk:000",
+        "raw_wiki:31852:72985:814ee00262cb4399:chunk:000",
+        "raw_wiki:31296:99397:cf04c89a577454a6:chunk:000",
+        "raw_wiki:41347:136483:fa9dacb31cfc56c4:chunk:000"
+      ],
+      "staging_top_k_evidence_ids": [
+        "raw_wiki:35947:81917:0722434a53a692f3:chunk:000",
+        "raw_wiki:31310:99574:02e73eaeaa24eb2c:chunk:000",
+        "raw_wiki:26373:135203:7ce25d5efa8633f0:chunk:000",
+        "raw_wiki:26373:135203:7ce25d5efa8633f0:chunk:000",
+        "raw_wiki:31296:99397:cf04c89a577454a6:chunk:000"
+      ],
+      "offline_rank": 1,
+      "staging_rank": 1,
+      "identical_top_k": false,
+      "candidate_set_added": [
+        "raw_wiki:26373:135203:7ce25d5efa8633f0:chunk:000",
+        "raw_wiki:31310:99574:02e73eaeaa24eb2c:chunk:000"
+      ],
+      "candidate_set_removed": [
+        "raw_wiki:31852:72985:814ee00262cb4399:chunk:000",
+        "raw_wiki:36127:136805:e24081106cc2ec69:chunk:000",
+        "raw_wiki:41347:136483:fa9dacb31cfc56c4:chunk:000"
+      ],
+      "query_latency_ms": 1641.821,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-051",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:9136:91555:b4167fb1e8b24566:chunk:000"
+      ],
+      "offline_top_k_evidence_ids": [
+        "raw_wiki:632:99398:b84b4f87a9d9ade9:chunk:000",
+        "raw_wiki:9136:91555:b4167fb1e8b24566:chunk:000",
+        "raw_wiki:1007:135324:8f903f46d2fa3ca8:chunk:000",
+        "raw_wiki:4972:93386:0559269f28d2b45c:chunk:000",
+        "raw_wiki:1012:123801:ecdcd6cae8d7c1f6:chunk:000"
+      ],
+      "staging_top_k_evidence_ids": [
+        "raw_wiki:632:99398:b84b4f87a9d9ade9:chunk:000",
+        "raw_wiki:9136:91555:b4167fb1e8b24566:chunk:000",
+        "raw_wiki:42446:101218:eba876c1698e83d3:chunk:000",
+        "raw_wiki:9136:91555:b4167fb1e8b24566:chunk:000",
+        "raw_wiki:42446:101218:eba876c1698e83d3:chunk:000"
+      ],
+      "offline_rank": 2,
+      "staging_rank": 2,
+      "identical_top_k": false,
+      "candidate_set_added": [
+        "raw_wiki:42446:101218:eba876c1698e83d3:chunk:000"
+      ],
+      "candidate_set_removed": [
+        "raw_wiki:1007:135324:8f903f46d2fa3ca8:chunk:000",
+        "raw_wiki:1012:123801:ecdcd6cae8d7c1f6:chunk:000",
+        "raw_wiki:4972:93386:0559269f28d2b45c:chunk:000"
+      ],
+      "query_latency_ms": 1630.667,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-052",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:25664:91980:9be7bfc0b0f78f80:chunk:000"
+      ],
+      "offline_top_k_evidence_ids": [
+        "raw_wiki:25664:91980:9be7bfc0b0f78f80:chunk:000",
+        "raw_wiki:27951:96619:ae0c99137282474b:chunk:000",
+        "raw_wiki:25663:91985:b51f66944bdef37e:chunk:000",
+        "raw_wiki:28698:91903:86949c1ca7c63a87:chunk:000",
+        "raw_wiki:28266:131321:5f2feb1a382c7763:chunk:000"
+      ],
+      "staging_top_k_evidence_ids": [
+        "raw_wiki:25664:91980:9be7bfc0b0f78f80:chunk:000",
+        "raw_wiki:25664:91980:9be7bfc0b0f78f80:chunk:000",
+        "raw_wiki:27951:96619:ae0c99137282474b:chunk:000",
+        "raw_wiki:25664:91980:9be7bfc0b0f78f80:chunk:000",
+        "raw_wiki:27951:96619:ae0c99137282474b:chunk:000"
+      ],
+      "offline_rank": 1,
+      "staging_rank": 1,
+      "identical_top_k": false,
+      "candidate_set_added": [],
+      "candidate_set_removed": [
+        "raw_wiki:25663:91985:b51f66944bdef37e:chunk:000",
+        "raw_wiki:28266:131321:5f2feb1a382c7763:chunk:000",
+        "raw_wiki:28698:91903:86949c1ca7c63a87:chunk:000"
+      ],
+      "query_latency_ms": 1605.078,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-053",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:907:126835:49c5a92e82ee7ad1:chunk:000"
+      ],
+      "offline_top_k_evidence_ids": [
+        "raw_wiki:1074:99099:f1f00f7ba53c6ff4:chunk:000",
+        "raw_wiki:907:126835:49c5a92e82ee7ad1:chunk:000",
+        "raw_wiki:39187:136635:e0a124eb457dfb82:chunk:000",
+        "raw_wiki:1007:135324:8f903f46d2fa3ca8:chunk:000",
+        "raw_wiki:7557:136952:45922d58511e4b39:chunk:000"
+      ],
+      "staging_top_k_evidence_ids": [
+        "raw_wiki:907:126835:49c5a92e82ee7ad1:chunk:000",
+        "raw_wiki:1074:99099:f1f00f7ba53c6ff4:chunk:000",
+        "raw_wiki:907:126835:49c5a92e82ee7ad1:chunk:000",
+        "raw_wiki:39187:136635:e0a124eb457dfb82:chunk:000",
+        "raw_wiki:42446:101218:eba876c1698e83d3:chunk:000"
+      ],
+      "offline_rank": 2,
+      "staging_rank": 1,
+      "identical_top_k": false,
+      "candidate_set_added": [
+        "raw_wiki:42446:101218:eba876c1698e83d3:chunk:000"
+      ],
+      "candidate_set_removed": [
+        "raw_wiki:1007:135324:8f903f46d2fa3ca8:chunk:000",
+        "raw_wiki:7557:136952:45922d58511e4b39:chunk:000"
+      ],
+      "query_latency_ms": 1766.514,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-054",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:897:102549:c6a570ea76923091:chunk:000"
+      ],
+      "offline_top_k_evidence_ids": [
+        "raw_wiki:632:99398:b84b4f87a9d9ade9:chunk:000",
+        "raw_wiki:897:102549:c6a570ea76923091:chunk:000",
+        "raw_wiki:38537:136632:f169b123e2bf1328:chunk:000",
+        "raw_wiki:1083:99739:cbdfd02257976eaa:chunk:000",
+        "raw_wiki:39067:109671:72359e9e9ab9da76:chunk:000"
+      ],
+      "staging_top_k_evidence_ids": [
+        "raw_wiki:897:102549:c6a570ea76923091:chunk:000",
+        "raw_wiki:632:99398:b84b4f87a9d9ade9:chunk:000",
+        "raw_wiki:897:102549:c6a570ea76923091:chunk:000",
+        "raw_wiki:38537:136632:f169b123e2bf1328:chunk:000",
+        "raw_wiki:31556:97061:ae4ba2c13572f46c:chunk:000"
+      ],
+      "offline_rank": 2,
+      "staging_rank": 1,
+      "identical_top_k": false,
+      "candidate_set_added": [
+        "raw_wiki:31556:97061:ae4ba2c13572f46c:chunk:000"
+      ],
+      "candidate_set_removed": [
+        "raw_wiki:1083:99739:cbdfd02257976eaa:chunk:000",
+        "raw_wiki:39067:109671:72359e9e9ab9da76:chunk:000"
+      ],
+      "query_latency_ms": 1632.323,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-055",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:37078:90660:e28687f672074f5b:chunk:000"
+      ],
+      "offline_top_k_evidence_ids": [
+        "raw_wiki:37078:90660:e28687f672074f5b:chunk:000",
+        "raw_wiki:1007:135324:8f903f46d2fa3ca8:chunk:000",
+        "raw_wiki:1567:101748:f9ba41dcd5878b94:chunk:000",
+        "raw_wiki:21832:136283:293336c736128dae:chunk:000",
+        "raw_wiki:1011:91978:42944d61edab4c7f:chunk:000"
+      ],
+      "staging_top_k_evidence_ids": [
+        "raw_wiki:37078:90660:e28687f672074f5b:chunk:000",
+        "raw_wiki:42446:101218:eba876c1698e83d3:chunk:000",
+        "raw_wiki:40856:136878:d51cccfe23ea5dcf:chunk:000",
+        "raw_wiki:42446:101218:eba876c1698e83d3:chunk:000",
+        "raw_wiki:31283:102761:da0b008506be0f37:chunk:000"
+      ],
+      "offline_rank": 1,
+      "staging_rank": 1,
+      "identical_top_k": false,
+      "candidate_set_added": [
+        "raw_wiki:31283:102761:da0b008506be0f37:chunk:000",
+        "raw_wiki:40856:136878:d51cccfe23ea5dcf:chunk:000",
+        "raw_wiki:42446:101218:eba876c1698e83d3:chunk:000"
+      ],
+      "candidate_set_removed": [
+        "raw_wiki:1007:135324:8f903f46d2fa3ca8:chunk:000",
+        "raw_wiki:1011:91978:42944d61edab4c7f:chunk:000",
+        "raw_wiki:1567:101748:f9ba41dcd5878b94:chunk:000",
+        "raw_wiki:21832:136283:293336c736128dae:chunk:000"
+      ],
+      "query_latency_ms": 1619.378,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-056",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:25536:91984:eba4d3a4762e23f2:chunk:000"
+      ],
+      "offline_top_k_evidence_ids": [
+        "raw_wiki:25536:91984:eba4d3a4762e23f2:chunk:000",
+        "raw_wiki:25181:99753:9e0c3a4835bc76e7:chunk:000",
+        "raw_wiki:26166:100313:e86c3e53552bfa24:chunk:000",
+        "raw_wiki:25663:91985:b51f66944bdef37e:chunk:000",
+        "raw_wiki:25643:131312:454e154acc0d2056:chunk:000"
+      ],
+      "staging_top_k_evidence_ids": [
+        "raw_wiki:25536:91984:eba4d3a4762e23f2:chunk:000",
+        "raw_wiki:25536:91984:eba4d3a4762e23f2:chunk:000",
+        "raw_wiki:25536:91984:eba4d3a4762e23f2:chunk:000",
+        "raw_wiki:24784:96617:ecee4ea626873787:chunk:000",
+        "raw_wiki:25664:91980:9be7bfc0b0f78f80:chunk:000"
+      ],
+      "offline_rank": 1,
+      "staging_rank": 1,
+      "identical_top_k": false,
+      "candidate_set_added": [
+        "raw_wiki:24784:96617:ecee4ea626873787:chunk:000",
+        "raw_wiki:25664:91980:9be7bfc0b0f78f80:chunk:000"
+      ],
+      "candidate_set_removed": [
+        "raw_wiki:25181:99753:9e0c3a4835bc76e7:chunk:000",
+        "raw_wiki:25643:131312:454e154acc0d2056:chunk:000",
+        "raw_wiki:25663:91985:b51f66944bdef37e:chunk:000",
+        "raw_wiki:26166:100313:e86c3e53552bfa24:chunk:000"
+      ],
+      "query_latency_ms": 1633.647,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-057",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:37607:136469:8050e4ce70f7de3d:chunk:000"
+      ],
+      "offline_top_k_evidence_ids": [
+        "raw_wiki:37607:136469:8050e4ce70f7de3d:chunk:000",
+        "raw_wiki:39518:92429:9a5de5beef515159:chunk:000",
+        "raw_wiki:40519:95671:244ba0c895fb3e8f:chunk:000",
+        "raw_wiki:38241:100321:abf33f122f8c975e:chunk:000",
+        "raw_wiki:39522:92433:758f2d0ddc9c2ec3:chunk:000"
+      ],
+      "staging_top_k_evidence_ids": [
+        "raw_wiki:37607:136469:8050e4ce70f7de3d:chunk:000",
+        "raw_wiki:37540:136639:46f5898638863eb0:chunk:000",
+        "raw_wiki:37607:136469:8050e4ce70f7de3d:chunk:000",
+        "raw_wiki:37607:136469:8050e4ce70f7de3d:chunk:000",
+        "raw_wiki:37607:136469:8050e4ce70f7de3d:chunk:000"
+      ],
+      "offline_rank": 1,
+      "staging_rank": 1,
+      "identical_top_k": false,
+      "candidate_set_added": [
+        "raw_wiki:37540:136639:46f5898638863eb0:chunk:000"
+      ],
+      "candidate_set_removed": [
+        "raw_wiki:38241:100321:abf33f122f8c975e:chunk:000",
+        "raw_wiki:39518:92429:9a5de5beef515159:chunk:000",
+        "raw_wiki:39522:92433:758f2d0ddc9c2ec3:chunk:000",
+        "raw_wiki:40519:95671:244ba0c895fb3e8f:chunk:000"
+      ],
+      "query_latency_ms": 1610.061,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-058",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:25647:136276:a53bc0e233f155a7:chunk:000"
+      ],
+      "offline_top_k_evidence_ids": [
+        "raw_wiki:25647:136276:a53bc0e233f155a7:chunk:000",
+        "raw_wiki:27325:99766:36b887fc239c254f:chunk:000",
+        "raw_wiki:570:100537:486bd778015163b6:chunk:000",
+        "raw_wiki:24786:99400:468ec49727209414:chunk:000",
+        "raw_wiki:25663:91985:b51f66944bdef37e:chunk:000"
+      ],
+      "staging_top_k_evidence_ids": [
+        "raw_wiki:25647:136276:a53bc0e233f155a7:chunk:000",
+        "raw_wiki:27325:99766:36b887fc239c254f:chunk:000",
+        "raw_wiki:570:100537:486bd778015163b6:chunk:000",
+        "raw_wiki:25663:91985:b51f66944bdef37e:chunk:000",
+        "raw_wiki:42446:101218:eba876c1698e83d3:chunk:000"
+      ],
+      "offline_rank": 1,
+      "staging_rank": 1,
+      "identical_top_k": false,
+      "candidate_set_added": [
+        "raw_wiki:42446:101218:eba876c1698e83d3:chunk:000"
+      ],
+      "candidate_set_removed": [
+        "raw_wiki:24786:99400:468ec49727209414:chunk:000"
+      ],
+      "query_latency_ms": 1631.524,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-059",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:28697:99385:4dd8afe17544fe65:chunk:000"
+      ],
+      "offline_top_k_evidence_ids": [
+        "raw_wiki:28697:99385:4dd8afe17544fe65:chunk:000",
+        "raw_wiki:28698:91903:86949c1ca7c63a87:chunk:000",
+        "raw_wiki:1005:99743:9725a6704dccd755:chunk:000",
+        "raw_wiki:2160:97151:900eba7fa255d8d4:chunk:000",
+        "raw_wiki:20501:99245:c417da3a3a4d4832:chunk:000"
+      ],
+      "staging_top_k_evidence_ids": [
+        "raw_wiki:28697:99385:4dd8afe17544fe65:chunk:000",
+        "raw_wiki:28697:99385:4dd8afe17544fe65:chunk:000",
+        "raw_wiki:42446:101218:eba876c1698e83d3:chunk:000",
+        "raw_wiki:28697:99385:4dd8afe17544fe65:chunk:000",
+        "raw_wiki:37540:136639:46f5898638863eb0:chunk:000"
+      ],
+      "offline_rank": 1,
+      "staging_rank": 1,
+      "identical_top_k": false,
+      "candidate_set_added": [
+        "raw_wiki:37540:136639:46f5898638863eb0:chunk:000",
+        "raw_wiki:42446:101218:eba876c1698e83d3:chunk:000"
+      ],
+      "candidate_set_removed": [
+        "raw_wiki:1005:99743:9725a6704dccd755:chunk:000",
+        "raw_wiki:20501:99245:c417da3a3a4d4832:chunk:000",
+        "raw_wiki:2160:97151:900eba7fa255d8d4:chunk:000",
+        "raw_wiki:28698:91903:86949c1ca7c63a87:chunk:000"
+      ],
+      "query_latency_ms": 1614.525,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-060",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:37654:102567:739b9476d8734adf:chunk:000"
+      ],
+      "offline_top_k_evidence_ids": [
+        "raw_wiki:37654:102567:739b9476d8734adf:chunk:000",
+        "raw_wiki:39255:94532:a4b996534deab505:chunk:000",
+        "raw_wiki:39067:109671:72359e9e9ab9da76:chunk:000",
+        "raw_wiki:588:99853:a4995516cd60ac47:chunk:000",
+        "raw_wiki:522:103593:65ac76a1400c1df9:chunk:000"
+      ],
+      "staging_top_k_evidence_ids": [
+        "raw_wiki:39067:109671:72359e9e9ab9da76:chunk:000",
+        "raw_wiki:39604:98386:1980d9db5ade6dee:chunk:000",
+        "raw_wiki:39255:94532:a4b996534deab505:chunk:000",
+        "raw_wiki:39255:94532:a4b996534deab505:chunk:000",
+        "raw_wiki:37543:136637:1b307d031f032102:chunk:000"
+      ],
+      "offline_rank": 1,
+      "staging_rank": null,
+      "identical_top_k": false,
+      "candidate_set_added": [
+        "raw_wiki:37543:136637:1b307d031f032102:chunk:000",
+        "raw_wiki:39604:98386:1980d9db5ade6dee:chunk:000"
+      ],
+      "candidate_set_removed": [
+        "raw_wiki:37654:102567:739b9476d8734adf:chunk:000",
+        "raw_wiki:522:103593:65ac76a1400c1df9:chunk:000",
+        "raw_wiki:588:99853:a4995516cd60ac47:chunk:000"
+      ],
+      "query_latency_ms": 1630.229,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-061",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:21831:100474:3c84649dd4a92bf0:chunk:000"
+      ],
+      "offline_top_k_evidence_ids": [
+        "raw_wiki:21831:100474:3c84649dd4a92bf0:chunk:000",
+        "raw_wiki:1007:135324:8f903f46d2fa3ca8:chunk:000",
+        "raw_wiki:11350:99751:2e37cb3c31f1baa7:chunk:000",
+        "raw_wiki:38669:100541:65d87a2d3459e078:chunk:000",
+        "raw_wiki:20570:99750:24263a0b90c8239f:chunk:000"
+      ],
+      "staging_top_k_evidence_ids": [
+        "raw_wiki:21831:100474:3c84649dd4a92bf0:chunk:000",
+        "raw_wiki:21831:100474:3c84649dd4a92bf0:chunk:000",
+        "raw_wiki:21831:100474:3c84649dd4a92bf0:chunk:000",
+        "raw_wiki:1007:135324:8f903f46d2fa3ca8:chunk:000",
+        "raw_wiki:1007:135324:8f903f46d2fa3ca8:chunk:000"
+      ],
+      "offline_rank": 1,
+      "staging_rank": 1,
+      "identical_top_k": false,
+      "candidate_set_added": [],
+      "candidate_set_removed": [
+        "raw_wiki:11350:99751:2e37cb3c31f1baa7:chunk:000",
+        "raw_wiki:20570:99750:24263a0b90c8239f:chunk:000",
+        "raw_wiki:38669:100541:65d87a2d3459e078:chunk:000"
+      ],
+      "query_latency_ms": 1622.838,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-062",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:4972:93386:0559269f28d2b45c:chunk:000"
+      ],
+      "offline_top_k_evidence_ids": [
+        "raw_wiki:4972:93386:0559269f28d2b45c:chunk:000",
+        "raw_wiki:5025:97139:284393f8765f120f:chunk:000",
+        "raw_wiki:1005:99743:9725a6704dccd755:chunk:000",
+        "raw_wiki:1006:99742:df733987b85d008a:chunk:000",
+        "raw_wiki:10270:99746:c2d602cbf420f2ad:chunk:000"
+      ],
+      "staging_top_k_evidence_ids": [
+        "raw_wiki:4972:93386:0559269f28d2b45c:chunk:000",
+        "raw_wiki:4972:93386:0559269f28d2b45c:chunk:000",
+        "raw_wiki:4972:93386:0559269f28d2b45c:chunk:000",
+        "raw_wiki:4972:93386:0559269f28d2b45c:chunk:000",
+        "raw_wiki:7986:99744:d0fede1026c2811c:chunk:000"
+      ],
+      "offline_rank": 1,
+      "staging_rank": 1,
+      "identical_top_k": false,
+      "candidate_set_added": [
+        "raw_wiki:7986:99744:d0fede1026c2811c:chunk:000"
+      ],
+      "candidate_set_removed": [
+        "raw_wiki:1005:99743:9725a6704dccd755:chunk:000",
+        "raw_wiki:1006:99742:df733987b85d008a:chunk:000",
+        "raw_wiki:10270:99746:c2d602cbf420f2ad:chunk:000",
+        "raw_wiki:5025:97139:284393f8765f120f:chunk:000"
+      ],
+      "query_latency_ms": 1643.046,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-063",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:2960:99756:4c2d85a16f6eb409:chunk:000"
+      ],
+      "offline_top_k_evidence_ids": [
+        "raw_wiki:2960:99756:4c2d85a16f6eb409:chunk:000",
+        "raw_wiki:900:99749:8adf6fa8df5985b0:chunk:000",
+        "raw_wiki:39572:100119:8f70654d69292e08:chunk:000",
+        "raw_wiki:39571:100113:faa20f81e9c59752:chunk:000",
+        "raw_wiki:26196:99513:1106002e2cae6db6:chunk:000"
+      ],
+      "staging_top_k_evidence_ids": [
+        "raw_wiki:2960:99756:4c2d85a16f6eb409:chunk:000",
+        "raw_wiki:2960:99756:4c2d85a16f6eb409:chunk:000",
+        "raw_wiki:2960:99756:4c2d85a16f6eb409:chunk:000",
+        "raw_wiki:2960:99756:4c2d85a16f6eb409:chunk:000",
+        "raw_wiki:2960:99756:4c2d85a16f6eb409:chunk:000"
+      ],
+      "offline_rank": 1,
+      "staging_rank": 1,
+      "identical_top_k": false,
+      "candidate_set_added": [],
+      "candidate_set_removed": [
+        "raw_wiki:26196:99513:1106002e2cae6db6:chunk:000",
+        "raw_wiki:39571:100113:faa20f81e9c59752:chunk:000",
+        "raw_wiki:39572:100119:8f70654d69292e08:chunk:000",
+        "raw_wiki:900:99749:8adf6fa8df5985b0:chunk:000"
+      ],
+      "query_latency_ms": 2141.517,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-064",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:32741:94835:53882334e3c9aac2:chunk:000"
+      ],
+      "offline_top_k_evidence_ids": [
+        "raw_wiki:32741:94835:53882334e3c9aac2:chunk:000",
+        "raw_wiki:26008:95284:8988a45bf257299b:chunk:000",
+        "raw_wiki:25536:91984:eba4d3a4762e23f2:chunk:000",
+        "raw_wiki:25643:131312:454e154acc0d2056:chunk:000",
+        "raw_wiki:24784:96617:ecee4ea626873787:chunk:000"
+      ],
+      "staging_top_k_evidence_ids": [
+        "raw_wiki:32741:94835:53882334e3c9aac2:chunk:000",
+        "raw_wiki:32741:94835:53882334e3c9aac2:chunk:000",
+        "raw_wiki:25536:91984:eba4d3a4762e23f2:chunk:000",
+        "raw_wiki:25536:91984:eba4d3a4762e23f2:chunk:000",
+        "raw_wiki:32741:94835:53882334e3c9aac2:chunk:000"
+      ],
+      "offline_rank": 1,
+      "staging_rank": 1,
+      "identical_top_k": false,
+      "candidate_set_added": [],
+      "candidate_set_removed": [
+        "raw_wiki:24784:96617:ecee4ea626873787:chunk:000",
+        "raw_wiki:25643:131312:454e154acc0d2056:chunk:000",
+        "raw_wiki:26008:95284:8988a45bf257299b:chunk:000"
+      ],
+      "query_latency_ms": 1633.266,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-065",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:25641:91914:11721f78613de356:chunk:000"
+      ],
+      "offline_top_k_evidence_ids": [
+        "raw_wiki:25641:91914:11721f78613de356:chunk:000",
+        "raw_wiki:1058:99748:2f12f0e7b9fb0625:chunk:000",
+        "raw_wiki:1007:135324:8f903f46d2fa3ca8:chunk:000",
+        "raw_wiki:25638:91941:c275a7efcd72e5ad:chunk:000",
+        "raw_wiki:25640:101922:f3c187e67e6d767a:chunk:000"
+      ],
+      "staging_top_k_evidence_ids": [
+        "raw_wiki:25641:91914:11721f78613de356:chunk:000",
+        "raw_wiki:25641:91914:11721f78613de356:chunk:000",
+        "raw_wiki:25641:91914:11721f78613de356:chunk:000",
+        "raw_wiki:42446:101218:eba876c1698e83d3:chunk:000",
+        "raw_wiki:27951:96619:ae0c99137282474b:chunk:000"
+      ],
+      "offline_rank": 1,
+      "staging_rank": 1,
+      "identical_top_k": false,
+      "candidate_set_added": [
+        "raw_wiki:27951:96619:ae0c99137282474b:chunk:000",
+        "raw_wiki:42446:101218:eba876c1698e83d3:chunk:000"
+      ],
+      "candidate_set_removed": [
+        "raw_wiki:1007:135324:8f903f46d2fa3ca8:chunk:000",
+        "raw_wiki:1058:99748:2f12f0e7b9fb0625:chunk:000",
+        "raw_wiki:25638:91941:c275a7efcd72e5ad:chunk:000",
+        "raw_wiki:25640:101922:f3c187e67e6d767a:chunk:000"
+      ],
+      "query_latency_ms": 1612.587,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-066",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:38339:136640:9d71c98f093fd140:chunk:000"
+      ],
+      "offline_top_k_evidence_ids": [
+        "raw_wiki:38339:136640:9d71c98f093fd140:chunk:000",
+        "raw_wiki:26008:95284:8988a45bf257299b:chunk:000",
+        "raw_wiki:1008:99738:fa6acd585adb1d2a:chunk:000",
+        "raw_wiki:7986:99744:d0fede1026c2811c:chunk:000",
+        "raw_wiki:37304:100540:d9c41f8fbf72b2ba:chunk:000"
+      ],
+      "staging_top_k_evidence_ids": [
+        "raw_wiki:26165:131313:b22f8b2701be47df:chunk:000",
+        "raw_wiki:26165:131313:b22f8b2701be47df:chunk:000",
+        "raw_wiki:38339:136640:9d71c98f093fd140:chunk:000",
+        "raw_wiki:1074:99099:f1f00f7ba53c6ff4:chunk:000",
+        "raw_wiki:1074:99099:f1f00f7ba53c6ff4:chunk:000"
+      ],
+      "offline_rank": 1,
+      "staging_rank": 3,
+      "identical_top_k": false,
+      "candidate_set_added": [
+        "raw_wiki:1074:99099:f1f00f7ba53c6ff4:chunk:000",
+        "raw_wiki:26165:131313:b22f8b2701be47df:chunk:000"
+      ],
+      "candidate_set_removed": [
+        "raw_wiki:1008:99738:fa6acd585adb1d2a:chunk:000",
+        "raw_wiki:26008:95284:8988a45bf257299b:chunk:000",
+        "raw_wiki:37304:100540:d9c41f8fbf72b2ba:chunk:000",
+        "raw_wiki:7986:99744:d0fede1026c2811c:chunk:000"
+      ],
+      "query_latency_ms": 1629.363,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-067",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:9279:92868:b7fb9fbd7f67e230:chunk:000"
+      ],
+      "offline_top_k_evidence_ids": [
+        "raw_wiki:9279:92868:b7fb9fbd7f67e230:chunk:000",
+        "raw_wiki:37606:95396:516e78ac4cb5e435:chunk:000",
+        "raw_wiki:24784:96617:ecee4ea626873787:chunk:000",
+        "raw_wiki:936:101013:20a1567cbe138350:chunk:000",
+        "raw_wiki:26196:99513:1106002e2cae6db6:chunk:000"
+      ],
+      "staging_top_k_evidence_ids": [
+        "raw_wiki:9279:92868:b7fb9fbd7f67e230:chunk:000",
+        "raw_wiki:1012:123801:ecdcd6cae8d7c1f6:chunk:000",
+        "raw_wiki:24784:96617:ecee4ea626873787:chunk:000",
+        "raw_wiki:329:136366:3ec40212bc841d78:chunk:000",
+        "raw_wiki:1012:123801:ecdcd6cae8d7c1f6:chunk:000"
+      ],
+      "offline_rank": 1,
+      "staging_rank": 1,
+      "identical_top_k": false,
+      "candidate_set_added": [
+        "raw_wiki:1012:123801:ecdcd6cae8d7c1f6:chunk:000",
+        "raw_wiki:329:136366:3ec40212bc841d78:chunk:000"
+      ],
+      "candidate_set_removed": [
+        "raw_wiki:26196:99513:1106002e2cae6db6:chunk:000",
+        "raw_wiki:37606:95396:516e78ac4cb5e435:chunk:000",
+        "raw_wiki:936:101013:20a1567cbe138350:chunk:000"
+      ],
+      "query_latency_ms": 1632.221,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-068",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:26888:99747:897732ef65d43d75:chunk:000"
+      ],
+      "offline_top_k_evidence_ids": [
+        "raw_wiki:26888:99747:897732ef65d43d75:chunk:000",
+        "raw_wiki:2495:95403:5f1aaaf7d623c0fb:chunk:000",
+        "raw_wiki:37544:136308:b6e43f908463ebaa:chunk:000",
+        "raw_wiki:58857:123826:fe87fa19ceeb0aaa:chunk:000",
+        "raw_wiki:3150:93366:590fa68ddaf79966:chunk:000"
+      ],
+      "staging_top_k_evidence_ids": [
+        "raw_wiki:26888:99747:897732ef65d43d75:chunk:000",
+        "raw_wiki:7986:99744:d0fede1026c2811c:chunk:000",
+        "raw_wiki:2495:95403:5f1aaaf7d623c0fb:chunk:000",
+        "raw_wiki:2495:95403:5f1aaaf7d623c0fb:chunk:000",
+        "raw_wiki:7986:99744:d0fede1026c2811c:chunk:000"
+      ],
+      "offline_rank": 1,
+      "staging_rank": 1,
+      "identical_top_k": false,
+      "candidate_set_added": [
+        "raw_wiki:7986:99744:d0fede1026c2811c:chunk:000"
+      ],
+      "candidate_set_removed": [
+        "raw_wiki:3150:93366:590fa68ddaf79966:chunk:000",
+        "raw_wiki:37544:136308:b6e43f908463ebaa:chunk:000",
+        "raw_wiki:58857:123826:fe87fa19ceeb0aaa:chunk:000"
+      ],
+      "query_latency_ms": 1629.513,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-069",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:20570:99750:24263a0b90c8239f:chunk:000"
+      ],
+      "offline_top_k_evidence_ids": [
+        "raw_wiki:20570:99750:24263a0b90c8239f:chunk:000",
+        "raw_wiki:599:96614:56f198042c315f7e:chunk:000",
+        "raw_wiki:1084:100118:75a288862a10382c:chunk:000",
+        "raw_wiki:10962:102771:2a81d1750c1bd1aa:chunk:000",
+        "raw_wiki:21832:136283:293336c736128dae:chunk:000"
+      ],
+      "staging_top_k_evidence_ids": [
+        "raw_wiki:20570:99750:24263a0b90c8239f:chunk:000",
+        "raw_wiki:21831:100474:3c84649dd4a92bf0:chunk:000",
+        "raw_wiki:1007:135324:8f903f46d2fa3ca8:chunk:000",
+        "raw_wiki:21831:100474:3c84649dd4a92bf0:chunk:000",
+        "raw_wiki:25663:91985:b51f66944bdef37e:chunk:000"
+      ],
+      "offline_rank": 1,
+      "staging_rank": 1,
+      "identical_top_k": false,
+      "candidate_set_added": [
+        "raw_wiki:1007:135324:8f903f46d2fa3ca8:chunk:000",
+        "raw_wiki:21831:100474:3c84649dd4a92bf0:chunk:000",
+        "raw_wiki:25663:91985:b51f66944bdef37e:chunk:000"
+      ],
+      "candidate_set_removed": [
+        "raw_wiki:1084:100118:75a288862a10382c:chunk:000",
+        "raw_wiki:10962:102771:2a81d1750c1bd1aa:chunk:000",
+        "raw_wiki:21832:136283:293336c736128dae:chunk:000",
+        "raw_wiki:599:96614:56f198042c315f7e:chunk:000"
+      ],
+      "query_latency_ms": 1628.218,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-070",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:26008:95284:8988a45bf257299b:chunk:000"
+      ],
+      "offline_top_k_evidence_ids": [
+        "raw_wiki:26008:95284:8988a45bf257299b:chunk:000",
+        "raw_wiki:25181:99753:9e0c3a4835bc76e7:chunk:000",
+        "raw_wiki:24785:136671:712b3f900b1e25df:chunk:000",
+        "raw_wiki:25536:91984:eba4d3a4762e23f2:chunk:000",
+        "raw_wiki:25663:91985:b51f66944bdef37e:chunk:000"
+      ],
+      "staging_top_k_evidence_ids": [
+        "raw_wiki:26008:95284:8988a45bf257299b:chunk:000",
+        "raw_wiki:25536:91984:eba4d3a4762e23f2:chunk:000",
+        "raw_wiki:25536:91984:eba4d3a4762e23f2:chunk:000",
+        "raw_wiki:25536:91984:eba4d3a4762e23f2:chunk:000",
+        "raw_wiki:25536:91984:eba4d3a4762e23f2:chunk:000"
+      ],
+      "offline_rank": 1,
+      "staging_rank": 1,
+      "identical_top_k": false,
+      "candidate_set_added": [],
+      "candidate_set_removed": [
+        "raw_wiki:24785:136671:712b3f900b1e25df:chunk:000",
+        "raw_wiki:25181:99753:9e0c3a4835bc76e7:chunk:000",
+        "raw_wiki:25663:91985:b51f66944bdef37e:chunk:000"
+      ],
+      "query_latency_ms": 1853.325,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-071",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:26165:131313:b22f8b2701be47df:chunk:000"
+      ],
+      "offline_top_k_evidence_ids": [
+        "raw_wiki:26165:131313:b22f8b2701be47df:chunk:000",
+        "raw_wiki:37304:100540:d9c41f8fbf72b2ba:chunk:000",
+        "raw_wiki:26196:99513:1106002e2cae6db6:chunk:000",
+        "raw_wiki:27951:96619:ae0c99137282474b:chunk:000",
+        "raw_wiki:39570:100110:b3816711a76bcaf4:chunk:000"
+      ],
+      "staging_top_k_evidence_ids": [
+        "raw_wiki:26165:131313:b22f8b2701be47df:chunk:000",
+        "raw_wiki:27120:96278:b1047d1aa9a9b8d2:chunk:000",
+        "raw_wiki:26196:99513:1106002e2cae6db6:chunk:000",
+        "raw_wiki:26165:131313:b22f8b2701be47df:chunk:000",
+        "raw_wiki:27951:96619:ae0c99137282474b:chunk:000"
+      ],
+      "offline_rank": 1,
+      "staging_rank": 1,
+      "identical_top_k": false,
+      "candidate_set_added": [
+        "raw_wiki:27120:96278:b1047d1aa9a9b8d2:chunk:000"
+      ],
+      "candidate_set_removed": [
+        "raw_wiki:37304:100540:d9c41f8fbf72b2ba:chunk:000",
+        "raw_wiki:39570:100110:b3816711a76bcaf4:chunk:000"
+      ],
+      "query_latency_ms": 1612.265,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-072",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:39515:92424:e9a79d8cabc6e6e2:chunk:000"
+      ],
+      "offline_top_k_evidence_ids": [
+        "raw_wiki:39515:92424:e9a79d8cabc6e6e2:chunk:000",
+        "raw_wiki:3397:68336:55000dcfdd441514:chunk:000",
+        "raw_wiki:24999:99250:79f12bc79353ca49:chunk:000",
+        "raw_wiki:39517:92428:ad018330f40cc17a:chunk:000",
+        "raw_wiki:1084:100118:75a288862a10382c:chunk:000"
+      ],
+      "staging_top_k_evidence_ids": [
+        "raw_wiki:39515:92424:e9a79d8cabc6e6e2:chunk:000",
+        "raw_wiki:1084:100118:75a288862a10382c:chunk:000",
+        "raw_wiki:348:86837:3b43bd7a33ec8d89:chunk:000",
+        "raw_wiki:24999:99250:79f12bc79353ca49:chunk:000",
+        "raw_wiki:3397:68336:55000dcfdd441514:chunk:000"
+      ],
+      "offline_rank": 1,
+      "staging_rank": 1,
+      "identical_top_k": false,
+      "candidate_set_added": [
+        "raw_wiki:348:86837:3b43bd7a33ec8d89:chunk:000"
+      ],
+      "candidate_set_removed": [
+        "raw_wiki:39517:92428:ad018330f40cc17a:chunk:000"
+      ],
+      "query_latency_ms": 1619.649,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-073",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:1011:91978:42944d61edab4c7f:chunk:000"
+      ],
+      "offline_top_k_evidence_ids": [
+        "raw_wiki:1011:91978:42944d61edab4c7f:chunk:000",
+        "raw_wiki:1008:99738:fa6acd585adb1d2a:chunk:000",
+        "raw_wiki:26008:95284:8988a45bf257299b:chunk:000",
+        "raw_wiki:1083:99739:cbdfd02257976eaa:chunk:000",
+        "raw_wiki:31295:135376:0a70da2ff45c5134:chunk:000"
+      ],
+      "staging_top_k_evidence_ids": [
+        "raw_wiki:1008:99738:fa6acd585adb1d2a:chunk:000",
+        "raw_wiki:1008:99738:fa6acd585adb1d2a:chunk:000",
+        "raw_wiki:1074:99099:f1f00f7ba53c6ff4:chunk:000",
+        "raw_wiki:1074:99099:f1f00f7ba53c6ff4:chunk:000",
+        "raw_wiki:1011:91978:42944d61edab4c7f:chunk:000"
+      ],
+      "offline_rank": 1,
+      "staging_rank": 5,
+      "identical_top_k": false,
+      "candidate_set_added": [
+        "raw_wiki:1074:99099:f1f00f7ba53c6ff4:chunk:000"
+      ],
+      "candidate_set_removed": [
+        "raw_wiki:1083:99739:cbdfd02257976eaa:chunk:000",
+        "raw_wiki:26008:95284:8988a45bf257299b:chunk:000",
+        "raw_wiki:31295:135376:0a70da2ff45c5134:chunk:000"
+      ],
+      "query_latency_ms": 1628.913,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-074",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:10270:99746:c2d602cbf420f2ad:chunk:000"
+      ],
+      "offline_top_k_evidence_ids": [
+        "raw_wiki:41913:136779:8670bd0697124da2:chunk:000",
+        "raw_wiki:10270:99746:c2d602cbf420f2ad:chunk:000",
+        "raw_wiki:7557:136952:45922d58511e4b39:chunk:000",
+        "raw_wiki:1529:54889:3cf6f65c15d85b1d:chunk:000",
+        "raw_wiki:39570:100110:b3816711a76bcaf4:chunk:000"
+      ],
+      "staging_top_k_evidence_ids": [
+        "raw_wiki:1006:99742:df733987b85d008a:chunk:000",
+        "raw_wiki:10270:99746:c2d602cbf420f2ad:chunk:000",
+        "raw_wiki:37540:136639:46f5898638863eb0:chunk:000",
+        "raw_wiki:38339:136640:9d71c98f093fd140:chunk:000",
+        "raw_wiki:41913:136779:8670bd0697124da2:chunk:000"
+      ],
+      "offline_rank": 2,
+      "staging_rank": 2,
+      "identical_top_k": false,
+      "candidate_set_added": [
+        "raw_wiki:1006:99742:df733987b85d008a:chunk:000",
+        "raw_wiki:37540:136639:46f5898638863eb0:chunk:000",
+        "raw_wiki:38339:136640:9d71c98f093fd140:chunk:000"
+      ],
+      "candidate_set_removed": [
+        "raw_wiki:1529:54889:3cf6f65c15d85b1d:chunk:000",
+        "raw_wiki:39570:100110:b3816711a76bcaf4:chunk:000",
+        "raw_wiki:7557:136952:45922d58511e4b39:chunk:000"
+      ],
+      "query_latency_ms": 1607.197,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-075",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:39255:94532:a4b996534deab505:chunk:000"
+      ],
+      "offline_top_k_evidence_ids": [
+        "raw_wiki:39255:94532:a4b996534deab505:chunk:000",
+        "raw_wiki:39521:92432:fd2f00aace31f993:chunk:000",
+        "raw_wiki:37646:96300:a6b761e4a8d21a37:chunk:000",
+        "raw_wiki:39518:92429:9a5de5beef515159:chunk:000",
+        "raw_wiki:39067:109671:72359e9e9ab9da76:chunk:000"
+      ],
+      "staging_top_k_evidence_ids": [
+        "raw_wiki:39255:94532:a4b996534deab505:chunk:000",
+        "raw_wiki:39255:94532:a4b996534deab505:chunk:000",
+        "raw_wiki:39255:94532:a4b996534deab505:chunk:000",
+        "raw_wiki:42446:101218:eba876c1698e83d3:chunk:000",
+        "raw_wiki:39212:96889:58a15a6051c28b88:chunk:000"
+      ],
+      "offline_rank": 1,
+      "staging_rank": 1,
+      "identical_top_k": false,
+      "candidate_set_added": [
+        "raw_wiki:39212:96889:58a15a6051c28b88:chunk:000",
+        "raw_wiki:42446:101218:eba876c1698e83d3:chunk:000"
+      ],
+      "candidate_set_removed": [
+        "raw_wiki:37646:96300:a6b761e4a8d21a37:chunk:000",
+        "raw_wiki:39067:109671:72359e9e9ab9da76:chunk:000",
+        "raw_wiki:39518:92429:9a5de5beef515159:chunk:000",
+        "raw_wiki:39521:92432:fd2f00aace31f993:chunk:000"
+      ],
+      "query_latency_ms": 1613.011,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-076",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:27413:92077:9d707490d9c3d53c:chunk:000"
+      ],
+      "offline_top_k_evidence_ids": [
+        "raw_wiki:27413:92077:9d707490d9c3d53c:chunk:000",
+        "raw_wiki:40785:109691:5d46c8fc15089027:chunk:000",
+        "raw_wiki:38239:92858:409ed7d8b57e376a:chunk:000",
+        "raw_wiki:39569:100106:ef52a23766c99055:chunk:000",
+        "raw_wiki:38236:94125:6468c7e698e76e50:chunk:000"
+      ],
+      "staging_top_k_evidence_ids": [
+        "raw_wiki:27413:92077:9d707490d9c3d53c:chunk:000",
+        "raw_wiki:27413:92077:9d707490d9c3d53c:chunk:000",
+        "raw_wiki:348:86837:3b43bd7a33ec8d89:chunk:000",
+        "raw_wiki:38241:100321:abf33f122f8c975e:chunk:000",
+        "raw_wiki:38241:100321:abf33f122f8c975e:chunk:000"
+      ],
+      "offline_rank": 1,
+      "staging_rank": 1,
+      "identical_top_k": false,
+      "candidate_set_added": [
+        "raw_wiki:348:86837:3b43bd7a33ec8d89:chunk:000",
+        "raw_wiki:38241:100321:abf33f122f8c975e:chunk:000"
+      ],
+      "candidate_set_removed": [
+        "raw_wiki:38236:94125:6468c7e698e76e50:chunk:000",
+        "raw_wiki:38239:92858:409ed7d8b57e376a:chunk:000",
+        "raw_wiki:39569:100106:ef52a23766c99055:chunk:000",
+        "raw_wiki:40785:109691:5d46c8fc15089027:chunk:000"
+      ],
+      "query_latency_ms": 1637.452,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-077",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:39056:98971:e98008a22b980baa:chunk:000"
+      ],
+      "offline_top_k_evidence_ids": [
+        "raw_wiki:39056:98971:e98008a22b980baa:chunk:000",
+        "raw_wiki:37391:136476:a3a41695657088cf:chunk:000",
+        "raw_wiki:38235:100618:8025f2e9981c401e:chunk:000",
+        "raw_wiki:37543:136637:1b307d031f032102:chunk:000",
+        "raw_wiki:37545:99389:e03a4665c08c9421:chunk:000"
+      ],
+      "staging_top_k_evidence_ids": [
+        "raw_wiki:39056:98971:e98008a22b980baa:chunk:000",
+        "raw_wiki:37391:136476:a3a41695657088cf:chunk:000",
+        "raw_wiki:37391:136476:a3a41695657088cf:chunk:000",
+        "raw_wiki:37391:136476:a3a41695657088cf:chunk:000",
+        "raw_wiki:37543:136637:1b307d031f032102:chunk:000"
+      ],
+      "offline_rank": 1,
+      "staging_rank": 1,
+      "identical_top_k": false,
+      "candidate_set_added": [],
+      "candidate_set_removed": [
+        "raw_wiki:37545:99389:e03a4665c08c9421:chunk:000",
+        "raw_wiki:38235:100618:8025f2e9981c401e:chunk:000"
+      ],
+      "query_latency_ms": 1611.607,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-078",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:42446:101218:eba876c1698e83d3:chunk:000"
+      ],
+      "offline_top_k_evidence_ids": [
+        "raw_wiki:39067:109671:72359e9e9ab9da76:chunk:000",
+        "raw_wiki:42444:101216:e096b87c4d10d6e8:chunk:000",
+        "raw_wiki:42446:101218:eba876c1698e83d3:chunk:000",
+        "raw_wiki:1083:99739:cbdfd02257976eaa:chunk:000",
+        "raw_wiki:900:99749:8adf6fa8df5985b0:chunk:000"
+      ],
+      "staging_top_k_evidence_ids": [
+        "raw_wiki:39067:109671:72359e9e9ab9da76:chunk:000",
+        "raw_wiki:42444:101216:e096b87c4d10d6e8:chunk:000",
+        "raw_wiki:30940:96622:a0dca9f4d3d03fb9:chunk:000",
+        "raw_wiki:30940:96622:a0dca9f4d3d03fb9:chunk:000",
+        "raw_wiki:42446:101218:eba876c1698e83d3:chunk:000"
+      ],
+      "offline_rank": 3,
+      "staging_rank": 5,
+      "identical_top_k": false,
+      "candidate_set_added": [
+        "raw_wiki:30940:96622:a0dca9f4d3d03fb9:chunk:000"
+      ],
+      "candidate_set_removed": [
+        "raw_wiki:1083:99739:cbdfd02257976eaa:chunk:000",
+        "raw_wiki:900:99749:8adf6fa8df5985b0:chunk:000"
+      ],
+      "query_latency_ms": 1608.236,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-079",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:3397:68336:55000dcfdd441514:chunk:000"
+      ],
+      "offline_top_k_evidence_ids": [
+        "raw_wiki:3397:68336:55000dcfdd441514:chunk:000",
+        "raw_wiki:24999:99250:79f12bc79353ca49:chunk:000",
+        "raw_wiki:348:86837:3b43bd7a33ec8d89:chunk:000",
+        "raw_wiki:982:84523:0f817fe4003addbe:chunk:000",
+        "raw_wiki:1084:100118:75a288862a10382c:chunk:000"
+      ],
+      "staging_top_k_evidence_ids": [
+        "raw_wiki:3397:68336:55000dcfdd441514:chunk:000",
+        "raw_wiki:24999:99250:79f12bc79353ca49:chunk:000",
+        "raw_wiki:348:86837:3b43bd7a33ec8d89:chunk:000",
+        "raw_wiki:24999:99250:79f12bc79353ca49:chunk:000",
+        "raw_wiki:3397:68336:55000dcfdd441514:chunk:000"
+      ],
+      "offline_rank": 1,
+      "staging_rank": 1,
+      "identical_top_k": false,
+      "candidate_set_added": [],
+      "candidate_set_removed": [
+        "raw_wiki:1084:100118:75a288862a10382c:chunk:000",
+        "raw_wiki:982:84523:0f817fe4003addbe:chunk:000"
+      ],
+      "query_latency_ms": 1626.217,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-080",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:58857:123826:fe87fa19ceeb0aaa:chunk:000"
+      ],
+      "offline_top_k_evidence_ids": [
+        "raw_wiki:58857:123826:fe87fa19ceeb0aaa:chunk:000",
+        "raw_wiki:62901:123831:ba80c16941f70a5d:chunk:000",
+        "raw_wiki:2495:95403:5f1aaaf7d623c0fb:chunk:000",
+        "raw_wiki:26888:99747:897732ef65d43d75:chunk:000",
+        "raw_wiki:39606:95914:15e511d997faf614:chunk:000"
+      ],
+      "staging_top_k_evidence_ids": [
+        "raw_wiki:58857:123826:fe87fa19ceeb0aaa:chunk:000",
+        "raw_wiki:62901:123831:ba80c16941f70a5d:chunk:000",
+        "raw_wiki:62901:123831:ba80c16941f70a5d:chunk:000",
+        "raw_wiki:38120:136663:32d09c1fe3aba7cc:chunk:000",
+        "raw_wiki:39187:136635:e0a124eb457dfb82:chunk:000"
+      ],
+      "offline_rank": 1,
+      "staging_rank": 1,
+      "identical_top_k": false,
+      "candidate_set_added": [
+        "raw_wiki:38120:136663:32d09c1fe3aba7cc:chunk:000",
+        "raw_wiki:39187:136635:e0a124eb457dfb82:chunk:000"
+      ],
+      "candidate_set_removed": [
+        "raw_wiki:2495:95403:5f1aaaf7d623c0fb:chunk:000",
+        "raw_wiki:26888:99747:897732ef65d43d75:chunk:000",
+        "raw_wiki:39606:95914:15e511d997faf614:chunk:000"
+      ],
+      "query_latency_ms": 1599.814,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-081",
+      "expected_behavior": "retrieve",
+      "relevant_evidence_ids": [
+        "raw_wiki:37304:100540:d9c41f8fbf72b2ba:chunk:000"
+      ],
+      "offline_top_k_evidence_ids": [
+        "raw_wiki:37304:100540:d9c41f8fbf72b2ba:chunk:000",
+        "raw_wiki:27120:96278:b1047d1aa9a9b8d2:chunk:000",
+        "raw_wiki:26165:131313:b22f8b2701be47df:chunk:000",
+        "raw_wiki:26196:99513:1106002e2cae6db6:chunk:000",
+        "raw_wiki:1011:91978:42944d61edab4c7f:chunk:000"
+      ],
+      "staging_top_k_evidence_ids": [
+        "raw_wiki:26165:131313:b22f8b2701be47df:chunk:000",
+        "raw_wiki:26165:131313:b22f8b2701be47df:chunk:000",
+        "raw_wiki:26196:99513:1106002e2cae6db6:chunk:000",
+        "raw_wiki:37304:100540:d9c41f8fbf72b2ba:chunk:000",
+        "raw_wiki:37304:100540:d9c41f8fbf72b2ba:chunk:000"
+      ],
+      "offline_rank": 1,
+      "staging_rank": 4,
+      "identical_top_k": false,
+      "candidate_set_added": [],
+      "candidate_set_removed": [
+        "raw_wiki:1011:91978:42944d61edab4c7f:chunk:000",
+        "raw_wiki:27120:96278:b1047d1aa9a9b8d2:chunk:000"
+      ],
+      "query_latency_ms": 1609.912,
+      "abstention_evaluation": null
+    },
+    {
+      "case_id": "rw-082",
+      "expected_behavior": "abstain",
+      "relevant_evidence_ids": [],
+      "offline_top_k_evidence_ids": [
+        "raw_wiki:26165:131313:b22f8b2701be47df:chunk:000",
+        "raw_wiki:27951:96619:ae0c99137282474b:chunk:000",
+        "raw_wiki:43216:103597:56c6d36978ca3e8a:chunk:000",
+        "raw_wiki:37304:100540:d9c41f8fbf72b2ba:chunk:000",
+        "raw_wiki:8269:95612:1c103964f57b0be7:chunk:000"
+      ],
+      "staging_top_k_evidence_ids": [
+        "raw_wiki:26165:131313:b22f8b2701be47df:chunk:000",
+        "raw_wiki:27951:96619:ae0c99137282474b:chunk:000",
+        "raw_wiki:26165:131313:b22f8b2701be47df:chunk:000",
+        "raw_wiki:348:86837:3b43bd7a33ec8d89:chunk:000",
+        "raw_wiki:26165:131313:b22f8b2701be47df:chunk:000"
+      ],
+      "offline_rank": null,
+      "staging_rank": null,
+      "identical_top_k": false,
+      "candidate_set_added": [
+        "raw_wiki:348:86837:3b43bd7a33ec8d89:chunk:000"
+      ],
+      "candidate_set_removed": [
+        "raw_wiki:37304:100540:d9c41f8fbf72b2ba:chunk:000",
+        "raw_wiki:43216:103597:56c6d36978ca3e8a:chunk:000",
+        "raw_wiki:8269:95612:1c103964f57b0be7:chunk:000"
+      ],
+      "query_latency_ms": 1628.93,
+      "abstention_evaluation": "not_evaluable_at_retrieval_stage"
+    },
+    {
+      "case_id": "rw-083",
+      "expected_behavior": "abstain",
+      "relevant_evidence_ids": [],
+      "offline_top_k_evidence_ids": [
+        "raw_wiki:40856:136878:d51cccfe23ea5dcf:chunk:000",
+        "raw_wiki:27028:60495:cbfe73d49673eeef:chunk:000",
+        "raw_wiki:42275:101289:8a55f0e7992dded5:chunk:000",
+        "raw_wiki:38234:97270:acf5dbe16c115e8c:chunk:000",
+        "raw_wiki:38236:94125:6468c7e698e76e50:chunk:000"
+      ],
+      "staging_top_k_evidence_ids": [
+        "raw_wiki:40856:136878:d51cccfe23ea5dcf:chunk:000",
+        "raw_wiki:42446:101218:eba876c1698e83d3:chunk:000",
+        "raw_wiki:27028:60495:cbfe73d49673eeef:chunk:000",
+        "raw_wiki:42446:101218:eba876c1698e83d3:chunk:000",
+        "raw_wiki:8269:95612:1c103964f57b0be7:chunk:000"
+      ],
+      "offline_rank": null,
+      "staging_rank": null,
+      "identical_top_k": false,
+      "candidate_set_added": [
+        "raw_wiki:42446:101218:eba876c1698e83d3:chunk:000",
+        "raw_wiki:8269:95612:1c103964f57b0be7:chunk:000"
+      ],
+      "candidate_set_removed": [
+        "raw_wiki:38234:97270:acf5dbe16c115e8c:chunk:000",
+        "raw_wiki:38236:94125:6468c7e698e76e50:chunk:000",
+        "raw_wiki:42275:101289:8a55f0e7992dded5:chunk:000"
+      ],
+      "query_latency_ms": 1635.214,
+      "abstention_evaluation": "not_evaluable_at_retrieval_stage"
+    }
+  ],
+  "parity_gaps": []
+}

@@ -30,13 +30,24 @@ async def test_factory_keeps_remote_reranking_disabled_without_explicit_provider
 
 
 @pytest.mark.asyncio
-async def test_factory_constructs_an_explicit_remote_provider() -> None:
+@pytest.mark.parametrize(
+    ("provider", "model", "key_setting"),
+    [
+        ("voyage", "rerank-3-lite", "VOYAGE_API_KEY"),
+        ("jina", "jina-reranker-v3.5", "JINA_API_KEY"),
+    ],
+)
+async def test_factory_constructs_an_explicit_remote_provider(
+    provider: str,
+    model: str,
+    key_setting: str,
+) -> None:
     async with httpx.AsyncClient() as client:
         reranker = build_cross_encoder_reranker(
             config=_settings(
-                RERANKER_PROVIDER="voyage",
-                RERANKER_API_MODEL="rerank-3-lite",
-                VOYAGE_API_KEY="test-key",
+                RERANKER_PROVIDER=provider,
+                RERANKER_API_MODEL=model,
+                **{key_setting: "test-key"},
             ),
             http_client=client,
         )

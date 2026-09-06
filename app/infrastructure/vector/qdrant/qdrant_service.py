@@ -31,6 +31,7 @@ from app.domain.entities.memory import MemoryPayload, MemoryTier
 from app.domain.interfaces.corpus_publisher import CorpusPublication
 from app.domain.models.corpus_manifest import LoreManifestRow, lore_manifest_checksum
 from app.domain.models.corpus_release import CorpusRelease
+from app.domain.models.corpus_safety_exception import CorpusSafetyProvenance
 from app.domain.models.evidence import EvidenceAccess
 from app.domain.services.guardrails import CorpusSafetyGate
 from app.domain.tuning.rag import RAGTuning
@@ -1240,10 +1241,27 @@ class QdrantService(IVectorStore):
             upsert_payload = payload
         if not isinstance(upsert_payload, dict):
             raise TypeError("Lore payload must be a mapping")
+        corpus_version = upsert_payload.get("corpus_version")
+        source_id = upsert_payload.get("source_id")
+        revision_id = upsert_payload.get("revision_id")
+        provenance = (
+            CorpusSafetyProvenance(
+                source_id=str(source_id),
+                corpus_version=str(corpus_version),
+                page_id=int(upsert_payload["page_id"]),
+                revision_id=int(revision_id),
+                chunk_id=point_id,
+            )
+            if source_id is not None
+            and corpus_version is not None
+            and revision_id is not None
+            else None
+        )
         self._corpus_safety_gate.require_safe(
             text=str(upsert_payload.get("text_content", "")),
             source_id=f"qdrant:{collection}:point:{point_id}",
-            checksum=str(upsert_payload.get("text_hash", "unknown")),
+            checksum=str(upsert_payload.get("chunk_hash", "unknown")),
+            provenance=provenance,
         )
 
         target_collection = self._active_collection_name(collection)
