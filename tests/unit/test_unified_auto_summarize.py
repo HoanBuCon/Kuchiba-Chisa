@@ -1,14 +1,16 @@
-import sys
 import os
+import sys
 import uuid
-import pytest
 from unittest.mock import AsyncMock, MagicMock
+
+import pytest
 
 # Add project root to sys.path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
-from app.domain.services.chat_engine import ChatEngine
+from app.domain.entities.conversation import ConversationSummary
 from app.domain.interfaces.llm_provider import LLMResponse
+from app.domain.services.chat_engine import ChatEngine
 
 
 class DummyStats:
@@ -38,8 +40,15 @@ class DummyConvRepo:
             for i in range(1, 11)
         ]
 
-    async def update_conversation_summary(self, conv_uuid, summary_text):
+    async def update_summary_if_newer(self, conv_uuid, summary_text, *, source_revision):
         self.updated_summary = summary_text
+        return ConversationSummary(
+            conversation_id=conv_uuid,
+            user_id=uuid.uuid4(),
+            text=summary_text,
+            revision=1,
+            source_revision=source_revision,
+        )
 
 
 class DummyDbSession:
@@ -65,6 +74,8 @@ async def test_pure_auto_summarize_workflow():
     mock_cache = MagicMock()
     mock_cache.get = AsyncMock(return_value=None)
     mock_cache.set = AsyncMock()
+    queue = MagicMock()
+    queue.enqueue = AsyncMock()
 
     def db_session_factory():
         return dummy_db_session
@@ -100,7 +111,8 @@ async def test_pure_auto_summarize_workflow():
         db_session_factory=db_session_factory,
         llm=mock_llm,
         embedder=MagicMock(),
-        vector_store=MagicMock()
+        vector_store=MagicMock(),
+        background_job_queue=queue,
     )
 
     # 4. Run Auto Summarize
@@ -110,9 +122,6 @@ async def test_pure_auto_summarize_workflow():
     assert mock_llm.generate.called
     assert dummy_conv_repo.updated_summary == "Senpai thích uống cà phê, làm dev và mới chia sẻ thêm sở thích đi phượt cùng Chisa."
     
-    # Verify Redis summary sync
-    assert mock_cache.set.called
-    redis_set_args = mock_cache.set.call_args
-    assert "chisa:user:" in redis_set_args[0][0]
-    assert ":summary" in redis_set_args[0][0]
-    assert redis_set_args[0][1] == "Senpai thích uống cà phê, làm dev và mới chia sẻ thêm sở thích đi phượt cùng Chisa."
+    # Redis is not written until the durable projection job executes.
+    queue.enqueue.assert_awaited_once()
+    assert not mock_cache.set.called

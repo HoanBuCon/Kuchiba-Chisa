@@ -7,6 +7,7 @@ class UserStats:
     user_id: UUID
     interaction_count: int = 0
     last_seen: int = 0
+    state_revision: int = 0
 
 @dataclass
 class User:

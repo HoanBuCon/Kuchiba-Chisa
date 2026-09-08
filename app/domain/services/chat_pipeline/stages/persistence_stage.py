@@ -74,17 +74,12 @@ class PersistenceStage(PipelineStage):
             is_success=True,
         )
 
-        stats.interaction_count += 1
-        stats.last_seen = int(time.time() * 1000)
-        await user_repo.update_stats(stats)
-
-        # Write-Through to Redis State Cache
-        if self.cache_provider and context.emotion:
-            from app.domain.services.user_state_cache import UserStateCache
-
-            await UserStateCache.set_state(
-                self.cache_provider, user_uuid, stats, context.emotion, conversation_id
-            )
+        stats = await user_repo.apply_interaction(
+            user_uuid,
+            last_seen=int(time.time() * 1000),
+        )
+        context.stats = stats
+        context.state_revision = stats.state_revision
 
         if self.pipeline_tracker:
             self.pipeline_tracker.add_step(

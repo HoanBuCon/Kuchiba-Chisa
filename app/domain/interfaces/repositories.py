@@ -4,7 +4,8 @@ import uuid
 from datetime import datetime
 from typing import Any, Protocol
 
-from app.domain.entities.emotion import EmotionState
+from app.domain.entities.conversation import ConversationSummary
+from app.domain.entities.emotion import EmotionMutation, EmotionState
 from app.domain.entities.lore import LoreParent
 from app.domain.entities.user import User, UserStats
 from app.domain.models.corpus_manifest import ParentCorpusManifest
@@ -39,6 +40,10 @@ class IUserRepository(Protocol):
         """
         ...
 
+    async def apply_interaction(self, user_id: uuid.UUID, *, last_seen: int) -> UserStats:
+        """Atomically increment one acknowledged turn and its state revision."""
+        ...
+
     async def delete_all_for_user(self, user_id: uuid.UUID) -> None:
         """
         Deletes all user data (User and UserStats).
@@ -61,6 +66,12 @@ class IEmotionRepository(Protocol):
         """
         Saves changes to EmotionState.
         """
+        ...
+
+    async def apply_mutation(
+        self, user_id: uuid.UUID, mutation: EmotionMutation, *, updated_at: int
+    ) -> EmotionState:
+        """Atomically apply one turn's additive mutation to canonical emotion state."""
         ...
 
     async def delete_all_for_user(self, user_id: uuid.UUID) -> None:
@@ -127,6 +138,18 @@ class IConversationRepository(Protocol):
         """
         Updates the summary field for a conversation.
         """
+        ...
+
+    async def update_summary_if_newer(
+        self, conversation_id: uuid.UUID, summary: str, *, source_revision: int
+    ) -> ConversationSummary | None:
+        """Publish only when the source watermark is newer than the stored summary."""
+        ...
+
+    async def get_summary_projection(
+        self, conversation_id: uuid.UUID, user_id: uuid.UUID
+    ) -> ConversationSummary | None:
+        """Load canonical summary text and monotonic revisions for cache projection."""
         ...
 
     async def delete_all_for_user(self, user_id: uuid.UUID) -> None:

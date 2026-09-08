@@ -95,7 +95,12 @@ class ClearCommunityMemoryUseCase:
                 if not isinstance(cached_channel_id, str):
                     continue
                 prefix = f"chisa:guild:{guild_id}:channel:{cached_channel_id}"
-                for suffix in ("topic_summary", "rolling_buffer", "msg_count"):
+                for suffix in (
+                    "topic_summary",
+                    "rolling_buffer",
+                    "msg_count",
+                    "processed_events",
+                ):
                     await self.cache_provider.delete(f"{prefix}:{suffix}")
                 cleared_channels += 1
         await self.cache_provider.delete(f"chisa:guild:{guild_id}:community_channels")
@@ -123,7 +128,12 @@ class ClearCommunityMemoryUseCase:
     ) -> None:
         assert channel_id is not None
         prefix = f"chisa:guild:{guild_id}:channel:{channel_id}"
-        for suffix in ("topic_summary", "rolling_buffer", "msg_count"):
+        for suffix in (
+            "topic_summary",
+            "rolling_buffer",
+            "msg_count",
+            "processed_events",
+        ):
             await self.cache_provider.delete(f"{prefix}:{suffix}")
         results["redis"] = "acknowledged"
 

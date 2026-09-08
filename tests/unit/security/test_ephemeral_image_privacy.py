@@ -9,6 +9,7 @@ import pytest
 
 from app.domain.entities.emotion import EmotionState
 from app.domain.entities.user import UserStats
+from app.domain.models.background_job import BackgroundJobType
 from app.domain.services.chat_pipeline.context import ChatContext
 from app.domain.services.chat_pipeline.stages.background_task_stage import BackgroundTaskStage
 from app.domain.services.chat_pipeline.stages.initialization_stage import InitializationStage
@@ -135,6 +136,9 @@ async def test_ephemeral_image_is_not_persisted_or_sent_to_visual_memory_worker(
     )
     user_repo = MagicMock()
     user_repo.update_stats = AsyncMock()
+    user_repo.apply_interaction = AsyncMock(
+        return_value=UserStats(user_id=user_uuid, interaction_count=1, state_revision=1)
+    )
     conversation_repo = MagicMock()
     conversation_repo.save_message = AsyncMock()
     persistence = PersistenceStage(
@@ -151,5 +155,7 @@ async def test_ephemeral_image_is_not_persisted_or_sent_to_visual_memory_worker(
     background = BackgroundTaskStage(job_queue=queue)
     await background.process(context)
 
-    # No durable job is enqueued: an ephemeral image cannot reach Qdrant.
-    queue.enqueue.assert_not_awaited()
+    # Only the canonical post-commit state projection is enqueued; an ephemeral
+    # image never reaches the visual-memory job path.
+    submissions = [call.args[1] for call in queue.enqueue.await_args_list]
+    assert [item.job_type for item in submissions] == [BackgroundJobType.USER_STATE_CACHE]

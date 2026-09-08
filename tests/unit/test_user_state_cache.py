@@ -16,12 +16,23 @@ from app.domain.services.chat_pipeline.stages.persistence_stage import Persisten
 class InMemoryMockCache:
     def __init__(self):
         self.store = {}
+        self.revisions = {}
 
     async def get_json(self, key: str):
         return self.store.get(key)
 
     async def set_json(self, key: str, value: dict, ttl: int = None):
         self.store[key] = value
+
+    async def set_if_newer(self, key: str, value: str, revision: int, ttl: int) -> bool:
+        del ttl
+        if revision <= self.revisions.get(key, -1):
+            return False
+        import json
+
+        self.store[key] = json.loads(value)
+        self.revisions[key] = revision
+        return True
 
     async def delete(self, key: str):
         self.store.pop(key, None)
@@ -72,7 +83,7 @@ async def test_user_state_cache_set_and_get():
 
 
 @pytest.mark.asyncio
-async def test_initialization_stage_uses_user_state_cache():
+async def test_initialization_stage_uses_canonical_database_state():
     cache = InMemoryMockCache()
     user_id = "test_user_cache_123"
     from app.shared.utils.user_identity import normalize_user_id
@@ -80,17 +91,31 @@ async def test_initialization_stage_uses_user_state_cache():
     conv_id = uuid.uuid4()
 
     # Pre-populate cache
-    stats = UserStatsEntity(user_id=user_uuid, interaction_count=42, last_seen=1700000000000)
+    stats = UserStatsEntity(
+        user_id=user_uuid,
+        interaction_count=42,
+        last_seen=1700000000000,
+        state_revision=42,
+    )
     emotion = EmotionStateEntity(user_id=user_uuid, joy=0.8, trust=0.9, updated_at=1700000000000)
     await UserStateCache.set_state(cache, user_uuid, stats, emotion, conv_id)
 
     # Mock Repos
     user_repo = MagicMock()
     user_repo.get_or_create_user = AsyncMock()
-    user_repo.get_user_stats = AsyncMock()
+    canonical_stats = UserStatsEntity(
+        user_id=user_uuid,
+        interaction_count=43,
+        last_seen=1700000000001,
+        state_revision=43,
+    )
+    user_repo.get_user_stats = AsyncMock(return_value=canonical_stats)
 
     emotion_repo = MagicMock()
-    emotion_repo.get_emotion_state = AsyncMock()
+    canonical_emotion = EmotionStateEntity(
+        user_id=user_uuid, joy=0.7, trust=0.85, updated_at=1700000000001
+    )
+    emotion_repo.get_emotion_state = AsyncMock(return_value=canonical_emotion)
 
     conv_repo = MagicMock()
     conv_repo.get_or_create_conversation = AsyncMock(return_value=conv_id)
@@ -109,16 +134,16 @@ async def test_initialization_stage_uses_user_state_cache():
 
     res = await stage.process(ctx)
 
-    # Verify cache HIT: SQL methods get_user_stats and get_emotion_state were SKIPPED!
-    assert res.stats.interaction_count == 42
-    assert res.emotion.joy == 0.8
+    # Mutable request state is read from the transactionally canonical database.
+    assert res.stats.interaction_count == 43
+    assert res.emotion.joy == 0.7
     assert res.conv_id == conv_id
-    user_repo.get_user_stats.assert_not_called()
-    emotion_repo.get_emotion_state.assert_not_called()
+    user_repo.get_user_stats.assert_awaited_once_with(user_uuid)
+    emotion_repo.get_emotion_state.assert_awaited_once_with(user_uuid)
 
 
 @pytest.mark.asyncio
-async def test_persistence_stage_writes_through_to_cache():
+async def test_persistence_stage_uses_atomic_canonical_interaction_update():
     cache = InMemoryMockCache()
     user_id = "test_persist_user"
     from app.shared.utils.user_identity import normalize_user_id
@@ -126,7 +151,13 @@ async def test_persistence_stage_writes_through_to_cache():
     conv_id = uuid.uuid4()
 
     user_repo = MagicMock()
-    user_repo.update_stats = AsyncMock()
+    updated_stats = UserStatsEntity(
+        user_id=user_uuid,
+        interaction_count=6,
+        last_seen=200,
+        state_revision=6,
+    )
+    user_repo.apply_interaction = AsyncMock(return_value=updated_stats)
     conv_repo = MagicMock()
     conv_repo.save_message = AsyncMock()
 
@@ -152,14 +183,7 @@ async def test_persistence_stage_writes_through_to_cache():
 
     await stage.process(ctx)
 
-    # Verify SQL update_stats was called
-    assert stats.interaction_count == 6
-    user_repo.update_stats.assert_called_once_with(stats)
-
-    # Verify Redis Write-Through cache has updated state!
-    cached = await UserStateCache.get_state(cache, user_uuid)
-    assert cached is not None
-    c_stats, c_emotion, c_conv = cached
-    assert c_stats.interaction_count == 6
-    assert c_emotion.joy == 0.6
-    assert c_conv == conv_id
+    user_repo.apply_interaction.assert_awaited_once()
+    assert ctx.stats is updated_stats
+    assert ctx.state_revision == 6
+    assert await UserStateCache.get_state(cache, user_uuid) is None

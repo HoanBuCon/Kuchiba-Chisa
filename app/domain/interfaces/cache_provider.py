@@ -23,6 +23,12 @@ class ICacheProvider(Protocol):
         """Sets a JSON serializable value in cache with optional TTL."""
         ...
 
+    async def set_if_newer(
+        self, key: str, value: str, revision: int, ttl: int
+    ) -> bool:
+        """Atomically publish only when revision is newer than the cached revision."""
+        ...
+
     async def delete(self, key: str) -> None:
         """Deletes a key from cache."""
         ...
@@ -45,4 +51,8 @@ class ICacheProvider(Protocol):
 
     async def release_lock(self, lock_key: str, token: Optional[str] = None) -> bool:
         """Releases a distributed lock safely using token comparison."""
+        ...
+
+    async def renew_lock(self, lock_key: str, token: str, ttl: int) -> bool:
+        """Renew only a lease still owned by token."""
         ...

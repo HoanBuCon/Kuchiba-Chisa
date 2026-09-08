@@ -13,3 +13,17 @@ class EmotionState:
     curiosity: float = 0.10
     comfort: float = 0.50
     updated_at: int = 0
+
+
+@dataclass(frozen=True)
+class EmotionMutation:
+    """One turn's additive emotion mutation, applied atomically to canonical state."""
+
+    joy: float = 0.0
+    sadness: float = 0.0
+    trust: float = 0.0
+    irritation: float = 0.0
+    attachment: float = 0.0
+    shyness: float = 0.0
+    curiosity: float = 0.0
+    comfort: float = 0.0

@@ -15,6 +15,9 @@ class BackgroundJobType(StrEnum):
     PRIVATE_SUMMARY = "private_summary.v1"
     COMMUNITY_SUMMARY = "community_summary.v1"
     VISUAL_MEMORY = "visual_memory.v1"
+    USER_STATE_CACHE = "user_state_cache.v1"
+    PRIVATE_SUMMARY_CACHE = "private_summary_cache.v1"
+    COMMUNITY_STATE = "community_state.v1"
 
 
 class BackgroundJobStatus(StrEnum):
@@ -57,6 +60,7 @@ class MemoryExtractionPayload:
 class PrivateSummaryPayload:
     user_id: uuid.UUID
     conversation_id: uuid.UUID
+    source_revision: int | None = None
 
     def as_json(self) -> dict[str, Any]:
         return _json_ready(asdict(self))
@@ -67,6 +71,43 @@ class CommunitySummaryPayload:
     user_id: uuid.UUID
     guild_id: str
     channel_id: str
+    trace_id: str | None
+
+    def as_json(self) -> dict[str, Any]:
+        return _json_ready(asdict(self))
+
+
+@dataclass(frozen=True)
+class UserStateCachePayload:
+    user_id: uuid.UUID
+    conversation_id: uuid.UUID
+    state_revision: int
+
+    def as_json(self) -> dict[str, Any]:
+        return _json_ready(asdict(self))
+
+
+@dataclass(frozen=True)
+class PrivateSummaryCachePayload:
+    user_id: uuid.UUID
+    conversation_id: uuid.UUID
+    summary_revision: int
+    source_revision: int
+
+    def as_json(self) -> dict[str, Any]:
+        return _json_ready(asdict(self))
+
+
+@dataclass(frozen=True)
+class CommunityStatePayload:
+    user_id: uuid.UUID
+    conversation_id: uuid.UUID
+    user_message_id: uuid.UUID
+    assistant_message_id: uuid.UUID
+    guild_id: str
+    channel_id: str
+    speaker_name: str | None
+    ambient_delta: dict[str, float]
     trace_id: str | None
 
     def as_json(self) -> dict[str, Any]:

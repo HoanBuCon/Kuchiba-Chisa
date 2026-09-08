@@ -18,6 +18,7 @@ from app.interface.api.routes import admin_ingestion, auth, chat, community, hea
 from app.interface.middlewares.rate_limiter import RateLimitMiddleware
 from app.interface.middlewares.request_body_limit import RequestBodyLimitMiddleware
 from app.shared.utils.background_tasks import BackgroundTaskManager
+from app.shared.utils.maintenance_tasks import MaintenanceTaskSupervisor
 
 # Configure logging before anything else
 configure_logging()
@@ -118,6 +119,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
     # ── Shutdown ─────────────────────────────────────────────────────────
     log.info("Shutting down Chisa API...")
+    await MaintenanceTaskSupervisor.shutdown(grace_seconds=10.0)
     await BackgroundTaskManager.shutdown(timeout=10.0)
     await disconnect_database()
     await redis_service.disconnect()

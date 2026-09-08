@@ -23,6 +23,7 @@ from PIL import Image, ImageOps
 from app.config.settings import settings
 from app.infrastructure.logging.logger import get_logger
 from app.shared.security.network_destinations import is_forbidden_ip
+from app.shared.utils.maintenance_tasks import MaintenanceTaskSupervisor
 
 log = get_logger(__name__)
 
@@ -331,8 +332,12 @@ class LocalStorageManager(IImageStorageProvider):
         # Async write to disk
         await asyncio.to_thread(main_path.write_bytes, sanitized_result["sanitized_bytes"])
 
-        # Check and enforce LRU Quota in background
-        asyncio.create_task(self.enforce_lru_quota())
+        # Quota is node-local maintenance: coalesce concurrent uploads and keep
+        # the operation lifecycle-tracked through application shutdown.
+        MaintenanceTaskSupervisor.schedule(
+            key=f"image-storage-quota:{self.storage_dir}",
+            operation=self.enforce_lru_quota,
+        )
 
         rel_main_url = f"{self.base_url}/{sub_dir_name}/{main_filename}"
 
@@ -366,10 +371,7 @@ class LocalStorageManager(IImageStorageProvider):
         """
         Scans storage directory and removes oldest files (LRU) when total usage >= 90% quota.
         """
-        try:
-            await asyncio.to_thread(self._enforce_lru_quota_sync)
-        except Exception as e:
-            log.warning("LRU image quota cleanup error", error=str(e))
+        await asyncio.to_thread(self._enforce_lru_quota_sync)
 
     def _enforce_lru_quota_sync(self) -> None:
         if not self.storage_dir.exists():

@@ -1,6 +1,7 @@
 from typing import Any
 
 from app.domain.interfaces.cache_provider import ICacheProvider
+from app.domain.interfaces.community_state import ICommunityStateStore
 from app.domain.interfaces.llm_provider import BaseLLMAdapter, StructuredPrompt
 from app.domain.services.community.transcript_formatter import ChannelTranscriptFormatter
 from app.domain.services.guardrails.pii_redaction import PiiRedactor
@@ -21,11 +22,16 @@ class CommunityTopicSummarizer:
     SUMMARIZE_INTERVAL = 30
 
     def __init__(
-        self, llm: BaseLLMAdapter, cache: ICacheProvider, pii_redactor: PiiRedactor | None = None
+        self,
+        llm: BaseLLMAdapter,
+        cache: ICacheProvider,
+        pii_redactor: PiiRedactor | None = None,
+        state_store: ICommunityStateStore | None = None,
     ):
         self.llm = llm
         self.cache = cache
         self.pii_redactor = pii_redactor or PiiRedactor()
+        self.state_store = state_store
         self.SUMMARY_SCHEMA = {
             "type": "object",
             "properties": {
@@ -212,6 +218,8 @@ class CommunityTopicSummarizer:
         messages: list[Any] | None = None,
         trace_id: str | None = None,
         propagate_errors: bool = False,
+        source_revision: int | None = None,
+        previous_summary_snapshot: str | None = None,
     ) -> str | None:
         """
         Background execution: Calls LLM to summarize channel topic with 3-tier context:
@@ -219,8 +227,13 @@ class CommunityTopicSummarizer:
         2. Accumulated History Buffer (Redis Rolling Buffer)
         3. Live Recent Channel Messages (15 raw Discord messages)
         """
-        rolling_buffer = await self.get_rolling_buffer(channel_id, guild_id)
-        live_messages = messages or []
+        is_versioned_snapshot = source_revision is not None and self.state_store is not None
+        rolling_buffer = (
+            list(messages or [])
+            if is_versioned_snapshot
+            else await self.get_rolling_buffer(channel_id, guild_id)
+        )
+        live_messages = [] if is_versioned_snapshot else (messages or [])
 
         if not rolling_buffer and not live_messages:
             return None
@@ -254,7 +267,11 @@ class CommunityTopicSummarizer:
             return None
 
         # 3. Fetch Previous Summary from Redis
-        previous_summary = await self.get_topic_summary(channel_id, guild_id)
+        previous_summary = (
+            previous_summary_snapshot
+            if is_versioned_snapshot
+            else await self.get_topic_summary(channel_id, guild_id)
+        )
 
         # Build 3-Tier User Message Sections
         sections = []
@@ -303,20 +320,36 @@ class CommunityTopicSummarizer:
             ).value
 
             if summary_text:
-                await self.cache.set(
-                    self._summary_key(channel_id, guild_id),
-                    summary_text,
-                    ttl=self.SUMMARY_TTL_SECONDS
-                )
-                
-                # Trim rolling buffer to retain last BUFFER_OVERLAP_MESSAGES for subsequent continuity
-                if rolling_buffer and len(rolling_buffer) > self.BUFFER_OVERLAP_MESSAGES:
-                    trimmed = rolling_buffer[-self.BUFFER_OVERLAP_MESSAGES:]
-                    await self.cache.set_json(
-                        self._buffer_key(channel_id, guild_id),
-                        trimmed,
+                if source_revision is not None and self.state_store is not None:
+                    published = await self.state_store.publish_summary(
+                        guild_id=guild_id,
+                        channel_id=channel_id,
+                        source_revision=source_revision,
+                        summary=summary_text,
+                    )
+                    if not published:
+                        log.info(
+                            "Discarded stale community summary",
+                            channel_id=channel_id,
+                            source_revision=source_revision,
+                        )
+                        return None
+                else:
+                    await self.cache.set(
+                        self._summary_key(channel_id, guild_id),
+                        summary_text,
                         ttl=self.SUMMARY_TTL_SECONDS,
                     )
+
+                    # Legacy jobs have no watermark. Versioned BE-03 jobs retain
+                    # all messages appended after their immutable snapshot.
+                    if rolling_buffer and len(rolling_buffer) > self.BUFFER_OVERLAP_MESSAGES:
+                        trimmed = rolling_buffer[-self.BUFFER_OVERLAP_MESSAGES:]
+                        await self.cache.set_json(
+                            self._buffer_key(channel_id, guild_id),
+                            trimmed,
+                            ttl=self.SUMMARY_TTL_SECONDS,
+                        )
 
                 sample_transcript = (formatted_live_transcript or formatted_history_transcript)[:300]
                 log.info("Community topic summary updated in Redis", channel_id=channel_id, summary_length=len(summary_text))

@@ -7,9 +7,10 @@ from app.domain.interfaces.tracker import IPipelineTracker
 from app.domain.models.background_job import (
     BackgroundJobSubmission,
     BackgroundJobType,
-    CommunitySummaryPayload,
+    CommunityStatePayload,
     MemoryExtractionPayload,
     PrivateSummaryPayload,
+    UserStateCachePayload,
     VisualMemoryPayload,
 )
 from app.domain.services.chat_pipeline.context import ChatContext
@@ -49,7 +50,9 @@ class BackgroundTaskStage(PipelineStage):
         allowed = context.memory_privacy_policy.allows_long_term_memory
         count = context.stats.interaction_count if context.stats else 0
         trigger_extract = bool(allowed and count > 0 and count % 3 == 0)
-        trigger_summary = bool(allowed and count > 0 and count % 10 == 0)
+        trigger_summary = bool(
+            allowed and not context.is_community and count > 0 and count % 10 == 0
+        )
         trigger_visual = bool(
             allowed and context.processed_images and not context.is_ephemeral_reference
         )
@@ -62,6 +65,21 @@ class BackgroundTaskStage(PipelineStage):
             raise RuntimeError("Durable background work requires exact persisted message IDs")
         user_message_id = context.persisted_user_message_id
         assistant_message_id = context.persisted_assistant_message_id
+
+        if context.state_revision is None:
+            raise RuntimeError("Durable cache projection requires a committed state revision")
+        user_cache_payload = UserStateCachePayload(
+            user_id=context.user_uuid,
+            conversation_id=context.conv_id,
+            state_revision=context.state_revision,
+        )
+        await self._enqueue(
+            context,
+            BackgroundJobType.USER_STATE_CACHE,
+            f"user-state-cache:{context.user_uuid}:{context.state_revision}",
+            user_cache_payload.as_json(),
+            tenant_id=None,
+        )
 
         expiry = context.memory_privacy_policy.retention_expiry_epoch()
         if trigger_extract:
@@ -82,8 +100,9 @@ class BackgroundTaskStage(PipelineStage):
             await self._enqueue(
                 context,
                 BackgroundJobType.MEMORY_EXTRACTION,
-                f"memory-extraction:{assistant_message_id}",
-                memory_payload.as_json(),
+            f"memory-extraction:{assistant_message_id}",
+            memory_payload.as_json(),
+            tenant_id=context.guild_id if context.is_community else None,
             )
 
         if trigger_summary:
@@ -92,12 +111,14 @@ class BackgroundTaskStage(PipelineStage):
             summary_payload = PrivateSummaryPayload(
                 user_id=context.user_uuid,
                 conversation_id=context.conv_id,
+                source_revision=context.state_revision,
             )
             await self._enqueue(
                 context,
                 BackgroundJobType.PRIVATE_SUMMARY,
                 f"private-summary:{assistant_message_id}",
                 summary_payload.as_json(),
+                tenant_id=None,
             )
 
         if (
@@ -105,43 +126,37 @@ class BackgroundTaskStage(PipelineStage):
             and context.is_community
             and context.guild_id
             and context.channel_id
-            and self.topic_summarizer
         ):
-            await self.topic_summarizer.append_messages(
-                channel_id=context.channel_id,
+            if user_message_id is None or assistant_message_id is None:
+                raise RuntimeError("Community state requires persisted message IDs")
+            if context.emotion_mutation is None:
+                raise RuntimeError("Community state requires an atomic emotion mutation")
+            community_payload = CommunityStatePayload(
+                user_id=context.user_uuid,
+                conversation_id=context.conv_id,
+                user_message_id=user_message_id,
+                assistant_message_id=assistant_message_id,
                 guild_id=context.guild_id,
-                messages=context.recent_community_messages or [],
-                current_user_turn={
-                    "speaker_name": context.speaker_name or "User",
-                    "content": context.user_message,
-                    "is_bot": False,
-                    "created_at": "Now",
+                channel_id=context.channel_id,
+                speaker_name=_redact_optional(self.pii_redactor, context.speaker_name),
+                ambient_delta={
+                    "joy": context.emotion_mutation.joy,
+                    "sadness": context.emotion_mutation.sadness,
+                    "irritation": context.emotion_mutation.irritation,
+                    "shyness": context.emotion_mutation.shyness,
+                    "curiosity": context.emotion_mutation.curiosity,
+                    "comfort": context.emotion_mutation.comfort,
                 },
-                current_assistant_turn={
-                    "speaker_name": "Chisa",
-                    "content": context.chisa_reply,
-                    "is_bot": True,
-                    "created_at": "Now",
-                },
+                trace_id=context.trace_id,
             )
-            message_count = await self.topic_summarizer.increment_message_count(
-                context.channel_id, context.guild_id
+            await self._enqueue(
+                context,
+                BackgroundJobType.COMMUNITY_STATE,
+                f"community-state:{assistant_message_id}",
+                community_payload.as_json(),
+                tenant_id=context.guild_id,
             )
-            if message_count > 0 and message_count % self.topic_summarizer.SUMMARIZE_INTERVAL == 0:
-                trigger_topic = True
-                topic_payload = CommunitySummaryPayload(
-                    user_id=context.user_uuid,
-                    guild_id=context.guild_id,
-                    channel_id=context.channel_id,
-                    trace_id=context.trace_id,
-                )
-                await self._enqueue(
-                    context,
-                    BackgroundJobType.COMMUNITY_SUMMARY,
-                    f"community-summary:{topic_payload.guild_id}:"
-                    f"{topic_payload.channel_id}:{message_count}",
-                    topic_payload.as_json(),
-                )
+            trigger_topic = count % 30 == 0
 
         if trigger_visual:
             if user_message_id is None or assistant_message_id is None:
@@ -164,6 +179,7 @@ class BackgroundTaskStage(PipelineStage):
                 BackgroundJobType.VISUAL_MEMORY,
                 f"visual-memory:{assistant_message_id}",
                 visual_payload.as_json(),
+                tenant_id=context.guild_id if context.is_community else None,
             )
 
         if self.pipeline_tracker:
@@ -193,6 +209,8 @@ class BackgroundTaskStage(PipelineStage):
         job_type: BackgroundJobType,
         idempotency_key: str,
         payload: dict[str, object],
+        *,
+        tenant_id: str | None,
     ) -> None:
         if context.user_uuid is None:
             raise RuntimeError("Trusted principal is required for durable enqueue")
@@ -203,7 +221,7 @@ class BackgroundTaskStage(PipelineStage):
                 idempotency_key=idempotency_key,
                 payload=payload,
                 principal_id=context.user_uuid,
-                tenant_id=context.guild_id if context.is_community else None,
+                tenant_id=tenant_id,
             ),
         )
 

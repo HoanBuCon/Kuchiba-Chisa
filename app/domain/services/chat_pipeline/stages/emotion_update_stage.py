@@ -1,11 +1,14 @@
 from typing import Callable, Optional
-from app.domain.interfaces.session import IDbSession
-from app.domain.services.chat_pipeline.stage import PipelineStage
-from app.domain.services.chat_pipeline.context import ChatContext
-from app.domain.services.emotion_engine import EmotionEngine
-from app.domain.interfaces.repositories import IEmotionRepository
+
+from app.domain.entities.emotion import EmotionMutation
 from app.domain.interfaces.cache_provider import ICacheProvider
+from app.domain.interfaces.repositories import IEmotionRepository
+from app.domain.interfaces.session import IDbSession
 from app.domain.interfaces.tracker import IPipelineTracker
+from app.domain.services.chat_pipeline.context import ChatContext
+from app.domain.services.chat_pipeline.stage import PipelineStage
+from app.domain.services.emotion_engine import EmotionEngine
+
 
 class EmotionUpdateStage(PipelineStage):
     """
@@ -44,8 +47,6 @@ class EmotionUpdateStage(PipelineStage):
         chisa_annoyed = chisa_sentiment.get("is_annoyed", False)
         chisa_flustered = chisa_sentiment.get("is_flustered", False)
         
-        emotion_repo = self.emotion_repo_factory(context.session)
-
         # Explicitly snapshot pre-update emotions to guarantee accurate telemetry
         old_emotions = {
             "joy": emotion.joy,
@@ -70,20 +71,30 @@ class EmotionUpdateStage(PipelineStage):
             chisa_annoyed=chisa_annoyed,
             chisa_flustered=chisa_flustered
         )
-        await emotion_repo.update_emotion(emotion)
+        context.emotion_mutation = EmotionMutation(
+            joy=delta.joy,
+            sadness=delta.sadness,
+            trust=delta.trust,
+            irritation=delta.irritation,
+            attachment=delta.attachment,
+            shyness=delta.shyness,
+            curiosity=delta.curiosity,
+            comfort=delta.comfort,
+        )
+        emotion_repo = self.emotion_repo_factory(context.session)
+        emotion = await emotion_repo.apply_mutation(
+            emotion.user_id,
+            context.emotion_mutation,
+            updated_at=emotion.updated_at,
+        )
+        context.emotion = emotion
 
-        # Sync Server-Level Ambient Mood in shared server environments
+        # Shared ambient state is projected only by the durable post-commit job.
         is_server_shared = (
             bool(context.guild_id)
             and not (context.guild_id or "").startswith("CHANNEL_")
             and context.guild_id != "DM"
         )
-        if is_server_shared and self.cache_provider:
-            from app.domain.services.community.ambient_manager import AmbientMoodManager
-            ambient_snapshot = AmbientMoodManager.extract_ambient_snapshot(emotion)
-            cache_key = f"chisa:guild:{context.guild_id}:ambient_mood"
-            await self.cache_provider.set_json(cache_key, ambient_snapshot, ttl=7200)
-
         if self.pipeline_tracker:
             self.pipeline_tracker.add_step("emotion_update", {
                 "old_emotions": old_emotions,

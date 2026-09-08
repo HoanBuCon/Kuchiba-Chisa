@@ -116,4 +116,5 @@ async def test_clear_community_memory_self_scope_uses_verified_tenant_channel_an
         "chisa:guild:tenant-a:channel:channel-a:topic_summary",
         "chisa:guild:tenant-a:channel:channel-a:rolling_buffer",
         "chisa:guild:tenant-a:channel:channel-a:msg_count",
+        "chisa:guild:tenant-a:channel:channel-a:processed_events",
     }

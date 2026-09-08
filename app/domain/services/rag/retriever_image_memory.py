@@ -5,17 +5,27 @@ Location: app/domain/services/rag/retriever_image_memory.py
 
 from __future__ import annotations
 
-import asyncio
+import hashlib
+import json
 import os
 import time
+from functools import partial
 from typing import Any
 
-from qdrant_client.http.models import FieldCondition, Filter, MatchValue, PointIdsList, Range
+from qdrant_client.http.models import (
+    FieldCondition,
+    Filter,
+    FilterSelector,
+    HasIdCondition,
+    MatchValue,
+    Range,
+)
 
 from app.domain.entities.image_memory import RetrievedImageMemory
 from app.domain.interfaces.vector_store import IVectorStore
 from app.infrastructure.logging.logger import get_logger
 from app.infrastructure.vector.qdrant.qdrant_service import COLLECTION_IMAGE_MEMORIES
+from app.shared.utils.maintenance_tasks import MaintenanceTaskSupervisor
 
 log = get_logger(__name__)
 
@@ -29,16 +39,52 @@ class ImageMemoryRetriever:
     def __init__(self, vector_store: IVectorStore) -> None:
         self.vector_store = vector_store
 
-    async def _delete_orphan_points(self, qdrant_client: Any, point_ids: list[str]) -> None:
-        """Deletes dangling/orphan points from Qdrant collection 'image_memories'."""
-        try:
-            await qdrant_client.delete(
-                collection_name=COLLECTION_IMAGE_MEMORIES,
-                points_selector=PointIdsList(points=point_ids),
-            )
-            log.info("Successfully pruned orphan image memory points from Qdrant", count=len(point_ids))
-        except Exception as err:
-            log.warning("Failed to prune orphan image memory points", error=str(err))
+    async def _delete_orphan_point(
+        self,
+        qdrant_client: Any,
+        *,
+        point_id: str,
+        expected_payload_fingerprint: str,
+        expected_local_path: str,
+        expected_image_id: str,
+    ) -> None:
+        """Delete only the exact point version that was observed as an orphan."""
+        records = await qdrant_client.retrieve(
+            collection_name=COLLECTION_IMAGE_MEMORIES,
+            ids=[point_id],
+            with_payload=True,
+        )
+        record = next((item for item in records if str(item.id) == point_id), None)
+        if record is None:
+            return
+        current_payload = record.payload or {}
+        if _payload_fingerprint(point_id, current_payload) != expected_payload_fingerprint:
+            log.info("Skipped stale orphan cleanup after image-memory point changed")
+            return
+        if os.path.exists(expected_local_path):
+            log.info("Skipped stale orphan cleanup after local image was restored")
+            return
+
+        # Payload predicates provide a final server-side identity check in addition
+        # to the immutable payload fingerprint revalidation above.
+        await qdrant_client.delete(
+            collection_name=COLLECTION_IMAGE_MEMORIES,
+            points_selector=FilterSelector(
+                filter=Filter(
+                    must=[
+                        HasIdCondition(has_id=[point_id]),
+                        FieldCondition(
+                            key="local_path", match=MatchValue(value=expected_local_path)
+                        ),
+                        FieldCondition(
+                            key="image_id", match=MatchValue(value=expected_image_id)
+                        ),
+                    ]
+                )
+            ),
+            wait=True,
+        )
+        log.info("Successfully pruned one orphan image-memory point")
 
     async def retrieve_image_memories(
         self,
@@ -105,7 +151,7 @@ class ImageMemoryRetriever:
             return []
 
         retrieved: list[RetrievedImageMemory] = []
-        orphan_point_ids: list[str] = []
+        orphan_candidates: list[tuple[str, str, str, str]] = []
 
         for hit in results:
             payload = hit.payload or {}
@@ -115,9 +161,17 @@ class ImageMemoryRetriever:
             local_path = payload.get("local_path")
 
             # Self-Healing Check: If image was stored locally but file was pruned by LRU quota / deleted
-            if local_path and not os.path.exists(local_path):
+            if isinstance(local_path, str) and local_path and not os.path.exists(local_path):
                 log.warning("Pruned/Orphan image memory detected, skipping and queuing for self-healing deletion", image_id=payload.get("image_id"), local_path=local_path)
-                orphan_point_ids.append(str(hit.id))
+                point_id = str(hit.id)
+                orphan_candidates.append(
+                    (
+                        point_id,
+                        _payload_fingerprint(point_id, payload),
+                        local_path,
+                        str(payload.get("image_id", point_id)),
+                    )
+                )
                 continue
 
             retrieved.append(
@@ -135,10 +189,17 @@ class ImageMemoryRetriever:
                 )
             )
 
-        # Asynchronously clean up orphan points from Qdrant in background
-        if orphan_point_ids and qdrant_client:
-            asyncio.create_task(
-                self._delete_orphan_points(qdrant_client, orphan_point_ids)
+        for point_id, fingerprint, local_path, image_id in orphan_candidates:
+            MaintenanceTaskSupervisor.schedule(
+                key=f"image-memory-orphan:{point_id}",
+                operation=partial(
+                    self._delete_orphan_point,
+                    qdrant_client,
+                    point_id=point_id,
+                    expected_payload_fingerprint=fingerprint,
+                    expected_local_path=local_path,
+                    expected_image_id=image_id,
+                ),
             )
 
         # Sort by similarity score descending
@@ -150,3 +211,13 @@ class ImageMemoryRetriever:
             user_id=user_id,
         )
         return retrieved
+
+
+def _payload_fingerprint(point_id: str, payload: dict[str, Any]) -> str:
+    encoded = json.dumps(
+        {"point_id": point_id, "payload": payload},
+        ensure_ascii=False,
+        separators=(",", ":"),
+        sort_keys=True,
+    ).encode("utf-8")
+    return hashlib.sha256(encoded).hexdigest()

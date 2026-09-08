@@ -1,12 +1,16 @@
 from __future__ import annotations
+
 import time
 import uuid
+
+from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+
+from app.domain.entities.user import User as UserEntity
+from app.domain.entities.user import UserStats as UserStatsEntity
+from app.domain.interfaces.repositories import IUserRepository
 from app.infrastructure.database.models.user import User as UserModel
 from app.infrastructure.database.models.user_stats import UserStats as UserStatsModel
-from app.domain.interfaces.repositories import IUserRepository
-from app.domain.entities.user import User as UserEntity, UserStats as UserStatsEntity
 
 
 class SqlAlchemyUserRepository(IUserRepository):
@@ -49,7 +53,30 @@ class SqlAlchemyUserRepository(IUserRepository):
         return UserStatsEntity(
             user_id=stats_db.user_id,
             interaction_count=stats_db.interaction_count,
-            last_seen=stats_db.last_seen
+            last_seen=stats_db.last_seen,
+            state_revision=stats_db.state_revision,
+        )
+
+    async def apply_interaction(
+        self, user_id: uuid.UUID, *, last_seen: int
+    ) -> UserStatsEntity:
+        row = (
+            await self.session.execute(
+                update(UserStatsModel)
+                .where(UserStatsModel.user_id == user_id)
+                .values(
+                    interaction_count=UserStatsModel.interaction_count + 1,
+                    last_seen=func.greatest(UserStatsModel.last_seen, last_seen),
+                    state_revision=UserStatsModel.state_revision + 1,
+                )
+                .returning(UserStatsModel)
+            )
+        ).scalar_one()
+        return UserStatsEntity(
+            user_id=row.user_id,
+            interaction_count=row.interaction_count,
+            last_seen=row.last_seen,
+            state_revision=row.state_revision,
         )
 
     async def update_stats(self, stats: UserStatsEntity) -> None:
@@ -63,7 +90,8 @@ class SqlAlchemyUserRepository(IUserRepository):
             stats_db = UserStatsModel(
                 user_id=stats.user_id,
                 interaction_count=stats.interaction_count,
-                last_seen=stats.last_seen
+                last_seen=stats.last_seen,
+                state_revision=stats.state_revision,
             )
             self.session.add(stats_db)
         await self.session.flush()

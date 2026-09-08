@@ -101,14 +101,24 @@ async def test_holistic_multi_user_server_emotion_resonance():
 
     mock_cache.get_json = AsyncMock(side_effect=mock_get_json)
     mock_cache.set_json = AsyncMock(side_effect=mock_set_json)
+    mock_cache.get = AsyncMock(return_value=None)
 
     engine = EmotionEngine()
 
     # Step 1: User A (Provocateur) interacts with rude/hostile sentiment
     user_a_uuid = uuid4()
-    emotion_a = EmotionState(user_id=user_a_uuid, trust=0.40, attachment=0.05, sadness=0.05, irritation=0.10)
+    emotion_a = EmotionState(
+        user_id=user_a_uuid,
+        trust=0.40,
+        attachment=0.05,
+        sadness=0.05,
+        irritation=0.10,
+    )
     mock_emotion_repo = MagicMock()
     mock_emotion_repo.update_emotion = AsyncMock()
+    mock_emotion_repo.apply_mutation = AsyncMock(
+        side_effect=lambda _user_id, _mutation, **_: emotion_a
+    )
 
     update_stage = EmotionUpdateStage(
         emotion_engine=engine,
@@ -136,9 +146,10 @@ async def test_holistic_multi_user_server_emotion_resonance():
 
     await update_stage.process(context_a)
 
-    # Server ambient cache now holds the elevated irritation from User A's interaction
-    assert f"chisa:guild:{server_id}:ambient_mood" in cache_store
-    server_ambient = cache_store[f"chisa:guild:{server_id}:ambient_mood"]
+    # The pipeline no longer writes shared Redis state before its database commit.
+    assert f"chisa:guild:{server_id}:ambient_mood" not in cache_store
+    server_ambient = AmbientMoodManager.extract_ambient_snapshot(context_a.emotion)
+    cache_store[f"chisa:guild:{server_id}:ambient_mood"] = server_ambient
     assert server_ambient["irritation"] >= 0.40
     assert server_ambient["comfort"] <= 0.30
 

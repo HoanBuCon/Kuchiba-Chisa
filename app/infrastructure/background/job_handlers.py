@@ -9,16 +9,24 @@ from typing import Any
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
+from app.domain.interfaces.cache_provider import ICacheProvider
+from app.domain.interfaces.community_state import ICommunityStateStore
 from app.domain.models.background_job import (
     BackgroundJobType,
     BackgroundTurnSource,
     ClaimedBackgroundJob,
 )
+from app.domain.models.community_state import CommunityTurn
 from app.domain.services.community.topic_summarizer import CommunityTopicSummarizer
+from app.domain.services.guardrails.pii_redaction import PiiRedactor
 from app.domain.services.memory_extractor import MemoryExtractor
+from app.domain.services.user_state_cache import USER_STATE_CACHE_TTL, UserStateCache
 from app.domain.services.visual_memory_ingestion import VisualMemoryIngestionWorker
+from app.infrastructure.database.models.conversation import Conversation
+from app.infrastructure.database.models.emotion_state import EmotionState
 from app.infrastructure.database.models.message import Message, MessageRole
 from app.infrastructure.database.models.user import User
+from app.infrastructure.database.models.user_stats import UserStats
 from app.infrastructure.database.repositories.privacy_preference import (
     SqlAlchemyPrivacyPreferenceRepository,
 )
@@ -162,15 +170,20 @@ class PrivateSummaryJobHandler:
             external_user_id,
             str(_uuid(payload, "conversation_id")),
             propagate_errors=True,
+            source_revision=_optional_int(payload, "source_revision"),
         )
 
 
 class CommunitySummaryJobHandler:
     def __init__(
-        self, source: BackgroundTurnSourceReader, summarizer: CommunityTopicSummarizer
+        self,
+        source: BackgroundTurnSourceReader,
+        summarizer: CommunityTopicSummarizer,
+        store: ICommunityStateStore | None = None,
     ) -> None:
         self._source = source
         self._summarizer = summarizer
+        self._store = store
 
     async def handle(self, job: ClaimedBackgroundJob) -> None:
         payload = _payload(job, BackgroundJobType.COMMUNITY_SUMMARY)
@@ -178,11 +191,202 @@ class CommunitySummaryJobHandler:
         guild_id = _required_str(payload, "guild_id")
         _verify_scope(job, user_id, guild_id)
         await self._source.ensure_consent(user_id)
+        channel_id = _required_str(payload, "channel_id")
+        if self._store is None:
+            raise DurableJobPayloadError("legacy community summary requires versioned state store")
+        snapshot = await self._store.snapshot(guild_id=guild_id, channel_id=channel_id)
         await self._summarizer.summarize_channel_topic(
-            channel_id=_required_str(payload, "channel_id"),
+            channel_id=channel_id,
             guild_id=guild_id,
+            messages=snapshot.messages,
+            previous_summary_snapshot=snapshot.topic_summary,
             trace_id=_optional_str(payload, "trace_id"),
             propagate_errors=True,
+            source_revision=snapshot.state_revision,
+        )
+
+
+class UserStateCacheJobHandler:
+    def __init__(
+        self,
+        session_factory: SessionFactory,
+        cache: ICacheProvider,
+    ) -> None:
+        self._session_factory = session_factory
+        self._cache = cache
+
+    async def handle(self, job: ClaimedBackgroundJob) -> None:
+        payload = _payload(job, BackgroundJobType.USER_STATE_CACHE)
+        user_id = _uuid(payload, "user_id")
+        _verify_scope(job, user_id, None)
+        requested_revision = _required_int(payload, "state_revision")
+        conversation_id = _uuid(payload, "conversation_id")
+        async with self._session_factory() as session:
+            stats = await session.scalar(select(UserStats).where(UserStats.user_id == user_id))
+            emotion = await session.scalar(
+                select(EmotionState).where(EmotionState.user_id == user_id)
+            )
+            conversation = await session.scalar(
+                select(Conversation).where(
+                    Conversation.id == conversation_id,
+                    Conversation.user_id == user_id,
+                )
+            )
+            if stats is None or emotion is None or conversation is None:
+                raise DurableJobPayloadError("canonical user-state projection source is missing")
+            if stats.state_revision < requested_revision:
+                raise DurableJobPayloadError("user-state revision is not committed")
+            from app.domain.entities.emotion import EmotionState as EmotionEntity
+            from app.domain.entities.user import UserStats as UserStatsEntity
+
+            value = UserStateCache.build_payload(
+                user_id,
+                UserStatsEntity(
+                    user_id=user_id,
+                    interaction_count=stats.interaction_count,
+                    last_seen=stats.last_seen,
+                    state_revision=stats.state_revision,
+                ),
+                EmotionEntity(
+                    user_id=user_id,
+                    joy=emotion.joy,
+                    sadness=emotion.sadness,
+                    trust=emotion.trust,
+                    attachment=emotion.attachment,
+                    irritation=emotion.irritation,
+                    shyness=emotion.shyness,
+                    curiosity=emotion.curiosity,
+                    comfort=emotion.comfort,
+                    updated_at=emotion.updated_at,
+                ),
+                None,
+            )
+        import json
+
+        await self._cache.set_if_newer(
+            UserStateCache.get_cache_key(user_id),
+            json.dumps(value, default=str),
+            stats.state_revision,
+            USER_STATE_CACHE_TTL,
+        )
+
+
+class PrivateSummaryCacheJobHandler:
+    def __init__(
+        self,
+        session_factory: SessionFactory,
+        cache: ICacheProvider,
+    ) -> None:
+        self._session_factory = session_factory
+        self._cache = cache
+
+    async def handle(self, job: ClaimedBackgroundJob) -> None:
+        payload = _payload(job, BackgroundJobType.PRIVATE_SUMMARY_CACHE)
+        user_id = _uuid(payload, "user_id")
+        _verify_scope(job, user_id, None)
+        requested_revision = _required_int(payload, "summary_revision")
+        requested_source_revision = _required_int(payload, "source_revision")
+        conversation_id = _uuid(payload, "conversation_id")
+        async with self._session_factory() as session:
+            conversation = await session.scalar(
+                select(Conversation).where(
+                    Conversation.id == conversation_id,
+                    Conversation.user_id == user_id,
+                )
+            )
+            if conversation is None or conversation.summary is None:
+                raise DurableJobPayloadError("canonical summary projection source is missing")
+            if conversation.summary_revision < requested_revision:
+                raise DurableJobPayloadError("summary revision is not committed")
+            if conversation.summary_source_revision < requested_source_revision:
+                raise DurableJobPayloadError("summary source revision is not committed")
+            summary = conversation.summary
+            revision = conversation.summary_source_revision
+        await self._cache.set_if_newer(
+            f"chisa:user:{user_id}:summary",
+            summary,
+            revision,
+            7 * 24 * 3600,
+        )
+
+
+class CommunityStateJobHandler:
+    def __init__(
+        self,
+        source: BackgroundTurnSourceReader,
+        store: ICommunityStateStore,
+        summarizer: CommunityTopicSummarizer,
+        pii_redactor: PiiRedactor | None = None,
+    ) -> None:
+        self._source = source
+        self._store = store
+        self._summarizer = summarizer
+        self._pii_redactor = pii_redactor or PiiRedactor()
+
+    async def handle(self, job: ClaimedBackgroundJob) -> None:
+        payload = _payload(job, BackgroundJobType.COMMUNITY_STATE)
+        user_id = _uuid(payload, "user_id")
+        guild_id = _required_str(payload, "guild_id")
+        channel_id = _required_str(payload, "channel_id")
+        _verify_scope(job, user_id, guild_id)
+        await self._source.ensure_consent(user_id)
+        source = await self._source.load(
+            principal_id=user_id,
+            conversation_id=_uuid(payload, "conversation_id"),
+            user_message_id=_uuid(payload, "user_message_id"),
+            assistant_message_id=_uuid(payload, "assistant_message_id"),
+        )
+        ambient = payload.get("ambient_delta")
+        if not isinstance(ambient, dict):
+            raise DurableJobPayloadError("ambient_delta must be an object")
+        ambient_values = {
+            key: float(value)
+            for key, value in ambient.items()
+            if key
+            in {
+                "joy",
+                "sadness",
+                "irritation",
+                "shyness",
+                "curiosity",
+                "comfort",
+            }
+            and isinstance(value, int | float)
+        }
+        event_id = str(_uuid(payload, "assistant_message_id"))
+        result = await self._store.apply_turn(
+            guild_id=guild_id,
+            channel_id=channel_id,
+            turn=CommunityTurn(
+                event_id=event_id,
+                user_message={
+                    "speaker_name": _optional_str(payload, "speaker_name") or "User",
+                    "content": self._pii_redactor.redact(source.user_message).value,
+                    "is_bot": False,
+                    "event_id": f"{event_id}:user",
+                },
+                assistant_message={
+                    "speaker_name": "Chisa",
+                    "content": self._pii_redactor.redact(source.assistant_message).value,
+                    "is_bot": True,
+                    "event_id": f"{event_id}:assistant",
+                },
+                ambient_delta=ambient_values,
+            ),
+        )
+        if result.message_count % self._summarizer.SUMMARIZE_INTERVAL != 0:
+            return
+        snapshot = await self._store.snapshot(guild_id=guild_id, channel_id=channel_id)
+        if not result.applied and snapshot.topic_summary_revision >= result.state_revision:
+            return
+        await self._summarizer.summarize_channel_topic(
+            channel_id=channel_id,
+            guild_id=guild_id,
+            messages=snapshot.messages,
+            previous_summary_snapshot=snapshot.topic_summary,
+            trace_id=_optional_str(payload, "trace_id"),
+            propagate_errors=True,
+            source_revision=snapshot.state_revision,
         )
 
 
@@ -261,5 +465,12 @@ def _optional_int(payload: dict[str, Any], key: str) -> int | None:
     if value is None:
         return None
     if not isinstance(value, int):
+        raise DurableJobPayloadError(f"invalid {key}")
+    return value
+
+
+def _required_int(payload: dict[str, Any], key: str) -> int:
+    value = payload.get(key)
+    if not isinstance(value, int) or value < 0:
         raise DurableJobPayloadError(f"invalid {key}")
     return value

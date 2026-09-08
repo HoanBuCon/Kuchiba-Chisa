@@ -55,32 +55,13 @@ class InitializationStage(PipelineStage):
             else context.memory_privacy_policy
         )
 
-        # 1. Try reading User State from Redis Cache (~0.2ms)
-        from app.domain.services.user_state_cache import UserStateCache
-
-        cached_state = None
-        if self.cache_provider:
-            cached_state = await UserStateCache.get_state(self.cache_provider, user_uuid)
-
-        if cached_state:
-            stats, emotion, conv_id = cached_state
-            if not conv_id:
-                conv_id = await conv_repo.get_or_create_conversation(user_uuid)
-            is_state_cached = True
-            log.debug("User state loaded from Redis cache", user_id=str(user_uuid))
-        else:
-            # Cache MISS -> Ensure user exists first, then sequentialize reads from SQL
-            await user_repo.get_or_create_user(user_uuid)
-            stats = await user_repo.get_user_stats(user_uuid)
-            emotion = await emotion_repo.get_emotion_state(user_uuid)
-            conv_id = await conv_repo.get_or_create_conversation(user_uuid)
-            is_state_cached = False
-
-            # Fire-and-forget write to Redis
-            if self.cache_provider:
-                await UserStateCache.set_state(
-                    self.cache_provider, user_uuid, stats, emotion, conv_id
-                )
+        # Canonical mutable state is always loaded from PostgreSQL. Redis is an
+        # eventually consistent projection and must never become a stale write base.
+        await user_repo.get_or_create_user(user_uuid)
+        stats = await user_repo.get_user_stats(user_uuid)
+        emotion = await emotion_repo.get_emotion_state(user_uuid)
+        conv_id = await conv_repo.get_or_create_conversation(user_uuid)
+        is_state_cached = False
 
         # 2. Sequentialize conversation history and summary reads
         if context.is_community:
@@ -96,20 +77,7 @@ class InitializationStage(PipelineStage):
                 )
         else:
             history = await conv_repo.get_recent_history(user_uuid, conv_id, limit=40)
-            # Read summary from Redis cache first (~0.2ms)
-            summary = None
-            if self.cache_provider:
-                try:
-                    summary = await self.cache_provider.get(f"chisa:user:{user_uuid}:summary")
-                except Exception:
-                    pass
-            if not summary:
-                summary = await conv_repo.get_latest_summary(user_uuid, conv_id)
-                if summary and self.cache_provider:
-                    with suppress(Exception):
-                        await self.cache_provider.set(
-                            f"chisa:user:{user_uuid}:summary", summary, ttl=7 * 24 * 3600
-                        )
+            summary = await conv_repo.get_latest_summary(user_uuid, conv_id)
 
         # 4. Server-Level Holistic Ambient Emotion Dynamics (Continuous Exponential Decay)
         guild_id = context.guild_id
