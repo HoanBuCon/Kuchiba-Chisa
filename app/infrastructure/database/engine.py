@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import AsyncGenerator
+from collections.abc import AsyncGenerator
 
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import (
@@ -13,6 +13,10 @@ from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy.pool import NullPool
 
 from app.config.settings import settings
+from app.infrastructure.database.schema_revision import (
+    SchemaRevisionMismatchError,
+    verify_database_schema_revision,
+)
 from app.infrastructure.logging.logger import get_logger
 
 log = get_logger(__name__)
@@ -80,13 +84,17 @@ async def get_db_session() -> AsyncGenerator[AsyncSession, None]:
 # ─── Health Check ─────────────────────────────────────────────────────────────
 
 async def check_database_health() -> bool:
-    """Returns True if the database is reachable."""
+    """Return readiness only when connectivity and Alembic revision are valid."""
     try:
         async with AsyncSessionFactory() as session:
             await session.execute(text("SELECT 1"))
+            await verify_database_schema_revision(session)
         return True
+    except SchemaRevisionMismatchError as exc:
+        log.error("Database schema revision check failed", error=str(exc))
+        return False
     except Exception as e:
-        log.error("Database health check failed", error=str(e))
+        log.error("Database health check failed", error_type=type(e).__name__)
         return False
 
 

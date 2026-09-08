@@ -32,7 +32,6 @@ discord/
     commands/               # /ask, /clear, /setup, /docs, /about, /help
     database/
       pool.js               # PostgreSQL connection pool
-      schema.sql            # Migration schema
     events/
       ready.js
       interactionCreate.js  # Xử lý slash commands & interactive buttons
@@ -71,7 +70,12 @@ discord/
    ```bash
    npm run register:commands
    ```
-4. Khởi chạy Bot:
+4. Apply the repository Alembic migrations from the project root. Discord does
+   not create or repair database schema at startup:
+   ```bash
+   python -m alembic upgrade head
+   ```
+5. Khởi chạy Bot:
    ```bash
    npm start
    ```

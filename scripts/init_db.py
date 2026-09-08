@@ -1,23 +1,17 @@
-import asyncio
-import os
-import sys
+"""Compatibility entry point for applying the Alembic-owned schema.
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+This script intentionally contains no SQLAlchemy ``create_all`` or direct DDL.
+Operators should normally use ``python -m alembic upgrade head`` directly.
+"""
 
-from sqlalchemy import text
-from app.infrastructure.database.engine import AsyncSessionFactory, engine
-from app.infrastructure.database.models import Base
+from alembic import command
+from alembic.config import Config
 
 
-async def init_db():
-    print("Initializing Database Schema...")
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
-        await conn.execute(text("ALTER TABLE emotion_state ADD COLUMN IF NOT EXISTS shyness FLOAT DEFAULT 0.0;"))
-        await conn.execute(text("ALTER TABLE emotion_state ADD COLUMN IF NOT EXISTS curiosity FLOAT DEFAULT 0.20;"))
-        await conn.execute(text("ALTER TABLE emotion_state ADD COLUMN IF NOT EXISTS comfort FLOAT DEFAULT 0.50;"))
-    print("Tables & columns migrated successfully via asyncpg!")
+def migrate_to_head() -> None:
+    """Apply versioned migrations using the repository Alembic configuration."""
+    command.upgrade(Config("alembic.ini"), "head")
 
 
 if __name__ == "__main__":
-    asyncio.run(init_db())
+    migrate_to_head()

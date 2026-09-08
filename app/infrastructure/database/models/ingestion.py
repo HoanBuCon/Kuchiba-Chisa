@@ -1,9 +1,18 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String, Text
+from sqlalchemy import (
+    Boolean,
+    Column,
+    DateTime,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+    UniqueConstraint,
+)
 from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.infrastructure.database.models.base import Base
 
@@ -55,10 +64,11 @@ class CorpusReleaseModel(Base):
     """Durable, non-content receipt for a staged versioned lore corpus."""
 
     __tablename__ = "corpus_releases"
+    __table_args__ = (UniqueConstraint("job_id"),)
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True)
     job_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("pipeline_jobs.id"), nullable=False, unique=True, index=True
+        UUID(as_uuid=True), ForeignKey("pipeline_jobs.id"), nullable=False, index=True
     )
     source_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("ingestion_sources.id"), nullable=False, index=True
@@ -98,13 +108,13 @@ class CorpusReleaseQualityReportModel(Base):
     """Versioned aggregate evaluator outcome; no prompts, answers, or source text."""
 
     __tablename__ = "corpus_release_quality_reports"
+    __table_args__ = (UniqueConstraint("release_id"),)
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True)
     release_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("corpus_releases.id"),
         nullable=False,
-        unique=True,
         index=True,
     )
     evaluator_version: Mapped[str] = mapped_column(String(128), nullable=False)
@@ -140,7 +150,9 @@ class ChunkStateModel(Base):
     __tablename__ = "chunk_state"
     
     chunk_id = Column(UUID(as_uuid=True), primary_key=True)
-    parent_id = Column(UUID(as_uuid=True), ForeignKey("lore_parents.id"), nullable=False, index=True)
+    parent_id = Column(
+        UUID(as_uuid=True), ForeignKey("lore_parents.id"), nullable=False, index=True
+    )
     chunk_hash = Column(String, nullable=False, index=True)
     embedded = Column(Boolean, default=False)
     embedding_model = Column(String, nullable=True)
@@ -186,9 +198,6 @@ class IngestionMetricModel(Base):
     failed_chunks = Column(Integer, default=0)
     unknown_entities = Column(Integer, default=0)
     total_duration_ms = Column(Integer, default=0)
-
-from sqlalchemy.orm import relationship
-
 
 class EntityModel(Base):
     __tablename__ = "entities"

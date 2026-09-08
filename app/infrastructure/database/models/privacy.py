@@ -8,11 +8,12 @@ from datetime import datetime
 from sqlalchemy import Boolean, DateTime, ForeignKey, Integer
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.sql import func
 
-from app.infrastructure.database.models.base import Base, TimestampMixin
+from app.infrastructure.database.models.base import Base
 
 
-class UserPrivacyPreferenceModel(Base, TimestampMixin):
+class UserPrivacyPreferenceModel(Base):
     __tablename__ = "user_privacy_preferences"
 
     user_id: Mapped[uuid.UUID] = mapped_column(
@@ -21,6 +22,15 @@ class UserPrivacyPreferenceModel(Base, TimestampMixin):
     long_term_memory_enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     retention_days: Mapped[int | None] = mapped_column(Integer, nullable=True)
     consented_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        onupdate=func.now(),
+        nullable=False,
+    )
 
 
 class PrivacyPolicyAuditModel(Base):

@@ -26,6 +26,14 @@ from app.infrastructure.database.models.ingestion import (
 from app.infrastructure.database.models.lore_parent import LoreParentModel
 from app.infrastructure.database.models.memory_metadata import MemoryMetadata, MemoryType
 from app.infrastructure.database.models.message import Message, MessageRole
+from app.infrastructure.database.models.owned_schema import (
+    discord_interactions,
+    discord_users,
+    guild_clear_cutoffs,
+    guild_settings,
+    legacy_affection_logs,
+    legacy_emotional_states,
+)
 from app.infrastructure.database.models.privacy import (
     PrivacyPolicyAuditModel,
     UserPrivacyPreferenceModel,
@@ -39,6 +47,12 @@ __all__ = [
     "Conversation",
     "Message",
     "MessageRole",
+    "discord_interactions",
+    "discord_users",
+    "guild_clear_cutoffs",
+    "guild_settings",
+    "legacy_affection_logs",
+    "legacy_emotional_states",
     "MemoryMetadata",
     "MemoryType",
     "UserPrivacyPreferenceModel",
