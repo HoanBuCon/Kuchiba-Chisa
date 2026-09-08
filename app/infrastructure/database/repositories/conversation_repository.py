@@ -50,7 +50,7 @@ class SqlAlchemyConversationRepository(IConversationRepository):
         is_success: bool = True,
         rewritten_content: Optional[str] = None,
         media_metadata: Optional[Any] = None,
-    ) -> None:
+    ) -> uuid.UUID:
         enum_role = MessageRoleModel.USER if role == "user" else MessageRoleModel.ASSISTANT
         msg = MessageModel(
             id=uuid.uuid4(),
@@ -66,6 +66,7 @@ class SqlAlchemyConversationRepository(IConversationRepository):
         )
         self.session.add(msg)
         await self.session.flush()
+        return msg.id
 
     async def get_last_user_rewritten_query(
         self, user_id: uuid.UUID, conversation_id: uuid.UUID, max_lookback: int = 3

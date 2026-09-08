@@ -120,6 +120,7 @@ class VisualMemoryIngestionWorker:
         llm_image_tags: list[str] | None = None,
         llm_visual_caption: str | None = None,
         retention_expires_at: int | None = None,
+        propagate_errors: bool = False,
     ) -> int:
         """
         Indexes all permanent processed images into Qdrant 'image_memories'.
@@ -245,7 +246,11 @@ class VisualMemoryIngestionWorker:
 
             except Exception as ex:
                 log.error(
-                    "Failed to ingest image memory into Qdrant", image_id=image_id, error=str(ex)
+                    "Failed to ingest image memory into Qdrant",
+                    image_id=image_id,
+                    error_type=type(ex).__name__,
                 )
+                if propagate_errors:
+                    raise
 
         return ingested_count

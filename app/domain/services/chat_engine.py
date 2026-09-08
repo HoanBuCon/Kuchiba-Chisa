@@ -306,7 +306,9 @@ class ChatEngine:
                 log.error("Failed to save failed message to database in production pipeline", error=str(db_err))
             raise e
 
-    async def _unified_auto_summarize(self, user_id: str, conv_id: Any) -> None:
+    async def _unified_auto_summarize(
+        self, user_id: str, conv_id: Any, *, propagate_errors: bool = False
+    ) -> None:
         """
         Background auto-summarization workflow for Private 1-on-1 DM triggered every 10 interactions.
         1. Loads previous summary (from PostgreSQL or Redis) + last 20 messages (10 interaction turns).
@@ -434,5 +436,11 @@ class ChatEngine:
                     log.warning("Auto-summarize produced empty summary_text", conv_id=str(conv_uuid))
 
             except Exception as e:
-                log.error("Failed to run background auto-summarization", error=str(e), user_id=user_id)
+                log.error(
+                    "Failed to run background auto-summarization",
+                    error_type=type(e).__name__,
+                    user_id=user_id,
+                )
+                if propagate_errors:
+                    raise
 

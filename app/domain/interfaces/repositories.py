@@ -91,7 +91,7 @@ class IConversationRepository(Protocol):
         is_success: bool = True,
         rewritten_content: str | None = None,
         media_metadata: Any | None = None,
-    ) -> None:
+    ) -> uuid.UUID:
         """
         Persists a new message into STM.
         """

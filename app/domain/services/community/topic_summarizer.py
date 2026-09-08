@@ -211,6 +211,7 @@ class CommunityTopicSummarizer:
         guild_id: str,
         messages: list[Any] | None = None,
         trace_id: str | None = None,
+        propagate_errors: bool = False,
     ) -> str | None:
         """
         Background execution: Calls LLM to summarize channel topic with 3-tier context:
@@ -342,7 +343,11 @@ class CommunityTopicSummarizer:
                 return None
         except Exception as e:
             sample_transcript = (formatted_live_transcript or formatted_history_transcript)[:300] if 'formatted_live_transcript' in locals() else ""
-            log.error("Failed to summarize community topic", channel_id=channel_id, error=str(e))
+            log.error(
+                "Failed to summarize community topic",
+                channel_id=channel_id,
+                error_type=type(e).__name__,
+            )
             self._record_pipeline_step(
                 status="failed",
                 topic_summary="",
@@ -351,6 +356,8 @@ class CommunityTopicSummarizer:
                 transcript_sample=sample_transcript,
                 trace_id=trace_id
             )
+            if propagate_errors:
+                raise
             return None
 
     def _record_pipeline_step(

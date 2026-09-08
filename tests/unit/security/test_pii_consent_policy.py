@@ -31,7 +31,6 @@ from app.domain.services.visual_memory_ingestion import VisualMemoryIngestionWor
 from app.domain.value_objects.principal import PrincipalContext
 from app.interface.api.routes import chat
 from app.interface.api.schemas.chat import MemoryConsentRequest
-from app.shared.utils.background_tasks import BackgroundTaskManager
 
 
 def _evidence(text: str) -> Evidence:
@@ -147,7 +146,6 @@ async def test_visual_memory_payload_is_redacted_before_vector_persistence() -> 
 
 @pytest.mark.asyncio
 async def test_long_term_memory_is_default_deny_without_verified_consent(
-    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     context = ChatContext(
         session=MagicMock(),
@@ -159,17 +157,16 @@ async def test_long_term_memory_is_default_deny_without_verified_consent(
         stats=UserStats(user_id=uuid4(), interaction_count=30),
         processed_images=[{"image_id": "permanent-image"}],
     )
-    spawn = MagicMock()
-    monkeypatch.setattr(BackgroundTaskManager, "spawn", spawn)
+    queue = MagicMock()
+    queue.enqueue = AsyncMock()
     stage = BackgroundTaskStage(
-        memory_extractor=MagicMock(),
-        unified_auto_summarize_callback=AsyncMock(),
+        job_queue=queue,
         topic_summarizer=MagicMock(),
     )
 
     await stage.process(context)
 
-    spawn.assert_not_called()
+    queue.enqueue.assert_not_awaited()
 
 
 @pytest.mark.asyncio
@@ -218,7 +215,6 @@ async def test_image_is_ephemeral_when_no_memory_consent(
 
 @pytest.mark.asyncio
 async def test_consented_policy_spawns_bounded_memory_extraction(
-    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     policy = MemoryPrivacyPolicy(
         long_term_memory_enabled=True,
@@ -234,27 +230,19 @@ async def test_consented_policy_spawns_bounded_memory_extraction(
         chisa_reply="acknowledged",
         stats=UserStats(user_id=uuid4(), interaction_count=3),
         memory_privacy_policy=policy,
+        persisted_user_message_id=uuid4(),
+        persisted_assistant_message_id=uuid4(),
     )
-    extractor = MagicMock()
-    extractor.extract_and_store_batch = AsyncMock()
-    extractor.vector_store = MagicMock()
-    extractor.embedder = MagicMock()
-    spawned: list[str] = []
-
-    def capture(coroutine, *, name: str):
-        coroutine.close()
-        spawned.append(name)
-        return MagicMock()
-
-    monkeypatch.setattr(BackgroundTaskManager, "spawn", capture)
-    stage = BackgroundTaskStage(
-        memory_extractor=extractor,
-        unified_auto_summarize_callback=AsyncMock(),
-    )
+    queue = MagicMock()
+    queue.enqueue = AsyncMock(return_value=uuid4())
+    stage = BackgroundTaskStage(job_queue=queue)
 
     await stage.process(context)
 
-    assert spawned == ["memory_extract_batch:verified-user"]
+    queue.enqueue.assert_awaited_once()
+    submission = queue.enqueue.await_args.args[1]
+    assert submission.payload["user_id"] == str(context.user_uuid)
+    assert "remember this" not in str(submission.payload)
     assert _bounded_expiry(None, 123) == 123
     assert _bounded_expiry(456, 123) == 123
 

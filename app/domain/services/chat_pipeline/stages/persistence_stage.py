@@ -56,7 +56,7 @@ class PersistenceStage(PipelineStage):
                 for img in context.processed_images
             ]
 
-        await conv_repo.save_message(
+        context.persisted_user_message_id = await conv_repo.save_message(
             conversation_id,
             user_uuid,
             "user",
@@ -65,7 +65,7 @@ class PersistenceStage(PipelineStage):
             is_success=True,
             media_metadata=media_meta,
         )
-        await conv_repo.save_message(
+        context.persisted_assistant_message_id = await conv_repo.save_message(
             conversation_id,
             user_uuid,
             "assistant",

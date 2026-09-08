@@ -120,6 +120,19 @@ class AppContainer:
         )
 
     @cached_property
+    def background_job_queue(self):
+        from app.infrastructure.database.engine import AsyncSessionFactory
+        from app.infrastructure.database.repositories.background_job_queue import (
+            PostgresDurableBackgroundJobQueue,
+        )
+
+        return PostgresDurableBackgroundJobQueue(
+            AsyncSessionFactory,
+            retry_base_seconds=settings.WORKER_RETRY_BASE_SECONDS,
+            retry_max_seconds=settings.WORKER_RETRY_MAX_SECONDS,
+        )
+
+    @cached_property
     def chat_engine(self) -> ChatEngine:
         from app.domain.services.chat_engine import ChatPipeline
         from app.domain.services.chat_pipeline.stages.background_task_stage import (
@@ -265,8 +278,6 @@ class AppContainer:
         query_rewriter = QueryRewriter(llm=self.llm, entity_resolver=entity_resolver)
 
         # Let's instantiate ChatPipeline first, we can use a lambda to defer the callback.
-        engine_ref: list[ChatEngine] = []
-
         stages = [
             InitializationStage(
                 user_repo_factory=user_repo_factory,
@@ -328,8 +339,7 @@ class AppContainer:
                 cache=redis_service
             ),
             BackgroundTaskStage(
-                memory_extractor=self.memory_extractor,
-                unified_auto_summarize_callback=lambda uid, cid: engine_ref[0]._unified_auto_summarize(uid, cid),
+                job_queue=self.background_job_queue,
                 topic_summarizer=CommunityTopicSummarizer(llm=self.llm, cache=redis_service),
                 pipeline_tracker=pipeline_tracker
             )
@@ -350,8 +360,6 @@ class AppContainer:
             embedder=self.embedder,
             vector_store=qdrant_service
         )
-        engine_ref.append(engine)
-        
         return engine
 
     @cached_property
