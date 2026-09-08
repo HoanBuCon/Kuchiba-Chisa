@@ -15,7 +15,6 @@ from app.domain.services.chat_pipeline.stages.initialization_stage import Initia
 from app.domain.services.chat_pipeline.stages.persistence_stage import PersistenceStage
 from app.domain.services.image_ingestion import ImageIngestionService
 from app.shared.security.vision_security import ImageSanitizer
-from app.shared.utils.background_tasks import BackgroundTaskManager
 
 
 @pytest.mark.asyncio
@@ -147,13 +146,10 @@ async def test_ephemeral_image_is_not_persisted_or_sent_to_visual_memory_worker(
 
     assert conversation_repo.save_message.call_args_list[0].kwargs["media_metadata"] is None
 
-    background = BackgroundTaskStage(
-        memory_extractor=MagicMock(),
-        unified_auto_summarize_callback=AsyncMock(),
-    )
-    spawn = MagicMock()
-    monkeypatch.setattr(BackgroundTaskManager, "spawn", spawn)
+    queue = MagicMock()
+    queue.enqueue = AsyncMock()
+    background = BackgroundTaskStage(job_queue=queue)
     await background.process(context)
 
-    # No worker is constructed/spawned: an ephemeral image cannot reach Qdrant.
-    spawn.assert_not_called()
+    # No durable job is enqueued: an ephemeral image cannot reach Qdrant.
+    queue.enqueue.assert_not_awaited()

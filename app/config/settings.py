@@ -154,7 +154,12 @@ class Settings(BaseSettings):
     # ── Celery / Workers ───────────────────────────────────────
     CELERY_BROKER_URL: str = "redis://localhost:6379/1"
     CELERY_RESULT_BACKEND: str = "redis://localhost:6379/2"
-    WORKER_CONCURRENCY: int = 4
+    WORKER_CONCURRENCY: int = Field(default=1, ge=1, le=4)
+    WORKER_LEASE_SECONDS: int = Field(default=300, ge=30, le=3_600)
+    WORKER_POLL_SECONDS: float = Field(default=1.0, ge=0.1, le=30.0)
+    WORKER_SHUTDOWN_GRACE_SECONDS: float = Field(default=30.0, ge=1.0, le=300.0)
+    WORKER_RETRY_BASE_SECONDS: float = Field(default=2.0, ge=0.1, le=300.0)
+    WORKER_RETRY_MAX_SECONDS: float = Field(default=300.0, ge=1.0, le=3_600.0)
 
     # ── Prompt Budget ──────────────────────────────────────────
     PROMPT_BUDGET_SMALL_TALK: int = 5000

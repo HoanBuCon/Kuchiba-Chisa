@@ -40,6 +40,8 @@ class ChatContext:
     # State populated during pipeline execution
     user_uuid: uuid.UUID | None = None
     conv_id: uuid.UUID | None = None
+    persisted_user_message_id: uuid.UUID | None = None
+    persisted_assistant_message_id: uuid.UUID | None = None
     stats: UserStats | None = None
     emotion: EmotionState | None = None
     history: list[dict[str, str]] = field(default_factory=list)

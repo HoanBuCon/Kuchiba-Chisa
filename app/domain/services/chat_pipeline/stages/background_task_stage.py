@@ -1,32 +1,41 @@
-from collections.abc import Callable, Coroutine
-from typing import Any, Optional
+"""Transactional scheduling of reliability-sensitive background work."""
 
+from __future__ import annotations
+
+from app.domain.interfaces.background_jobs import IDurableBackgroundJobQueue
 from app.domain.interfaces.tracker import IPipelineTracker
+from app.domain.models.background_job import (
+    BackgroundJobSubmission,
+    BackgroundJobType,
+    CommunitySummaryPayload,
+    MemoryExtractionPayload,
+    PrivateSummaryPayload,
+    VisualMemoryPayload,
+)
 from app.domain.services.chat_pipeline.context import ChatContext
 from app.domain.services.chat_pipeline.stage import PipelineStage
 from app.domain.services.community.topic_summarizer import CommunityTopicSummarizer
 from app.domain.services.guardrails.injection_guard import GuardAction
-from app.domain.services.memory_extractor import MemoryExtractor
-from app.shared.utils.background_tasks import BackgroundTaskManager
+from app.domain.services.guardrails.pii_redaction import PiiRedactor
 from app.shared.utils.logger import get_logger
 
 log = get_logger(__name__)
 
+
 class BackgroundTaskStage(PipelineStage):
-    """
-    Stage 10: Spawn background tasks for memory extraction, periodic summarization, and community topic tracking.
-    """
+    """Stage 10: atomically enqueue durable jobs with the persisted chat turn."""
+
     def __init__(
         self,
-        memory_extractor: MemoryExtractor,
-        unified_auto_summarize_callback: Callable[[str, str], Coroutine[Any, Any, None]],
-        topic_summarizer: Optional[CommunityTopicSummarizer] = None,
-        pipeline_tracker: Optional[IPipelineTracker] = None
-    ):
-        self.memory_extractor = memory_extractor
-        self.unified_auto_summarize_callback = unified_auto_summarize_callback
+        job_queue: IDurableBackgroundJobQueue,
+        topic_summarizer: CommunityTopicSummarizer | None = None,
+        pipeline_tracker: IPipelineTracker | None = None,
+        pii_redactor: PiiRedactor | None = None,
+    ) -> None:
+        self.job_queue = job_queue
         self.topic_summarizer = topic_summarizer
         self.pipeline_tracker = pipeline_tracker
+        self.pii_redactor = pii_redactor or PiiRedactor()
 
     async def process(self, context: ChatContext) -> ChatContext:
         if (
@@ -34,156 +43,170 @@ class BackgroundTaskStage(PipelineStage):
             and context.guardrail_assessment.action is GuardAction.BLOCK
         ):
             return context
-        long_term_memory_allowed = context.memory_privacy_policy.allows_long_term_memory
-        triggered_extract = bool(
-            long_term_memory_allowed
-            and context.stats
-            and context.stats.interaction_count > 0
-            and context.stats.interaction_count % 3 == 0
-        )
-        triggered_summary = bool(
-            long_term_memory_allowed
-            and context.stats
-            and context.stats.interaction_count > 0
-            and context.stats.interaction_count % 10 == 0
-        )
-        triggered_topic_summary = False
+        if context.user_uuid is None or context.conv_id is None:
+            raise RuntimeError("BackgroundTaskStage requires persisted principal and conversation")
 
-        # Trigger batched background fact extraction every 3 interaction turns (batch of 3 pairs + 2 context msgs)
-        if triggered_extract:
-            BackgroundTaskManager.spawn(
-                self.memory_extractor.extract_and_store_batch(
-                    user_id=context.user_id,
-                    conversation_id=str(context.conv_id),
-                    history=context.history,
-                    current_user_message=context.user_message,
-                    current_assistant_reply=context.chisa_reply,
-                    guild_id=context.guild_id,
-                    channel_id=context.channel_id,
-                    speaker_name=context.speaker_name,
-                    is_community=context.is_community,
-                    trace_id=context.trace_id,
-                    retention_expires_at=context.memory_privacy_policy.retention_expiry_epoch(),
-                ),
-                name=f"memory_extract_batch:{context.user_id}",
+        allowed = context.memory_privacy_policy.allows_long_term_memory
+        count = context.stats.interaction_count if context.stats else 0
+        trigger_extract = bool(allowed and count > 0 and count % 3 == 0)
+        trigger_summary = bool(allowed and count > 0 and count % 10 == 0)
+        trigger_visual = bool(
+            allowed and context.processed_images and not context.is_ephemeral_reference
+        )
+        trigger_topic = False
+
+        if (trigger_extract or trigger_summary or trigger_visual) and (
+            context.persisted_user_message_id is None
+            or context.persisted_assistant_message_id is None
+        ):
+            raise RuntimeError("Durable background work requires exact persisted message IDs")
+        user_message_id = context.persisted_user_message_id
+        assistant_message_id = context.persisted_assistant_message_id
+
+        expiry = context.memory_privacy_policy.retention_expiry_epoch()
+        if trigger_extract:
+            if user_message_id is None or assistant_message_id is None:
+                raise RuntimeError("Memory extraction requires persisted message IDs")
+            memory_payload = MemoryExtractionPayload(
+                user_id=context.user_uuid,
+                conversation_id=context.conv_id,
+                user_message_id=user_message_id,
+                assistant_message_id=assistant_message_id,
+                guild_id=context.guild_id,
+                channel_id=context.channel_id,
+                speaker_name=_redact_optional(self.pii_redactor, context.speaker_name),
+                is_community=context.is_community,
+                trace_id=context.trace_id,
+                retention_expires_at=expiry,
             )
-        else:
-            log.debug("Skipping batch memory extraction (runs every 3 turns)", user_id=context.user_id, count=getattr(context.stats, 'interaction_count', 0))
-        
-        # Periodically trigger unified background auto-summarization (every 10 interactions)
-        if triggered_summary:
-            BackgroundTaskManager.spawn(
-                self.unified_auto_summarize_callback(
-                    context.user_id,
-                    str(context.conv_id)
-                ),
-                name=f"unified_auto_summarize:{context.user_id}",
+            await self._enqueue(
+                context,
+                BackgroundJobType.MEMORY_EXTRACTION,
+                f"memory-extraction:{assistant_message_id}",
+                memory_payload.as_json(),
             )
 
-        # Periodically trigger community topic summarization in community channels (every 30 messages)
+        if trigger_summary:
+            if assistant_message_id is None:
+                raise RuntimeError("Private summary requires persisted assistant message ID")
+            summary_payload = PrivateSummaryPayload(
+                user_id=context.user_uuid,
+                conversation_id=context.conv_id,
+            )
+            await self._enqueue(
+                context,
+                BackgroundJobType.PRIVATE_SUMMARY,
+                f"private-summary:{assistant_message_id}",
+                summary_payload.as_json(),
+            )
+
         if (
-            long_term_memory_allowed
+            allowed
             and context.is_community
+            and context.guild_id
             and context.channel_id
             and self.topic_summarizer
         ):
-            try:
-                # 1. Accumulate new messages and current turn into Redis Rolling Buffer
-                current_user_turn = {
+            await self.topic_summarizer.append_messages(
+                channel_id=context.channel_id,
+                guild_id=context.guild_id,
+                messages=context.recent_community_messages or [],
+                current_user_turn={
                     "speaker_name": context.speaker_name or "User",
                     "content": context.user_message,
                     "is_bot": False,
                     "created_at": "Now",
-                }
-                current_assistant_turn = {
+                },
+                current_assistant_turn={
                     "speaker_name": "Chisa",
                     "content": context.chisa_reply,
                     "is_bot": True,
                     "created_at": "Now",
-                }
-                await self.topic_summarizer.append_messages(
-                    channel_id=context.channel_id,
+                },
+            )
+            message_count = await self.topic_summarizer.increment_message_count(
+                context.channel_id, context.guild_id
+            )
+            if message_count > 0 and message_count % self.topic_summarizer.SUMMARIZE_INTERVAL == 0:
+                trigger_topic = True
+                topic_payload = CommunitySummaryPayload(
+                    user_id=context.user_uuid,
                     guild_id=context.guild_id,
-                    messages=context.recent_community_messages or [],
-                    current_user_turn=current_user_turn,
-                    current_assistant_turn=current_assistant_turn,
+                    channel_id=context.channel_id,
+                    trace_id=context.trace_id,
+                )
+                await self._enqueue(
+                    context,
+                    BackgroundJobType.COMMUNITY_SUMMARY,
+                    f"community-summary:{topic_payload.guild_id}:"
+                    f"{topic_payload.channel_id}:{message_count}",
+                    topic_payload.as_json(),
                 )
 
-                # 2. Check interval and spawn background summarization with rolling buffer
-                msg_count = await self.topic_summarizer.increment_message_count(
-                    context.channel_id, context.guild_id
-                )
-                if msg_count > 0 and msg_count % self.topic_summarizer.SUMMARIZE_INTERVAL == 0:
-                    triggered_topic_summary = True
-                    BackgroundTaskManager.spawn(
-                        self.topic_summarizer.summarize_channel_topic(
-                            channel_id=context.channel_id,
-                            guild_id=str(context.guild_id or ""),
-                            messages=context.recent_community_messages,
-                            trace_id=context.trace_id,
-                        ),
-                        name=f"topic_summarize:{context.channel_id}",
-                    )
-            except Exception as ts_err:
-                log.warning("Failed to trigger community topic summarization", error=str(ts_err))
-
-        # Trigger background visual memory ingestion when images are uploaded/referenced
-        triggered_visual_ingest = (
-            bool(context.processed_images)
-            and not context.is_ephemeral_reference
-            and long_term_memory_allowed
-        )
-        if triggered_visual_ingest:
-            try:
-                from app.domain.services.visual_memory_ingestion import VisualMemoryIngestionWorker
-                visual_worker = VisualMemoryIngestionWorker(
-                    vector_store=self.memory_extractor.vector_store,
-                    embedder=self.memory_extractor.embedder,
-                )
-                BackgroundTaskManager.spawn(
-                    visual_worker.ingest_image_memories(
-                        user_id=context.user_id,
-                        user_message=context.user_message,
-                        chisa_reply=context.chisa_reply,
-                        processed_images=context.processed_images,
-                        conversation_id=str(context.conv_id) if context.conv_id else None,
-                        guild_id=context.guild_id,
-                        channel_id=context.channel_id,
-                        is_ephemeral=context.is_ephemeral_reference,
-                        llm_image_tags=context.image_tags,
-                        llm_visual_caption=context.visual_caption,
-                        retention_expires_at=context.memory_privacy_policy.retention_expiry_epoch(),
-                    ),
-                    name=f"visual_memory_ingest:{context.user_id}",
-                )
-            except Exception as vm_err:
-                log.warning("Failed to trigger visual memory ingestion", error=str(vm_err))
+        if trigger_visual:
+            if user_message_id is None or assistant_message_id is None:
+                raise RuntimeError("Visual memory requires persisted message IDs")
+            visual_payload = VisualMemoryPayload(
+                user_id=context.user_uuid,
+                conversation_id=context.conv_id,
+                user_message_id=user_message_id,
+                assistant_message_id=assistant_message_id,
+                guild_id=context.guild_id,
+                channel_id=context.channel_id,
+                image_tags=tuple(
+                    self.pii_redactor.redact(str(tag)).value for tag in context.image_tags
+                ),
+                visual_caption=_redact_optional(self.pii_redactor, context.visual_caption),
+                retention_expires_at=expiry,
+            )
+            await self._enqueue(
+                context,
+                BackgroundJobType.VISUAL_MEMORY,
+                f"visual-memory:{assistant_message_id}",
+                visual_payload.as_json(),
+            )
 
         if self.pipeline_tracker:
-            extract_desc = "Kích hoạt" if triggered_extract else "Bỏ qua (chu kỳ 3 lượt)"
-            summary_desc = "Kích hoạt" if triggered_summary else "Bỏ qua (chu kỳ 10 lượt)"
-            vision_desc = "Kích hoạt (Lưu Ký Ức Thị Giác)" if triggered_visual_ingest else "Không có ảnh mới"
             self.pipeline_tracker.add_step(
                 name="background_tasks",
                 stage_id="stage_10_bg",
                 depth=0,
                 category="stage_root",
                 status="success",
-                title="Stage 10: [BACKGROUND] Tác vụ Nền Tự động",
-                subtitle=f"Batch Facts ({extract_desc}) · Summarize ({summary_desc}) · Vision ({vision_desc})",
+                title="Stage 10: Durable Background Jobs",
+                subtitle="Transactional outbox scheduling",
                 data={
-                    "interaction_count": getattr(context.stats, 'interaction_count', 0),
-                    "batch_memory_extraction_triggered": triggered_extract,
-                    "batch_memory_interval": 3,
-                    "auto_summarization_triggered": triggered_summary,
-                    "auto_summary_interval": 10,
-                    "topic_summarization_triggered": triggered_topic_summary,
-                    "topic_summarization_interval": 30,
-                    "visual_memory_ingestion_triggered": triggered_visual_ingest,
-                    "images_count": len(context.processed_images),
-                    "long_term_memory_allowed": long_term_memory_allowed,
-                }
+                    "interaction_count": count,
+                    "batch_memory_extraction_triggered": trigger_extract,
+                    "auto_summarization_triggered": trigger_summary,
+                    "topic_summarization_triggered": trigger_topic,
+                    "visual_memory_ingestion_triggered": trigger_visual,
+                    "long_term_memory_allowed": allowed,
+                },
             )
-            
         log.info("ChatPipeline cycle complete", user_id=context.user_id)
         return context
+
+    async def _enqueue(
+        self,
+        context: ChatContext,
+        job_type: BackgroundJobType,
+        idempotency_key: str,
+        payload: dict[str, object],
+    ) -> None:
+        if context.user_uuid is None:
+            raise RuntimeError("Trusted principal is required for durable enqueue")
+        await self.job_queue.enqueue(
+            context.session,
+            BackgroundJobSubmission(
+                job_type=job_type,
+                idempotency_key=idempotency_key,
+                payload=payload,
+                principal_id=context.user_uuid,
+                tenant_id=context.guild_id if context.is_community else None,
+            ),
+        )
+
+
+def _redact_optional(redactor: PiiRedactor, value: str | None) -> str | None:
+    return redactor.redact(value).value if value else None

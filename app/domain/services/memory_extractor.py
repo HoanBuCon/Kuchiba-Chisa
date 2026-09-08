@@ -286,6 +286,8 @@ class MemoryExtractor:
         is_community: bool = False,
         trace_id: str | None = None,
         retention_expires_at: int | None = None,
+        idempotency_key: str | None = None,
+        propagate_errors: bool = False,
     ) -> None:
         """
         Batched background worker: Analyzes conversation window to extract multi-fact milestones,
@@ -493,14 +495,23 @@ class MemoryExtractor:
                             "recorded_by_speaker": speaker_name
                         })
                         continue
-                    elif action == "CONTRADICT" and conflicting_id:
+                    elif action == "CONTRADICT" and conflicting_id and not idempotency_key:
                         log.info("Memory conflict resolved — deleting superseded memory", old_id=conflicting_id, new_content=content, collection=target_collection)
                         try:
                             await self.vector_store.delete_points(collection=target_collection, ids=[conflicting_id])
                         except Exception as del_err:
                             log.warning("Failed to delete conflicting memory point", id=conflicting_id, error=str(del_err))
 
-                point_id = str(uuid.uuid4())
+                point_id = (
+                    str(
+                        uuid.uuid5(
+                            uuid.NAMESPACE_URL,
+                            f"{idempotency_key}:{idx}:{fact_type}:{content}",
+                        )
+                    )
+                    if idempotency_key
+                    else str(uuid.uuid4())
+                )
 
                 payload: MemoryPayload | GuildMemoryPayload
                 if target_collection == "guild_memories":
@@ -532,6 +543,16 @@ class MemoryExtractor:
                     vector=vector,
                     payload=payload
                 )
+                if (
+                    idempotency_key
+                    and reconciliation_action == "CONTRADICT"
+                    and conflicting_memory_id
+                    and str(conflicting_memory_id) != point_id
+                ):
+                    await self.vector_store.delete_points(
+                        collection=target_collection,
+                        ids=[conflicting_memory_id],
+                    )
 
                 stored_facts.append({
                     "type": fact_type,
@@ -554,7 +575,9 @@ class MemoryExtractor:
                 trace_id=trace_id
             )
         except Exception as e:
-            log.warning("Batch memory extraction failed", error=str(e))
+            log.warning("Batch memory extraction failed", error_type=type(e).__name__)
+            if propagate_errors:
+                raise
 
     def _record_pipeline_step(
         self,
