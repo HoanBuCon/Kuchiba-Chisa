@@ -3,7 +3,7 @@ import { logger } from './config/logger.js';
 import { createBotClient } from './bot/client.js';
 import { loadCommands } from './bot/loadCommands.js';
 import { loadEvents } from './bot/loadEvents.js';
-import { ensureSchema, closePool, pool } from './database/pool.js';
+import { closePool, pool } from './database/pool.js';
 import { DiscordUserRepository } from './repositories/discordUserRepository.js';
 import { InteractionRepository } from './repositories/interactionRepository.js';
 import { GuildSettingsRepository } from './repositories/guildSettingsRepository.js';
@@ -15,8 +15,6 @@ let botClient = null;
 let cleanupTimer = null;
 
 export async function startApp() {
-  await ensureSchema();
-
   botClient = createBotClient({ enablePrefix: env.discord.enablePrefix });
   const repositories = {
     users: new DiscordUserRepository(pool),

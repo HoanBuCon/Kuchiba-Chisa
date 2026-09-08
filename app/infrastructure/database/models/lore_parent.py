@@ -1,5 +1,6 @@
 import uuid
 
+from sqlalchemy import ForeignKey
 from sqlalchemy.dialects.postgresql import TEXT, UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -19,7 +20,10 @@ class LoreParentModel(Base, UUIDMixin, TimestampMixin):
     revision_id: Mapped[int] = mapped_column(nullable=False)
     corpus_version: Mapped[str | None] = mapped_column(nullable=True, index=True)
     source_id: Mapped[uuid.UUID | None] = mapped_column(
-        UUID(as_uuid=True), nullable=True, index=True
+        UUID(as_uuid=True),
+        ForeignKey("ingestion_sources.id"),
+        nullable=True,
+        index=True,
     )
     access_scope: Mapped[str] = mapped_column(nullable=False, default="public", index=True)
     access_subject_id: Mapped[str | None] = mapped_column(nullable=True, index=True)
