@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import uuid
 from collections.abc import Callable
 from contextlib import AbstractAsyncContextManager
@@ -7,6 +8,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from app.domain.entities.emotion import EmotionState
+from app.domain.interfaces.background_jobs import IDurableBackgroundJobQueue
 from app.domain.interfaces.cache_provider import ICacheProvider
 from app.domain.interfaces.embedding_provider import IEmbeddingProvider
 from app.domain.interfaces.llm_provider import BaseLLMAdapter, StructuredPrompt
@@ -75,6 +77,7 @@ class ChatEngine:
         llm: BaseLLMAdapter,
         embedder: IEmbeddingProvider,
         vector_store: IVectorStore,
+        background_job_queue: IDurableBackgroundJobQueue | None = None,
     ):
         self.pipeline = pipeline
         self.uow_factory = uow_factory
@@ -87,6 +90,7 @@ class ChatEngine:
         self.llm = llm
         self.embedder = embedder
         self.vector_store = vector_store
+        self.background_job_queue = background_job_queue
         
         self.db_session_factory = db_session_factory
 
@@ -94,26 +98,11 @@ class ChatEngine:
         from app.shared.utils.user_identity import normalize_user_id
         user_uuid = normalize_user_id(user_id)
         
-        # 1. Check Redis State Cache (~0.2ms)
-        if self.cache_provider:
-            from app.domain.services.user_state_cache import UserStateCache
-            cached_state = await UserStateCache.get_state(self.cache_provider, user_uuid)
-            if cached_state:
-                _, emotion, _ = cached_state
-                return emotion
-
-        # 2. Cache MISS -> Fallback to PostgreSQL
+        # Mutable state is canonical in PostgreSQL; Redis is a post-commit projection.
         user_repo = self.user_repo_factory(session)
         await user_repo.get_or_create_user(user_uuid)
         emotion_repo = self.emotion_repo_factory(session)
         emotion = await emotion_repo.get_emotion_state(user_uuid)
-        
-        # Write-Through to Redis Cache
-        if self.cache_provider:
-            stats = await user_repo.get_user_stats(user_uuid)
-            from app.domain.services.user_state_cache import UserStateCache
-            await UserStateCache.set_state(self.cache_provider, user_uuid, stats, emotion)
-
         return emotion
 
     async def get_history(self, session: IDbSession, user_id: str, limit: int = 50) -> list[dict[str, str]]:
@@ -162,8 +151,13 @@ class ChatEngine:
         if not acquired:
             log.warning("Chat lock not acquired — concurrent request for same user", user_id=user_id)
             raise ChatEngineBusyError(user_id)
+        lease_lost = asyncio.Event()
+        stop_heartbeat = asyncio.Event()
+        heartbeat = asyncio.create_task(
+            self._renew_chat_lock(lock_key, acquired, stop_heartbeat, lease_lost)
+        )
         try:
-            return await self._chat_inner(
+            result = await self._chat_inner(
                 session=session,
                 user_id=user_id,
                 user_message=user_message,
@@ -171,7 +165,15 @@ class ChatEngine:
                 images=images,
                 is_ephemeral_reference=is_ephemeral_reference,
             )
+            if lease_lost.is_set():
+                raise ChatEngineBusyError(user_id)
+            if not await self.cache.renew_lock(lock_key, acquired, ttl=120):
+                raise ChatEngineBusyError(user_id)
+            await session.commit()
+            return result
         finally:
+            stop_heartbeat.set()
+            await heartbeat
             await self.cache.release_lock(lock_key, token=acquired)
 
     async def community_chat(
@@ -235,6 +237,11 @@ class ChatEngine:
         if not acquired:
             log.warning("Community chat lock not acquired — concurrent request for same speaker", user_id=user_id)
             raise ChatEngineBusyError(user_id)
+        lease_lost = asyncio.Event()
+        stop_heartbeat = asyncio.Event()
+        heartbeat = asyncio.create_task(
+            self._renew_chat_lock(lock_key, acquired, stop_heartbeat, lease_lost)
+        )
         try:
             context = ChatContext(
                 session=session,
@@ -252,15 +259,39 @@ class ChatEngine:
                 is_ephemeral_reference=is_ephemeral_reference,
             )
             context = await self.pipeline.execute(context)
-            return ChatExecutionResult(
+            result = ChatExecutionResult(
                 reply_text=context.chisa_reply,
                 emotions=context.updated_emotions,
                 images_processed=context.images_processed,
                 attached_images=context.attached_images,
                 citation_ids=context.citation_ids,
             )
+            if lease_lost.is_set():
+                raise ChatEngineBusyError(user_id)
+            if not await self.cache.renew_lock(lock_key, acquired, ttl=120):
+                raise ChatEngineBusyError(user_id)
+            await session.commit()
+            return result
         finally:
+            stop_heartbeat.set()
+            await heartbeat
             await self.cache.release_lock(lock_key, token=acquired)
+
+    async def _renew_chat_lock(
+        self,
+        lock_key: str,
+        token: str,
+        stop: asyncio.Event,
+        lease_lost: asyncio.Event,
+    ) -> None:
+        while not stop.is_set():
+            try:
+                await asyncio.wait_for(stop.wait(), timeout=40.0)
+                return
+            except TimeoutError:
+                if not await self.cache.renew_lock(lock_key, token, ttl=120):
+                    lease_lost.set()
+                    return
 
     async def _chat_inner(
         self,
@@ -307,7 +338,12 @@ class ChatEngine:
             raise e
 
     async def _unified_auto_summarize(
-        self, user_id: str, conv_id: Any, *, propagate_errors: bool = False
+        self,
+        user_id: str,
+        conv_id: Any,
+        *,
+        propagate_errors: bool = False,
+        source_revision: int | None = None,
     ) -> None:
         """
         Background auto-summarization workflow for Private 1-on-1 DM triggered every 10 interactions.
@@ -330,14 +366,7 @@ class ChatEngine:
                 user_repo = self.user_repo_factory(session)
 
                 # 1. Load previous summary & stats
-                previous_summary = None
-                if self.cache_provider:
-                    try:
-                        previous_summary = await self.cache_provider.get(f"chisa:user:{user_uuid}:summary")
-                    except Exception:
-                        pass
-                if not previous_summary:
-                    previous_summary = await conv_repo.get_latest_summary(user_uuid, conv_uuid)
+                previous_summary = await conv_repo.get_latest_summary(user_uuid, conv_uuid)
 
                 stats = await user_repo.get_user_stats(user_uuid)
                 is_full_refresh = stats and stats.interaction_count > 0 and stats.interaction_count % 100 == 0
@@ -420,18 +449,48 @@ class ChatEngine:
                 summary_text = str(parsed.get("summary", "")).strip()
 
                 if summary_text:
-                    # 1. Save summary to PostgreSQL
-                    await conv_repo.update_conversation_summary(conv_uuid, summary_text)
-                    await session.commit()
-                    log.info("Conversation summary saved to PostgreSQL", conv_id=str(conv_uuid))
+                    effective_source_revision = (
+                        stats.interaction_count
+                        if source_revision is None
+                        else source_revision
+                    )
+                    published = await conv_repo.update_summary_if_newer(
+                        conv_uuid,
+                        summary_text,
+                        source_revision=effective_source_revision,
+                    )
+                    if published is not None:
+                        if self.background_job_queue is None:
+                            raise RuntimeError("Summary cache projection queue is unavailable")
+                        from app.domain.models.background_job import (
+                            BackgroundJobSubmission,
+                            BackgroundJobType,
+                            PrivateSummaryCachePayload,
+                        )
 
-                    # 2. Sync to Redis Summary Cache (TTL 7 days)
-                    if self.cache_provider:
-                        try:
-                            await self.cache_provider.set(f"chisa:user:{user_uuid}:summary", summary_text, ttl=7 * 24 * 3600)
-                            log.info("Conversation summary synced to Redis cache", user_id=str(user_uuid))
-                        except Exception as cache_err:
-                            log.warning("Failed to sync summary to Redis cache", error=str(cache_err))
+                        cache_payload = PrivateSummaryCachePayload(
+                            user_id=user_uuid,
+                            conversation_id=conv_uuid,
+                            summary_revision=published.revision,
+                            source_revision=published.source_revision,
+                        )
+                        await self.background_job_queue.enqueue(
+                            session,
+                            BackgroundJobSubmission(
+                                job_type=BackgroundJobType.PRIVATE_SUMMARY_CACHE,
+                                idempotency_key=(
+                                    f"private-summary-cache:{conv_uuid}:{published.revision}"
+                                ),
+                                payload=cache_payload.as_json(),
+                                principal_id=user_uuid,
+                            ),
+                        )
+                    await session.commit()
+                    log.info(
+                        "Conversation summary transaction committed",
+                        conv_id=str(conv_uuid),
+                        applied=published is not None,
+                    )
                 else:
                     log.warning("Auto-summarize produced empty summary_text", conv_id=str(conv_uuid))
 

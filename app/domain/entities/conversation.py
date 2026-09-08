@@ -11,3 +11,12 @@ class Conversation:
     ended_at: Optional[datetime] = None
     summary: Optional[str] = None
     is_archived: bool = False
+
+
+@dataclass(frozen=True)
+class ConversationSummary:
+    conversation_id: UUID
+    user_id: UUID
+    text: str | None
+    revision: int
+    source_revision: int

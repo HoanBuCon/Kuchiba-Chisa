@@ -16,9 +16,12 @@ from app.domain.services.community.topic_summarizer import CommunityTopicSummari
 from app.domain.services.visual_memory_ingestion import VisualMemoryIngestionWorker
 from app.infrastructure.background.job_handlers import (
     BackgroundTurnSourceReader,
+    CommunityStateJobHandler,
     CommunitySummaryJobHandler,
     MemoryExtractionJobHandler,
+    PrivateSummaryCacheJobHandler,
     PrivateSummaryJobHandler,
+    UserStateCacheJobHandler,
     VisualMemoryJobHandler,
 )
 from app.infrastructure.cache.redis.redis_service import redis_service
@@ -43,7 +46,11 @@ async def run_worker() -> None:
         raise RuntimeError("Qdrant health check failed for durable worker")
 
     source = BackgroundTurnSourceReader(AsyncSessionFactory)
-    topic_summarizer = CommunityTopicSummarizer(llm=container.llm, cache=redis_service)
+    topic_summarizer = CommunityTopicSummarizer(
+        llm=container.llm,
+        cache=redis_service,
+        state_store=container.community_state_store,
+    )
     visual_worker = VisualMemoryIngestionWorker(
         vector_store=qdrant_service,
         embedder=container.embedder,
@@ -58,9 +65,20 @@ async def run_worker() -> None:
                 source, container.chat_engine._unified_auto_summarize
             ),
             BackgroundJobType.COMMUNITY_SUMMARY: CommunitySummaryJobHandler(
-                source, topic_summarizer
+                source, topic_summarizer, container.community_state_store
             ),
             BackgroundJobType.VISUAL_MEMORY: VisualMemoryJobHandler(source, visual_worker),
+            BackgroundJobType.USER_STATE_CACHE: UserStateCacheJobHandler(
+                AsyncSessionFactory, redis_service
+            ),
+            BackgroundJobType.PRIVATE_SUMMARY_CACHE: PrivateSummaryCacheJobHandler(
+                AsyncSessionFactory, redis_service
+            ),
+            BackgroundJobType.COMMUNITY_STATE: CommunityStateJobHandler(
+                source,
+                container.community_state_store,
+                topic_summarizer,
+            ),
         },
         worker_id=f"{socket.gethostname()}:{id(asyncio.current_task())}",
         concurrency=settings.WORKER_CONCURRENCY,

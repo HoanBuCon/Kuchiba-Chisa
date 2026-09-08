@@ -12,6 +12,7 @@ import pytest
 from app.application.privacy import MemoryPolicyService
 from app.domain.entities.user import UserStats
 from app.domain.interfaces.llm_provider import LLMResponse, StructuredPrompt
+from app.domain.models.background_job import BackgroundJobType
 from app.domain.models.evidence import (
     Evidence,
     EvidenceAccess,
@@ -155,6 +156,7 @@ async def test_long_term_memory_is_default_deny_without_verified_consent(
         user_message="remember this",
         chisa_reply="acknowledged",
         stats=UserStats(user_id=uuid4(), interaction_count=30),
+        state_revision=30,
         processed_images=[{"image_id": "permanent-image"}],
     )
     queue = MagicMock()
@@ -166,7 +168,8 @@ async def test_long_term_memory_is_default_deny_without_verified_consent(
 
     await stage.process(context)
 
-    queue.enqueue.assert_not_awaited()
+    submissions = [call.args[1] for call in queue.enqueue.await_args_list]
+    assert [item.job_type for item in submissions] == [BackgroundJobType.USER_STATE_CACHE]
 
 
 @pytest.mark.asyncio
@@ -229,6 +232,7 @@ async def test_consented_policy_spawns_bounded_memory_extraction(
         user_message="remember this",
         chisa_reply="acknowledged",
         stats=UserStats(user_id=uuid4(), interaction_count=3),
+        state_revision=3,
         memory_privacy_policy=policy,
         persisted_user_message_id=uuid4(),
         persisted_assistant_message_id=uuid4(),
@@ -239,8 +243,12 @@ async def test_consented_policy_spawns_bounded_memory_extraction(
 
     await stage.process(context)
 
-    queue.enqueue.assert_awaited_once()
-    submission = queue.enqueue.await_args.args[1]
+    submissions = [call.args[1] for call in queue.enqueue.await_args_list]
+    assert [item.job_type for item in submissions] == [
+        BackgroundJobType.USER_STATE_CACHE,
+        BackgroundJobType.MEMORY_EXTRACTION,
+    ]
+    submission = submissions[1]
     assert submission.payload["user_id"] == str(context.user_uuid)
     assert "remember this" not in str(submission.payload)
     assert _bounded_expiry(None, 123) == 123

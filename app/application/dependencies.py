@@ -133,6 +133,15 @@ class AppContainer:
         )
 
     @cached_property
+    def community_state_store(self):
+        from app.infrastructure.cache.redis.community_state_store import (
+            RedisCommunityStateStore,
+        )
+        from app.infrastructure.cache.redis.redis_service import get_redis_client
+
+        return RedisCommunityStateStore(get_redis_client())
+
+    @cached_property
     def chat_engine(self) -> ChatEngine:
         from app.domain.services.chat_engine import ChatPipeline
         from app.domain.services.chat_pipeline.stages.background_task_stage import (
@@ -358,7 +367,8 @@ class AppContainer:
             db_session_factory=AsyncSessionFactory,
             llm=self.llm,
             embedder=self.embedder,
-            vector_store=qdrant_service
+            vector_store=qdrant_service,
+            background_job_queue=self.background_job_queue,
         )
         return engine
 

@@ -163,10 +163,14 @@ async def test_unified_chat_engine_community_mode_execution():
     mock_user_repo = MagicMock()
     mock_user_repo.get_or_create_user = AsyncMock()
     mock_user_repo.get_user_stats = AsyncMock(return_value=mock_stats)
+    mock_user_repo.apply_interaction = AsyncMock(
+        return_value=UserStats(user_id=user_uuid, interaction_count=6, state_revision=6)
+    )
     mock_user_repo.update_stats = AsyncMock()
 
     mock_emotion_repo = MagicMock()
     mock_emotion_repo.get_emotion_state = AsyncMock(return_value=initial_emotion)
+    mock_emotion_repo.apply_mutation = AsyncMock(return_value=initial_emotion)
     mock_emotion_repo.update_emotion = AsyncMock()
 
     mock_conv_repo = MagicMock()
@@ -196,6 +200,7 @@ async def test_unified_chat_engine_community_mode_execution():
     pipeline = ChatPipeline(stages)
     mock_cache = MagicMock()
     mock_cache.acquire_lock = AsyncMock(return_value="token123")
+    mock_cache.renew_lock = AsyncMock(return_value=True)
     mock_cache.release_lock = AsyncMock()
 
     chat_engine = ChatEngine(
@@ -238,8 +243,8 @@ async def test_unified_chat_engine_community_mode_execution():
 
     assert reply == "Quán đó tuyệt vời lắm đó Senpai!"
     assert updated_emotions["trust"] > 0.50
-    mock_emotion_repo.update_emotion.assert_awaited_once()
-    mock_user_repo.update_stats.assert_awaited_once()
+    mock_emotion_repo.apply_mutation.assert_awaited_once()
+    mock_user_repo.apply_interaction.assert_awaited_once()
     mock_conv_repo.save_message.assert_awaited()
 
 

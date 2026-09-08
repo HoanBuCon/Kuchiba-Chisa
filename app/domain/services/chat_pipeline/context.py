@@ -3,7 +3,7 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Any
 
-from app.domain.entities.emotion import EmotionState
+from app.domain.entities.emotion import EmotionMutation, EmotionState
 from app.domain.entities.user import UserStats
 from app.domain.interfaces.llm_provider import StructuredPrompt
 from app.domain.interfaces.session import IDbSession
@@ -42,6 +42,8 @@ class ChatContext:
     conv_id: uuid.UUID | None = None
     persisted_user_message_id: uuid.UUID | None = None
     persisted_assistant_message_id: uuid.UUID | None = None
+    state_revision: int | None = None
+    emotion_mutation: EmotionMutation | None = None
     stats: UserStats | None = None
     emotion: EmotionState | None = None
     history: list[dict[str, str]] = field(default_factory=list)

@@ -24,7 +24,7 @@ def _get_pool() -> aioredis.ConnectionPool:
         _redis_pool = aioredis.ConnectionPool.from_url(
             settings.REDIS_URL,
             password=settings.REDIS_PASSWORD or None,
-            username=settings.REDIS_USERNAME,
+            username=settings.REDIS_USERNAME if settings.REDIS_PASSWORD else None,
             max_connections=50,
             decode_responses=True,
             socket_connect_timeout=5,
@@ -85,8 +85,39 @@ class RedisService(ICacheProvider):
     async def set_json(self, key: str, value: Any, ttl: int | None = None) -> None:
         await self.set(key, json.dumps(value, default=str), ttl)
 
+    _SET_IF_NEWER_LUA = """
+    local value_exists = redis.call('EXISTS', KEYS[1])
+    local current = tonumber(redis.call('GET', KEYS[2]) or '-1')
+    local incoming = tonumber(ARGV[2])
+    if value_exists == 1 and current >= incoming then
+        return 0
+    end
+    redis.call('SET', KEYS[1], ARGV[1], 'EX', tonumber(ARGV[3]))
+    redis.call('SET', KEYS[2], ARGV[2], 'EX', tonumber(ARGV[3]))
+    return 1
+    """
+
+    async def set_if_newer(
+        self, key: str, value: str, revision: int, ttl: int
+    ) -> bool:
+        result = await cast(
+            Awaitable[Any],
+            self._client.eval(
+                self._SET_IF_NEWER_LUA,
+                2,
+                key,
+                f"{key}:revision",
+                value,
+                str(revision),
+                str(ttl),
+            ),
+        )
+        return bool(result)
+
     async def delete(self, key: str) -> None:
-        await self._client.delete(key)
+        # Versioned projections use a sidecar revision. Deleting both keys in
+        # one Redis command prevents a stale revision from blocking recreation.
+        await self._client.delete(key, f"{key}:revision")
 
     async def delete_pattern(self, pattern: str) -> int:
         deleted = 0
@@ -171,6 +202,12 @@ class RedisService(ICacheProvider):
         return 0
     end
     """
+    _RENEW_LOCK_LUA = """
+    if redis.call("get", KEYS[1]) == ARGV[1] then
+        return redis.call("expire", KEYS[1], tonumber(ARGV[2]))
+    end
+    return 0
+    """
 
     async def acquire_lock(
         self, lock_key: str, ttl: int = 5, token: str | None = None
@@ -186,9 +223,13 @@ class RedisService(ICacheProvider):
             if result is True:
                 return lock_token
             return None
-        except Exception as e:
-            log.warning("Redis acquire_lock failed, proceeding without lock (fail-open)", lock_key=lock_key, error=str(e))
-            return lock_token
+        except Exception as exc:
+            log.warning(
+                "Redis acquire_lock failed closed",
+                lock_key=lock_key,
+                error_type=type(exc).__name__,
+            )
+            return None
 
     async def release_lock(self, lock_key: str, token: str | None = None) -> bool:
         """
@@ -201,10 +242,24 @@ class RedisService(ICacheProvider):
                 )
                 return bool(res)
             else:
-                await self._client.delete(lock_key)
-                return True
+                return False
         except Exception as e:
             log.warning("Redis release_lock failed, ignoring", lock_key=lock_key, error=str(e))
+            return False
+
+    async def renew_lock(self, lock_key: str, token: str, ttl: int) -> bool:
+        try:
+            result = await cast(
+                Awaitable[Any],
+                self._client.eval(self._RENEW_LOCK_LUA, 1, lock_key, token, str(ttl)),
+            )
+            return bool(result)
+        except Exception as exc:
+            log.warning(
+                "Redis renew_lock failed",
+                lock_key=lock_key,
+                error_type=type(exc).__name__,
+            )
             return False
 
     # ── Connection Management ────────────────────────────────────

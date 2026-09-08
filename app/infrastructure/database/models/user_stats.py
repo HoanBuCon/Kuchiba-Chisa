@@ -31,3 +31,4 @@ class UserStats(Base):
         nullable=False,
         doc="Unix timestamp in milliseconds",
     )
+    state_revision: Mapped[int] = mapped_column(Integer, default=0, nullable=False)

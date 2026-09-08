@@ -1,11 +1,15 @@
 from __future__ import annotations
+
 import time
 import uuid
+
+from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
-from app.infrastructure.database.models.emotion_state import EmotionState as EmotionStateModel
-from app.domain.interfaces.repositories import IEmotionRepository
+
+from app.domain.entities.emotion import EmotionMutation
 from app.domain.entities.emotion import EmotionState as EmotionStateEntity
+from app.domain.interfaces.repositories import IEmotionRepository
+from app.infrastructure.database.models.emotion_state import EmotionState as EmotionStateModel
 
 
 class SqlAlchemyEmotionRepository(IEmotionRepository):
@@ -92,6 +96,55 @@ class SqlAlchemyEmotionRepository(IEmotionRepository):
             )
             self.session.add(state_db)
         await self.session.flush()
+
+    async def apply_mutation(
+        self,
+        user_id: uuid.UUID,
+        mutation: EmotionMutation,
+        *,
+        updated_at: int,
+    ) -> EmotionStateEntity:
+        dimensions = (
+            "joy",
+            "sadness",
+            "trust",
+            "attachment",
+            "irritation",
+            "shyness",
+            "curiosity",
+            "comfort",
+        )
+        values = {
+            name: func.least(
+                1.0,
+                func.greatest(
+                    0.0,
+                    getattr(EmotionStateModel, name) + getattr(mutation, name),
+                ),
+            )
+            for name in dimensions
+        }
+        values["updated_at"] = func.greatest(EmotionStateModel.updated_at, updated_at)
+        row = (
+            await self.session.execute(
+                update(EmotionStateModel)
+                .where(EmotionStateModel.user_id == user_id)
+                .values(**values)
+                .returning(EmotionStateModel)
+            )
+        ).scalar_one()
+        return EmotionStateEntity(
+            user_id=row.user_id,
+            joy=float(row.joy),
+            sadness=float(row.sadness),
+            trust=float(row.trust),
+            attachment=float(row.attachment),
+            irritation=float(row.irritation),
+            shyness=float(row.shyness),
+            curiosity=float(row.curiosity),
+            comfort=float(row.comfort),
+            updated_at=row.updated_at,
+        )
 
     async def delete_all_for_user(self, user_id: uuid.UUID) -> None:
         from sqlalchemy import delete

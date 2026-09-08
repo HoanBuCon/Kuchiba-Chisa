@@ -7,6 +7,7 @@ for UserStats and EmotionState, eliminating repeated SQL queries at Stage 1.
 """
 from __future__ import annotations
 
+import json
 import time
 import uuid
 from typing import Any, Optional, Tuple
@@ -55,7 +56,10 @@ class UserStateCache:
                 user_id=user_id,
                 interaction_count=int(stats_raw.get("interaction_count", 0)),
                 last_seen=int(stats_raw.get("last_seen", 0)),
+                state_revision=int(data.get("state_revision", -1)),
             )
+            if stats.state_revision < 0:
+                return None
             emotion = EmotionStateEntity(
                 user_id=user_id,
                 joy=float(emotion_raw.get("joy", 0.15)),
@@ -94,8 +98,31 @@ class UserStateCache:
         if not cache:
             return
         key = cls.get_cache_key(user_id)
-        payload = {
+        payload = cls.build_payload(user_id, stats, emotion, conv_id)
+        try:
+            await cache.set_if_newer(
+                key,
+                json.dumps(payload, default=str),
+                stats.state_revision,
+                ttl,
+            )
+        except Exception as e:
+            log.warning(
+                "Failed to save user state to Redis cache",
+                error=str(e),
+                user_id=str(user_id),
+            )
+
+    @staticmethod
+    def build_payload(
+        user_id: uuid.UUID,
+        stats: UserStatsEntity,
+        emotion: EmotionStateEntity,
+        conv_id: uuid.UUID | None = None,
+    ) -> dict[str, Any]:
+        return {
             "user_id": str(user_id),
+            "state_revision": stats.state_revision,
             "stats": {
                 "interaction_count": stats.interaction_count,
                 "last_seen": stats.last_seen,
@@ -114,14 +141,6 @@ class UserStateCache:
             "conv_id": str(conv_id) if conv_id else None,
             "cached_at": int(time.time() * 1000),
         }
-        try:
-            await cache.set_json(key, payload, ttl=ttl)
-        except Exception as e:
-            log.warning(
-                "Failed to save user state to Redis cache",
-                error=str(e),
-                user_id=str(user_id),
-            )
 
     @classmethod
     async def invalidate(cls, cache: ICacheProvider, user_id: uuid.UUID | str) -> None:

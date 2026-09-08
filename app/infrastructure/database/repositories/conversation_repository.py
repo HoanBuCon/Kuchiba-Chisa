@@ -4,9 +4,10 @@ import uuid
 from datetime import datetime, timezone
 from typing import Any, Optional
 
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.domain.entities.conversation import ConversationSummary
 from app.domain.interfaces.repositories import IConversationRepository
 from app.infrastructure.database.models.conversation import Conversation as ConversationModel
 from app.infrastructure.database.models.message import Message as MessageModel
@@ -143,6 +144,59 @@ class SqlAlchemyConversationRepository(IConversationRepository):
         if conv:
             conv.summary = summary
             await self.session.flush()
+
+    async def update_summary_if_newer(
+        self,
+        conversation_id: uuid.UUID,
+        summary: str,
+        *,
+        source_revision: int,
+    ) -> ConversationSummary | None:
+        row = (
+            await self.session.execute(
+                update(ConversationModel)
+                .where(
+                    ConversationModel.id == conversation_id,
+                    ConversationModel.summary_source_revision < source_revision,
+                )
+                .values(
+                    summary=summary,
+                    summary_revision=ConversationModel.summary_revision + 1,
+                    summary_source_revision=source_revision,
+                )
+                .returning(ConversationModel)
+            )
+        ).scalar_one_or_none()
+        if row is None:
+            return None
+        return ConversationSummary(
+            conversation_id=row.id,
+            user_id=row.user_id,
+            text=row.summary,
+            revision=row.summary_revision,
+            source_revision=row.summary_source_revision,
+        )
+
+    async def get_summary_projection(
+        self, conversation_id: uuid.UUID, user_id: uuid.UUID
+    ) -> ConversationSummary | None:
+        row = (
+            await self.session.execute(
+                select(ConversationModel).where(
+                    ConversationModel.id == conversation_id,
+                    ConversationModel.user_id == user_id,
+                )
+            )
+        ).scalar_one_or_none()
+        if row is None:
+            return None
+        return ConversationSummary(
+            conversation_id=row.id,
+            user_id=row.user_id,
+            text=row.summary,
+            revision=row.summary_revision,
+            source_revision=row.summary_source_revision,
+        )
 
     async def delete_all_for_user(self, user_id: uuid.UUID) -> None:
         from sqlalchemy import delete

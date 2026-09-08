@@ -3,21 +3,22 @@ Unit tests for Text-to-Image Reverse Memory Retrieval & Delivery.
 Location: tests/unit/test_text_to_image_memory_retrieval.py
 """
 
-import pytest
 import time
-import asyncio
 from unittest.mock import AsyncMock, MagicMock, patch
 
-from app.domain.entities.image_memory import ImageMemoryPayload, RetrievedImageMemory
+import pytest
+
 from app.domain.entities.emotion import EmotionState
+from app.domain.entities.image_memory import RetrievedImageMemory
+from app.domain.interfaces.llm_provider import LLMResponse, StructuredPrompt
 from app.domain.models.intent_result import ChatIntent, IntentResult
-from app.domain.services.visual_memory_ingestion import VisualMemoryIngestionWorker
-from app.domain.services.rag.retriever_image_memory import ImageMemoryRetriever
-from app.domain.services.context_builder import ContextBuilder
 from app.domain.services.chat_pipeline.context import ChatContext
 from app.domain.services.chat_pipeline.stages.intent_stage import IntentStage
 from app.domain.services.chat_pipeline.stages.llm_generation_stage import LLMGenerationStage
-from app.domain.interfaces.llm_provider import LLMResponse, StructuredPrompt
+from app.domain.services.context_builder import ContextBuilder
+from app.domain.services.rag.retriever_image_memory import ImageMemoryRetriever
+from app.domain.services.visual_memory_ingestion import VisualMemoryIngestionWorker
+from app.shared.utils.maintenance_tasks import MaintenanceTaskSupervisor
 
 
 @pytest.mark.asyncio
@@ -523,6 +524,7 @@ async def test_image_memory_retriever_self_healing_prunes_missing_files():
     }
 
     mock_client.search.return_value = [mock_hit_ghost, mock_hit_existing]
+    mock_client.retrieve.return_value = [mock_hit_ghost]
     mock_client.delete = AsyncMock()
 
     retriever = ImageMemoryRetriever(vector_store=mock_vector_store)
@@ -537,5 +539,5 @@ async def test_image_memory_retriever_self_healing_prunes_missing_files():
     assert results[0].image_id == "img_1"
 
     # 2. Điểm point_ghost phải được gửi lệnh xóa khỏi Qdrant
-    await asyncio.sleep(0.05)  # Chờ background async task
+    await MaintenanceTaskSupervisor.shutdown(grace_seconds=1)
     mock_client.delete.assert_called_once()

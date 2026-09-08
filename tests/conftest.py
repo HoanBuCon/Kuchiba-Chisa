@@ -27,9 +27,12 @@ os.environ.setdefault(
     "DATABASE_URL", "postgresql+asyncpg://chisa:chisa_test_secret@localhost:55432/chisa_test"
 )
 os.environ.setdefault("REDIS_URL", "redis://localhost:56379/15")
+os.environ["REDIS_PASSWORD"] = ""
+os.environ["REDIS_USERNAME"] = ""
 os.environ.setdefault("CELERY_BROKER_URL", "redis://localhost:56379/14")
 os.environ.setdefault("CELERY_RESULT_BACKEND", "redis://localhost:56379/14")
 os.environ.setdefault("QDRANT_URL", "http://localhost:16333")
+os.environ["QDRANT_API_KEY"] = ""
 os.environ.setdefault("GROQ_API_KEY", "test_groq_key_placeholder")
 os.environ.setdefault("JWT_SECRET", "test_jwt_secret_that_is_long_enough_for_validation")
 os.environ.setdefault(
@@ -343,11 +346,53 @@ def test_chat_engine(
     """Build a new application container per test without the module-level singleton."""
     del isolated_postgres, isolated_vector_store
     from app.application.dependencies import AppContainer
+    from app.infrastructure.cache.redis import redis_service as redis_module
 
+    class DeterministicTestCache:
+        def __init__(self) -> None:
+            self.values: dict[str, str] = {}
+            self.locks: dict[str, str] = {}
+
+        async def get(self, key: str) -> str | None:
+            return self.values.get(key)
+
+        async def set(self, key: str, value: str, ttl: int | None = None) -> None:
+            del ttl
+            self.values[key] = value
+
+        async def delete(self, key: str) -> None:
+            self.values.pop(key, None)
+
+        async def acquire_lock(
+            self, lock_key: str, ttl: int = 5, token: str | None = None
+        ) -> str | None:
+            del ttl
+            if lock_key in self.locks:
+                return None
+            owner = token or f"test-owner:{lock_key}"
+            self.locks[lock_key] = owner
+            return owner
+
+        async def renew_lock(self, lock_key: str, token: str, ttl: int) -> bool:
+            del ttl
+            return self.locks.get(lock_key) == token
+
+        async def release_lock(self, lock_key: str, token: str | None = None) -> bool:
+            if self.locks.get(lock_key) != token:
+                return False
+            self.locks.pop(lock_key, None)
+            return True
+
+    test_cache = DeterministicTestCache()
+    original_cache = redis_module.redis_service
+    redis_module.redis_service = test_cache
     test_container = AppContainer()
     test_container.__dict__["llm"] = DeterministicTestLLM()
     test_container.__dict__["entity_resolver"] = isolated_entity_resolver
-    return test_container.chat_engine
+    try:
+        return test_container.chat_engine
+    finally:
+        redis_module.redis_service = original_cache
 
 
 @pytest.fixture
