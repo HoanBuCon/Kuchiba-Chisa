@@ -19,6 +19,7 @@ class FastEmbedCrossEncoderReranker:
     """
 
     data_boundary = RerankerDataBoundary.LOCAL
+    provider_name = "local"
 
     def __init__(
         self,

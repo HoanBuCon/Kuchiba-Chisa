@@ -1,0 +1,185 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: chisa-ops02
+  labels:
+    app.kubernetes.io/name: kuchiba-chisa
+spec:
+  groups:
+    - name: chisa.slo.availability
+      rules:
+        - alert: ChisaChatAdmissionAvailabilityFastBurn
+          expr: >-
+            (sum(rate(chisa_http_errors_total{chisa_route=~"/api/v1/chat|/api/v1/chat/stream|/api/v1/community/chat",chisa_status_class="5xx"}[5m]))
+            / clamp_min(sum(rate(chisa_http_requests_total{chisa_route=~"/api/v1/chat|/api/v1/chat/stream|/api/v1/community/chat",chisa_status_class=~"2xx|3xx|5xx"}[5m])), 1e-9)) > 0.0144
+            and
+            (sum(rate(chisa_http_errors_total{chisa_route=~"/api/v1/chat|/api/v1/chat/stream|/api/v1/community/chat",chisa_status_class="5xx"}[1h]))
+            / clamp_min(sum(rate(chisa_http_requests_total{chisa_route=~"/api/v1/chat|/api/v1/chat/stream|/api/v1/community/chat",chisa_status_class=~"2xx|3xx|5xx"}[1h])), 1e-9)) > 0.0144
+          for: 2m
+          labels:
+            severity: page
+            requirement: NFR-REL-001
+            slo: chat-admission-availability
+          annotations:
+            summary: Chat admission is consuming its monthly error budget rapidly
+            intent: 14.4x burn across 5m and 1h for the approved 99.9 percent SLO.
+        - alert: ChisaChatAdmissionAvailabilitySlowBurn
+          expr: >-
+            (sum(rate(chisa_http_errors_total{chisa_route=~"/api/v1/chat|/api/v1/chat/stream|/api/v1/community/chat",chisa_status_class="5xx"}[30m]))
+            / clamp_min(sum(rate(chisa_http_requests_total{chisa_route=~"/api/v1/chat|/api/v1/chat/stream|/api/v1/community/chat",chisa_status_class=~"2xx|3xx|5xx"}[30m])), 1e-9)) > 0.006
+            and
+            (sum(rate(chisa_http_errors_total{chisa_route=~"/api/v1/chat|/api/v1/chat/stream|/api/v1/community/chat",chisa_status_class="5xx"}[6h]))
+            / clamp_min(sum(rate(chisa_http_requests_total{chisa_route=~"/api/v1/chat|/api/v1/chat/stream|/api/v1/community/chat",chisa_status_class=~"2xx|3xx|5xx"}[6h])), 1e-9)) > 0.006
+          for: 15m
+          labels:
+            severity: ticket
+            requirement: NFR-REL-001
+            slo: chat-admission-availability
+          annotations:
+            summary: Chat admission has a sustained monthly error-budget burn
+            intent: 6x burn across 30m and 6h for the approved 99.9 percent SLO.
+        - alert: ChisaGroundedRagAvailabilityFastBurn
+          expr: >-
+            (sum(rate(chisa_rag_grounding_decisions_total{chisa_status="rejected"}[5m]))
+            / clamp_min(sum(rate(chisa_rag_grounding_decisions_total[5m])), 1e-9)) > 0.072
+            and
+            (sum(rate(chisa_rag_grounding_decisions_total{chisa_status="rejected"}[1h]))
+            / clamp_min(sum(rate(chisa_rag_grounding_decisions_total[1h])), 1e-9)) > 0.072
+          for: 2m
+          labels:
+            severity: page
+            requirement: NFR-REL-001
+            slo: grounded-rag-availability
+          annotations:
+            summary: Grounded RAG is consuming its monthly error budget rapidly
+            intent: 14.4x burn across 5m and 1h for the approved 99.5 percent SLO.
+        - alert: ChisaGroundedRagAvailabilitySlowBurn
+          expr: >-
+            (sum(rate(chisa_rag_grounding_decisions_total{chisa_status="rejected"}[30m]))
+            / clamp_min(sum(rate(chisa_rag_grounding_decisions_total[30m])), 1e-9)) > 0.03
+            and
+            (sum(rate(chisa_rag_grounding_decisions_total{chisa_status="rejected"}[6h]))
+            / clamp_min(sum(rate(chisa_rag_grounding_decisions_total[6h])), 1e-9)) > 0.03
+          for: 15m
+          labels:
+            severity: ticket
+            requirement: NFR-REL-001
+            slo: grounded-rag-availability
+          annotations:
+            summary: Grounded RAG has a sustained monthly error-budget burn
+            intent: 6x burn across 30m and 6h for the approved 99.5 percent SLO.
+    - name: chisa.slo.latency
+      rules:
+        - alert: ChisaTextRagLatencyFastBurn
+          expr: >-
+            (1 - sum(rate(chisa_http_server_duration_seconds_bucket{chisa_route=~"/api/v1/chat|/api/v1/chat/stream",le="8.0"}[5m]))
+            / clamp_min(sum(rate(chisa_http_server_duration_seconds_count{chisa_route=~"/api/v1/chat|/api/v1/chat/stream"}[5m])), 1e-9)) > 0.72
+            and
+            (1 - sum(rate(chisa_http_server_duration_seconds_bucket{chisa_route=~"/api/v1/chat|/api/v1/chat/stream",le="8.0"}[1h]))
+            / clamp_min(sum(rate(chisa_http_server_duration_seconds_count{chisa_route=~"/api/v1/chat|/api/v1/chat/stream"}[1h])), 1e-9)) > 0.72
+          for: 2m
+          labels:
+            severity: page
+            requirement: NFR-PERF-003
+            slo: text-rag-total-p95
+          annotations:
+            summary: Text RAG p95 latency objective is burning rapidly
+            intent: 14.4x burn across 5m and 1h for the approved 95 percent within 8 seconds objective.
+        - alert: ChisaTextRagLatencySlowBurn
+          expr: >-
+            (1 - sum(rate(chisa_http_server_duration_seconds_bucket{chisa_route=~"/api/v1/chat|/api/v1/chat/stream",le="8.0"}[30m]))
+            / clamp_min(sum(rate(chisa_http_server_duration_seconds_count{chisa_route=~"/api/v1/chat|/api/v1/chat/stream"}[30m])), 1e-9)) > 0.3
+            and
+            (1 - sum(rate(chisa_http_server_duration_seconds_bucket{chisa_route=~"/api/v1/chat|/api/v1/chat/stream",le="8.0"}[6h]))
+            / clamp_min(sum(rate(chisa_http_server_duration_seconds_count{chisa_route=~"/api/v1/chat|/api/v1/chat/stream"}[6h])), 1e-9)) > 0.3
+          for: 15m
+          labels:
+            severity: ticket
+            requirement: NFR-PERF-003
+            slo: text-rag-total-p95
+          annotations:
+            summary: Text RAG p95 latency objective has sustained burn
+            intent: 6x burn across 30m and 6h for the approved 95 percent within 8 seconds objective.
+    - name: chisa.operational
+      rules:
+        - alert: ChisaProviderFallbackSustained
+          expr: >-
+            (sum(rate(chisa_llm_provider_errors_total[15m])) > 0
+            and sum(rate(chisa_llm_fallbacks_total[15m])) > 0
+            and sum(rate(chisa_llm_provider_errors_total[1h])) > 0)
+            or
+            (sum(rate(chisa_rag_reranker_errors_total[15m])) > 0
+            and sum(rate(chisa_rag_reranker_fallbacks_total[15m])) > 0
+            and sum(rate(chisa_rag_reranker_errors_total[1h])) > 0)
+          for: 15m
+          labels:
+            severity: ticket
+            requirement: NFR-REL-002
+          annotations:
+            summary: LLM provider failures and fallback remain active
+            intent: Investigate provider, breaker and compatible fallback health; this is not a new SLO.
+        - alert: ChisaWorkerQueueBacklogGrowing
+          expr: >-
+            min_over_time(chisa_worker_queue_depth{chisa_status="ready"}[30m]) > 0
+            and deriv(chisa_worker_queue_depth{chisa_status="ready"}[30m]) > 0
+            and deriv(chisa_worker_queue_oldest_ready_age_seconds[30m]) > 0
+          for: 15m
+          labels:
+            severity: ticket
+            requirement: NFR-REL-006
+          annotations:
+            summary: Durable worker queue and oldest-ready age are both growing
+            intent: Diagnose worker capacity or poison jobs without inventing an unapproved fixed lag SLO.
+        - alert: ChisaWorkerDlqGrowth
+          expr: sum(increase(chisa_worker_dlq_total[15m])) > 0
+          for: 5m
+          labels:
+            severity: ticket
+            requirement: NFR-REL-006
+          annotations:
+            summary: A durable job entered the dead-letter queue
+            intent: Inspect sanitized failure class and use the audited replay workflow.
+        - alert: ChisaRequiredDependencyUnavailable
+          expr: min_over_time(chisa_dependency_available{chisa_dependency=~"postgresql|redis|qdrant"}[5m]) < 1
+          for: 5m
+          labels:
+            severity: page
+            requirement: NFR-REL-001
+          annotations:
+            summary: A required dependency is continuously unavailable
+            intent: Readiness must remain unavailable while a required dependency cannot serve safely.
+        - alert: ChisaOutputLeakageDetected
+          expr: sum(increase(chisa_security_events_total{chisa_failure_class="output_leakage"}[5m])) > 0
+          labels:
+            severity: page
+            requirement: NFR-OPS-003
+          annotations:
+            summary: Output leakage guard reported a blocking event
+            intent: Preserve the blocked output and investigate using metadata-only telemetry.
+        - alert: ChisaCrossTenantAccessDenied
+          expr: sum(increase(chisa_security_events_total{chisa_failure_class="cross_tenant_denial"}[15m])) > 0
+          for: 5m
+          labels:
+            severity: ticket
+            requirement: NFR-OPS-003
+          annotations:
+            summary: Cross-tenant access attempts were denied
+            intent: Investigate abuse patterns without recording principal or tenant identifiers as labels.
+        - alert: ChisaCorpusIndexDrift
+          expr: min_over_time(chisa_dependency_available{chisa_dependency="qdrant_index_identity"}[5m]) < 1
+          for: 5m
+          labels:
+            severity: page
+            requirement: NFR-OPS-003
+          annotations:
+            summary: Active corpus and Qdrant index identity disagree
+            intent: Stop publication or rollback through the authorized versioned corpus workflow.
+        - alert: ChisaLlmCallBudgetExhaustion
+          expr: sum(increase(chisa_llm_budget_exhausted_total[15m])) > 0
+          for: 5m
+          labels:
+            severity: ticket
+            requirement: NFR-PERF-009
+          annotations:
+            summary: One or more requests exhausted the approved LLM call budget
+            intent: Inspect purpose/model token counters; monetary cost is unavailable without versioned pricing.

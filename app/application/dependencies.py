@@ -155,6 +155,7 @@ class AppContainer:
             log_routing_transaction,
         )
         from app.infrastructure.logging.pipeline_tracker import pipeline_tracker
+        from app.infrastructure.observability import operational_telemetry
 
         def user_repo_factory(session: IDbSession):
             return SqlAlchemyUserRepository(_require_async_session(session))
@@ -250,6 +251,7 @@ class AppContainer:
                 vector_store=qdrant_service,
                 lore_parent_repo_factory=LoreParentRepository,
                 cross_encoder_reranker=self.cross_encoder_reranker,
+                telemetry=operational_telemetry,
             ),
             assessor=ContextAssessor(),
             thinking_loop_agent=ThinkingLoopAgent(pipeline_tracker=pipeline_tracker),
@@ -275,13 +277,15 @@ class AppContainer:
                 embedder=self.embedder,
                 query_rewriter=query_rewriter,
                 conv_repo_factory=conversation_repo_factory,
-                pipeline_tracker=pipeline_tracker
+                pipeline_tracker=pipeline_tracker,
+                telemetry=operational_telemetry,
             ),
             CacheStage(
                 cache=redis_service,
                 corpus_identity_provider=qdrant_service,
                 contract=lore_answer_cache,
-                pipeline_tracker=pipeline_tracker
+                pipeline_tracker=pipeline_tracker,
+                telemetry=operational_telemetry,
             ),
             ToolRoutingStage(
                 tool_router=tool_router,
@@ -307,6 +311,7 @@ class AppContainer:
                 llm_logger_callback=log_llm_transaction,
                 pipeline_tracker=pipeline_tracker,
                 output_leakage_guard=PromptLeakageGuard(),
+                telemetry=operational_telemetry,
             ),
             EmotionUpdateStage(
                 emotion_engine=emotion_engine,
@@ -324,6 +329,7 @@ class AppContainer:
                 cache=redis_service,
                 corpus_identity_provider=qdrant_service,
                 contract=lore_answer_cache,
+                telemetry=operational_telemetry,
             ),
             BackgroundTaskStage(
                 job_queue=self.background_job_queue,
@@ -333,7 +339,7 @@ class AppContainer:
         ]
 
         
-        pipeline = ChatPipeline(stages=stages)
+        pipeline = ChatPipeline(stages=stages, telemetry=operational_telemetry)
         
         engine = ChatEngine(
             pipeline=pipeline,

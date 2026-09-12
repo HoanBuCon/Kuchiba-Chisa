@@ -8,6 +8,7 @@ import httpx
 from app.application.llm_gateway import LLMGateway, LLMGatewayPolicy, ProviderModel
 from app.config.settings import Settings
 from app.domain.interfaces.llm_provider import LLMCapability, LLMPurpose
+from app.infrastructure.observability import operational_telemetry
 
 _ALL_PURPOSES = frozenset(purpose for purpose in LLMPurpose if purpose is not LLMPurpose.UNKNOWN)
 _TEXT_STRUCTURED_STREAM = frozenset(
@@ -202,4 +203,5 @@ def build_llm_gateway(
             breaker_failure_threshold=config.LLM_BREAKER_FAILURE_THRESHOLD,
             breaker_recovery_seconds=config.LLM_BREAKER_RECOVERY_SECONDS,
         ),
+        telemetry=operational_telemetry,
     )

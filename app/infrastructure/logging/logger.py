@@ -1,9 +1,13 @@
 from __future__ import annotations
+
 import logging
 import sys
 from typing import Any
+
 import structlog
+from opentelemetry import trace
 from structlog.types import EventDict, WrappedLogger
+
 from app.config.settings import settings
 
 # Reconfigure Windows stdout/stderr to UTF-8 to prevent charmap encoding errors with Vietnamese/Unicode
@@ -37,6 +41,19 @@ def _drop_color_message_key(
     return event_dict
 
 
+def _add_trace_context(
+    logger: WrappedLogger,
+    method_name: str,
+    event_dict: EventDict,
+) -> EventDict:
+    """Correlate logs with sampled traces without creating metric dimensions."""
+    context = trace.get_current_span().get_span_context()
+    if context.is_valid:
+        event_dict["trace_id"] = format(context.trace_id, "032x")
+        event_dict["span_id"] = format(context.span_id, "016x")
+    return event_dict
+
+
 def configure_logging() -> None:
     """
     Configure structlog for the entire application.
@@ -51,6 +68,7 @@ def configure_logging() -> None:
         structlog.processors.TimeStamper(fmt="iso"),
         structlog.processors.StackInfoRenderer(),
         _add_service_info,
+        _add_trace_context,
         _drop_color_message_key,
     ]
 

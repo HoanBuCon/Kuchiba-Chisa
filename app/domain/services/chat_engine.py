@@ -5,6 +5,7 @@ import uuid
 from collections.abc import Callable
 from contextlib import AbstractAsyncContextManager
 from dataclasses import dataclass
+from time import monotonic
 from typing import Any
 
 from app.domain.entities.emotion import EmotionState
@@ -16,6 +17,13 @@ from app.domain.interfaces.llm_provider import (
     LLMCallBudget,
     LLMPurpose,
     StructuredPrompt,
+)
+from app.domain.interfaces.observability import (
+    HistogramSignal,
+    IOperationalTelemetry,
+    NoopOperationalTelemetry,
+    TelemetryDimensions,
+    TraceOperation,
 )
 from app.domain.interfaces.repositories import (
     IConversationRepository,
@@ -56,13 +64,67 @@ class ChatExecutionResult:
 
 
 class ChatPipeline:
-    def __init__(self, stages: list[PipelineStage]):
+    _STAGE_NAMES = {
+        "InitializationStage": "initialization",
+        "IntentStage": "intent",
+        "CacheStage": "cache",
+        "ToolRoutingStage": "tool_routing",
+        "RAGStage": "rag",
+        "ContextBuildingStage": "context_building",
+        "ProviderPiiRedactionStage": "provider_pii_redaction",
+        "LLMGenerationStage": "llm_generation",
+        "EmotionUpdateStage": "emotion_update",
+        "PersistenceStage": "persistence",
+        "CacheUpdateStage": "cache_update",
+        "BackgroundTaskStage": "background_task",
+    }
+
+    def __init__(
+        self,
+        stages: list[PipelineStage],
+        telemetry: IOperationalTelemetry | None = None,
+    ) -> None:
         self.stages = stages
+        self.telemetry = telemetry or NoopOperationalTelemetry()
 
     async def execute(self, context: ChatContext) -> ChatContext:
-        for stage in self.stages:
-            context = await stage.process(context)
-        return context
+        pipeline_started = monotonic()
+        with self.telemetry.span(
+            TraceOperation.CHAT_PIPELINE, TelemetryDimensions()
+        ) as pipeline_span:
+            try:
+                for stage in self.stages:
+                    stage_name = self._STAGE_NAMES.get(type(stage).__name__, "other")
+                    dimensions = TelemetryDimensions(stage=stage_name)
+                    stage_started = monotonic()
+                    with self.telemetry.span(
+                        TraceOperation.PIPELINE_STAGE, dimensions
+                    ) as stage_span:
+                        try:
+                            context = await stage.process(context)
+                        except BaseException:
+                            stage_span.set_status("error", "unhandled")
+                            raise
+                        else:
+                            stage_span.set_status("ok")
+                        finally:
+                            self.telemetry.observe(
+                                HistogramSignal.PIPELINE_STAGE_DURATION,
+                                monotonic() - stage_started,
+                                dimensions,
+                            )
+            except BaseException:
+                pipeline_span.set_status("error", "unhandled")
+                raise
+            else:
+                pipeline_span.set_status("ok")
+                return context
+            finally:
+                self.telemetry.observe(
+                    HistogramSignal.CHAT_PIPELINE_DURATION,
+                    monotonic() - pipeline_started,
+                    TelemetryDimensions(),
+                )
 
 class ChatEngine:
     """

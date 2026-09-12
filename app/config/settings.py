@@ -3,7 +3,7 @@ from __future__ import annotations
 from functools import lru_cache
 from typing import Literal, Optional
 
-from pydantic import Field, field_validator, model_validator
+from pydantic import Field, HttpUrl, SecretStr, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -207,6 +207,21 @@ class Settings(BaseSettings):
         default="rag06-grounding-v2", min_length=1, max_length=128
     )
 
+    # ── OpenTelemetry / OPS-02 ──
+    OTEL_ENABLED: bool = False
+    OTEL_SERVICE_NAME: str = Field(default="chisa-api", min_length=1, max_length=128)
+    OTEL_EXPORTER_OTLP_ENDPOINT: HttpUrl | None = None
+    OTEL_EXPORTER_OTLP_HEADERS: SecretStr | None = None
+    OTEL_TRACE_SAMPLE_RATIO: float = Field(default=0.05, ge=0.0, le=1.0)
+    OTEL_METRIC_EXPORT_INTERVAL_SECONDS: float = Field(default=30.0, ge=5.0, le=300.0)
+    OTEL_EXPORT_TIMEOUT_SECONDS: float = Field(default=3.0, ge=0.1, le=30.0)
+    OTEL_BSP_MAX_QUEUE_SIZE: int = Field(default=512, ge=64, le=4_096)
+    OTEL_BSP_MAX_EXPORT_BATCH_SIZE: int = Field(default=128, ge=1, le=512)
+    OTEL_BSP_SCHEDULE_DELAY_MS: int = Field(default=5_000, ge=100, le=60_000)
+    OTEL_WORKER_QUEUE_SNAPSHOT_INTERVAL_SECONDS: float = Field(
+        default=30.0, ge=5.0, le=300.0
+    )
+
     # ── Derived Properties ─────────────────────────────────────
     @property
     def is_dev(self) -> bool:
@@ -236,6 +251,10 @@ class Settings(BaseSettings):
             raise ValueError("VISION_MAX_TOTAL_DECODED_BYTES cannot be below the image quota")
         if self.VISION_MAX_IMAGES * max_encoded_image_bytes > self.API_MAX_REQUEST_BODY_BYTES:
             raise ValueError("API_MAX_REQUEST_BODY_BYTES cannot carry the configured image quota")
+        if self.OTEL_BSP_MAX_EXPORT_BATCH_SIZE > self.OTEL_BSP_MAX_QUEUE_SIZE:
+            raise ValueError("OTEL_BSP_MAX_EXPORT_BATCH_SIZE cannot exceed OTEL_BSP_MAX_QUEUE_SIZE")
+        if self.OTEL_ENABLED and self.is_prod and self.OTEL_EXPORTER_OTLP_ENDPOINT is None:
+            raise ValueError("OTEL_EXPORTER_OTLP_ENDPOINT is required when telemetry is enabled")
         if self.is_prod:
             protected_secrets = (
                 self.SECRET_KEY,
