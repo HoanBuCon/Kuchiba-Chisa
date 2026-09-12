@@ -1,8 +1,17 @@
 import math
 import uuid
 from collections.abc import Callable
+from time import monotonic
 from typing import Any
 
+from app.domain.interfaces.observability import (
+    CounterSignal,
+    HistogramSignal,
+    IOperationalTelemetry,
+    NoopOperationalTelemetry,
+    TelemetryDimensions,
+    TraceOperation,
+)
 from app.domain.interfaces.repositories import ILoreParentRepository
 from app.domain.interfaces.reranker import (
     ICrossEncoderReranker,
@@ -33,11 +42,13 @@ class LoreRetriever:
         reranker: KeywordOverlapReranker | None = None,
         lore_parent_repo_factory: Callable[[Any], ILoreParentRepository] | None = None,
         cross_encoder_reranker: ICrossEncoderReranker | None = None,
+        telemetry: IOperationalTelemetry | None = None,
     ):
         self.vector_store = vector_store
         self.reranker = reranker or KeywordOverlapReranker()
         self.lore_parent_repo_factory = lore_parent_repo_factory
         self.cross_encoder_reranker = cross_encoder_reranker
+        self.telemetry = telemetry or NoopOperationalTelemetry()
         self._cross_encoder_fallback = DeterministicRerankerFallback()
 
     @staticmethod
@@ -129,24 +140,38 @@ class LoreRetriever:
         max_token_budget: int | None = None,
         enable_cross_encoder_rerank: bool = True,
     ) -> list[tuple[str, float, dict[str, Any]]]:
+        retrieval_dimensions = TelemetryDimensions(stage="hybrid", dependency="qdrant")
+        retrieval_started = monotonic()
         try:
             if not self.vector_store:
                 return []
-                
-            candidates = await self.vector_store.search_lore(
-                collection=collection,
-                query_vector=query_vector,
-                query_text=query_text,
-                limit=15,
-                score_threshold=score_threshold,
-                entities_filter=entities_filter,
-                requester_subject_id=requester_subject_id,
-                requester_tenant_id=requester_tenant_id,
-                requester_channel_id=requester_channel_id,
+
+            with self.telemetry.span(
+                TraceOperation.RAG_RETRIEVAL, retrieval_dimensions
+            ) as retrieval_span:
+                candidates = await self.vector_store.search_lore(
+                    collection=collection,
+                    query_vector=query_vector,
+                    query_text=query_text,
+                    limit=15,
+                    score_threshold=score_threshold,
+                    entities_filter=entities_filter,
+                    requester_subject_id=requester_subject_id,
+                    requester_tenant_id=requester_tenant_id,
+                    requester_channel_id=requester_channel_id,
+                )
+                retrieval_span.set_status("ok")
+        except Exception as error:
+            log.warning(
+                "Lore parent-child retrieval failed", error_type=type(error).__name__
             )
-        except Exception as e:
-            log.warning("Lore parent-child retrieval failed", collection=collection, error=str(e))
             return []
+        finally:
+            self.telemetry.observe(
+                HistogramSignal.RAG_RETRIEVAL_DURATION,
+                monotonic() - retrieval_started,
+                retrieval_dimensions,
+            )
 
         query_tokens = self.reranker.tokenize(query_text)
         filter_set = set(entities_filter) if entities_filter else set()
@@ -283,7 +308,13 @@ class LoreRetriever:
                 
             if len(lore_chunks) >= top_k:
                 break
-                
+
+        if lore_chunks:
+            self.telemetry.observe(
+                HistogramSignal.RAG_RETRIEVAL_SCORE,
+                float(lore_chunks[0][1]),
+                TelemetryDimensions(stage="hybrid", status="ok"),
+            )
         return lore_chunks
 
     async def _cross_encoder_rerank(
@@ -311,10 +342,21 @@ class LoreRetriever:
             return self._apply_cross_encoder_fallback(scored_candidates, "not_configured")
 
         rerankable = scored_candidates[: RAGTuning.CROSS_ENCODER_CANDIDATE_LIMIT]
+        provider = self.cross_encoder_reranker.provider_name
+        rerank_dimensions = TelemetryDimensions(provider=provider, stage="reranker_total")
         if self._reranker_requires_public_evidence() and not self._all_public(rerankable):
             log.warning(
                 "Remote reranker denied non-public evidence; using deterministic fallback"
             )
+            self.telemetry.count(
+                CounterSignal.RERANKER_PRIVACY_REJECTIONS,
+                TelemetryDimensions(
+                    provider=provider,
+                    stage="provider_http",
+                    failure_class="privacy_rejected",
+                ),
+            )
+            self.telemetry.count(CounterSignal.RERANKER_FALLBACKS, rerank_dimensions)
             return self._apply_cross_encoder_fallback(scored_candidates, "remote_policy")
         documents = [
             str(candidate.get("payload", {}).get("text_content", ""))
@@ -322,19 +364,34 @@ class LoreRetriever:
         ]
         if not all(documents):
             return self._apply_cross_encoder_fallback(scored_candidates, "invalid_candidate")
+        rerank_started = monotonic()
+        self.telemetry.count(CounterSignal.RERANKER_CALLS, rerank_dimensions)
         try:
-            cross_encoder_scores = await self.cross_encoder_reranker.rerank(
-                query_text, documents
-            )
+            with self.telemetry.span(
+                TraceOperation.RAG_RERANK, rerank_dimensions
+            ) as rerank_span:
+                cross_encoder_scores = await self.cross_encoder_reranker.rerank(
+                    query_text, documents
+                )
+                rerank_span.set_status("ok")
         except RerankerUnavailableError as error:
             log.warning(
                 "Cross-encoder reranking unavailable; using deterministic fallback",
                 error_type=type(error).__name__,
                 failure_kind=error.failure_kind.value,
             )
+            fallback_reason = self._provider_failure_reason(error.failure_kind)
+            failure_class = self._provider_failure_class(error.failure_kind)
+            failed_dimensions = TelemetryDimensions(
+                provider=provider,
+                stage="provider_http",
+                failure_class=failure_class,
+            )
+            self.telemetry.count(CounterSignal.RERANKER_ERRORS, failed_dimensions)
+            self.telemetry.count(CounterSignal.RERANKER_FALLBACKS, failed_dimensions)
             return self._apply_cross_encoder_fallback(
                 scored_candidates,
-                self._provider_failure_reason(error.failure_kind),
+                fallback_reason,
             )
         except TimeoutError as error:
             log.warning(
@@ -342,9 +399,22 @@ class LoreRetriever:
                 error_type=type(error).__name__,
                 failure_kind="timeout",
             )
+            failed_dimensions = TelemetryDimensions(
+                provider=provider,
+                stage="provider_http",
+                failure_class="timeout",
+            )
+            self.telemetry.count(CounterSignal.RERANKER_ERRORS, failed_dimensions)
+            self.telemetry.count(CounterSignal.RERANKER_FALLBACKS, failed_dimensions)
             return self._apply_cross_encoder_fallback(
                 scored_candidates,
                 "provider_timeout",
+            )
+        finally:
+            self.telemetry.observe(
+                HistogramSignal.RAG_RERANKER_TOTAL_DURATION,
+                monotonic() - rerank_started,
+                rerank_dimensions,
             )
         if len(cross_encoder_scores) != len(rerankable) or not all(
             math.isfinite(score) for score in cross_encoder_scores
@@ -390,6 +460,16 @@ class LoreRetriever:
             RerankerFailureKind.RATE_LIMIT: "provider_rate_limit",
             RerankerFailureKind.PROVIDER: "provider_unavailable",
             RerankerFailureKind.INVALID_RESPONSE: "provider_invalid_response",
+            RerankerFailureKind.UNAVAILABLE: "provider_unavailable",
+        }[failure_kind]
+
+    @staticmethod
+    def _provider_failure_class(failure_kind: RerankerFailureKind) -> str:
+        return {
+            RerankerFailureKind.TIMEOUT: "timeout",
+            RerankerFailureKind.RATE_LIMIT: "rate_limit",
+            RerankerFailureKind.PROVIDER: "provider_unavailable",
+            RerankerFailureKind.INVALID_RESPONSE: "invalid_response",
             RerankerFailureKind.UNAVAILABLE: "provider_unavailable",
         }[failure_kind]
 

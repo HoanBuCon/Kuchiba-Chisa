@@ -23,6 +23,7 @@ from sqlalchemy import text
 
 # ── Force test environment before any app imports ───────────────────
 os.environ.setdefault("APP_ENV", "test")
+os.environ["OTEL_ENABLED"] = "false"
 os.environ.setdefault(
     "DATABASE_URL", "postgresql+asyncpg://chisa:chisa_test_secret@localhost:55432/chisa_test"
 )

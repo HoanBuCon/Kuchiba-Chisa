@@ -1,0 +1,257 @@
+{
+  "annotations": {
+    "list": []
+  },
+  "editable": false,
+  "panels": [
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "max": 1,
+          "min": 0,
+          "unit": "percentunit"
+        }
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 6,
+        "x": 0,
+        "y": 0
+      },
+      "id": 1,
+      "targets": [
+        {
+          "expr": "1 - (sum(rate(chisa_http_errors_total{chisa_route=~\"/api/v1/chat|/api/v1/chat/stream|/api/v1/community/chat\",chisa_status_class=\"5xx\"}[30d])) / clamp_min(sum(rate(chisa_http_requests_total{chisa_route=~\"/api/v1/chat|/api/v1/chat/stream|/api/v1/community/chat\",chisa_status_class=~\"2xx|3xx|5xx\"}[30d])), 1e-9))",
+          "refId": "A"
+        }
+      ],
+      "title": "Chat admission availability (30d)",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps"
+        }
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 9,
+        "x": 6,
+        "y": 0
+      },
+      "id": 2,
+      "targets": [
+        {
+          "expr": "sum by (chisa_route, chisa_method) (rate(chisa_http_requests_total[$__rate_interval]))",
+          "legendFormat": "{{chisa_method}} {{chisa_route}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Request rate by bounded route template",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps"
+        }
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 9,
+        "x": 15,
+        "y": 0
+      },
+      "id": 3,
+      "targets": [
+        {
+          "expr": "sum by (chisa_route, chisa_status_class) (rate(chisa_http_errors_total[$__rate_interval]))",
+          "legendFormat": "{{chisa_route}} {{chisa_status_class}}",
+          "refId": "A"
+        }
+      ],
+      "title": "HTTP error rate",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s"
+        }
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 12,
+        "x": 0,
+        "y": 6
+      },
+      "id": 4,
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum by (le, chisa_route) (rate(chisa_http_server_duration_seconds_bucket[$__rate_interval])))",
+          "legendFormat": "p95 {{chisa_route}}",
+          "refId": "A"
+        }
+      ],
+      "title": "HTTP total latency p95",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        }
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 6,
+        "x": 12,
+        "y": 6
+      },
+      "id": 5,
+      "targets": [
+        {
+          "expr": "sum(chisa_http_active_requests)",
+          "legendFormat": "requests",
+          "refId": "A"
+        },
+        {
+          "expr": "sum(chisa_http_active_streams)",
+          "legendFormat": "streams",
+          "refId": "B"
+        }
+      ],
+      "title": "Active requests and streams",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops"
+        }
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 6,
+        "x": 18,
+        "y": 6
+      },
+      "id": 6,
+      "targets": [
+        {
+          "expr": "sum by (chisa_failure_class) (increase(chisa_http_sse_disconnects_total[$__rate_interval]))",
+          "legendFormat": "{{chisa_failure_class}}",
+          "refId": "A"
+        }
+      ],
+      "title": "SSE disconnect / cancellation",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "max": 1,
+          "min": 0,
+          "unit": "bool"
+        }
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 12,
+        "x": 0,
+        "y": 13
+      },
+      "id": 7,
+      "targets": [
+        {
+          "expr": "min by (chisa_dependency) (chisa_dependency_available)",
+          "legendFormat": "{{chisa_dependency}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Dependency availability",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        }
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 12,
+        "x": 12,
+        "y": 13
+      },
+      "id": 8,
+      "targets": [
+        {
+          "expr": "sum by (alertname, severity) (ALERTS{alertname=~\"Chisa.*Burn\",alertstate=\"firing\"})",
+          "legendFormat": "{{severity}} {{alertname}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Active SLO burn alerts",
+      "type": "timeseries"
+    }
+  ],
+  "schemaVersion": 39,
+  "tags": [
+    "chisa",
+    "ops-02",
+    "system",
+    "api"
+  ],
+  "templating": {
+    "list": [
+      {
+        "current": {},
+        "label": "Prometheus",
+        "name": "DS_PROMETHEUS",
+        "query": "prometheus",
+        "type": "datasource"
+      }
+    ]
+  },
+  "time": {
+    "from": "now-6h",
+    "to": "now"
+  },
+  "title": "Chisa / System and API",
+  "uid": "chisa-system-api",
+  "version": 1
+}

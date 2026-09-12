@@ -23,6 +23,14 @@ from app.domain.interfaces.llm_provider import (
     LLMTokenOverflowError,
     StructuredPrompt,
 )
+from app.domain.interfaces.observability import (
+    CounterSignal,
+    HistogramSignal,
+    IOperationalTelemetry,
+    NoopOperationalTelemetry,
+    TelemetryDimensions,
+    TraceOperation,
+)
 from app.shared.utils.logger import get_logger
 
 log = get_logger(__name__)
@@ -147,12 +155,14 @@ class LLMGateway(BaseLLMAdapter):
         clock: Callable[[], float] = monotonic,
         sleep: Callable[[float], Awaitable[None]] = asyncio.sleep,
         jitter: Callable[[float, float], float] = random.uniform,
+        telemetry: IOperationalTelemetry | None = None,
     ) -> None:
         self._providers = tuple(providers)
         self._policy = policy
         self._clock = clock
         self._sleep = sleep
         self._jitter = jitter
+        self._telemetry = telemetry or NoopOperationalTelemetry()
         self._breakers: dict[_RouteKey, _Breaker] = {}
         self._bulkheads = {
             provider.provider: asyncio.BoundedSemaphore(provider.concurrency_limit)
@@ -186,8 +196,11 @@ class LLMGateway(BaseLLMAdapter):
             breaker = self._breaker(route_key)
             if not await breaker.permit(self._clock()):
                 last_failure = LLMFailureClass.CIRCUIT_OPEN
+                dimensions = self._dimensions(candidate, prompt, required)
+                self._telemetry.count(CounterSignal.LLM_BREAKER_OPENS, dimensions)
                 candidate_index += 1
                 fallback_used = True
+                self._telemetry.count(CounterSignal.LLM_FALLBACKS, dimensions)
                 continue
 
             if prompt.call_budget.reserve() is None:
@@ -227,10 +240,23 @@ class LLMGateway(BaseLLMAdapter):
                 if next_index is not None:
                     candidate_index = next_index
                     fallback_used = True
+                    self._telemetry.count(
+                        CounterSignal.LLM_FALLBACKS,
+                        self._dimensions(
+                            candidate,
+                            prompt,
+                            required,
+                            fallback_reason=failure.value,
+                        ),
+                    )
                     retry_count = 0
                     continue
                 if self._is_retryable(failure) and retry_count < self._policy.retry_limit:
                     retry_count += 1
+                    self._telemetry.count(
+                        CounterSignal.LLM_RETRIES,
+                        self._dimensions(candidate, prompt, required),
+                    )
                     if not await self._wait_before_retry(prompt, retry_count):
                         last_failure = LLMFailureClass.DEADLINE_EXCEEDED
                         break
@@ -257,14 +283,29 @@ class LLMGateway(BaseLLMAdapter):
         )
 
     async def generate(self, prompt: StructuredPrompt) -> LLMResponse:
-        outcome = await self.execute(prompt)
-        if outcome.status is LLMGatewayStatus.SUCCESS and outcome.response is not None:
-            return outcome.response
-        raise LLMGatewayError(
-            "LLM request unavailable",
-            failure_class=outcome.failure_class or LLMFailureClass.UNKNOWN,
-            degraded=outcome.status is LLMGatewayStatus.DEGRADED,
-        )
+        started = self._clock()
+        dimensions = self._prompt_dimensions(prompt)
+        with self._telemetry.span(TraceOperation.LLM_GENERATION, dimensions) as span:
+            try:
+                outcome = await self.execute(prompt)
+                if outcome.status is LLMGatewayStatus.SUCCESS and outcome.response is not None:
+                    span.set_status("ok")
+                    return outcome.response
+                span.set_status(
+                    "degraded",
+                    (outcome.failure_class or LLMFailureClass.UNKNOWN).value,
+                )
+                raise LLMGatewayError(
+                    "LLM request unavailable",
+                    failure_class=outcome.failure_class or LLMFailureClass.UNKNOWN,
+                    degraded=outcome.status is LLMGatewayStatus.DEGRADED,
+                )
+            finally:
+                self._telemetry.observe(
+                    HistogramSignal.LLM_GENERATION_DURATION,
+                    self._clock() - started,
+                    dimensions,
+                )
 
     async def stream(self, prompt: StructuredPrompt) -> AsyncIterator[str]:
         self._initialize_deadline(prompt)
@@ -286,15 +327,28 @@ class LLMGateway(BaseLLMAdapter):
                 last_failure = LLMFailureClass.DEADLINE_EXCEEDED
                 break
             candidate = candidates[candidate_index]
+            dimensions = self._dimensions(candidate, prompt, required)
             breaker = self._breaker(
                 self._route_key(candidate, prompt, required)
             )
             if not await breaker.permit(self._clock()):
                 last_failure = LLMFailureClass.CIRCUIT_OPEN
+                self._telemetry.count(CounterSignal.LLM_BREAKER_OPENS, dimensions)
                 candidate_index += 1
+                self._telemetry.count(
+                    CounterSignal.LLM_FALLBACKS,
+                    TelemetryDimensions(
+                        provider=candidate.provider,
+                        model_profile=prompt.model_profile,
+                        purpose=prompt.purpose.value,
+                        capability_profile=dimensions.capability_profile,
+                        fallback_reason="circuit_open",
+                    ),
+                )
                 continue
             if prompt.call_budget.reserve() is None:
                 await breaker.release_probe()
+                self._telemetry.count(CounterSignal.LLM_BUDGET_EXHAUSTED, dimensions)
                 raise LLMGatewayError(
                     "LLM call budget exhausted",
                     failure_class=LLMFailureClass.BUDGET_EXHAUSTED,
@@ -303,13 +357,31 @@ class LLMGateway(BaseLLMAdapter):
             attempts += 1
             acquired = False
             emitted = False
+            provider_started: float | None = None
+            provider_span_context = None
+            provider_span = None
             try:
+                bulkhead_started = self._clock()
                 acquired = await self._acquire_bulkhead(candidate, prompt)
+                self._telemetry.observe(
+                    HistogramSignal.LLM_BULKHEAD_WAIT,
+                    self._clock() - bulkhead_started,
+                    dimensions,
+                )
                 if not acquired:
+                    self._telemetry.count(
+                        CounterSignal.LLM_BULKHEAD_REJECTIONS, dimensions
+                    )
                     raise LLMGatewayError(
                         "LLM provider concurrency budget exhausted",
                         failure_class=LLMFailureClass.BULKHEAD_REJECTED,
                     )
+                provider_started = self._clock()
+                provider_span_context = self._telemetry.span(
+                    TraceOperation.LLM_PROVIDER, dimensions
+                )
+                provider_span = provider_span_context.__enter__()
+                self._telemetry.count(CounterSignal.LLM_PROVIDER_CALLS, dimensions)
                 iterator = candidate.adapter.stream(prompt).__aiter__()
                 total_timeout = self._phase_timeout(
                     prompt, self._policy.per_attempt_timeout_seconds
@@ -321,20 +393,42 @@ class LLMGateway(BaseLLMAdapter):
                             prompt, self._policy.first_token_timeout_seconds
                         ),
                     )
+                    self._telemetry.observe(
+                        HistogramSignal.LLM_TTFT,
+                        self._clock() - provider_started,
+                        dimensions,
+                    )
                     emitted = True
                     yield first
                     async for chunk in iterator:
                         yield chunk
                 await breaker.success()
+                provider_span.set_status("ok")
                 return
             except StopAsyncIteration:
                 await breaker.success()
+                if provider_span is not None:
+                    provider_span.set_status("ok")
                 return
             except asyncio.CancelledError:
                 await breaker.release_probe()
+                if provider_span is not None:
+                    provider_span.set_status("cancelled", "client_cancelled")
                 raise
             except Exception as error:
                 last_failure = classify_llm_failure(error)
+                failed_dimensions = self._dimensions(
+                    candidate,
+                    prompt,
+                    required,
+                    failure_class=last_failure.value,
+                )
+                if provider_started is not None:
+                    self._telemetry.count(
+                        CounterSignal.LLM_PROVIDER_ERRORS, failed_dimensions
+                    )
+                if provider_span is not None:
+                    provider_span.set_status("error", last_failure.value)
                 if last_failure in _BREAKER_FAILURES:
                     await breaker.failure(self._clock())
                 else:
@@ -358,6 +452,16 @@ class LLMGateway(BaseLLMAdapter):
                 )
                 if next_index is not None:
                     candidate_index = next_index
+                    self._telemetry.count(
+                        CounterSignal.LLM_FALLBACKS,
+                        TelemetryDimensions(
+                            provider=candidate.provider,
+                            model_profile=prompt.model_profile,
+                            purpose=prompt.purpose.value,
+                            capability_profile=dimensions.capability_profile,
+                            fallback_reason=last_failure.value,
+                        ),
+                    )
                     retry_count = 0
                     continue
                 if (
@@ -365,14 +469,31 @@ class LLMGateway(BaseLLMAdapter):
                     and retry_count < self._policy.retry_limit
                 ):
                     retry_count += 1
+                    self._telemetry.count(CounterSignal.LLM_RETRIES, dimensions)
                     if await self._wait_before_retry(prompt, retry_count):
                         continue
                     last_failure = LLMFailureClass.DEADLINE_EXCEEDED
                 break
             finally:
+                if provider_started is not None:
+                    self._telemetry.observe(
+                        HistogramSignal.LLM_PROVIDER_DURATION,
+                        self._clock() - provider_started,
+                        dimensions,
+                    )
+                if provider_span_context is not None:
+                    provider_span_context.__exit__(None, None, None)
                 if acquired:
                     self._bulkheads[candidate.provider].release()
 
+        self._telemetry.count(
+            CounterSignal.LLM_DEGRADED,
+            TelemetryDimensions(
+                model_profile=prompt.model_profile,
+                purpose=prompt.purpose.value,
+                failure_class=last_failure.value,
+            ),
+        )
         raise LLMGatewayError(
             "All compatible streaming LLM providers failed",
             failure_class=last_failure,
@@ -476,21 +597,107 @@ class LLMGateway(BaseLLMAdapter):
             tuple(sorted(capabilities, key=lambda item: item.value)),
         )
 
+    @staticmethod
+    def _dimensions(
+        candidate: ProviderModel,
+        prompt: StructuredPrompt,
+        capabilities: frozenset[LLMCapability],
+        *,
+        fallback_reason: str | None = None,
+        failure_class: str | None = None,
+    ) -> TelemetryDimensions:
+        return TelemetryDimensions(
+            provider=candidate.provider,
+            model_profile=prompt.model_profile,
+            purpose=prompt.purpose.value,
+            capability_profile="+".join(sorted(item.value for item in capabilities)),
+            fallback_reason=fallback_reason,
+            failure_class=failure_class,
+        )
+
+    @staticmethod
+    def _prompt_dimensions(prompt: StructuredPrompt) -> TelemetryDimensions:
+        return TelemetryDimensions(
+            model_profile=prompt.model_profile,
+            purpose=prompt.purpose.value,
+        )
+
     async def _invoke(
         self, candidate: ProviderModel, prompt: StructuredPrompt
     ) -> LLMResponse:
+        capabilities = self._required_capabilities(prompt, streaming=False)
+        dimensions = self._dimensions(candidate, prompt, capabilities)
+        bulkhead_started = self._clock()
         acquired = await self._acquire_bulkhead(candidate, prompt)
+        self._telemetry.observe(
+            HistogramSignal.LLM_BULKHEAD_WAIT,
+            self._clock() - bulkhead_started,
+            dimensions,
+        )
         if not acquired:
+            self._telemetry.count(CounterSignal.LLM_BULKHEAD_REJECTIONS, dimensions)
             raise LLMGatewayError(
                 "LLM provider concurrency budget exhausted",
                 failure_class=LLMFailureClass.BULKHEAD_REJECTED,
             )
+        provider_started = self._clock()
+        self._telemetry.count(CounterSignal.LLM_PROVIDER_CALLS, dimensions)
         try:
-            return await asyncio.wait_for(
-                candidate.adapter.generate(prompt),
-                timeout=self._phase_timeout(prompt, self._policy.per_attempt_timeout_seconds),
-            )
+            with self._telemetry.span(TraceOperation.LLM_PROVIDER, dimensions) as span:
+                try:
+                    response = await asyncio.wait_for(
+                        candidate.adapter.generate(prompt),
+                        timeout=self._phase_timeout(
+                            prompt, self._policy.per_attempt_timeout_seconds
+                        ),
+                    )
+                except asyncio.CancelledError:
+                    span.set_status("cancelled", "client_cancelled")
+                    raise
+                except Exception as error:
+                    failure = classify_llm_failure(error)
+                    failed_dimensions = self._dimensions(
+                        candidate,
+                        prompt,
+                        capabilities,
+                        failure_class=failure.value,
+                    )
+                    self._telemetry.count(
+                        CounterSignal.LLM_PROVIDER_ERRORS, failed_dimensions
+                    )
+                    span.set_status("error", failure.value)
+                    raise
+                else:
+                    span.set_status("ok")
+                    if response.input_tokens:
+                        self._telemetry.count(
+                            CounterSignal.LLM_TOKENS,
+                            TelemetryDimensions(
+                                provider=candidate.provider,
+                                model_profile=prompt.model_profile,
+                                purpose=prompt.purpose.value,
+                                token_type="input",
+                            ),
+                            response.input_tokens,
+                        )
+                    if response.output_tokens:
+                        self._telemetry.count(
+                            CounterSignal.LLM_TOKENS,
+                            TelemetryDimensions(
+                                provider=candidate.provider,
+                                model_profile=prompt.model_profile,
+                                purpose=prompt.purpose.value,
+                                token_type="output",
+                            ),
+                            response.output_tokens,
+                        )
+                    return response
         finally:
+            self._telemetry.observe(
+                HistogramSignal.LLM_PROVIDER_DURATION,
+                self._clock() - provider_started,
+                dimensions,
+            )
             self._bulkheads[candidate.provider].release()
 
     async def _acquire_bulkhead(
@@ -547,8 +754,8 @@ class LLMGateway(BaseLLMAdapter):
     def _is_retryable(failure: LLMFailureClass) -> bool:
         return failure in _BREAKER_FAILURES
 
-    @staticmethod
     def _degraded(
+        self,
         prompt: StructuredPrompt,
         failure: LLMFailureClass,
         message: str,
@@ -568,6 +775,15 @@ class LLMGateway(BaseLLMAdapter):
             LLMFailureClass.AUTH_CONFIG,
             LLMFailureClass.TOKEN_OVERFLOW,
         }
+        dimensions = TelemetryDimensions(
+            provider=provider,
+            model_profile=prompt.model_profile,
+            purpose=prompt.purpose.value,
+            failure_class=failure.value,
+        )
+        self._telemetry.count(CounterSignal.LLM_DEGRADED, dimensions)
+        if failure is LLMFailureClass.BUDGET_EXHAUSTED:
+            self._telemetry.count(CounterSignal.LLM_BUDGET_EXHAUSTED, dimensions)
         return LLMGatewayOutcome(
             status=(
                 LLMGatewayStatus.FAILURE

@@ -10,6 +10,13 @@ from typing import Any
 
 import httpx
 
+from app.domain.interfaces.observability import (
+    HistogramSignal,
+    IOperationalTelemetry,
+    NoopOperationalTelemetry,
+    TelemetryDimensions,
+    TraceOperation,
+)
 from app.domain.interfaces.reranker import (
     RerankerDataBoundary,
     RerankerFailureKind,
@@ -52,6 +59,7 @@ class ApiCrossEncoderReranker:
         max_documents: int,
         http_client: httpx.AsyncClient,
         pii_redactor: PiiRedactor | None = None,
+        telemetry: IOperationalTelemetry | None = None,
     ) -> None:
         if not api_key.strip():
             raise ValueError("reranker API key is required")
@@ -68,12 +76,17 @@ class ApiCrossEncoderReranker:
         self._max_documents = max_documents
         self._http_client = http_client
         self._pii_redactor = pii_redactor or PiiRedactor()
+        self._telemetry = telemetry or NoopOperationalTelemetry()
         self._last_http_latency_ms: float | None = None
 
     @property
     def last_http_latency_ms(self) -> float | None:
         """Latency of the latest successfully validated provider response."""
         return self._last_http_latency_ms
+
+    @property
+    def provider_name(self) -> str:
+        return self._provider.value
 
     async def rerank(self, query: str, documents: Sequence[str]) -> list[float]:
         """Return one finite score per document or a typed unavailable result."""
@@ -104,18 +117,32 @@ class ApiCrossEncoderReranker:
             payload["return_documents"] = False
 
         request_started = time.perf_counter()
+        dimensions = TelemetryDimensions(
+            provider=self._provider.value, stage="provider_http"
+        )
         try:
-            response = await self._http_client.post(
-                self._ENDPOINTS[self._provider],
-                headers={
-                    "Authorization": f"Bearer {self._api_key}",
-                    "Content-Type": "application/json",
-                },
-                json=payload,
-                timeout=self._timeout_seconds,
-            )
-            response.raise_for_status()
-            response_payload = response.json()
+            with self._telemetry.span(TraceOperation.RAG_RERANK, dimensions) as span:
+                response = await self._http_client.post(
+                    self._ENDPOINTS[self._provider],
+                    headers={
+                        "Authorization": f"Bearer {self._api_key}",
+                        "Content-Type": "application/json",
+                    },
+                    json=payload,
+                    timeout=self._timeout_seconds,
+                )
+                response.raise_for_status()
+                response_payload = response.json()
+                scores = self._parse_scores(response_payload, len(documents))
+                elapsed_seconds = time.perf_counter() - request_started
+                self._last_http_latency_ms = elapsed_seconds * 1000
+                self._telemetry.observe(
+                    HistogramSignal.RAG_RERANKER_DURATION,
+                    elapsed_seconds,
+                    dimensions,
+                )
+                span.set_status("ok")
+                return scores
         except httpx.TimeoutException as error:
             raise RerankerUnavailableError(
                 "remote reranker timed out",
@@ -141,15 +168,11 @@ class ApiCrossEncoderReranker:
                 failure_kind=RerankerFailureKind.INVALID_RESPONSE,
             ) from error
 
-        try:
-            scores = self._parse_scores(response_payload, len(documents))
         except RerankerUnavailableError as error:
             raise RerankerUnavailableError(
                 "remote reranker returned an invalid response",
                 failure_kind=RerankerFailureKind.INVALID_RESPONSE,
             ) from error
-        self._last_http_latency_ms = (time.perf_counter() - request_started) * 1000
-        return scores
 
     def _parse_scores(self, response_payload: object, expected_count: int) -> list[float]:
         if not isinstance(response_payload, dict):

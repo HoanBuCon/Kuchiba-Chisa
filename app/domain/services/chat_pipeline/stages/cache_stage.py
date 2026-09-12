@@ -9,6 +9,12 @@ from pydantic import ValidationError
 
 from app.domain.interfaces.cache_provider import ICacheProvider
 from app.domain.interfaces.lore_corpus_identity import ILoreCorpusIdentityProvider
+from app.domain.interfaces.observability import (
+    CounterSignal,
+    IOperationalTelemetry,
+    NoopOperationalTelemetry,
+    TelemetryDimensions,
+)
 from app.domain.interfaces.tracker import IPipelineTracker
 from app.domain.services.chat_pipeline.context import ChatContext
 from app.domain.services.chat_pipeline.stage import PipelineStage
@@ -32,12 +38,14 @@ class CacheStage(PipelineStage):
         contract: LoreAnswerCacheContract,
         pipeline_tracker: IPipelineTracker | None = None,
         clock: Callable[[], float] = time,
+        telemetry: IOperationalTelemetry | None = None,
     ) -> None:
         self.cache = cache
         self.corpus_identity_provider = corpus_identity_provider
         self.contract = contract
         self.pipeline_tracker = pipeline_tracker
         self.clock = clock
+        self.telemetry = telemetry or NoopOperationalTelemetry()
 
     async def process(self, context: ChatContext) -> ChatContext:
         if (
@@ -86,6 +94,10 @@ class CacheStage(PipelineStage):
 
     def _track(self, context: ChatContext, outcome: str) -> ChatContext:
         context.lore_cache_outcome = outcome
+        self.telemetry.count(
+            CounterSignal.CACHE_OPERATIONS,
+            TelemetryDimensions(cache_outcome=outcome, status="read"),
+        )
         if self.pipeline_tracker:
             self.pipeline_tracker.add_step(
                 name="cache_check",

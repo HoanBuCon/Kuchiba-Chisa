@@ -7,12 +7,17 @@ from typing import Any
 
 import httpx
 import pytest
+from opentelemetry.sdk.metrics import MeterProvider
+from opentelemetry.sdk.metrics.export import InMemoryMetricReader
+from opentelemetry.sdk.trace import TracerProvider
 
+from app.domain.interfaces.observability import HistogramSignal
 from app.domain.interfaces.reranker import (
     RerankerDataBoundary,
     RerankerFailureKind,
     RerankerUnavailableError,
 )
+from app.infrastructure.observability.otel import OpenTelemetryOperationalTelemetry
 from app.infrastructure.rag.api_cross_encoder_reranker import (
     ApiCrossEncoderReranker,
     ApiRerankerProvider,
@@ -34,6 +39,11 @@ async def test_remote_adapter_reconstructs_scores_in_input_order(
     expected_url: str,
 ) -> None:
     received: dict[str, Any] = {}
+    metric_reader = InMemoryMetricReader()
+    telemetry = OpenTelemetryOperationalTelemetry(
+        TracerProvider().get_tracer("reranker-http-test"),
+        MeterProvider(metric_readers=(metric_reader,)).get_meter("reranker-http-test"),
+    )
 
     def handler(request: httpx.Request) -> httpx.Response:
         received["url"] = str(request.url)
@@ -57,6 +67,7 @@ async def test_remote_adapter_reconstructs_scores_in_input_order(
             timeout_seconds=1.0,
             max_documents=15,
             http_client=client,
+            telemetry=telemetry,
         )
         scores = await reranker.rerank("query", ["first", "second"])
 
@@ -73,6 +84,15 @@ async def test_remote_adapter_reconstructs_scores_in_input_order(
     assert ("return_documents" in received["json"]) is (
         provider is ApiRerankerProvider.JINA
     )
+    metric_data = metric_reader.get_metrics_data()
+    assert metric_data is not None
+    metric_names = {
+        metric.name
+        for resource in metric_data.resource_metrics
+        for scope in resource.scope_metrics
+        for metric in scope.metrics
+    }
+    assert HistogramSignal.RAG_RERANKER_DURATION.value in metric_names
 
 
 @pytest.mark.asyncio
