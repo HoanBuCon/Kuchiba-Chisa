@@ -12,6 +12,7 @@ from app.domain.models.privacy import MemoryPrivacyPolicy
 from app.domain.services.attachment_manifest import AttachmentManifest
 from app.domain.services.context_budget_manager import BudgetAudit
 from app.domain.services.guardrails.injection_guard import InjectionAssessment
+from app.domain.services.lore_answer_cache import LoreAnswerCacheIdentity
 from app.domain.services.rag import RAGContext
 
 
@@ -105,6 +106,8 @@ class ChatContext:
     chisa_reply: str = ""
     citation_ids: list[str] = field(default_factory=list)
     is_cached_answer: bool = False
+    lore_cache_identity: LoreAnswerCacheIdentity | None = None
+    lore_cache_outcome: str = "bypass"
     guardrail_assessment: InjectionAssessment | None = None
     memory_privacy_policy: MemoryPrivacyPolicy = field(default_factory=MemoryPrivacyPolicy)
     provider_pii_redaction_counts: dict[str, int] = field(default_factory=dict)

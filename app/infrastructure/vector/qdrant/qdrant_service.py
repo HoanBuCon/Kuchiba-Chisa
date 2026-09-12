@@ -29,6 +29,7 @@ from qdrant_client.http.models import (
 from app.config.settings import settings
 from app.domain.entities.memory import MemoryPayload, MemoryTier
 from app.domain.interfaces.corpus_publisher import CorpusPublication
+from app.domain.interfaces.lore_corpus_identity import LoreCorpusIdentity
 from app.domain.models.corpus_manifest import LoreManifestRow, lore_manifest_checksum
 from app.domain.models.corpus_release import CorpusRelease
 from app.domain.models.corpus_safety_exception import CorpusSafetyProvenance
@@ -380,6 +381,27 @@ class QdrantService(IVectorStore):
             if alias.alias_name == alias_name:
                 return alias.collection_name
         return None
+
+    async def active_lore_corpus_identity(self) -> LoreCorpusIdentity | None:
+        """Resolve all managed lore aliases from one authoritative Qdrant snapshot."""
+        logical_collections = (
+            COLLECTION_CHARACTER_LORE,
+            COLLECTION_WORLD_LORE,
+            COLLECTION_STORY_LORE,
+        )
+        aliases = await self._client.get_aliases()
+        resolved = {alias.alias_name: alias.collection_name for alias in aliases.aliases}
+        targets: list[tuple[str, str]] = []
+        for logical in logical_collections:
+            target = resolved.get(active_collection_alias(logical))
+            prefix = f"{logical}__"
+            if target is None or not target.startswith(prefix):
+                return None
+            version = target.removeprefix(prefix)
+            if not _VERSION_COMPONENT.fullmatch(version) or version == "active":
+                return None
+            targets.append((logical, target))
+        return LoreCorpusIdentity(alias_targets=tuple(sorted(targets)))
 
     async def promote_active_alias(
         self,

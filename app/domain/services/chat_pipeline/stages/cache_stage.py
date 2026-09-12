@@ -1,24 +1,43 @@
-import hashlib
-from typing import Optional
+"""Read a versioned, authorization-bound final lore answer cache entry."""
+
+from __future__ import annotations
+
+from collections.abc import Callable
+from time import time
+
+from pydantic import ValidationError
 
 from app.domain.interfaces.cache_provider import ICacheProvider
+from app.domain.interfaces.lore_corpus_identity import ILoreCorpusIdentityProvider
 from app.domain.interfaces.tracker import IPipelineTracker
 from app.domain.services.chat_pipeline.context import ChatContext
 from app.domain.services.chat_pipeline.stage import PipelineStage
 from app.domain.services.guardrails.injection_guard import GuardAction
-from app.domain.services.intent_classifier import ChatIntent
+from app.domain.services.lore_answer_cache import (
+    LoreAnswerCacheContract,
+    LoreAnswerCacheEntry,
+)
 from app.shared.utils.logger import get_logger
 
 log = get_logger(__name__)
 
+
 class CacheStage(PipelineStage):
-    """
-    Stage 3: Checks Redis for a cached answer if the query is purely LORE.
-    If a cache hit occurs, flags the context so subsequent heavy stages are skipped.
-    """
-    def __init__(self, cache: ICacheProvider, pipeline_tracker: Optional[IPipelineTracker] = None):
+    """Use only current-format answers whose version and ACL receipt still match."""
+
+    def __init__(
+        self,
+        cache: ICacheProvider,
+        corpus_identity_provider: ILoreCorpusIdentityProvider,
+        contract: LoreAnswerCacheContract,
+        pipeline_tracker: IPipelineTracker | None = None,
+        clock: Callable[[], float] = time,
+    ) -> None:
         self.cache = cache
+        self.corpus_identity_provider = corpus_identity_provider
+        self.contract = contract
         self.pipeline_tracker = pipeline_tracker
+        self.clock = clock
 
     async def process(self, context: ChatContext) -> ChatContext:
         if (
@@ -26,47 +45,61 @@ class CacheStage(PipelineStage):
             and context.guardrail_assessment.action is GuardAction.BLOCK
         ):
             return context
-        cache_key = None
-        is_lore_only = len(context.intents) == 1 and context.intents[0] == ChatIntent.LORE and not context.is_small_talk and not context.has_images
-        
-        # Only cache if intent is exclusively LORE (no SYSTEM_ACTION or MEMORY or Images)
-        if is_lore_only:
-            from app.shared.utils.fallback_detector import is_fallback_reply
-            query_hash = hashlib.md5(context.cleaned_query.encode()).hexdigest()
-            cache_key = f"chisa:answer_cache:lore:{query_hash}"
-            cached_answer = await self.cache.get(cache_key)
-            if cached_answer:
-                if is_fallback_reply(cached_answer):
-                    log.warning("Lore cache contains fallback/error reply. Invalidating key", cache_key=cache_key)
-                    await self.cache.delete(cache_key)
-                else:
-                    log.info("Answer cache hit", cache_key=cache_key)
-                    context.is_cached_answer = True
-                    context.chisa_reply = cached_answer
+        if not self.contract.request_is_eligible(context):
+            return self._track(context, "bypass")
 
+        try:
+            corpus = await self.corpus_identity_provider.active_lore_corpus_identity()
+        except Exception as error:
+            log.warning("Lore cache corpus identity unavailable", error_type=type(error).__name__)
+            return self._track(context, "unavailable")
+        if corpus is None:
+            return self._track(context, "corpus_unavailable")
+
+        identity = self.contract.identity(context, corpus)
+        context.lore_cache_identity = identity
+        try:
+            raw = await self.cache.get(identity.key)
+        except Exception as error:
+            log.warning("Lore answer cache read unavailable", error_type=type(error).__name__)
+            return self._track(context, "unavailable")
+        if raw is None:
+            return self._track(context, "miss")
+        try:
+            entry = LoreAnswerCacheEntry.model_validate_json(raw)
+        except (ValidationError, ValueError, TypeError):
+            return self._track(context, "malformed")
+
+        outcome = self.contract.validate_entry(entry, identity, context, now=self.clock())
+        if outcome != "hit":
+            return self._track(context, outcome)
+
+        context.is_cached_answer = True
+        context.chisa_reply = entry.answer
+        context.citation_ids = [citation.evidence_id for citation in entry.citations]
+        context.tool_res = {
+            "grounding": {"status": "verified", "source": "validated_cache_receipt"},
+            "cache": {"schema_version": entry.schema_version, "outcome": "hit"},
+        }
+        log.info("Lore answer cache hit", cache_identity=identity.digest[:12])
+        return self._track(context, "hit")
+
+    def _track(self, context: ChatContext, outcome: str) -> ChatContext:
+        context.lore_cache_outcome = outcome
         if self.pipeline_tracker:
-            hit = bool(context.is_cached_answer)
-            status_val = "cached" if hit else "skipped"
-            sub_title = "⚡ Cache HIT (Bỏ qua RAG & trả lời tức thì)" if hit else (
-                "⚪ Cache MISS (Chuyển tiếp RAG Pipeline)" if is_lore_only else "⚪ Bỏ qua Cache (Non-Lore query)"
-            )
             self.pipeline_tracker.add_step(
                 name="cache_check",
                 stage_id="stage_3_cache",
                 depth=0,
                 category="stage_root",
-                status=status_val,
-                title="Stage 3: [CACHE] Kiểm tra Bộ nhớ đệm (Redis Answer Cache)",
-                subtitle=sub_title,
+                status="cached" if outcome == "hit" else "skipped",
+                title="Stage 3: [CACHE] Versioned lore answer cache",
+                subtitle=f"Cache outcome: {outcome}",
                 data={
-                    "hit": hit,
-                    "is_hit": hit,
-                    "cache_key": cache_key,
-                    "cached_answer": context.chisa_reply if hit else None,
-                    "is_lore_only": is_lore_only,
-                    "status": "hit" if hit else "miss",
-                }
+                    "hit": outcome == "hit",
+                    "is_hit": outcome == "hit",
+                    "outcome": outcome,
+                    "cache_schema": "lore-answer-v2",
+                },
             )
-                
         return context
-

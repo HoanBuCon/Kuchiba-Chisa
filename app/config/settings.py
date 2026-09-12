@@ -199,6 +199,13 @@ class Settings(BaseSettings):
     LLM_LOG_MAX_BYTES: int = 10 * 1024 * 1024  # 10 MB default
     LLM_LOG_BACKUP_COUNT: int = 5
     PIPELINE_TRACE_TTL_SECONDS: int = Field(default=3_600, ge=60, le=2_592_000)
+    LORE_ANSWER_CACHE_TTL_SECONDS: int = Field(default=86_400, ge=60, le=604_800)
+    LORE_ANSWER_CACHE_PROMPT_VERSION: str = Field(
+        default="context-builder-v1", min_length=1, max_length=128
+    )
+    LORE_ANSWER_CACHE_GROUNDING_VERSION: str = Field(
+        default="rag06-grounding-v2", min_length=1, max_length=128
+    )
 
     # ── Derived Properties ─────────────────────────────────────
     @property
