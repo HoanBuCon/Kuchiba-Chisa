@@ -14,8 +14,14 @@ from app.infrastructure.cache.redis.redis_service import redis_service
 from app.infrastructure.database.engine import connect_database, disconnect_database
 from app.infrastructure.llm.gateway_factory import validate_llm_configuration
 from app.infrastructure.logging.logger import configure_logging, get_logger
+from app.infrastructure.observability import (
+    configure_observability,
+    operational_telemetry,
+    shutdown_observability,
+)
 from app.infrastructure.vector.qdrant.qdrant_service import qdrant_service
 from app.interface.api.routes import admin_ingestion, auth, chat, community, health
+from app.interface.middlewares.observability import ObservabilityMiddleware
 from app.interface.middlewares.rate_limiter import RateLimitMiddleware
 from app.interface.middlewares.request_body_limit import RequestBodyLimitMiddleware
 from app.shared.utils.background_tasks import BackgroundTaskManager
@@ -40,6 +46,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     Shutdown: gracefully close all connections.
     """
     log.info("[Chisa] Chisa API starting up...", env=settings.APP_ENV)
+    configure_observability(settings)
 
     # ── Startup ──────────────────────────────────────────────────
     startup_errors: list[str] = []
@@ -109,6 +116,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     await disconnect_database()
     await redis_service.disconnect()
     await qdrant_service.disconnect()
+    shutdown_observability()
 
     from app.application.dependencies import container
 
@@ -151,6 +159,7 @@ def create_app() -> FastAPI:
     # ── Rate Limiting ────────────────────────────────────────────────
     app.add_middleware(RateLimitMiddleware)
     app.add_middleware(RequestBodyLimitMiddleware)
+    app.add_middleware(ObservabilityMiddleware, telemetry=operational_telemetry)
 
     # ── Routes ───────────────────────────────────────────────────
     app.include_router(health.router, tags=["System"])

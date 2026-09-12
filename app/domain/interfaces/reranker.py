@@ -45,6 +45,11 @@ class ICrossEncoderReranker(Protocol):
         """State whether this adapter sends evidence outside the deployment boundary."""
         ...
 
+    @property
+    def provider_name(self) -> str:
+        """Return a bounded operational provider identifier."""
+        ...
+
     async def rerank(self, query: str, documents: Sequence[str]) -> list[float]:
         """Return one finite score per supplied document, in the same order."""
         ...

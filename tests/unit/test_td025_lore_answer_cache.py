@@ -10,6 +10,10 @@ import pytest
 from app.config.settings import settings
 from app.domain.interfaces.llm_provider import LLMCallBudget, StructuredPrompt
 from app.domain.interfaces.lore_corpus_identity import LoreCorpusIdentity
+from app.domain.interfaces.observability import (
+    CounterSignal,
+    TelemetryDimensions,
+)
 from app.domain.models.evidence import (
     Evidence,
     EvidenceAccess,
@@ -188,6 +192,78 @@ async def test_same_identity_hits_and_retains_server_citations_without_provider_
     provider = SimpleNamespace(execute=AsyncMock(side_effect=AssertionError("provider called")))
     await LLMGenerationStage(llm=provider).process(result)
     provider.execute.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_cache_read_hit_and_miss_outcomes_are_observable() -> None:
+    cache = MemoryCache()
+    contract = _contract()
+    await _write(cache, _context(), contract)
+    telemetry = MagicMock()
+
+    await CacheStage(
+        cache,
+        CorpusProvider(),
+        contract,
+        clock=lambda: NOW + 1,
+        telemetry=telemetry,
+    ).process(_context())
+    await CacheStage(
+        MemoryCache(),
+        CorpusProvider(),
+        contract,
+        clock=lambda: NOW + 1,
+        telemetry=telemetry,
+    ).process(_context())
+
+    telemetry.count.assert_any_call(
+        CounterSignal.CACHE_OPERATIONS,
+        TelemetryDimensions(cache_outcome="hit", status="read"),
+    )
+    telemetry.count.assert_any_call(
+        CounterSignal.CACHE_OPERATIONS,
+        TelemetryDimensions(cache_outcome="miss", status="read"),
+    )
+
+
+@pytest.mark.asyncio
+async def test_cache_stale_version_and_write_outcomes_are_observable() -> None:
+    cache = MemoryCache()
+    contract = _contract()
+    telemetry = MagicMock()
+    provider = CorpusProvider("v1")
+    stale = _context()
+    await CacheStage(cache, provider, contract, clock=lambda: NOW).process(stale)
+    _grounded(stale)
+    provider.version = "v2"
+
+    await CacheUpdateStage(
+        cache,
+        provider,
+        contract,
+        clock=lambda: NOW,
+        telemetry=telemetry,
+    ).process(stale)
+
+    writable = _context()
+    writable.lore_cache_identity = contract.identity(writable, _corpus())
+    _grounded(writable)
+    await CacheUpdateStage(
+        cache,
+        CorpusProvider(),
+        contract,
+        clock=lambda: NOW,
+        telemetry=telemetry,
+    ).process(writable)
+
+    telemetry.count.assert_any_call(
+        CounterSignal.CACHE_OPERATIONS,
+        TelemetryDimensions(cache_outcome="stale_version", status="write"),
+    )
+    telemetry.count.assert_any_call(
+        CounterSignal.CACHE_OPERATIONS,
+        TelemetryDimensions(cache_outcome="write", status="write"),
+    )
 
 
 @pytest.mark.asyncio

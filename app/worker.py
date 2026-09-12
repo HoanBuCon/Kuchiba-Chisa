@@ -11,6 +11,11 @@ import uuid
 from app.application.background.worker import DurableBackgroundWorker
 from app.application.dependencies import container
 from app.config.settings import settings
+from app.domain.interfaces.observability import (
+    CounterSignal,
+    GaugeSignal,
+    TelemetryDimensions,
+)
 from app.domain.models.background_job import BackgroundJobType
 from app.domain.services.community.topic_summarizer import CommunityTopicSummarizer
 from app.domain.services.visual_memory_ingestion import VisualMemoryIngestionWorker
@@ -31,6 +36,11 @@ from app.infrastructure.database.engine import (
     disconnect_database,
 )
 from app.infrastructure.logging.logger import configure_logging, get_logger
+from app.infrastructure.observability import (
+    configure_observability,
+    operational_telemetry,
+    shutdown_observability,
+)
 from app.infrastructure.vector.qdrant.qdrant_service import qdrant_service
 
 log = get_logger(__name__)
@@ -39,6 +49,7 @@ log = get_logger(__name__)
 async def run_worker() -> None:
     """Validate dependencies, run bounded work, and drain safely on termination."""
     configure_logging()
+    configure_observability(settings)
     await connect_database()
     if not await redis_service.health_check():
         raise RuntimeError("Redis health check failed for durable worker")
@@ -85,6 +96,10 @@ async def run_worker() -> None:
         lease_seconds=settings.WORKER_LEASE_SECONDS,
         poll_seconds=settings.WORKER_POLL_SECONDS,
         shutdown_grace_seconds=settings.WORKER_SHUTDOWN_GRACE_SECONDS,
+        queue_snapshot_interval_seconds=(
+            settings.OTEL_WORKER_QUEUE_SNAPSHOT_INTERVAL_SECONDS
+        ),
+        telemetry=operational_telemetry,
     )
     loop = asyncio.get_running_loop()
     for signal_name in (signal.SIGINT, signal.SIGTERM):
@@ -101,29 +116,48 @@ async def run_worker() -> None:
         await disconnect_database()
         if "http_client" in container.__dict__:
             await container.http_client.aclose()
+        shutdown_observability()
         log.info("Durable background worker stopped")
 
 
 async def replay_dead_letter(job_id: uuid.UUID, actor: str) -> None:
     """Explicit operator action; the durable record retains actor and timestamp."""
     configure_logging()
+    configure_observability(settings)
     await connect_database()
     try:
         await container.background_job_queue.replay_dead_letter(
             job_id=job_id,
             actor=actor,
         )
+        operational_telemetry.count(
+            CounterSignal.WORKER_REPLAYS,
+            TelemetryDimensions(status="succeeded"),
+        )
         log.info("Dead-letter job scheduled for replay", job_id=str(job_id), actor=actor)
     finally:
         await disconnect_database()
+        shutdown_observability()
 
 
 async def report_queue_status() -> None:
     """Emit content-free queue lag/state for operator monitoring."""
     configure_logging()
+    configure_observability(settings)
     await connect_database()
     try:
         snapshot = await container.background_job_queue.snapshot()
+        for status, count in snapshot.counts.items():
+            operational_telemetry.set_gauge(
+                GaugeSignal.WORKER_QUEUE_DEPTH,
+                count,
+                TelemetryDimensions(status=status.value),
+            )
+        operational_telemetry.set_gauge(
+            GaugeSignal.WORKER_QUEUE_OLDEST_READY_AGE,
+            snapshot.oldest_ready_age_seconds or 0.0,
+            TelemetryDimensions(),
+        )
         log.info(
             "Durable background queue status",
             counts={status.value: count for status, count in snapshot.counts.items()},
@@ -132,6 +166,7 @@ async def report_queue_status() -> None:
         )
     finally:
         await disconnect_database()
+        shutdown_observability()
 
 
 def main() -> None:

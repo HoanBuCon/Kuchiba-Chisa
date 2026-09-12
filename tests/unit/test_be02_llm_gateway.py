@@ -6,6 +6,9 @@ from unittest.mock import AsyncMock, MagicMock
 
 import httpx
 import pytest
+from opentelemetry.sdk.metrics import MeterProvider
+from opentelemetry.sdk.metrics.export import InMemoryMetricReader
+from opentelemetry.sdk.trace import TracerProvider
 
 from app.application.llm_gateway import (
     BreakerState,
@@ -28,11 +31,13 @@ from app.domain.interfaces.llm_provider import (
     LLMTimeoutError,
     StructuredPrompt,
 )
+from app.domain.interfaces.observability import CounterSignal, IOperationalTelemetry
 from app.domain.services.rag.thinking_loop import ThinkingLoopAgent
 from app.infrastructure.llm.adapters.deepseek import DeepSeekAdapter
 from app.infrastructure.llm.adapters.gemini import GeminiAdapter
 from app.infrastructure.llm.adapters.groq import GroqAdapter
 from app.infrastructure.llm.gateway_factory import validate_llm_configuration
+from app.infrastructure.observability.otel import OpenTelemetryOperationalTelemetry
 
 
 class FakeAdapter(BaseLLMAdapter):
@@ -157,6 +162,7 @@ def _gateway(
     bulkhead_wait: float = 0.01,
     retry_limit: int = 1,
     clock=None,
+    telemetry: IOperationalTelemetry | None = None,
 ) -> LLMGateway:
     policy = LLMGatewayPolicy(
         primary_provider=primary,
@@ -172,7 +178,67 @@ def _gateway(
         breaker_recovery_seconds=recovery,
     )
     kwargs = {"clock": clock} if clock is not None else {}
-    return LLMGateway(providers, policy, jitter=lambda _start, _end: 0.0, **kwargs)
+    return LLMGateway(
+        providers,
+        policy,
+        jitter=lambda _start, _end: 0.0,
+        telemetry=telemetry,
+        **kwargs,
+    )
+
+
+def _ops_telemetry() -> tuple[OpenTelemetryOperationalTelemetry, InMemoryMetricReader]:
+    reader = InMemoryMetricReader()
+    meter_provider = MeterProvider(metric_readers=(reader,))
+    telemetry = OpenTelemetryOperationalTelemetry(
+        TracerProvider().get_tracer("be02-ops02-test"),
+        meter_provider.get_meter("be02-ops02-test"),
+    )
+    return telemetry, reader
+
+
+def _metric_sum(reader: InMemoryMetricReader, signal: CounterSignal) -> int:
+    data = reader.get_metrics_data()
+    assert data is not None
+    metric = next(
+        metric
+        for resource in data.resource_metrics
+        for scope in resource.scope_metrics
+        for metric in scope.metrics
+        if metric.name == signal.value
+    )
+    return sum(int(point.value) for point in metric.data.data_points)
+
+
+@pytest.mark.asyncio
+async def test_provider_failure_fallback_and_budget_are_observable_without_content() -> None:
+    telemetry, reader = _ops_telemetry()
+    primary = FakeAdapter([LLMRateLimitError()])
+    fallback = FakeAdapter([_response("fallback-model")])
+    gateway = _gateway(
+        [_provider("primary", primary), _provider("secondary", fallback)],
+        fallback=("secondary",),
+        telemetry=telemetry,
+    )
+
+    outcome = await gateway.execute(_prompt())
+
+    assert outcome.status is LLMGatewayStatus.SUCCESS
+    assert _metric_sum(reader, CounterSignal.LLM_PROVIDER_CALLS) == 2
+    assert _metric_sum(reader, CounterSignal.LLM_PROVIDER_ERRORS) == 1
+    assert _metric_sum(reader, CounterSignal.LLM_FALLBACKS) == 1
+    exported = str(reader.get_metrics_data())
+    assert "protected-value" not in exported
+    assert "private-value" not in exported
+
+    exhausted_gateway = _gateway(
+        [_provider("primary", FakeAdapter())], telemetry=telemetry
+    )
+    exhausted = await exhausted_gateway.execute(
+        _prompt(budget=LLMCallBudget(max_calls=0))
+    )
+    assert exhausted.status is LLMGatewayStatus.DEGRADED
+    assert _metric_sum(reader, CounterSignal.LLM_BUDGET_EXHAUSTED) == 1
 
 
 @pytest.mark.asyncio

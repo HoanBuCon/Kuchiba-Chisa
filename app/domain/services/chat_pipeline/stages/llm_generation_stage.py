@@ -1,5 +1,6 @@
 import asyncio
 from collections.abc import Awaitable, Callable
+from time import monotonic
 
 from app.config.settings import settings
 from app.domain.interfaces.llm_provider import (
@@ -8,6 +9,14 @@ from app.domain.interfaces.llm_provider import (
     LLMInvalidResponseError,
     LLMResponse,
     StructuredPrompt,
+)
+from app.domain.interfaces.observability import (
+    CounterSignal,
+    HistogramSignal,
+    IOperationalTelemetry,
+    NoopOperationalTelemetry,
+    TelemetryDimensions,
+    TraceOperation,
 )
 from app.domain.interfaces.tracker import IPipelineTracker
 from app.domain.models.intent_result import ChatIntent
@@ -54,6 +63,7 @@ class LLMGenerationStage(PipelineStage):
         citation_guard: EvidenceCitationGuard | None = None,
         claim_evidence_guard: ClaimEvidenceGuard | None = None,
         grounded_output_assembler: GroundedOutputAssembler | None = None,
+        telemetry: IOperationalTelemetry | None = None,
     ):
         self.llm = llm
         self.llm_logger_callback = llm_logger_callback
@@ -65,6 +75,7 @@ class LLMGenerationStage(PipelineStage):
             grounded_output_assembler
             or GroundedOutputAssembler(self.claim_evidence_guard)
         )
+        self.telemetry = telemetry or NoopOperationalTelemetry()
 
     async def process(self, context: ChatContext) -> ChatContext:
         if context.is_cached_answer:
@@ -180,6 +191,9 @@ class LLMGenerationStage(PipelineStage):
                 else:
                     raise gen_err
 
+        grounding_started = (
+            monotonic() if prompt.output_contract_name == "submit_grounded_answer" else None
+        )
         grounded_envelope = None
         chisa_reply: str
         if prompt.output_contract_name == "submit_grounded_answer":
@@ -193,6 +207,9 @@ class LLMGenerationStage(PipelineStage):
                 )
             except (GroundedOutputValidationError, ValueError):
                 log.warning("Generated response rejected by grounded output contract")
+                self._record_grounding_failure(
+                    grounding_started, "invalid_response"
+                )
                 return await self._abstain_for_rejected_output(
                     context,
                     status="abstained_invalid_grounding",
@@ -258,6 +275,11 @@ class LLMGenerationStage(PipelineStage):
                 "Generated response rejected by prompt leakage guard",
                 response_fingerprint=leakage_assessment.fingerprint,
             )
+            dimensions = TelemetryDimensions(
+                stage="grounding", failure_class="output_leakage"
+            )
+            self.telemetry.count(CounterSignal.SECURITY_EVENTS, dimensions)
+            self._record_grounding_failure(grounding_started, "output_leakage")
             if grounded_envelope is not None:
                 return await self._abstain_for_rejected_output(
                     context,
@@ -277,6 +299,10 @@ class LLMGenerationStage(PipelineStage):
                 )
             except CitationValidationError as error:
                 log.warning("Generated response rejected by citation guard")
+                self._record_grounding_failure(
+                    grounding_started, "grounding_failed"
+                )
+                self._record_grounding_decision("rejected")
                 raise LLMInvalidResponseError(
                     "Response rejected by grounding checks"
                 ) from error
@@ -291,9 +317,28 @@ class LLMGenerationStage(PipelineStage):
                 )
             except ClaimEvidenceValidationError as error:
                 log.warning("Generated response rejected by claim-evidence guard")
+                self._record_grounding_failure(
+                    grounding_started, "grounding_failed"
+                )
+                self._record_grounding_decision("rejected")
                 raise LLMInvalidResponseError(
                     "Response rejected by grounding checks"
                 ) from error
+
+        if grounded_envelope is not None:
+            if grounding_started is None:
+                raise RuntimeError("grounded output telemetry boundary was not initialized")
+            grounding_dimensions = TelemetryDimensions(stage="grounding", status="ok")
+            self.telemetry.observe(
+                HistogramSignal.RAG_GROUNDING_DURATION,
+                monotonic() - grounding_started,
+                grounding_dimensions,
+            )
+            if grounded_envelope.abstained:
+                self.telemetry.count(CounterSignal.RAG_ABSTENTIONS, grounding_dimensions)
+                self._record_grounding_decision("abstained")
+            else:
+                self._record_grounding_decision("verified")
 
         if context.on_token:
             for token in chisa_reply:
@@ -397,22 +442,29 @@ class LLMGenerationStage(PipelineStage):
         prompt = context.prompt
         if prompt is None:
             raise RuntimeError("LLMGenerationStage requires a prompt from ContextBuildingStage.")
-        return self.claim_evidence_guard.require_supported(
-            answer=answer,
-            evidence=prompt.retrieved_evidence,
-            citation_ids=citation_ids,
-        )
+        dimensions = TelemetryDimensions(stage="grounding")
+        with self.telemetry.span(TraceOperation.RAG_GROUNDING, dimensions) as span:
+            try:
+                result = self.claim_evidence_guard.require_supported(
+                    answer=answer,
+                    evidence=prompt.retrieved_evidence,
+                    citation_ids=citation_ids,
+                )
+            except BaseException:
+                span.set_status("error", "grounding_failed")
+                raise
+            span.set_status("ok")
+            return result
 
-    @staticmethod
-    async def _abstain_for_missing_evidence(context: ChatContext) -> ChatContext:
+    async def _abstain_for_missing_evidence(self, context: ChatContext) -> ChatContext:
         """Return a deterministic limitation instead of asking the model to invent facts."""
-        return await LLMGenerationStage._abstain_for_rejected_output(
+        return await self._abstain_for_rejected_output(
             context,
             status="abstained_missing_evidence",
         )
 
-    @staticmethod
     async def _abstain_for_rejected_output(
+        self,
         context: ChatContext,
         *,
         status: str,
@@ -422,6 +474,11 @@ class LLMGenerationStage(PipelineStage):
         context.citation_ids = []
         context.tool_res = context.tool_res or {}
         context.tool_res["grounding"] = {"status": status}
+        self.telemetry.count(
+            CounterSignal.RAG_ABSTENTIONS,
+            TelemetryDimensions(stage="grounding", status="degraded"),
+        )
+        self._record_grounding_decision("abstained")
         if context.on_token:
             for token in context.chisa_reply:
                 if asyncio.iscoroutinefunction(context.on_token):
@@ -429,3 +486,24 @@ class LLMGenerationStage(PipelineStage):
                 else:
                     context.on_token(token)
         return context
+
+    def _record_grounding_failure(
+        self, started: float | None, failure_class: str
+    ) -> None:
+        if started is None:
+            return
+        dimensions = TelemetryDimensions(
+            stage="grounding", status="error", failure_class=failure_class
+        )
+        self.telemetry.count(CounterSignal.GROUNDING_FAILURES, dimensions)
+        self.telemetry.observe(
+            HistogramSignal.RAG_GROUNDING_DURATION,
+            monotonic() - started,
+            dimensions,
+        )
+
+    def _record_grounding_decision(self, status: str) -> None:
+        self.telemetry.count(
+            CounterSignal.GROUNDING_DECISIONS,
+            TelemetryDimensions(stage="grounding", status=status),
+        )

@@ -1,0 +1,241 @@
+apiVersion: openslo/v1
+kind: Service
+metadata:
+  name: chisa-api
+  displayName: Kuchiba Chisa API
+spec:
+  description: Production chat admission and grounded RAG service.
+---
+apiVersion: openslo/v1
+kind: SLO
+metadata:
+  name: chat-admission-availability
+  annotations:
+    srs_requirement: NFR-REL-001
+spec:
+  service: chisa-api
+  description: Monthly chat admission availability over eligible non-client-error traffic.
+  budgetingMethod: Occurrences
+  indicator:
+    metadata:
+      name: chat-admission-success-ratio
+    spec:
+      ratioMetric:
+        counter: true
+        good:
+          metricSource:
+            type: Prometheus
+            spec:
+              query: >-
+                sum(rate(chisa_http_requests_total{chisa_route=~"/api/v1/chat|/api/v1/chat/stream|/api/v1/community/chat",chisa_status_class=~"2xx|3xx"}[30d]))
+        total:
+          metricSource:
+            type: Prometheus
+            spec:
+              query: >-
+                sum(rate(chisa_http_requests_total{chisa_route=~"/api/v1/chat|/api/v1/chat/stream|/api/v1/community/chat",chisa_status_class=~"2xx|3xx|5xx"}[30d]))
+  timeWindow:
+    - duration: 30d
+      isRolling: true
+  objectives:
+    - displayName: 99.9 percent monthly admission availability
+      target: 0.999
+---
+apiVersion: openslo/v1
+kind: SLO
+metadata:
+  name: grounded-rag-availability
+  annotations:
+    srs_requirement: NFR-REL-001
+spec:
+  service: chisa-api
+  description: Monthly ratio of grounding attempts without a grounding failure.
+  budgetingMethod: Occurrences
+  indicator:
+    metadata:
+      name: grounded-rag-success-ratio
+    spec:
+      ratioMetric:
+        counter: true
+        good:
+          metricSource:
+            type: Prometheus
+            spec:
+              query: >-
+                sum(rate(chisa_rag_grounding_decisions_total{chisa_status=~"verified|abstained"}[30d]))
+        total:
+          metricSource:
+            type: Prometheus
+            spec:
+              query: sum(rate(chisa_rag_grounding_decisions_total[30d]))
+  timeWindow:
+    - duration: 30d
+      isRolling: true
+  objectives:
+    - displayName: 99.5 percent monthly grounded RAG availability
+      target: 0.995
+---
+apiVersion: openslo/v1
+kind: SLO
+metadata:
+  name: text-rag-ttft-p50
+  annotations:
+    srs_requirement: NFR-PERF-002
+spec:
+  service: chisa-api
+  description: At least 50 percent of warm text RAG streams emit their first token in 1.5 seconds.
+  budgetingMethod: Occurrences
+  indicator:
+    metadata:
+      name: text-rag-ttft-under-1-5-seconds
+    spec:
+      ratioMetric:
+        counter: true
+        good:
+          metricSource:
+            type: Prometheus
+            spec:
+              query: sum(rate(chisa_http_ttft_seconds_bucket{chisa_route="/api/v1/chat/stream",le="1.5"}[30d]))
+        total:
+          metricSource:
+            type: Prometheus
+            spec:
+              query: sum(rate(chisa_http_ttft_seconds_count{chisa_route="/api/v1/chat/stream"}[30d]))
+  timeWindow:
+    - duration: 30d
+      isRolling: true
+  objectives:
+    - displayName: TTFT p50 at or below 1.5 seconds
+      target: 0.5
+---
+apiVersion: openslo/v1
+kind: SLO
+metadata:
+  name: text-rag-ttft-p95
+  annotations:
+    srs_requirement: NFR-PERF-002
+spec:
+  service: chisa-api
+  description: At least 95 percent of warm text RAG streams emit their first token in 3.5 seconds.
+  budgetingMethod: Occurrences
+  indicator:
+    metadata:
+      name: text-rag-ttft-under-3-5-seconds
+    spec:
+      ratioMetric:
+        counter: true
+        good:
+          metricSource:
+            type: Prometheus
+            spec:
+              query: sum(rate(chisa_http_ttft_seconds_bucket{chisa_route="/api/v1/chat/stream",le="3.5"}[30d]))
+        total:
+          metricSource:
+            type: Prometheus
+            spec:
+              query: sum(rate(chisa_http_ttft_seconds_count{chisa_route="/api/v1/chat/stream"}[30d]))
+  timeWindow:
+    - duration: 30d
+      isRolling: true
+  objectives:
+    - displayName: TTFT p95 at or below 3.5 seconds
+      target: 0.95
+---
+apiVersion: openslo/v1
+kind: SLO
+metadata:
+  name: text-rag-total-p95
+  annotations:
+    srs_requirement: NFR-PERF-003
+spec:
+  service: chisa-api
+  description: At least 95 percent of eligible text RAG requests complete in 8 seconds.
+  budgetingMethod: Occurrences
+  indicator:
+    metadata:
+      name: text-rag-total-under-8-seconds
+    spec:
+      ratioMetric:
+        counter: true
+        good:
+          metricSource:
+            type: Prometheus
+            spec:
+              query: sum(rate(chisa_http_server_duration_seconds_bucket{chisa_route=~"/api/v1/chat|/api/v1/chat/stream",le="8.0"}[30d]))
+        total:
+          metricSource:
+            type: Prometheus
+            spec:
+              query: sum(rate(chisa_http_server_duration_seconds_count{chisa_route=~"/api/v1/chat|/api/v1/chat/stream"}[30d]))
+  timeWindow:
+    - duration: 30d
+      isRolling: true
+  objectives:
+    - displayName: Text RAG total p95 at or below 8 seconds
+      target: 0.95
+---
+apiVersion: openslo/v1
+kind: SLO
+metadata:
+  name: text-rag-total-p99
+  annotations:
+    srs_requirement: NFR-PERF-003
+spec:
+  service: chisa-api
+  description: At least 99 percent of eligible text RAG requests complete in 15 seconds.
+  budgetingMethod: Occurrences
+  indicator:
+    metadata:
+      name: text-rag-total-under-15-seconds
+    spec:
+      ratioMetric:
+        counter: true
+        good:
+          metricSource:
+            type: Prometheus
+            spec:
+              query: sum(rate(chisa_http_server_duration_seconds_bucket{chisa_route=~"/api/v1/chat|/api/v1/chat/stream",le="15.0"}[30d]))
+        total:
+          metricSource:
+            type: Prometheus
+            spec:
+              query: sum(rate(chisa_http_server_duration_seconds_count{chisa_route=~"/api/v1/chat|/api/v1/chat/stream"}[30d]))
+  timeWindow:
+    - duration: 30d
+      isRolling: true
+  objectives:
+    - displayName: Text RAG total p99 at or below 15 seconds
+      target: 0.99
+---
+apiVersion: openslo/v1
+kind: SLO
+metadata:
+  name: remote-reranker-provider-p95
+  annotations:
+    srs_requirement: NFR-PERF-006
+spec:
+  service: chisa-api
+  description: Provider HTTP time excludes quota pacing and includes response validation.
+  budgetingMethod: Occurrences
+  indicator:
+    metadata:
+      name: remote-reranker-provider-under-750-ms
+    spec:
+      ratioMetric:
+        counter: true
+        good:
+          metricSource:
+            type: Prometheus
+            spec:
+              query: sum(rate(chisa_rag_reranker_duration_seconds_bucket{chisa_stage="provider_http",le="0.75"}[30d]))
+        total:
+          metricSource:
+            type: Prometheus
+            spec:
+              query: sum(rate(chisa_rag_reranker_duration_seconds_count{chisa_stage="provider_http"}[30d]))
+  timeWindow:
+    - duration: 30d
+      isRolling: true
+  objectives:
+    - displayName: Remote reranker provider HTTP p95 at or below 750 milliseconds
+      target: 0.95

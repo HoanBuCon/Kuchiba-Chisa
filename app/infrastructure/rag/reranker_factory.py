@@ -6,6 +6,7 @@ import httpx
 
 from app.config.settings import Settings
 from app.domain.interfaces.reranker import ICrossEncoderReranker
+from app.infrastructure.observability import operational_telemetry
 from app.infrastructure.rag.api_cross_encoder_reranker import (
     ApiCrossEncoderReranker,
     ApiRerankerProvider,
@@ -43,4 +44,5 @@ def build_cross_encoder_reranker(
         timeout_seconds=config.RERANKER_TIMEOUT_SECONDS,
         max_documents=config.RERANKER_API_MAX_DOCUMENTS,
         http_client=http_client,
+        telemetry=operational_telemetry,
     )

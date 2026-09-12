@@ -1,0 +1,309 @@
+{
+  "annotations": {
+    "list": []
+  },
+  "editable": false,
+  "panels": [
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s"
+        }
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 8,
+        "x": 0,
+        "y": 0
+      },
+      "id": 1,
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.50, sum by (le) (rate(chisa_http_ttft_seconds_bucket{chisa_route=\"/api/v1/chat/stream\"}[$__rate_interval])))",
+          "legendFormat": "p50",
+          "refId": "A"
+        },
+        {
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(chisa_http_ttft_seconds_bucket{chisa_route=\"/api/v1/chat/stream\"}[$__rate_interval])))",
+          "legendFormat": "p95",
+          "refId": "B"
+        }
+      ],
+      "title": "Text stream TTFT",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s"
+        }
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 8,
+        "x": 8,
+        "y": 0
+      },
+      "id": 2,
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(chisa_http_server_duration_seconds_bucket{chisa_route=~\"/api/v1/chat|/api/v1/chat/stream\"}[$__rate_interval])))",
+          "legendFormat": "p95",
+          "refId": "A"
+        },
+        {
+          "expr": "histogram_quantile(0.99, sum by (le) (rate(chisa_http_server_duration_seconds_bucket{chisa_route=~\"/api/v1/chat|/api/v1/chat/stream\"}[$__rate_interval])))",
+          "legendFormat": "p99",
+          "refId": "B"
+        },
+        {
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(chisa_chat_pipeline_duration_seconds_bucket[$__rate_interval])))",
+          "legendFormat": "pipeline p95",
+          "refId": "C"
+        }
+      ],
+      "title": "Text RAG total response",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s"
+        }
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 8,
+        "x": 16,
+        "y": 0
+      },
+      "id": 3,
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum by (le, chisa_stage) (rate(chisa_rag_retrieval_duration_seconds_bucket[$__rate_interval])))",
+          "legendFormat": "retrieval {{chisa_stage}}",
+          "refId": "A"
+        },
+        {
+          "expr": "histogram_quantile(0.95, sum by (le, chisa_stage, chisa_provider) (rate(chisa_rag_reranker_duration_seconds_bucket[$__rate_interval])))",
+          "legendFormat": "rerank {{chisa_provider}} {{chisa_stage}}",
+          "refId": "B"
+        },
+        {
+          "expr": "histogram_quantile(0.50, sum by (le, chisa_stage) (rate(chisa_rag_retrieval_score_bucket[$__rate_interval])))",
+          "legendFormat": "score p50 {{chisa_stage}}",
+          "refId": "C"
+        }
+      ],
+      "title": "Retrieval/reranker p95 and retrieval score",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops"
+        }
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 8,
+        "x": 0,
+        "y": 7
+      },
+      "id": 4,
+      "targets": [
+        {
+          "expr": "sum by (chisa_failure_class) (rate(chisa_rag_grounding_failures_total[$__rate_interval]))",
+          "legendFormat": "failure {{chisa_failure_class}}",
+          "refId": "A"
+        },
+        {
+          "expr": "sum by (chisa_failure_class) (rate(chisa_rag_abstentions_total[$__rate_interval]))",
+          "legendFormat": "abstain {{chisa_failure_class}}",
+          "refId": "B"
+        }
+      ],
+      "title": "Grounding failures and safe abstentions",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s"
+        }
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 8,
+        "x": 8,
+        "y": 7
+      },
+      "id": 5,
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum by (le, chisa_provider, chisa_purpose) (rate(chisa_llm_provider_duration_seconds_bucket[$__rate_interval])))",
+          "legendFormat": "provider {{chisa_provider}} {{chisa_purpose}}",
+          "refId": "A"
+        },
+        {
+          "expr": "histogram_quantile(0.95, sum by (le, chisa_purpose) (rate(chisa_llm_generation_duration_seconds_bucket[$__rate_interval])))",
+          "legendFormat": "generation {{chisa_purpose}}",
+          "refId": "B"
+        }
+      ],
+      "title": "LLM provider and generation p95",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops"
+        }
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 8,
+        "x": 16,
+        "y": 7
+      },
+      "id": 6,
+      "targets": [
+        {
+          "expr": "sum by (chisa_provider, chisa_failure_class) (rate(chisa_llm_provider_errors_total[$__rate_interval]))",
+          "legendFormat": "error {{chisa_provider}} {{chisa_failure_class}}",
+          "refId": "A"
+        },
+        {
+          "expr": "sum by (chisa_provider, chisa_fallback_reason) (rate(chisa_llm_fallbacks_total[$__rate_interval]))",
+          "legendFormat": "fallback {{chisa_provider}} {{chisa_fallback_reason}}",
+          "refId": "B"
+        },
+        {
+          "expr": "sum by (chisa_provider) (rate(chisa_llm_breaker_opens_total[$__rate_interval]))",
+          "legendFormat": "breaker {{chisa_provider}}",
+          "refId": "C"
+        },
+        {
+          "expr": "sum by (chisa_provider, chisa_failure_class) (rate(chisa_rag_reranker_errors_total[$__rate_interval]))",
+          "legendFormat": "rerank error {{chisa_provider}} {{chisa_failure_class}}",
+          "refId": "D"
+        },
+        {
+          "expr": "sum by (chisa_provider, chisa_failure_class) (rate(chisa_rag_reranker_fallbacks_total[$__rate_interval]))",
+          "legendFormat": "rerank fallback {{chisa_provider}} {{chisa_failure_class}}",
+          "refId": "E"
+        },
+        {
+          "expr": "sum by (chisa_provider, chisa_failure_class) (rate(chisa_rag_reranker_privacy_rejections_total[$__rate_interval]))",
+          "legendFormat": "rerank privacy {{chisa_provider}} {{chisa_failure_class}}",
+          "refId": "F"
+        }
+      ],
+      "title": "Provider errors, fallback and breaker",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        }
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 12,
+        "x": 0,
+        "y": 14
+      },
+      "id": 7,
+      "targets": [
+        {
+          "expr": "sum by (chisa_provider, chisa_token_type, chisa_purpose) (rate(chisa_llm_tokens_total[$__rate_interval]))",
+          "legendFormat": "{{chisa_provider}} {{chisa_purpose}} {{chisa_token_type}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Provider-reported token usage (cost unavailable)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops"
+        }
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 12,
+        "x": 12,
+        "y": 14
+      },
+      "id": 8,
+      "targets": [
+        {
+          "expr": "sum by (chisa_cache_outcome) (rate(chisa_cache_operations_total[$__rate_interval]))",
+          "legendFormat": "{{chisa_cache_outcome}}",
+          "refId": "A"
+        }
+      ],
+      "title": "TD-025 lore-answer cache outcomes",
+      "type": "timeseries"
+    }
+  ],
+  "schemaVersion": 39,
+  "tags": [
+    "chisa",
+    "ops-02",
+    "rag",
+    "llm"
+  ],
+  "templating": {
+    "list": [
+      {
+        "current": {},
+        "label": "Prometheus",
+        "name": "DS_PROMETHEUS",
+        "query": "prometheus",
+        "type": "datasource"
+      }
+    ]
+  },
+  "time": {
+    "from": "now-6h",
+    "to": "now"
+  },
+  "title": "Chisa / RAG and LLM",
+  "uid": "chisa-rag-llm",
+  "version": 1
+}

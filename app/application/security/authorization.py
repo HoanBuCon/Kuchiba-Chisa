@@ -2,8 +2,32 @@
 
 from __future__ import annotations
 
+import logging
+
+from opentelemetry import metrics
+
+from app.domain.interfaces.observability import CounterSignal
 from app.domain.value_objects.principal import PrincipalContext, PrincipalSource
 from app.shared.utils.user_identity import normalize_user_id_str
+
+_log = logging.getLogger(__name__)
+_security_events = metrics.get_meter("chisa").create_counter(
+    CounterSignal.SECURITY_EVENTS.value,
+    unit="{event}",
+    description="Content-free security boundary events",
+)
+
+
+def _record_cross_tenant_denial() -> None:
+    """Record a denial without principal, tenant, channel, or resource identifiers."""
+    try:
+        _security_events.add(1, {"chisa.failure_class": "cross_tenant_denial"})
+    except Exception as error:
+        # Observability is never allowed to fail open or replace the denial.
+        _log.warning(
+            "Security event telemetry failed",
+            extra={"failure_class": type(error).__name__},
+        )
 
 
 class AuthorizationError(Exception):
@@ -41,22 +65,26 @@ class AuthorizationPolicy:
     @staticmethod
     def require_tenant(principal: PrincipalContext, requested_tenant_id: str) -> None:
         if principal.tenant_id is None or principal.tenant_id != requested_tenant_id:
+            _record_cross_tenant_denial()
             raise AuthorizationError("principal does not belong to the requested tenant")
 
     @staticmethod
     def tenant_id_or_deny(principal: PrincipalContext) -> str:
         if principal.tenant_id is None:
+            _record_cross_tenant_denial()
             raise AuthorizationError("credential has no tenant context")
         return principal.tenant_id
 
     @staticmethod
     def require_channel(principal: PrincipalContext, requested_channel_id: str) -> None:
         if principal.channel_id is None or principal.channel_id != requested_channel_id:
+            _record_cross_tenant_denial()
             raise AuthorizationError("principal does not belong to the requested channel")
 
     @staticmethod
     def channel_id_or_deny(principal: PrincipalContext) -> str:
         if principal.channel_id is None:
+            _record_cross_tenant_denial()
             raise AuthorizationError("credential has no channel context")
         return principal.channel_id
 

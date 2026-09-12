@@ -1,0 +1,265 @@
+{
+  "annotations": {
+    "list": []
+  },
+  "editable": false,
+  "panels": [
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        }
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 8,
+        "x": 0,
+        "y": 0
+      },
+      "id": 1,
+      "targets": [
+        {
+          "expr": "sum by (chisa_status) (chisa_worker_queue_depth)",
+          "legendFormat": "{{chisa_status}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Durable queue depth",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s"
+        }
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 8,
+        "x": 8,
+        "y": 0
+      },
+      "id": 2,
+      "targets": [
+        {
+          "expr": "max(chisa_worker_queue_oldest_ready_age_seconds)",
+          "refId": "A"
+        }
+      ],
+      "title": "Oldest ready job age",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        }
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 8,
+        "x": 16,
+        "y": 0
+      },
+      "id": 3,
+      "targets": [
+        {
+          "expr": "sum by (chisa_job_type) (chisa_worker_active)",
+          "legendFormat": "{{chisa_job_type}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Active worker jobs",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops"
+        }
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 8,
+        "x": 0,
+        "y": 7
+      },
+      "id": 4,
+      "targets": [
+        {
+          "expr": "sum by (chisa_job_type, chisa_status) (rate(chisa_worker_jobs_total[$__rate_interval]))",
+          "legendFormat": "{{chisa_job_type}} {{chisa_status}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Job completion outcomes",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s"
+        }
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 8,
+        "x": 8,
+        "y": 7
+      },
+      "id": 5,
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum by (le, chisa_job_type) (rate(chisa_worker_job_duration_seconds_bucket[$__rate_interval])))",
+          "legendFormat": "{{chisa_job_type}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Job processing duration p95",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops"
+        }
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 8,
+        "x": 16,
+        "y": 7
+      },
+      "id": 6,
+      "targets": [
+        {
+          "expr": "sum by (chisa_job_type, chisa_failure_class) (rate(chisa_worker_retries_total[$__rate_interval]))",
+          "legendFormat": "retry {{chisa_job_type}} {{chisa_failure_class}}",
+          "refId": "A"
+        },
+        {
+          "expr": "sum by (chisa_job_type, chisa_failure_class) (rate(chisa_worker_failures_total[$__rate_interval]))",
+          "legendFormat": "failure {{chisa_job_type}} {{chisa_failure_class}}",
+          "refId": "B"
+        },
+        {
+          "expr": "sum by (chisa_job_type) (increase(chisa_worker_dlq_total[$__rate_interval]))",
+          "legendFormat": "DLQ {{chisa_job_type}}",
+          "refId": "C"
+        },
+        {
+          "expr": "sum by (chisa_job_type, chisa_status) (increase(chisa_worker_replays_total[$__rate_interval]))",
+          "legendFormat": "replay {{chisa_job_type}} {{chisa_status}}",
+          "refId": "D"
+        }
+      ],
+      "title": "Retry, failure, DLQ and replay",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "max": 1,
+          "min": 0,
+          "unit": "bool"
+        }
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 12,
+        "x": 0,
+        "y": 14
+      },
+      "id": 7,
+      "targets": [
+        {
+          "expr": "min by (chisa_dependency) (chisa_dependency_available)",
+          "legendFormat": "{{chisa_dependency}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Dependency availability",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s"
+        }
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 12,
+        "x": 12,
+        "y": 14
+      },
+      "id": 8,
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum by (le, chisa_dependency) (rate(chisa_dependency_duration_seconds_bucket[$__rate_interval])))",
+          "legendFormat": "{{chisa_dependency}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Dependency check latency p95",
+      "type": "timeseries"
+    }
+  ],
+  "schemaVersion": 39,
+  "tags": [
+    "chisa",
+    "ops-02",
+    "worker",
+    "dependencies"
+  ],
+  "templating": {
+    "list": [
+      {
+        "current": {},
+        "label": "Prometheus",
+        "name": "DS_PROMETHEUS",
+        "query": "prometheus",
+        "type": "datasource"
+      }
+    ]
+  },
+  "time": {
+    "from": "now-6h",
+    "to": "now"
+  },
+  "title": "Chisa / Worker and Dependencies",
+  "uid": "chisa-worker-dependencies",
+  "version": 1
+}

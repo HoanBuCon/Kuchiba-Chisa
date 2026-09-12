@@ -1,6 +1,12 @@
 from collections.abc import Callable
 
 from app.domain.interfaces.embedding_provider import IEmbeddingProvider
+from app.domain.interfaces.observability import (
+    CounterSignal,
+    IOperationalTelemetry,
+    NoopOperationalTelemetry,
+    TelemetryDimensions,
+)
 from app.domain.interfaces.repositories import IConversationRepository
 from app.domain.interfaces.session import IDbSession
 from app.domain.interfaces.tracker import IPipelineTracker
@@ -115,6 +121,7 @@ class IntentStage(PipelineStage):
         conv_repo_factory: Callable[[IDbSession], IConversationRepository] | None = None,
         pipeline_tracker: IPipelineTracker | None = None,
         injection_guard: InjectionGuard | None = None,
+        telemetry: IOperationalTelemetry | None = None,
     ):
         self.intent_classifier = intent_classifier
         self.embedder = embedder
@@ -122,6 +129,7 @@ class IntentStage(PipelineStage):
         self.conv_repo_factory = conv_repo_factory
         self.pipeline_tracker = pipeline_tracker
         self.injection_guard = injection_guard or InjectionGuard()
+        self.telemetry = telemetry or NoopOperationalTelemetry()
 
     async def _embed_rewritten_vector_query(self, rewritten_query: str) -> list[float]:
         """Embed the canonical rewritten query or fail before vector retrieval can be skipped."""
@@ -137,6 +145,10 @@ class IntentStage(PipelineStage):
             context.user_message, ContentSource.USER
         )
         context.guardrail_assessment = assessment
+        self.telemetry.count(
+            CounterSignal.GUARDRAIL_DECISIONS,
+            TelemetryDimensions(status=assessment.action.value),
+        )
         if assessment.action is GuardAction.BLOCK:
             context.is_cached_answer = True
             context.chisa_reply = (
