@@ -12,6 +12,7 @@ from fastapi.staticfiles import StaticFiles
 from app.config.settings import settings
 from app.infrastructure.cache.redis.redis_service import redis_service
 from app.infrastructure.database.engine import connect_database, disconnect_database
+from app.infrastructure.llm.gateway_factory import validate_llm_configuration
 from app.infrastructure.logging.logger import configure_logging, get_logger
 from app.infrastructure.vector.qdrant.qdrant_service import qdrant_service
 from app.interface.api.routes import admin_ingestion, auth, chat, community, health
@@ -69,31 +70,15 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         startup_errors.append("Qdrant: health check failed")
         log.error("Qdrant startup health check failed")
 
+    llm_config_errors = validate_llm_configuration(settings)
+    startup_errors.extend(f"LLM configuration: {issue}" for issue in llm_config_errors)
+    if not llm_config_errors:
+        log.info("LLM provider capability configuration verified")
+
     if startup_errors and settings.is_prod:
         raise RuntimeError(f"Critical startup failures: {startup_errors}")
     elif startup_errors:
         log.warning("Non-fatal startup warnings (dev mode)", issues=startup_errors)
-
-    # ── Validate LLM API Key ──────────────────────────────────────
-    try:
-        provider = settings.LLM_PROVIDER
-        if provider == "gemini":
-            if not settings.GEMINI_API_KEY:
-                startup_errors.append(f"LLM ({provider}): GEMINI_API_KEY is not set")
-            else:
-                log.info("LLM API key (Gemini) verified ✓")
-        elif provider == "deepseek":
-            if not settings.DEEPSEEK_API_KEY:
-                startup_errors.append(f"LLM ({provider}): DEEPSEEK_API_KEY is not set")
-            else:
-                log.info("LLM API key (DeepSeek) verified ✓")
-        elif provider == "groq":
-            if not settings.GROQ_API_KEY:
-                startup_errors.append(f"LLM ({provider}): GROQ_API_KEY is not set")
-            else:
-                log.info("LLM API key (Groq) verified ✓")
-    except Exception as e:
-        startup_errors.append(f"LLM API key validation failed: {e}")
 
     # ── Engine Pre-warmup (FastEmbed, Entity Graph & Payload Indexes) ─────
     try:

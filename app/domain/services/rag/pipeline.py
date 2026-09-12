@@ -3,7 +3,7 @@ from enum import Enum
 from typing import Any
 
 from app.domain.interfaces.embedding_provider import IEmbeddingProvider
-from app.domain.interfaces.llm_provider import BaseLLMAdapter
+from app.domain.interfaces.llm_provider import BaseLLMAdapter, LLMCallBudget
 from app.domain.interfaces.session import IDbSession
 from app.domain.interfaces.tracker import IPipelineTracker
 from app.domain.services.guardrails.injection_guard import (
@@ -116,6 +116,7 @@ class RAGPipeline:
         channel_id: str | None = None,
         needs_vector_search: bool = True,
         needs_web_search: bool = False,
+        llm_call_budget: LLMCallBudget | None = None,
     ) -> RAGContext:
         """
         Runs E2E RAG Pipeline: Retrieves memory & lore, checks alignment, and runs thinking loop if necessary.
@@ -616,6 +617,7 @@ class RAGPipeline:
                 llm=llm,
                 history=history,
                 conversation_summary=conversation_summary,
+                call_budget=llm_call_budget,
             )
             if len(assess_res) == 6:
                 is_aligned, alignment_reason, search_query, use_lore, extracted_facts, search_target = assess_res
@@ -696,6 +698,7 @@ class RAGPipeline:
                 initial_extracted_facts=extracted_facts,
                 lore_retriever=self.lore_retriever,
                 initial_search_target=initial_target,
+                call_budget=llm_call_budget,
             )
 
             # ── BUILD TOOL OUTPUT MESSAGE (KẾT HỢP FACTUAL SUMMARY + DỮ LIỆU TÌM KIẾM MỚI TỪ LOOP) ──

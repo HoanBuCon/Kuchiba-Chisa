@@ -77,6 +77,7 @@ class ContextBuildingStage(PipelineStage):
         )
         
         context.prompt = build_result.prompt
+        context.prompt.call_budget = context.llm_call_budget
         context.prompt.images = image_payloads
         context.budget_audit = build_result.audit
 

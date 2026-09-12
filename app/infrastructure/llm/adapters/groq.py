@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import asyncio
 import json
 from collections.abc import AsyncIterator
 from typing import Any, cast
@@ -13,7 +12,6 @@ from app.application.security.json_schema import (
     validate_structured_output,
 )
 from app.config.settings import settings
-from app.config.tuning.llm import LLMTuning
 from app.domain.interfaces.llm_provider import (
     BaseLLMAdapter,
     LLMError,
@@ -28,6 +26,23 @@ from app.infrastructure.logging.logger import get_logger
 
 log = get_logger(__name__)
 
+
+def _translate_groq_error(error: Exception) -> LLMError:
+    normalized = str(error).lower()
+    if "timeout" in normalized:
+        return LLMTimeoutError()
+    if "rate_limit" in normalized or "429" in normalized:
+        return LLMRateLimitError()
+    if any(marker in normalized for marker in ("401", "403", "api key", "unauthorized")):
+        return LLMError("Groq authentication failed", retryable=False, code="AUTH_CONFIG")
+    if "context_length" in normalized or "token limit" in normalized:
+        return LLMTokenOverflowError()
+    if "413" in normalized or "payload too large" in normalized:
+        return LLMError("Groq payload too large", retryable=False, code="PAYLOAD_TOO_LARGE")
+    if any(marker in normalized for marker in ("500", "502", "503", "504")):
+        return LLMError("Groq provider unavailable", retryable=True, code="PROVIDER_5XX")
+    return LLMError("Groq transport request failed", retryable=True, code="TRANSPORT")
+
 # ─── Groq Adapter ─────────────────────────────────────────────────────────────
 
 class GroqAdapter(BaseLLMAdapter):
@@ -36,12 +51,7 @@ class GroqAdapter(BaseLLMAdapter):
     Implements BaseLLMAdapter interface so Groq can be swapped
     for any other provider without touching domain/application layers.
 
-    Current status: STUB — full generation logic will be implemented
-    in Phase 4 (Core Domain Implementation).
     """
-
-    _MAX_RETRIES = LLMTuning.ADAPTER_MAX_RETRIES
-    _BASE_BACKOFF = LLMTuning.ADAPTER_BASE_BACKOFF_STANDARD  # seconds
 
     @staticmethod
     def _build_messages(prompt: StructuredPrompt) -> list[ChatCompletionMessageParam]:
@@ -64,55 +74,18 @@ class GroqAdapter(BaseLLMAdapter):
         self._client = AsyncGroq(
             api_key=settings.GROQ_API_KEY,
             timeout=settings.GROQ_TIMEOUT,
-            max_retries=0,  # We handle retries manually; do not block for 18s automatically
+            max_retries=0,  # The gateway exclusively owns retries and failover.
         )
         self._model = settings.GROQ_MODEL
         self._max_tokens = settings.GROQ_MAX_TOKENS
         self._temperature = settings.GROQ_TEMPERATURE
 
-    # ── Generate (with retry) ──────────────────────────────────────
     async def generate(self, prompt: StructuredPrompt) -> LLMResponse:
-        """
-        STUB: Sends structured prompt to Groq with JSON mode enforced.
-        Full implementation in Phase 4.
-        """
-        last_error: Exception | None = None
-
-        for attempt in range(1, self._MAX_RETRIES + 1):
-            try:
-                log.debug(
-                    "Groq generate attempt",
-                    attempt=attempt,
-                    model=self._model,
-                )
-                return await self._call_groq(prompt)
-
-            except LLMTokenOverflowError:
-                raise  # Don't retry token overflow — it won't help
-
-            except LLMRateLimitError as e:
-                last_error = e
-                wait = self._BASE_BACKOFF * (2 ** (attempt - 1))
-                log.warning("Groq rate limited, waiting", wait_seconds=wait, attempt=attempt)
-                await asyncio.sleep(wait)
-
-            except LLMTimeoutError as e:
-                last_error = e
-                wait = self._BASE_BACKOFF * (2 ** (attempt - 1))
-                log.warning("Groq timeout, retrying", wait_seconds=wait, attempt=attempt)
-                await asyncio.sleep(wait)
-
-            except LLMError as e:
-                last_error = e
-                if not e.retryable:
-                    raise
-                await asyncio.sleep(self._BASE_BACKOFF * attempt)
-
-        raise last_error or LLMError("Max retries exhausted")
+        """Execute one provider request; retry/failover belongs to the gateway."""
+        return await self._call_groq(prompt)
 
     async def _call_groq(self, prompt: StructuredPrompt) -> LLMResponse:
-        """Internal Groq API call — STUB implementation."""
-        # TODO (Phase 4): Build full message list, call Groq, validate JSON
+        """Build the request, execute one Groq call and validate its response."""
         messages = self._build_messages(prompt)
 
         try:
@@ -124,19 +97,7 @@ class GroqAdapter(BaseLLMAdapter):
                 response_format={"type": "json_object"},
             )
         except Exception as e:
-            error_str = str(e).lower()
-            if "timeout" in error_str:
-                raise LLMTimeoutError() from e
-            if "rate_limit" in error_str or "429" in error_str:
-                raise LLMRateLimitError() from e
-            if "context_length" in error_str or "token" in error_str:
-                raise LLMTokenOverflowError() from e
-            if "413" in error_str or "payload too large" in error_str:
-                # Do not retry 413 errors as sending the exact same payload again will always fail
-                raise LLMError(
-                    f"Groq API error: {e}", retryable=False, code="PAYLOAD_TOO_LARGE"
-                ) from e
-            raise LLMError(f"Groq API error: {e}", retryable=True) from e
+            raise _translate_groq_error(e) from e
 
         raw = response.choices[0].message.content or ""
         finish_reason = response.choices[0].finish_reason or ""
@@ -203,8 +164,7 @@ class GroqAdapter(BaseLLMAdapter):
                 if content:
                     yield content
         except Exception as e:
-            log.error("Groq streaming failed", error=str(e))
-            raise LLMError(f"Groq streaming failed: {e}", retryable=False) from e
+            raise _translate_groq_error(e) from e
 
     # ── Validate Response ──────────────────────────────────────────
     async def validate_response(self, raw: str, schema: dict[str, Any]) -> dict[str, Any]:

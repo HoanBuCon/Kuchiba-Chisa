@@ -2,7 +2,7 @@ from typing import Any
 
 from app.domain.interfaces.cache_provider import ICacheProvider
 from app.domain.interfaces.community_state import ICommunityStateStore
-from app.domain.interfaces.llm_provider import BaseLLMAdapter, StructuredPrompt
+from app.domain.interfaces.llm_provider import BaseLLMAdapter, LLMPurpose, StructuredPrompt
 from app.domain.services.community.transcript_formatter import ChannelTranscriptFormatter
 from app.domain.services.guardrails.pii_redaction import PiiRedactor
 from app.shared.utils.logger import get_logger
@@ -307,12 +307,11 @@ class CommunityTopicSummarizer:
             temperature=0.3,
             retrieved_memories=[],
             retrieved_lore=[],
-            rag_decisions={"use_deep_thinking": False}
+            rag_decisions={"use_deep_thinking": False},
+            purpose=LLMPurpose.COMMUNITY_SUMMARY,
         )
 
         try:
-            from app.domain.context import llm_call_purpose
-            llm_call_purpose.set("community_topic_summarize")
             response = await self.llm.generate(prompt)
             parsed = response.parsed or {}
             summary_text = self.pii_redactor.redact(

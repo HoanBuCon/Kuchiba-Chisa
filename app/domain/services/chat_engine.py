@@ -11,7 +11,12 @@ from app.domain.entities.emotion import EmotionState
 from app.domain.interfaces.background_jobs import IDurableBackgroundJobQueue
 from app.domain.interfaces.cache_provider import ICacheProvider
 from app.domain.interfaces.embedding_provider import IEmbeddingProvider
-from app.domain.interfaces.llm_provider import BaseLLMAdapter, StructuredPrompt
+from app.domain.interfaces.llm_provider import (
+    BaseLLMAdapter,
+    LLMCallBudget,
+    LLMPurpose,
+    StructuredPrompt,
+)
 from app.domain.interfaces.repositories import (
     IConversationRepository,
     IEmotionRepository,
@@ -78,6 +83,8 @@ class ChatEngine:
         embedder: IEmbeddingProvider,
         vector_store: IVectorStore,
         background_job_queue: IDurableBackgroundJobQueue | None = None,
+        llm_max_calls: int = 2,
+        llm_deadline_seconds: float = 60.0,
     ):
         self.pipeline = pipeline
         self.uow_factory = uow_factory
@@ -91,6 +98,8 @@ class ChatEngine:
         self.embedder = embedder
         self.vector_store = vector_store
         self.background_job_queue = background_job_queue
+        self.llm_max_calls = llm_max_calls
+        self.llm_deadline_seconds = llm_deadline_seconds
         
         self.db_session_factory = db_session_factory
 
@@ -257,6 +266,7 @@ class ChatEngine:
                 recent_community_messages=recent_messages or [],
                 images=images or [],
                 is_ephemeral_reference=is_ephemeral_reference,
+                llm_call_budget=self._new_llm_call_budget(),
             )
             context = await self.pipeline.execute(context)
             result = ChatExecutionResult(
@@ -311,6 +321,7 @@ class ChatEngine:
                 on_token=on_token,
                 images=images or [],
                 is_ephemeral_reference=is_ephemeral_reference,
+                llm_call_budget=self._new_llm_call_budget(),
             )
             context = await self.pipeline.execute(context)
             return ChatExecutionResult(
@@ -440,10 +451,9 @@ class ChatEngine:
                     retrieved_memories=[],
                     retrieved_lore=[],
                     rag_decisions={"use_deep_thinking": False},
+                    purpose=LLMPurpose.PRIVATE_SUMMARY,
                 )
 
-                from app.domain.context import llm_call_purpose
-                llm_call_purpose.set("auto_summarize_private")
                 response = await self.llm.generate(prompt)
                 parsed = response.parsed or {}
                 summary_text = str(parsed.get("summary", "")).strip()
@@ -502,4 +512,10 @@ class ChatEngine:
                 )
                 if propagate_errors:
                     raise
+
+    def _new_llm_call_budget(self) -> LLMCallBudget:
+        return LLMCallBudget.with_deadline(
+            max_calls=self.llm_max_calls,
+            timeout_seconds=self.llm_deadline_seconds,
+        )
 

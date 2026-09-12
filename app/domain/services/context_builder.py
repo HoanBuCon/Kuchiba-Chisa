@@ -8,7 +8,7 @@ from typing import Any, Optional
 
 from app.config.settings import settings
 from app.domain.entities.emotion import EmotionState
-from app.domain.interfaces.llm_provider import StructuredPrompt
+from app.domain.interfaces.llm_provider import LLMPurpose, StructuredPrompt
 from app.domain.models.evidence import Evidence
 from app.domain.services.budget_mode import BudgetMode
 from app.domain.services.context_budget_manager import BudgetAudit, ContextBudgetManager
@@ -624,6 +624,7 @@ class ContextBuilder:
                 "use_memory": len(allocation.trimmed_memories) > 0,
                 "use_deep_thinking": use_deep_thinking,
             },
+            purpose=LLMPurpose.CHAT_RESPONSE,
         )
         return ContextBuildResult(prompt=prompt, audit=allocation.audit, components=components)
 

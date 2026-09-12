@@ -2,7 +2,12 @@ import asyncio
 from typing import Any
 
 from app.domain.interfaces.embedding_provider import IEmbeddingProvider
-from app.domain.interfaces.llm_provider import BaseLLMAdapter, StructuredPrompt
+from app.domain.interfaces.llm_provider import (
+    BaseLLMAdapter,
+    LLMCallBudget,
+    LLMPurpose,
+    StructuredPrompt,
+)
 from app.domain.interfaces.session import IDbSession
 from app.domain.interfaces.tracker import IPipelineTracker
 from app.shared.utils.logger import get_logger
@@ -39,6 +44,7 @@ class ThinkingLoopAgent:
         initial_extracted_facts: str = "",
         lore_retriever: Any | None = None,
         initial_search_target: str = "web",
+        call_budget: LLMCallBudget | None = None,
     ) -> tuple[str, list[dict[str, Any]]]:
         from app.config.settings import settings
 
@@ -57,6 +63,7 @@ class ThinkingLoopAgent:
                     initial_extracted_facts=initial_extracted_facts,
                     lore_retriever=lore_retriever or self.lore_retriever,
                     initial_search_target=initial_search_target,
+                    call_budget=call_budget,
                 ),
                 timeout=float(settings.THINKING_LOOP_TIMEOUT),
             )
@@ -163,6 +170,7 @@ class ThinkingLoopAgent:
         initial_extracted_facts: str = "",
         lore_retriever: Any | None = None,
         initial_search_target: str = "web",
+        call_budget: LLMCallBudget | None = None,
     ) -> tuple[str, list[dict[str, Any]]]:
         log.info("Activating Loop Thinking Agent for user query", user_message=user_message)
 
@@ -180,6 +188,25 @@ class ThinkingLoopAgent:
 
         for i in range(1, max_cycles + 1):
             log.info("Starting thinking loop cycle", cycle=i)
+
+            if i > 1 and call_budget is not None and call_budget.remaining_calls <= 1:
+                thinking_steps.append(
+                    {
+                        "cycle": i,
+                        "thinking": "Reserved the remaining provider call for final generation.",
+                        "has_enough_info": True,
+                        "search_query": "",
+                        "search_target": initial_search_target or "web",
+                        "distilled_facts": "",
+                        "search_result": "No further search needed.",
+                    }
+                )
+                log.info(
+                    "Stopping thinking loop to preserve final-generation call budget",
+                    cycle=i,
+                    remaining_calls=call_budget.remaining_calls,
+                )
+                break
 
             if i == 1 and initial_search_query and initial_search_query.strip():
                 log.info(
@@ -277,14 +304,13 @@ class ThinkingLoopAgent:
                     retrieved_memories=[],
                     retrieved_lore=[],
                     rag_decisions={"use_deep_thinking": False},
+                    purpose=LLMPurpose.THINKING_LOOP,
+                    call_budget=call_budget or LLMCallBudget(),
                 )
 
             try:
                 # Only execute LLM call if not bypassed
                 if not (i == 1 and initial_search_query and initial_search_query.strip()):
-                    from app.domain.context import llm_call_purpose
-
-                    llm_call_purpose.set(f"thinking_loop_cycle_{i}")
                     response = await llm.generate(prompt)
                     parsed = response.parsed or {}
                     reasoning_content = getattr(response, "reasoning_content", None)

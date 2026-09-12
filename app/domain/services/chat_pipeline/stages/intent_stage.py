@@ -317,6 +317,7 @@ class IntentStage(PipelineStage):
                     prev_rewritten_query=prev_rewritten_query,
                     needs_llm_rewrite=True,
                     intent_hint=None,
+                    call_budget=context.llm_call_budget,
                 )
                 rewritten_query = rewrite_result.rewritten_query
                 rewrite_method = rewrite_result.method

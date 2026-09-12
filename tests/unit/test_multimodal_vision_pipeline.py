@@ -1,18 +1,26 @@
-import pytest
-from unittest.mock import AsyncMock, patch, MagicMock
+from unittest.mock import AsyncMock, MagicMock, patch
+
 import httpx
+import pytest
+
 from app.config.settings import settings
-from app.infrastructure.llm.adapters.deepseek import DeepSeekAdapter
-from app.domain.interfaces.llm_provider import StructuredPrompt, LLMResponse
-from app.domain.models.intent_result import ChatIntent
 from app.domain.entities.emotion import EmotionState
+from app.domain.interfaces.llm_provider import (
+    LLMFailureClass,
+    LLMGatewayError,
+    LLMResponse,
+    StructuredPrompt,
+)
+from app.domain.models.intent_result import ChatIntent
 from app.domain.services.chat_pipeline.context import ChatContext
-from app.domain.services.chat_pipeline.stages.intent_stage import IntentStage
 from app.domain.services.chat_pipeline.stages.cache_stage import CacheStage
 from app.domain.services.chat_pipeline.stages.context_building_stage import ContextBuildingStage
+from app.domain.services.chat_pipeline.stages.intent_stage import IntentStage
 from app.domain.services.chat_pipeline.stages.llm_generation_stage import LLMGenerationStage
 from app.domain.services.context_builder import ContextBuilder
+from app.infrastructure.llm.adapters.deepseek import DeepSeekAdapter
 from app.shared.security.vision_security import VisualPromptDefense
+
 
 @pytest.mark.asyncio
 @patch("httpx.AsyncClient.post")
@@ -243,6 +251,39 @@ async def test_llm_generation_stage_vision_resilience_fallback():
     assert result_ctx.vision_failed is True
     assert "Học viện Startorch" in result_ctx.chisa_reply
     assert mock_llm.generate.call_count == 2
+
+
+@pytest.mark.asyncio
+async def test_llm_generation_stage_gateway_failure_does_not_drop_images():
+    """A typed gateway failure returns an explicit limitation without a text retry."""
+    mock_llm = AsyncMock()
+    mock_llm.generate.side_effect = LLMGatewayError(
+        "No compatible vision provider",
+        failure_class=LLMFailureClass.NO_COMPATIBLE_PROVIDER,
+        degraded=True,
+    )
+    stage = LLMGenerationStage(llm=mock_llm)
+    prompt = StructuredPrompt(
+        system="System persona",
+        history=[],
+        user_message="Xem ảnh nè",
+        images=["data:image/webp;base64,XYZ..."],
+        response_schema={"type": "object"},
+    )
+    ctx = ChatContext(
+        session=None,
+        user_id="test-user-gateway-degraded",
+        user_message="Xem ảnh nè",
+        prompt=prompt,
+        has_images=True,
+    )
+
+    result_ctx = await stage.process(ctx)
+
+    assert result_ctx.vision_failed is True
+    assert result_ctx.tool_res["generation"]["status"] == "degraded_vision_unavailable"
+    assert "couldn't safely analyze" in result_ctx.chisa_reply
+    assert mock_llm.generate.call_count == 1
 
 
 @pytest.mark.asyncio

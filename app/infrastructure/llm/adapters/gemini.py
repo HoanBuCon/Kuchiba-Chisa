@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import asyncio
 import json
 from collections.abc import AsyncIterator
 from typing import Any
@@ -14,7 +13,6 @@ from app.application.security.json_schema import (
     validate_structured_output,
 )
 from app.config.settings import settings
-from app.config.tuning.llm import LLMTuning
 from app.domain.interfaces.llm_provider import (
     BaseLLMAdapter,
     LLMError,
@@ -33,14 +31,26 @@ GeminiPart = str | Image.Image | types.File | types.FileDict | types.Part | type
 GeminiContent = types.Content | types.ContentDict | GeminiPart | list[GeminiPart]
 
 
+def _translate_gemini_error(error: Exception) -> LLMError:
+    normalized = str(error).lower()
+    if "timeout" in normalized:
+        return LLMTimeoutError()
+    if "rate_limit" in normalized or "429" in normalized or "quota" in normalized:
+        return LLMRateLimitError()
+    if "context_length" in normalized or "token limit" in normalized:
+        return LLMTokenOverflowError()
+    if any(marker in normalized for marker in ("401", "403", "api key", "unauthenticated")):
+        return LLMError("Gemini authentication failed", retryable=False, code="AUTH_CONFIG")
+    if any(marker in normalized for marker in ("500", "502", "503", "504")):
+        return LLMError("Gemini provider unavailable", retryable=True, code="PROVIDER_5XX")
+    return LLMError("Gemini transport request failed", retryable=True, code="TRANSPORT")
+
+
 class GeminiAdapter(BaseLLMAdapter):
     """
     Google Gemini LLM adapter.
     Implements BaseLLMAdapter interface so it can be swapped seamlessly.
     """
-
-    _MAX_RETRIES = LLMTuning.ADAPTER_MAX_RETRIES
-    _BASE_BACKOFF = LLMTuning.ADAPTER_BASE_BACKOFF_SLOW  # seconds
 
     def __init__(self) -> None:
         api_key = settings.GEMINI_API_KEY
@@ -51,44 +61,9 @@ class GeminiAdapter(BaseLLMAdapter):
         self._max_tokens = settings.GEMINI_MAX_TOKENS
         self._temperature = settings.GEMINI_TEMPERATURE
 
-    # ── Generate (with retry) ──────────────────────────────────────
     async def generate(self, prompt: StructuredPrompt) -> LLMResponse:
-        """
-        Sends structured prompt to Gemini with JSON mode enforced.
-        """
-        last_error: Exception | None = None
-
-        for attempt in range(1, self._MAX_RETRIES + 1):
-            try:
-                log.debug(
-                    "Gemini generate attempt",
-                    attempt=attempt,
-                    model=self._model,
-                )
-                return await self._call_gemini(prompt)
-
-            except LLMTokenOverflowError:
-                raise  # Don't retry token overflow — it won't help
-
-            except LLMRateLimitError as e:
-                last_error = e
-                wait = self._BASE_BACKOFF * (2 ** (attempt - 1))
-                log.warning("Gemini rate limited, waiting", wait_seconds=wait, attempt=attempt)
-                await asyncio.sleep(wait)
-
-            except LLMTimeoutError as e:
-                last_error = e
-                wait = self._BASE_BACKOFF * (2 ** (attempt - 1))
-                log.warning("Gemini timeout, retrying", wait_seconds=wait, attempt=attempt)
-                await asyncio.sleep(wait)
-
-            except LLMError as e:
-                last_error = e
-                if not e.retryable:
-                    raise
-                await asyncio.sleep(self._BASE_BACKOFF * attempt)
-
-        raise last_error or LLMError("Max retries exhausted")
+        """Execute one provider request; retry/failover belongs to the gateway."""
+        return await self._call_gemini(prompt)
 
     async def _call_gemini(self, prompt: StructuredPrompt) -> LLMResponse:
         """Internal Gemini API call."""
@@ -134,14 +109,7 @@ class GeminiAdapter(BaseLLMAdapter):
                 config=config
             )
         except Exception as e:
-            error_str = str(e).lower()
-            if "timeout" in error_str:
-                raise LLMTimeoutError() from e
-            if "rate_limit" in error_str or "429" in error_str or "quota" in error_str:
-                raise LLMRateLimitError() from e
-            if "context_length" in error_str or "token limit" in error_str:
-                raise LLMTokenOverflowError() from e
-            raise LLMError(f"Gemini API error: {e}", retryable=True) from e
+            raise _translate_gemini_error(e) from e
 
         raw = response.text or ""
         finish_reason = str(response.candidates[0].finish_reason) if response.candidates else ""
@@ -239,8 +207,7 @@ class GeminiAdapter(BaseLLMAdapter):
                 if chunk.text:
                     yield chunk.text
         except Exception as e:
-            log.error("Gemini streaming failed", error=str(e))
-            raise LLMError(f"Gemini streaming failed: {e}", retryable=False) from e
+            raise _translate_gemini_error(e) from e
 
     # ── Validate Response ──────────────────────────────────────────
     async def validate_response(self, raw: str, schema: dict[str, Any]) -> dict[str, Any]:

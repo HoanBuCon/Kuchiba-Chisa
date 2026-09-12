@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from collections.abc import AsyncIterator
 from functools import cached_property
 from typing import Any
 
@@ -9,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config.settings import settings
 from app.domain.interfaces.embedding_provider import IEmbeddingProvider
-from app.domain.interfaces.llm_provider import BaseLLMAdapter, LLMResponse, StructuredPrompt
+from app.domain.interfaces.llm_provider import BaseLLMAdapter
 from app.domain.interfaces.session import IDbSession
 from app.domain.services.chat_engine import ChatEngine
 from app.domain.services.community.topic_summarizer import CommunityTopicSummarizer
@@ -17,7 +16,6 @@ from app.domain.services.context_builder import ContextBuilder
 from app.domain.services.memory_extractor import MemoryExtractor
 from app.infrastructure.embeddings.fastembed_adapter import FastEmbedAdapter
 from app.infrastructure.vector.qdrant.qdrant_service import qdrant_service
-from app.shared.utils.circuit_breaker import llm_circuit_breaker
 
 
 def _require_async_session(session: IDbSession) -> AsyncSession:
@@ -26,46 +24,18 @@ def _require_async_session(session: IDbSession) -> AsyncSession:
         raise TypeError("AppContainer repository factories require SQLAlchemy AsyncSession.")
     return session
 
-class LLMCircuitBreakerProxy(BaseLLMAdapter):
-    """Proxy to apply circuit breaker pattern to any LLM adapter."""
-    def __init__(self, adapter: BaseLLMAdapter):
-        self.adapter = adapter
-    
-    def __getattr__(self, name):
-        return getattr(self.adapter, name)
-    
-    async def generate(self, prompt: StructuredPrompt) -> LLMResponse:
-        llm_circuit_breaker.check_state()
-        try:
-            res = await self.adapter.generate(prompt)
-            llm_circuit_breaker.record_success()
-            return res
-        except Exception as e:
-            llm_circuit_breaker.record_failure(e)
-            raise
-
-    async def stream(self, prompt: StructuredPrompt) -> AsyncIterator[str]:
-        llm_circuit_breaker.check_state()
-        try:
-            async for chunk in self.adapter.stream(prompt):
-                yield chunk
-            llm_circuit_breaker.record_success()
-        except Exception as e:
-            llm_circuit_breaker.record_failure(e)
-            raise
-            
-    async def validate_response(self, raw: str, schema: dict) -> dict:
-        return await self.adapter.validate_response(raw, schema)
-        
-    async def estimate_tokens(self, text: str) -> int:
-        return await self.adapter.estimate_tokens(text)
-
 class AppContainer:
     """Dependency Injection Container for the application."""
 
     @cached_property
     def http_client(self) -> httpx.AsyncClient:
-        return httpx.AsyncClient(timeout=10.0, follow_redirects=True)
+        return httpx.AsyncClient(
+            timeout=httpx.Timeout(
+                settings.LLM_CALL_TIMEOUT_SECONDS,
+                connect=settings.LLM_CONNECT_TIMEOUT_SECONDS,
+            ),
+            follow_redirects=True,
+        )
 
     @cached_property
     def embedder(self) -> IEmbeddingProvider:
@@ -73,18 +43,9 @@ class AppContainer:
 
     @cached_property
     def llm(self) -> BaseLLMAdapter:
-        raw_adapter: BaseLLMAdapter
-        if settings.LLM_PROVIDER == "gemini":
-            from app.infrastructure.llm.adapters.gemini import GeminiAdapter
-            raw_adapter = GeminiAdapter()
-        elif settings.LLM_PROVIDER == "deepseek":
-            from app.infrastructure.llm.adapters.deepseek import DeepSeekAdapter
-            raw_adapter = DeepSeekAdapter(http_client=self.http_client)
-        else:
-            from app.infrastructure.llm.adapters.groq import GroqAdapter
-            raw_adapter = GroqAdapter()
-            
-        return LLMCircuitBreakerProxy(raw_adapter)
+        from app.infrastructure.llm.gateway_factory import build_llm_gateway
+
+        return build_llm_gateway(config=settings, http_client=self.http_client)
 
     @cached_property
     def context_builder(self) -> ContextBuilder:
@@ -369,6 +330,8 @@ class AppContainer:
             embedder=self.embedder,
             vector_store=qdrant_service,
             background_job_queue=self.background_job_queue,
+            llm_max_calls=settings.LLM_CALL_MAX_ATTEMPTS,
+            llm_deadline_seconds=settings.LLM_REQUEST_DEADLINE_SECONDS,
         )
         return engine
 

@@ -44,6 +44,7 @@ class RAGStage(PipelineStage):
             channel_id=context.channel_id,
             needs_vector_search=context.needs_vector_search,
             needs_web_search=context.needs_web_search,
+            llm_call_budget=context.llm_call_budget,
         )
         
         context.rag_context = rag_context

@@ -1,6 +1,11 @@
 from typing import Any
 
-from app.domain.interfaces.llm_provider import BaseLLMAdapter, StructuredPrompt
+from app.domain.interfaces.llm_provider import (
+    BaseLLMAdapter,
+    LLMCallBudget,
+    LLMPurpose,
+    StructuredPrompt,
+)
 from app.shared.utils.logger import get_logger
 
 log = get_logger(__name__)
@@ -17,8 +22,21 @@ class ContextAssessor:
         llm: BaseLLMAdapter,
         history: list[dict[str, Any]] | None = None,
         conversation_summary: str | None = None,
+        call_budget: LLMCallBudget | None = None,
     ) -> tuple[bool, str, str, bool, str, str]:
         import json
+        if call_budget is not None and call_budget.remaining_calls <= 1:
+            normalized = context_text.strip()
+            has_context = normalized not in {"", "(No context retrieved)"}
+            target = "web" if "web search" in normalized.lower() else "vector"
+            return (
+                has_context,
+                "Deterministic budget-preserving context check",
+                "" if has_context else user_message.strip(),
+                target == "vector",
+                "",
+                target,
+            )
         # Prefer summary (compact) over raw history to save tokens.
         # Fallback to last 4 raw messages if no summary exists yet.
         if conversation_summary and conversation_summary.strip():
@@ -99,12 +117,12 @@ class ContextAssessor:
             response_schema=schema,
             retrieved_memories=[],
             retrieved_lore=[],
-            rag_decisions={"use_deep_thinking": False}
+            rag_decisions={"use_deep_thinking": False},
+            purpose=LLMPurpose.CONTEXT_ASSESSMENT,
+            call_budget=call_budget or LLMCallBudget(),
         )
 
         try:
-            from app.domain.context import llm_call_purpose
-            llm_call_purpose.set("alignment_assessor")
             response = await llm.generate(prompt)
             parsed = response.parsed or {}
             is_aligned = parsed.get("is_aligned", True)
