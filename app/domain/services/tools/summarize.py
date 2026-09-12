@@ -1,7 +1,8 @@
 import uuid
 from typing import Any, Dict, List
-from app.domain.interfaces.llm_provider import BaseLLMAdapter, StructuredPrompt
+
 from app.domain.interfaces.embedding_provider import IEmbeddingProvider
+from app.domain.interfaces.llm_provider import BaseLLMAdapter, LLMPurpose, StructuredPrompt
 from app.domain.services.tools.base import BaseAgentTool
 from app.shared.utils.logger import get_logger
 
@@ -107,12 +108,11 @@ class ConversationSummarizerAgentTool(BaseAgentTool):
             },
             retrieved_memories=[],
             retrieved_lore=[],
-            rag_decisions={}
+            rag_decisions={},
+            purpose=LLMPurpose.CONVERSATION_SUMMARY,
         )
 
         try:
-            from app.domain.context import llm_call_purpose
-            llm_call_purpose.set("summarize_conversation")
             response = await llm.generate(prompt)
             summary_text = (response.parsed or {}).get("summary", "").strip()
             if not summary_text:

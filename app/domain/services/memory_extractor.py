@@ -4,7 +4,7 @@ from typing import Any
 
 from app.domain.entities.memory import GuildMemoryPayload, MemoryPayload
 from app.domain.interfaces.embedding_provider import IEmbeddingProvider
-from app.domain.interfaces.llm_provider import BaseLLMAdapter, StructuredPrompt
+from app.domain.interfaces.llm_provider import BaseLLMAdapter, LLMPurpose, StructuredPrompt
 from app.domain.interfaces.vector_store import IVectorStore
 from app.domain.services.guardrails.pii_redaction import PiiRedactor
 from app.shared.utils.logger import get_logger
@@ -164,13 +164,12 @@ class MemoryExtractor:
             response_schema=schema,
             retrieved_memories=[],
             retrieved_lore=[],
-            rag_decisions={"use_deep_thinking": False}
+            rag_decisions={"use_deep_thinking": False},
+            purpose=LLMPurpose.MEMORY_RECONCILIATION,
         )
 
         results: dict[int, tuple[str, str | None]] = {}
         try:
-            from app.domain.context import llm_call_purpose
-            llm_call_purpose.set("memory_reconciliation")
             response = await self.llm.generate(prompt)
             parsed = response.parsed or {}
             reconciliations = parsed.get("reconciliations", [])
@@ -346,12 +345,11 @@ class MemoryExtractor:
             response_schema=self.BATCH_RESPONSE_SCHEMA,
             retrieved_memories=[],
             retrieved_lore=[],
-            rag_decisions={"use_deep_thinking": False}
+            rag_decisions={"use_deep_thinking": False},
+            purpose=LLMPurpose.MEMORY_EXTRACTION,
         )
 
         try:
-            from app.domain.context import llm_call_purpose
-            llm_call_purpose.set("memory_extraction")
             response = await self.llm.generate(prompt)
             parsed = response.parsed or {}
             extracted_facts = parsed.get("facts", [])

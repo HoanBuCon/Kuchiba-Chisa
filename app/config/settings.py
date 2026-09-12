@@ -56,7 +56,28 @@ class Settings(BaseSettings):
     INGESTION_SOURCE_MAX_RETRIES: int = Field(default=2, ge=0, le=5)
 
     # ── LLM — Provider ─────────────────────────────────────────
-    LLM_PROVIDER: Literal["groq", "gemini", "deepseek"] = Field(default="groq", validation_alias="LLM_PROVIDER")
+    LLM_PROVIDER: Literal["groq", "gemini", "deepseek"] = Field(
+        default="deepseek", validation_alias="LLM_PROVIDER"
+    )
+    LLM_ENABLED_PROVIDERS: str = "deepseek"
+    LLM_FALLBACK_PROVIDERS: str = ""
+    LLM_CALL_MAX_ATTEMPTS: int = Field(default=2, ge=1, le=2)
+    LLM_RETRY_LIMIT: int = Field(default=1, ge=0, le=1)
+    LLM_RETRY_BASE_SECONDS: float = Field(default=0.2, ge=0.0, le=5.0)
+    LLM_RETRY_MAX_SECONDS: float = Field(default=1.0, ge=0.0, le=10.0)
+    LLM_REQUEST_DEADLINE_SECONDS: float = Field(default=60.0, gt=0, le=180.0)
+    LLM_CALL_TIMEOUT_SECONDS: float = Field(default=30.0, gt=0, le=120.0)
+    LLM_FIRST_TOKEN_TIMEOUT_SECONDS: float = Field(default=10.0, gt=0, le=60.0)
+    LLM_CONNECT_TIMEOUT_SECONDS: float = Field(default=5.0, gt=0, le=30.0)
+    LLM_BULKHEAD_WAIT_SECONDS: float = Field(default=0.25, ge=0.0, le=5.0)
+    LLM_DEEPSEEK_CONCURRENCY: int = Field(default=4, ge=1, le=16)
+    LLM_GEMINI_CONCURRENCY: int = Field(default=2, ge=1, le=16)
+    LLM_GROQ_CONCURRENCY: int = Field(default=2, ge=1, le=16)
+    LLM_DEEPSEEK_PURPOSES: str = "*"
+    LLM_GEMINI_PURPOSES: str = "*"
+    LLM_GROQ_PURPOSES: str = "*"
+    LLM_BREAKER_FAILURE_THRESHOLD: int = Field(default=3, ge=1, le=20)
+    LLM_BREAKER_RECOVERY_SECONDS: float = Field(default=15.0, gt=0, le=300.0)
 
 
     # ── LLM — Groq ─────────────────────────────────────────────

@@ -2,9 +2,9 @@ import asyncio
 from collections.abc import Awaitable, Callable
 
 from app.config.settings import settings
-from app.domain.context import llm_call_purpose
 from app.domain.interfaces.llm_provider import (
     BaseLLMAdapter,
+    LLMGatewayError,
     LLMInvalidResponseError,
     LLMResponse,
     StructuredPrompt,
@@ -103,8 +103,6 @@ class LLMGenerationStage(PipelineStage):
             context.prompt = prompt
             
         log.info("Generating response with structured LLM")
-        llm_call_purpose.set("chat_response")
-        
         if context.on_token:
             raw_chunks = []
             raw_response = ""
@@ -151,10 +149,18 @@ class LLMGenerationStage(PipelineStage):
                 log.warning("Failed to log streaming transaction", error=str(log_ex))
                 
             if error_to_raise:
+                if isinstance(error_to_raise, LLMGatewayError) and context.has_images:
+                    context.vision_failed = True
+                    return await self._degrade_unavailable_vision(context)
                 raise error_to_raise
         else:
             try:
                 response = await self.llm.generate(prompt)
+            except LLMGatewayError:
+                if context.has_images:
+                    context.vision_failed = True
+                    return await self._degrade_unavailable_vision(context)
+                raise
             except Exception as gen_err:
                 if context.has_images:
                     log.warning(
@@ -356,6 +362,23 @@ class LLMGenerationStage(PipelineStage):
             if isinstance(raw_caption, str) and raw_caption.strip():
                 context.visual_caption = raw_caption.strip()
 
+        return context
+
+    @staticmethod
+    async def _degrade_unavailable_vision(context: ChatContext) -> ChatContext:
+        """Return an explicit limitation without silently converting to text-only input."""
+        context.chisa_reply = (
+            "I couldn't safely analyze the attached image right now. Please try again later."
+        )
+        context.citation_ids = []
+        context.tool_res = context.tool_res or {}
+        context.tool_res["generation"] = {"status": "degraded_vision_unavailable"}
+        if context.on_token:
+            for token in context.chisa_reply:
+                if asyncio.iscoroutinefunction(context.on_token):
+                    await context.on_token(token)
+                else:
+                    context.on_token(token)
         return context
 
     @staticmethod

@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import asyncio
 import json
 from collections.abc import AsyncIterator
 from typing import Any
@@ -12,7 +11,6 @@ from app.application.security.json_schema import (
     validate_structured_output,
 )
 from app.config.settings import settings
-from app.config.tuning.llm import LLMTuning
 from app.domain.interfaces.llm_provider import (
     BaseLLMAdapter,
     LLMError,
@@ -61,9 +59,6 @@ class DeepSeekAdapter(BaseLLMAdapter):
     DeepSeek API adapter using direct httpx calls to avoid OpenAI-HTTPX proxies conflicts.
     """
 
-    _MAX_RETRIES = LLMTuning.ADAPTER_MAX_RETRIES
-    _BASE_BACKOFF = LLMTuning.ADAPTER_BASE_BACKOFF_STANDARD  # seconds
-
     def __init__(self, http_client: httpx.AsyncClient) -> None:
         self._http_client = http_client
         self._api_key = settings.DEEPSEEK_API_KEY
@@ -71,42 +66,10 @@ class DeepSeekAdapter(BaseLLMAdapter):
         self._model = settings.DEEPSEEK_MODEL
         self._max_tokens = settings.DEEPSEEK_MAX_TOKENS
         self._temperature = settings.DEEPSEEK_TEMPERATURE
-        self._timeout = settings.DEEPSEEK_TIMEOUT
 
     async def generate(self, prompt: StructuredPrompt) -> LLMResponse:
-        last_error: Exception | None = None
-
-        for attempt in range(1, self._MAX_RETRIES + 1):
-            try:
-                log.debug(
-                    "DeepSeek generate attempt",
-                    attempt=attempt,
-                    model=self._model,
-                )
-                return await self._call_deepseek(prompt)
-
-            except LLMTokenOverflowError:
-                raise
-
-            except LLMRateLimitError as e:
-                last_error = e
-                wait = self._BASE_BACKOFF * (2 ** (attempt - 1))
-                log.warning("DeepSeek rate limited, waiting", wait_seconds=wait, attempt=attempt)
-                await asyncio.sleep(wait)
-
-            except LLMTimeoutError as e:
-                last_error = e
-                wait = self._BASE_BACKOFF * (2 ** (attempt - 1))
-                log.warning("DeepSeek timeout, retrying", wait_seconds=wait, attempt=attempt)
-                await asyncio.sleep(wait)
-
-            except LLMError as e:
-                last_error = e
-                if not e.retryable:
-                    raise
-                await asyncio.sleep(self._BASE_BACKOFF * attempt)
-
-        raise last_error or LLMError("Max retries exhausted")
+        """Execute one provider request; retry/failover belongs to the gateway."""
+        return await self._call_deepseek(prompt)
 
     async def _call_deepseek(self, prompt: StructuredPrompt) -> LLMResponse:
         if prompt.images:
@@ -176,22 +139,35 @@ class DeepSeekAdapter(BaseLLMAdapter):
             }
 
         try:
-            response = await self._http_client.post(url, headers=headers, json=payload, timeout=float(self._timeout))
+            response = await self._http_client.post(url, headers=headers, json=payload)
             
             if response.status_code == 429:
                 raise LLMRateLimitError()
             elif response.status_code == 413:
                 raise LLMError("Payload too large", retryable=False, code="PAYLOAD_TOO_LARGE")
             elif response.status_code >= 500:
-                raise LLMError(f"Server error: {response.status_code}", retryable=True)
+                raise LLMError(
+                    f"Server error: {response.status_code}",
+                    retryable=True,
+                    code="PROVIDER_5XX",
+                )
             elif response.status_code != 200:
-                raise LLMError(f"API error: {response.status_code} - {response.text}", retryable=False)
+                code = "AUTH_CONFIG" if response.status_code in (401, 403) else "PROVIDER_ERROR"
+                raise LLMError(
+                    f"DeepSeek API request rejected with status {response.status_code}",
+                    retryable=False,
+                    code=code,
+                )
                 
             res_json = response.json()
         except httpx.TimeoutException as error:
             raise LLMTimeoutError() from error
         except httpx.RequestError as e:
-            raise LLMError(f"HTTP request failed: {e}", retryable=True) from e
+            raise LLMError(
+                "DeepSeek transport request failed",
+                retryable=True,
+                code="TRANSPORT",
+            ) from e
         except json.JSONDecodeError as error:
             raise LLMInvalidResponseError("Failed to decode JSON from DeepSeek response") from error
 
@@ -306,11 +282,29 @@ class DeepSeekAdapter(BaseLLMAdapter):
         contract_name = ""
         contract_arguments_seen = False
         try:
-            async with self._http_client.stream("POST", url, headers=headers, json=payload, timeout=float(self._timeout)) as response:
+            async with self._http_client.stream(
+                "POST", url, headers=headers, json=payload
+            ) as response:
                 if response.status_code != 200:
-                    log.error("DeepSeek stream failed", status_code=response.status_code)
-                    yield ""
-                    return
+                    if response.status_code == 429:
+                        raise LLMRateLimitError()
+                    if response.status_code in (401, 403):
+                        raise LLMError(
+                            "DeepSeek authentication failed",
+                            retryable=False,
+                            code="AUTH_CONFIG",
+                        )
+                    if response.status_code >= 500:
+                        raise LLMError(
+                            "DeepSeek provider unavailable",
+                            retryable=True,
+                            code="PROVIDER_5XX",
+                        )
+                    raise LLMError(
+                        "DeepSeek streaming request rejected",
+                        retryable=False,
+                        code="PROVIDER_ERROR",
+                    )
                 
                 async for line in response.aiter_lines():
                     if not line:
@@ -355,9 +349,7 @@ class DeepSeekAdapter(BaseLLMAdapter):
                         except (json.JSONDecodeError, KeyError, IndexError, TypeError) as parse_ex:
                             log.warning(
                                 "Failed to parse DeepSeek stream chunk",
-                                chunk_preview=data_str[:200],
                                 chunk_size=len(data_str),
-                                error=str(parse_ex),
                                 error_type=type(parse_ex).__name__,
                             )
                             continue
@@ -373,9 +365,14 @@ class DeepSeekAdapter(BaseLLMAdapter):
         except httpx.TimeoutException as error:
             log.error("DeepSeek streaming timed out")
             raise LLMTimeoutError() from error
+        except LLMError:
+            raise
         except Exception as e:
-            log.error("DeepSeek streaming failed", error=str(e))
-            raise LLMError(f"DeepSeek streaming failed: {e}", retryable=False) from e
+            raise LLMError(
+                "DeepSeek streaming transport failed",
+                retryable=True,
+                code="TRANSPORT",
+            ) from e
 
     async def validate_response(self, raw: str, schema: dict[str, Any]) -> dict[str, Any]:
         from app.shared.utils.json_parser import robust_parse_json

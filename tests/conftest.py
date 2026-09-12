@@ -123,6 +123,39 @@ class DeterministicMemoryLLM(DeterministicTestLLM):
         properties = prompt.response_schema.get("properties", {})
         transcript = prompt.user_message.lower()
         if "facts" in properties:
+            if "viettel software" in transcript:
+                return {
+                    "facts": [
+                        {
+                            "type": "user_fact",
+                            "content": "Senpai đang chuẩn bị ứng tuyển vào Viettel Software",
+                            "importance_score": 0.9,
+                        }
+                    ]
+                }
+            if "chỉ huy trưởng" in transcript:
+                return {
+                    "facts": [
+                        {
+                            "type": "shared_story",
+                            "content": "Chisa đã đặt biệt danh cho Senpai là Chỉ Huy Trưởng",
+                            "importance_score": 0.9,
+                        }
+                    ]
+                }
+            if "chứng chỉ aws" in transcript and "hứa" in transcript:
+                return {
+                    "facts": [
+                        {
+                            "type": "shared_story",
+                            "content": (
+                                "Chisa hứa vẽ tặng Senpai một bức chân dung "
+                                "khi Senpai thi đỗ chứng chỉ AWS"
+                            ),
+                            "importance_score": 0.9,
+                        }
+                    ]
+                }
             if "chỉ huy" in transcript:
                 return {
                     "facts": [
@@ -196,6 +229,12 @@ class DeterministicMemoryLLM(DeterministicTestLLM):
                 ]
             }
         return super()._response_payload(prompt)
+
+
+@pytest.fixture
+def deterministic_memory_llm() -> DeterministicMemoryLLM:
+    """Provider-free memory decisions for deterministic contract tests."""
+    return DeterministicMemoryLLM()
 
 
 def _assert_isolated_test_endpoints() -> None:

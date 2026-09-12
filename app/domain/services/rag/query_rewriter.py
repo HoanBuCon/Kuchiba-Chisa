@@ -3,7 +3,12 @@ import json
 import re
 from typing import Any, Dict, Optional, Tuple
 
-from app.domain.interfaces.llm_provider import BaseLLMAdapter, StructuredPrompt
+from app.domain.interfaces.llm_provider import (
+    BaseLLMAdapter,
+    LLMCallBudget,
+    LLMPurpose,
+    StructuredPrompt,
+)
 from app.shared.utils.logger import get_logger
 from app.shared.utils.query_cleaner import (
     clean_query_for_rag,
@@ -128,6 +133,7 @@ class QueryRewriter:
         needs_llm_rewrite: bool = False,
         intent_hint: Optional[str] = None,
         timeout_seconds: float = RAGTuning.REWRITE_TIMEOUT_SECONDS,
+        call_budget: LLMCallBudget | None = None,
     ) -> RewriteResult:
         """
         Main rewrite method.
@@ -177,11 +183,11 @@ class QueryRewriter:
             response_schema=REWRITE_SCHEMA,
             max_tokens=100,
             temperature=0.1,
+            purpose=LLMPurpose.QUERY_REWRITE,
+            call_budget=call_budget or LLMCallBudget(),
         )
 
         try:
-            from app.domain.context import llm_call_purpose
-            llm_call_purpose.set("micro_llm_query_rewrite")
             log.info("Executing Micro LLM Rewrite", current=raw_user_query, prev_context=prev_clamped)
             resp = await asyncio.wait_for(
                 self.llm.generate(prompt),

@@ -5,7 +5,7 @@ from typing import Any
 
 from app.domain.entities.emotion import EmotionMutation, EmotionState
 from app.domain.entities.user import UserStats
-from app.domain.interfaces.llm_provider import StructuredPrompt
+from app.domain.interfaces.llm_provider import LLMCallBudget, StructuredPrompt
 from app.domain.interfaces.session import IDbSession
 from app.domain.models.intent_result import ChatIntent, IntentResult
 from app.domain.models.privacy import MemoryPrivacyPolicy
@@ -99,6 +99,7 @@ class ChatContext:
     final_user_message: str = ""
     prompt: StructuredPrompt | None = None
     budget_audit: BudgetAudit | None = None
+    llm_call_budget: LLMCallBudget = field(default_factory=LLMCallBudget)
     
     # LLM Generation
     chisa_reply: str = ""

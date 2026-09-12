@@ -9,7 +9,6 @@ from typing import Any, List
 from app.config.settings import settings
 from app.domain.context import (
     enable_clean_log,
-    llm_call_purpose,
     request_question_idx,
     request_turn_idx,
 )
@@ -139,7 +138,7 @@ async def log_routing_transaction(
 
 def _write_log_sync(prompt: StructuredPrompt, response: LLMResponse, q_idx: int, t_idx: int) -> None:
     trace = current_trace_var.get()
-    purpose = llm_call_purpose.get()
+    purpose = prompt.purpose.value
     
     # Extract retrieval metadata
     decisions = prompt.rag_decisions or {}
@@ -274,7 +273,7 @@ async def log_llm_transaction(prompt: StructuredPrompt, response: LLMResponse) -
         # Add LLM call step to the pipeline tracker
         try:
             from app.infrastructure.logging.pipeline_tracker import pipeline_tracker
-            purpose = llm_call_purpose.get()
+            purpose = prompt.purpose.value
             is_deep_thinking = prompt.rag_decisions.get("use_deep_thinking", False) if hasattr(prompt, "rag_decisions") and prompt.rag_decisions else False
             is_main_chat = (purpose == "chat_response" or not purpose or purpose == "unknown")
 
@@ -340,7 +339,9 @@ async def log_llm_transaction(prompt: StructuredPrompt, response: LLMResponse) -
                                     "has_reasoning": bool(response.reasoning_content),
                                 }
                                 break
-                            elif purpose.startswith("thinking_loop_cycle_") and s.get("name") == purpose:
+                            elif purpose == "thinking_loop" and str(s.get("name", "")).startswith(
+                                "thinking_loop_cycle_"
+                            ):
                                 s["data"]["llm_telemetry"] = {
                                     "model": response.model,
                                     "tokens": token_breakdown,

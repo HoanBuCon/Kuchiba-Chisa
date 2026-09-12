@@ -3,23 +3,23 @@ Unit & Integration Test Suite for Precision Long-Term Memory (LTM) Engine.
 Tests the 2-Type Memory Model (user_fact & shared_story) and Anti-Banter Filters.
 """
 
-import asyncio
 import os
 import sys
 
 sys.path.insert(0, os.path.abspath("."))
 
 from app.application.dependencies import container
+from app.domain.interfaces.llm_provider import LLMPurpose, StructuredPrompt
 from app.domain.services.memory_extractor import MemoryExtractor
-from app.domain.interfaces.llm_provider import StructuredPrompt
 
 
-async def test_all_scenarios():
+async def test_all_scenarios(deterministic_memory_llm, monkeypatch):
     print("=" * 80)
     print("🚀 BẮT ĐẦU KIỂM THỬ: PRECISION LONG-TERM MEMORY (2-TYPE MODEL)")
     print("=" * 80)
 
     extractor: MemoryExtractor = container.memory_extractor
+    monkeypatch.setattr(extractor, "llm", deterministic_memory_llm)
 
     # ── SCENARIO 1: User Job Application & Banter Joke Filter ──
     print("\n[TEST 1] Kiểm tra trích xuất User Fact & Kháng câu đùa roleplay...")
@@ -87,7 +87,8 @@ async def test_all_scenarios():
         system=system_prompt,
         history=[],
         user_message=transcript_1,
-        response_schema=extractor.BATCH_RESPONSE_SCHEMA
+        response_schema=extractor.BATCH_RESPONSE_SCHEMA,
+        purpose=LLMPurpose.MEMORY_EXTRACTION,
     ))
     facts_1 = resp_1.parsed.get("facts", [])
     print(f"  • Extracted Facts count: {len(facts_1)}")
@@ -115,7 +116,8 @@ async def test_all_scenarios():
         system=system_prompt,
         history=[],
         user_message=transcript_2,
-        response_schema=extractor.BATCH_RESPONSE_SCHEMA
+        response_schema=extractor.BATCH_RESPONSE_SCHEMA,
+        purpose=LLMPurpose.MEMORY_EXTRACTION,
     ))
     facts_2 = resp_2.parsed.get("facts", [])
     print(f"  • Extracted Facts count: {len(facts_2)}")
@@ -143,7 +145,8 @@ async def test_all_scenarios():
         system=system_prompt,
         history=[],
         user_message=transcript_3,
-        response_schema=extractor.BATCH_RESPONSE_SCHEMA
+        response_schema=extractor.BATCH_RESPONSE_SCHEMA,
+        purpose=LLMPurpose.MEMORY_EXTRACTION,
     ))
     facts_3 = resp_3.parsed.get("facts", [])
     print(f"  • Extracted Facts count: {len(facts_3)}")
@@ -171,7 +174,8 @@ async def test_all_scenarios():
         system=system_prompt,
         history=[],
         user_message=transcript_4,
-        response_schema=extractor.BATCH_RESPONSE_SCHEMA
+        response_schema=extractor.BATCH_RESPONSE_SCHEMA,
+        purpose=LLMPurpose.MEMORY_EXTRACTION,
     ))
     facts_4 = resp_4.parsed.get("facts", [])
     print(f"  • Extracted Facts count: {len(facts_4)}")
@@ -181,7 +185,3 @@ async def test_all_scenarios():
     print("\n" + "=" * 80)
     print("🎉 TOÀN BỘ 4 BỘ KIỂM THỬ PRECISION LONG-TERM MEMORY ĐỀU THÀNH CÔNG 100%!")
     print("=" * 80)
-
-
-if __name__ == "__main__":
-    asyncio.run(test_all_scenarios())

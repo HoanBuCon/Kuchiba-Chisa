@@ -52,7 +52,3 @@ class CircuitBreaker:
                 log.info("Circuit breaker HALF_OPEN (testing recovery)")
             else:
                 raise CircuitBreakerError("Circuit breaker is OPEN. Calls are blocked.")
-
-
-# Global instance for LLM calls
-llm_circuit_breaker = CircuitBreaker(failure_threshold=5, recovery_timeout=15.0)

@@ -16,6 +16,7 @@ from app.application.dependencies import (
 )
 from app.application.security.authorization import AuthorizationError, AuthorizationPolicy
 from app.domain.interfaces.llm_provider import (
+    LLMGatewayError,
     LLMInvalidResponseError,
     LLMRateLimitError,
     LLMTimeoutError,
@@ -31,7 +32,6 @@ from app.interface.api.schemas.chat import (
     MemoryConsentRequest,
     MemoryConsentResponse,
 )
-from app.shared.utils.circuit_breaker import CircuitBreakerError
 from app.shared.utils.user_identity import normalize_user_id, normalize_user_id_str
 
 log = get_logger(__name__)
@@ -162,7 +162,7 @@ async def _run_chat_request(
             error=None,
         )
         return fallback_text, fallback_emotions, False, [], [], []
-    except (LLMTimeoutError, LLMInvalidResponseError, CircuitBreakerError) as llm_err:
+    except (LLMGatewayError, LLMTimeoutError, LLMInvalidResponseError) as llm_err:
         fallback_text = "Chisa hơi mệt một chút, Senpai nhắn lại sau nhé ~"
         fallback_emotions = None
         log.warning(
