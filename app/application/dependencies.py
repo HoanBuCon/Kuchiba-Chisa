@@ -128,6 +128,10 @@ class AppContainer:
         from app.domain.services.emotion_engine import EmotionEngine
         from app.domain.services.guardrails import PromptLeakageGuard
         from app.domain.services.intent_classifier import IntentClassifier
+        from app.domain.services.lore_answer_cache import (
+            LoreAnswerCacheContract,
+            LoreAnswerCachePolicy,
+        )
         from app.domain.services.tool_router import LLMToolRouter
         from app.infrastructure.cache.redis.redis_service import redis_service
         from app.infrastructure.database.engine import AsyncSessionFactory
@@ -145,6 +149,7 @@ class AppContainer:
             SqlAlchemyUserRepository,
         )
         from app.infrastructure.database.uow import UnitOfWork
+        from app.infrastructure.llm.gateway_factory import generation_policy_fingerprint
         from app.infrastructure.logging.llm_logger import (
             log_llm_transaction,
             log_routing_transaction,
@@ -168,6 +173,14 @@ class AppContainer:
         
         entity_resolver = self.entity_resolver
         intent_classifier = IntentClassifier(llm=self.llm, embedder=self.embedder, entity_resolver=entity_resolver)
+        lore_answer_cache = LoreAnswerCacheContract(
+            LoreAnswerCachePolicy(
+                generation_fingerprint=generation_policy_fingerprint(settings),
+                prompt_semantics_version=settings.LORE_ANSWER_CACHE_PROMPT_VERSION,
+                grounding_contract_version=settings.LORE_ANSWER_CACHE_GROUNDING_VERSION,
+                ttl_seconds=settings.LORE_ANSWER_CACHE_TTL_SECONDS,
+            )
+        )
         
         # Tools registration
         from app.domain.services.tools.emotion_report import EmotionReportAgentTool
@@ -266,6 +279,8 @@ class AppContainer:
             ),
             CacheStage(
                 cache=redis_service,
+                corpus_identity_provider=qdrant_service,
+                contract=lore_answer_cache,
                 pipeline_tracker=pipeline_tracker
             ),
             ToolRoutingStage(
@@ -306,7 +321,9 @@ class AppContainer:
                 pipeline_tracker=pipeline_tracker
             ),
             CacheUpdateStage(
-                cache=redis_service
+                cache=redis_service,
+                corpus_identity_provider=qdrant_service,
+                contract=lore_answer_cache,
             ),
             BackgroundTaskStage(
                 job_queue=self.background_job_queue,

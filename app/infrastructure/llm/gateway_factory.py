@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import hashlib
+import json
+
 import httpx
 
 from app.application.llm_gateway import LLMGateway, LLMGatewayPolicy, ProviderModel
@@ -25,6 +28,35 @@ def _provider_purposes(value: str) -> frozenset[LLMPurpose]:
     if parts == ("*",):
         return _ALL_PURPOSES
     return frozenset(LLMPurpose(part) for part in parts)
+
+
+def generation_policy_fingerprint(config: Settings, *, profile: str = "default") -> str:
+    """Opaque identity for output-relevant BE-02 routing/model configuration."""
+    enabled = _provider_names(config.LLM_ENABLED_PROVIDERS)
+    configured_models = {
+        "deepseek": config.DEEPSEEK_MODEL,
+        "gemini": config.GEMINI_MODEL,
+        "groq": config.GROQ_MODEL,
+    }
+    configured_purposes = {
+        "deepseek": config.LLM_DEEPSEEK_PURPOSES,
+        "gemini": config.LLM_GEMINI_PURPOSES,
+        "groq": config.LLM_GROQ_PURPOSES,
+    }
+    material = {
+        "profile": profile,
+        "primary": config.LLM_PROVIDER,
+        "enabled": enabled,
+        "fallback": _provider_names(config.LLM_FALLBACK_PROVIDERS),
+        "models": {
+            provider: configured_models.get(provider, "unsupported") for provider in enabled
+        },
+        "purposes": {
+            provider: configured_purposes.get(provider, "unsupported") for provider in enabled
+        },
+    }
+    canonical = json.dumps(material, sort_keys=True, separators=(",", ":"))
+    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
 
 
 def validate_llm_configuration(config: Settings) -> list[str]:

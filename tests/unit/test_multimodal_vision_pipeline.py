@@ -18,6 +18,10 @@ from app.domain.services.chat_pipeline.stages.context_building_stage import Cont
 from app.domain.services.chat_pipeline.stages.intent_stage import IntentStage
 from app.domain.services.chat_pipeline.stages.llm_generation_stage import LLMGenerationStage
 from app.domain.services.context_builder import ContextBuilder
+from app.domain.services.lore_answer_cache import (
+    LoreAnswerCacheContract,
+    LoreAnswerCachePolicy,
+)
 from app.infrastructure.llm.adapters.deepseek import DeepSeekAdapter
 from app.shared.security.vision_security import VisualPromptDefense
 
@@ -154,7 +158,17 @@ async def test_cache_stage_bypasses_cache_when_images_present():
     mock_cache = AsyncMock()
     mock_cache.get.return_value = '{"response": "Cached answer"}'
 
-    cache_stage = CacheStage(cache=mock_cache)
+    cache_stage = CacheStage(
+        cache=mock_cache,
+        corpus_identity_provider=AsyncMock(),
+        contract=LoreAnswerCacheContract(
+            LoreAnswerCachePolicy(
+                generation_fingerprint="a" * 64,
+                prompt_semantics_version="test-v1",
+                grounding_contract_version="test-v1",
+            )
+        ),
+    )
 
     ctx = ChatContext(
         session=None,
