@@ -174,12 +174,12 @@ spec:
           annotations:
             summary: Active corpus and Qdrant index identity disagree
             intent: Stop publication or rollback through the authorized versioned corpus workflow.
-        - alert: ChisaLlmCallBudgetExhaustion
+        - alert: ChisaLlmCostBudgetAnomaly
           expr: sum(increase(chisa_llm_budget_exhausted_total[15m])) > 0
           for: 5m
           labels:
             severity: ticket
-            requirement: NFR-PERF-009
+            requirement: NFR-OPS-003
           annotations:
-            summary: One or more requests exhausted the approved LLM call budget
-            intent: Inspect purpose/model token counters; monetary cost is unavailable without versioned pricing.
+            summary: One or more requests exhausted the approved LLM cost-control budget
+            intent: Inspect purpose/model token counters and NFR-PERF-009 enforcement; monetary cost remains unavailable without versioned pricing.

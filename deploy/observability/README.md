@@ -27,8 +27,9 @@ without metric suffixes, adapt the backend query layer rather than changing appl
   threshold that is not present in the SRS.
 
 Cost is deliberately not estimated here. No authoritative provider price registry exists in the
-application. Token usage and request-budget exhaustion remain observable; a monetary cost alert
-must wait for a versioned pricing source and explicit budget approval.
+application. `ChisaLlmCostBudgetAnomaly` alerts on the approved hard per-request call-budget
+exhaustion signal and token usage remains observable; a monetary-cost alert must wait for a
+versioned pricing source and explicit budget approval.
 
 ## Explicit measurement boundaries
 

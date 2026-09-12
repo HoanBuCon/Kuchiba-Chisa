@@ -140,7 +140,7 @@ def test_prometheus_rule_has_multi_window_burn_pairs_and_actionable_signals() ->
         "ChisaOutputLeakageDetected",
         "ChisaCrossTenantAccessDenied",
         "ChisaCorpusIndexDrift",
-        "ChisaLlmCallBudgetExhaustion",
+        "ChisaLlmCostBudgetAnomaly",
     }
     assert required == set(rules)
 

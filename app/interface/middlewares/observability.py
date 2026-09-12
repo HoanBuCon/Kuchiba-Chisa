@@ -18,6 +18,13 @@ from app.domain.interfaces.observability import (
     TraceOperation,
 )
 
+_STREAM_FIRST_TOKEN_AT_KEY = "chisa.observability.first_token_at"
+
+
+def mark_stream_first_token(scope: dict[str, Any]) -> None:
+    """Record the first emitted token time without inspecting stream content."""
+    scope.setdefault(_STREAM_FIRST_TOKEN_AT_KEY, monotonic())
+
 
 def _route_group(path_template: str | None) -> str:
     if path_template in {"/health", "/ready"}:
@@ -56,8 +63,6 @@ class ObservabilityMiddleware:
 
         method = str(scope.get("method", "GET")).upper()
         started = monotonic()
-        response_started_at: float | None = None
-        first_body_at: float | None = None
         status_code = 500
         is_stream = False
         disconnected = False
@@ -81,9 +86,8 @@ class ObservabilityMiddleware:
             return message
 
         async def send_observed(message: dict[str, Any]) -> None:
-            nonlocal first_body_at, is_stream, response_started_at, status_code
+            nonlocal is_stream, status_code
             if message["type"] == "http.response.start":
-                response_started_at = monotonic()
                 status_code = int(message.get("status", 500))
                 response_headers = {
                     key.lower(): value.lower() for key, value in message.get("headers", ())
@@ -96,8 +100,6 @@ class ObservabilityMiddleware:
                         self._active_streams,
                         TelemetryDimensions(),
                     )
-            elif message["type"] == "http.response.body" and first_body_at is None:
-                first_body_at = monotonic()
             await send(message)
 
         try:
@@ -135,10 +137,15 @@ class ObservabilityMiddleware:
                         monotonic() - started,
                         final_dimensions,
                     )
-                    if is_stream and first_body_at is not None:
+                    first_token_at = scope.get(_STREAM_FIRST_TOKEN_AT_KEY)
+                    if (
+                        is_stream
+                        and isinstance(first_token_at, int | float)
+                        and first_token_at >= started
+                    ):
                         self.telemetry.observe(
                             HistogramSignal.HTTP_TTFT,
-                            first_body_at - started,
+                            first_token_at - started,
                             final_dimensions,
                         )
         finally:

@@ -1,0 +1,7 @@
+services:
+  postgres:
+    ports: !reset []
+  redis:
+    ports: !reset []
+  qdrant:
+    ports: !reset []

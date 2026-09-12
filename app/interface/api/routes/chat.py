@@ -32,6 +32,7 @@ from app.interface.api.schemas.chat import (
     MemoryConsentRequest,
     MemoryConsentResponse,
 )
+from app.interface.middlewares.observability import mark_stream_first_token
 from app.shared.utils.user_identity import normalize_user_id, normalize_user_id_str
 
 log = get_logger(__name__)
@@ -458,6 +459,8 @@ async def chat_stream_endpoint(
             yield _sse_event("meta", {"trace_id": trace_id})
             while True:
                 event = await queue.get()
+                if event["type"] == "token":
+                    mark_stream_first_token(http_request.scope)
                 yield _sse_event(event["type"], event.get("data", {}))
                 if event["type"] in {"done", "error"}:
                     break

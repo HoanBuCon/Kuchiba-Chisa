@@ -31,7 +31,11 @@ from app.infrastructure.observability.otel import (
     DelegatingOperationalTelemetry,
     OpenTelemetryOperationalTelemetry,
 )
-from app.interface.middlewares.observability import ObservabilityMiddleware, _route_group
+from app.interface.middlewares.observability import (
+    ObservabilityMiddleware,
+    _route_group,
+    mark_stream_first_token,
+)
 
 
 def _telemetry() -> tuple[
@@ -198,6 +202,48 @@ async def test_cancelled_request_is_never_recorded_as_success() -> None:
     points = request_metric.data.data_points
     assert any(point.attributes["chisa.status_class"] == "cancelled" for point in points)
     assert all(point.attributes["chisa.status_class"] != "2xx" for point in points)
+
+
+@pytest.mark.asyncio
+async def test_sse_ttft_uses_explicit_first_token_marker_not_metadata_body() -> None:
+    telemetry, _exporter, metric_reader = _telemetry()
+
+    async def endpoint(scope, _receive, send) -> None:
+        scope["route"] = SimpleNamespace(path="/api/v1/chat/stream")
+        await send(
+            {
+                "type": "http.response.start",
+                "status": 200,
+                "headers": [(b"content-type", b"text/event-stream")],
+            }
+        )
+        await send({"type": "http.response.body", "body": b"event: meta\n\n"})
+        mark_stream_first_token(scope)
+        await send({"type": "http.response.body", "body": b"event: token\n\n"})
+
+    middleware = ObservabilityMiddleware(endpoint, telemetry)
+    await middleware(
+        {
+            "type": "http",
+            "method": "POST",
+            "path": "/api/v1/chat/stream",
+            "headers": [],
+        },
+        _unused_receive,
+        _unused_send,
+    )
+
+    metrics_data = metric_reader.get_metrics_data()
+    assert metrics_data is not None
+    ttft_metric = next(
+        metric
+        for resource in metrics_data.resource_metrics
+        for scope in resource.scope_metrics
+        for metric in scope.metrics
+        if metric.name == HistogramSignal.HTTP_TTFT.value
+    )
+    assert len(ttft_metric.data.data_points) == 1
+    assert ttft_metric.data.data_points[0].count == 1
 
 
 def test_initialization_failure_is_nonfatal_and_redacts_exporter_secrets(
