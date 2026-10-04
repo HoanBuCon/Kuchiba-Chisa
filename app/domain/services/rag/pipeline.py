@@ -181,7 +181,11 @@ class RAGPipeline:
                 if self.entity_resolver:
                     extracted = self.entity_resolver.extract_entities(cleaned_query)
                     expanded = self.entity_resolver.expand_entities(extracted)
-                    log.info("Entity Resolver Output", extracted=list(extracted), expanded=list(expanded))
+                    log.info(
+                        "Entity Resolver Output",
+                        extracted_count=len(extracted),
+                        expanded_count=len(expanded),
+                    )
 
                 for col_name in lore_collections:
                     queried_lore_cols.append(col_name)
@@ -463,7 +467,10 @@ class RAGPipeline:
             if not web_search_tool:
                 return
 
-            log.info("Knowledge Retrieval executing Web Search (Round 1)", query=web_search_1_query)
+            log.info(
+                "Knowledge Retrieval executing Web Search (Round 1)",
+                query_chars=len(web_search_1_query or ""),
+            )
             try:
                 web_search_1_res = await web_search_tool.execute(
                     session=session,

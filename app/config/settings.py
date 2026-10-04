@@ -154,6 +154,10 @@ class Settings(BaseSettings):
     TAVILY_API_KEY: Optional[str] = None
     SERPER_API_KEY: Optional[str] = None
     ENABLE_PAID_SEARCH: bool = False
+    # B-1: SSRF-safe deep page fetch budget for untrusted search-result URLs.
+    WEB_FETCH_MAX_BYTES: int = Field(default=1_000_000, ge=16_384, le=5_000_000)
+    WEB_FETCH_MAX_REDIRECTS: int = Field(default=3, ge=0, le=5)
+    WEB_FETCH_TIMEOUT_SECONDS: float = Field(default=3.5, gt=0, le=10.0)
 
     # ── JWT ────────────────────────────────────────────────────
     JWT_SECRET: str = Field(min_length=32)
@@ -164,6 +168,22 @@ class Settings(BaseSettings):
     JWT_AUDIENCE: str = "kuchiba-chisa-api"
     DISCORD_WORKLOAD_JWT_SECRET: str = Field(min_length=32)
     DISCORD_WORKLOAD_JWT_ISSUER: str = "kuchiba-chisa-discord"
+
+    # ── User accounts (email/password + Google OIDC) ───────────
+    ACCOUNT_ACCESS_TOKEN_MINUTES: int = Field(default=15, ge=1, le=60)
+    BCRYPT_ROUNDS: int = Field(default=12, ge=10, le=15)
+    # Secure cookies require HTTPS; only development over plain http may disable it.
+    AUTH_COOKIE_SECURE: bool = True
+    AUTH_RATE_LIMIT_PER_MINUTE: int = Field(default=10, ge=1, le=1_000)
+    AUTH_LOGIN_PER_EMAIL_PER_MINUTE: int = Field(default=5, ge=1, le=100)
+    # Public origin of the web app (used for post-OAuth redirects), e.g. https://chisa.example.com
+    PUBLIC_APP_URL: str = "http://localhost:5173"
+    GOOGLE_OAUTH_CLIENT_ID: str | None = None
+    GOOGLE_OAUTH_CLIENT_SECRET: SecretStr | None = None
+    # Must exactly match an authorized redirect URI in Google Cloud Console,
+    # e.g. https://chisa.example.com/api/v1/auth/google/callback
+    GOOGLE_OAUTH_REDIRECT_URI: str | None = None
+    GOOGLE_OAUTH_TIMEOUT_SECONDS: float = Field(default=10.0, gt=0, le=30.0)
 
     # ── Rate Limiting ──────────────────────────────────────────
     RATE_LIMIT_PER_MINUTE: int = 60
@@ -193,6 +213,14 @@ class Settings(BaseSettings):
     PROMPT_REALLOCATE_EMPTY: bool = True
     MAX_RESPONSE_TOKENS: int = 20000
     LLM_OUTPUT_MAX_RESPONSE_CHARS: int = Field(default=16_000, ge=1, le=80_000)
+
+    # ── Application Logging (B-2) ──────────────────────────────
+    # Empty disables the file sink (production: stdout + Docker log rotation).
+    APP_LOG_FILE: str = ""
+    APP_LOG_MAX_BYTES: int = Field(default=10 * 1024 * 1024, ge=1_048_576, le=104_857_600)
+    APP_LOG_BACKUP_COUNT: int = Field(default=5, ge=1, le=20)
+    # Development-only escape hatch; rejected in production by the validator below.
+    LOG_UNSAFE_CONTENT_DEBUG: bool = False
 
     # ── LLM Telemetry Logging ──────────────────────────────────
     LLM_LOG_FILE: str = "logs/llm_api.jsonl"
@@ -235,6 +263,15 @@ class Settings(BaseSettings):
     def is_test(self) -> bool:
         return self.APP_ENV == "test"
 
+    @property
+    def google_oauth_enabled(self) -> bool:
+        return bool(
+            self.GOOGLE_OAUTH_CLIENT_ID
+            and self.GOOGLE_OAUTH_CLIENT_SECRET
+            and self.GOOGLE_OAUTH_CLIENT_SECRET.get_secret_value()
+            and self.GOOGLE_OAUTH_REDIRECT_URI
+        )
+
     @field_validator("DATABASE_URL")
     @classmethod
     def validate_database_url(cls, v: str) -> str:
@@ -255,6 +292,8 @@ class Settings(BaseSettings):
             raise ValueError("OTEL_BSP_MAX_EXPORT_BATCH_SIZE cannot exceed OTEL_BSP_MAX_QUEUE_SIZE")
         if self.OTEL_ENABLED and self.is_prod and self.OTEL_EXPORTER_OTLP_ENDPOINT is None:
             raise ValueError("OTEL_EXPORTER_OTLP_ENDPOINT is required when telemetry is enabled")
+        if self.LOG_UNSAFE_CONTENT_DEBUG and not self.is_dev:
+            raise ValueError("LOG_UNSAFE_CONTENT_DEBUG is only allowed in development")
         if self.is_prod:
             protected_secrets = (
                 self.SECRET_KEY,
@@ -267,6 +306,24 @@ class Settings(BaseSettings):
                 raise ValueError("REDIS_PASSWORD is required in production")
             if not self.QDRANT_API_KEY:
                 raise ValueError("QDRANT_API_KEY is required in production")
+            if self.DISCORD_WORKLOAD_JWT_SECRET == self.JWT_SECRET:
+                raise ValueError("DISCORD_WORKLOAD_JWT_SECRET must differ from JWT_SECRET")
+            if not self.AUTH_COOKIE_SECURE:
+                raise ValueError("AUTH_COOKIE_SECURE must be enabled in production")
+            if self.google_oauth_enabled and not (
+                self.PUBLIC_APP_URL.startswith("https://")
+                and str(self.GOOGLE_OAUTH_REDIRECT_URI).startswith("https://")
+            ):
+                raise ValueError(
+                    "PUBLIC_APP_URL and GOOGLE_OAUTH_REDIRECT_URI must use https in production"
+                )
+            secret = (
+                self.GOOGLE_OAUTH_CLIENT_SECRET.get_secret_value()
+                if self.GOOGLE_OAUTH_CLIENT_SECRET
+                else ""
+            )
+            if secret and _is_placeholder_secret(secret):
+                raise ValueError("production secrets must not use template values")
         return self
 
 

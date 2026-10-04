@@ -70,7 +70,11 @@ class ToolRoutingStage(PipelineStage):
                 tool_output_msg = tool_res.get("message")
                 tool_name = raw_tool_name
                 tool_score = raw_tool_score
-                log.info("Tool executed from SYSTEM_ACTION intent", tool_res=tool_res, query=target_query)
+                log.info(
+                    "Tool executed from SYSTEM_ACTION intent",
+                    has_tool_result=bool(tool_res),
+                    query_chars=len(target_query or ""),
+                )
 
         intent_values = [i.value for i in context.intents]
 

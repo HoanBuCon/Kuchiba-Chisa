@@ -1,0 +1,70 @@
+# Chisa production edge (B-4): HTTPS, same-origin SPA + API, SSE, security headers.
+#
+# Environment (set in .env, read by the `web` service):
+#   CHISA_DOMAIN       public hostname, e.g. chisa.example.com (A/AAAA record → VPS)
+#   CHISA_ACME_EMAIL   contact for Let's Encrypt
+{
+	email {$CHISA_ACME_EMAIL}
+	# No admin API on the network; no access logs (request URIs can carry OAuth
+	# codes or user IDs). Caddy's own error log still goes to stdout.
+	admin off
+	servers {
+		protocols h1 h2
+	}
+}
+
+{$CHISA_DOMAIN} {
+	encode zstd gzip
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		Permissions-Policy "camera=(), microphone=(), geolocation=()"
+		Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'"
+		-Server
+	}
+
+	# Request body ceiling: 4 images x 10 MB, base64-encoded (~54 MB) plus JSON.
+	request_body {
+		max_size 60MB
+	}
+
+	# Routing uses mutually exclusive `handle` blocks only. A bare `respond` or
+	# `reverse_proxy` directive would be ordered *after* the handle group (whose
+	# catch-all SPA block always matches), so it would silently never run.
+
+	# Never expose API docs, schema, internal static mounts or user uploads.
+	# Discord fetches approved attachments from the app over the private network.
+	@blocked path /docs /docs/* /redoc /redoc/* /openapi.json /static/* /api/v1/visualizer*
+	handle @blocked {
+		respond 404
+	}
+
+	# Public health endpoints for the external uptime monitor (booleans only).
+	@health path /health /ready
+	handle @health {
+		reverse_proxy app:8000
+	}
+
+	handle /api/* {
+		reverse_proxy app:8000 {
+			# Server-Sent Events: stream tokens immediately, never buffer.
+			flush_interval -1
+			transport http {
+				read_timeout 180s
+				write_timeout 180s
+			}
+		}
+	}
+
+	# Single-page app (built into the image from frontend/dist).
+	handle {
+		root * /srv/web
+		@immutable path /assets/*
+		header @immutable Cache-Control "public, max-age=31536000, immutable"
+		try_files {path} /index.html
+		file_server
+	}
+}

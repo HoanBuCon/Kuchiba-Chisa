@@ -2,6 +2,17 @@ import { useState, useRef, useEffect } from 'react';
 import axios from 'axios';
 import { Send, MessageSquare, Trash2, Zap, Heart, Smile, Frown, Shield, Plus, X, Sparkles, Search, Coffee } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
+import { AccountStatus, AuthModal } from './AuthPanel.jsx';
+import {
+  bootstrapSession,
+  consumeOAuthRedirect,
+  ensureFreshSession,
+  fetchCapabilities,
+  login,
+  logout,
+  register,
+  startGoogle,
+} from './auth.js';
 
 // ── Persistent Device UUID ──────────────────────────────────────────
 const getDeviceId = () => {
@@ -42,28 +53,6 @@ const saveConversations = (convs) => {
 };
 
 const BASE = import.meta.env.VITE_API_BASE_URL ?? '/api/v1';
-const WEB_SESSION_STORAGE_KEY = 'chisa_web_session_v1';
-
-async function getWebSession() {
-  const existingToken = sessionStorage.getItem(WEB_SESSION_STORAGE_KEY);
-  const requestSession = async (token) => fetch(`${BASE}/auth/anonymous-session`, {
-    method: 'POST',
-    headers: token ? { authorization: `Bearer ${token}` } : {},
-  });
-
-  let response = existingToken ? await requestSession(existingToken) : null;
-  if (!response || !response.ok) {
-    sessionStorage.removeItem(WEB_SESSION_STORAGE_KEY);
-    response = await requestSession(null);
-  }
-  if (!response.ok) {
-    throw new Error(`Unable to establish web session (${response.status})`);
-  }
-
-  const session = await response.json();
-  sessionStorage.setItem(WEB_SESSION_STORAGE_KEY, session.access_token);
-  return session;
-}
 const GREETING = { role: 'chisa', content: 'Chào Senpai~ Em là Chisa đây ♡  Hôm nay Senpai có gì muốn tâm sự với em không?' };
 
 // ── SSE Chat Streaming Handler ───────────────────────────────────────────
@@ -341,7 +330,8 @@ function Sidebar({
   onSelectSession, 
   onCreateSession, 
   onDeleteSession, 
-  onClearMemory 
+  onClearMemory,
+  accountPanel,
 }) {
   return (
     <aside className="sidebar">
@@ -387,6 +377,7 @@ function Sidebar({
       <div className="sidebar-spacer" />
 
       <div className="sidebar-footer">
+        {accountPanel}
         <button
           className="sidebar-item"
           onClick={onClearMemory}
@@ -419,6 +410,10 @@ export default function App() {
   const [isHistoryLoading, setIsHistoryLoading] = useState(true);
   const [isEmotionOpen, setIsEmotionOpen]   = useState(false);
   const [webSession, setWebSession]         = useState(null);
+  const [authCapabilities, setAuthCapabilities] = useState({ password: true, google: false });
+  const [isAuthOpen, setIsAuthOpen]         = useState(false);
+  const [authNotice, setAuthNotice]         = useState(null);
+  const sessionRef = useRef(null);
 
   const messagesEndRef = useRef(null);
   const textareaRef    = useRef(null);
@@ -426,24 +421,72 @@ export default function App() {
   const scrollToBottom = () =>
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
 
+  const applySession = (session) => {
+    sessionRef.current = session;
+    setWebSession(session);
+  };
+
+  // Always use a fresh, server-issued session for API calls. An expired account
+  // session degrades to anonymous and tells the user to sign in again.
+  const ensureSession = async () => {
+    const current = sessionRef.current;
+    const fresh = await ensureFreshSession(current);
+    if (fresh !== current) {
+      applySession(fresh);
+      if (fresh.expired) {
+        setAuthNotice({ type: 'error', text: 'Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại.' });
+      }
+    }
+    return fresh;
+  };
+
   useEffect(() => {
     let active = true;
-    getWebSession()
+    const notice = consumeOAuthRedirect();
+    if (notice) setAuthNotice(notice);
+    fetchCapabilities().then(caps => { if (active) setAuthCapabilities(caps); });
+    bootstrapSession()
       .then(session => {
-        if (active) setWebSession(session);
+        if (active) applySession(session);
       })
       .catch(console.error);
     return () => { active = false; };
   }, []);
 
+  const handleAuthSubmit = async (mode, email, password) => {
+    const session = mode === 'register' ? await register(email, password) : await login(email, password);
+    applySession(session);
+    setIsAuthOpen(false);
+    setAuthNotice({ type: 'success', text: mode === 'register' ? 'Đã tạo tài khoản.' : 'Đăng nhập thành công.' });
+  };
+
+  const handleLogout = async () => {
+    applySession(await logout());
+    setAuthNotice({ type: 'success', text: 'Đã đăng xuất.' });
+  };
+
+  const handleGoogle = async (intent = 'login') => {
+    try {
+      const session = intent === 'link' ? await ensureSession() : null;
+      await startGoogle(intent, session?.access_token);
+    } catch (err) {
+      setAuthNotice({ type: 'error', text: err?.message || 'Không thể bắt đầu đăng nhập Google.' });
+    }
+  };
+
   // Backend memory belongs to the verified principal, never a local UI thread ID.
+  const subjectId = webSession?.subject_id;
   useEffect(() => {
-    if (!webSession) return undefined;
+    if (!subjectId) return undefined;
+    let active = true;
     setIsHistoryLoading(true);
-    const config = { headers: { authorization: `Bearer ${webSession.access_token}` } };
+    (async () => {
+    const session = await ensureSession();
+    if (!active) return;
+    const config = { headers: { authorization: `Bearer ${session.access_token}` } };
     
     // Fetch History
-    axios.get(`${BASE}/chat/history/${webSession.subject_id}?limit=50`, config)
+    axios.get(`${BASE}/chat/history/${session.subject_id}?limit=50`, config)
       .then(res => {
         const hist = res.data?.history || [];
         setMessages(hist.length
@@ -455,7 +498,7 @@ export default function App() {
       .finally(() => setIsHistoryLoading(false));
 
     // Fetch Emotions
-    axios.get(`${BASE}/chat/emotions/${webSession.subject_id}`, config)
+    axios.get(`${BASE}/chat/emotions/${session.subject_id}`, config)
       .then(res => {
         if (res.data) {
           setEmotions(res.data);
@@ -463,8 +506,10 @@ export default function App() {
         }
       })
       .catch(console.error);
-    return undefined;
-  }, [webSession]);
+    })().catch(console.error);
+    return () => { active = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [subjectId]);
 
   useEffect(() => { scrollToBottom(); }, [messages, isLoading]);
 
@@ -505,9 +550,10 @@ export default function App() {
 
     try {
       if (webSession) {
+        const session = await ensureSession();
         await axios.delete(
-          `${BASE}/chat/clear/${webSession.subject_id}`,
-          { headers: { authorization: `Bearer ${webSession.access_token}` } },
+          `${BASE}/chat/clear/${session.subject_id}`,
+          { headers: { authorization: `Bearer ${session.access_token}` } },
         ).catch(console.error);
       }
     } catch {
@@ -540,9 +586,10 @@ export default function App() {
     setIsLoading(true);
     try {
       if (!webSession) throw new Error('Web session is unavailable');
+      const session = await ensureSession();
       const res = await axios.delete(
-        `${BASE}/chat/clear/${webSession.subject_id}`,
-        { headers: { authorization: `Bearer ${webSession.access_token}` } },
+        `${BASE}/chat/clear/${session.subject_id}`,
+        { headers: { authorization: `Bearer ${session.access_token}` } },
       );
       setMessages([{ role: 'chisa', content: `🌸 ${res.data?.message || 'Ký ức đã được xóa!'}` }]);
       setEmotions({ joy: 0.1, sadness: 0.0, trust: 0.5, irritation: 0.0, attachment: 0.0 });
@@ -580,9 +627,10 @@ export default function App() {
     setStreamedText('');
 
     try {
+      const session = await ensureSession();
       const res = await streamChatResponse(
         { message: userText },
-        webSession.access_token,
+        session.access_token,
         {
           onLoopThinkingStart: () => {
             setIsThinkingMode(true);
@@ -629,6 +677,22 @@ export default function App() {
         onCreateSession={handleCreateNewChat}
         onDeleteSession={handleDeleteSession}
         onClearMemory={handleClearMemory}
+        accountPanel={
+          <AccountStatus
+            session={webSession}
+            capabilities={authCapabilities}
+            onOpen={() => setIsAuthOpen(true)}
+            onLogout={handleLogout}
+            onLinkGoogle={() => handleGoogle('link')}
+          />
+        }
+      />
+      <AuthModal
+        open={isAuthOpen}
+        capabilities={authCapabilities}
+        onClose={() => setIsAuthOpen(false)}
+        onSubmit={handleAuthSubmit}
+        onGoogle={() => handleGoogle('login')}
       />
 
       {/* ── Main Chat Panel ── */}
@@ -652,6 +716,15 @@ export default function App() {
             <span>Cảm xúc Chisa</span>
           </button>
         </header>
+
+        {authNotice && (
+          <div className={`auth-notice ${authNotice.type}`} role="status">
+            <span>{authNotice.text}</span>
+            <button className="drawer-close-btn" onClick={() => setAuthNotice(null)} aria-label="Đóng">
+              <X size={14} />
+            </button>
+          </div>
+        )}
 
         {/* Messages Feed */}
         <div className="messages-feed">
@@ -722,7 +795,10 @@ export default function App() {
               <Send size={16} />
             </button>
           </div>
-          <div className="input-hint">Gõ <code>/clear</code> để xóa ký ức • Shift+Enter để xuống dòng</div>
+          <div className="input-hint">
+            Gõ <code>/clear</code> để xóa ký ức • Shift+Enter để xuống dòng •{' '}
+            <a href="/privacy.html" target="_blank" rel="noopener noreferrer">Quyền riêng tư</a>
+          </div>
         </div>
       </div>
 

@@ -188,7 +188,11 @@ class QueryRewriter:
         )
 
         try:
-            log.info("Executing Micro LLM Rewrite", current=raw_user_query, prev_context=prev_clamped)
+            log.info(
+                "Executing Micro LLM Rewrite",
+                query_chars=len(raw_user_query or ""),
+                has_prev_context=bool(prev_clamped),
+            )
             resp = await asyncio.wait_for(
                 self.llm.generate(prompt),
                 timeout=timeout_seconds,

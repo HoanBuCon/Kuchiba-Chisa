@@ -2,9 +2,21 @@
 # Chisa AI — Docker Compose
 # Runs all required infrastructure services + the application
 # ─────────────────────────────────────────────────────────────────────────────
+# Bounded container logs on a single VPS (Docker json-file rotation).
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "5"
+
 networks:
   chisa_edge:
     driver: bridge
+    ipam:
+      config:
+        # Fixed subnet so the API can trust exactly one reverse proxy address
+        # (TRUSTED_PROXY_CIDRS=172.28.0.10/32).
+        - subnet: 172.28.0.0/24
   chisa_data:
     driver: bridge
     internal: true
@@ -13,6 +25,10 @@ volumes:
   postgres_data:
   qdrant_data:
   redis_data:
+  uploads_data:
+  model_cache:
+  caddy_data:
+  caddy_config:
 
 secrets:
   postgres_password:
@@ -29,6 +45,7 @@ services:
     image: postgres:16-alpine
     container_name: chisa_postgres
     restart: unless-stopped
+    logging: *default-logging
     environment:
       POSTGRES_USER: chisa
       POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
@@ -57,12 +74,13 @@ services:
     image: redis:7-alpine
     container_name: chisa_redis
     restart: unless-stopped
+    logging: *default-logging
     command:
       - /bin/sh
       - -ec
       - >-
-        printf 'user default off\\nuser chisa on >%s ~* +@all\\n' "$$(cat /run/secrets/redis_password)" > /run/redis/users.acl;
-        exec redis-server --aclfile /run/redis/users.acl --maxmemory 512mb --maxmemory-policy allkeys-lru --appendonly yes --appendfsync everysec
+        printf 'user default off\nuser chisa on >%s ~* +@all\n' "$$(cat /run/secrets/redis_password)" > /run/redis/users.acl;
+        exec redis-server --aclfile /run/redis/users.acl --maxmemory 384mb --maxmemory-policy allkeys-lru --appendonly yes --appendfsync everysec
     volumes:
       - redis_data:/data
     tmpfs:
@@ -89,6 +107,7 @@ services:
     image: qdrant/qdrant:v1.12.4
     container_name: chisa_qdrant
     restart: unless-stopped
+    logging: *default-logging
     volumes:
       - qdrant_data:/qdrant/storage
     environment:
@@ -111,14 +130,24 @@ services:
       target: production
     container_name: chisa_app
     restart: unless-stopped
+    logging: *default-logging
     env_file: .env
     environment:
       REDIS_URL: redis://redis:6379/0
       REDIS_USERNAME: chisa
       QDRANT_URL: http://qdrant:6333
+      # stdout only; Docker rotates it (B-2: no unbounded backend.log).
+      APP_LOG_FILE: ""
+      FASTEMBED_CACHE_PATH: /app/.cache/fastembed
+      HF_HOME: /app/.cache/huggingface
+      TRUSTED_PROXY_CIDRS: ${TRUSTED_PROXY_CIDRS:-172.28.0.10/32}
     secrets:
       - postgres_password
       - redis_password
+    volumes:
+      # Persistent image memory files and embedding model cache (survive redeploys).
+      - uploads_data:/app/app/static/uploads
+      - model_cache:/app/.cache
     ports:
       - "127.0.0.1:${APP_PORT:-8000}:8000"
     networks:
@@ -144,7 +173,7 @@ services:
       - >-
         export DATABASE_URL="$$(python -c 'from pathlib import Path; from urllib.parse import quote; print("postgresql+asyncpg://chisa:" + quote(Path("/run/secrets/postgres_password").read_text().strip(), safe="") + "@postgres:5432/chisa_db")')";
         export REDIS_PASSWORD="$$(cat /run/secrets/redis_password)";
-        exec python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers $${WEB_CONCURRENCY:-2}
+        exec python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers $${WEB_CONCURRENCY:-2} --no-access-log
 
   worker:
     build:
@@ -153,12 +182,20 @@ services:
       target: production
     container_name: chisa_worker
     restart: unless-stopped
+    logging: *default-logging
     env_file: .env
     environment:
       REDIS_URL: redis://redis:6379/0
       REDIS_USERNAME: chisa
       QDRANT_URL: http://qdrant:6333
       WORKER_CONCURRENCY: ${WORKER_CONCURRENCY:-1}
+      APP_LOG_FILE: ""
+      FASTEMBED_CACHE_PATH: /app/.cache/fastembed
+      HF_HOME: /app/.cache/huggingface
+    volumes:
+      - model_cache:/app/.cache
+    # Longer than WORKER_SHUTDOWN_GRACE_SECONDS (30s) so leases drain cleanly.
+    stop_grace_period: 40s
     secrets:
       - postgres_password
       - redis_password
@@ -170,7 +207,8 @@ services:
       resources:
         limits:
           cpus: '1.0'
-          memory: 768M
+          # Holds one multilingual-e5-small ONNX runtime (~0.6 GB) plus Python.
+          memory: 1200M
         reservations:
           memory: 256M
     depends_on:
@@ -195,6 +233,7 @@ services:
       dockerfile: Dockerfile
     container_name: chisa_discord_bot
     restart: unless-stopped
+    logging: *default-logging
     env_file: .env
     environment:
       CORE_RAG_BASE_URL: http://app:8000
@@ -225,3 +264,62 @@ services:
         exec node src/index.js
 
 
+
+  # ── Web edge: Caddy (HTTPS, SPA, /api reverse proxy, SSE) ────────
+  web:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: chisa_web
+    restart: unless-stopped
+    logging: *default-logging
+    environment:
+      CHISA_DOMAIN: ${CHISA_DOMAIN:?CHISA_DOMAIN must be the public hostname}
+      CHISA_ACME_EMAIL: ${CHISA_ACME_EMAIL:?CHISA_ACME_EMAIL must be set for Let's Encrypt}
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./deploy/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      chisa_edge:
+        ipv4_address: 172.28.0.10
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 128M
+    depends_on:
+      app:
+        condition: service_started
+
+  # ── One-shot schema migration (run before starting app/worker/discord) ──
+  # docker compose --profile ops run --rm migrate
+  migrate:
+    profiles: ["ops"]
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+    env_file: .env
+    environment:
+      APP_LOG_FILE: ""
+    secrets:
+      - postgres_password
+      - redis_password
+    networks:
+      - chisa_data
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command:
+      - /bin/sh
+      - -ec
+      - >-
+        export DATABASE_URL="$$(python -c 'from pathlib import Path; from urllib.parse import quote; print("postgresql+asyncpg://chisa:" + quote(Path("/run/secrets/postgres_password").read_text().strip(), safe="") + "@postgres:5432/chisa_db")')";
+        export REDIS_PASSWORD="$$(cat /run/secrets/redis_password)";
+        python -m alembic upgrade head;
+        python -m alembic current

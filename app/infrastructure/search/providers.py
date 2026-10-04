@@ -151,7 +151,9 @@ class DDGScraperSearchProvider(ISearchProvider):
             body_bytes = urllib.parse.urlencode({"q": q}, encoding="utf-8").encode("utf-8")
             for ep in endpoints:
                 try:
-                    log.info("Running resilient DDG POST search...", endpoint=ep, query=q)
+                    log.info(
+                        "Running resilient DDG POST search...", endpoint=ep, query_chars=len(q)
+                    )
                     response = await self._http_client.post(
                         ep,
                         content=body_bytes,

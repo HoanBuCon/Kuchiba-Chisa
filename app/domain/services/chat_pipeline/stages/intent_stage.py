@@ -448,7 +448,7 @@ class IntentStage(PipelineStage):
             confidence=intent_result.confidence,
             method=intent_result.routing_method,
             rewrite_method=rewrite_method,
-            rewritten_query=rewritten_query,
+            rewritten_query_chars=len(rewritten_query or ""),
             needs_vector_search=needs_vector_search,
             needs_web_search=needs_web_search,
             user_id=context.user_id,

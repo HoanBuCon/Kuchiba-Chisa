@@ -5,24 +5,28 @@ from __future__ import annotations
 from collections.abc import Iterable
 from datetime import UTC, datetime, timedelta
 from typing import Any
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 from jose import JWTError, jwt
 
 from app.config.settings import settings
-from app.domain.value_objects.principal import PrincipalContext
+from app.domain.interfaces.accounts import IAccountTokenIssuer
+from app.domain.value_objects.principal import PrincipalAuthentication, PrincipalContext
 
 
 class AuthenticationError(Exception):
     """A credential is absent, malformed, expired, or not accepted."""
 
 
-class JwtAuthenticator:
+class JwtAuthenticator(IAccountTokenIssuer):
     """Builds ``PrincipalContext`` only after cryptographic JWT verification."""
 
     _SUPPORTED_TOKEN_USES = {"web", "workload"}
 
     _ANONYMOUS_WEB_SCOPES = frozenset({"chat:write", "chat:read", "chat:clear"})
+    # Registered accounts receive the same least-privilege web scopes; the
+    # account ID (not a client value) is the subject.
+    _ACCOUNT_WEB_SCOPES = _ANONYMOUS_WEB_SCOPES
 
     def authenticate_bearer(self, authorization: str | None) -> PrincipalContext:
         if not authorization:
@@ -78,6 +82,26 @@ class JwtAuthenticator:
         }
         return jwt.encode(claims, settings.JWT_SECRET, algorithm=settings.JWT_ALGORITHM)
 
+    def issue_account_access_token(self, account_id: UUID, session_id: UUID) -> tuple[str, int]:
+        """Short-lived access token bound to a revocable server-side session."""
+        lifetime_seconds = settings.ACCOUNT_ACCESS_TOKEN_MINUTES * 60
+        now = datetime.now(UTC)
+        claims = {
+            "sub": str(account_id),
+            "scopes": sorted(self._ACCOUNT_WEB_SCOPES),
+            "token_use": "web",
+            "source": "web",
+            "auth": "account",
+            "sid": str(session_id),
+            "iss": settings.JWT_ISSUER,
+            "aud": settings.JWT_AUDIENCE,
+            "iat": now,
+            "exp": now + timedelta(seconds=lifetime_seconds),
+            "jti": str(uuid4()),
+        }
+        token = jwt.encode(claims, settings.JWT_SECRET, algorithm=settings.JWT_ALGORITHM)
+        return token, lifetime_seconds
+
     @staticmethod
     def _unverified_claims(token: str) -> dict[str, Any]:
         try:
@@ -109,6 +133,7 @@ class JwtAuthenticator:
         tenant_id = JwtAuthenticator._optional_string(claims.get("tenant_id"))
         channel_id = JwtAuthenticator._optional_string(claims.get("channel_id"))
         display_name = JwtAuthenticator._optional_string(claims.get("display_name"))
+        authentication, session_id = JwtAuthenticator._authentication(claims, token_use)
         return PrincipalContext(
             subject_id=subject_id,
             tenant_id=tenant_id,
@@ -117,7 +142,25 @@ class JwtAuthenticator:
             kind="user" if token_use == "web" else "workload",
             scopes=frozenset(scopes),
             display_name=display_name,
+            authentication=authentication,
+            session_id=session_id,
         )
+
+    @staticmethod
+    def _authentication(
+        claims: dict[str, Any], token_use: str
+    ) -> tuple[PrincipalAuthentication, str | None]:
+        if token_use == "workload":
+            return "workload", None
+        if claims.get("auth") != "account":
+            return "anonymous", None
+        session_id = claims.get("sid")
+        try:
+            UUID(str(session_id))
+            UUID(str(claims.get("sub")))
+        except ValueError as error:
+            raise AuthenticationError("account credential is invalid") from error
+        return "account", str(session_id)
 
     @staticmethod
     def _scopes(value: object) -> set[str]:

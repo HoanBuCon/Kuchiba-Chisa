@@ -39,6 +39,18 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
 
     RATE_LIMITED_PREFIXES = ("/api/v1/chat", "/api/v1/community")
     ANONYMOUS_SESSION_PATH = "/api/v1/auth/anonymous-session"
+    # Pre-authentication account endpoints: brute-force/credential-stuffing control
+    # keyed by trusted client network address and route.
+    AUTH_RATE_LIMITED_PATHS = frozenset(
+        {
+            "/api/v1/auth/login",
+            "/api/v1/auth/register",
+            "/api/v1/auth/refresh",
+            "/api/v1/auth/logout",
+            "/api/v1/auth/google/start",
+            "/api/v1/auth/google/callback",
+        }
+    )
 
     def __init__(self, app: ASGIApp) -> None:
         super().__init__(app)
@@ -53,6 +65,15 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         if path == self.ANONYMOUS_SESSION_PATH:
             client_ip = self._trusted_client_ip(request)
             allowed, _, reset_at = await self._check_anonymous_session_rate(client_ip)
+            if not allowed:
+                return self._limited_response(reset_at)
+            return await call_next(request)
+
+        if path in self.AUTH_RATE_LIMITED_PATHS:
+            client_ip = self._trusted_client_ip(request)
+            allowed, _, reset_at = await self._check_bucket(
+                self._auth_route_key(client_ip, path), settings.AUTH_RATE_LIMIT_PER_MINUTE
+            )
             if not allowed:
                 return self._limited_response(reset_at)
             return await call_next(request)
@@ -133,6 +154,12 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         """Pre-auth exception: only a trusted network address is available."""
         digest = hashlib.sha256(f"anonymous-session|{client_ip}".encode()).hexdigest()
         return f"chisa:ratelimit:anonymous-session:v1:{digest}"
+
+    @staticmethod
+    def _auth_route_key(client_ip: str, path: str) -> str:
+        """Pre-auth account route bucket: trusted network address + fixed route only."""
+        digest = hashlib.sha256(f"auth|{client_ip}|{path}".encode()).hexdigest()
+        return f"chisa:ratelimit:auth:v1:{digest}"
 
     @staticmethod
     def _parse_trusted_proxy_networks() -> tuple[

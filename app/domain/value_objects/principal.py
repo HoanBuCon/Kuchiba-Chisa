@@ -5,6 +5,9 @@ from typing import Literal
 
 PrincipalKind = Literal["user", "workload"]
 PrincipalSource = Literal["web", "discord"]
+# How a web principal authenticated. Accounts are server-verified identities;
+# anonymous principals are server-minted, device-scoped sessions.
+PrincipalAuthentication = Literal["anonymous", "account", "workload"]
 
 
 @dataclass(frozen=True, slots=True)
@@ -23,6 +26,8 @@ class PrincipalContext:
     kind: PrincipalKind
     scopes: frozenset[str]
     display_name: str | None = None
+    authentication: PrincipalAuthentication = "anonymous"
+    session_id: str | None = None
 
     def has_scope(self, scope: str) -> bool:
         return scope in self.scopes

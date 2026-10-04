@@ -199,6 +199,17 @@ class AppContainer:
             DDGScraperSearchProvider(http_client=self.http_client),
         ]
         
+        from app.infrastructure.search.safe_page_fetcher import SafePageFetcher
+
+        # B-1: search-result URLs are untrusted. Every hop is validated, pinned to
+        # a public address and size-bounded; redirects are never auto-followed.
+        safe_page_fetcher = SafePageFetcher(
+            self.http_client,
+            max_bytes=settings.WEB_FETCH_MAX_BYTES,
+            max_redirects=settings.WEB_FETCH_MAX_REDIRECTS,
+            timeout_seconds=settings.WEB_FETCH_TIMEOUT_SECONDS,
+        )
+
         async def fetch_page(url: str) -> str:
             headers = {
                 "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
@@ -207,15 +218,7 @@ class AppContainer:
             }
             if "wikipedia.org" in url:
                 headers["User-Agent"] = "KuchibaChisa/2.1 (contact: bot@chisa.ai) Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
-            try:
-                resp = await self.http_client.get(url, timeout=3.5, headers=headers, follow_redirects=True)
-                if resp.status_code == 200:
-                    return resp.text
-            except Exception as e:
-                from app.infrastructure.logging.logger import get_logger
-                _dep_log = get_logger(__name__)
-                _dep_log.debug("Web search page fetch failed", url=url, error=str(e))
-            return ""
+            return await safe_page_fetcher.fetch(url, headers)
 
         agent_tools = [
             WebSearchAgentTool(providers=web_search_providers, page_fetcher=fetch_page),
@@ -434,6 +437,44 @@ class AppContainer:
         )
 
 # Global container instance
+    @cached_property
+    def account_auth_service(self):
+        """Email/password + external-identity account service (server-derived identity)."""
+        from datetime import timedelta
+
+        from app.application.security.accounts import AccountAuthService
+        from app.infrastructure.database.repositories.account_repository import (
+            SqlAlchemyAccountRepository,
+        )
+        from app.infrastructure.security.jwt_authenticator import jwt_authenticator
+        from app.infrastructure.security.password_hasher import BcryptPasswordHasher
+
+        return AccountAuthService(
+            repo_factory=lambda session: SqlAlchemyAccountRepository(
+                _require_async_session(session)
+            ),
+            password_hasher=BcryptPasswordHasher(settings.BCRYPT_ROUNDS),
+            token_issuer=jwt_authenticator,
+            refresh_ttl=timedelta(days=settings.JWT_REFRESH_EXPIRE_DAYS),
+        )
+
+    @cached_property
+    def google_identity_provider(self):
+        """Google OIDC adapter, or None when Google sign-in is not configured."""
+        if not settings.google_oauth_enabled:
+            return None
+        from app.infrastructure.security.google_oidc import GoogleOidcProvider
+
+        secret = settings.GOOGLE_OAUTH_CLIENT_SECRET
+        return GoogleOidcProvider(
+            client_id=str(settings.GOOGLE_OAUTH_CLIENT_ID),
+            client_secret=secret.get_secret_value() if secret else "",
+            redirect_uri=str(settings.GOOGLE_OAUTH_REDIRECT_URI),
+            http_client=self.http_client,
+            timeout_seconds=settings.GOOGLE_OAUTH_TIMEOUT_SECONDS,
+        )
+
+
 container = AppContainer()
 
 
@@ -453,6 +494,16 @@ def get_clear_community_memory_use_case():
 def get_memory_policy_service():
     """FastAPI dependency for SAFE-02 consent transitions."""
     return container.memory_policy_service
+
+
+def get_account_auth_service():
+    """FastAPI dependency for registered-account authentication."""
+    return container.account_auth_service
+
+
+def get_google_identity_provider():
+    """FastAPI dependency for the optional Google OIDC provider."""
+    return container.google_identity_provider
 
 async def get_vector_store():
     return qdrant_service
