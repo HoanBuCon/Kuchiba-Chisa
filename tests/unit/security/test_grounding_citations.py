@@ -187,7 +187,11 @@ async def test_unsupported_factual_claim_is_removed_before_delivery() -> None:
 
     result = await stage.process(_factual_context([evidence]))
 
-    assert result.chisa_reply == "Jinhsi is the magistrate of Jinzhou."
+    # The unsupported paraphrase is replaced by the verbatim quote, presented in
+    # Chisa's fixed persona frame (the quote itself is unaltered).
+    assert result.chisa_reply == (
+        "Em tìm được trong tư liệu gốc nè Senpai: “Jinhsi is the magistrate of Jinzhou.”"
+    )
     assert "Black Shores" not in result.chisa_reply
     assert result.tool_res["generation_contract"]["extractive_claims"] == 1
 
@@ -212,7 +216,9 @@ async def test_numeric_hallucination_is_removed_before_delivery() -> None:
     result = await stage.process(_factual_context([evidence]))
 
     assert "2" not in result.chisa_reply
-    assert result.chisa_reply == "Jinhsi has 1 verified title."
+    assert result.chisa_reply == (
+        "Em tìm được trong tư liệu gốc nè Senpai: “Jinhsi has 1 verified title.”"
+    )
 
 
 @pytest.mark.asyncio

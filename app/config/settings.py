@@ -265,7 +265,7 @@ class Settings(BaseSettings):
         default="context-builder-v1", min_length=1, max_length=128
     )
     LORE_ANSWER_CACHE_GROUNDING_VERSION: str = Field(
-        default="rag06-grounding-v2", min_length=1, max_length=128
+        default="rag06-grounding-v3", min_length=1, max_length=128
     )
 
     # ── OpenTelemetry / OPS-02 ──

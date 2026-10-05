@@ -38,10 +38,15 @@ from app.shared.utils.token_estimator import TokenEstimator
 
 log = get_logger(__name__)
 
+# Grounded-path wording follows the frozen persona addressing rules (self: "Em",
+# user: "Senpai"; see ContextBuilder). The abstention decision is unchanged.
 _GROUNDED_ABSTENTION = (
-    "Mình chưa có đủ bằng chứng trong nguồn hiện tại để trả lời chính xác. "
-    "Bạn có thể cung cấp thêm ngữ cảnh hoặc hỏi theo cách khác không?"
+    "Em chưa có đủ bằng chứng trong nguồn hiện tại để trả lời chính xác. "
+    "Senpai có thể cho em thêm ngữ cảnh hoặc hỏi theo cách khác không?"
 )
+# Verbatim, server-verified quotes (used when a paraphrase cannot be verified across
+# languages) are presented in Chisa's voice; the quote text itself is never altered.
+_GROUNDED_EXTRACTIVE_FRAME = "Em tìm được trong tư liệu gốc nè Senpai: “{quote}”"
 _GROUNDED_INTENTS = {
     ChatIntent.KNOWLEDGE_OR_TASK,
     ChatIntent.LORE,
@@ -204,6 +209,7 @@ class LLMGenerationStage(PipelineStage):
                     evidence=prompt.retrieved_evidence,
                     attachment_ids=[item.attachment_id for item in manifests],
                     abstention_answer=_GROUNDED_ABSTENTION,
+                    extractive_frame=_GROUNDED_EXTRACTIVE_FRAME,
                 )
             except (GroundedOutputValidationError, ValueError):
                 log.warning("Generated response rejected by grounded output contract")
@@ -339,6 +345,11 @@ class LLMGenerationStage(PipelineStage):
                 self._record_grounding_decision("abstained")
             else:
                 self._record_grounding_decision("verified")
+
+        # Every check above verified the server-grounded ``answer``. Only now apply the
+        # fixed persona presentation of verbatim quotes (no model text is added).
+        if grounded_envelope is not None and grounded_envelope.presented_answer:
+            chisa_reply = grounded_envelope.presented_answer
 
         if context.on_token:
             for token in chisa_reply:
