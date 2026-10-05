@@ -1,0 +1,8 @@
+#!/usr/bin/env sh
+# Developer entrypoint for POSIX shells and Git Bash:  ./chisa dev start
+# (Windows cmd/PowerShell: chisa.bat dev start)
+cd "$(dirname "$0")" || exit 1
+for candidate in venv/bin/python venv/Scripts/python.exe .venv/bin/python .venv/Scripts/python.exe; do
+  if [ -x "$candidate" ]; then exec "$candidate" chisa_cli.py "$@"; fi
+done
+exec python chisa_cli.py "$@"

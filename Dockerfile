@@ -76,7 +76,7 @@ COPY --chown=chisa:chisa deploy/ ./deploy/
 COPY --chown=chisa:chisa docs/ ./docs/
 COPY --chown=chisa:chisa reports/ ./reports/
 COPY --chown=chisa:chisa tests/ ./tests/
-COPY --chown=chisa:chisa docker-compose.yml .dockerignore ./
+COPY --chown=chisa:chisa docker-compose.yml docker-compose.dev.yml .dockerignore ./
 COPY --chown=chisa:chisa scripts/ ./scripts/
 
 USER chisa
