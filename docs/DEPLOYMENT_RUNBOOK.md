@@ -78,7 +78,32 @@ chmod 600 .env
   `RERANKER_API_MODEL=jina-reranker-v3.5`, `JINA_API_KEY`).
 - Discord: `DISCORD_TOKEN`, `DISCORD_CLIENT_ID`, `DISCORD_MODERATOR_ROLE_IDS`
   (danh sách **role ID**, không phải tên role; để trống = chỉ Administrator/ManageGuild).
-  Bật *Message Content Intent* trong Discord Developer Portal.
+  Bật *Message Content Intent* trong Discord Developer Portal. Hành vi Public Bot và DM:
+  xem mục 11.
+- Email SMTP (bắt buộc cho đăng ký bằng email và quên mật khẩu): xem mục "Email
+  giao dịch" ngay dưới.
+- Quota chi phí LLM: giữ giá trị mặc định trong `.env.production.example` (mục 11).
+
+### Email giao dịch (SMTP)
+
+Code chỉ dùng SMTP chuẩn, nên chọn được bất kỳ provider giao dịch nào (Resend, Brevo,
+Amazon SES, Postmark, Mailgun...). Các bước **Sếp phải làm trên tài khoản provider**:
+
+1. Tạo tài khoản, thêm domain gửi (ví dụ `chisa.example.com`).
+2. Khai báo DNS mà provider yêu cầu: **SPF**, **DKIM**, và **DMARC** (tối thiểu `p=none`
+   khi mới bắt đầu). Đợi provider báo domain đã xác minh.
+3. Tạo SMTP credential, rồi ghi vào `.env` trên VPS:
+   `SMTP_HOST`, `SMTP_PORT` (587 + `SMTP_SECURITY=starttls`, hoặc 465 + `ssl`),
+   `SMTP_USERNAME`, `SMTP_PASSWORD`, `SMTP_FROM` (địa chỉ trên domain đã xác minh).
+4. Nếu provider có giới hạn gửi/ngày hoặc cảnh báo chi phí, đặt ở mức khớp
+   `EMAIL_DAILY_GLOBAL_LIMIT` (mặc định 300 email/ngày).
+
+Thiếu `SMTP_HOST` hoặc `SMTP_FROM` thì đăng ký bằng email, gửi lại email xác minh và
+quên mật khẩu trả 503, UI tự ẩn các nút này. Đăng nhập Google, đăng nhập tài khoản đã
+verify và chat ẩn danh vẫn hoạt động.
+
+Lưu ý tài khoản cũ: tài khoản email/password tạo **trước** bản này chưa từng verify, nên
+sẽ nhận 403 khi đăng nhập. Người dùng bấm "Gửi lại email xác minh" (hoặc "Quên mật khẩu").
 
 ### Google Sign-In (tùy chọn)
 
@@ -102,7 +127,7 @@ App từ chối khởi động ở production nếu: secret là placeholder, `JW
 
 ```bash
 cd /opt/chisa
-docker compose build
+docker compose --profile ops build   # includes the migrate image (profiles are skipped otherwise)
 docker compose up -d postgres redis qdrant
 docker compose --profile ops run --rm migrate          # in ra "<revision> (head)"
 docker compose run --rm --no-deps app python -m app.ops.warm_embedding_cache
@@ -158,9 +183,11 @@ curl -s -o /dev/null -w "%{http_code} %{redirect_url}\n" http://<CHISA_DOMAIN>/ 
 ```
 
 Trên trình duyệt: mở trang, gửi một tin nhắn (thấy chữ chạy dần, tức SSE không bị buffer),
-tạo tài khoản, đăng xuất, đăng nhập lại, thử "Đăng nhập Google" nếu đã bật. Trên Discord:
-mention bot trong kênh được cấu hình, thử `/clear` với một tài khoản không phải moderator
-(phải bị từ chối).
+tạo tài khoản bằng **email thật**: nhận thư, mở link xác minh (URL dạng
+`https://<domain>/#verify-email=...`), đăng nhập. Thử "Quên mật khẩu": nhận link
+`#reset-password=...`, đặt mật khẩu mới, xác nhận phiên cũ bị đăng xuất. Thử "Đăng nhập
+Google" nếu đã bật. Trên Discord: DM bot, mention bot trong kênh đã `/setup`, thử `/clear
+scope:all` với tài khoản không phải moderator (phải bị từ chối).
 
 ---
 
@@ -170,7 +197,7 @@ mention bot trong kênh được cấu hình, thử `/clear` với một tài kh
 cd /opt/chisa
 scripts/ops/backup.sh                         # luôn backup trước
 git fetch --tags && git checkout <tag-mới>    # chỉ tag đã qua CI
-docker compose build
+docker compose --profile ops build   # includes the migrate image (profiles are skipped otherwise)
 docker compose --profile ops run --rm migrate
 docker compose up -d app worker web discord
 curl -fsS https://<CHISA_DOMAIN>/ready
@@ -259,7 +286,7 @@ Log đã được redaction (không có nội dung hội thoại, email, token).
 1. **Chỉ code (migration không đổi):**
    ```bash
    git checkout <tag-trước>
-   docker compose build && docker compose up -d app worker web discord
+   docker compose --profile ops build && docker compose up -d app worker web discord
    ```
 2. **Có migration mới:** ưu tiên *roll forward* (sửa lỗi, deploy tag mới). Nếu bắt buộc
    phải lùi schema: dừng `app worker discord`, chạy
@@ -295,3 +322,68 @@ cộng swap 2 GB làm đệm. Khi rehearsal ở trạng thái nghỉ (sau warm-u
 worker ≈ 155 MiB, Postgres ≈ 70 MiB, Qdrant ≈ 40 MiB (corpus rỗng), Caddy ≈ 12 MiB.
 Model embedding nạp lười theo từng process (~0.5–0.7 GB mỗi process khi dùng), nên khi
 có tải thật phải theo dõi `docker stats` trong tuần đầu.
+
+---
+
+## 11. Cấu hình controlled public beta
+
+### 11.1 Discord: Public Bot, không allowlist
+
+- **Public Bot giữ bật** trong Developer Portal: ai cũng có thể thêm bot vào server của họ.
+- **Không có allowlist guild hay kênh.** Biến `DISCORD_ALLOWED_CHANNEL_IDS` không được bot
+  đọc; đừng dựa vào nó.
+- Bot trả lời:
+  - **DM** của bất kỳ người dùng Discord nào (giữ quyết định sản phẩm hiện tại);
+  - các kênh đã được cấu hình bằng `/setup` (chỉ Administrator / Manage Server / role ID
+    trong `DISCORD_MODERATOR_ROLE_IDS` mới chạy được `/setup`);
+  - lệnh `/ask` ở mọi kênh mà Discord cho phép slash command.
+- Lệnh đặc quyền (`/setup`, `/clear scope:all`, `/clear mode:nuke`) chỉ dành cho
+  Administrator, ManageGuild hoặc role ID cấu hình. Không có kiểm tra nào theo tên role.
+- Danh tính Discord tách biệt với Web: mỗi cặp (Discord user, guild/DM) có một
+  `core_user_id` riêng do bot cấp. Core chỉ nhận đúng các scope bot cần
+  (`chat:write`, `chat:clear`, `chat:clear:any`, `community:write`,
+  `community:clear:self`, `community:clear:any`) và **từ chối mọi workload token nhắm vào
+  subject là tài khoản Web** (chat, clear, community).
+- Chi phí Discord bị chặn bởi pool `discord` và quota mỗi guild (mục 11.2), cộng rate
+  limit của bot (5 request / 15 giây mỗi người dùng).
+
+### 11.2 Quota chi phí LLM (mặc định)
+
+| Biến | Giá trị | Ý nghĩa |
+|---|---|---|
+| `CHAT_MESSAGE_RATE_LIMIT_PER_MINUTE` | 10 | Chat/phút mỗi subject |
+| `QUOTA_WEB_ANON_PER_SUBJECT_DAILY` | 30 | Mỗi phiên ẩn danh / ngày |
+| `QUOTA_WEB_ANON_PER_IP_DAILY` | 100 | Mỗi IP (chỉ ẩn danh) / ngày |
+| `QUOTA_WEB_ACCOUNT_PER_SUBJECT_DAILY` | 150 | Mỗi tài khoản đã verify / ngày |
+| `QUOTA_DISCORD_PER_SUBJECT_DAILY` | 50 | Mỗi người dùng Discord (mỗi guild/DM) / ngày |
+| `QUOTA_DISCORD_PER_GUILD_DAILY` | 500 | Mỗi guild / ngày |
+| `QUOTA_POOL_WEB_ANON_DAILY` | 3000 | Tổng chat ẩn danh / ngày |
+| `QUOTA_POOL_WEB_ACCOUNT_DAILY` | 3000 | Tổng chat tài khoản / ngày |
+| `QUOTA_POOL_DISCORD_DAILY` | 3000 | Tổng chat Discord / ngày |
+
+- Ngày tính theo **UTC** (00:00 UTC = 07:00 giờ Việt Nam).
+- Mỗi request chat bị trừ **một lần** trước khi gọi LLM; retry bên trong LLM gateway không
+  trừ thêm. Request bị từ chối vì đang có chat khác chạy cho cùng subject được hoàn quota.
+- Đồng thời: tối đa **1 chat đang chạy mỗi subject** (khóa phân tán có sẵn, TTL 120 giây).
+- Redis lỗi thì chat trả 503 (fail-closed). `CHAT_QUOTA_ENABLED=false` bị từ chối ở
+  production.
+- Hết quota thì Web nhận 429 kèm `Retry-After` tới 00:00 UTC; Discord hiển thị thông báo.
+- Xem mức dùng hiện tại:
+  `docker compose exec redis redis-cli --user chisa --pass "$(cat secrets/redis_password)" --scan --pattern 'chisa:quota:v1:*:pool:*'`
+  rồi `GET` từng key.
+
+Trần lý thuyết mỗi ngày: 3 pool × 3000 = 9000 request chat. Mỗi request gồm nhiều lời gọi
+LLM (rewriter, assessor, vòng suy luận, câu trả lời). Hãy ước lượng chi phí theo bảng giá
+DeepSeek hiện hành rồi chỉnh các pool cho khớp ngân sách.
+
+### 11.3 Chặn chi tiêu phía DeepSeek
+
+DeepSeek tính phí bằng **số dư trả trước**: khi số dư về 0, API trả lỗi 402 và ngừng phục
+vụ. Đây là cơ chế chặn cứng duy nhất. Code không cấu hình được trần chi tiêu, và em không
+thấy DeepSeek có API hay thiết lập giới hạn chi tiêu nào khác. Việc Sếp cần làm:
+
+1. Chỉ nạp số tiền chấp nhận mất tối đa cho đợt beta; **không bật tự nạp tiền**.
+2. Theo dõi trang Usage trên console DeepSeek hằng ngày trong tuần đầu.
+3. Khi số dư hết, chat trả lời lỗi (fallback), hệ thống không tự nạp thêm.
+
+Quota trong app (11.2) là lớp chặn chính; số dư trả trước là lưới an toàn cuối cùng.

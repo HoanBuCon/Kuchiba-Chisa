@@ -5,13 +5,19 @@ import ReactMarkdown from 'react-markdown';
 import { AccountStatus, AuthModal } from './AuthPanel.jsx';
 import {
   bootstrapSession,
+  changePassword,
+  consumeAuthFragment,
   consumeOAuthRedirect,
   ensureFreshSession,
   fetchCapabilities,
+  forgotPassword,
   login,
   logout,
   register,
+  resendVerification,
+  resetPassword,
   startGoogle,
+  verifyEmail,
 } from './auth.js';
 
 // ── Persistent Device UUID ──────────────────────────────────────────
@@ -410,8 +416,10 @@ export default function App() {
   const [isHistoryLoading, setIsHistoryLoading] = useState(true);
   const [isEmotionOpen, setIsEmotionOpen]   = useState(false);
   const [webSession, setWebSession]         = useState(null);
-  const [authCapabilities, setAuthCapabilities] = useState({ password: true, google: false });
+  const [authCapabilities, setAuthCapabilities] = useState({ password: true, password_registration: false, google: false });
   const [isAuthOpen, setIsAuthOpen]         = useState(false);
+  const [authMode, setAuthMode]             = useState('login');
+  const [resetToken, setResetToken]         = useState(null);
   const [authNotice, setAuthNotice]         = useState(null);
   const sessionRef = useRef(null);
 
@@ -444,6 +452,21 @@ export default function App() {
     let active = true;
     const notice = consumeOAuthRedirect();
     if (notice) setAuthNotice(notice);
+    const fragment = consumeAuthFragment();
+    if (fragment?.action === 'verify-email') {
+      verifyEmail(fragment.token)
+        .then(() => {
+          if (!active) return;
+          setAuthNotice({ type: 'success', text: 'Email đã được xác minh. Hãy đăng nhập.' });
+          setAuthMode('login');
+          setIsAuthOpen(true);
+        })
+        .catch(err => { if (active) setAuthNotice({ type: 'error', text: err?.message || 'Liên kết không hợp lệ hoặc đã hết hạn.' }); });
+    } else if (fragment?.action === 'reset-password') {
+      setResetToken(fragment.token);
+      setAuthMode('reset');
+      setIsAuthOpen(true);
+    }
     fetchCapabilities().then(caps => { if (active) setAuthCapabilities(caps); });
     bootstrapSession()
       .then(session => {
@@ -453,11 +476,45 @@ export default function App() {
     return () => { active = false; };
   }, []);
 
-  const handleAuthSubmit = async (mode, email, password) => {
-    const session = mode === 'register' ? await register(email, password) : await login(email, password);
-    applySession(session);
-    setIsAuthOpen(false);
-    setAuthNotice({ type: 'success', text: mode === 'register' ? 'Đã tạo tài khoản.' : 'Đăng nhập thành công.' });
+  const openAuth = (mode = 'login') => {
+    setAuthMode(mode);
+    setIsAuthOpen(true);
+  };
+
+  // Each handler resolves to an inline message for the modal, or closes it.
+  const authHandlers = {
+    login: async (email, password) => {
+      applySession(await login(email, password));
+      setIsAuthOpen(false);
+      setAuthNotice({ type: 'success', text: 'Đăng nhập thành công.' });
+      return null;
+    },
+    register: async (email, password) => {
+      await register(email, password);
+      return 'Nếu email hợp lệ, Chisa đã gửi thư cho bạn. Hãy mở liên kết trong thư để tiếp tục.';
+    },
+    resend: async (email) => {
+      await resendVerification(email);
+      return 'Nếu tài khoản đang chờ xác minh, email mới đã được gửi (tối đa vài lần mỗi ngày).';
+    },
+    forgot: async (email) => {
+      await forgotPassword(email);
+      return 'Nếu email có tài khoản, Chisa đã gửi liên kết đặt lại mật khẩu (hiệu lực 30 phút).';
+    },
+    reset: async (newPassword) => {
+      await resetPassword(resetToken, newPassword);
+      setResetToken(null);
+      applySession(await logout());
+      setAuthMode('login');
+      return 'Đã đặt mật khẩu mới và đăng xuất mọi thiết bị. Hãy đăng nhập lại.';
+    },
+    change: async (currentPassword, newPassword) => {
+      const session = await ensureSession();
+      applySession(await changePassword(session.access_token, currentPassword, newPassword));
+      setIsAuthOpen(false);
+      setAuthNotice({ type: 'success', text: 'Đã đổi mật khẩu. Các thiết bị khác đã bị đăng xuất.' });
+      return null;
+    },
   };
 
   const handleLogout = async () => {
@@ -681,7 +738,8 @@ export default function App() {
           <AccountStatus
             session={webSession}
             capabilities={authCapabilities}
-            onOpen={() => setIsAuthOpen(true)}
+            onOpen={() => openAuth('login')}
+            onChangePassword={() => openAuth('change')}
             onLogout={handleLogout}
             onLinkGoogle={() => handleGoogle('link')}
           />
@@ -689,9 +747,11 @@ export default function App() {
       />
       <AuthModal
         open={isAuthOpen}
+        mode={authMode}
+        onModeChange={setAuthMode}
         capabilities={authCapabilities}
-        onClose={() => setIsAuthOpen(false)}
-        onSubmit={handleAuthSubmit}
+        onClose={() => { setIsAuthOpen(false); setResetToken(null); }}
+        handlers={authHandlers}
         onGoogle={() => handleGoogle('login')}
       />
 

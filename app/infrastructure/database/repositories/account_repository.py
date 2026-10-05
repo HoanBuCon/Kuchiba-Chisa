@@ -1,4 +1,4 @@
-"""SQLAlchemy persistence for accounts, external identities and refresh sessions."""
+"""SQLAlchemy persistence for accounts, identities, refresh sessions and e-mail tokens."""
 
 from __future__ import annotations
 
@@ -17,6 +17,7 @@ from app.domain.interfaces.accounts import (
 from app.domain.models.account import (
     Account,
     AccountCredentials,
+    AccountTokenPurpose,
     AuthMethod,
     AuthSessionRecord,
     ExternalProvider,
@@ -25,6 +26,7 @@ from app.domain.models.account import (
 from app.infrastructure.database.models.account import (
     AccountIdentityModel,
     AccountModel,
+    AccountTokenModel,
     AuthSessionModel,
 )
 
@@ -191,6 +193,97 @@ class SqlAlchemyAccountRepository(IAccountRepository):
             .where(AuthSessionModel.id == session_id, AuthSessionModel.revoked_at.is_(None))
             .values(revoked_at=now)
         )
+
+    async def revoke_all_sessions(self, account_id: uuid.UUID, now: datetime) -> int:
+        result = await self.session.execute(
+            update(AuthSessionModel)
+            .where(AuthSessionModel.account_id == account_id, AuthSessionModel.revoked_at.is_(None))
+            .values(revoked_at=now)
+        )
+        return int(result.rowcount or 0)  # type: ignore[attr-defined]
+
+    async def account_exists(self, account_id: uuid.UUID) -> bool:
+        found = await self.session.scalar(
+            select(AccountModel.id).where(AccountModel.id == account_id)
+        )
+        return found is not None
+
+    async def get_credentials_by_id(self, account_id: uuid.UUID) -> AccountCredentials | None:
+        row = await self.session.get(AccountModel, account_id)
+        if row is None:
+            return None
+        return AccountCredentials(
+            account=await self._to_account(row), password_hash=row.password_hash
+        )
+
+    async def mark_email_verified(self, account_id: uuid.UUID) -> None:
+        await self.session.execute(
+            update(AccountModel).where(AccountModel.id == account_id).values(email_verified=True)
+        )
+
+    async def create_account_token(
+        self,
+        account_id: uuid.UUID,
+        purpose: AccountTokenPurpose,
+        token_hash: str,
+        expires_at: datetime,
+        now: datetime,
+    ) -> None:
+        self.session.add(
+            AccountTokenModel(
+                account_id=account_id,
+                purpose=purpose,
+                token_hash=token_hash,
+                created_at=now,
+                expires_at=expires_at,
+            )
+        )
+        await self.session.flush()
+
+    async def consume_account_token(
+        self, purpose: AccountTokenPurpose, token_hash: str, now: datetime
+    ) -> uuid.UUID | None:
+        # Single statement: concurrent redemptions cannot both succeed.
+        return await self.session.scalar(
+            update(AccountTokenModel)
+            .where(
+                AccountTokenModel.token_hash == token_hash,
+                AccountTokenModel.purpose == purpose,
+                AccountTokenModel.used_at.is_(None),
+                AccountTokenModel.expires_at > now,
+            )
+            .values(used_at=now)
+            .returning(AccountTokenModel.account_id)
+        )
+
+    async def invalidate_account_tokens(
+        self, account_id: uuid.UUID, purpose: AccountTokenPurpose, now: datetime
+    ) -> None:
+        await self.session.execute(
+            update(AccountTokenModel)
+            .where(
+                AccountTokenModel.account_id == account_id,
+                AccountTokenModel.purpose == purpose,
+                AccountTokenModel.used_at.is_(None),
+            )
+            .values(used_at=now)
+        )
+
+    async def account_token_activity(
+        self, account_id: uuid.UUID, purpose: AccountTokenPurpose, since: datetime
+    ) -> tuple[int, datetime | None]:
+        row = (
+            await self.session.execute(
+                select(
+                    func.count(AccountTokenModel.id).filter(AccountTokenModel.created_at >= since),
+                    func.max(AccountTokenModel.created_at),
+                ).where(
+                    AccountTokenModel.account_id == account_id,
+                    AccountTokenModel.purpose == purpose,
+                )
+            )
+        ).one()
+        return int(row[0] or 0), row[1]
 
 
 def _record(row: AuthSessionModel) -> AuthSessionRecord:

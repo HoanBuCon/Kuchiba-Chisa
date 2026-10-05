@@ -47,11 +47,15 @@ async function anonymousSession() {
   return withExpiry(data, { kind: 'anonymous' });
 }
 
-async function accountRequest(path, body) {
+async function postAuth(path, body, extraHeaders = {}) {
   const response = await fetch(`${BASE}/auth/${path}`, {
     method: 'POST',
     credentials: 'same-origin',
-    headers: { ...CLIENT_HEADERS, ...(body ? { 'content-type': 'application/json' } : {}) },
+    headers: {
+      ...CLIENT_HEADERS,
+      ...extraHeaders,
+      ...(body ? { 'content-type': 'application/json' } : {}),
+    },
     body: body ? JSON.stringify(body) : undefined,
   });
   if (!response.ok) {
@@ -59,7 +63,11 @@ async function accountRequest(path, body) {
     error.status = response.status;
     throw error;
   }
-  const data = await response.json();
+  return response.json();
+}
+
+async function accountRequest(path, body, extraHeaders = {}) {
+  const data = await postAuth(path, body, extraHeaders);
   return withExpiry(data, { kind: 'account', account: data.account });
 }
 
@@ -101,8 +109,34 @@ export async function ensureFreshSession(session) {
   return anonymousSession();
 }
 
+// Login fails with status 403 while the e-mail is not verified yet.
 export const login = (email, password) => accountRequest('login', { email, password });
-export const register = (email, password) => accountRequest('register', { email, password });
+// Registration never signs in: the server always answers 202 and e-mails the address.
+export const register = (email, password) => postAuth('register', { email, password });
+export const resendVerification = (email) => postAuth('verify-email/resend', { email });
+export const forgotPassword = (email) => postAuth('password/forgot', { email });
+export const verifyEmail = (token) => postAuth('verify-email', { token });
+export const resetPassword = (token, newPassword) =>
+  postAuth('password/reset', { token, new_password: newPassword });
+export const changePassword = (accessToken, currentPassword, newPassword) =>
+  accountRequest(
+    'password/change',
+    { current_password: currentPassword, new_password: newPassword },
+    { authorization: `Bearer ${accessToken}` },
+  );
+
+// E-mailed links carry their secret in the URL fragment (#verify-email=… or
+// #reset-password=…), which browsers never send to servers. Read it once and
+// remove it from the address bar and history before doing anything else.
+export function consumeAuthFragment() {
+  const { hash } = window.location;
+  if (!/^#(verify-email|reset-password)=/.test(hash)) return null;
+  const match = /^#(verify-email|reset-password)=([A-Za-z0-9_-]{16,256})$/.exec(hash);
+  const url = new URL(window.location.href);
+  window.history.replaceState({}, '', `${url.pathname}${url.search}`);
+  if (!match) return null;
+  return { action: match[1], token: match[2] };
+}
 
 export async function logout() {
   await fetch(`${BASE}/auth/logout`, {
@@ -120,7 +154,7 @@ export async function fetchCapabilities() {
   } catch {
     // capabilities are optional UI hints
   }
-  return { password: true, google: false };
+  return { password: true, password_registration: false, google: false };
 }
 
 // Starts Google sign-in (intent "login") or linking (intent "link", requires an
@@ -149,6 +183,8 @@ const OAUTH_ERRORS = {
   state: 'Yêu cầu đăng nhập Google không hợp lệ, hãy thử lại.',
   failed: 'Không xác minh được tài khoản Google, hãy thử lại.',
   unavailable: 'Đăng nhập Google chưa được bật trên máy chủ.',
+  claim_email:
+    'Email Google này đang bị giữ bởi một tài khoản chưa xác minh. Hãy dùng "Quên mật khẩu" với email này để chứng minh quyền sở hữu, rồi đăng nhập và liên kết Google.',
 };
 
 // Reads and removes ?auth= / ?auth_error= left by the Google callback redirect.

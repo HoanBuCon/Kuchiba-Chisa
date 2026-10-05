@@ -6,15 +6,18 @@ import uuid
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 
+from app.application.security.account_email import AccountEmailDispatcher
 from app.application.security.accounts import AccountAuthService
 from app.domain.interfaces.accounts import (
     EmailAlreadyRegisteredError,
     ExternalIdentityAlreadyLinkedError,
     IAccountRepository,
+    IEmailSender,
 )
 from app.domain.models.account import (
     Account,
     AccountCredentials,
+    AccountTokenPurpose,
     AuthMethod,
     AuthSessionRecord,
     ExternalProvider,
@@ -38,6 +41,7 @@ class InMemoryAccountRepository(IAccountRepository):
     accounts: dict[uuid.UUID, _Row] = field(default_factory=dict)
     identities: dict[tuple[str, str], uuid.UUID] = field(default_factory=dict)
     sessions: dict[uuid.UUID, dict] = field(default_factory=dict)
+    tokens: dict[str, dict] = field(default_factory=dict)
 
     def _account(self, row: _Row) -> Account:
         providers = tuple(
@@ -150,6 +154,72 @@ class InMemoryAccountRepository(IAccountRepository):
         if self.sessions[session_id]["revoked_at"] is None:
             self.sessions[session_id]["revoked_at"] = now
 
+    async def revoke_all_sessions(self, account_id: uuid.UUID, now: datetime) -> int:
+        revoked = 0
+        for data in self.sessions.values():
+            if data["account_id"] == account_id and data["revoked_at"] is None:
+                data["revoked_at"] = now
+                revoked += 1
+        return revoked
+
+    async def account_exists(self, account_id: uuid.UUID) -> bool:
+        return account_id in self.accounts
+
+    async def get_credentials_by_id(self, account_id: uuid.UUID) -> AccountCredentials | None:
+        row = self.accounts.get(account_id)
+        return AccountCredentials(self._account(row), row.password_hash) if row else None
+
+    async def mark_email_verified(self, account_id: uuid.UUID) -> None:
+        self.accounts[account_id].email_verified = True
+
+    async def create_account_token(
+        self,
+        account_id: uuid.UUID,
+        purpose: AccountTokenPurpose,
+        token_hash: str,
+        expires_at: datetime,
+        now: datetime,
+    ) -> None:
+        self.tokens[token_hash] = {
+            "account_id": account_id,
+            "purpose": purpose,
+            "created_at": now,
+            "expires_at": expires_at,
+            "used_at": None,
+        }
+
+    async def consume_account_token(
+        self, purpose: AccountTokenPurpose, token_hash: str, now: datetime
+    ) -> uuid.UUID | None:
+        data = self.tokens.get(token_hash)
+        if (
+            data is None
+            or data["purpose"] != purpose
+            or data["used_at"] is not None
+            or data["expires_at"] <= now
+        ):
+            return None
+        data["used_at"] = now
+        return data["account_id"]
+
+    async def invalidate_account_tokens(
+        self, account_id: uuid.UUID, purpose: AccountTokenPurpose, now: datetime
+    ) -> None:
+        for data in self.tokens.values():
+            if data["account_id"] == account_id and data["purpose"] == purpose:
+                data["used_at"] = data["used_at"] or now
+
+    async def account_token_activity(
+        self, account_id: uuid.UUID, purpose: AccountTokenPurpose, since: datetime
+    ) -> tuple[int, datetime | None]:
+        rows = [
+            d for d in self.tokens.values()
+            if d["account_id"] == account_id and d["purpose"] == purpose
+        ]
+        recent = sum(1 for d in rows if d["created_at"] >= since)
+        latest = max((d["created_at"] for d in rows), default=None)
+        return recent, latest
+
 
 class FakeDbSession:
     """Stands in for AsyncSession in route tests; the repository is in-memory."""
@@ -182,3 +252,52 @@ def make_service(
         refresh_ttl=timedelta(days=7),
         clock=clock or Clock(),
     )
+
+
+@dataclass
+class SentEmail:
+    to: str
+    subject: str
+    text: str
+
+
+class OutboxSender(IEmailSender):
+    """Captures messages instead of sending them (never logs anything)."""
+
+    def __init__(self, enabled: bool = True) -> None:
+        self._enabled = enabled
+        self.sent: list[SentEmail] = []
+
+    @property
+    def enabled(self) -> bool:
+        return self._enabled
+
+    async def send(self, *, to: str, subject: str, text: str) -> None:
+        self.sent.append(SentEmail(to, subject, text))
+
+
+def make_dispatcher(
+    sender: OutboxSender, app_url: str = "https://chisa.example.test", daily_limit: int = 1_000
+) -> AccountEmailDispatcher:
+    counts: dict[str, int] = {}
+
+    async def counter(key: str, _ttl: int) -> int:
+        counts[key] = counts.get(key, 0) + 1
+        return counts[key]
+
+    return AccountEmailDispatcher(
+        sender=sender,
+        public_app_url=app_url,
+        daily_counter=counter,
+        daily_limit=daily_limit,
+        verification_ttl_hours=24,
+        reset_ttl_minutes=30,
+    )
+
+
+def token_from_email(message: SentEmail) -> str:
+    """Extract the fragment secret from an e-mailed link (test helper)."""
+    for line in message.text.splitlines():
+        if "#verify-email=" in line or "#reset-password=" in line:
+            return line.strip().split("=", 1)[1]
+    raise AssertionError("no account link in e-mail")

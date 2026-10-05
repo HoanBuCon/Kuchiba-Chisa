@@ -7,7 +7,14 @@ a server-side verified ID token. No route accepts a user identifier from the bod
 Browser-cookie endpoints (refresh, logout, Google start) require the custom
 ``X-Chisa-Client`` header; together with ``SameSite=Lax`` cookies this blocks
 cross-site request forgery because a foreign page cannot send custom headers to
-this origin without a CORS preflight that the API never approves.
+this origin without a CORS preflight that the API never approves. Every
+account-mutating endpoint (register, verification, reset, password change)
+requires it too.
+
+E-mail-triggering endpoints (register, resend verification, forgot password)
+always answer ``202 {"status": "accepted"}`` and deliver mail in a background
+task after the response, so neither the body nor the timing reveals whether an
+address has an account.
 """
 
 from __future__ import annotations
@@ -18,20 +25,33 @@ import uuid
 from typing import Annotated, Any
 from urllib.parse import urlencode
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response, status
+from fastapi import (
+    APIRouter,
+    BackgroundTasks,
+    Depends,
+    HTTPException,
+    Query,
+    Request,
+    Response,
+    status,
+)
 from fastapi.responses import JSONResponse, RedirectResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.application.dependencies import (
     get_account_auth_service,
+    get_account_email_dispatcher,
     get_google_identity_provider,
 )
+from app.application.security.account_email import AccountEmailDispatcher
 from app.application.security.accounts import (
     AccountAuthService,
     AccountLinkRequiredError,
+    AccountTokenInvalidError,
+    EmailClaimRequiredError,
+    EmailNotVerifiedError,
     ExternalIdentityRejectedError,
     InvalidCredentialsError,
-    RegistrationRejectedError,
     SessionInvalidError,
 )
 from app.application.security.anonymous_session import AnonymousWebSessionService
@@ -42,6 +62,7 @@ from app.domain.models.account import (
     Account,
     AccountPolicyError,
     IssuedAccountSession,
+    OutboundAccountEmail,
     normalize_email,
 )
 from app.domain.value_objects.principal import PrincipalContext
@@ -57,14 +78,20 @@ from app.infrastructure.security.oauth_transaction import (
 )
 from app.interface.api.dependencies.security import CurrentPrincipal
 from app.interface.api.schemas.auth import (
+    AcceptedResponse,
     AccountSessionResponse,
     AccountSummary,
+    AccountTokenRequest,
     AnonymousSessionResponse,
     AuthCapabilitiesResponse,
+    ChangePasswordRequest,
     CurrentIdentityResponse,
     EmailPasswordRequest,
+    EmailRequest,
     GoogleStartRequest,
     GoogleStartResponse,
+    ResetPasswordRequest,
+    StatusResponse,
 )
 
 log = get_logger(__name__)
@@ -76,9 +103,15 @@ OAUTH_COOKIE = "chisa_oauth"
 OAUTH_COOKIE_PATH = "/api/v1/auth/google"
 CLIENT_HEADER = "x-chisa-client"
 _INVALID_CREDENTIALS = "Email hoặc mật khẩu không đúng."
+_EMAIL_NOT_VERIFIED = (
+    "Email chưa được xác minh. Hãy mở liên kết trong email, hoặc gửi lại email xác minh."
+)
+_INVALID_LINK = "Liên kết không hợp lệ hoặc đã hết hạn."
+_EMAIL_UNAVAILABLE = "Đăng ký và khôi phục bằng email tạm thời chưa được bật."
 
 AccountService = Annotated[AccountAuthService, Depends(get_account_auth_service)]
 DbSession = Annotated[AsyncSession, Depends(get_db_session)]
+EmailDispatcher = Annotated[AccountEmailDispatcher, Depends(get_account_email_dispatcher)]
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────
@@ -150,16 +183,25 @@ def _account_session_response(issued: IssuedAccountSession, status_code: int) ->
     return response
 
 
-async def _throttle_login_email(email: str) -> None:
-    """Per-account throttle against distributed credential stuffing (IP limit is separate)."""
+async def _throttle_login_email(email: str, action: str = "login") -> None:
+    """Per-address throttle against distributed abuse (the IP limit is separate).
+
+    ``login`` keeps its historical key; e-mail-triggering actions use their own
+    buckets so they cannot lock a user out of signing in.
+    """
     try:
         normalized = normalize_email(email)
     except AccountPolicyError:
         return
-    digest = hashlib.sha256(normalized.encode("utf-8")).hexdigest()
+    bucket = "auth-email" if action == "login" else f"auth-email-{action}"
+    await _throttle_identity(bucket, normalized)
+
+
+async def _throttle_identity(bucket: str, identity: str) -> None:
+    digest = hashlib.sha256(identity.encode("utf-8")).hexdigest()
     try:
         allowed, _, retry_after = await redis_service.consume_token_bucket(
-            key=f"chisa:ratelimit:auth-email:v1:{digest}",
+            key=f"chisa:ratelimit:{bucket}:v1:{digest}",
             capacity=settings.AUTH_LOGIN_PER_EMAIL_PER_MINUTE,
             refill_period_seconds=60,
             now=time.time(),
@@ -173,6 +215,34 @@ async def _throttle_login_email(email: str) -> None:
             detail="Rate limit exceeded",
             headers={"Retry-After": str(max(1, int(retry_after)))},
         )
+
+
+def _require_email_delivery(dispatcher: AccountEmailDispatcher) -> None:
+    if not dispatcher.enabled:
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                            detail=_EMAIL_UNAVAILABLE)
+
+
+def _accepted(
+    background: BackgroundTasks,
+    dispatcher: AccountEmailDispatcher,
+    outbound: OutboundAccountEmail | None,
+) -> JSONResponse:
+    """Uniform 202; mail (if any) is sent after the response has been written."""
+    if outbound is not None:
+        background.add_task(dispatcher.deliver, outbound)
+    response = JSONResponse(
+        status_code=status.HTTP_202_ACCEPTED, content=AcceptedResponse().model_dump()
+    )
+    response.headers["Cache-Control"] = "no-store"
+    return response
+
+
+def _account_principal(request: Request) -> PrincipalContext:
+    principal = _bearer_principal(request)
+    if principal is None or principal.authentication != "account":
+        raise HTTPException(status_code=401, detail="Authentication required")
+    return principal
 
 
 # ── Anonymous sessions (compatibility) ────────────────────────────────────
@@ -205,30 +275,125 @@ async def issue_anonymous_session(request: Request) -> AnonymousSessionResponse:
 
 
 @router.get("/capabilities", response_model=AuthCapabilitiesResponse)
-async def auth_capabilities() -> AuthCapabilitiesResponse:
-    return AuthCapabilitiesResponse(google=settings.google_oauth_enabled)
+async def auth_capabilities(dispatcher: EmailDispatcher) -> AuthCapabilitiesResponse:
+    return AuthCapabilitiesResponse(
+        google=settings.google_oauth_enabled,
+        password_registration=dispatcher.enabled,
+    )
 
 
-@router.post("/register", response_model=AccountSessionResponse, status_code=201)
+@router.post("/register", response_model=AcceptedResponse, status_code=202)
 async def register(
     body: EmailPasswordRequest,
     request: Request,
+    background: BackgroundTasks,
     session: DbSession,
     service: AccountService,
+    dispatcher: EmailDispatcher,
+) -> JSONResponse:
+    """Create an unverified account (or e-mail the existing owner). Never signs in."""
+    _require_client_header(request)
+    _require_email_delivery(dispatcher)
+    await _throttle_login_email(body.email, "register")
+    try:
+        outbound = await service.register(session, body.email, body.password)
+    except AccountPolicyError as error:
+        raise HTTPException(status_code=422, detail=str(error)) from error
+    await session.commit()
+    log.info("Account registration accepted", email_queued=outbound is not None)
+    return _accepted(background, dispatcher, outbound)
+
+
+@router.post("/verify-email", response_model=StatusResponse)
+async def verify_email(
+    body: AccountTokenRequest, request: Request, session: DbSession, service: AccountService
 ) -> JSONResponse:
     _require_client_header(request)
     try:
-        issued = await service.register(session, body.email, body.password)
+        await service.verify_email(session, body.token)
+    except AccountTokenInvalidError as error:
+        raise HTTPException(status_code=400, detail=_INVALID_LINK) from error
+    await session.commit()
+    log.info("Account e-mail verified")
+    response = JSONResponse(content={"status": "verified"})
+    response.headers["Cache-Control"] = "no-store"
+    return response
+
+
+@router.post("/verify-email/resend", response_model=AcceptedResponse, status_code=202)
+async def resend_verification(
+    body: EmailRequest,
+    request: Request,
+    background: BackgroundTasks,
+    session: DbSession,
+    service: AccountService,
+    dispatcher: EmailDispatcher,
+) -> JSONResponse:
+    _require_client_header(request)
+    _require_email_delivery(dispatcher)
+    await _throttle_login_email(body.email, "resend")
+    outbound = await service.resend_verification(session, body.email)
+    await session.commit()
+    return _accepted(background, dispatcher, outbound)
+
+
+@router.post("/password/forgot", response_model=AcceptedResponse, status_code=202)
+async def forgot_password(
+    body: EmailRequest,
+    request: Request,
+    background: BackgroundTasks,
+    session: DbSession,
+    service: AccountService,
+    dispatcher: EmailDispatcher,
+) -> JSONResponse:
+    _require_client_header(request)
+    _require_email_delivery(dispatcher)
+    await _throttle_login_email(body.email, "forgot")
+    outbound = await service.request_password_reset(session, body.email)
+    await session.commit()
+    log.info("Password reset requested", email_queued=outbound is not None)
+    return _accepted(background, dispatcher, outbound)
+
+
+@router.post("/password/reset", response_model=StatusResponse)
+async def reset_password(
+    body: ResetPasswordRequest, request: Request, session: DbSession, service: AccountService
+) -> JSONResponse:
+    """Redeem a single-use reset link. All refresh sessions are revoked; sign in again."""
+    _require_client_header(request)
+    try:
+        await service.reset_password(session, body.token, body.new_password)
     except AccountPolicyError as error:
         raise HTTPException(status_code=422, detail=str(error)) from error
-    except RegistrationRejectedError as error:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="Không thể đăng ký với email này.",
-        ) from error
+    except AccountTokenInvalidError as error:
+        raise HTTPException(status_code=400, detail=_INVALID_LINK) from error
     await session.commit()
-    log.info("Account registered", auth_method="password")
-    return _account_session_response(issued, status.HTTP_201_CREATED)
+    log.info("Password reset completed")
+    response = JSONResponse(content={"status": "password_reset"})
+    response.headers["Cache-Control"] = "no-store"
+    _clear_refresh_cookie(response)
+    return response
+
+
+@router.post("/password/change", response_model=AccountSessionResponse)
+async def change_password(
+    body: ChangePasswordRequest, request: Request, session: DbSession, service: AccountService
+) -> JSONResponse:
+    """Authenticated change: every other session is revoked; this browser gets a new one."""
+    _require_client_header(request)
+    principal = _account_principal(request)
+    await _throttle_identity("auth-password-change", principal.subject_id)
+    try:
+        issued = await service.change_password(
+            session, uuid.UUID(principal.subject_id), body.current_password, body.new_password
+        )
+    except InvalidCredentialsError as error:
+        raise HTTPException(status_code=401, detail="Mật khẩu hiện tại không đúng.") from error
+    except AccountPolicyError as error:
+        raise HTTPException(status_code=422, detail=str(error)) from error
+    await session.commit()
+    log.info("Password changed")
+    return _account_session_response(issued, status.HTTP_200_OK)
 
 
 @router.post("/login", response_model=AccountSessionResponse)
@@ -247,7 +412,13 @@ async def login(
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail=_INVALID_CREDENTIALS
         ) from error
+    except EmailNotVerifiedError as error:
+        log.info("Account login rejected", reason_code="email_unverified")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail=_EMAIL_NOT_VERIFIED
+        ) from error
     await session.commit()
+    log.info("Account login succeeded", auth_method="password")
     return _account_session_response(issued, status.HTTP_200_OK)
 
 
@@ -272,6 +443,7 @@ async def logout(request: Request, session: DbSession, service: AccountService) 
     _require_client_header(request)
     await service.logout(session, request.cookies.get(REFRESH_COOKIE))
     await session.commit()
+    log.info("Account logout")
     response = Response(status_code=status.HTTP_204_NO_CONTENT)
     _clear_refresh_cookie(response)
     return response
@@ -405,6 +577,8 @@ async def google_callback(
         )
     except AccountLinkRequiredError:
         return _app_redirect(auth_error="link_required")
+    except EmailClaimRequiredError:
+        return _app_redirect(auth_error="claim_email")
     except (ExternalIdentityRejectedError, SessionInvalidError):
         return _app_redirect(auth_error="rejected")
     await session.commit()

@@ -10,11 +10,13 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.application.dependencies import (
+    get_chat_admission_control,
     get_chat_engine,
     get_clear_user_memory_use_case,
     get_memory_policy_service,
 )
 from app.application.security.authorization import AuthorizationError, AuthorizationPolicy
+from app.application.security.chat_admission import ChatAdmissionControl
 from app.domain.interfaces.llm_provider import (
     LLMGatewayError,
     LLMInvalidResponseError,
@@ -25,6 +27,11 @@ from app.domain.services.chat_engine import ChatEngine, ChatEngineBusyError
 from app.domain.value_objects.principal import PrincipalContext
 from app.infrastructure.database.engine import get_db_session
 from app.infrastructure.logging.logger import get_logger
+from app.interface.api.dependencies.chat_admission import (
+    Admission,
+    admit_chat,
+    deny_workload_account_target,
+)
 from app.interface.api.dependencies.security import CurrentPrincipal, require_scope
 from app.interface.api.schemas.chat import (
     ChatRequest,
@@ -192,12 +199,15 @@ async def chat_endpoint(
     request: ChatRequest,
     http_request: Request,
     principal: Annotated[PrincipalContext, Depends(require_scope("chat:write"))],
+    admission: Admission,
     session: AsyncSession = Depends(get_db_session),
     chat_engine: ChatEngine = Depends(get_chat_engine),
 ) -> ChatResponse:
     """
     Primary endpoint for User <-> AI interactions scoped by verified identity.
     """
+    await deny_workload_account_target(admission, session, principal, principal.subject_id)
+    reservation = await admit_chat(admission, principal, http_request)
     username, normalized_user_id = _prepare_chat_context(principal, http_request)
     message = request.message or ""
     log.info(
@@ -259,6 +269,8 @@ async def chat_endpoint(
             citations=citation_ids,
         )
     except ChatEngineBusyError:
+        # One chat in flight per subject (existing lock); a rejected one is not charged.
+        await admission.refund(reservation)
         raise HTTPException(
             status_code=429,
             detail="Chisa đang xử lý tin nhắn trước đó, Senpai chờ em thêm lát nữa nhé~",
@@ -285,6 +297,7 @@ async def chat_stream_endpoint(
     request: ChatRequest,
     http_request: Request,
     principal: Annotated[PrincipalContext, Depends(require_scope("chat:write"))],
+    admission: Admission,
     chat_engine: ChatEngine = Depends(get_chat_engine),
 ):
     """SSE stream for realtime loop-thinking updates — web clients only."""
@@ -299,6 +312,7 @@ async def chat_stream_endpoint(
             detail="SSE chat stream is only available for web clients. Use POST /chat instead.",
         )
 
+    reservation = await admit_chat(admission, principal, http_request)
     username, normalized_user_id = _prepare_chat_context(principal, http_request)
     message = request.message or ""
     log.info(
@@ -403,6 +417,21 @@ async def chat_stream_endpoint(
             )
         except asyncio.CancelledError:
             raise
+        except ChatEngineBusyError:
+            # One chat in flight per subject (existing lock); not charged.
+            await admission.refund(reservation)
+            with suppress(asyncio.QueueFull):
+                queue.put_nowait(
+                    {
+                        "type": "error",
+                        "trace_id": trace_id,
+                        "data": {
+                            "message": "Chisa đang xử lý tin nhắn trước đó, Senpai chờ em "
+                            "thêm lát nữa nhé~",
+                            "error": "Busy",
+                        },
+                    }
+                )
         except SQLAlchemyError as db_err:
             log.error(
                 "SSE database connection or operation failed",
@@ -549,6 +578,8 @@ async def clear_user_memory(
     principal: CurrentPrincipal,
     session: AsyncSession = Depends(get_db_session),
     clear_use_case=Depends(get_clear_user_memory_use_case),
+    # Only consulted for workload principals (web users can only clear themselves).
+    admission: ChatAdmissionControl = Depends(get_chat_admission_control),
 ) -> dict | JSONResponse:
     """
     Wipes all conversation memory (STM + LTM) and resets emotion/stats for a user.
@@ -561,6 +592,8 @@ async def clear_user_memory(
             own_scope="chat:clear",
             elevated_scope="chat:clear:any",
         )
+        if principal.kind == "workload":
+            await deny_workload_account_target(admission, session, principal, user_id)
         result = await clear_use_case.execute(session, normalize_user_id_str(user_id))
         if result["status"] != "completed":
             return JSONResponse(

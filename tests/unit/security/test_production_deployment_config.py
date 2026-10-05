@@ -137,9 +137,13 @@ def test_production_env_template_fails_closed_until_filled() -> None:
         "JWT_SECRET": "j" * 48,
         "DISCORD_WORKLOAD_JWT_SECRET": "d" * 48,
         "QDRANT_API_KEY": "q" * 32,
+        "SMTP_USERNAME": "chisa-mailer",
+        "SMTP_PASSWORD": "m" * 32,
     }
     settings = Settings(_env_file=None, **filled)
     assert settings.is_prod and settings.AUTH_COOKIE_SECURE and not settings.google_oauth_enabled
+    assert settings.CHAT_QUOTA_ENABLED and settings.email_delivery_enabled
+    assert "DISCORD_ALLOWED_CHANNEL_IDS" not in template  # no allowlist in the beta
 
 
 def test_ops_modules_do_not_load_full_application_settings() -> None:
@@ -190,3 +194,11 @@ def test_caddyfile_routes_only_inside_handle_blocks() -> None:
     assert not [line for line in site_level if line.startswith(("respond", "reverse_proxy"))]
     assert "handle @blocked {" in caddyfile
     assert "handle @health {" in caddyfile
+
+
+def test_runbook_builds_the_profiled_migrate_image() -> None:
+    # Plain `docker compose build` skips profiled services, so an update would run
+    # the *previous* migrate image (found in the rehearsal).
+    runbook = (ROOT / "docs" / "DEPLOYMENT_RUNBOOK.md").read_text(encoding="utf-8")
+    assert "docker compose --profile ops build" in runbook
+    assert "docker compose build" not in runbook.splitlines()

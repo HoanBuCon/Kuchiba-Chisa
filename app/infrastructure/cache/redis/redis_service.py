@@ -184,6 +184,66 @@ class RedisService(ICacheProvider):
         allowed, remaining, retry_after = (str(value) for value in result)
         return bool(int(allowed)), int(remaining), float(retry_after)
 
+    # ── Daily quota counters (atomic; callers treat errors as fail-closed) ─
+    _INCR_WITH_TTL_LUA = """
+    local value = redis.call('INCR', KEYS[1])
+    if value == 1 then
+        redis.call('EXPIRE', KEYS[1], tonumber(ARGV[1]))
+    end
+    return value
+    """
+    # All-or-nothing: returns 0 and increments every counter only if all are
+    # below their limits; otherwise returns the 1-based index of the first full one.
+    _CONSUME_QUOTA_LUA = """
+    local n = #KEYS
+    for i = 1, n do
+        local current = tonumber(redis.call('GET', KEYS[i]) or '0')
+        if current >= tonumber(ARGV[i]) then
+            return i
+        end
+    end
+    for i = 1, n do
+        local value = redis.call('INCR', KEYS[i])
+        if value == 1 then
+            redis.call('EXPIRE', KEYS[i], tonumber(ARGV[n + 1]))
+        end
+    end
+    return 0
+    """
+    _REFUND_QUOTA_LUA = """
+    for i = 1, #KEYS do
+        local current = tonumber(redis.call('GET', KEYS[i]) or '0')
+        if current > 0 then
+            redis.call('DECR', KEYS[i])
+        end
+    end
+    return 1
+    """
+
+    async def incr_with_ttl(self, key: str, ttl: int) -> int:
+        result = await cast(
+            Awaitable[Any], self._client.eval(self._INCR_WITH_TTL_LUA, 1, key, str(ttl))
+        )
+        return int(result)
+
+    async def consume_daily_quota(
+        self, keys: list[str], limits: list[int], ttl: int
+    ) -> int:
+        result = await cast(
+            Awaitable[Any],
+            self._client.eval(
+                self._CONSUME_QUOTA_LUA,
+                len(keys),
+                *keys,
+                *(str(limit) for limit in limits),
+                str(ttl),
+            ),
+        )
+        return int(result)
+
+    async def refund_daily_quota(self, keys: list[str]) -> None:
+        await cast(Awaitable[Any], self._client.eval(self._REFUND_QUOTA_LUA, len(keys), *keys))
+
     # ── List (Short-Term Memory) ───────────────────────────────────
     async def lpush(self, key: str, *values: str) -> int:
         return await cast(Awaitable[int], self._client.lpush(key, *values))

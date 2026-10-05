@@ -8,12 +8,20 @@ from urllib.parse import parse_qs, urlsplit
 
 import pytest
 import pytest_asyncio
-from account_fakes import FakeDbSession, InMemoryAccountRepository, make_service
+from account_fakes import (
+    FakeDbSession,
+    InMemoryAccountRepository,
+    OutboxSender,
+    make_dispatcher,
+    make_service,
+    token_from_email,
+)
 from fastapi import FastAPI
 from httpx import ASGITransport, AsyncClient
 
 from app.application.dependencies import (
     get_account_auth_service,
+    get_account_email_dispatcher,
     get_google_identity_provider,
 )
 from app.config.settings import settings
@@ -68,6 +76,7 @@ async def env(monkeypatch: pytest.MonkeyPatch) -> AsyncIterator[dict]:
 
     repo = InMemoryAccountRepository()
     google = FakeGoogleProvider()
+    outbox = OutboxSender()
     app = FastAPI()
     app.add_middleware(RateLimitMiddleware)
     app.include_router(auth.router, prefix="/api/v1")
@@ -78,15 +87,40 @@ async def env(monkeypatch: pytest.MonkeyPatch) -> AsyncIterator[dict]:
     app.dependency_overrides[get_db_session] = fake_session
     app.dependency_overrides[get_account_auth_service] = lambda: make_service(repo)
     app.dependency_overrides[get_google_identity_provider] = lambda: google
+    dispatcher = make_dispatcher(outbox, APP_URL)
+    app.dependency_overrides[get_account_email_dispatcher] = lambda: dispatcher
     async with AsyncClient(
         transport=ASGITransport(app=app), base_url="https://testserver"
     ) as client:
-        yield {"client": client, "repo": repo, "google": google}
+        yield {"client": client, "repo": repo, "google": google, "outbox": outbox}
 
 
 async def register(client: AsyncClient, email: str = "senpai@example.com"):
     return await client.post(
         "/api/v1/auth/register", json={"email": email, "password": PASSWORD}, headers=WEB
+    )
+
+
+async def signup(env: dict, email: str = "senpai@example.com"):
+    """Register → open the e-mailed verification link → sign in. Returns the login reply."""
+    client = env["client"]
+    assert (await register(client, email)).status_code == 202
+    token = token_from_email(env["outbox"].sent[-1])
+    verified = await client.post("/api/v1/auth/verify-email", json={"token": token}, headers=WEB)
+    assert verified.status_code == 200, verified.text
+    login = await client.post(
+        "/api/v1/auth/login", json={"email": email, "password": PASSWORD}, headers=WEB
+    )
+    assert login.status_code == 200, login.text
+    return login
+
+
+async def signup_existing(env: dict, email: str = "senpai@example.com"):
+    client = env["client"]
+    token = token_from_email(env["outbox"].sent[-1])
+    await client.post("/api/v1/auth/verify-email", json={"token": token}, headers=WEB)
+    return await client.post(
+        "/api/v1/auth/login", json={"email": email, "password": PASSWORD}, headers=WEB
     )
 
 
@@ -96,16 +130,19 @@ def _cookie_header(response, name: str) -> str:
 
 @pytest.mark.asyncio
 async def test_register_returns_account_session_and_hardened_refresh_cookie(env) -> None:
-    response = await register(env["client"])
+    registered = await register(env["client"])
+    assert registered.status_code == 202
+    assert registered.json() == {"status": "accepted"}
+    assert "set-cookie" not in registered.headers  # no session before verification
 
-    assert response.status_code == 201
+    response = await signup_existing(env)
     body = response.json()
     principal = jwt_authenticator.authenticate_bearer(f"Bearer {body['access_token']}")
     assert principal.subject_id == body["subject_id"]
     assert principal.authentication == "account"
     assert body["account"] == {
         "email": "senpai@example.com",
-        "email_verified": False,
+        "email_verified": True,
         "has_password": True,
         "providers": [],
     }
@@ -137,16 +174,22 @@ async def test_cookie_endpoints_require_the_client_header(env) -> None:
         ("refresh", None),
         ("logout", None),
         ("google/start", {}),
+        ("verify-email", {"token": "x" * 43}),
+        ("verify-email/resend", {"email": "a@example.com"}),
+        ("password/forgot", {"email": "a@example.com"}),
+        ("password/reset", {"token": "x" * 43, "new_password": PASSWORD}),
+        ("password/change", {"current_password": PASSWORD, "new_password": PASSWORD}),
     ):
         response = await client.post(f"/api/v1/auth/{path}", json=body)
         assert response.status_code == 403, path
     assert env["repo"].accounts == {}
+    assert env["outbox"].sent == []
 
 
 @pytest.mark.asyncio
 async def test_login_error_does_not_reveal_account_existence(env, caplog) -> None:
     client = env["client"]
-    await register(client)
+    await signup(env)
     caplog.set_level(logging.DEBUG)
 
     wrong = await client.post(
@@ -174,15 +217,26 @@ async def test_login_error_does_not_reveal_account_existence(env, caplog) -> Non
 
 
 @pytest.mark.asyncio
-async def test_duplicate_registration_conflicts(env) -> None:
-    await register(env["client"])
-    assert (await register(env["client"], "SENPAI@example.com")).status_code == 409
+async def test_registration_does_not_reveal_existing_addresses(env) -> None:
+    client = env["client"]
+    await signup(env)
+    fresh = await register(client, "brand-new@example.com")
+    existing = await register(client, "SENPAI@example.com")
+
+    assert fresh.status_code == existing.status_code == 202
+    assert fresh.json() == existing.json() == {"status": "accepted"}
+    assert fresh.headers.get("set-cookie") is None and existing.headers.get("set-cookie") is None
+    assert len(env["repo"].accounts) == 2
+    # Each address hears only about itself: verification vs. "already registered".
+    sent = {m.to: m.subject for m in env["outbox"].sent[-2:]}
+    assert "Xác minh" in sent["brand-new@example.com"]
+    assert "đã có tài khoản" in sent["senpai@example.com"]
 
 
 @pytest.mark.asyncio
 async def test_refresh_rotates_cookie_and_logout_revokes(env) -> None:
     client = env["client"]
-    await register(client)
+    await signup(env)
 
     refreshed = await client.post("/api/v1/auth/refresh", headers=WEB)
     assert refreshed.status_code == 200
@@ -200,7 +254,7 @@ async def test_refresh_rotates_cookie_and_logout_revokes(env) -> None:
 @pytest.mark.asyncio
 async def test_account_token_cannot_be_downgraded_to_anonymous_session(env) -> None:
     client = env["client"]
-    token = (await register(client)).json()["access_token"]
+    token = (await signup(env)).json()["access_token"]
 
     response = await client.post(
         "/api/v1/auth/anonymous-session", headers={"Authorization": f"Bearer {token}"}
@@ -211,7 +265,7 @@ async def test_account_token_cannot_be_downgraded_to_anonymous_session(env) -> N
 @pytest.mark.asyncio
 async def test_me_reports_server_derived_identity(env) -> None:
     client = env["client"]
-    body = (await register(client)).json()
+    body = (await signup(env)).json()
 
     me = await client.get(
         "/api/v1/auth/me", headers={"Authorization": f"Bearer {body['access_token']}"}
@@ -291,7 +345,7 @@ async def test_google_callback_rejects_missing_or_mismatched_state(env) -> None:
 @pytest.mark.asyncio
 async def test_google_email_collision_requires_explicit_link(env) -> None:
     client = env["client"]
-    await register(client, "senpai@gmail.com")
+    await signup(env, "senpai@gmail.com")
     await client.post("/api/v1/auth/logout", headers=WEB)
 
     state, _ = await _google_start(client)
@@ -305,7 +359,7 @@ async def test_google_email_collision_requires_explicit_link(env) -> None:
 @pytest.mark.asyncio
 async def test_signed_in_account_links_google_then_can_sign_in_with_it(env) -> None:
     client = env["client"]
-    token = (await register(client, "senpai@gmail.com")).json()["access_token"]
+    token = (await signup(env, "senpai@gmail.com")).json()["access_token"]
     owner_id = next(iter(env["repo"].accounts))
 
     state, _ = await _google_start(client, "link", token)
@@ -327,7 +381,7 @@ async def test_link_requires_account_token_and_same_browser_session(env) -> None
     )
     assert refused.status_code == 401
 
-    token = (await register(client, "senpai@gmail.com")).json()["access_token"]
+    token = (await signup(env, "senpai@gmail.com")).json()["access_token"]
     state, _ = await _google_start(client, "link", token)
     client.cookies.delete("chisa_refresh", path="/api/v1/auth")
     callback = await client.get(

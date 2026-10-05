@@ -15,6 +15,8 @@ from typing import Literal
 
 ExternalProvider = Literal["google"]
 AuthMethod = Literal["password", "google"]
+# Single-use, e-mailed secrets. Only their SHA-256 is stored.
+AccountTokenPurpose = Literal["verify_email", "password_reset"]
 
 _EMAIL_PATTERN = re.compile(r"^[^@\s]{1,64}@[^@\s]+\.[^@\s]{2,}$")
 EMAIL_MAX_LENGTH = 254
@@ -100,3 +102,19 @@ class IssuedAccountSession:
     access_expires_in: int
     refresh_token: str
     refresh_expires_in: int
+
+
+@dataclass(frozen=True, slots=True)
+class OutboundAccountEmail:
+    """An account e-mail to deliver *after* the transaction commits.
+
+    ``kind`` selects the template: ``verify_email`` (new registration),
+    ``password_reset`` (forgot password), ``existing_account`` (someone tried to
+    register an address that already has an account) or ``claim_account`` (the
+    address is held by an unverified account; resetting proves ownership).
+    ``token`` is the raw secret and must never be logged.
+    """
+
+    kind: Literal["verify_email", "password_reset", "existing_account", "claim_account"]
+    to: str
+    token: str

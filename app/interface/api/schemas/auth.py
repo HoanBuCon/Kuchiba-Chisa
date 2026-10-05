@@ -55,4 +55,43 @@ class GoogleStartResponse(BaseModel):
 
 class AuthCapabilitiesResponse(BaseModel):
     password: bool = True
+    # False when e-mail delivery is not configured: sign-up, verification resend
+    # and password reset are then unavailable (existing verified logins still work).
+    password_registration: bool = False
     google: bool
+
+
+class AcceptedResponse(BaseModel):
+    """Uniform reply for e-mail-triggering requests (never reveals account existence)."""
+
+    status: Literal["accepted"] = "accepted"
+
+
+class EmailRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    email: str = Field(min_length=3, max_length=254)
+
+
+class AccountTokenRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    token: str = Field(min_length=16, max_length=256)
+
+
+class ResetPasswordRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    token: str = Field(min_length=16, max_length=256)
+    new_password: str = Field(min_length=1, max_length=256)
+
+
+class ChangePasswordRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    current_password: str = Field(min_length=1, max_length=256)
+    new_password: str = Field(min_length=1, max_length=256)
+
+
+class StatusResponse(BaseModel):
+    status: str

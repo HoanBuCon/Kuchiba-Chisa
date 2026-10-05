@@ -456,6 +456,58 @@ class AppContainer:
             password_hasher=BcryptPasswordHasher(settings.BCRYPT_ROUNDS),
             token_issuer=jwt_authenticator,
             refresh_ttl=timedelta(days=settings.JWT_REFRESH_EXPIRE_DAYS),
+            verification_ttl=timedelta(hours=settings.EMAIL_VERIFICATION_TTL_HOURS),
+            reset_ttl=timedelta(minutes=settings.PASSWORD_RESET_TTL_MINUTES),
+            email_cooldown=timedelta(seconds=settings.ACCOUNT_EMAIL_COOLDOWN_SECONDS),
+            email_daily_limit=settings.ACCOUNT_EMAIL_DAILY_LIMIT,
+        )
+
+    @cached_property
+    def account_email_dispatcher(self):
+        """Account e-mail over SMTP; disabled (and sign-up with it) when SMTP is unset."""
+        from app.application.security.account_email import AccountEmailDispatcher
+        from app.infrastructure.cache.redis.redis_service import redis_service
+        from app.infrastructure.email.smtp_sender import SmtpEmailSender
+
+        password = settings.SMTP_PASSWORD
+        return AccountEmailDispatcher(
+            sender=SmtpEmailSender(
+                host=settings.SMTP_HOST,
+                port=settings.SMTP_PORT,
+                security=settings.SMTP_SECURITY,
+                username=settings.SMTP_USERNAME,
+                password=password.get_secret_value() if password else "",
+                sender=settings.SMTP_FROM,
+                timeout_seconds=settings.SMTP_TIMEOUT_SECONDS,
+            ),
+            public_app_url=settings.PUBLIC_APP_URL,
+            daily_counter=redis_service.incr_with_ttl,
+            daily_limit=settings.EMAIL_DAILY_GLOBAL_LIMIT,
+            verification_ttl_hours=settings.EMAIL_VERIFICATION_TTL_HOURS,
+            reset_ttl_minutes=settings.PASSWORD_RESET_TTL_MINUTES,
+        )
+
+    @cached_property
+    def chat_admission_control(self):
+        """Daily LLM cost quotas and the Discord-workload → web-account boundary."""
+        from app.application.security.chat_admission import (
+            ChatAdmissionControl,
+            ChatQuotaLimits,
+        )
+        from app.infrastructure.cache.redis.redis_service import redis_service
+        from app.infrastructure.database.repositories.account_repository import (
+            SqlAlchemyAccountRepository,
+        )
+
+        async def account_exists(session, account_id):
+            repo = SqlAlchemyAccountRepository(_require_async_session(session))
+            return await repo.account_exists(account_id)
+
+        return ChatAdmissionControl(
+            store=redis_service,
+            limits=ChatQuotaLimits.from_settings(settings),
+            enabled=settings.CHAT_QUOTA_ENABLED,
+            account_exists=account_exists,
         )
 
     @cached_property
@@ -504,6 +556,16 @@ def get_account_auth_service():
 def get_google_identity_provider():
     """FastAPI dependency for the optional Google OIDC provider."""
     return container.google_identity_provider
+
+
+def get_account_email_dispatcher():
+    """FastAPI dependency for verification / password-reset e-mail delivery."""
+    return container.account_email_dispatcher
+
+
+def get_chat_admission_control():
+    """FastAPI dependency for LLM cost quotas and workload target checks."""
+    return container.chat_admission_control
 
 async def get_vector_store():
     return qdrant_service

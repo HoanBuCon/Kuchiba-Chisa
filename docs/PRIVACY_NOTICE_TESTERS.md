@@ -18,6 +18,8 @@ tờ, thông tin tài chính, sức khỏe, địa chỉ nhà…) trong tin nh�
 | Tài khoản: email, mật khẩu đã băm bằng bcrypt (không lưu mật khẩu gốc), thời điểm đăng nhập gần nhất | Khi bạn tạo tài khoản | Đăng nhập |
 | Liên kết Google: mã định danh Google (`sub`) và email Google | Khi bạn đăng nhập/liên kết bằng Google | Đăng nhập bằng Google |
 | Phiên đăng nhập: chỉ lưu **mã băm** của refresh token, thời hạn 7 ngày | Khi đăng nhập | Giữ đăng nhập, cho phép đăng xuất |
+| Mã xác minh email / đặt lại mật khẩu: chỉ lưu **mã băm**, dùng một lần, hết hạn sau 24 giờ (xác minh) hoặc 30 phút (đặt lại) | Khi đăng ký, gửi lại xác minh, quên mật khẩu | Chứng minh bạn sở hữu email |
+| Bộ đếm lượt chat theo ngày (định danh và IP đã được băm) | Mỗi lượt chat, tự xóa sau 2 ngày | Giới hạn chi phí, chống lạm dụng |
 | Discord: Discord user ID, guild ID, nội dung tin nhắn gửi cho bot | Khi bạn dùng bot | Ánh xạ bạn với dữ liệu trong Chisa |
 
 **Không dùng chat ẩn danh vẫn để lại dữ liệu:** nếu chưa đăng nhập, bạn là một phiên ẩn
@@ -37,6 +39,8 @@ muốn xóa.
   vấn tìm kiếm rút ra từ tin nhắn của bạn được gửi đi, và máy chủ tải các trang kết quả.
 - **Jina** (sắp xếp kết quả tìm kiếm lore): chỉ nhận đoạn lore công khai của game và câu
   truy vấn đã được xử lý, không nhận lịch sử hội thoại.
+- **Nhà cung cấp email giao dịch** (qua SMTP): nhận địa chỉ email và nội dung thư xác minh
+  hoặc đặt lại mật khẩu để gửi tới bạn.
 - **Google**: chỉ khi bạn chọn đăng nhập bằng Google. Chisa nhận mã định danh và email từ
   Google; Google biết bạn đã đăng nhập vào ứng dụng này.
 - **Discord**: nếu bạn dùng bot, tin nhắn đi qua hạ tầng của Discord theo chính sách của
@@ -61,6 +65,10 @@ liệu không mở ra Internet; bản sao lưu được mã hóa khi gửi ra ng
 hệ thống thử nghiệm do một cá nhân vận hành, nên không thể cam kết như một dịch vụ thương mại.
 
 ## 5. Lưu giữ và xóa dữ liệu
+
+- **Giới hạn sử dụng:** mỗi phiên, tài khoản, IP và server Discord có số lượt chat tối đa
+  mỗi ngày (đặt lại lúc 07:00 giờ Việt Nam).
+- **Tài khoản email/password** phải xác minh email trước khi đăng nhập được.
 
 - **Xóa hội thoại và ký ức:** gõ `/clear` (web) hoặc dùng lệnh `/clear` trên Discord. Lệnh
   này xóa lịch sử chat, ký ức dài hạn, ảnh đã lưu và cache liên quan đến bạn.

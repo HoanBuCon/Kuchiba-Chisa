@@ -185,6 +185,39 @@ class Settings(BaseSettings):
     GOOGLE_OAUTH_REDIRECT_URI: str | None = None
     GOOGLE_OAUTH_TIMEOUT_SECONDS: float = Field(default=10.0, gt=0, le=30.0)
 
+    # ── Account e-mail (verification + password reset, SMTP) ───
+    # E-mailed secrets are random 256-bit values; only SHA-256 is stored.
+    EMAIL_VERIFICATION_TTL_HOURS: int = Field(default=24, ge=1, le=72)
+    PASSWORD_RESET_TTL_MINUTES: int = Field(default=30, ge=5, le=120)
+    # Per account and purpose: minimum gap between e-mails, and max per 24 hours.
+    ACCOUNT_EMAIL_COOLDOWN_SECONDS: int = Field(default=60, ge=10, le=3_600)
+    ACCOUNT_EMAIL_DAILY_LIMIT: int = Field(default=5, ge=1, le=50)
+    # Application-wide ceiling on account e-mails per UTC day (Redis; fail-closed).
+    EMAIL_DAILY_GLOBAL_LIMIT: int = Field(default=300, ge=1, le=100_000)
+    # Transactional provider via SMTP. Empty SMTP_HOST disables e-mail and with it
+    # password registration, verification resend and password reset.
+    SMTP_HOST: str = ""
+    SMTP_PORT: int = Field(default=587, ge=1, le=65_535)
+    SMTP_SECURITY: Literal["starttls", "ssl"] = "starttls"
+    SMTP_USERNAME: str = ""
+    SMTP_PASSWORD: SecretStr | None = None
+    SMTP_FROM: str = ""
+    SMTP_TIMEOUT_SECONDS: float = Field(default=10.0, gt=0, le=60.0)
+
+    # ── LLM cost / abuse quotas (per UTC day; Redis; fail-closed) ─
+    # Applied once per chat request (POST /chat, /chat/stream, /community/chat).
+    CHAT_QUOTA_ENABLED: bool = True
+    CHAT_MESSAGE_RATE_LIMIT_PER_MINUTE: int = Field(default=10, ge=1, le=600)
+    QUOTA_WEB_ANON_PER_SUBJECT_DAILY: int = Field(default=30, ge=1)
+    QUOTA_WEB_ANON_PER_IP_DAILY: int = Field(default=100, ge=1)
+    QUOTA_WEB_ACCOUNT_PER_SUBJECT_DAILY: int = Field(default=150, ge=1)
+    QUOTA_DISCORD_PER_SUBJECT_DAILY: int = Field(default=50, ge=1)
+    QUOTA_DISCORD_PER_GUILD_DAILY: int = Field(default=500, ge=1)
+    # Independent pools so abuse of one surface cannot exhaust the others.
+    QUOTA_POOL_WEB_ANON_DAILY: int = Field(default=3_000, ge=1)
+    QUOTA_POOL_WEB_ACCOUNT_DAILY: int = Field(default=3_000, ge=1)
+    QUOTA_POOL_DISCORD_DAILY: int = Field(default=3_000, ge=1)
+
     # ── Rate Limiting ──────────────────────────────────────────
     RATE_LIMIT_PER_MINUTE: int = 60
     RATE_LIMIT_LOCAL_FALLBACK_MAX_KEYS: int = Field(default=10_000, ge=100, le=100_000)
@@ -264,6 +297,10 @@ class Settings(BaseSettings):
         return self.APP_ENV == "test"
 
     @property
+    def email_delivery_enabled(self) -> bool:
+        return bool(self.SMTP_HOST.strip() and self.SMTP_FROM.strip())
+
+    @property
     def google_oauth_enabled(self) -> bool:
         return bool(
             self.GOOGLE_OAUTH_CLIENT_ID
@@ -324,6 +361,13 @@ class Settings(BaseSettings):
             )
             if secret and _is_placeholder_secret(secret):
                 raise ValueError("production secrets must not use template values")
+            smtp_password = (
+                self.SMTP_PASSWORD.get_secret_value() if self.SMTP_PASSWORD else ""
+            )
+            if smtp_password and _is_placeholder_secret(smtp_password):
+                raise ValueError("production secrets must not use template values")
+            if not self.CHAT_QUOTA_ENABLED:
+                raise ValueError("CHAT_QUOTA_ENABLED must be enabled in production")
         return self
 
 

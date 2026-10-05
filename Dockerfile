@@ -73,6 +73,7 @@ COPY --chown=chisa:chisa chisa_cli.py ./
 COPY --chown=chisa:chisa .env.example .env.production.example ./
 COPY --chown=chisa:chisa data/ ./data/
 COPY --chown=chisa:chisa deploy/ ./deploy/
+COPY --chown=chisa:chisa docs/ ./docs/
 COPY --chown=chisa:chisa reports/ ./reports/
 COPY --chown=chisa:chisa tests/ ./tests/
 COPY --chown=chisa:chisa docker-compose.yml .dockerignore ./

@@ -49,8 +49,15 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
             "/api/v1/auth/logout",
             "/api/v1/auth/google/start",
             "/api/v1/auth/google/callback",
+            "/api/v1/auth/verify-email",
+            "/api/v1/auth/verify-email/resend",
+            "/api/v1/auth/password/forgot",
+            "/api/v1/auth/password/reset",
+            "/api/v1/auth/password/change",
         }
     )
+    # LLM-backed routes get a tighter per-minute bucket than reads (history, etc.).
+    CHAT_MESSAGE_ROUTES = frozenset({"POST:chat", "POST:chat.stream", "POST:community.chat"})
 
     def __init__(self, app: ASGIApp) -> None:
         super().__init__(app)
@@ -92,6 +99,8 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         request.state.principal = principal
 
         client_ip = self._trusted_client_ip(request)
+        # Exposed to routes for per-IP daily quotas (web anonymous chat).
+        request.state.client_ip = client_ip
         anomaly_allowed, _, anomaly_reset_at = await self._check_ip_anomaly(client_ip)
         if not anomaly_allowed:
             return self._limited_response(anomaly_reset_at)
@@ -207,6 +216,8 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
     ) -> tuple[bool, int, float]:
         key = self._rate_limit_key(principal, method, path)
         capacity = settings.RATE_LIMIT_PER_MINUTE
+        if self._route_bucket(method, path) in self.CHAT_MESSAGE_ROUTES:
+            capacity = min(capacity, settings.CHAT_MESSAGE_RATE_LIMIT_PER_MINUTE)
         now = time.time()
         try:
             allowed, remaining, retry_after = await redis_service.consume_token_bucket(

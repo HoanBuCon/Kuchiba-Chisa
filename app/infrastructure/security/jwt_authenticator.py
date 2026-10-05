@@ -27,6 +27,21 @@ class JwtAuthenticator(IAccountTokenIssuer):
     # Registered accounts receive the same least-privilege web scopes; the
     # account ID (not a client value) is the subject.
     _ACCOUNT_WEB_SCOPES = _ANONYMOUS_WEB_SCOPES
+    # The only scopes a Discord workload credential may carry. The bot signs its
+    # own tokens, so Core must not accept arbitrary self-granted authority (for
+    # example ``chat:read:any``, ``ingestion:*``). ``chat:clear:any`` is needed
+    # for moderator guild erasure; Core separately refuses workload access to
+    # registered web accounts (ChatAdmissionControl).
+    _WORKLOAD_ALLOWED_SCOPES = frozenset(
+        {
+            "chat:write",
+            "chat:clear",
+            "chat:clear:any",
+            "community:write",
+            "community:clear:self",
+            "community:clear:any",
+        }
+    )
 
     def authenticate_bearer(self, authorization: str | None) -> PrincipalContext:
         if not authorization:
@@ -129,6 +144,8 @@ class JwtAuthenticator(IAccountTokenIssuer):
         scopes = JwtAuthenticator._scopes(claims.get("scopes"))
         if not scopes:
             raise AuthenticationError("credential scopes are missing")
+        if token_use == "workload" and not scopes <= JwtAuthenticator._WORKLOAD_ALLOWED_SCOPES:
+            raise AuthenticationError("workload credential carries a scope it may not hold")
 
         tenant_id = JwtAuthenticator._optional_string(claims.get("tenant_id"))
         channel_id = JwtAuthenticator._optional_string(claims.get("channel_id"))

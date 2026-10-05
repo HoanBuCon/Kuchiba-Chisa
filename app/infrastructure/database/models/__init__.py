@@ -7,6 +7,7 @@ can auto-detect the entire schema during migrations.
 from app.infrastructure.database.models.account import (
     AccountIdentityModel,
     AccountModel,
+    AccountTokenModel,
     AuthSessionModel,
 )
 from app.infrastructure.database.models.background_job import DurableBackgroundJobModel
@@ -50,6 +51,7 @@ from app.infrastructure.database.models.user_stats import UserStats
 __all__ = [
     "AccountIdentityModel",
     "AccountModel",
+    "AccountTokenModel",
     "AuthSessionModel",
     "Base",
     "DurableBackgroundJobModel",

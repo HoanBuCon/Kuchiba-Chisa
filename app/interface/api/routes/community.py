@@ -18,6 +18,11 @@ from app.domain.services.chat_engine import ChatEngine, ChatEngineBusyError
 from app.domain.value_objects.principal import PrincipalContext
 from app.infrastructure.database.engine import get_db_session
 from app.infrastructure.logging.logger import get_logger
+from app.interface.api.dependencies.chat_admission import (
+    Admission,
+    admit_chat,
+    deny_workload_account_target,
+)
 from app.interface.api.dependencies.security import CurrentPrincipal, require_scope
 from app.interface.api.schemas.community import CommunityChatRequest, CommunityChatResponse
 from app.shared.utils.user_identity import normalize_user_id
@@ -65,6 +70,7 @@ def _domain_messages(request: CommunityChatRequest) -> list[CommunityMessage]:
 async def community_chat_endpoint(
     request: CommunityChatRequest,
     principal: Annotated[PrincipalContext, Depends(require_scope("community:write"))],
+    admission: Admission,
     session: AsyncSession = Depends(get_db_session),
     chat_engine: ChatEngine = Depends(get_chat_engine),
 ) -> CommunityChatResponse:
@@ -73,6 +79,8 @@ async def community_chat_endpoint(
         actor_id, guild_id, channel_id = _trusted_community_context(principal)
     except AuthorizationError as error:
         raise HTTPException(status_code=403, detail="Access denied") from error
+    await deny_workload_account_target(admission, session, principal, actor_id)
+    reservation = await admit_chat(admission, principal)
 
     username = principal.display_name or "Discord user"
     log.info(
@@ -153,6 +161,7 @@ async def community_chat_endpoint(
             citations=citation_ids,
         )
     except ChatEngineBusyError as error:
+        await admission.refund(reservation)
         pipeline_tracker.end_trace(response_text="Busy", emotions={}, status="error", error="busy")
         raise HTTPException(status_code=429, detail="Chat is busy; try again shortly") from error
     except LLMRateLimitError:

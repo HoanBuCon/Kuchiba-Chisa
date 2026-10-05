@@ -110,3 +110,59 @@ async def test_refresh_session_rotation_and_revocation_are_atomic() -> None:
         assert stored.revoked_at is not None
     finally:
         await _cleanup(email)
+
+
+@pytest.mark.asyncio
+async def test_account_tokens_are_single_use_expiring_and_hash_only() -> None:
+    email = _email()
+    now = datetime.now(UTC)
+    try:
+        async with AsyncSessionFactory() as session:
+            repo = SqlAlchemyAccountRepository(session)
+            account = await repo.create_password_account(email, "$2b$12$hash")
+            await repo.create_account_token(
+                account.id, "password_reset", "a" * 64, now + timedelta(minutes=30), now
+            )
+            await repo.create_account_token(
+                account.id, "password_reset", "b" * 64, now - timedelta(seconds=1), now
+            )
+            await session.commit()
+
+        async with AsyncSessionFactory() as session:
+            repo = SqlAlchemyAccountRepository(session)
+            # Wrong purpose, expired, then the valid one exactly once.
+            assert await repo.consume_account_token("verify_email", "a" * 64, now) is None
+            assert await repo.consume_account_token("password_reset", "b" * 64, now) is None
+            assert await repo.consume_account_token("password_reset", "a" * 64, now) == account.id
+            assert await repo.consume_account_token("password_reset", "a" * 64, now) is None
+            count, latest = await repo.account_token_activity(
+                account.id, "password_reset", now - timedelta(days=1)
+            )
+            assert count == 2 and latest is not None
+            await session.commit()
+    finally:
+        await _cleanup(email)
+
+
+@pytest.mark.asyncio
+async def test_revoke_all_sessions_and_mark_verified() -> None:
+    email = _email()
+    now = datetime.now(UTC)
+    try:
+        async with AsyncSessionFactory() as session:
+            repo = SqlAlchemyAccountRepository(session)
+            account = await repo.create_password_account(email, "$2b$12$hash")
+            for marker in "cd":
+                await repo.create_session(
+                    account.id, marker * 64, now + timedelta(days=7), "password"
+                )
+            assert await repo.revoke_all_sessions(account.id, now) == 2
+            assert await repo.revoke_all_sessions(account.id, now) == 0
+            await repo.mark_email_verified(account.id)
+            assert await repo.account_exists(account.id) is True
+            assert await repo.account_exists(uuid.uuid4()) is False
+            credentials = await repo.get_credentials_by_id(account.id)
+            assert credentials is not None and credentials.account.email_verified is True
+            await session.commit()
+    finally:
+        await _cleanup(email)
