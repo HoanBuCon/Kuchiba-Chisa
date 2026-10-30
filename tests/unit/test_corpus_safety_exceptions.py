@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import uuid
 from datetime import UTC, datetime
+from pathlib import Path
 from unittest.mock import AsyncMock
 
 import pytest
@@ -22,7 +23,11 @@ from app.infrastructure.ingestion.corpus_safety_exceptions import (
     load_corpus_safety_exception_manifest,
 )
 from app.infrastructure.vector.qdrant.qdrant_service import QdrantService
-from scripts.evaluate_rag05_staging_retrieval import SAFETY_EXCEPTIONS
+
+SAFETY_EXCEPTIONS = (
+    Path(__file__).resolve().parents[2]
+    / "data/evaluations/approvals/rag05_corpus_safety_exceptions_v1.json"
+)
 
 TEXT = "The performers hope to expose the Order's secrets through their performance."
 SOURCE_ID = "543b2265-40c0-5e2c-9bb5-f941e7d1094a"

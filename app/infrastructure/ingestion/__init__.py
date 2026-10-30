@@ -1,12 +1,6 @@
-"""
-Ingestion Pipeline — Production Architecture v1.1
+"""Infrastructure adapters for the governed canonical ingestion DAG.
 
-Transforms raw Wiki data (10K–50K pages) into high-quality vector-ready chunks
-through a Canonical Dataset intermediate layer.
-
-Pipeline flow:
-    Wiki → Crawl → Parse → Canonical Dataset (★) → Chunk → Validate → Embed → Index
-
-The Canonical Dataset (canonical.jsonl) is the immutable decoupling boundary
-between expensive upstream processing and cheap downstream experimentation.
+The legacy file/SQLite pipeline was removed (SRS v2 ING-010); its rule files are
+kept for reference in ``docs/legacy/ingestion-rules`` and the full code remains on
+the ``freeze/chisa-v1`` branch.
 """

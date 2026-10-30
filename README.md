@@ -183,7 +183,7 @@ Tất cả các tài liệu kỹ thuật, đặc tả kiến trúc và hướng 
 - **[Ký Ức Thị Giác & Multimodal Vision (docs/MULTIMODAL_VISION_AND_MEMORY.md)](docs/MULTIMODAL_VISION_AND_MEMORY.md)**: Thiết kế kỹ thuật chi tiết cho tính năng đọc ảnh, phòng vệ SSRF/Pixel Bomb và Text-to-Image Reverse Retrieval.
 - **[Hệ Thống Cảm Xúc Động 8 Chiều (docs/HE_THONG_CAM_XUC_8_CHIEU.md)](docs/HE_THONG_CAM_XUC_8_CHIEU.md)**: Mô hình tâm lý học nhận thức đa tầng, RESONA Engine 3.0, ma trận tương hỗ 7 Archetypes $\times$ 5 Stances và phân rã cảm xúc môi trường.
 - **[Hướng Dẫn Khởi Chạy & Triển Khai (docs/STARTUP_GUIDE.md)](docs/STARTUP_GUIDE.md)**: Hướng dẫn thiết lập môi trường Docker, cấu hình `.env`, chạy Alembic migration và khởi động máy chủ FastAPI/Discord bot.
-- **[Hướng Dẫn Nạp Dữ Liệu Lore RAG (docs/INGESTION_GUIDE.md)](docs/INGESTION_GUIDE.md)**: Quy trình Ingestion dữ liệu Wiki Wuthering Waves, Semantic Chunking, Parent-Child Hydration và Qdrant Vector indexing.
+- **[Hướng Dẫn Ingestion v1 (lịch sử) (docs/legacy/INGESTION_GUIDE_v1.md)](docs/legacy/INGESTION_GUIDE_v1.md)**: Pipeline ingestion legacy đã gỡ; data plane mới xem SRS v2 mục 4.11.
 - **[Phân Tích Cấu Trúc Hệ Thống (docs/PHAN_TICH_WORKSPACE_CHI_TIET.md)](docs/PHAN_TICH_WORKSPACE_CHI_TIET.md)**: Tài liệu phân tích sâu chi tiết cấu trúc mã nguồn dự án, thiết kế cơ sở dữ liệu PostgreSQL/Qdrant và mô hình Clean Architecture.
 - **[Phiên Dịch Luồng Dữ Liệu (docs/WALKTHROUGH.md)](docs/WALKTHROUGH.md)**: Khám phá toàn cảnh luồng đi của dữ liệu từ Discord Gateway qua 10 Stages của Pipeline đến phản hồi LLM.
 

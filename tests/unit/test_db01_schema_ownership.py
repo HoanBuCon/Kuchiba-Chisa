@@ -117,15 +117,6 @@ def test_production_runtime_paths_contain_no_schema_ddl() -> None:
     assert not (PROJECT_ROOT / "discord" / "src" / "database" / "schema.sql").exists()
 
 
-def test_auxiliary_ingestion_state_ddl_is_sqlite_scoped() -> None:
-    path = (
-        PROJECT_ROOT / "app" / "infrastructure" / "ingestion" / "storage" / "state_db.py"
-    )
-    source = path.read_text(encoding="utf-8")
-    assert "sqlite3.connect" in source
-    assert "DATABASE_URL" not in source
-
-
 def test_database_bootstrap_delegates_to_alembic() -> None:
     source = (PROJECT_ROOT / "scripts" / "init_db.py").read_text(encoding="utf-8")
     assert 'command.upgrade(Config("alembic.ini"), "head")' in source
