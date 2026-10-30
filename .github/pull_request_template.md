@@ -17,6 +17,7 @@ Refs: <!-- e.g. ADV-004, MON-012 -->
 - [ ] Eval results attached (prompt, retrieval, tool, model changes)
 
 ## Checklist
+- [ ] Clean code and clean comments (STD-PY-011/012) in every changed line
 - [ ] Docs, diagrams (SRS §3.5), metric catalog and runbooks updated if affected
 - [ ] No secrets, real user data, or content in telemetry
 - [ ] Protected persona content untouched (or owner approval recorded)

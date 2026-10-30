@@ -20,6 +20,11 @@ The source of truth is **[SRS v2](SRS_Chisa_v2_Advanced_Agentic_RAG.md)**. Secti
 - Conventional Commits in English (`type(scope): subject`). Code, comments and logs are English; Chisa's
   user-facing text is Vietnamese and persona-compliant.
 - Do not push or merge unless the owner asks.
+- **Clean code** (STD-PY-011): one job per function, intention-revealing names, early returns, no dead or
+  duplicated code, no unnamed magic numbers, cyclomatic complexity ≤ 10.
+- **Clean comments** (STD-PY-012): explain *why*, never restate *what*; keep it to one concise line; no
+  commented-out code, banners or emoji; one-sentence docstrings; `TODO` must cite a requirement ID or issue.
+- When touching legacy code, clean what you touch (STD-PY-013).
 - Every change needs tests. Run the mandatory checks for the change type (SRS §14.10).
 
 ## Commands
