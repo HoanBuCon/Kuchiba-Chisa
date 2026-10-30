@@ -8,7 +8,9 @@ select = ["E", "F", "I", "N", "UP", "ASYNC", "B", "SIM"]
 ignore = ["B008"]
 
 [tool.ruff.lint.per-file-ignores]
-"tests/**" = ["N", "S101"]
+"tests/**" = ["N", "S101", "T20"]
+# CLI scripts report on stdout by design; STD-PY-008 targets application code.
+"scripts/**" = ["T20"]
 
 [tool.mypy]
 python_version = "3.11"
@@ -23,3 +25,56 @@ testpaths = ["tests"]
 [tool.coverage.run]
 source = ["app"]
 omit = ["*/tests/*", "*/alembic/*"]
+
+# Layer contracts (SRS v2 §3.5.3, STD-ARC-001, STD-AI-001). Run: lint-imports
+[tool.importlinter]
+root_package = "app"
+include_external_packages = true
+
+[[tool.importlinter.contracts]]
+name = "Domain imports no other layer"
+type = "forbidden"
+allow_indirect_imports = true
+source_modules = ["app.domain"]
+forbidden_modules = ["app.application", "app.infrastructure", "app.interface"]
+# Legacy debt frozen on 2026-10-31; remove entries as the R2 runtime replaces these services.
+ignore_imports = [
+    "app.domain.services.image_ingestion -> app.infrastructure.logging.logger",
+    "app.domain.services.image_ingestion -> app.infrastructure.storage.factory",
+    "app.domain.services.memory_extractor -> app.infrastructure.logging.pipeline_tracker",
+    "app.domain.services.rag.retriever_image_memory -> app.infrastructure.logging.logger",
+    "app.domain.services.rag.retriever_image_memory -> app.infrastructure.vector.qdrant.qdrant_service",
+    "app.domain.services.visual_memory_ingestion -> app.infrastructure.logging.logger",
+    "app.domain.services.visual_memory_ingestion -> app.infrastructure.vector.qdrant.qdrant_service",
+]
+
+[[tool.importlinter.contracts]]
+name = "Application imports only the domain"
+type = "forbidden"
+allow_indirect_imports = true
+source_modules = ["app.application"]
+forbidden_modules = ["app.infrastructure", "app.interface"]
+ignore_imports = [
+    # Composition root misplaced in the application package (STD-ARC-005); moves out in R2.
+    "app.application.dependencies -> app.infrastructure.**",
+    # Legacy debt frozen on 2026-10-31.
+    "app.application.security.account_email -> app.infrastructure.logging.logger",
+    "app.application.security.chat_admission -> app.infrastructure.logging.logger",
+    "app.application.usecases.clear_community_memory -> app.infrastructure.logging.logger",
+    "app.application.usecases.clear_community_memory -> app.infrastructure.vector.qdrant.qdrant_service",
+    "app.application.usecases.clear_user_memory -> app.infrastructure.logging.logger",
+]
+
+[[tool.importlinter.contracts]]
+name = "Infrastructure never imports the interface layer"
+type = "forbidden"
+allow_indirect_imports = true
+source_modules = ["app.infrastructure"]
+forbidden_modules = ["app.interface"]
+
+[[tool.importlinter.contracts]]
+name = "LLM provider SDKs stay inside infrastructure adapters"
+type = "forbidden"
+allow_indirect_imports = true
+source_modules = ["app.domain", "app.application", "app.interface"]
+forbidden_modules = ["openai", "groq"]

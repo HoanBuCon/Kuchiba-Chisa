@@ -1,2 +1,5 @@
 # Preserve byte-exact raw corpus revisions: evidence IDs include content checksums.
 data/raw_wiki/** -text -whitespace
+
+# The OpenAPI contract is generated; keep LF so the drift check is byte-stable
+docs/api/openapi.json text eol=lf

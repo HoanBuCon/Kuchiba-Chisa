@@ -1,0 +1,20 @@
+# Optional local hooks mirroring the CI gates (SRS v2 §14.13). Enable with:
+#   pip install pre-commit && pre-commit install
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.8.4
+    hooks:
+      - id: ruff
+        files: ^(app|scripts|tests)/
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.21.2
+    hooks:
+      - id: gitleaks
+  - repo: local
+    hooks:
+      - id: import-contracts
+        name: import-linter layer contracts
+        entry: lint-imports
+        language: system
+        pass_filenames: false
+        files: ^app/
