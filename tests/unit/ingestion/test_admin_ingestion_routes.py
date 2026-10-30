@@ -4,10 +4,10 @@ from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
 
+import jwt
 import pytest
 from fastapi import FastAPI
 from httpx import ASGITransport, AsyncClient
-from jose import jwt
 
 from app.application.ingestion.source_governance import IngestionSourceGovernanceService
 from app.config.settings import settings

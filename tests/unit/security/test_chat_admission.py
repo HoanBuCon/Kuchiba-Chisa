@@ -7,9 +7,9 @@ import uuid
 from types import SimpleNamespace
 from unittest.mock import AsyncMock
 
+import jwt
 import pytest
 from fastapi import HTTPException
-from jose import jwt
 
 from app.application.security.chat_admission import (
     ChatAdmissionControl,

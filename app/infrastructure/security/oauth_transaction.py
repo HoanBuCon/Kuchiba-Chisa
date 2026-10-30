@@ -5,7 +5,7 @@ from __future__ import annotations
 import uuid
 from datetime import UTC, datetime, timedelta
 
-from jose import JWTError, jwt
+import jwt
 
 from app.application.security.oauth_flow import OAuthTransaction
 from app.config.settings import settings
@@ -44,7 +44,7 @@ def decode_oauth_transaction(value: str | None) -> OAuthTransaction:
             algorithms=[_ALGORITHM],
             audience=_AUDIENCE,
             issuer=settings.JWT_ISSUER,
-            options={"require_exp": True, "require_iat": True},
+            options={"require": ["exp", "iat"]},
         )
         link = claims.get("link")
         return OAuthTransaction(
@@ -53,5 +53,5 @@ def decode_oauth_transaction(value: str | None) -> OAuthTransaction:
             code_verifier=str(claims["cv"]),
             link_account_id=uuid.UUID(link) if link else None,
         )
-    except (JWTError, KeyError, ValueError, TypeError) as error:
+    except (jwt.PyJWTError, KeyError, ValueError, TypeError) as error:
         raise OAuthTransactionError("invalid OAuth transaction") from error

@@ -7,7 +7,7 @@ from datetime import UTC, datetime, timedelta
 from typing import Any
 from uuid import UUID, uuid4
 
-from jose import JWTError, jwt
+import jwt
 
 from app.config.settings import settings
 from app.domain.interfaces.accounts import IAccountTokenIssuer
@@ -65,9 +65,9 @@ class JwtAuthenticator(IAccountTokenIssuer):
                 algorithms=[settings.JWT_ALGORITHM],
                 audience=settings.JWT_AUDIENCE,
                 issuer=issuer,
-                options={"require_exp": True, "require_iat": True, "require_sub": True},
+                options={"require": ["exp", "iat", "sub"]},
             )
-        except JWTError as error:
+        except jwt.PyJWTError as error:
             raise AuthenticationError("credential verification failed") from error
 
         if claims.get("token_use") != token_use:
@@ -120,8 +120,8 @@ class JwtAuthenticator(IAccountTokenIssuer):
     @staticmethod
     def _unverified_claims(token: str) -> dict[str, Any]:
         try:
-            claims = jwt.get_unverified_claims(token)
-        except JWTError as error:
+            claims = jwt.decode(token, options={"verify_signature": False})
+        except jwt.PyJWTError as error:
             raise AuthenticationError("malformed credential") from error
         if not isinstance(claims, dict):
             raise AuthenticationError("malformed credential claims")

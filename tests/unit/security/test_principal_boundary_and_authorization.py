@@ -6,12 +6,12 @@ import time
 from types import SimpleNamespace
 from unittest.mock import AsyncMock
 
+import jwt
 import pytest
 from admission_fakes import AllowAllAdmission
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse
 from httpx import ASGITransport, AsyncClient
-from jose import jwt
 from pydantic import ValidationError
 
 from app.config.settings import settings

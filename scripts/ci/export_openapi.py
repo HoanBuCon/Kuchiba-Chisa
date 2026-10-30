@@ -23,7 +23,7 @@ def main() -> int:
     current = render()
     if not parser.parse_args().check:
         CONTRACT.parent.mkdir(parents=True, exist_ok=True)
-        CONTRACT.write_text(current, encoding="utf-8")
+        CONTRACT.write_text(current, encoding="utf-8", newline="\n")
         print(f"OpenAPI contract written to {CONTRACT}")
         return 0
     committed = ""

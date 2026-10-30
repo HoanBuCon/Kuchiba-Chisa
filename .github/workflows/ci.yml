@@ -37,8 +37,7 @@ jobs:
       - name: Conventional Commits (STD-GIT-002)
         if: github.event_name == 'pull_request'
         run: python scripts/ci/check_commit_messages.py
-      - name: Dependency vulnerabilities (STD-SEC-006, report-only until R0.2b upgrades)
-        continue-on-error: true
+      - name: Dependency vulnerabilities (STD-SEC-006)
         run: pip-audit --requirement requirements.txt --progress-spinner off
 
   secret-scan:
