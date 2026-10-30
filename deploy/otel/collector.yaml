@@ -1,0 +1,101 @@
+# Monitoring profile M0 (SRS v2 §13.3): one collector on the VPS, storage in a hosted backend.
+# Resource-first: memory_limiter runs first, infrastructure is scraped every 60s, traces are
+# tail-sampled, and content-bearing attributes are dropped before anything leaves the host.
+
+extensions:
+  health_check:
+    endpoint: 0.0.0.0:13133
+
+receivers:
+  otlp:
+    protocols:
+      http:
+        endpoint: 0.0.0.0:4318
+  hostmetrics:
+    root_path: /hostfs
+    collection_interval: 60s
+    scrapers:
+      cpu: {}
+      memory: {}
+      load: {}
+      filesystem: {}
+      network: {}
+  docker_stats:
+    endpoint: tcp://docker-socket-proxy:2375
+    collection_interval: 60s
+  filelog/docker:
+    include: [/var/lib/docker/containers/*/*-json.log]
+    start_at: end
+    operators:
+      - type: container
+        format: docker
+
+processors:
+  memory_limiter:
+    check_interval: 1s
+    limit_mib: 160
+    spike_limit_mib: 40
+  resourcedetection:
+    detectors: [env, system]
+  filter/health:
+    error_mode: ignore
+    traces:
+      span:
+        - 'attributes["url.path"] == "/health" or attributes["url.path"] == "/ready"'
+  # MON-013: never export prompts, responses, tool arguments, emails or credentials.
+  attributes/redact:
+    actions:
+      - key: http.request.header.authorization
+        action: delete
+      - key: http.request.header.cookie
+        action: delete
+      - pattern: ^(gen_ai\.(prompt|completion|input|output)\..*|.*\.content|user\.email|enduser\..*)$
+        action: delete
+  tail_sampling:
+    decision_wait: 10s
+    num_traces: 5000
+    policies:
+      - name: errors
+        type: status_code
+        status_code: {status_codes: [ERROR]}
+      - name: slow
+        type: latency
+        latency: {threshold_ms: 3500}
+      - name: agentic-turns
+        type: string_attribute
+        string_attribute: {key: chisa.lane, values: [agentic]}
+      - name: admin-actions
+        type: string_attribute
+        string_attribute: {key: http.route, values: ["/api/v2/admin/.*"], enabled_regex_matching: true}
+      - name: baseline
+        type: probabilistic
+        probabilistic: {sampling_percentage: 10}
+  batch:
+    send_batch_size: 512
+    timeout: 5s
+
+exporters:
+  otlphttp:
+    endpoint: ${env:MONITORING_OTLP_ENDPOINT}
+    headers:
+      Authorization: ${env:MONITORING_OTLP_AUTHORIZATION}
+    compression: gzip
+
+service:
+  extensions: [health_check]
+  telemetry:
+    metrics:
+      level: basic
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [memory_limiter, filter/health, attributes/redact, tail_sampling, batch]
+      exporters: [otlphttp]
+    metrics:
+      receivers: [otlp, hostmetrics, docker_stats]
+      processors: [memory_limiter, resourcedetection, batch]
+      exporters: [otlphttp]
+    logs:
+      receivers: [filelog/docker]
+      processors: [memory_limiter, attributes/redact, batch]
+      exporters: [otlphttp]

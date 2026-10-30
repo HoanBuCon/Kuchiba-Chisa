@@ -20,6 +20,9 @@ networks:
   chisa_data:
     driver: bridge
     internal: true
+  # Egress for the telemetry collector only (SRS v2 §13.2).
+  chisa_monitor:
+    driver: bridge
 
 volumes:
   postgres_data:
@@ -141,6 +144,11 @@ services:
       FASTEMBED_CACHE_PATH: /app/.cache/fastembed
       HF_HOME: /app/.cache/huggingface
       TRUSTED_PROXY_CIDRS: ${TRUSTED_PROXY_CIDRS:-172.28.0.10/32}
+      OTEL_ENABLED: "true"
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
+      # Head sampling keeps everything; the collector tail-samples (MON-014).
+      OTEL_TRACE_SAMPLE_RATIO: "1.0"
+      OTEL_SERVICE_NAME: chisa-api
     secrets:
       - postgres_password
       - redis_password
@@ -185,6 +193,11 @@ services:
     logging: *default-logging
     env_file: .env
     environment:
+      OTEL_ENABLED: "true"
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
+      # Head sampling keeps everything; the collector tail-samples (MON-014).
+      OTEL_TRACE_SAMPLE_RATIO: "1.0"
+      OTEL_SERVICE_NAME: chisa-worker
       REDIS_URL: redis://redis:6379/0
       REDIS_USERNAME: chisa
       QDRANT_URL: http://qdrant:6333
@@ -298,6 +311,52 @@ services:
 
   # ── One-shot schema migration (run before starting app/worker/discord) ──
   # docker compose --profile ops run --rm migrate
+  # ── Monitoring M0 (SRS v2 §13) ──────────────────────────────────
+  # Read-only Docker API for container metrics; the collector never mounts the socket (MON-006).
+  docker-socket-proxy:
+    image: tecnativa/docker-socket-proxy:v0.4.2
+    container_name: chisa_docker_socket_proxy
+    restart: unless-stopped
+    logging: *default-logging
+    environment:
+      CONTAINERS: 1
+      POST: 0
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - chisa_monitor
+    deploy:
+      resources:
+        limits:
+          cpus: '0.1'
+          memory: 32M
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.162.0
+    container_name: chisa_otel_collector
+    restart: unless-stopped
+    logging: *default-logging
+    command: ["--config=/etc/otelcol/config.yaml"]
+    # Root is required to read host filesystem stats and Docker JSON logs (read-only mounts).
+    user: "0:0"
+    environment:
+      MONITORING_OTLP_ENDPOINT: ${MONITORING_OTLP_ENDPOINT:?MONITORING_OTLP_ENDPOINT must point at the hosted OTLP backend}
+      MONITORING_OTLP_AUTHORIZATION: ${MONITORING_OTLP_AUTHORIZATION:?MONITORING_OTLP_AUTHORIZATION must hold the backend auth header}
+    volumes:
+      - ./deploy/otel/collector.yaml:/etc/otelcol/config.yaml:ro
+      - /:/hostfs:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+    networks:
+      - chisa_data
+      - chisa_monitor
+    depends_on:
+      - docker-socket-proxy
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 200M
+
   migrate:
     profiles: ["ops"]
     build:
