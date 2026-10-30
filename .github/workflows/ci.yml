@@ -3,7 +3,7 @@ name: Verification
 on:
   pull_request:
   push:
-    branches: [main]
+    branches: [main, HBC]
 
 jobs:
   changed-lines-lint:
@@ -20,8 +20,40 @@ jobs:
       - name: Full Ruff debt ratchet
         run: python scripts/ruff_debt_ratchet.py
 
+  convention-gates:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: python -m pip install --requirement requirements-dev.txt
+      - name: Layer contracts (STD-ARC-001, STD-AI-001)
+        run: lint-imports
+      - name: RAM budget (CON-003, STD-OPS-005)
+        run: python scripts/ci/check_ram_budget.py
+      - name: Conventional Commits (STD-GIT-002)
+        if: github.event_name == 'pull_request'
+        run: python scripts/ci/check_commit_messages.py
+      - name: Dependency vulnerabilities (STD-SEC-006, report-only until R0.2b upgrades)
+        continue-on-error: true
+        run: pip-audit --requirement requirements.txt --progress-spinner off
+
+  secret-scan:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Secret scan (STD-SEC-002)
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
   isolated-verification:
-    needs: changed-lines-lint
+    needs: [changed-lines-lint, convention-gates]
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:

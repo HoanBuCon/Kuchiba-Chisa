@@ -90,4 +90,6 @@ services:
         python -m alembic check;
         if python -m ruff check app tests --output-format=concise; then :; else ruff_status=$$?; if [ "$$ruff_status" -gt 1 ]; then exit "$$ruff_status"; fi; echo 'Legacy Ruff debt audit recorded; changed-lines lint is the blocking gate.'; fi;
         python -m mypy app;
+        lint-imports;
+        python -m scripts.ci.export_openapi --check;
         python -m pytest tests/unit tests/integration -q

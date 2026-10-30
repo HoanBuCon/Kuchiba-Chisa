@@ -18,6 +18,11 @@ types-pyasn1==0.6.0.20250914
 types-python-jose==3.3.4.20240106
 types-PyYAML==6.0.12.20250915
 
+# ── Convention gates (SRS v2 §14.13) ─────────────────────────────────
+import-linter==2.1
+grimp==3.18
+pip-audit==2.7.3
+
 # ── Code metrics (scripts/count_loc.py) ──────────────────────────────
 gitdb==4.0.12
 GitPython==3.1.51

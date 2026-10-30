@@ -12,6 +12,9 @@ from collections import defaultdict
 from pathlib import Path
 
 HUNK_RE = re.compile(r"^@@ -\d+(?:,\d+)? \+(\d+)(?:,(\d+))? @@")
+# Stricter than the repository baseline so legacy debt does not block, but new lines must comply
+# (STD-PY-005 blind except, STD-PY-008 print, STD-PY-011 complexity, STD-PY-012 commented-out code).
+STRICT_RULES = ("--extend-select", "C90,ERA,T20,BLE", "--config", "lint.mccabe.max-complexity=10")
 
 
 def run(*args: str) -> subprocess.CompletedProcess[str]:
@@ -63,7 +66,10 @@ def main() -> int:
         print("Ruff changed-lines gate: no changed Python lines.")
         return 0
     result = subprocess.run(
-        [sys.executable, "-m", "ruff", "check", "--output-format=json", *map(str, changed)],
+        [
+            sys.executable, "-m", "ruff", "check", "--output-format=json", *STRICT_RULES,
+            *map(str, changed),
+        ],
         capture_output=True,
         text=True,
         encoding="utf-8",

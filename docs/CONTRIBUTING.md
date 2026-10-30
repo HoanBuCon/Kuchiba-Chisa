@@ -33,7 +33,7 @@ The source of truth is **[SRS v2](SRS_Chisa_v2_Advanced_Agentic_RAG.md)**. Secti
 ./venv/Scripts/python.exe -m pytest -q --ignore=tests/integration   # unit tests (integration needs Docker services)
 ./venv/Scripts/python.exe -m ruff check <changed files>
 ./venv/Scripts/python.exe scripts/ruff_debt_ratchet.py               # lint debt must not grow
-./venv/Scripts/python.exe -m lint_imports                            # layer contracts (import-linter)
+./venv/Scripts/lint-imports                                          # layer contracts (import-linter)
 ./chisa dev start | status | stop                                    # local development stack
 make test-isolated                                                   # full gates in disposable Docker services
 ```
