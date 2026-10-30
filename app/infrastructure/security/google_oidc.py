@@ -23,6 +23,7 @@ from urllib.parse import urlencode
 
 import httpx
 import jwt
+from cryptography.hazmat.primitives.asymmetric.rsa import RSAPublicKey
 from jwt.algorithms import RSAAlgorithm
 from jwt.utils import base64url_decode
 
@@ -189,6 +190,8 @@ def _signature_is_valid(token: str, key_data: dict[str, Any]) -> bool:
     try:
         signing_input, encoded_signature = token.rsplit(".", 1)
         public_key = RSAAlgorithm.from_jwk(key_data)
+        if not isinstance(public_key, RSAPublicKey):
+            return False
         signature = base64url_decode(encoded_signature.encode("ascii"))
         return bool(
             RSAAlgorithm(RSAAlgorithm.SHA256).verify(
