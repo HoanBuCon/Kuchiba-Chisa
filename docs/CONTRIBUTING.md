@@ -1,6 +1,6 @@
-# AGENTS.md — rules for every contributor (humans and AI agents)
+# CONTRIBUTING — rules for every contributor (humans and AI agents)
 
-The source of truth is **[SRS v2](docs/SRS_Chisa_v2_Advanced_Agentic_RAG.md)**. Section 14 ("Quy ước hệ thống") is
+The source of truth is **[SRS v2](SRS_Chisa_v2_Advanced_Agentic_RAG.md)**. Section 14 ("Quy ước hệ thống") is
 **mandatory** (STD-GOV-001). When rules conflict: approved SRS > accepted ADR (`docs/adr/`) > section 14 > existing code.
 
 ## Before you change anything
