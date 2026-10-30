@@ -37,3 +37,8 @@ fi
 
 find "${BACKUP_DIR}" -mindepth 1 -maxdepth 1 -type d -mtime "+${KEEP_DAYS}" -exec rm -rf {} +
 echo "[backup] OK ${TARGET}"
+
+# Dead-man heartbeat (MON-033): silence after a missed daily run raises a P1 alert.
+if [ -n "${BACKUP_HEARTBEAT_URL:-}" ]; then
+  curl -fsS -m 10 --retry 3 "${BACKUP_HEARTBEAT_URL}" > /dev/null || echo "[backup] WARN: heartbeat ping failed" >&2
+fi

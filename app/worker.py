@@ -41,6 +41,7 @@ from app.infrastructure.observability import (
     operational_telemetry,
     shutdown_observability,
 )
+from app.infrastructure.observability.heartbeat import run_heartbeat
 from app.infrastructure.vector.qdrant.qdrant_service import qdrant_service
 
 log = get_logger(__name__)
@@ -108,9 +109,11 @@ async def run_worker() -> None:
         except (NotImplementedError, RuntimeError):
             signal.signal(signal_name, lambda *_: worker.request_shutdown())
 
+    heartbeat = _start_heartbeat()
     try:
         await worker.run()
     finally:
+        await _stop_heartbeat(heartbeat)
         await redis_service.disconnect()
         await qdrant_service.disconnect()
         await disconnect_database()
@@ -118,6 +121,29 @@ async def run_worker() -> None:
             await container.http_client.aclose()
         shutdown_observability()
         log.info("Durable background worker stopped")
+
+
+def _start_heartbeat() -> tuple[asyncio.Event, asyncio.Task[None]] | None:
+    if settings.WORKER_HEARTBEAT_URL is None:
+        return None
+    stop = asyncio.Event()
+    task = asyncio.create_task(
+        run_heartbeat(
+            container.http_client,
+            settings.WORKER_HEARTBEAT_URL.get_secret_value(),
+            settings.WORKER_HEARTBEAT_INTERVAL_SECONDS,
+            stop,
+        )
+    )
+    return stop, task
+
+
+async def _stop_heartbeat(heartbeat: tuple[asyncio.Event, asyncio.Task[None]] | None) -> None:
+    if heartbeat is None:
+        return
+    stop, task = heartbeat
+    stop.set()
+    await task
 
 
 async def replay_dead_letter(job_id: uuid.UUID, actor: str) -> None:

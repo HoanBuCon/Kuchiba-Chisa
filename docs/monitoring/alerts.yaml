@@ -1,0 +1,84 @@
+# Alert catalog (SRS v2 §13.7, MON-030). Backend-neutral: each alert names its signal and threshold;
+# the hosted backend rule must implement exactly this. Every alert needs docs/runbooks/<id>.md (STD-OBS-004).
+# Alerts that depend on later phases are added with those phases (admin audit and MFA arrive in R3).
+alerts:
+  - id: chisa-uptime-down
+    severity: P1
+    source: external uptime check on /health and the web root
+    condition: two consecutive failed probes
+    channels: [email, discord]
+  - id: chisa-api-5xx-rate
+    severity: P1
+    source: http.server.request.duration (status_class)
+    condition: 5xx share above 5% for 5 minutes
+    channels: [email, discord]
+  - id: chisa-availability-fast-burn
+    severity: P1
+    source: SLO-AVAIL error budget
+    condition: burn rate above 14.4x over 1 hour
+    channels: [email, discord]
+  - id: chisa-llm-providers-down
+    severity: P1
+    source: chisa.llm.breaker.state
+    condition: every configured provider breaker open for 2 minutes
+    channels: [email, discord]
+  - id: chisa-datastore-down
+    severity: P1
+    source: container metrics and API readiness
+    condition: postgres, redis or qdrant not running or /ready failing for 2 minutes
+    channels: [email, discord]
+  - id: chisa-disk-critical
+    severity: P1
+    source: system.filesystem.utilization
+    condition: root filesystem above 90%
+    channels: [email, discord]
+  - id: chisa-container-oom-loop
+    severity: P1
+    source: container restarts and memory usage
+    condition: three or more restarts of one container within 15 minutes
+    channels: [email, discord]
+  - id: chisa-llm-daily-cost-cap
+    severity: P1
+    source: chisa.llm.cost
+    condition: daily cost reaches the configured cap (QUO-005)
+    channels: [email, discord]
+  - id: chisa-heartbeat-missing
+    severity: P1
+    source: external heartbeat service (worker every 5 minutes, backup daily)
+    condition: an expected ping is missing past its grace period
+    channels: [email, discord]
+  - id: chisa-latency-slow-burn
+    severity: P2
+    source: SLO-COMP / SLO-ADV / SLO-AGT error budgets
+    condition: burn rate above 6x over 6 hours
+    channels: [discord]
+  - id: chisa-rerank-fallback-high
+    severity: P2
+    source: chisa.rerank.fallbacks
+    condition: fallback share above 20% for 15 minutes
+    channels: [discord]
+  - id: chisa-job-lag
+    severity: P2
+    source: chisa.jobs.lag and dead-letter count
+    condition: oldest ready job older than 10 minutes, or any dead-letter job
+    channels: [discord]
+  - id: chisa-container-memory-high
+    severity: P2
+    source: container.memory.usage against the compose limit
+    condition: above 85% of the limit for 15 minutes
+    channels: [discord]
+  - id: chisa-disk-warning
+    severity: P2
+    source: system.filesystem.utilization
+    condition: root filesystem above 80%
+    channels: [discord]
+  - id: chisa-tls-expiry
+    severity: P2
+    source: external uptime check certificate data
+    condition: certificate expires in less than 14 days
+    channels: [discord]
+  - id: chisa-telemetry-quota
+    severity: P2
+    source: backend usage for series, logs and traces
+    condition: above 80% of the free-tier allowance (MON-061)
+    channels: [discord]

@@ -232,6 +232,9 @@ class Settings(BaseSettings):
     WORKER_LEASE_SECONDS: int = Field(default=300, ge=30, le=3_600)
     WORKER_POLL_SECONDS: float = Field(default=1.0, ge=0.1, le=30.0)
     WORKER_SHUTDOWN_GRACE_SECONDS: float = Field(default=30.0, ge=1.0, le=300.0)
+    # Monitor URLs embed an access token, so they are kept out of logs and reprs.
+    WORKER_HEARTBEAT_URL: SecretStr | None = None
+    WORKER_HEARTBEAT_INTERVAL_SECONDS: float = Field(default=300.0, ge=30.0, le=3_600.0)
     WORKER_RETRY_BASE_SECONDS: float = Field(default=2.0, ge=0.1, le=300.0)
     WORKER_RETRY_MAX_SECONDS: float = Field(default=300.0, ge=1.0, le=3_600.0)
 
