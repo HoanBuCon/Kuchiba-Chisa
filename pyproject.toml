@@ -8,7 +8,9 @@ select = ["E", "F", "I", "N", "UP", "ASYNC", "B", "SIM"]
 ignore = ["B008"]
 
 [tool.ruff.lint.per-file-ignores]
-"tests/**" = ["N", "S101"]
+"tests/**" = ["N", "S101", "T20"]
+# CLI scripts report on stdout by design; STD-PY-008 targets application code.
+"scripts/**" = ["T20"]
 
 [tool.mypy]
 python_version = "3.11"
