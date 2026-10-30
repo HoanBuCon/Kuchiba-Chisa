@@ -11,6 +11,7 @@ ignore = ["B008"]
 "tests/**" = ["N", "S101", "T20"]
 # CLI scripts report on stdout by design; STD-PY-008 targets application code.
 "scripts/**" = ["T20"]
+"evals/__main__.py" = ["T20"]
 
 [tool.mypy]
 python_version = "3.11"
@@ -28,7 +29,7 @@ omit = ["*/tests/*", "*/alembic/*"]
 
 # Layer contracts (SRS v2 §3.5.3, STD-ARC-001, STD-AI-001). Run: lint-imports
 [tool.importlinter]
-root_package = "app"
+root_packages = ["app", "evals"]
 include_external_packages = true
 
 [[tool.importlinter.contracts]]
@@ -78,3 +79,9 @@ type = "forbidden"
 allow_indirect_imports = true
 source_modules = ["app.domain", "app.application", "app.interface"]
 forbidden_modules = ["openai", "groq"]
+
+[[tool.importlinter.contracts]]
+name = "The app never imports the offline eval harness"
+type = "forbidden"
+source_modules = ["app"]
+forbidden_modules = ["evals"]
