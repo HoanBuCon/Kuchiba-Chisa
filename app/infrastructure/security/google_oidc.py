@@ -22,8 +22,9 @@ from typing import Any
 from urllib.parse import urlencode
 
 import httpx
-from jose import JWTError, jwk, jwt
-from jose.utils import base64url_decode
+import jwt
+from jwt.algorithms import RSAAlgorithm
+from jwt.utils import base64url_decode
 
 from app.domain.interfaces.accounts import IExternalIdentityProvider
 from app.domain.models.account import ExternalProvider, VerifiedExternalIdentity
@@ -121,7 +122,7 @@ class GoogleOidcProvider(IExternalIdentityProvider):
     async def verify_id_token(self, id_token: str, *, expected_nonce: str) -> dict[str, Any]:
         try:
             header = jwt.get_unverified_header(id_token)
-        except JWTError as error:
+        except jwt.PyJWTError as error:
             raise ExternalIdentityVerificationError("malformed id_token") from error
         if header.get("alg") != "RS256" or not isinstance(header.get("kid"), str):
             raise ExternalIdentityVerificationError("unexpected id_token algorithm")
@@ -130,8 +131,8 @@ class GoogleOidcProvider(IExternalIdentityProvider):
             raise ExternalIdentityVerificationError("id_token signature is invalid")
 
         try:
-            claims = jwt.get_unverified_claims(id_token)
-        except JWTError as error:
+            claims = jwt.decode(id_token, options={"verify_signature": False})
+        except jwt.PyJWTError as error:
             raise ExternalIdentityVerificationError("malformed id_token") from error
 
         now = self._clock()
@@ -187,10 +188,14 @@ class GoogleOidcProvider(IExternalIdentityProvider):
 def _signature_is_valid(token: str, key_data: dict[str, Any]) -> bool:
     try:
         signing_input, encoded_signature = token.rsplit(".", 1)
-        public_key = jwk.construct(key_data, algorithm="RS256")
+        public_key = RSAAlgorithm.from_jwk(key_data)
         signature = base64url_decode(encoded_signature.encode("ascii"))
-        return bool(public_key.verify(signing_input.encode("ascii"), signature))
-    except (JWTError, ValueError, TypeError, UnicodeError):
+        return bool(
+            RSAAlgorithm(RSAAlgorithm.SHA256).verify(
+                signing_input.encode("ascii"), public_key, signature
+            )
+        )
+    except (jwt.PyJWTError, ValueError, TypeError, UnicodeError):
         return False
 
 

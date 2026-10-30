@@ -7,10 +7,11 @@ from typing import Any
 from urllib.parse import parse_qs, urlsplit
 
 import httpx
+import jwt
 import pytest
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
-from jose import jwk, jwt
+from jwt.algorithms import RSAAlgorithm
 
 from app.application.security.oauth_flow import new_oauth_transaction
 from app.infrastructure.security.google_oidc import (
@@ -39,7 +40,8 @@ OTHER_KEY = _rsa_pem()
 
 
 def _public_jwk(pem: bytes, kid: str) -> dict[str, Any]:
-    data = jwk.construct(pem, algorithm="RS256").public_key().to_dict()
+    private_key = serialization.load_pem_private_key(pem, password=None)
+    data = RSAAlgorithm.to_jwk(private_key.public_key(), as_dict=True)
     return {**data, "kid": kid, "use": "sig", "alg": "RS256"}
 
 
