@@ -1,4 +1,4 @@
-{
+﻿{
   "name": "chisa-discord-bot",
   "version": "0.1.0",
   "private": true,
@@ -13,7 +13,8 @@
     "start": "node src/index.js",
     "dev": "node --watch src/index.js",
     "register:commands": "node scripts/register-commands.js",
-    "check": "node --check src/index.js"
+    "check": "node --check src/index.js",
+    "test": "node --test"
   },
   "dependencies": {
     "@discordjs/rest": "^2.0.0",

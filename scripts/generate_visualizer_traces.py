@@ -529,4 +529,8 @@ async def generate_10_full_pipeline_traces():
 
 
 if __name__ == "__main__":
+    from app.config.settings import settings
+
+    if settings.is_prod:
+        raise SystemExit("Refusing to write synthetic demo traces in production.")
     asyncio.run(generate_10_full_pipeline_traces())

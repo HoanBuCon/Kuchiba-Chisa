@@ -162,7 +162,14 @@ class ContextAssessor:
             else:
                 extracted_facts = str(raw_facts).strip() if raw_facts else ""
 
-            log.info("Information alignment check complete", is_aligned=is_aligned, reason=reason, search_query=search_query, search_target=search_target, use_lore=use_lore, facts_len=len(extracted_facts))
+            log.info(
+                "Information alignment check complete",
+                is_aligned=is_aligned,
+                has_search_query=bool(search_query),
+                search_target=search_target,
+                use_lore=use_lore,
+                facts_len=len(extracted_facts),
+            )
             return is_aligned, reason, search_query, use_lore, extracted_facts, search_target
         except Exception as e:
             log.warning("Information alignment check failed, defaulting to True", error=str(e))

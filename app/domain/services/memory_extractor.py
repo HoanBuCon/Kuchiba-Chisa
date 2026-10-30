@@ -386,13 +386,17 @@ class MemoryExtractor:
 
                 # Enforce minimum quality & importance threshold
                 if importance < 0.65:
-                    log.debug("Dropped low-importance memory fact", content=content, importance=importance)
+                    log.debug(
+                        "Dropped low-importance memory fact",
+                        content_chars=len(content),
+                        importance=importance,
+                    )
                     continue
 
                 # Filter out meta persona definitions
                 content_lower = content.lower()
                 if "xưng em" in content_lower or "chisa là companion" in content_lower or "chisa là ai" in content_lower:
-                    log.info("Dropped meta-persona noise fact", content=content)
+                    log.info("Dropped meta-persona noise fact", content_chars=len(content))
                     continue
 
                 valid_facts.append({
@@ -419,7 +423,13 @@ class MemoryExtractor:
             for idx, fact in enumerate(valid_facts):
                 content = fact["content"]
                 fact_type = fact["type"]
-                log.info("Batch extracted memory fact", type=fact_type, content=content, importance=fact["importance_score"], user_id=user_id)
+                log.info(
+                    "Batch extracted memory fact",
+                    type=fact_type,
+                    content_chars=len(content),
+                    importance=fact["importance_score"],
+                    user_id=user_id,
+                )
                 vector = await self.embedder.embed_text(content, prefix="passage: ")
                 
                 # Search candidates based on scope
@@ -480,7 +490,11 @@ class MemoryExtractor:
                     conflicting_memory_id = conflicting_id
 
                     if action == "DUPLICATE":
-                        log.info("Skipped duplicate memory", content=content, collection=target_collection)
+                        log.info(
+                            "Skipped duplicate memory",
+                            content_chars=len(content),
+                            collection=target_collection,
+                        )
                         stored_facts.append({
                             "type": fact_type,
                             "content": content,

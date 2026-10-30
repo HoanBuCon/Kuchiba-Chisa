@@ -70,7 +70,7 @@ class ThinkingLoopAgent:
         except TimeoutError:
             log.warning(
                 "Thinking loop global timeout reached, returning accumulated context",
-                user_message=user_message,
+                message_chars=len(user_message or ""),
             )
             return initial_context, []
 
@@ -102,7 +102,10 @@ class ThinkingLoopAgent:
         # 1. Vector Lore Search
         if search_target in ("vector", "both") and lore_retriever and embedder:
             try:
-                log.info("Thinking loop executing Vector Search retry", query=search_query)
+                log.info(
+                    "Thinking loop executing Vector Search retry",
+                    query_chars=len(search_query or ""),
+                )
                 query_vector = await embedder.embed_text(search_query, prefix="query: ")
                 for collection in ["character_lore", "world_lore", "story_lore"]:
                     lore_res = await lore_retriever.retrieve_lore_parent_child(
@@ -133,7 +136,7 @@ class ThinkingLoopAgent:
         # 2. Web Search
         if search_target in ("web", "both") and web_search_tool:
             try:
-                log.info("Thinking loop executing Web Search", query=search_query)
+                log.info("Thinking loop executing Web Search", query_chars=len(search_query or ""))
                 web_res = await web_search_tool.execute(
                     session=session,
                     user_id=user_id,
@@ -172,7 +175,10 @@ class ThinkingLoopAgent:
         initial_search_target: str = "web",
         call_budget: LLMCallBudget | None = None,
     ) -> tuple[str, list[dict[str, Any]]]:
-        log.info("Activating Loop Thinking Agent for user query", user_message=user_message)
+        log.info(
+            "Activating Loop Thinking Agent for user query",
+            message_chars=len(user_message or ""),
+        )
 
         # Format history for the model
         history_lines = []
@@ -211,7 +217,7 @@ class ThinkingLoopAgent:
             if i == 1 and initial_search_query and initial_search_query.strip():
                 log.info(
                     "Bypassing Cycle 1 LLM query extraction using assessor query",
-                    query=initial_search_query,
+                    query_chars=len(initial_search_query or ""),
                 )
                 thinking = "ContextAssessor has already evaluated the initial context as unaligned and generated a targeted search query."
                 has_enough_info = False
@@ -335,7 +341,7 @@ class ThinkingLoopAgent:
                     "Thinking cycle evaluated",
                     cycle=i,
                     has_enough_info=has_enough_info,
-                    search_query=search_query,
+                    has_search_query=bool(search_query),
                     search_target=search_target,
                 )
 
@@ -485,7 +491,10 @@ class ThinkingLoopAgent:
                     )
 
                 if i == 1 and is_satisfied:
-                    log.info("Auto-satisfying after Cycle 1 search", reason=satisfied_reason)
+                    log.info(
+                        "Auto-satisfying after Cycle 1 search",
+                        has_reason=bool(satisfied_reason),
+                    )
                     self.pipeline_tracker.add_step(
                         name="thinking_loop_auto_satisfy",
                         stage_id="stage_5_rag",

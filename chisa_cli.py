@@ -621,6 +621,12 @@ def handle_direct_cli_args() -> bool:
 
     cmd = sys.argv[1].lower()
 
+    if cmd == "dev":
+        # Development stack orchestration: `chisa dev start|stop|restart|status|logs|test|...`
+        from scripts import dev_stack
+
+        sys.exit(dev_stack.main(sys.argv[2:], python=VENV_PYTHON))
+
     if cmd in ("ingest", "ingestion", "pipeline"):
         import argparse
 

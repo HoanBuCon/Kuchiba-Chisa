@@ -1,6 +1,7 @@
 import { SlashCommandBuilder, EmbedBuilder, InteractionContextType } from 'discord.js';
 import { DEFAULT_COMMANDS } from '../config/constants.js';
 import { isGuildModeratorOrAdmin } from '../utils/permissions.js';
+import { eraseGuildMembers } from '../security/guildErasure.js';
 
 export const data = new SlashCommandBuilder()
   .setName(DEFAULT_COMMANDS.clear)
@@ -99,6 +100,17 @@ function createPrivateSelfSuccessEmbed(isDM) {
     .setTimestamp();
 }
 
+function createGuildErasureIncompleteEmbed(result) {
+  return createNoticeEmbed({
+    title: '⚠️ XÓA CHƯA HOÀN TẤT',
+    description:
+      `Có **${result.failedSteps}** bước xóa chưa được Core xác nhận. ` +
+      'Dữ liệu ánh xạ thành viên được giữ lại để có thể chạy lại lệnh an toàn. ' +
+      'Hãy thử lại sau ít phút.',
+    color: '#e67e22',
+  });
+}
+
 export async function execute(client, interaction, discordUser) {
   const { logger, rateLimiter, repositories, coreRagClient } = client.services;
   const rawMode = interaction.options.getString('mode');
@@ -174,23 +186,18 @@ export async function execute(client, interaction, discordUser) {
         logger.warn({ err, guildId }, 'Failed to persist clear cutoff to database');
       });
 
-      await coreRagClient.clearCommunityMemory({ guildId, scope: 'all' }).catch((err) => {
-        logger.warn({ err, guildId }, 'Failed to clear community memory during NUKE');
+      const erasure = await eraseGuildMembers({
+        guildId,
+        includeCommunity: true,
+        coreRagClient,
+        repositories,
+        logger,
       });
-
-      const res = await repositories.users.pool.query(
-        'SELECT core_user_id FROM discord_users WHERE discord_guild_id = $1',
-        [guildId]
-      );
-      const coreUserIds = res.rows.map((row) => row.core_user_id);
-      for (const coreUserId of coreUserIds) {
-        await coreRagClient.clearMemory(coreUserId, { guildId, scopes: ['chat:clear:any'] }).catch((err) => {
-          logger.warn({ err, coreUserId }, 'Failed to clear user memory during NUKE');
-        });
+      if (!erasure.complete) {
+        await repositories.interactions.markFailure(interactionId, 'Guild erasure incomplete');
+        await interaction.editReply({ embeds: [createGuildErasureIncompleteEmbed(erasure)] });
+        return;
       }
-
-      await repositories.interactions.pool.query('DELETE FROM discord_interactions WHERE discord_guild_id = $1', [guildId]);
-      await repositories.users.pool.query('DELETE FROM discord_users WHERE discord_guild_id = $1', [guildId]);
 
       await repositories.interactions.markSuccess(interactionId, {
         assistantMessage: 'Server nuke completed',
@@ -248,19 +255,18 @@ export async function execute(client, interaction, discordUser) {
     if (mode === 'private') {
       if (scope === 'all') {
         logger.info({ guildId }, 'Clearing private memory for all guild members');
-        const res = await repositories.users.pool.query(
-          'SELECT core_user_id FROM discord_users WHERE discord_guild_id = $1',
-          [guildId]
-        );
-        const coreUserIds = res.rows.map((row) => row.core_user_id);
-        for (const coreUserId of coreUserIds) {
-          await coreRagClient.clearMemory(coreUserId, { guildId, scopes: ['chat:clear:any'] }).catch((err) => {
-            logger.warn({ err, coreUserId }, 'Failed to clear user private memory in all clear');
-          });
+        const erasure = await eraseGuildMembers({
+          guildId,
+          includeCommunity: false,
+          coreRagClient,
+          repositories,
+          logger,
+        });
+        if (!erasure.complete) {
+          await repositories.interactions.markFailure(interactionId, 'Guild erasure incomplete');
+          await interaction.editReply({ embeds: [createGuildErasureIncompleteEmbed(erasure)] });
+          return;
         }
-
-        await repositories.interactions.pool.query('DELETE FROM discord_interactions WHERE discord_guild_id = $1', [guildId]);
-        await repositories.users.pool.query('DELETE FROM discord_users WHERE discord_guild_id = $1', [guildId]);
 
         await repositories.interactions.markSuccess(interactionId, {
           assistantMessage: 'Private memory cleared for all',
@@ -387,23 +393,18 @@ export async function executePrefix(client, message, argsText, discordUser) {
         logger.warn({ err, guildId }, 'Failed to persist clear cutoff to database in prefix NUKE');
       });
 
-      await coreRagClient.clearCommunityMemory({ guildId, scope: 'all' }).catch((err) => {
-        logger.warn({ err, guildId }, 'Failed community clear during prefix NUKE');
+      const erasure = await eraseGuildMembers({
+        guildId,
+        includeCommunity: true,
+        coreRagClient,
+        repositories,
+        logger,
       });
-
-      const res = await repositories.users.pool.query(
-        'SELECT core_user_id FROM discord_users WHERE discord_guild_id = $1',
-        [guildId]
-      );
-      const coreUserIds = res.rows.map((row) => row.core_user_id);
-      for (const coreUserId of coreUserIds) {
-        await coreRagClient.clearMemory(coreUserId, { guildId, scopes: ['chat:clear:any'] }).catch((err) => {
-          logger.warn({ err, coreUserId }, 'Failed user clear during prefix NUKE');
-        });
+      if (!erasure.complete) {
+        await repositories.interactions.markFailure(interactionId, 'Guild erasure incomplete');
+        await message.reply({ embeds: [createGuildErasureIncompleteEmbed(erasure)] });
+        return;
       }
-
-      await repositories.interactions.pool.query('DELETE FROM discord_interactions WHERE discord_guild_id = $1', [guildId]);
-      await repositories.users.pool.query('DELETE FROM discord_users WHERE discord_guild_id = $1', [guildId]);
 
       await repositories.interactions.markSuccess(interactionId, {
         assistantMessage: 'Prefix NUKE completed',
@@ -461,19 +462,18 @@ export async function executePrefix(client, message, argsText, discordUser) {
     if (mode === 'private') {
       if (scope === 'all') {
         logger.info({ guildId }, 'Prefix clearing private memory for all');
-        const res = await repositories.users.pool.query(
-          'SELECT core_user_id FROM discord_users WHERE discord_guild_id = $1',
-          [guildId]
-        );
-        const coreUserIds = res.rows.map((row) => row.core_user_id);
-        for (const coreUserId of coreUserIds) {
-          await coreRagClient.clearMemory(coreUserId, { guildId, scopes: ['chat:clear:any'] }).catch((err) => {
-            logger.warn({ err, coreUserId }, 'Failed user clear in prefix private all');
-          });
+        const erasure = await eraseGuildMembers({
+          guildId,
+          includeCommunity: false,
+          coreRagClient,
+          repositories,
+          logger,
+        });
+        if (!erasure.complete) {
+          await repositories.interactions.markFailure(interactionId, 'Guild erasure incomplete');
+          await message.reply({ embeds: [createGuildErasureIncompleteEmbed(erasure)] });
+          return;
         }
-
-        await repositories.interactions.pool.query('DELETE FROM discord_interactions WHERE discord_guild_id = $1', [guildId]);
-        await repositories.users.pool.query('DELETE FROM discord_users WHERE discord_guild_id = $1', [guildId]);
 
         await repositories.interactions.markSuccess(interactionId, {
           assistantMessage: 'Prefix private cleared for all',

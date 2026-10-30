@@ -1,0 +1,1 @@
+"""Transactional e-mail adapters."""

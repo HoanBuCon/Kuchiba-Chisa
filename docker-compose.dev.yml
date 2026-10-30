@@ -1,0 +1,61 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Chisa — DEVELOPMENT infrastructure only (Postgres, Redis, Qdrant).
+#
+# Used by `chisa dev start`. The API, worker, frontend and Discord bot run on the
+# host (hot reload). This file is NOT for production: ports are bound to loopback,
+# Redis/Qdrant have no auth, and the Postgres password comes from the process
+# environment (the CLI derives it from DATABASE_URL in the git-ignored .env).
+#
+# The project name and volume names match the pre-existing development stack, so
+# existing local data (database, lore corpus) is reused, never recreated.
+# ─────────────────────────────────────────────────────────────────────────────
+name: kuchiba_chisa
+
+volumes:
+  postgres_data:
+  qdrant_data:
+  redis_data:
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: chisa_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: chisa
+      POSTGRES_PASSWORD: ${CHISA_DEV_POSTGRES_PASSWORD:?run through "chisa dev start" (derives it from DATABASE_URL)}
+      POSTGRES_DB: chisa_db
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U chisa -d chisa_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  redis:
+    image: redis:7-alpine
+    container_name: chisa_redis
+    restart: unless-stopped
+    command: ["redis-server", "--maxmemory", "512mb", "--maxmemory-policy", "allkeys-lru", "--save", "", "--appendonly", "no"]
+    ports:
+      - "127.0.0.1:6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+
+  qdrant:
+    image: qdrant/qdrant:v1.12.4
+    container_name: chisa_qdrant
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:6333:6333"
+      - "127.0.0.1:6334:6334"
+    volumes:
+      - qdrant_data:/qdrant/storage

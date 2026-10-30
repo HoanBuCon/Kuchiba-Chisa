@@ -10,3 +10,11 @@ __pycache__
 htmlcov
 logs
 discord/node_modules
+# Never ship local runtime data or secrets in an image (user uploads are private
+# memory files and belong only in the uploads volume).
+app/static/uploads
+.env
+.env.*
+!.env.example
+!.env.production.example
+secrets

@@ -39,6 +39,25 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
 
     RATE_LIMITED_PREFIXES = ("/api/v1/chat", "/api/v1/community")
     ANONYMOUS_SESSION_PATH = "/api/v1/auth/anonymous-session"
+    # Pre-authentication account endpoints: brute-force/credential-stuffing control
+    # keyed by trusted client network address and route.
+    AUTH_RATE_LIMITED_PATHS = frozenset(
+        {
+            "/api/v1/auth/login",
+            "/api/v1/auth/register",
+            "/api/v1/auth/refresh",
+            "/api/v1/auth/logout",
+            "/api/v1/auth/google/start",
+            "/api/v1/auth/google/callback",
+            "/api/v1/auth/verify-email",
+            "/api/v1/auth/verify-email/resend",
+            "/api/v1/auth/password/forgot",
+            "/api/v1/auth/password/reset",
+            "/api/v1/auth/password/change",
+        }
+    )
+    # LLM-backed routes get a tighter per-minute bucket than reads (history, etc.).
+    CHAT_MESSAGE_ROUTES = frozenset({"POST:chat", "POST:chat.stream", "POST:community.chat"})
 
     def __init__(self, app: ASGIApp) -> None:
         super().__init__(app)
@@ -57,6 +76,15 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
                 return self._limited_response(reset_at)
             return await call_next(request)
 
+        if path in self.AUTH_RATE_LIMITED_PATHS:
+            client_ip = self._trusted_client_ip(request)
+            allowed, _, reset_at = await self._check_bucket(
+                self._auth_route_key(client_ip, path), settings.AUTH_RATE_LIMIT_PER_MINUTE
+            )
+            if not allowed:
+                return self._limited_response(reset_at)
+            return await call_next(request)
+
         if not any(path.startswith(prefix) for prefix in self.RATE_LIMITED_PREFIXES):
             return await call_next(request)
 
@@ -71,6 +99,8 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         request.state.principal = principal
 
         client_ip = self._trusted_client_ip(request)
+        # Exposed to routes for per-IP daily quotas (web anonymous chat).
+        request.state.client_ip = client_ip
         anomaly_allowed, _, anomaly_reset_at = await self._check_ip_anomaly(client_ip)
         if not anomaly_allowed:
             return self._limited_response(anomaly_reset_at)
@@ -135,6 +165,12 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         return f"chisa:ratelimit:anonymous-session:v1:{digest}"
 
     @staticmethod
+    def _auth_route_key(client_ip: str, path: str) -> str:
+        """Pre-auth account route bucket: trusted network address + fixed route only."""
+        digest = hashlib.sha256(f"auth|{client_ip}|{path}".encode()).hexdigest()
+        return f"chisa:ratelimit:auth:v1:{digest}"
+
+    @staticmethod
     def _parse_trusted_proxy_networks() -> tuple[
         ipaddress.IPv4Network | ipaddress.IPv6Network, ...
     ]:
@@ -180,6 +216,8 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
     ) -> tuple[bool, int, float]:
         key = self._rate_limit_key(principal, method, path)
         capacity = settings.RATE_LIMIT_PER_MINUTE
+        if self._route_bucket(method, path) in self.CHAT_MESSAGE_ROUTES:
+            capacity = min(capacity, settings.CHAT_MESSAGE_RATE_LIMIT_PER_MINUTE)
         now = time.time()
         try:
             allowed, remaining, retry_after = await redis_service.consume_token_bucket(

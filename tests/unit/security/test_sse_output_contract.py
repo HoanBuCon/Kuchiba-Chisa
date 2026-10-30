@@ -6,6 +6,7 @@ import inspect
 from typing import Any
 
 import pytest
+from admission_fakes import AllowAllAdmission
 from fastapi import Request
 
 from app.domain.value_objects.principal import PrincipalContext
@@ -77,6 +78,7 @@ async def test_stream_emits_only_the_server_owned_grounding_contract(
         request=ChatRequest(message="Tell me the lore"),
         http_request=_request(),
         principal=_principal(),
+        admission=AllowAllAdmission(),
         chat_engine=object(),
     )
 
@@ -106,6 +108,7 @@ async def test_stream_sanitizes_unexpected_error_before_sse_sink(
         request=ChatRequest(message="Tell me the lore"),
         http_request=_request(),
         principal=_principal(),
+        admission=AllowAllAdmission(),
         chat_engine=object(),
     )
 

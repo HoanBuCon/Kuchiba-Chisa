@@ -241,7 +241,7 @@ class VisualMemoryIngestionWorker:
                         "Ingested image memory into Qdrant",
                         image_id=image_id,
                         user_id=user_id,
-                        tags=final_tags,
+                        tag_count=len(final_tags),
                     )
 
             except Exception as ex:

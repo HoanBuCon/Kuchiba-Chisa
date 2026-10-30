@@ -7,6 +7,7 @@ from types import SimpleNamespace
 from unittest.mock import AsyncMock
 
 import pytest
+from admission_fakes import AllowAllAdmission
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse
 from httpx import ASGITransport, AsyncClient
@@ -163,6 +164,7 @@ async def test_chat_payload_identity_fields_are_rejected_and_principal_is_used(
         request=request,
         http_request=SimpleNamespace(headers={}),
         principal=principal,
+        admission=AllowAllAdmission(),
         session=SimpleNamespace(),
         chat_engine=SimpleNamespace(),
     )
@@ -312,7 +314,11 @@ async def test_community_payload_identity_fields_are_rejected_and_principal_is_u
     monkeypatch.setattr(pipeline_tracker, "end_trace", lambda **kwargs: None)
 
     response = await community.community_chat_endpoint(
-        request=request, principal=principal, session=session, chat_engine=engine
+        request=request,
+        principal=principal,
+        admission=AllowAllAdmission(),
+        session=session,
+        chat_engine=engine,
     )
 
     call = engine.community_chat_detailed.await_args.kwargs

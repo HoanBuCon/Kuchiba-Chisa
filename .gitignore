@@ -69,3 +69,9 @@ data/ingestion_report.md
 app/static/uploads/*
 !app/static/uploads/.gitkeep
 
+
+# Local development stack state (pids, logs, pre-migration backups)
+.dev/
+
+# Wiki survey snapshot (local baseline, not versioned)
+data/survey/

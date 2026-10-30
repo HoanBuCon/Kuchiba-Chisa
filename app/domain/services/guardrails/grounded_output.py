@@ -99,7 +99,14 @@ class GroundedOutputAssembler:
         evidence: Sequence[Evidence],
         attachment_ids: Sequence[str] = (),
         abstention_answer: str = "Insufficient evidence is available to answer accurately.",
+        extractive_frame: str = "{quote}",
     ) -> GroundedAnswerEnvelope:
+        """``extractive_frame`` presents verbatim quotes (``{quote}``) in the caller's voice.
+
+        ``answer`` (what every grounding check verifies) is unchanged. The frame only
+        shapes ``presented_answer``: each run of consecutive extractive quotes is
+        joined and placed in the frame once; the quote text itself is never altered.
+        """
         model_payload = GroundedModelPayload.model_validate(payload)
         if model_payload.decision == "abstain":
             return GroundedAnswerEnvelope(
@@ -116,6 +123,8 @@ class GroundedOutputAssembler:
             )
         evidence_by_id = {item.evidence_id: item for item in evidence}
         rendered: list[str] = []
+        presented: list[str] = []
+        extractive_run: list[str] = []
         citations: list[str] = []
         verified = 0
         extractive = 0
@@ -155,15 +164,23 @@ class GroundedOutputAssembler:
                 citation_ids=[source.evidence_id],
             )
             if verification.supported:
+                if extractive_run:
+                    presented.append(extractive_frame.format(quote=" ".join(extractive_run)))
+                    extractive_run = []
                 rendered.append(claim.text.strip())
+                presented.append(claim.text.strip())
                 verified += 1
             else:
                 # The model paraphrase is not trusted across languages. The exact,
                 # server-verified quote remains a safe extractive answer segment.
                 rendered.append(resolved_quote)
+                extractive_run.append(resolved_quote)
                 extractive += 1
             if source.evidence_id not in citations:
                 citations.append(source.evidence_id)
+
+        if extractive_run:
+            presented.append(extractive_frame.format(quote=" ".join(extractive_run)))
 
         if not rendered:
             raise GroundedOutputValidationError(
@@ -179,8 +196,10 @@ class GroundedOutputAssembler:
             flags.append("unsupported_claim_removed")
         accepted = verified + extractive
         confidence = accepted / (accepted + removed)
+        presented_answer = " ".join(presented)
         return GroundedAnswerEnvelope(
             answer=" ".join(rendered),
+            presented_answer=presented_answer if extractive else None,
             citations=citations,
             confidence=confidence,
             safety_flags=flags,

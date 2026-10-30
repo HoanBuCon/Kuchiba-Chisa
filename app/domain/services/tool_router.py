@@ -48,7 +48,10 @@ class SemanticToolRouter:
                         vectors.append(vec)
                     except Exception as e:
                         log.error(
-                            "Failed to embed tool anchor", tool=tool.name, text=text, error=str(e)
+                            "Failed to embed tool anchor",
+                            tool=tool.name,
+                            text_chars=len(text),
+                            error=str(e),
                         )
                 if vectors:
                     self.tool_embeddings[tool.name] = np.array(vectors)

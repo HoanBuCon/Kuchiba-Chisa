@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Quyền riêng tư — Chisa</title>
+  <meta name="description" content="Thông báo quyền riêng tư cho tester của Chisa (bản thử nghiệm có kiểm soát).">
+  <style>
+    :root { --bg: #fbfaf8; --fg: #1f1d1a; --muted: #5d5850; --line: #e3ded6; --accent: #8a3b2e; }
+    @media (prefers-color-scheme: dark) {
+      :root { --bg: #16151a; --fg: #ece9e4; --muted: #a9a39a; --line: #2e2c33; --accent: #e59a86; }
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--fg); font: 16px/1.65 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+    main { max-width: 760px; margin: 0 auto; padding: 40px 16px 64px; }
+    h1 { font-size: 1.7rem; line-height: 1.25; margin: 0 0 4px; }
+    h2 { font-size: 1.15rem; margin: 2rem 0 .5rem; padding-top: 1rem; border-top: 1px solid var(--line); }
+    .meta { color: var(--muted); font-size: .9rem; margin: 0 0 1.5rem; }
+    .note { border-left: 3px solid var(--accent); padding: .5rem .9rem; background: color-mix(in srgb, var(--accent) 8%, transparent); }
+    ul { padding-left: 1.2rem; }
+    li { margin: .35rem 0; }
+    code { font-size: .9em; padding: .05em .3em; border: 1px solid var(--line); border-radius: 4px; }
+    a { color: var(--accent); }
+  </style>
+</head>
+<body>
+<main>
+  <h1>Thông báo quyền riêng tư cho tester</h1>
+  <p class="meta">Chisa — bản thử nghiệm có kiểm soát · Cập nhật 05/10/2026</p>
+
+  <p class="note">Chisa là dự án cá nhân đang thử nghiệm với một nhóm tester được mời, không phải dịch vụ thương mại.
+    Vui lòng <strong>không gửi thông tin nhạy cảm</strong> (mật khẩu, số giấy tờ, tài chính, sức khỏe, địa chỉ nhà…) trong tin nhắn hoặc ảnh.</p>
+
+  <h2>1. Chúng tôi lưu những gì</h2>
+  <ul>
+    <li><strong>Tin nhắn và câu trả lời</strong> (web và Discord), để giữ ngữ cảnh và hiển thị lịch sử.</li>
+    <li><strong>Ảnh bạn gửi</strong>, để Chisa “nhìn” ảnh (và nhớ lại nếu bạn bật ký ức dài hạn).</li>
+    <li><strong>Ký ức dài hạn</strong>: chỉ khi bạn bật; mặc định <strong>tắt</strong>.</li>
+    <li><strong>Tài khoản</strong>: email, mật khẩu đã băm bcrypt (không lưu mật khẩu gốc), thời điểm đăng nhập gần nhất.</li>
+    <li><strong>Đăng nhập Google</strong> (nếu dùng): mã định danh Google và email Google.</li>
+    <li><strong>Phiên đăng nhập</strong>: chỉ lưu mã băm của refresh token, hiệu lực 7 ngày.</li>
+    <li><strong>Mã xác minh email / đặt lại mật khẩu</strong>: chỉ lưu mã băm, dùng một lần, hết hạn sau 24 giờ hoặc 30 phút.</li>
+    <li><strong>Bộ đếm lượt chat theo ngày</strong> (định danh và IP đã băm), tự xóa sau 2 ngày, để giới hạn chi phí.</li>
+    <li><strong>Discord</strong>: Discord user ID, guild ID và tin nhắn bạn gửi cho bot.</li>
+  </ul>
+  <p>Chat khi chưa đăng nhập là một phiên ẩn danh gắn với tab trình duyệt. Đóng tab thì bạn mất quyền truy cập lịch sử đó, nhưng dữ liệu vẫn còn trên máy chủ. Hãy gõ <code>/clear</code> trước khi đóng tab nếu muốn xóa.</p>
+
+  <h2>2. Dữ liệu gửi cho bên thứ ba</h2>
+  <ul>
+    <li><strong>DeepSeek</strong> (mô hình ngôn ngữ): tin nhắn, một phần lịch sử, ảnh và ký ức liên quan. Một số bước trung gian gửi nguyên văn tin nhắn; chỉ bước tạo câu trả lời cuối được lọc bớt thông tin cá nhân.</li>
+    <li><strong>Tìm kiếm web</strong> (mặc định DuckDuckGo): truy vấn rút ra từ tin nhắn khi cần thông tin mới.</li>
+    <li><strong>Jina</strong>: chỉ nhận lore công khai của game và truy vấn đã xử lý, không nhận lịch sử hội thoại.</li>
+    <li><strong>Nhà cung cấp email giao dịch</strong>: nhận địa chỉ email và nội dung thư xác minh/đặt lại mật khẩu để gửi tới bạn.</li>
+    <li><strong>Google</strong>: chỉ khi bạn chọn đăng nhập bằng Google.</li>
+    <li><strong>Discord</strong>: tin nhắn đi qua hạ tầng Discord theo chính sách của Discord.</li>
+  </ul>
+  <p>Các bên này xử lý dữ liệu theo chính sách riêng của họ, có thể ở ngoài Việt Nam.</p>
+
+  <h2>3. Cookie</h2>
+  <ul>
+    <li><code>chisa_refresh</code>: HttpOnly, Secure, SameSite=Lax; chỉ để giữ đăng nhập.</li>
+    <li><code>chisa_oauth</code>: tạm thời (10 phút) trong lúc đăng nhập Google.</li>
+    <li>Mã phiên ẩn danh trong <code>sessionStorage</code>, tự mất khi đóng tab.</li>
+  </ul>
+  <p>Không có cookie quảng cáo hay công cụ phân tích của bên thứ ba.</p>
+
+  <h2>4. Bảo vệ dữ liệu</h2>
+  <p>HTTPS bắt buộc; mật khẩu băm bcrypt; refresh token lưu dạng băm và xoay vòng sau mỗi lần dùng; log hệ thống không ghi nội dung tin nhắn, email hay token; cơ sở dữ liệu không mở ra Internet; bản sao lưu được mã hóa khi gửi ra ngoài máy chủ. Đây vẫn là hệ thống thử nghiệm do một cá nhân vận hành.</p>
+
+  <h2>5. Lưu giữ và xóa</h2>
+  <ul>
+    <li><strong>Giới hạn sử dụng:</strong> mỗi phiên, tài khoản, IP và server Discord có số lượt chat tối đa mỗi ngày (đặt lại lúc 07:00 giờ Việt Nam).</li>
+    <li><strong>Tài khoản email/password</strong> phải xác minh email trước khi đăng nhập được.</li>
+    <li><strong>Xóa hội thoại và ký ức:</strong> gõ <code>/clear</code> trên web hoặc dùng lệnh <code>/clear</code> trên Discord (xóa lịch sử, ký ức, ảnh đã lưu và cache).</li>
+    <li><strong>Xóa tài khoản:</strong> đăng nhập, gõ <code>/clear</code>, rồi nhắn người vận hành để xóa tài khoản.</li>
+    <li>Hội thoại được lưu trong thời gian thử nghiệm; khi kết thúc beta, dữ liệu tester sẽ được xóa hoặc bạn sẽ được báo trước.</li>
+    <li>Bản sao lưu giữ tối đa 7 ngày; dữ liệu đã xóa có thể còn trong bản sao lưu cho tới khi bản đó hết hạn.</li>
+  </ul>
+
+  <h2>6. Liên hệ</h2>
+  <p>Câu hỏi hoặc yêu cầu xem/xóa dữ liệu: liên hệ người vận hành qua kênh bạn được mời tham gia thử nghiệm. Tiếp tục sử dụng Chisa nghĩa là bạn đã đọc thông báo này.</p>
+
+  <p><a href="/">← Quay lại Chisa</a></p>
+</main>
+</body>
+</html>

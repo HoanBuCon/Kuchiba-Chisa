@@ -120,7 +120,7 @@ class FastEmbedAdapter(IEmbeddingProvider):
         try:
             cached = await redis_service.get(cache_key)
             if cached:
-                log.debug("Embedding cache hit", text=cleaned[:30])
+                log.debug("Embedding cache hit", text_chars=len(cleaned))
                 return json.loads(cached)
         except Exception as e:
             log.warning("Embedding cache read failed, falling back to generation", error=str(e))

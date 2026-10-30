@@ -40,6 +40,11 @@ COPY --chown=chisa:chisa app/ ./app/
 COPY --chown=chisa:chisa alembic.ini ./
 COPY --chown=chisa:chisa alembic_migrations/ ./alembic_migrations/
 
+# Mount points for persistent volumes (uploads, embedding model cache). Creating
+# them here gives fresh named volumes the non-root owner.
+RUN mkdir -p /app/app/static/uploads /app/.cache/fastembed /app/.cache/huggingface \
+    && chown -R chisa:chisa /app/app/static /app/.cache
+
 # Switch to non-root user
 USER chisa
 
@@ -65,12 +70,13 @@ RUN pip install --no-cache-dir -r requirements-dev.txt
 
 COPY --chown=chisa:chisa pyproject.toml ./
 COPY --chown=chisa:chisa chisa_cli.py ./
-COPY --chown=chisa:chisa .env.example ./
+COPY --chown=chisa:chisa .env.example .env.production.example ./
 COPY --chown=chisa:chisa data/ ./data/
 COPY --chown=chisa:chisa deploy/ ./deploy/
+COPY --chown=chisa:chisa docs/ ./docs/
 COPY --chown=chisa:chisa reports/ ./reports/
 COPY --chown=chisa:chisa tests/ ./tests/
-COPY --chown=chisa:chisa docker-compose.yml ./
+COPY --chown=chisa:chisa docker-compose.yml docker-compose.dev.yml .dockerignore ./
 COPY --chown=chisa:chisa scripts/ ./scripts/
 
 USER chisa

@@ -1,6 +1,7 @@
 import re
 from collections.abc import Awaitable, Callable
 from typing import Any
+from urllib.parse import urlsplit
 
 from app.domain.interfaces.embedding_provider import IEmbeddingProvider
 from app.domain.interfaces.llm_provider import BaseLLMAdapter
@@ -9,6 +10,14 @@ from app.domain.services.tools.base import BaseAgentTool
 from app.shared.utils.logger import get_logger
 
 log = get_logger(__name__)
+
+
+def _url_host(url: str) -> str | None:
+    """Log only the host of an untrusted search-result URL, never path or query."""
+    try:
+        return urlsplit(url).hostname
+    except ValueError:
+        return None
 
 
 def web_search_trace_payload(
@@ -96,7 +105,7 @@ class WebSearchAgentTool(BaseAgentTool):
         cache = kwargs.get("cache")
 
         search_query = user_message.strip()
-        log.info("Executing search query", query=search_query)
+        log.info("Executing search query", query_chars=len(search_query))
 
         # ── Redis Cache Lookup ──
         h = hashlib.md5(search_query.encode("utf-8")).hexdigest()
@@ -107,7 +116,7 @@ class WebSearchAgentTool(BaseAgentTool):
                 cached = await cache.get(cache_key)
 
             if cached:
-                log.info("Redis search cache hit ✓", query=search_query)
+                log.info("Redis search cache hit ✓", query_chars=len(search_query))
                 res = json.loads(cached)
                 res["optimized_query"] = search_query
                 return res
@@ -311,7 +320,7 @@ class WebSearchAgentTool(BaseAgentTool):
     async def _web_search(self, query: str) -> dict[str, Any]:
         import asyncio
 
-        log.info("Executing resilient web search provider chain", query=query)
+        log.info("Executing resilient web search provider chain", query_chars=len(query or ""))
 
         snippets = []
         urls = []
@@ -354,7 +363,7 @@ class WebSearchAgentTool(BaseAgentTool):
 
             async def fetch_page(target_url: str):
                 try:
-                    log.info("Fetching deep page in parallel", url=target_url)
+                    log.info("Fetching deep page in parallel", url_host=_url_host(target_url))
                     html = await asyncio.wait_for(page_fetcher(target_url), timeout=3.5)
                     if html:
                         cleaned_text = self._clean_html_to_text(html)
@@ -374,9 +383,15 @@ class WebSearchAgentTool(BaseAgentTool):
                         if len(cleaned_text) >= 150 and not is_blocked:
                             return target_url, cleaned_text[:2500]
                 except TimeoutError:
-                    log.warning("Deep page fetch timed out after 3.5s", url=target_url)
+                    log.warning(
+                        "Deep page fetch timed out after 3.5s", url_host=_url_host(target_url)
+                    )
                 except Exception as pe:
-                    log.warning("Failed parallel deep page fetch", url=target_url, error=str(pe))
+                    log.warning(
+                        "Failed parallel deep page fetch",
+                        url_host=_url_host(target_url),
+                        error_type=type(pe).__name__,
+                    )
                 return None
 
             tasks = [fetch_page(u) for u in candidate_urls]

@@ -919,3 +919,42 @@ body {
 .thinking-mode-dot:nth-child(1) { animation-delay: -0.4s; }
 .thinking-mode-dot:nth-child(2) { animation-delay: -0.2s; }
 .thinking-mode-dot:nth-child(3) { animation-delay:    0s; }
+
+/* ── Account / authentication (minimal) ─────────────────────────────── */
+.account-status { display: flex; flex-direction: column; gap: 2px; }
+.account-identity {
+  display: flex; align-items: center; gap: 8px;
+  padding: 6px 10px; font-size: 12.5px; color: var(--text-primary);
+}
+.account-email { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.auth-backdrop {
+  position: fixed; inset: 0; z-index: 1000;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(0, 0, 0, 0.35); padding: 16px;
+}
+.auth-modal {
+  width: 100%; max-width: 360px; display: flex; flex-direction: column; gap: 10px;
+  background: var(--bg-surface); border: 1px solid var(--border-hover);
+  border-radius: var(--radius-lg); padding: 18px; box-shadow: 0 12px 40px rgba(0,0,0,0.45);
+}
+.auth-header { display: flex; justify-content: space-between; align-items: center; font-weight: 600; }
+.auth-label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--text-secondary); }
+.auth-input {
+  border: 1px solid var(--border-hover); border-radius: var(--radius-md);
+  padding: 8px 10px; font-size: 14px; background: var(--bg-elevated); color: var(--text-primary);
+}
+.auth-input:focus { outline: none; border-color: var(--red); }
+.auth-submit { margin: 4px 0 0; justify-content: center; }
+.auth-google { justify-content: center; border: 1px solid var(--border-hover); }
+.auth-switch { background: none; border: none; color: var(--red); cursor: pointer; font-size: 12.5px; }
+.auth-hint { font-size: 11.5px; color: var(--text-secondary); }
+.input-hint a, .auth-hint a { color: inherit; text-decoration: underline; }
+.auth-error { font-size: 12.5px; color: #c62828; }
+.auth-info { font-size: 12.5px; color: var(--text-secondary); }
+.auth-notice {
+  display: flex; justify-content: space-between; align-items: center; gap: 8px;
+  margin: 8px 16px 0; padding: 8px 12px; border-radius: var(--radius-md); font-size: 13px;
+  border: 1px solid var(--border-hover); background: var(--bg-elevated);
+}
+.auth-notice.error { color: #c62828; }
+.auth-notice.success { color: #2e7d32; }

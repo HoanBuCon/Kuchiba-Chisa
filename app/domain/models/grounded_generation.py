@@ -41,6 +41,9 @@ class GroundedAnswerEnvelope(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
     answer: str = Field(min_length=1)
+    # Delivery wording: ``answer`` with verbatim quotes placed in the persona frame.
+    # All grounding/safety checks run on ``answer``; ``None`` means deliver ``answer``.
+    presented_answer: str | None = None
     citations: list[str]
     confidence: float = Field(ge=0.0, le=1.0)
     safety_flags: list[
