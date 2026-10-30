@@ -34,6 +34,8 @@ jobs:
         run: lint-imports
       - name: RAM budget (CON-003, STD-OPS-005)
         run: python scripts/ci/check_ram_budget.py
+      - name: Alert runbooks (STD-OBS-004)
+        run: python scripts/ci/check_runbooks.py
       - name: Conventional Commits (STD-GIT-002)
         if: github.event_name == 'pull_request'
         run: python scripts/ci/check_commit_messages.py
