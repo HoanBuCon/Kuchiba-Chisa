@@ -24,6 +24,7 @@
 | 2.0 | 2026-10-31 | Chủ dự án | **Phê duyệt** SRS v2 và E1–E13; thêm ING-011, ING-012, KNW-009; lộ trình mục 10 theo ADR-0001; chuyển tài liệu sang `docs/` |
 | 2.0.1 | 2026-10-31 | Chủ dự án | STD-GOV-001: quy tắc đóng góp chuyển sang `docs/CONTRIBUTING.md`, agent đọc qua `.claude/CLAUDE.md` |
 | 2.0.2 | 2026-10-31 | Chủ dự án | Thêm STD-PY-011 (clean code), STD-PY-012 (clean comment), STD-PY-013 (quy tắc hướng đạo sinh) |
+| 2.0.3 | 2026-10-31 | Chủ dự án | CON-001: nội dung bảo vệ chỉ gồm các system prompt trong code; lore Markdown thời sơ khai (`data/lore/`) bị loại bỏ vì không còn được dùng |
 
 ## Quyết định đã chốt của chủ dự án (đầu vào của tài liệu)
 
@@ -119,7 +120,7 @@ Chisa là dự án cá nhân, một chủ dự án kiêm Admin duy nhất ở gi
 ## 2.5 Ràng buộc
 | ID | Ràng buộc |
 |---|---|
-| CON-001 | Nội dung prompt persona và relationship lore được bảo vệ PHẢI giữ **nguyên văn**. Việc di chuyển vị trí cần chủ dự án phê duyệt (xem `PER-002`) |
+| CON-001 | Các system prompt persona và relationship trong `context_builder.py` / `persona_loader.py` được bảo vệ, PHẢI giữ **nguyên văn**. Việc di chuyển vị trí cần chủ dự án phê duyệt (xem `PER-002`) |
 | CON-002 | Không có bí mật nào trong repo; secret chỉ nằm trong cấu hình bí mật của VPS |
 | CON-003 | Tổng giới hạn RAM container ≤ ~6,5 GB, chừa phần cho OS và Docker |
 | CON-004 | Một Admin vận hành; thiết kế PHẢI an toàn mà không cần quy trình "hai người duyệt" |
