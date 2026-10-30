@@ -72,3 +72,6 @@ app/static/uploads/*
 
 # Local development stack state (pids, logs, pre-migration backups)
 .dev/
+
+# Wiki survey snapshot (local baseline, not versioned)
+data/survey/
