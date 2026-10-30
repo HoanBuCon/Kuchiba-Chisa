@@ -75,3 +75,6 @@ app/static/uploads/*
 
 # Wiki survey snapshot (local baseline, not versioned)
 data/survey/
+
+# Ad-hoc local experiments (never versioned)
+scratch/
