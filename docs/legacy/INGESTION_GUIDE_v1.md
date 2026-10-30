@@ -1,3 +1,5 @@
+> ⚠️ **Tài liệu lịch sử.** Mô tả pipeline ingestion legacy đã bị xoá ngày 2026-10-31 (SRS v2 `ING-010`). Code còn trên nhánh `freeze/chisa-v1`. Data plane mới được đặc tả ở `docs/SRS_Chisa_v2_Advanced_Agentic_RAG.md`, mục 4.11.
+
 # 📘 Hướng Dẫn Ingestion Dữ Liệu Lore RAG & Parent-Child Architecture
 
 > **Dự án**: Kuchiba Chisa — AI Companion & Game Knowledge Assistant  

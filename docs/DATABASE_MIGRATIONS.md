@@ -8,11 +8,6 @@ repair, alter, or drop schema at startup. FastAPI readiness checks the current
 `alembic_version` against the repository head and fails closed in production when
 they differ.
 
-The SQLite file managed by
-`app/infrastructure/ingestion/storage/state_db.py` is an auxiliary ingestion-state
-store. It is not connected through `DATABASE_URL` and is outside the production
-PostgreSQL schema boundary. Its lifecycle must not be used to bootstrap PostgreSQL.
-
 ## Forward migration procedure
 
 1. Confirm the target release, database endpoint, maintenance window, and operator
