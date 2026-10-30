@@ -8,7 +8,6 @@ PYTHON = venv/Scripts/python
 PIP = venv/Scripts/pip
 PYTEST = venv/Scripts/pytest
 RUFF = venv/Scripts/ruff
-CELERY = venv/Scripts/celery
 UVICORN = venv/Scripts/uvicorn
 
 help:                          ## Show this help
@@ -42,11 +41,8 @@ migrate:                       ## Run Alembic migrations
 migrate-new:                   ## Create new Alembic revision (usage: make migrate-new MSG="add users table")
 	$(PYTHON) -m alembic revision --autogenerate -m "$(MSG)"
 
-worker:                        ## Start Celery worker
-	$(CELERY) -A app.infrastructure.queue.worker worker --loglevel=info -Q high,medium,low
-
-worker-beat:                   ## Start Celery beat scheduler
-	$(CELERY) -A app.infrastructure.queue.celery_app beat --loglevel=info
+worker:                        ## Start the durable PostgreSQL background worker
+	$(PYTHON) -m app.worker
 
 docker-up:                     ## Start all Docker services
 	docker compose up -d

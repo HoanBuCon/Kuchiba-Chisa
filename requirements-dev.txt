@@ -17,3 +17,9 @@ types-passlib==1.7.7.20240819
 types-pyasn1==0.6.0.20250914
 types-python-jose==3.3.4.20240106
 types-PyYAML==6.0.12.20250915
+
+# ── Code metrics (scripts/count_loc.py) ──────────────────────────────
+gitdb==4.0.12
+GitPython==3.1.51
+pygount==3.2.0
+smmap==5.0.3
