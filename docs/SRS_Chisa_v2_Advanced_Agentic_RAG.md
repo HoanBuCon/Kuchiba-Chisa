@@ -25,6 +25,7 @@
 | 2.0.1 | 2026-10-31 | Chủ dự án | STD-GOV-001: quy tắc đóng góp chuyển sang `docs/CONTRIBUTING.md`, agent đọc qua `.claude/CLAUDE.md` |
 | 2.0.2 | 2026-10-31 | Chủ dự án | Thêm STD-PY-011 (clean code), STD-PY-012 (clean comment), STD-PY-013 (quy tắc hướng đạo sinh) |
 | 2.0.3 | 2026-10-31 | Chủ dự án | CON-001: nội dung bảo vệ chỉ gồm các system prompt trong code; lore Markdown thời sơ khai (`data/lore/`) bị loại bỏ vì không còn được dùng |
+| 2.0.4 | 2026-10-31 | Chủ dự án | D9, CON-005, mục 7.2: toàn bộ dữ liệu trước v2 (gồm dữ liệu người dùng) là rác, đã xoá; không migrate. CON-005 áp dụng cho dữ liệu phát sinh từ v2. Bỏ baseline hệ v1 khỏi R0 (corpus v1 đã xoá); mốc so sánh là release Tier A đầu tiên của R1 |
 
 ## Quyết định đã chốt của chủ dự án (đầu vào của tài liệu)
 
@@ -38,7 +39,7 @@
 | D6 | Tài khoản đăng ký thủ công **bắt buộc xác minh email**. Đăng nhập bằng Google hoặc Discord không cần xác minh email riêng, với điều kiện ở `IAM-005` |
 | D7 | Admin là quyền cao nhất và nguy hiểm, cần thiết kế bảo mật riêng |
 | D8 | Cách lưu chế độ: chủ dự án uỷ quyền đề xuất phương án tối ưu (xem mục 4.2) |
-| D9 | Toàn bộ codebase hiện tại coi là chưa tối ưu; toàn bộ dữ liệu lore đã crawl coi là rác. **Dữ liệu người dùng không thuộc diện "rác"** |
+| D9 | Toàn bộ codebase hiện tại coi là chưa tối ưu. **Toàn bộ dữ liệu cũ** (lore đã crawl và dữ liệu người dùng trước v2) coi là rác và đã xoá ngày 2026-10-31; hệ v2 khởi tạo sạch |
 
 ---
 
@@ -61,7 +62,7 @@
 - kênh Web và Discord;
 - quota theo đơn vị chi phí;
 - quan sát, đánh giá, vận hành trên một VPS;
-- migrate dữ liệu người dùng.
+- bảo toàn dữ liệu người dùng phát sinh từ v2.
 
 **Ngoài phạm vi:** Telegram/Facebook (các yêu cầu `v1:FR-CH-004/005` hoãn lại), multi-agent, fine-tune model, ứng dụng di động, thanh toán.
 
@@ -124,7 +125,7 @@ Chisa là dự án cá nhân, một chủ dự án kiêm Admin duy nhất ở gi
 | CON-002 | Không có bí mật nào trong repo; secret chỉ nằm trong cấu hình bí mật của VPS |
 | CON-003 | Tổng giới hạn RAM container ≤ ~6,5 GB, chừa phần cho OS và Docker |
 | CON-004 | Một Admin vận hành; thiết kế PHẢI an toàn mà không cần quy trình "hai người duyệt" |
-| CON-005 | Dữ liệu người dùng hiện có PHẢI được migrate hoặc xoá theo yêu cầu người dùng; không bị xoá do thay hệ thống |
+| CON-005 | Dữ liệu người dùng phát sinh từ hệ v2 PHẢI được giữ hoặc xoá theo yêu cầu người dùng; không bị mất do nâng cấp hay thay thành phần hệ thống. Dữ liệu trước v2 không thuộc phạm vi (D9) |
 
 ## 2.6 Giả định và phụ thuộc (phải xác nhận)
 | ID | Giả định | Pha xác nhận |
@@ -1227,16 +1228,9 @@ Yêu cầu Monitoring chi tiết (kiến trúc, hồ sơ tài nguyên, catalog m
 | `entities`, `aliases`, `quests`, `glossary` | sinh từ ingestion, có `corpus_version` |
 | LangGraph checkpoint tables | theo thư viện, TTL 7 ngày |
 
-## 7.2 Migrate dữ liệu
+## 7.2 Dữ liệu cũ
 
-| Dữ liệu | Hành động |
-|---|---|
-| Hội thoại hiện có (một hội thoại mở/user) | Chuyển thành **một thread "Lịch sử cũ"** cho mỗi user; giữ nguyên tin nhắn |
-| Memories Qdrant | Giữ; chạy job khởi tạo **core memory** và **facts** từ memory hiện có (tôn trọng consent) |
-| Emotion state | Giữ nguyên |
-| Ảnh người dùng | Giữ theo consent và TTL hiện có |
-| Tài khoản | Giữ; tất cả thành `member` (nếu đã xác minh); không ai có Chía-con/Admin cho tới khi được cấp |
-| Lore cũ | Không migrate (ING-009) |
+Không migrate. Chủ dự án xác nhận toàn bộ dữ liệu trước v2 (hội thoại, memories, emotion state, ảnh, tài khoản, lore) là rác; đã xoá ngày 2026-10-31 (D9). Hệ v2 khởi tạo với cơ sở dữ liệu rỗng.
 
 ## 7.3 Retention
 Xem SEC-DATA-003.
@@ -1308,12 +1302,12 @@ Lộ trình đã được chủ dự án phê duyệt ngày 2026-10-31 ([ADR-000
 
 | Pha | Nội dung | Cổng thoát |
 |---|---|---|
-| **R0 — Nền móng** | SRS v2 đã duyệt; công cụ thực thi quy ước (mục 14.13); Monitoring M0 (collector, dashboard tổng quan, cảnh báo P1, uptime ngoài, heartbeat); khung đánh giá + **golden v2** (câu hỏi quest kiểu "Honami", kịch bản trí nhớ, persona); baseline hệ hiện tại | Có số baseline; cảnh báo P1 thử nghiệm tới được Admin; CI chặn vi phạm quy ước |
+| **R0 — Nền móng** | SRS v2 đã duyệt; công cụ thực thi quy ước (mục 14.13); Monitoring M0 (collector, dashboard tổng quan, cảnh báo P1, uptime ngoài, heartbeat); khung đánh giá + **golden v2** (câu hỏi quest kiểu "Honami", kịch bản trí nhớ, persona) | Khung đánh giá chạy được; cảnh báo P1 thử nghiệm tới được Admin; CI chặn vi phạm quy ước |
 | **R1 — Dữ liệu Tier A** | Data plane mới cho Tier A (~1.050 trang): làm sạch HTML, chuẩn hoá (ING-012), boilerplate, khử trùng theo trang sở hữu (ING-011), chunk thoại hai tầng, thẻ quest có lời dẫn, kho có cấu trúc; Qdrant 1.20; inference service; đánh giá chọn model embedding | Golden v2 đạt QUAL-003; 0 khối trùng khớp chính xác; 0 rác markup |
 | **R2 — Advanced RAG v2** | LLM API mới + gateway ngân sách theo làn; runtime trên `/v2`: companion, **Advanced RAG**, Composer (persona tách nguyên văn), core memory, RESONA, grounding, threads. Chạy song song với hệ cũ, chuyển web rồi Discord | Không tụt persona/cảm xúc; Advanced đạt QUAL-001…004; QUAL-009 |
 | **R3 — IAM v2** | RBAC 4 vai trò, Discord OAuth + liên kết, Admin (CLI, MFA, phiên, step-up, audit), Admin Console tối thiểu | Bộ RBAC + bảo mật Admin xanh |
 | **R4 — Agentic beta** | Công cụ, sổ bằng chứng, interrupt, sự kiện, bulkhead, quota CU, công tắc chế độ; mở cho **Admin trước**, rồi nhóm Chía-con nhỏ | QUAL-007, CAP-001; chi phí trong COST-002 |
-| **R5 — Mở rộng** | Trí nhớ 4 lớp đầy đủ + migrate dữ liệu người dùng; corpus Tier B (quest phụ, NPC, event story); alias Hán-Việt đã duyệt (KNW-009) | QUAL-008; golden v2 mở rộng đạt ngưỡng |
+| **R5 — Mở rộng** | Trí nhớ 4 lớp đầy đủ; corpus Tier B (quest phụ, NPC, event story); alias Hán-Việt đã duyệt (KNW-009) | QUAL-008; golden v2 mở rộng đạt ngưỡng |
 | **R6 — Dọn dẹp** | Gỡ pipeline 12 stage, visualizer, ingestion legacy, Celery; OTEL hosted ổn định; diễn tập rollback | Không còn import legacy; rollback đã diễn tập |
 
 > Lưu ý thứ tự: IAM v2 (R3) PHẢI hoàn tất **trước** khi mở Agentic (R4), vì quyền Agentic phụ thuộc vai trò Chía-con.

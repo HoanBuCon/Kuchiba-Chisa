@@ -456,7 +456,7 @@ Báo cáo **HTML tĩnh**, sinh bằng Jinja2 sau mỗi lần chạy, lưu cùng 
 1. Qdrant **1.12.4 → 1.20.x**:
    - phải nâng **qua từng bản minor**, hoặc dựng instance mới;
    - collection lore dựng lại từ gold;
-   - collection **trí nhớ người dùng** cần kế hoạch di chuyển riêng (CON-005).
+   - không còn dữ liệu cũ cần giữ (SRS v2.0.4), nên dựng **instance 1.20 mới** thay vì nâng qua từng bản.
 2. Inference service (KNW-007).
 
 **Thay đổi SRS đề xuất** (chi tiết ở [rà soát SRS](../reviews/2026-10-31-srs-v2-audit.md)):
