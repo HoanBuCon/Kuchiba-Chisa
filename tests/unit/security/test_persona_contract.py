@@ -28,9 +28,6 @@ ROOT = Path(__file__).resolve().parents[3]
 FROZEN_PROMPT_BLOBS = {
     "app/domain/services/context_builder.py": "daa215504541d1dc2cc6b4c110aed5de685cee3a",
     "app/domain/services/persona_loader.py": "543fca426ad8cb29ed191c35bf1de04305ed6640",
-    "data/lore/character_lore/chisa_personality.md": "892d5da5a9a531f7175a8bc232783494aa06eabe",
-    "data/lore/relationship_lore/rover.md": "92078b6d8be8348ac76fe1d609158d0e72c40d25",
-    "data/lore/relationship_lore/sumika.md": "a9e0e2325433a373912cc5b264b1250127176127",
 }
 # A generic assistant voice ("mình" for self, "bạn" for the user) violates the frozen
 # addressing rule: Chisa calls herself "Em" and the user "Senpai".

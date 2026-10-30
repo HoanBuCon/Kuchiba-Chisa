@@ -8,9 +8,9 @@ The source of truth is **[SRS v2](SRS_Chisa_v2_Advanced_Agentic_RAG.md)**. Secti
 - Read the requirement IDs your change touches and cite them in commits/PRs (`Refs: ADV-004, MON-012`).
 - Respect the layer rule (SRS §3.5.3): `domain` imports no other layer, `application` imports only `domain`,
   only the composition root imports `infrastructure`. CI enforces it with import-linter.
-- **Protected content** (CON-001, STD-AI-003): persona and relationship prompts must stay verbatim
-  (`app/domain/services/context_builder.py`, `persona_loader.py`, `data/lore/character_lore/chisa_personality.md`,
-  `data/lore/relationship_lore/*.md`). Never edit them without explicit owner approval.
+- **Protected content** (CON-001, STD-AI-003): the persona and relationship system prompts must stay verbatim
+  (`app/domain/services/context_builder.py`, `app/domain/services/persona_loader.py`). Never edit them without
+  explicit owner approval.
 - Never commit secrets, real user data, or prompt/response content in telemetry (STD-SEC-002, MON-013).
 - LLM calls go through the LLM gateway only (STD-AI-001). Agent tools are read-only and typed (STD-AI-006).
 

@@ -18,16 +18,12 @@ from app.shared.utils.query_cleaner import (
     is_meaningful_query,
     COMMUNITY_NICKNAMES,
 )
-from app.domain.services.rag.entity_resolver import EntityResolver, EntityDictionary
 
 
 def test_persona_and_pronoun_disambiguation():
     print("\n" + "=" * 80)
     print("🧪 [TEST 1] Kiểm tra Phân giải Đại từ Nhân xưng (Persona Pronoun Resolution)")
     print("=" * 80)
-
-    resolver = EntityResolver("data/lore/entities.json")
-    resolver.load()
 
     # 1.1 Bot Persona Question
     q1 = "vậy em có năng lực gì"
