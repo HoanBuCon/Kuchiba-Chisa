@@ -20,8 +20,9 @@
 |---|---|---|---|
 | 2.0-draft | 2026-10-30 | Chờ chủ dự án | Bản đầu: kiến trúc hai chế độ, RBAC 4 vai trò (vãng lai / tài khoản / Chía-con / Admin), trí nhớ 4 lớp, data plane mới |
 | 2.0-draft.2 | 2026-10-30 | Chờ chủ dự án | Thêm bộ sơ đồ kiến trúc chi tiết (mục 3.5), hệ thống Monitoring tối ưu tài nguyên (mục 13), quy ước hệ thống bắt buộc (mục 14); cập nhật ngân sách RAM, OPS, lộ trình, vấn đề mở |
-| 2.0 | 2026-10-31 | Chủ dự án | **Phê duyệt** SRS v2 và E1–E13; thêm ING-011, ING-012, KNW-009; lộ trình mục 10 theo ADR-0001; chuyển tài liệu sang `docs/` |
 | 2.0-draft.3 | 2026-10-30 | Chờ chủ dự án | Cập nhật phụ lục C theo khảo sát toàn bộ dữ liệu đã crawl; thêm mục 15 (13 đề xuất chỉnh sửa E1–E13, chờ duyệt) |
+| 2.0 | 2026-10-31 | Chủ dự án | **Phê duyệt** SRS v2 và E1–E13; thêm ING-011, ING-012, KNW-009; lộ trình mục 10 theo ADR-0001; chuyển tài liệu sang `docs/` |
+| 2.0.1 | 2026-10-31 | Chủ dự án | STD-GOV-001: quy tắc đóng góp chuyển sang `docs/CONTRIBUTING.md`, agent đọc qua `.claude/CLAUDE.md` |
 
 ## Quyết định đã chốt của chủ dự án (đầu vào của tài liệu)
 
@@ -1579,7 +1580,7 @@ Chính sách: khi đốt quá 50% error budget trong 7 ngày, chủ dự án ưu
 
 | ID | Quy ước | Cách kiểm |
 |---|---|---|
-| STD-GOV-001 | Mục này **bắt buộc** với mọi bên phát triển, mở rộng, bảo trì Chisa, gồm cả **trợ lý AI**. File hướng dẫn agent của repo (`AGENTS.md`, `CLAUDE.md`) PHẢI trỏ tới mục này | Rà repo |
+| STD-GOV-001 | Mục này **bắt buộc** với mọi bên phát triển, mở rộng, bảo trì Chisa, gồm cả **trợ lý AI**. Quy tắc đóng góp nằm ở `docs/CONTRIBUTING.md`; file hướng dẫn agent (`.claude/CLAUDE.md`) PHẢI import file này | Rà repo |
 | STD-GOV-002 | Thứ bậc khi mâu thuẫn: **SRS (đã phê duyệt) > ADR đã chấp nhận > quy ước mục 14 > code hiện có** | Review |
 | STD-GOV-003 | Mọi ngoại lệ PHẢI có ADR nêu lý do, phạm vi, **thời hạn** và được chủ dự án duyệt; ngoại lệ hết hạn thì phải sửa hoặc gia hạn bằng ADR mới | Danh sách ngoại lệ trong `docs/adr` |
 | STD-GOV-004 | Quy ước được rà soát mỗi phiên bản lớn của SRS; thay đổi quy ước ghi vào lịch sử thay đổi SRS | Lịch sử thay đổi |
