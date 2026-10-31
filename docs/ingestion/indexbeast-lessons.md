@@ -164,7 +164,7 @@ SRS v2 chưa có yêu cầu ingest ảnh từ wiki. Hiện chỉ có:
 | C7 | Lấy L1, L2, L5–L12 làm chuẩn hiện thực cho S0–S8 (trích dẫn module IndexBeast làm tham chiếu) | design §6 | Bổ sung |
 | C8 | **Ảnh thực thể từ wiki** (mục 5.3) | SRS: yêu cầu mới (ví dụ KNW-010, ING-019), pha R5 | **Mở phạm vi, cần chủ dự án quyết định** |
 
-C1–C7 nằm trong phạm vi đã duyệt (ADR-0002), áp dụng được ngay sau khi PR #40 merge. C8 cần quyết định riêng.
+**Đã áp dụng (2026-10-31):** C1–C7 vào thiết kế và SRS v2.2 (ING-002/004/007). C8 được chủ dự án duyệt với một thay đổi: **lấy ảnh kích thước gốc** thay vì thumbnail; bản hiển thị ≤ 1.024 px sinh tại chỗ ([ADR-0003](../adr/0003-wiki-entity-images.md), ING-019, KNW-010).
 
 ---
 
