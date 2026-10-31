@@ -3,7 +3,7 @@
 | Thuộc tính | Giá trị |
 |---|---|
 | Tài liệu | SRS cho hệ thống mới của Kuchiba Chisa: hai chế độ Advanced RAG / Agentic RAG, phân quyền 4 vai trò, trí nhớ và cảm xúc |
-| Phiên bản | 2.0 |
+| Phiên bản | 2.1 |
 | Ngày lập / phê duyệt | 2026-10-30 / **2026-10-31** |
 | Trạng thái | **ĐÃ PHÊ DUYỆT** bởi chủ dự án. Là baseline yêu cầu cho hệ thống mới, **thay thế** [SRS v1.1](../reports/SRS_Kuchiba_Chisa.md) cho mọi phát triển mới. v1.1 được giữ nguyên làm tài liệu lịch sử và chỉ áp dụng cho việc sửa lỗi hệ hiện tại trong thời gian chuyển đổi. Các mục "Vấn đề mở" (mục 12) vẫn cần quyết định riêng |
 | Bản chất dự án | Dự án cá nhân; không còn ràng buộc với đồ án môn học |
@@ -26,6 +26,7 @@
 | 2.0.2 | 2026-10-31 | Chủ dự án | Thêm STD-PY-011 (clean code), STD-PY-012 (clean comment), STD-PY-013 (quy tắc hướng đạo sinh) |
 | 2.0.3 | 2026-10-31 | Chủ dự án | CON-001: nội dung bảo vệ chỉ gồm các system prompt trong code; lore Markdown thời sơ khai (`data/lore/`) bị loại bỏ vì không còn được dùng |
 | 2.0.4 | 2026-10-31 | Chủ dự án | D9, CON-005, mục 7.2: toàn bộ dữ liệu trước v2 (gồm dữ liệu người dùng) là rác, đã xoá; không migrate. CON-005 áp dụng cho dữ liệu phát sinh từ v2. Bỏ baseline hệ v1 khỏi R0 (corpus v1 đã xoá); mốc so sánh là release Tier A đầu tiên của R1 |
+| 2.1 | 2026-10-31 | Chủ dự án (uỷ quyền đề xuất) | Hệ thống ingestion theo [ADR-0002](adr/0002-ingestion-system.md) và [thiết kế](ingestion/design.md): sửa ING-002/006/008, thêm ING-013…018, ADV-010, GRD-005, MEM-011; cập nhật ASM-002, KNW-004, KNW-006, ADM-005, CAP-003, SEC-DATA-004, mục 3.3/3.4/3.5.2, 6.5; chốt O1–O9 và kết quả [rà soát](reviews/2026-10-31-srs-v2-audit.md) |
 
 ## Quyết định đã chốt của chủ dự án (đầu vào của tài liệu)
 
@@ -131,7 +132,7 @@ Chisa là dự án cá nhân, một chủ dự án kiêm Admin duy nhất ở gi
 | ID | Giả định | Pha xác nhận |
 |---|---|---|
 | ASM-001 | DeepSeek V4 Flash hỗ trợ tool-calling ở cả chế độ thinking; yêu cầu gửi lại `reasoning_content` trong vòng tool | R2 |
-| ASM-002 | Qdrant 1.20 cung cấp BM25 trên full-text index và fusion phía server đủ cho tiếng Anh; tham số BM25 chỉnh được hay không | R1 |
+| ASM-002 | Kênh lexical: Qdrant ≥ 1.15.2 sinh sparse BM25 phía server; Qdrant 1.20.0 (2026-10-22) thêm BM25 trên full-text payload index; weighted RRF có từ 1.17. Chọn một trong hai bằng spike I0 trên golden v2. BM25 chỉ hiệu quả với truy vấn tiếng Anh (ADV-010) | R1 (I0) |
 | ASM-003 | Google trả claim `email_verified`; Discord OAuth trả trường `verified` khi có scope `email` | R3 |
 | ASM-004 | LangGraph 1.2.x: checkpointer Postgres, `interrupt`, streaming có kiểu hoạt động như tài liệu | R2 |
 | ASM-005 | Chi phí và độ trễ ở mục 6 là ước tính; đo thật ở R2–R4 | R2–R4 |
@@ -198,7 +199,7 @@ flowchart TB
 | Postgres | accounts, identities, **roles/role_assignments**, **mfa_factors**, sessions, **admin_audit_events**, threads, messages, preferences, emotion_state, **core_memory**, **facts (temporal)**, entities/aliases/quests/glossary, corpus releases, outbox/jobs, **LangGraph checkpoints** |
 | Qdrant 1.20 | `lore_canon`, `lore_dialogue`, `memories`, `guild_memories`, `image_memories` (versioned + alias) |
 | Redis | Quota, lock, cache, **authz version**, Redis Streams sự kiện |
-| Object storage (đĩa VPS) | Ảnh người dùng (có TTL/consent), raw wiki theo `(page_id, revid)` |
+| Đĩa VPS | Ảnh người dùng (có TTL/consent); artifact ingestion `data/ingestion/` (bronze theo `(page_id, revid, render_hash)`, silver, gold, cache vector, báo cáo) |
 
 ## 3.4 Ngân sách tài nguyên VPS (mục tiêu)
 
@@ -213,7 +214,7 @@ flowchart TB
 | discord | 300 MB | |
 | web + caddy | 256 MB | |
 | otel-collector (Monitoring hồ sơ M0, mục 13) | 200 MB | `memory_limiter` giữ RSS dưới giới hạn |
-| **Tổng** | **~5,9 GB** | ≤ CON-003; hồ sơ M1 (tự host monitoring) cần thêm ~0,6 GB, xem MON-003 |
+| **Tổng** | **~5,9 GB** | ≤ CON-003; hồ sơ M1 (tự host monitoring) cần thêm ~0,6 GB, xem MON-003. **Thứ tự bắt buộc:** thêm inference service và gỡ model khỏi api/worker trong **cùng một đợt** (compose hiện tại 6.388 MB chưa có inference). Container ingest one-shot (768 MB) chỉ chạy giờ thấp tải, không tính vào tổng thường trực |
 
 ## 3.5 Bộ sơ đồ kiến trúc chi tiết
 
@@ -279,7 +280,8 @@ flowchart TB
     end
     subgraph APPN["Mạng app - internal"]
       API["api<br/>FastAPI x2 worker<br/>Agent Runtime, Admin API"]
-      WRK["worker<br/>outbox jobs, ingestion"]
+      WRK["worker<br/>outbox jobs"]
+      ING["ingest<br/>one-shot, timer của host"]
       BOT["discord-bot<br/>Node"]
       INF["inference<br/>TEI: embed + rerank"]
       OTC["otel-collector<br/>contrib, memory_limiter"]
@@ -298,6 +300,8 @@ flowchart TB
   BOT --> API
   API --> PG & RD & QD & INF
   WRK --> PG & RD & QD & INF & FS
+  ING --> PG & QD & INF & FS
+  ING --> EXT
   API --> EXT
   WRK --> EXT
   API -. OTLP .-> OTC
@@ -933,6 +937,7 @@ Vãng lai luôn `advanced`, không lưu gì.
 | ADV-007 | **Sửa sai tất định**: bằng chứng dưới ngưỡng thì chạy **một** lượt mở rộng (nới filter, thêm `lore_dialogue` có filter thực thể). Vẫn yếu thì **abstain bằng giọng Chisa**; nếu người dùng có quyền thì **đề nghị chuyển Agentic** | Test 3 nhánh; không gọi LLM ở bước sửa sai |
 | ADV-008 | Câu trả lời Advanced CÓ THỂ cache theo khoá `(mode=advanced, câu hỏi chuẩn hoá, corpus_version, prompt_version, persona_version, ACL scope)` | Test cache: không dùng lại khi khác ACL/version |
 | ADV-009 | Ngân sách Advanced: **≤ 2 lời gọi LLM**, **≤ 2 vòng truy hồi**, giới hạn token vào/ra cấu hình; vượt ngân sách thì trả kết quả degraded có mã lý do | Test ngân sách; khớp tinh thần `v1:NFR-PERF-009` |
+| ADV-010 | **Truy hồi xuyên ngữ**: câu hỏi tiếng Việt PHẢI được entity linking song ngữ tất định (alias) và sinh thêm truy vấn tiếng Anh cho kênh lexical; dịch bằng LLM chỉ dùng khi eval chứng minh cần và nằm trong ngân sách ADV-009 | Metric truy hồi báo theo ngôn ngữ (vi / en / không dấu / teencode) |
 
 ## 4.5 Chế độ Agentic RAG (AGT)
 
@@ -958,9 +963,9 @@ Vãng lai luôn `advanced`, không lưu gì.
 | KNW-001 | Công cụ là **hàm có kiểu** dùng chung cho cả hai chế độ (Advanced gọi theo chương trình, Agentic gọi qua planner) | Một hiện thực duy nhất cho mỗi công cụ |
 | KNW-002 | ACL, privacy và tenant PHẢI được kiểm tra **trong công cụ**, không dựa vào planner | Test cross-tenant qua planner bị prompt-inject |
 | KNW-003 | `lore_canon` và `lore_dialogue` là collection riêng; mỗi điểm có `corpus_version`, `source_kind`, `entities[]`, `entity_type`, `page_type`, `nation`, `game_version`, `section_path`, offset | Kiểm tra schema khi publish |
-| KNW-004 | Kho có cấu trúc trong Postgres: `entities` (infobox chuẩn hoá), `aliases` (redirect, Other Languages, alias tiếng Việt curated), `quests` (type, chapter, start location, địa điểm trích từ Steps, nhân vật, quest trước/sau), `glossary` (từ tooltip, có xử lý xung đột) | `list_quests(location='Honami City')` trả đúng danh sách theo dữ liệu nguồn |
+| KNW-004 | Kho có cấu trúc trong Postgres: `entities` (infobox chuẩn hoá từ `pageprops.infoboxes`), `aliases` (redirect, Other Languages, alias suy luận có bằng chứng, alias curated), `locations` (đồ thị từ category `<Vùng> Locations`), `quests` (type, chapter, địa điểm, nhân vật, quest trước/sau), `glossary` (từ tooltip, có xử lý xung đột) | Truy vấn quest theo "Honami" (alias suy luận → `Chronorift Metropolis`; wiki không có trang "Honami City") trả đúng danh sách đối chiếu tay một lần |
 | KNW-005 | Embedding PHẢI dùng đúng giao thức của model (ví dụ `passage:`/`query:` cho họ e5); model, version, prefix, tokenizer ghi vào corpus release | Startup từ chối nếu dimension/model không khớp release active |
-| KNW-006 | Model embedding PHẢI được chọn ở R1 bằng đánh giá trên golden v2 trong giới hạn RAM (ứng viên: multilingual-e5-small làm baseline, bge-m3 và model đa ngữ nhỏ khác) | Báo cáo chọn model có số liệu |
+| KNW-006 | Model embedding PHẢI được chọn ở R1 bằng đánh giá trên golden v2 trong giới hạn RAM đo thật của inference service (ứng viên: multilingual-e5-small làm baseline, bge-m3 và model đa ngữ nhỏ khác). Đổi model là release đồng thời cho lore **và** trí nhớ (embed lại từ văn bản gốc, MEM-011) | Báo cáo chọn model có số liệu RSS và chất lượng |
 | KNW-007 | Dịch vụ suy luận dùng chung PHẢI phục vụ embedding và rerank local cho API và worker; API process **không** tự nạp model | RAM api giảm; test kết nối và timeout |
 | KNW-008 | `web_search` chỉ có ở Agentic, **tắt mặc định cho câu hỏi lore**, theo domain policy, SSRF-safe, nội dung web là dữ liệu không tin cậy (giữ `v1:FR-RAG-010`) | Test chặn private IP, redirect |
 | KNW-009 | (CÓ THỂ) Sinh **alias Hán-Việt** từ tên tiếng Trung bằng từ điển tất định; alias tự sinh gắn cờ `unverified`, chỉ dùng cho entity linking sau khi curator duyệt hoặc eval chứng minh không tăng nhầm lẫn (E9) | Báo cáo eval entity linking có/không alias |
@@ -973,6 +978,7 @@ Vãng lai luôn `advanced`, không lưu gì.
 | GRD-002 | Claim guard và citation guard (RAG-06) PHẢI áp dụng cho bằng chứng từ **mọi bước** của sổ bằng chứng | Test bằng chứng từ bước 3 của Agentic được trích dẫn đúng |
 | GRD-003 | Claim không kiểm chứng được thì loại bỏ hoặc trích nguyên văn trong **khung persona** (hằng số server); không đủ bằng chứng thì abstain bằng giọng Chisa | Giữ hành vi `presented_answer` hiện tại |
 | GRD-004 | Không được dùng chỉ dẫn "trả lời như tự biết" để che nguồn hay độ bất định | Rà prompt |
+| GRD-005 | Message PHẢI lưu **ảnh chụp trích dẫn** (evidence_id, quote, url, revid, corpus_version) để lịch sử vẫn hiển thị đúng sau khi corpus đổi release; trích dẫn wiki ghi nguồn CC BY-SA (ING-018) | Test hiển thị lịch sử sau publish release mới |
 
 ## 4.8 Nhân cách và Composer (PER)
 
@@ -998,6 +1004,7 @@ Vãng lai luôn `advanced`, không lưu gì.
 | MEM-008 | Người dùng PHẢI xem, sửa, xoá core memory và từng memory/fact; tắt trí nhớ dài hạn bất kỳ lúc nào (giữ consent hiện có) | API + UI; test xoá lan đến Qdrant/Postgres/cache |
 | MEM-009 | Trí nhớ guild (sự kiện, văn hoá) giữ như hiện tại, tách khỏi trí nhớ cá nhân | Test ACL guild |
 | MEM-010 | **Reflection** hằng tuần (job): tóm tắt diễn biến quan hệ để cập nhật core memory; bật/tắt được | Test job; tôn trọng consent |
+| MEM-011 | Văn bản trí nhớ (memory, fact, core memory) PHẢI lưu ở **Postgres làm nguồn sự thật**; Qdrant chỉ là index dựng lại được | Xoá collection trí nhớ rồi dựng lại từ Postgres cho kết quả truy hồi như cũ |
 
 ## 4.10 Cảm xúc (EMO)
 
@@ -1018,17 +1025,23 @@ Control plane giữ nguyên tinh thần `v1:FR-ING-001/005/007/008/010` (source 
 | ID | Yêu cầu | Tiêu chí chấp nhận |
 |---|---|---|
 | ING-001 | Discover theo category (có độ sâu), **liệt kê subpage** (`/Backstory`, `/Voicelines`, `/Forte Examination Report`, `/Archive`, `/Story`), danh sách bổ sung curated, luật loại trừ theo hậu tố/category; mỗi trang có quyết định định tuyến kèm lý do | Inventory phủ 100% nhóm Tier A của khảo sát (1.049 trang + bổ sung) |
-| ING-002 | Fetch bằng `action=parse` (HTML đã render) theo revision; 1 req/s, `maxlag`, retry; raw lưu theo `(page_id, revid)`; revid không đổi thì không tải lại | Chạy lại không tải trang không đổi |
+| ING-002 | Fetch bằng `action=parse` (HTML đã render); 1 req/s, `maxlag`, retry, circuit breaker; raw lưu theo `(page_id, revid, render_hash)`. Tải lại khi: `revid` đổi; `touched` đổi **và** trang dùng template nhóm content vừa sửa; hoặc thuộc nhóm làm mới cuốn chiếu (~5%/lần). Chỉ lấy revision đã tồn tại ≥ 24 giờ (6 giờ ở chế độ ra bản) | Chạy lại không tải trang không đổi; test phân loại template |
 | ING-003 | Làm sạch HTML thành block có kiểu (prose, quote, infobox, table, dialogue theo lượt, list), gồm: tách infobox trước khi duyệt heading; tooltip → glossary; bỏ biến thể `.hidden`/`.mobile-only` bị lặp; bỏ audio/URL, card, tab, navbox, section do DPL sinh (giữ thành quan hệ); có nhật ký loại bỏ kèm lý do | Rác markup = 0 trên toàn corpus (khảo sát còn 51 chỗ do lỗi template của wiki, cần luật riêng) |
 | ING-004 | Chunk theo **token thật** của model embedding, ≤ giới hạn model trừ biên an toàn (ví dụ ≤ 450 với model 512), overlap theo câu/lượt; dialogue chia theo **cảnh** rồi theo lượt; bảng lặp header; unit nguyên tử không overlap; bất biến bao phủ (không hở, không đổi chữ) | 100% chunk ≤ giới hạn; test bao phủ |
 | ING-005 | Sinh **thẻ quest**, **hồ sơ thực thể**, alias, glossary vào kho có cấu trúc; registry thực thể version theo release | Kiểm tra số lượng so với inventory |
-| ING-006 | Lỗi mức item thì **quarantine**; lỗi mức release (tỷ lệ quarantine, sụt giảm số trang/chunk, collection rỗng, vi phạm safety chưa được miễn trừ) thì **chặn publish** | Test từng ngưỡng |
+| ING-006 | Lỗi mức trang thì **quarantine** và dùng **last-known-good** của trang đó; sụt token > 40% so với LKG thì giữ LKG tới khi thay đổi ổn định qua 2 lần chạy. Lỗi mức release theo ngưỡng cấu hình có version (`config/ingestion/gates.yaml`) thì **chặn publish** | Test từng ngưỡng; trang lỗi không biến mất khỏi release |
 | ING-007 | Mỗi stage ghi artifact có version, checksum, cache theo `(input, config, code version)`, chạy lại được từ một stage | `chisa ingest run --from chunk` không tải lại wiki |
-| ING-008 | Publish chỉ khi qua **eval gate** (golden v2, theo nhóm câu hỏi) và không tụt so với release active quá ngưỡng | Test publish/rollback |
+| ING-008 | Cổng release ba lớp: **dữ liệu** (tất định), **truy hồi** (golden v2 mức truy hồi + canary, không gọi LLM), **sinh câu trả lời** (chỉ khi đổi runtime/prompt/model hoặc vượt phong bì). **Tự publish** khi hai lớp đầu đạt và thay đổi trong phong bì thường lệ; ngược lại release ở `HELD`. **Tự rollback** khi kiểm tra sau publish (MON-070, canary) tụt | Test publish/hold/rollback theo từng nhánh |
 | ING-009 | Dữ liệu lore cũ (`data/raw_wiki`, `clean_wiki`, `canonical.jsonl`, `chunks.jsonl`, `ingestion.sqlite`, collection lore cũ) **không được migrate**; xoá sau khi release đầu tiên của hệ mới được publish | Checklist dọn dẹp |
 | ING-010 | Code ingestion legacy (khoảng 7.700 dòng) xoá sau khi lấy lại các luật cần thiết | Không còn import |
 | ING-011 | **Khử trùng xuyên trang theo trang sở hữu**: trang cụ thể > trang tổng hợp; trang quest > `/Story`; trang báo cáo > trang vùng; Backstory > trang chính (Official Introduction). Trang không sở hữu giữ tham chiếu `duplicate_of` (E2) | 0 khối trùng khớp chính xác giữa các điểm trong cùng corpus release |
 | ING-012 | **Chuẩn hoá văn bản** (NFC, bỏ ký tự zero-width, chuẩn hoá placeholder người chơi về `Rover`) áp dụng giống nhau cho index và query (E3) | Test: query "Rover" khớp đoạn có placeholder |
+| ING-013 | Mỗi lần chạy **đối soát toàn bộ inventory** ns0 (`allpages` + `prop=info`); khoá theo `page_id` (đổi tên giữ nguyên); trang vắng mặt 2 lần chạy liên tiếp và có log xoá mới thành tombstone | Lệch inventory = 0 sau một lần chạy; test đổi tên/xoá |
+| ING-014 | Kênh có cấu trúc lấy từ `pageprops.infoboxes` (khoá `source`), category, redirect, Other Languages; phủ **toàn wiki**, độc lập với tier văn bản | Độ phủ entity theo họ trang trong báo cáo |
+| ING-015 | Evidence ID **định địa chỉ theo nội dung** (`wiki:<page_id>:<hash văn bản unit>`), ổn định qua release khi chữ không đổi; point ID = uuid5(evidence_id) | Test: chèn đoạn không làm đổi ID các unit khác |
+| ING-016 | Lịch chạy bằng timer của host: hằng tuần, tự chuyển **chế độ ra bản** (hằng ngày trong 7 ngày) khi phát hiện đợt trang mới; ngân sách trang mỗi lần chạy; khoá chạy đơn (advisory lock); heartbeat sau mỗi lần thành công | Hai lần chạy chồng nhau thì lần sau thoát; test chuyển chế độ |
+| ING-017 | **Corpus Explorer**: báo cáo HTML tĩnh mỗi lần chạy (cổng, diff, quarantine, inspector trang, eval); bản tóm tắt gửi kênh Discord của Admin sau mỗi publish | Báo cáo sinh được không cần server |
+| ING-018 | Mọi trang lưu `url`, `revid`, giấy phép CC BY-SA; trích dẫn wiki hiển thị nguồn | Test payload và hiển thị |
 
 ## 4.12 Kênh (CH)
 
@@ -1048,7 +1061,7 @@ Control plane giữ nguyên tinh thần `v1:FR-ING-001/005/007/008/010` (source 
 | ADM-002 | Tra cứu tài khoản theo **ID** (và theo email chính xác cho hỗ trợ): xem metadata (trạng thái, vai trò, ngày tạo, danh tính liên kết, quota đã dùng). **Không** hiển thị nội dung tin nhắn hay memory | Test phạm vi dữ liệu trả về |
 | ADM-003 | Cấp/thu hồi Chía-con theo ROLE-001…007 | Test |
 | ADM-004 | Khoá/mở khoá tài khoản (`suspended`) có lý do + step-up; thu hồi mọi phiên khi khoá | Test |
-| ADM-005 | Quản lý corpus: xem release, quality report, publish, rollback (giữ quy trình ING-02) với step-up | Test |
+| ADM-005 | Quản lý corpus: xem release, quality report, Corpus Explorer; publish thủ công **release `HELD`**, rollback (quy trình ING-02) với step-up. Tự publish/rollback (ING-008) ghi audit với actor `service:ingestion-autopublish` | Test |
 | ADM-006 | Điều chỉnh quota toàn cục hoặc theo tài khoản có thời hạn, có lý do | Test |
 | ADM-007 | Xem audit log (lọc theo actor, hành động, đối tượng, thời gian); xuất CSV | Test |
 | ADM-008 | Thao tác hàng loạt (cấp vai trò cho nhiều tài khoản) **không** được hỗ trợ ở v2 | Không có endpoint |
@@ -1121,7 +1134,7 @@ Ranh giới: client (Web/Discord) ↔ Ingress; Runtime ↔ LLM provider; Runtime
 | SEC-DATA-001 | Dữ liệu cá nhân chỉ gửi provider sau redaction; memory/ảnh riêng không gửi sang provider rerank/embedding bên ngoài nếu chưa có policy |
 | SEC-DATA-002 | Xoá dữ liệu (erasure) bao phủ Postgres, Redis, Qdrant, ảnh, checkpoint, summary, core memory, facts, trace (giữ `v1:FR-CTX-006`, mở rộng cho dữ liệu mới) |
 | SEC-DATA-003 | Retention: thread guest 30 ngày; checkpoint agent 7 ngày; audit Admin ≥ 1 năm; trace theo cấu hình (mặc định 14 ngày, đã redaction) |
-| SEC-DATA-004 | Backup mã hoá, có diễn tập khôi phục định kỳ |
+| SEC-DATA-004 | Backup mã hoá, có diễn tập khôi phục **hằng quý**; RPO ≤ 24 giờ, RTO ≤ 4 giờ |
 
 ---
 
@@ -1148,7 +1161,7 @@ Ranh giới: client (Web/Discord) ↔ Ingress; Runtime ↔ LLM provider; Runtime
 |---|---|
 | CAP-001 | ≥ 50 luồng Advanced đồng thời và ≥ 5 lượt Agentic đồng thời trên VPS mục tiêu, CPU < 80%, RAM < 75% |
 | CAP-002 | Corpus mục tiêu: Tier A khoảng 1,65 triệu token / khoảng 6,7k chunk; mở rộng Tier A+B khoảng 3,36 triệu token / khoảng 15,5k chunk (số đo thật ngày 2026-10-30) |
-| CAP-003 | Ingestion toàn bộ Tier A ≤ 30 phút (lần đầu, 1 req/s); cập nhật tuần ≤ 10 phút |
+| CAP-003 | Ingestion lần đầu Tier A ≤ 30 phút (1 req/s); cập nhật tuần (gồm đối soát) Tier A ≤ 10 phút, Tier A+B ≤ 15 phút |
 
 ## 6.3 Độ tin cậy
 
@@ -1185,6 +1198,8 @@ Ranh giới: client (Web/Discord) ↔ Ingress; Runtime ↔ LLM provider; Runtime
 | QUAL-010 | Rò rỉ cross-tenant, rò rỉ prompt, vượt quyền | 0 trong bộ adversarial bắt buộc |
 
 Đánh giá PHẢI có version evaluator, cỡ mẫu, khoảng tin cậy, và kiểm tra thủ công một phần; không dựa duy nhất vào một LLM judge (giữ tinh thần `v1:NFR-RAG`).
+
+**Cỡ mẫu tối thiểu của golden v2** trước khi dùng làm cổng tự publish: ≥ 100 câu lore một bước, ≥ 50 câu mỗi nhóm còn lại; mỗi câu gắn ảnh chụp nguồn (`source_snapshot`). Nhóm chưa đủ cỡ mẫu chỉ báo cáo, không chặn hay mở cổng. Groundedness và rubric persona (QUAL-001, QUAL-005) có giao thức chấm viết thành văn bản có version trước R2.
 
 ## 6.6 Quan sát và vận hành
 
@@ -1340,9 +1355,9 @@ Lộ trình đã được chủ dự án phê duyệt ngày 2026-10-31 ([ADR-000
 
 ---
 
-# 12. Vấn đề mở (cần chủ dự án quyết định)
+# 12. Vấn đề mở (đã chốt 2026-10-31; chủ dự án uỷ quyền chọn theo đề xuất)
 
-| # | Vấn đề | Đề xuất |
+| # | Vấn đề | Quyết định |
 |---|---|---|
 | O1 | Di chuyển nguyên văn persona ra khỏi file được bảo vệ (PER-002) | Đồng ý di chuyển, kiểm tra bằng hash nội dung |
 | O2 | EMO-007 (cảm xúc tiêu cực giảm ngân sách Agentic) | Tắt ở v2.0, cân nhắc sau |
