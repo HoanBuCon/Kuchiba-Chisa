@@ -3,7 +3,7 @@
 | Thuộc tính | Giá trị |
 |---|---|
 | Tài liệu | SRS cho hệ thống mới của Kuchiba Chisa: hai chế độ Advanced RAG / Agentic RAG, phân quyền 4 vai trò, trí nhớ và cảm xúc |
-| Phiên bản | 2.2 |
+| Phiên bản | 2.2.1 |
 | Ngày lập / phê duyệt | 2026-10-30 / **2026-10-31** |
 | Trạng thái | **ĐÃ PHÊ DUYỆT** bởi chủ dự án. Là baseline yêu cầu cho hệ thống mới, **thay thế** [SRS v1.1](../reports/SRS_Kuchiba_Chisa.md) cho mọi phát triển mới. v1.1 được giữ nguyên làm tài liệu lịch sử và chỉ áp dụng cho việc sửa lỗi hệ hiện tại trong thời gian chuyển đổi. Các mục "Vấn đề mở" (mục 12) vẫn cần quyết định riêng |
 | Bản chất dự án | Dự án cá nhân; không còn ràng buộc với đồ án môn học |
@@ -28,6 +28,7 @@
 | 2.0.4 | 2026-10-31 | Chủ dự án | D9, CON-005, mục 7.2: toàn bộ dữ liệu trước v2 (gồm dữ liệu người dùng) là rác, đã xoá; không migrate. CON-005 áp dụng cho dữ liệu phát sinh từ v2. Bỏ baseline hệ v1 khỏi R0 (corpus v1 đã xoá); mốc so sánh là release Tier A đầu tiên của R1 |
 | 2.1 | 2026-10-31 | Chủ dự án (uỷ quyền đề xuất) | Hệ thống ingestion theo [ADR-0002](adr/0002-ingestion-system.md) và [thiết kế](ingestion/design.md): sửa ING-002/006/008, thêm ING-013…018, ADV-010, GRD-005, MEM-011; cập nhật ASM-002, KNW-004, KNW-006, ADM-005, CAP-003, SEC-DATA-004, mục 3.3/3.4/3.5.2, 6.5; chốt O1–O9 và kết quả [rà soát](reviews/2026-10-31-srs-v2-audit.md) |
 | 2.2 | 2026-10-31 | Chủ dự án | Bài học từ IndexBeast ([báo cáo](ingestion/indexbeast-lessons.md)): ING-004 ngưỡng chunk tối thiểu và gộp unit; ING-007 đường dẫn tương đối, lưu trạng thái, xác minh artifact; ING-002 nén gzip. **Mở phạm vi ảnh thực thể từ wiki, lấy kích thước gốc** ([ADR-0003](adr/0003-wiki-entity-images.md)): thêm ING-019, KNW-010, CAP-004; cập nhật 1.2, 3.3, lộ trình R1/R2/R5 |
+| 2.2.1 | 2026-10-31 | Chủ dự án (uỷ quyền đề xuất) | Inference service tự xây trên fastembed/ONNX thay TEI ([ADR-0004](adr/0004-inference-service.md)); ngân sách RAM inference 1.400 MB theo số đo cgroup Linux; api 1.200 MB, worker 700 MB; tổng 6.440 MB |
 
 ## Quyết định đã chốt của chủ dự án (đầu vào của tài liệu)
 
@@ -209,13 +210,13 @@ flowchart TB
 | postgres | 768 MB | + checkpoints, audit |
 | redis | 256 MB | |
 | qdrant | 1.200 MB | ~15–20k điểm lore + memories |
-| inference (TEI) | 1.000 MB | e5-small hoặc model được chọn ở R1 + reranker local tuỳ chọn |
+| inference (fastembed/ONNX, ADR-0004) | 1.400 MB | e5-small fp32: nạp ~0,82 GB, đỉnh 1,07 GB ở lô 8 (đo cgroup Linux 2026-10-31); lô tối đa 8; reranker local tuỳ chọn. Bản int8 (118 MB) đánh giá ở I0 có thể hạ ngân sách |
 | api (2 worker, **không** nạp model) | 1.200 MB | |
 | worker | 700 MB | |
 | discord | 300 MB | |
 | web + caddy | 256 MB | |
 | otel-collector (Monitoring hồ sơ M0, mục 13) | 200 MB | `memory_limiter` giữ RSS dưới giới hạn |
-| **Tổng** | **~5,9 GB** | ≤ CON-003; hồ sơ M1 (tự host monitoring) cần thêm ~0,6 GB, xem MON-003. **Thứ tự bắt buộc:** thêm inference service và gỡ model khỏi api/worker trong **cùng một đợt** (compose hiện tại 6.388 MB chưa có inference). Container ingest one-shot (768 MB) chỉ chạy giờ thấp tải, không tính vào tổng thường trực |
+| **Tổng** | **~6,4 GB** (compose đo 6.440 MB) | ≤ CON-003; hồ sơ M1 (tự host monitoring) cần thêm ~0,6 GB, xem MON-003. **Thứ tự bắt buộc:** thêm inference service và gỡ model khỏi api/worker trong **cùng một đợt** (compose hiện tại 6.388 MB chưa có inference). Container ingest one-shot (768 MB) chỉ chạy giờ thấp tải, không tính vào tổng thường trực |
 
 ## 3.5 Bộ sơ đồ kiến trúc chi tiết
 
@@ -284,7 +285,7 @@ flowchart TB
       WRK["worker<br/>outbox jobs"]
       ING["ingest<br/>one-shot, timer của host"]
       BOT["discord-bot<br/>Node"]
-      INF["inference<br/>TEI: embed + rerank"]
+      INF["inference<br/>fastembed ONNX: embed + rerank"]
       OTC["otel-collector<br/>contrib, memory_limiter"]
     end
     subgraph DATAN["Mạng data - internal, không ra Internet"]
@@ -319,7 +320,7 @@ flowchart TB
   IF["interface<br/>routes FastAPI, SSE, Admin API, CLI, composition root"]
   APP["application<br/>use case, node runtime, IAM policy, quota, outbox"]
   DOM["domain<br/>entity, value object, RESONA, memory scoring,<br/>quy tắc grounding, ports"]
-  INFRA["infrastructure<br/>adapter: Postgres, Qdrant, Redis, LLM gateway adapter,<br/>TEI, OTEL, SMTP, OAuth"]
+  INFRA["infrastructure<br/>adapter: Postgres, Qdrant, Redis, LLM gateway adapter,<br/>inference client, OTEL, SMTP, OAuth"]
   IF --> APP
   APP --> DOM
   INFRA -. hiện thực ports .-> DOM
@@ -1494,7 +1495,7 @@ Quy tắc đặt tên:
 | Ingestion | `chisa.ingest.stage.duration` | histogram (s) | stage | CAP-003 |
 | Hạ tầng | `system.cpu.utilization`, `system.memory.usage`, `system.filesystem.utilization` | gauge | (host) | Tài nguyên host |
 | Hạ tầng | `container.cpu.utilization`, `container.memory.usage` và số lần restart | gauge/counter | container | OOM, giới hạn §3.4 |
-| Hạ tầng | Postgres (kết nối, kích thước DB, deadlock), Redis (bộ nhớ, evictions), Qdrant (points, RAM), Caddy (request, lỗi), TEI (latency, queue) | theo receiver | instance | |
+| Hạ tầng | Postgres (kết nối, kích thước DB, deadlock), Redis (bộ nhớ, evictions), Qdrant (points, RAM), Caddy (request, lỗi), inference (latency, hàng đợi) | theo receiver | instance | |
 
 Phân tích theo người dùng, guild, thread (CU đã dùng, chi phí, số lượt theo chế độ) lấy từ cột usage của bảng `messages` (MODE-006) và hiển thị trên Admin Console. **Không** đưa vào backend metric.
 
@@ -1542,7 +1543,7 @@ Chính sách: khi đốt quá 50% error budget trong 7 ngày, chủ dự án ưu
 4. **Truy hồi và chất lượng**: độ trễ truy hồi, rerank fallback, sửa sai, abstain, kiểm tra tổng hợp.
 5. **Agentic**: số bước, công cụ, interrupt, hết ngân sách, bulkhead.
 6. **Bảo mật và IAM**: đăng nhập, MFA, từ chối quyền, hoạt động Admin.
-7. **Hạ tầng**: host, container, Postgres, Redis, Qdrant, TEI, Caddy.
+7. **Hạ tầng**: host, container, Postgres, Redis, Qdrant, inference, Caddy.
 8. **Job và ingestion**: hàng đợi, độ trễ, dead-letter, stage ingestion.
 
 ## 13.9 Yêu cầu Monitoring
@@ -1555,7 +1556,7 @@ Chính sách: khi đốt quá 50% error budget trong 7 ngày, chủ dự án ưu
 | MON-004 | Phoenix và các công cụ LLM-trace nặng chỉ dùng ở dev | Không có trong compose production |
 | MON-005 | Collector PHẢI đặt `memory_limiter` là processor đầu tiên (giới hạn dưới mức RAM container), có `batch`, `filter` (bỏ trace health check), xử lý redaction, `tail_sampling`; tự giám sát (RSS, dữ liệu bị từ chối) | Cấu hình được review; metric `otelcol_*` có trên dashboard hạ tầng |
 | MON-006 | Metric container lấy qua **docker socket proxy chỉ đọc**; không mount trực tiếp Docker socket vào collector | Rà compose |
-| MON-007 | Postgres dùng user giám sát chỉ đọc; Qdrant, Caddy, TEI xuất `/metrics` trong mạng nội bộ, không public | Test truy cập từ ngoài bị chặn |
+| MON-007 | Postgres dùng user giám sát chỉ đọc; Qdrant, Caddy, inference xuất `/metrics` trong mạng nội bộ, không public | Test truy cập từ ngoài bị chặn |
 | MON-008 | Chu kỳ: hạ tầng 60 giây, metric ứng dụng 30 giây; không dùng chu kỳ < 15 giây | Rà cấu hình |
 | MON-010 | Instrumentation bằng OpenTelemetry SDK (Python: FastAPI, httpx, SQLAlchemy, Redis có chọn lọc; Node: bot); span GenAI `invoke_agent`, `chat`, `execute_tool`; **ghim phiên bản** semantic conventions | Trace một lượt có đủ các span |
 | MON-011 | Đặt tên metric theo mục 13.4 | Lint catalog trong CI |
