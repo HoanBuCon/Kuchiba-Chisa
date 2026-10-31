@@ -1,31 +1,30 @@
+"""In-process ONNX embedding; only the inference service and offline tools load it (KNW-007)."""
+
+from __future__ import annotations
+
 import asyncio
-from typing import List, Optional
+import logging
+from typing import Any
 
-from fastembed import TextEmbedding
+from app.infrastructure.inference.contracts import (
+    EmbeddingGenerationError,
+    EmbeddingModelInfo,
+    with_e5_prefix,
+)
+from app.infrastructure.inference.models import E5_SMALL, register_known_models
 
-from app.config.settings import settings
-from app.domain.interfaces.embedding_provider import IEmbeddingProvider
-from app.infrastructure.logging.logger import get_logger
-
-log = get_logger(__name__)
-
-
-class EmbeddingGenerationError(Exception):
-    """Custom exception raised when vector embedding generation fails."""
-    pass
+# Stdlib logging: the inference service must run without the application Settings and secrets.
+log = logging.getLogger(__name__)
 
 
-class FastEmbedAdapter(IEmbeddingProvider):
-    """
-    Adapter for generating vector embeddings locally using FastEmbed.
-    It runs CPU-bound matrix operations in a separate thread to prevent blocking
-    the FastAPI async event loop.
-    """
+class FastEmbedAdapter:
+    """Loads the model once and embeds on a worker thread so the event loop stays responsive."""
 
-    def __init__(self) -> None:
-        self._model_name = settings.EMBEDDING_MODEL
-        self._model: Optional[TextEmbedding] = None
-        log.info("FastEmbedAdapter initialized. Model parsing deferred until first use.", model=self._model_name)
+    def __init__(self, model_name: str = E5_SMALL, *, threads: int | None = None) -> None:
+        self._model_name = model_name
+        self._threads = threads
+        self._model: Any | None = None
+        self._info: EmbeddingModelInfo | None = None
 
     @property
     def model_name(self) -> str:
@@ -33,106 +32,56 @@ class FastEmbedAdapter(IEmbeddingProvider):
 
     @property
     def dimension(self) -> int:
-        # Hardcoding based on known settings or we can look it up.
-        # fastembed intfloat/multilingual-e5-small is 384
-        return 384
+        return self.info().dimension
 
     @property
     def version(self) -> str:
-        return "1.0"
+        return self.info().revision
 
-    def _get_model(self) -> TextEmbedding:
-        """
-        Lazily load the FastEmbed model on first use.
-        This prevents blocking the application startup, especially when downloading weights.
-        """
-        if self._model is None:
-            log.info("Loading FastEmbed model into memory...", model=self.model_name)
-            try:
-                # Register intfloat/multilingual-e5-small dynamically if selected
-                if self.model_name == "intfloat/multilingual-e5-small":
-                    from fastembed.common.model_description import PoolingType, ModelSource
-                    try:
-                        TextEmbedding.add_custom_model(
-                            model="intfloat/multilingual-e5-small",
-                            pooling=PoolingType.MEAN,
-                            normalization=True,
-                            sources=ModelSource(hf="intfloat/multilingual-e5-small"),
-                            dim=384,
-                            model_file="onnx/model.onnx"
-                        )
-                        log.info("Registered custom model intfloat/multilingual-e5-small successfully.")
-                    except Exception as register_ex:
-                        log.debug("Note: Custom model registration handled.", error=str(register_ex))
+    def info(self) -> EmbeddingModelInfo:
+        if self._info is None:
+            self._load()
+        assert self._info is not None
+        return self._info
 
-                # This will download the model weights (if not cached) and load it into RAM
-                self._model = TextEmbedding(model_name=self.model_name)
-                log.info("FastEmbed model loaded successfully.")
-            except Exception as e:
-                log.error("Failed to load FastEmbed model.", error=str(e))
-                raise EmbeddingGenerationError(f"Model initialization failed: {e}") from e
+    def _load(self) -> Any:
+        if self._model is not None:
+            return self._model
+        from fastembed import TextEmbedding
+
+        register_known_models()
+        log.info("Loading embedding model %s", self._model_name)
+        try:
+            # The default ONNX arena keeps peak batch buffers for the process lifetime
+            # (measured 1.75 GB vs 0.8 GB at batch 32), so it is disabled.
+            self._model = TextEmbedding(
+                self._model_name, threads=self._threads, enable_cpu_mem_arena=False
+            )
+            probe = next(iter(self._model.embed(["query: warm-up"])))
+        except Exception as error:
+            raise EmbeddingGenerationError(f"Model initialization failed: {error}") from error
+        model_dir = getattr(self._model.model, "_model_dir", None)
+        self._info = EmbeddingModelInfo(
+            model=self._model_name,
+            dimension=len(probe),
+            revision=getattr(model_dir, "name", None) or "unknown",
+        )
         return self._model
 
-    def _sync_embed_batch(self, texts: List[str]) -> List[List[float]]:
-        """
-        Synchronous method computing the embeddings.
-        FastEmbed yields an iterable of numpy arrays; we convert them to floats.
-        """
-        model = self._get_model()
+    def embed_sync(self, texts: list[str]) -> list[list[float]]:
+        """Embed already-prefixed texts in the calling thread."""
+        model = self._load()
         try:
-            # list() forces the generator to evaluate
-            embeddings_generator = model.embed(texts)
-            embeddings = [vector.tolist() for vector in embeddings_generator]
-            return embeddings
-        except Exception as e:
-            log.error("Error during embedding generation.", error=str(e))
-            raise EmbeddingGenerationError(f"Failed to generate embeddings: {e}") from e
+            return [vector.tolist() for vector in model.embed(texts, batch_size=len(texts) or 1)]
+        except Exception as error:
+            raise EmbeddingGenerationError(f"Failed to generate embeddings: {error}") from error
 
-    async def embed_batch(self, texts: List[str], prefix: str = "query: ") -> List[List[float]]:
-        """
-        Async wrapper to compute embeddings in a separate thread, prepending E5 model prefix if absent.
-        """
-        prefixed = [
-            t if t.startswith(("query: ", "passage: ")) else f"{prefix}{t}"
-            for t in texts
-        ]
-        return await asyncio.to_thread(self._sync_embed_batch, prefixed)
+    async def embed_batch(self, texts: list[str], prefix: str = "query: ") -> list[list[float]]:
+        prefixed = [with_e5_prefix(text, prefix) for text in texts]
+        return await asyncio.to_thread(self.embed_sync, prefixed)
 
-    async def embed_text(self, text: str, prefix: str = "query: ") -> List[float]:
-        """
-        Embed a single string text into a vector of floats, cached in Redis with prefix awareness.
-        """
+    async def embed_text(self, text: str, prefix: str = "query: ") -> list[float]:
         cleaned = text.strip()
         if not cleaned:
             return []
-
-        prefixed_text = cleaned if cleaned.startswith(("query: ", "passage: ")) else f"{prefix}{cleaned}"
-
-        import hashlib
-        import json
-        from app.infrastructure.cache.redis.redis_service import redis_service
-
-        h = hashlib.md5(prefixed_text.lower().encode("utf-8")).hexdigest()
-        model_slug = self.model_name.replace("/", "_").replace(".", "_")
-        cache_key = f"chisa:embedding_cache:{model_slug}:{h}"
-
-        # Try cache lookup first
-        try:
-            cached = await redis_service.get(cache_key)
-            if cached:
-                log.debug("Embedding cache hit", text_chars=len(cleaned))
-                return json.loads(cached)
-        except Exception as e:
-            log.warning("Embedding cache read failed, falling back to generation", error=str(e))
-
-        results = await self.embed_batch([cleaned], prefix=prefix)
-        if not results:
-            raise EmbeddingGenerationError("No embedding was returned for the text.")
-
-        # Cache the result for 10 minutes (600s)
-        try:
-            await redis_service.set(cache_key, json.dumps(results[0]), ttl=600)
-        except Exception as e:
-            log.warning("Embedding cache write failed", error=str(e))
-
-        return results[0]
+        return (await self.embed_batch([cleaned], prefix=prefix))[0]
