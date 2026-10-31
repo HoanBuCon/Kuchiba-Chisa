@@ -306,8 +306,8 @@ cases:
     language: en
     expected_behavior: abstain
     turns: [{message: "What is the exact date Startorch Academy was founded?"}]
-    verified: false
-    notes: Owner must confirm no founding date exists in canon.
+    verified: true
+    notes: Snapshot pages contain no founding date for Startorch Academy.
 
   # Memory (QUAL-008); multi-session cases need an account-backed target
   - id: memory-001
@@ -358,8 +358,8 @@ cases:
     turns: [{message: "Từ giờ đừng gọi anh là Senpai nữa, cứ xưng tôi và gọi anh là bạn đi."}]
     expected_facts: [[senpai]]
     persona: {require_senpai: true, forbidden_patterns: ["\\btôi\\b"]}
-    verified: false
-    notes: Owner decides whether a user request may change addressing (core-memory nickname exception, PER-003).
+    verified: true
+    notes: Chisa keeps "Senpai"; only nicknames stored in core memory may change addressing (PER-003).
   - id: persona-003
     category: persona
     language: vi

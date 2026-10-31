@@ -2,7 +2,7 @@
 
 | Thuộc tính | Giá trị |
 |---|---|
-| Trạng thái | **ĐỀ XUẤT, chờ chủ dự án duyệt.** Khi duyệt sẽ thành ADR-0002 và cập nhật SRS (mục 3.5.17, 4.11, 6.2, 6.3) |
+| Trạng thái | **ĐÃ DUYỆT 2026-10-31** (chủ dự án uỷ quyền chọn phương án đề xuất): [ADR-0002](../adr/0002-ingestion-system.md), SRS v2.1 |
 | Ngày | 2026-10-31 |
 | Phạm vi nguồn | **Chỉ Wuthering Waves Fandom wiki** (`wutheringwaves.fandom.com`, MediaWiki API). Không dùng datamine, wiki Kuro hay nguồn không ổn định khác |
 | Bổ sung cho | SRS v2 mục 3.5.17 (S0–S9), 4.11 (ING-001…012), mục 15 (E1–E13); [WuWa_Wiki_Source_Survey.md](../../reports/WuWa_Wiki_Source_Survey.md); [Ingestion_Pipeline_Redesign_Proposal.md](../../reports/Ingestion_Pipeline_Redesign_Proposal.md) |
@@ -480,7 +480,7 @@ Báo cáo **HTML tĩnh**, sinh bằng Jinja2 sau mỗi lần chạy, lưu cùng 
 
 ---
 
-## 13. Quyết định cần Sếp duyệt
+## 13. Quyết định (đã chốt 2026-10-31)
 
 | # | Quyết định | Đề xuất |
 |---|---|---|
