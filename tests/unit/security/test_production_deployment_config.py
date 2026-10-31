@@ -75,7 +75,9 @@ def test_compose_resources_fit_a_4_cpu_8_gb_vps() -> None:
     }
     total_memory = sum(_mb(limit["memory"]) for limit in limits.values())
     assert total_memory <= 6600, total_memory  # leaves ≥1.4 GB for OS/page cache
-    assert _mb(limits["worker"]["memory"]) >= 1100
+    # Models live only in the inference service (KNW-007); e5-small peaks near 0.8 GB there.
+    assert _mb(limits["inference"]["memory"]) >= 900
+    assert _mb(limits["app"]["memory"]) <= 1200 and _mb(limits["worker"]["memory"]) <= 700
     redis_command = " ".join(services["redis"]["command"])
     assert "--maxmemory 384mb" in redis_command
     assert _mb(limits["redis"]["memory"]) > 384
@@ -85,9 +87,15 @@ def test_compose_persists_uploads_and_model_cache_and_rotates_logs() -> None:
     compose = _compose()
     services = compose["services"]
     assert "uploads_data:/app/app/static/uploads" in services["app"]["volumes"]
-    assert "model_cache:/app/.cache" in services["app"]["volumes"]
-    assert "model_cache:/app/.cache" in services["worker"]["volumes"]
-    for name in ("postgres", "redis", "qdrant", "app", "worker", "discord", "web"):
+    assert services["inference"]["volumes"] == ["model_cache:/app/.cache"]
+    assert services["model-warmup"]["volumes"] == ["model_cache:/app/.cache"]
+    for name in ("app", "worker"):
+        assert "model_cache:/app/.cache" not in services[name].get("volumes", []), name
+        assert services[name]["environment"]["INFERENCE_URL"] == "http://inference:8090", name
+    # The inference service has no egress; only the ops warm-up step may download models.
+    assert services["inference"]["networks"] == ["chisa_data"]
+    assert services["model-warmup"]["profiles"] == ["ops"]
+    for name in ("postgres", "redis", "qdrant", "inference", "app", "worker", "discord", "web"):
         logging_config = services[name]["logging"]
         assert logging_config["driver"] == "json-file", name
         assert logging_config["options"]["max-size"] == "10m", name

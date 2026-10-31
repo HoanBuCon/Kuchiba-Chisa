@@ -47,11 +47,13 @@ COMPOSE_FILE = ROOT / "docker-compose.dev.yml"
 
 LOCAL_HOSTS = frozenset({"localhost", "127.0.0.1", "::1"})
 BACKEND_PORT = 8000
+INFERENCE_PORT = 8090
 FRONTEND_PORT = 5173
 BACKEND_URL = f"http://127.0.0.1:{BACKEND_PORT}"
 FRONTEND_URL = f"http://127.0.0.1:{FRONTEND_PORT}"
+INFERENCE_URL = f"http://127.0.0.1:{INFERENCE_PORT}"
 INFRA_SERVICES = ("postgres", "redis", "qdrant")
-APP_SERVICES = ("backend", "worker", "frontend", "discord")
+APP_SERVICES = ("inference", "backend", "worker", "frontend", "discord")
 
 LLM_KEYS = {"deepseek": "DEEPSEEK_API_KEY", "groq": "GROQ_API_KEY", "gemini": "GEMINI_API_KEY"}
 RERANKER_KEYS = {"voyage": "VOYAGE_API_KEY", "jina": "JINA_API_KEY", "cohere": "COHERE_API_KEY"}
@@ -682,6 +684,40 @@ def require_node_deps(directory: str) -> None:
         raise DevError(f"{directory}/node_modules missing: run `cd {directory} && npm ci`")
 
 
+def start_inference(python: str, secrets: list[str]) -> None:
+    """The backend and worker refuse to start until the shared model service is ready (KNW-007)."""
+    if is_running("inference"):
+        step("inference", "already running")
+    else:
+        if port_in_use(INFERENCE_PORT):
+            raise DevError(f"port {INFERENCE_PORT} is already in use by another program")
+        step("inference", "starting (embedding model service)")
+        spawn(
+            "inference",
+            [
+                python,
+                "-m",
+                "uvicorn",
+                "app.interface.inference.main:app",
+                "--host",
+                "127.0.0.1",
+                "--port",
+                str(INFERENCE_PORT),
+            ],
+            ROOT,
+        )
+    try:
+        wait_for(
+            "inference /ready",
+            lambda: http_status(f"{INFERENCE_URL}/ready", timeout=5) == 200,
+            120,
+            alive=lambda: is_running("inference"),
+        )
+    except DevError as error:
+        raise fail_with_log("inference", secrets, error) from None
+    step("inference", f"ready at {INFERENCE_URL}")
+
+
 def start_backend(python: str, secrets: list[str]) -> None:
     if is_running("backend"):
         step("backend", "already running")
@@ -811,6 +847,7 @@ def cmd_start(args: argparse.Namespace, python: str) -> int:
     ensure_qdrant_state(python, secrets)
     warn_if_lore_invisible(env)
     ensure_embedding_cache(python, secrets)
+    start_inference(python, secrets)
     start_backend(python, secrets)
     if not args.no_worker:
         start_worker(python, secrets)
@@ -823,7 +860,7 @@ def cmd_start(args: argparse.Namespace, python: str) -> int:
     if not args.no_frontend:
         say(f"  web       {FRONTEND_URL}")
     say(f"  api       {BACKEND_URL}   (health: /health, readiness: /ready)")
-    say("  logs      chisa dev logs [backend|worker|frontend|discord] [-f]")
+    say("  logs      chisa dev logs [inference|backend|worker|frontend|discord] [-f]")
     say("  smoke     chisa dev test")
     say("  stop      chisa dev stop")
     return 0
