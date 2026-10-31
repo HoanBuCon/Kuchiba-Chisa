@@ -6,16 +6,19 @@ import httpx
 
 from app.config.settings import Settings
 from app.domain.interfaces.reranker import ICrossEncoderReranker
+from app.infrastructure.inference.client import InferenceCrossEncoderReranker
 from app.infrastructure.observability import operational_telemetry
 from app.infrastructure.rag.api_cross_encoder_reranker import (
     ApiCrossEncoderReranker,
     ApiRerankerProvider,
 )
-from app.infrastructure.rag.fastembed_cross_encoder_reranker import FastEmbedCrossEncoderReranker
 
 
 def build_cross_encoder_reranker(
-    *, config: Settings, http_client: httpx.AsyncClient
+    *,
+    config: Settings,
+    http_client: httpx.AsyncClient,
+    inference_client: httpx.AsyncClient,
 ) -> ICrossEncoderReranker | None:
     """Construct only an explicitly configured remote or provisioned local adapter."""
     if config.RERANKER_PROVIDER == "disabled":
@@ -23,10 +26,9 @@ def build_cross_encoder_reranker(
     if config.RERANKER_PROVIDER == "local":
         if not config.RERANKER_MODEL:
             return None
-        return FastEmbedCrossEncoderReranker(
-            model_name=config.RERANKER_MODEL,
-            timeout_seconds=config.RERANKER_TIMEOUT_SECONDS,
-            batch_size=config.RERANKER_BATCH_SIZE,
+        # The model itself is loaded by the inference service (KNW-007).
+        return InferenceCrossEncoderReranker(
+            inference_client, timeout_seconds=config.RERANKER_TIMEOUT_SECONDS
         )
 
     api_key_by_provider = {

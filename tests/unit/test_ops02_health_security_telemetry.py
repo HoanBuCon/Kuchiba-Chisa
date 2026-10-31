@@ -99,6 +99,7 @@ async def test_readiness_emits_separate_bounded_dependency_and_index_identity_si
         AsyncMock(return_value={"character_lore": SimpleNamespace(ready=True)}),
     )
     monkeypatch.setattr(health_route, "validate_llm_configuration", lambda _settings: [])
+    monkeypatch.setattr(health_route, "_inference_ready", AsyncMock(return_value=True))
 
     response = await health_route.ready()
 
@@ -108,6 +109,7 @@ async def test_readiness_emits_separate_bounded_dependency_and_index_identity_si
         "redis": True,
         "qdrant": True,
         "llm_config": True,
+        "inference": True,
     }
     dependencies = {dimensions.dependency for _, dimensions, _ in telemetry.spans}
     assert dependencies == {
@@ -116,6 +118,7 @@ async def test_readiness_emits_separate_bounded_dependency_and_index_identity_si
         "qdrant",
         "qdrant_index_identity",
         "llm_config",
+        "inference",
     }
     assert all(
         operation is TraceOperation.DEPENDENCY_CHECK

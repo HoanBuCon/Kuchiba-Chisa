@@ -56,6 +56,7 @@ async def run_worker() -> None:
         raise RuntimeError("Redis health check failed for durable worker")
     if not await qdrant_service.health_check(require_active_collections=True):
         raise RuntimeError("Qdrant health check failed for durable worker")
+    await container.inference_embedder.ensure_compatible(settings.EMBEDDING_DIMENSION)
 
     source = BackgroundTurnSourceReader(AsyncSessionFactory)
     topic_summarizer = CommunityTopicSummarizer(
@@ -117,8 +118,7 @@ async def run_worker() -> None:
         await redis_service.disconnect()
         await qdrant_service.disconnect()
         await disconnect_database()
-        if "http_client" in container.__dict__:
-            await container.http_client.aclose()
+        await container.aclose_http_clients()
         shutdown_observability()
         log.info("Durable background worker stopped")
 

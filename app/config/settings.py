@@ -136,6 +136,11 @@ class Settings(BaseSettings):
     # ── Embeddings & Semantic Router ───────────────────────────
     OPENAI_API_KEY: Optional[str] = None
     EMBEDDING_MODEL: str = "intfloat/multilingual-e5-small"
+    EMBEDDING_DIMENSION: int = Field(default=384, ge=1, le=4096)
+    # Models live only in the inference service; the API and worker call it (KNW-007).
+    INFERENCE_URL: str = "http://127.0.0.1:8090"
+    INFERENCE_TIMEOUT_SECONDS: float = Field(default=10.0, gt=0, le=60)
+    INFERENCE_MAX_BATCH: int = Field(default=8, ge=1, le=64)
     INTENT_SEMANTIC_THRESHOLD: float = 0.65
     INTENT_ENABLE_L3_SEMANTIC: bool = True
     # RAG-05 remote reranking is opt-in until a provider key and data-processing
