@@ -82,7 +82,12 @@ def create_app(
     *,
     reranker_name: str | None = None,
 ) -> FastAPI:
-    gate = asyncio.Semaphore(settings.INFERENCE_CONCURRENCY)
+    # Separate lanes: a chat query must never queue behind a passage batch (measured p95
+    # 7.9 s on one lane under ingestion load). ONNX sessions accept concurrent runs.
+    lanes = {
+        "query": asyncio.Semaphore(1),
+        "passage": asyncio.Semaphore(settings.INFERENCE_CONCURRENCY),
+    }
 
     @asynccontextmanager
     async def lifespan(_: FastAPI) -> AsyncIterator[None]:
@@ -114,7 +119,7 @@ def create_app(
     async def embed(request: EmbedRequest) -> EmbedResponse:
         _enforce_limits(request.texts, settings)
         prefixed = [with_e5_prefix(text, f"{request.kind}: ") for text in request.texts]
-        async with gate:
+        async with lanes[request.kind]:
             try:
                 vectors = await asyncio.to_thread(embedder.embed_sync, prefixed)
             except EmbeddingGenerationError as error:
@@ -130,7 +135,8 @@ def create_app(
         if reranker is None:
             raise HTTPException(404, "local reranker is not provisioned")
         _enforce_limits(request.documents, settings, query=request.query)
-        async with gate:
+        # Rerank sits on the chat path, so it shares the interactive lane.
+        async with lanes["query"]:
             try:
                 scores = await reranker.rerank(request.query, request.documents)
             except RerankerUnavailableError as error:

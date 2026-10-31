@@ -156,7 +156,9 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '1.0'
+          # A cap, not a reservation: ONNX runs INFERENCE_THREADS=2, and a 1.0 quota
+          # throttles two threads into latency spikes.
+          cpus: '2.0'
           # e5-small fp32 loads at ~0.82 GB and peaks at 1.07 GB with batch 8
           # (Linux cgroup measurement); INFERENCE_MAX_BATCH must stay at 8 or below.
           memory: 1400M

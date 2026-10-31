@@ -19,5 +19,5 @@ class InferenceSettings(BaseSettings):
     # 1.07 GB, batch 32 at 1.86 GB; 8 keeps the service inside its 1.4 GB limit.
     INFERENCE_MAX_BATCH: int = Field(default=8, ge=1, le=64)
     INFERENCE_MAX_TEXT_CHARS: int = Field(default=8000, ge=256, le=32_000)
-    # One batch at a time bounds peak RAM inside the container budget (SRS 3.4).
+    # Concurrent passage batches; one bounds peak RAM inside the container budget (SRS 3.4).
     INFERENCE_CONCURRENCY: int = Field(default=1, ge=1, le=4)

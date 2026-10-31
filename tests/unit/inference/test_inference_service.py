@@ -1,5 +1,7 @@
 """Inference service contract: limits, e5 prefixes, optional rerank, failures (KNW-005/007)."""
 
+import asyncio
+import threading
 from collections.abc import Sequence
 
 import httpx
@@ -100,3 +102,30 @@ async def test_rerank_scores_and_maps_unavailability_to_503() -> None:
         down = await client.post("/v1/rerank", json={"query": "q", "documents": ["a"]})
     assert ok.json() == {"scores": [1.0, 3.0]}
     assert down.status_code == 503
+
+
+class BlockingPassageEmbedder(FakeEmbedder):
+    def __init__(self) -> None:
+        super().__init__()
+        self.release = threading.Event()
+
+    def embed_sync(self, texts: list[str]) -> list[list[float]]:
+        if texts[0].startswith("passage: "):
+            self.release.wait(timeout=5)
+        return super().embed_sync(texts)
+
+
+@pytest.mark.asyncio
+async def test_query_is_served_while_a_passage_batch_is_running() -> None:
+    embedder = BlockingPassageEmbedder()
+    async with _client(embedder) as client:
+        batch = asyncio.create_task(
+            client.post("/v1/embed", json={"texts": ["chunk"], "kind": "passage"})
+        )
+        await asyncio.sleep(0.05)
+        query = await asyncio.wait_for(
+            client.post("/v1/embed", json={"texts": ["Chisa?"], "kind": "query"}), timeout=2
+        )
+        embedder.release.set()
+        assert query.status_code == 200
+        assert (await batch).status_code == 200
