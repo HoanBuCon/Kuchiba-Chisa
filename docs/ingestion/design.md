@@ -156,7 +156,10 @@ flowchart LR
 | L2 Silver | `CanonicalDocument`: block có kiểu, nhật ký loại bỏ, dữ kiện có cấu trúc, quan hệ, ứng viên glossary | `hash(bronze, họ trang, phiên bản cleaner, cấu hình)` | `silver/<page_id>/<key>.json.gz` | Bản hiện hành + LKG |
 | L3 Gold | Theo corpus: chunk, entity, alias, quest, glossary, quan hệ, bản đồ khử trùng | Theo `corpus_version` | `gold/<corpus_version>/*.jsonl.gz` + `manifest.json` | 4 release gần nhất |
 | L4 Vector cache | Vector dense (và sparse nếu dùng) | `hash(embedding_text) + model_id + model_revision + prefix_version + backend` | `vectors/<model>/<shard>.jsonl.gz` hoặc bảng Postgres | Theo model đang dùng + model trước |
+| L4b Ảnh thực thể | Bản gốc + bản hiển thị WebP ≤ 1.024 px; manifest liên kết ảnh–thực thể | `sha256` của bản gốc | `images/blobs/<sha[:2]>/<sha256>.<ext>`, `images/display/<sha256>.webp` | Ảnh còn được tham chiếu; không cần backup (tải lại được) |
 | L5 Release | Qdrant `lore_canon__<ver>`, `lore_dialogue__<ver>`; bảng có cấu trúc có cột `corpus_version`; alias `*_active` | `corpus_version` | Qdrant + Postgres | Release đang active + release trước (rollback tức thì); release cũ hơn dựng lại từ gold trong vài phút |
+
+Quy ước lưu trữ (ING-007): artifact và manifest chỉ dùng **đường dẫn tương đối** so với `data/ingestion/`; trạng thái chạy ở Postgres hoặc SQLite; log tiến độ JSONL append-only. IndexBeast ghi đè file JSON trạng thái 1–6 MB sau mỗi trang, mỗi ảnh, tốn khoảng 7–8 GB và 30 GB ghi đĩa cho một lần crawl.
 
 `corpus_version` dạng `YYYY.MM.DD-N`. Manifest ghi:
 - ảnh chụp nguồn (`page_id → revid`, mốc `recentchanges`);
@@ -200,7 +203,8 @@ Một trang trong phạm vi văn bản được đưa vào hàng tải nếu tho
 **Trễ ổn định:** chỉ tải revision đã tồn tại ≥ 24 giờ, hoặc ≥ 6 giờ trong chế độ ra bản. Trang mới hoàn toàn không phải chờ. Bản sửa phá hoại thường bị hoàn tác trong cửa sổ này, nên hệ thống tự lấy bản tốt.
 
 **Lịch sự và chịu lỗi:**
-- 1 req/s (cấu hình được), `maxlag=5`, User-Agent có liên hệ.
+- 1 req/s (cấu hình được), `maxlag=5`, User-Agent có liên hệ, nén gzip (giới hạn byte tính trên dữ liệu đã giải nén).
+- HTTP client theo mẫu `crawl/http.py` của IndexBeast: một nhịp chung cho mọi request, `Retry-After` dạng số giây và HTTP-date, dừng nếu phải chờ > 60 giây, chặn redirect ra ngoài host allowlist, chống vòng lặp `continue` ([bài học IndexBeast](indexbeast-lessons.md) L1, L2).
 - Retry có backoff + jitter.
 - **Circuit breaker**: chuỗi 429/5xx thì dừng lần chạy **một cách sạch** (đã tải thì giữ). Lần chạy sau tiếp tục từ hàng đợi, không có bước "rollback lần chạy".
 - **Ngân sách mỗi lần chạy** (số trang tối đa): phần dư dồn sang lần sau, nên thời gian chạy luôn bị chặn trên.
@@ -240,9 +244,10 @@ Trang chưa từng có LKG mà bị quarantine thì chưa vào corpus; nó chỉ
    - văn xuôi: theo đoạn và câu;
    - thoại: hai tầng;
    - bảng: lặp header;
-   - unit nguyên tử: không overlap.
+   - unit nguyên tử: không overlap;
+   - **chống chunk vụn**: unit kề nhau cùng section path, collection và ngôn ngữ được gộp tới ~250–400 token; ngưỡng tối thiểu ~120 token; infobox chỉ có **một thẻ hồ sơ** mỗi trang. IndexBeast cho thấy cắt theo trường hoặc theo lượt tạo 47% chunk dưới 50 token.
 
-   Bất biến bao phủ được kiểm bằng code.
+   Bất biến bao phủ được kiểm bằng code; thuật toán cắt theo tìm kiếm nhị phân trên token thật lấy từ `core/text/chunking.py` của IndexBeast.
 5. Định tuyến chunk vào `lore_canon` hoặc `lore_dialogue` theo họ trang và loại block.
 
 **Kho có cấu trúc** (phủ toàn wiki):
@@ -305,6 +310,18 @@ Cổng hiện tại đòi metric sinh câu trả lời và kiểm tra thủ côn
   - release cũ hơn bị xoá khỏi Qdrant nhưng vẫn dựng lại được từ gold;
   - bronze/silver giữ theo chính sách ở mục 5.
 
+### 6.10 Luồng ảnh thực thể (ING-019, KNW-010)
+
+Chạy sau S5, **tách khỏi luồng text**: lỗi ảnh không bao giờ làm hỏng trang text (khác IndexBeast).
+
+1. Danh sách ảnh lấy từ mục `image` của `pageprops.infoboxes` cho các thực thể trong kho có cấu trúc; bổ sung thẻ `characters=` và category `<Thực thể> Images` của trang file.
+2. `imageinfo` theo lô 50: `url`, `sha1`, `size`, `mime`, `timestamp`. `sha1` không đổi thì không tải lại.
+3. Tải **bản gốc**, kiểm bằng Pillow (decompression bomb, ≤ 25 MB, ≤ 60 megapixel, MIME khớp định dạng thật), lưu theo SHA-256.
+4. Sinh **bản hiển thị** WebP cạnh dài ≤ 1.024 px tại chỗ; câu trả lời dùng bản này, bản gốc chỉ khi người dùng mở xem.
+5. Lưu `file_page_url`, `revid`, `license=fair_use`; cổng riêng cho tỷ lệ lỗi và ảnh mồ côi.
+
+Quy mô Tier A: khoảng 650 file, 0,94 GB bản gốc. Tốc độ chung 1 req/s, nên tải lần đầu mất khoảng 15–20 phút (chạy sau text, có ngân sách riêng).
+
 ---
 
 ## 7. Ma trận độ tin cậy
@@ -321,7 +338,7 @@ Cổng hiện tại đòi metric sinh câu trả lời và kiểm tra thủ côn
 | Inference service lỗi | Lỗi gọi | Dừng ở S6, giữ release active | Không (cảnh báo nếu kéo dài) |
 | Load Qdrant thiếu điểm | Đối chiếu manifest | Release `FAILED`, active không đổi | Không |
 | Chất lượng tụt sau publish | MON-070 + canary | Tự rollback | Xem nguyên nhân sau |
-| Artifact hỏng (bit rot) | Checksum khi đọc; `chisa ingest verify` | Tính lại từ tầng dưới | Không |
+| Artifact hỏng (bit rot) | So `(size, mtime, sha256 đã lưu)` khi đọc; `chisa ingest verify` băm lại toàn bộ | Tính lại từ tầng dưới | Không |
 | Hai lần chạy chồng nhau | Advisory lock | Lần sau thoát ngay | Không |
 | Đầy đĩa | Cảnh báo `chisa-disk-*` có sẵn | Dọn theo chính sách giữ lại | Có nếu vẫn thiếu |
 
@@ -502,7 +519,7 @@ Báo cáo **HTML tĩnh**, sinh bằng Jinja2 sau mỗi lần chạy, lưu cùng 
 | **I0 Spike (2–3 ngày)** | Đo throughput và lỗi của `action=parse` trên Tier A; độ phủ `pageprops.infoboxes` theo họ trang; thử phân loại template; so vector TEI và fastembed; thử hai kiểu BM25 trên Qdrant 1.20; nâng Qdrant trên môi trường dev | Số đo cho D-ING-8; xác nhận ước tính thời gian ở mục 6.2 |
 | **I1 Nền** | Hợp đồng dữ liệu (pydantic), artifact store, inventory + đối soát, fetch bronze, `plan/sync/status`, metric, khoá chạy | Chạy lại không tải trang không đổi; lệch inventory = 0 |
 | **I2 Silver** | Bộ làm sạch theo họ Tier A + fixture; residue; hợp đồng họ trang; trích pageprops; LKG | Residue = 0; review tay 30 trang mẫu; 100% Tier A có họ trang |
-| **I3 Gold** | Chunker, khử trùng, parent, hồ sơ thực thể, kho có cấu trúc, đồ thị địa điểm, alias suy luận, thẻ quest | Bất biến bao phủ; 0 trùng khớp chính xác; truy vấn "Honami" đúng theo nguồn |
+| **I3 Gold** | Chunker (chống chunk vụn), khử trùng, parent, hồ sơ thực thể, kho có cấu trúc, đồ thị địa điểm, alias suy luận, thẻ quest; luồng ảnh thực thể (6.10) | Bất biến bao phủ; 0 trùng khớp chính xác; truy vấn "Honami" đúng theo nguồn |
 | **I4 Release** | Cache vector, load staging, manifest, cổng 3 lớp, Explorer | Release `STAGED` khớp manifest; golden v2 mức truy hồi đạt QUAL-003 |
 | **I5 Tự động hoá** | Timer, chế độ ra bản, tự publish, tự rollback, cảnh báo, runbook; xoá ingestion legacy (ING-010) | 4 tuần chạy tự động không cần can thiệp; diễn tập rollback |
 
