@@ -126,6 +126,63 @@ services:
           memory: 384M
 
   # ── Chisa API ────────────────────────────────────────────────────
+  # ── Inference: the only process that loads models (KNW-007) ────────
+  # No egress: the model is provisioned once by `model-warmup` (profile ops).
+  inference:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+    container_name: chisa_inference
+    restart: unless-stopped
+    logging: *default-logging
+    environment:
+      EMBEDDING_MODEL: ${EMBEDDING_MODEL:-intfloat/multilingual-e5-small}
+      RERANKER_MODEL: ${INFERENCE_RERANKER_MODEL:-}
+      INFERENCE_THREADS: "2"
+      FASTEMBED_CACHE_PATH: /app/.cache/fastembed
+      HF_HOME: /app/.cache/huggingface
+      HF_HUB_OFFLINE: "1"
+    volumes:
+      - model_cache:/app/.cache
+    networks:
+      - chisa_data
+    healthcheck:
+      test: ["CMD", "python", "-c", "from urllib.request import urlopen; urlopen('http://localhost:8090/ready', timeout=5)"]
+      interval: 10s
+      timeout: 6s
+      retries: 30
+      start_period: 60s
+    deploy:
+      resources:
+        limits:
+          # A cap, not a reservation: ONNX runs INFERENCE_THREADS=2, and a 1.0 quota
+          # throttles two threads into latency spikes.
+          cpus: '2.0'
+          # e5-small fp32 loads at ~0.82 GB and peaks at 1.07 GB with batch 8
+          # (Linux cgroup measurement); INFERENCE_MAX_BATCH must stay at 8 or below.
+          memory: 1400M
+        reservations:
+          memory: 512M
+    command: ["python", "-m", "uvicorn", "app.interface.inference.main:app", "--host", "0.0.0.0", "--port", "8090", "--workers", "1", "--no-access-log"]
+
+  model-warmup:
+    profiles: ["ops"]
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+    environment:
+      EMBEDDING_MODEL: ${EMBEDDING_MODEL:-intfloat/multilingual-e5-small}
+      FASTEMBED_CACHE_PATH: /app/.cache/fastembed
+      HF_HOME: /app/.cache/huggingface
+    volumes:
+      - model_cache:/app/.cache
+    # Egress only for the one-time model download.
+    networks:
+      - chisa_monitor
+    command: ["python", "-m", "app.ops.warm_embedding_cache"]
+
   app:
     build:
       context: .
@@ -141,8 +198,7 @@ services:
       QDRANT_URL: http://qdrant:6333
       # stdout only; Docker rotates it (B-2: no unbounded backend.log).
       APP_LOG_FILE: ""
-      FASTEMBED_CACHE_PATH: /app/.cache/fastembed
-      HF_HOME: /app/.cache/huggingface
+      INFERENCE_URL: http://inference:8090
       TRUSTED_PROXY_CIDRS: ${TRUSTED_PROXY_CIDRS:-172.28.0.10/32}
       OTEL_ENABLED: "true"
       OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
@@ -153,9 +209,8 @@ services:
       - postgres_password
       - redis_password
     volumes:
-      # Persistent image memory files and embedding model cache (survive redeploys).
+      # Persistent image memory files (survive redeploys).
       - uploads_data:/app/app/static/uploads
-      - model_cache:/app/.cache
     ports:
       - "127.0.0.1:${APP_PORT:-8000}:8000"
     networks:
@@ -165,10 +220,13 @@ services:
       resources:
         limits:
           cpus: '2.0'
-          memory: 2048M
+          # Two uvicorn workers without in-process models (KNW-007).
+          memory: 1200M
         reservations:
-          memory: 512M
+          memory: 384M
     depends_on:
+      inference:
+        condition: service_healthy
       postgres:
         condition: service_healthy
       redis:
@@ -203,10 +261,7 @@ services:
       QDRANT_URL: http://qdrant:6333
       WORKER_CONCURRENCY: ${WORKER_CONCURRENCY:-1}
       APP_LOG_FILE: ""
-      FASTEMBED_CACHE_PATH: /app/.cache/fastembed
-      HF_HOME: /app/.cache/huggingface
-    volumes:
-      - model_cache:/app/.cache
+      INFERENCE_URL: http://inference:8090
     # Longer than WORKER_SHUTDOWN_GRACE_SECONDS (30s) so leases drain cleanly.
     stop_grace_period: 40s
     secrets:
@@ -220,11 +275,13 @@ services:
       resources:
         limits:
           cpus: '1.0'
-          # Holds one multilingual-e5-small ONNX runtime (~0.6 GB) plus Python.
-          memory: 1200M
+          # Embeddings come from the inference service (KNW-007).
+          memory: 700M
         reservations:
           memory: 256M
     depends_on:
+      inference:
+        condition: service_healthy
       postgres:
         condition: service_healthy
       redis:

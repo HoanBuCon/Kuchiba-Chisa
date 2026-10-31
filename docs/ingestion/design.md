@@ -271,7 +271,7 @@ Trang chưa từng có LKG mà bị quarantine thì chưa vào corpus; nó chỉ
 
 - `embedding_text = "passage: {title}\n{section_path}\n{text}"` (giao thức e5, KNW-005). `text` giữ nguyên văn để offset trích dẫn không vỡ.
 - **Cache** theo khoá ở L4: chỉ chunk có chữ mới mới phải embed. Một tuần bình thường chỉ embed vài trăm chunk.
-- Gọi **inference service** theo lô 32–64, giới hạn số lô đồng thời = 1 khi chạy trên VPS, để không tranh tài nguyên với embedding query của người dùng.
+- Gọi **inference service** ([ADR-0004](../adr/0004-inference-service.md)) ở làn `passage`, lô 4 (service cho tối đa 8), một lô tại một thời điểm, **nghỉ giữa các lô khi có người dùng hoạt động**. Query của người dùng đi làn riêng; đo được p95 khoảng 78 ms trong lúc embed passage liên tục.
 - **Một backend embedding cho mỗi release** (ghi vào manifest). Query side bắt buộc dùng cùng model, revision và backend. Startup từ chối nếu lệch (KNW-005).
 - Kênh lexical (BM25) chọn ở I0 theo kết quả kiểm chứng ASM-002:
   - **sparse vector BM25 do Qdrant tự sinh** (có từ 1.15.2);

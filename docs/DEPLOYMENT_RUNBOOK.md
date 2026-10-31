@@ -130,13 +130,15 @@ cd /opt/chisa
 docker compose --profile ops build   # includes the migrate image (profiles are skipped otherwise)
 docker compose up -d postgres redis qdrant
 docker compose --profile ops run --rm migrate          # in ra "<revision> (head)"
-docker compose run --rm --no-deps app python -m app.ops.warm_embedding_cache
+docker compose --profile ops run --rm model-warmup     # in ra "embedding cache ready"
+docker compose up -d inference                          # chờ healthy trước app/worker
 ```
 
-`warm_embedding_cache` tải model embedding **một lần** vào volume `model_cache`. Không bỏ
-bước này: nếu `app` (2 worker) và `worker` cùng tải model trên cache trống, chúng ghi đè
-lẫn nhau và để lại snapshot hỏng (lỗi `ONNXRuntimeError NO_SUCHFILE` khi embed; đã gặp
-trong rehearsal). Nếu đã lỡ: dừng `app worker`, xóa volume `model_cache`, chạy lại bước này.
+`model-warmup` tải model embedding **một lần** vào volume `model_cache`. Bắt buộc, vì
+`inference` không có egress (mạng `chisa_data`) nên không tự tải được; thiếu bước này thì
+`inference` không bao giờ healthy và `app`/`worker` không khởi động (ADR-0004). `app` và
+`worker` không còn nạp model; khi khởi động chúng kiểm model và dimension của `inference`
+(KNW-005). Nếu cache hỏng: dừng `inference`, xóa volume `model_cache`, chạy lại bước này.
 
 ### Qdrant: alias runtime
 

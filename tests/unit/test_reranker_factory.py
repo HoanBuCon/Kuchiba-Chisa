@@ -7,8 +7,8 @@ import pytest
 
 from app.config.settings import Settings
 from app.domain.interfaces.reranker import RerankerDataBoundary
+from app.infrastructure.inference.client import InferenceCrossEncoderReranker
 from app.infrastructure.rag.api_cross_encoder_reranker import ApiCrossEncoderReranker
-from app.infrastructure.rag.fastembed_cross_encoder_reranker import FastEmbedCrossEncoderReranker
 from app.infrastructure.rag.reranker_factory import build_cross_encoder_reranker
 
 
@@ -26,7 +26,10 @@ def _settings(**overrides: str) -> Settings:
 @pytest.mark.asyncio
 async def test_factory_keeps_remote_reranking_disabled_without_explicit_provider() -> None:
     async with httpx.AsyncClient() as client:
-        assert build_cross_encoder_reranker(config=_settings(), http_client=client) is None
+        reranker = build_cross_encoder_reranker(
+            config=_settings(), http_client=client, inference_client=client
+        )
+        assert reranker is None
 
 
 @pytest.mark.asyncio
@@ -50,13 +53,14 @@ async def test_factory_constructs_an_explicit_remote_provider(
                 **{key_setting: "test-key"},
             ),
             http_client=client,
+            inference_client=client,
         )
         assert isinstance(reranker, ApiCrossEncoderReranker)
         assert reranker.data_boundary is RerankerDataBoundary.REMOTE
 
 
 @pytest.mark.asyncio
-async def test_factory_preserves_the_explicitly_provisioned_local_adapter() -> None:
+async def test_factory_routes_local_reranking_through_the_inference_service() -> None:
     async with httpx.AsyncClient() as client:
         reranker = build_cross_encoder_reranker(
             config=_settings(
@@ -64,6 +68,7 @@ async def test_factory_preserves_the_explicitly_provisioned_local_adapter() -> N
                 RERANKER_MODEL="approved-reranker",
             ),
             http_client=client,
+            inference_client=client,
         )
-        assert isinstance(reranker, FastEmbedCrossEncoderReranker)
+        assert isinstance(reranker, InferenceCrossEncoderReranker)
         assert reranker.data_boundary is RerankerDataBoundary.LOCAL

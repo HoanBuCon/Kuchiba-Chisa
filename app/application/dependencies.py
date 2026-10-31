@@ -14,7 +14,6 @@ from app.domain.services.chat_engine import ChatEngine
 from app.domain.services.community.topic_summarizer import CommunityTopicSummarizer
 from app.domain.services.context_builder import ContextBuilder
 from app.domain.services.memory_extractor import MemoryExtractor
-from app.infrastructure.embeddings.fastembed_adapter import FastEmbedAdapter
 from app.infrastructure.vector.qdrant.qdrant_service import qdrant_service
 
 
@@ -37,9 +36,34 @@ class AppContainer:
             follow_redirects=True,
         )
 
+    async def aclose_http_clients(self) -> None:
+        """Close only the clients this process actually created."""
+        for name in ("http_client", "inference_http_client"):
+            if name in self.__dict__:
+                await self.__dict__[name].aclose()
+
+    @cached_property
+    def inference_http_client(self) -> httpx.AsyncClient:
+        return httpx.AsyncClient(
+            base_url=settings.INFERENCE_URL, timeout=settings.INFERENCE_TIMEOUT_SECONDS
+        )
+
+    @cached_property
+    def inference_embedder(self):
+        from app.infrastructure.inference.client import InferenceEmbeddingClient
+
+        return InferenceEmbeddingClient(
+            self.inference_http_client,
+            model_name=settings.EMBEDDING_MODEL,
+            max_batch=settings.INFERENCE_MAX_BATCH,
+        )
+
     @cached_property
     def embedder(self) -> IEmbeddingProvider:
-        return FastEmbedAdapter()
+        from app.infrastructure.cache.redis.redis_service import redis_service
+        from app.infrastructure.embeddings.cached_embedder import CachedEmbeddingProvider
+
+        return CachedEmbeddingProvider(self.inference_embedder, redis_service)
 
     @cached_property
     def llm(self) -> BaseLLMAdapter:
@@ -78,6 +102,7 @@ class AppContainer:
         return build_cross_encoder_reranker(
             config=settings,
             http_client=self.http_client,
+            inference_client=self.inference_http_client,
         )
 
     @cached_property

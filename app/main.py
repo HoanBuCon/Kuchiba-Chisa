@@ -12,6 +12,7 @@ from fastapi.staticfiles import StaticFiles
 from app.config.settings import settings
 from app.infrastructure.cache.redis.redis_service import redis_service
 from app.infrastructure.database.engine import connect_database, disconnect_database
+from app.infrastructure.inference.contracts import EmbeddingGenerationError
 from app.infrastructure.llm.gateway_factory import validate_llm_configuration
 from app.infrastructure.logging.logger import configure_logging, get_logger
 from app.infrastructure.observability import (
@@ -77,6 +78,16 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         startup_errors.append("Qdrant: health check failed")
         log.error("Qdrant startup health check failed")
 
+    # KNW-005: refuse an inference service serving another model or dimension.
+    try:
+        from app.application.dependencies import container
+
+        await container.inference_embedder.ensure_compatible(settings.EMBEDDING_DIMENSION)
+        log.info("Inference service model verified ✓", model=settings.EMBEDDING_MODEL)
+    except EmbeddingGenerationError as error:
+        startup_errors.append(f"Inference: {error}")
+        log.error("Inference startup check failed", error=str(error))
+
     llm_config_errors = validate_llm_configuration(settings)
     startup_errors.extend(f"LLM configuration: {issue}" for issue in llm_config_errors)
     if not llm_config_errors:
@@ -87,7 +98,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     elif startup_errors:
         log.warning("Non-fatal startup warnings (dev mode)", issues=startup_errors)
 
-    # ── Engine Pre-warmup (FastEmbed, Entity Graph & Payload Indexes) ─────
+    # ── Engine Pre-warmup (Entity Graph) ─────
     try:
         from app.application.dependencies import container
         from app.domain.services.rag.entity_sync import sync_entities_dictionary
@@ -98,10 +109,6 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
             container.entity_resolver.load()
             log.info("Entity Knowledge Graph pre-loaded into RAM ✓")
 
-        # 2. Warm up FastEmbed model
-        if hasattr(container, "embedder") and container.embedder:
-            await container.embedder.embed_text("Chisa warm-up")
-            log.info("FastEmbed model pre-warmed into memory ✓")
 
     except Exception as warmup_err:
         log.warning("Warm-up routine warning", error=str(warmup_err))
@@ -120,8 +127,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
     from app.application.dependencies import container
 
-    if "http_client" in container.__dict__:
-        await container.http_client.aclose()
+    await container.aclose_http_clients()
 
     log.info("Chisa API shutdown complete")
 

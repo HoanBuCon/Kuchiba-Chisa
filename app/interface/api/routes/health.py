@@ -61,6 +61,12 @@ async def _llm_configuration_ready() -> bool:
     return not validate_llm_configuration(settings)
 
 
+async def _inference_ready() -> bool:
+    from app.application.dependencies import container
+
+    return await container.inference_embedder.health_check()
+
+
 async def _qdrant_index_identity_ready() -> bool:
     readiness = await qdrant_service.validate_active_collections()
     return all(result.ready for result in readiness.values())
@@ -126,12 +132,14 @@ async def ready() -> ReadinessResponse | JSONResponse:
         )
     qdrant_ok = qdrant_connectivity_ok and qdrant_index_identity_ok
     llm_config_ok = await _observe_dependency("llm_config", _llm_configuration_ready)
+    inference_ok = await _observe_dependency("inference", _inference_ready)
 
     services = {
         "postgresql": db_ok,
         "redis": redis_ok,
         "qdrant": qdrant_ok,
         "llm_config": llm_config_ok,
+        "inference": inference_ok,
     }
 
     all_ready = all(services.values())
