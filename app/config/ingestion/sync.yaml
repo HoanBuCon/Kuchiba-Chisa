@@ -1,0 +1,19 @@
+# Sync policy (ING-002, ING-016). Values are deliberately conservative; tune with run reports.
+version: 1
+source:
+  api_url: https://wutheringwaves.fandom.com/api.php
+  page_url: https://wutheringwaves.fandom.com/wiki/{title}
+  license: CC BY-SA
+  # Identifies the bot to wiki operators, as the Wikimedia User-Agent policy asks.
+  user_agent: KuchibaChisaWikiSync/2.0 (+https://github.com/HoanBuCon/Kuchiba-Chisa)
+  timeout_seconds: 30
+  # Requests start at most this often; robots and Retry-After can only slow it further.
+  min_interval_seconds: 1.0
+  max_retries: 2
+  max_wait_seconds: 60
+  max_response_bytes: 16000000
+fetch:
+  stabilization_hours: 24
+  release_mode_stabilization_hours: 6
+  rolling_refresh_fraction: 0.05
+  max_pages_per_run: 400

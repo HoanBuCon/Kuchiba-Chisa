@@ -62,6 +62,7 @@ scratch/
 # Ingestion Data
 data/clean_wiki/
 data/chunks/
+data/ingestion/
 data/canonical/
 data/ingestion_report.md
 
