@@ -46,7 +46,7 @@ services:
       retries: 12
 
   qdrant:
-    image: qdrant/qdrant:v1.12.4
+    image: qdrant/qdrant:v1.20.0
     restart: "no"
     ports:
       - "127.0.0.1:16333:6333"
