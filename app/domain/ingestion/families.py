@@ -17,8 +17,12 @@ class FamilyRule:
     titles: tuple[str, ...] = ()
     # Parents whose direct subcategories also belong to the family (resolved at sync time).
     subcategory_parents: tuple[str, ...] = ()
+    # Categories that veto a category match, e.g. the "Resonator" concept page is Terminology.
+    excluded_categories: tuple[str, ...] = ()
 
     def matches(self, title: str, categories: frozenset[str]) -> bool:
+        if categories.intersection(self.excluded_categories):
+            return False
         if title in self.titles:
             return True
         if any(title.endswith(f"/{suffix}") for suffix in self.suffixes):

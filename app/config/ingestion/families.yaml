@@ -16,7 +16,8 @@ families:
   - {name: voicelines, tier: A, suffixes: [Voicelines]}
   - {name: forte_report, tier: A, suffixes: [Forte Examination Report]}
   - {name: developer_archive, tier: A, suffixes: [Archive]}
-  - {name: resonator, tier: A, categories: [Resonators]}
+  # The "Resonator" concept page shares Category:Resonators with character pages.
+  - {name: resonator, tier: A, categories: [Resonators], excluded_categories: [Terminology]}
   - {name: main_quest, tier: A, categories: [Main Quests]}
   - {name: lore, tier: A, categories: [Lore]}
   - {name: terminology, tier: A, categories: [Terminology]}

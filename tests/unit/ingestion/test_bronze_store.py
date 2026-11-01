@@ -44,11 +44,7 @@ def test_same_render_is_written_once_and_new_render_gets_new_key(tmp_path) -> No
 def test_round_trip_keeps_fields(tmp_path) -> None:
     store = FileBronzeStore(tmp_path)
 
-    record = store.load(store.save(_page()))
-
-    assert record["schema_version"] == 1
-    assert record["title"] == "Chisa"
-    assert record["fetched_at"] == "2026-11-01T00:00:00+00:00"
+    assert store.load(store.save(_page())) == _page()
     assert not list(tmp_path.rglob("*.tmp"))
 
 

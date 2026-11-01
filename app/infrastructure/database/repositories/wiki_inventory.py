@@ -30,6 +30,7 @@ def _to_state(row: WikiPageModel) -> PageState:
         family=row.family,
         tier=row.tier,
         templates=tuple(row.templates),
+        categories=tuple(row.categories),
         status=PageStatus(row.status),
         fetched_revid=row.fetched_revid,
         fetched_touched=row.fetched_touched,
@@ -46,6 +47,7 @@ def _to_row(state: PageState) -> dict[str, object]:
         "status": state.status.value,
         "templates": list(state.templates),
         "aliases": list(state.aliases),
+        "categories": list(state.categories),
     }
 
 

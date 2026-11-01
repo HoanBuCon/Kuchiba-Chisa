@@ -1,4 +1,4 @@
-"""Operator CLI for the v2 wiki sync: `python -m app.interface.cli.wiki_sync plan|sync|status`."""
+"""Operator CLI for the v2 wiki pipeline: `python -m app.interface.cli.wiki_sync <command>`."""
 
 from __future__ import annotations
 
@@ -13,12 +13,18 @@ from pathlib import Path
 
 import httpx
 
+from app.application.ingestion.silver_stage import SilverStage
 from app.application.ingestion.wiki_sync import RunStatus, SyncReport, SyncRules, WikiSyncService
 from app.config.settings import settings
+from app.domain.ingestion.page_checks import CheckPolicy
 from app.infrastructure.database.engine import AsyncSessionFactory, engine
 from app.infrastructure.database.repositories.wiki_inventory import PostgresWikiInventory
+from app.infrastructure.database.repositories.wiki_silver import PostgresSilverLedger
 from app.infrastructure.ingestion.bronze_store import FileBronzeStore
 from app.infrastructure.ingestion.mediawiki_client import MediaWikiClient
+from app.infrastructure.ingestion.silver.html_cleaner import HtmlCleaner
+from app.infrastructure.ingestion.silver.rules import load_cleaning_rules
+from app.infrastructure.ingestion.silver.silver_store import FileSilverStore
 from app.infrastructure.ingestion.wiki_sync_config import WikiSyncConfig, load_wiki_sync_config
 
 MAX_REDIRECTS = 3
@@ -39,6 +45,7 @@ def _parser() -> argparse.ArgumentParser:
     sync.add_argument(
         "--release-mode", action="store_true", help="use the shorter stabilisation window"
     )
+    commands.add_parser("clean", help="clean fetched pages into silver and check them (ING-006)")
     commands.add_parser("status", help="show the last successful run and inventory counts")
     return parser
 
@@ -92,10 +99,30 @@ async def _status() -> dict[str, object]:
     }
 
 
+async def _clean() -> dict[str, object]:
+    rules = load_cleaning_rules()
+    root = Path(settings.INGESTION_DATA_DIR)
+    stage = SilverStage(
+        PostgresWikiInventory(engine, AsyncSessionFactory),
+        FileBronzeStore(root),
+        HtmlCleaner(rules),
+        FileSilverStore(root),
+        PostgresSilverLedger(AsyncSessionFactory),
+        policy=CheckPolicy(residue=rules.residue),
+        contracts=rules.contracts,
+    )
+    report = await stage.run()
+    flagged = [{"title": title, "reasons": list(reasons)} for title, reasons in report.flagged]
+    return {"stats": report.stats, "flagged": flagged}
+
+
 async def _run(args: argparse.Namespace) -> int:
     try:
         if args.command == "status":
             _emit(await _status())
+            return 0
+        if args.command == "clean":
+            _emit(await _clean())
             return 0
         config = load_wiki_sync_config()
         async with _service(config, release_mode=getattr(args, "release_mode", False)) as service:

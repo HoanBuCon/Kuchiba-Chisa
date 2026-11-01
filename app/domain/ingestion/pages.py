@@ -38,6 +38,8 @@ class PageState:
     family: str | None = None
     tier: str | None = None
     templates: tuple[str, ...] = ()
+    # Kept so a families.yaml change re-classifies every page without asking the wiki again.
+    categories: tuple[str, ...] = ()
     status: PageStatus = PageStatus.ACTIVE
     fetched_revid: int | None = None
     fetched_touched: datetime | None = None
@@ -60,6 +62,7 @@ class PageState:
             last_revid=info.last_revid,
             touched=info.touched,
             templates=info.templates or self.templates,
+            categories=info.categories or self.categories,
             status=PageStatus.ACTIVE,
             aliases=aliases,
         )

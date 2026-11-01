@@ -18,6 +18,7 @@ def config():
     ("title", "categories", "family"),
     [
         ("Chisa", ["Category:Resonators"], "resonator"),
+        ("Resonator", ["Category:Resonators", "Category:Lore", "Category:Terminology"], "lore"),
         ("Chisa/Backstory", ["Category:Resonator Backstory"], "resonator_backstory"),
         ("Chisa/Gallery", ["Category:Resonators"], None),
         ("Some Echo", ["Category:Echoes"], None),
