@@ -322,12 +322,12 @@ async def test_release_publisher_promotes_only_the_verified_release_receipt() ->
 @pytest.mark.asyncio
 async def test_runtime_search_uses_the_active_alias_not_legacy_collection_name() -> None:
     client = AsyncMock()
-    client.search.return_value = []
+    client.query_points.return_value = SimpleNamespace(points=[])
     service = QdrantService(client=client)
 
     await service.search_lore("character_lore", [0.1, 0.2])
 
-    assert client.search.await_args.kwargs["collection_name"] == active_collection_alias(
+    assert client.query_points.await_args.kwargs["collection_name"] == active_collection_alias(
         "character_lore"
     )
 
@@ -336,7 +336,7 @@ async def test_runtime_search_uses_the_active_alias_not_legacy_collection_name()
 async def test_lore_search_acl_filter_is_fail_closed_and_uses_trusted_scope_identifiers() -> None:
     client = AsyncMock()
     client.get_collection.return_value = _collection_info(384)
-    client.search.return_value = []
+    client.query_points.return_value = SimpleNamespace(points=[])
     service = QdrantService(client=client)
 
     await service.search_lore(
@@ -347,7 +347,7 @@ async def test_lore_search_acl_filter_is_fail_closed_and_uses_trusted_scope_iden
         requester_channel_id="verified-channel",
     )
 
-    query_filter = client.search.await_args.kwargs["query_filter"]
+    query_filter = client.query_points.await_args.kwargs["query_filter"]
     serialized_text = str(query_filter.model_dump(exclude_none=True))
     assert "access_scope" in serialized_text
     assert "verified-user" in serialized_text
@@ -360,13 +360,13 @@ async def test_lore_search_acl_filter_is_fail_closed_and_uses_trusted_scope_iden
 async def test_lore_search_without_private_context_allows_only_explicit_public_acl() -> None:
     client = AsyncMock()
     client.get_collection.return_value = _collection_info(384)
-    client.search.return_value = []
+    client.query_points.return_value = SimpleNamespace(points=[])
     service = QdrantService(client=client)
 
     await service.search_lore("character_lore", [0.1, 0.2])
 
     serialized_text = str(
-        client.search.await_args.kwargs["query_filter"].model_dump(exclude_none=True)
+        client.query_points.await_args.kwargs["query_filter"].model_dump(exclude_none=True)
     )
     assert "public" in serialized_text
     assert "access_subject_id" not in serialized_text

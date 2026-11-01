@@ -107,7 +107,7 @@ services:
 
   # ── Qdrant ──────────────────────────────────────────────────────
   qdrant:
-    image: qdrant/qdrant:v1.12.4
+    image: qdrant/qdrant:v1.20.0
     container_name: chisa_qdrant
     restart: unless-stopped
     logging: *default-logging

@@ -4,6 +4,7 @@ Location: tests/unit/test_text_to_image_memory_retrieval.py
 """
 
 import time
+from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -158,7 +159,7 @@ async def test_image_memory_retriever_dm_privacy_isolation():
         "guild_id": None,
         "created_at": int(time.time()),
     }
-    mock_client.search.return_value = [mock_hit]
+    mock_client.query_points.return_value = SimpleNamespace(points=[mock_hit])
 
     retriever = ImageMemoryRetriever(vector_store=mock_vector_store)
 
@@ -176,7 +177,7 @@ async def test_image_memory_retriever_dm_privacy_isolation():
     assert results[0].score == 0.85
 
     # Check search filter passed to Qdrant
-    search_kwargs = mock_client.search.call_args[1]
+    search_kwargs = mock_client.query_points.call_args[1]
     filter_obj = search_kwargs["query_filter"]
     must_conds = filter_obj.must
     assert any(c.key == "user_id" and c.match.value == "user_senpai_1" for c in must_conds)
@@ -190,7 +191,7 @@ async def test_image_memory_retriever_score_threshold_filtering():
     mock_vector_store._client = mock_client
 
     # Qdrant server returns empty if threshold is not met
-    mock_client.search.return_value = []
+    mock_client.query_points.return_value = SimpleNamespace(points=[])
 
     retriever = ImageMemoryRetriever(vector_store=mock_vector_store)
 
@@ -209,7 +210,7 @@ async def test_image_memory_retriever_filters_expired_records_before_top_k(
 ):
     mock_vector_store = MagicMock()
     mock_client = AsyncMock()
-    mock_client.search.return_value = []
+    mock_client.query_points.return_value = SimpleNamespace(points=[])
     mock_vector_store._client = mock_client
     monkeypatch.setattr(
         "app.domain.services.rag.retriever_image_memory.time.time", lambda: 1_700_000_000
@@ -222,7 +223,7 @@ async def test_image_memory_retriever_filters_expired_records_before_top_k(
         user_id="user_senpai_1",
     )
 
-    query_filter = mock_client.search.call_args.kwargs["query_filter"]
+    query_filter = mock_client.query_points.call_args.kwargs["query_filter"]
     expiry_filter = query_filter.must_not[0]
     assert expiry_filter.key == "expires_at"
     assert expiry_filter.range.lte == 1_700_000_000
@@ -523,7 +524,9 @@ async def test_image_memory_retriever_self_healing_prunes_missing_files():
         "created_at": 1700000000,
     }
 
-    mock_client.search.return_value = [mock_hit_ghost, mock_hit_existing]
+    mock_client.query_points.return_value = SimpleNamespace(
+        points=[mock_hit_ghost, mock_hit_existing]
+    )
     mock_client.retrieve.return_value = [mock_hit_ghost]
     mock_client.delete = AsyncMock()
 

@@ -6,14 +6,20 @@
 # Redis/Qdrant have no auth, and the Postgres password comes from the process
 # environment (the CLI derives it from DATABASE_URL in the git-ignored .env).
 #
-# The project name and volume names match the pre-existing development stack, so
-# existing local data (database, lore corpus) is reused, never recreated.
+# The project and Postgres/Redis volume names match the pre-existing development stack,
+# so that local data is reused; Qdrant moved to a fresh volume with 1.20.
 # ─────────────────────────────────────────────────────────────────────────────
 name: kuchiba_chisa
 
+# Development containers write no log files: protects the SSD from constant small writes.
+# `docker logs` shows nothing; to debug a container, drop its `logging` line and recreate it.
+x-no-logs: &no-logs
+  driver: none
+
 volumes:
   postgres_data:
-  qdrant_data:
+  # Qdrant 1.20 cannot open 1.12 storage; the pre-v2 data was disposable (SRS D9).
+  qdrant_v1_20_data:
   redis_data:
 
 services:
@@ -21,6 +27,7 @@ services:
     image: postgres:16-alpine
     container_name: chisa_postgres
     restart: unless-stopped
+    logging: *no-logs
     environment:
       POSTGRES_USER: chisa
       POSTGRES_PASSWORD: ${CHISA_DEV_POSTGRES_PASSWORD:?run through "chisa dev start" (derives it from DATABASE_URL)}
@@ -39,6 +46,7 @@ services:
     image: redis:7-alpine
     container_name: chisa_redis
     restart: unless-stopped
+    logging: *no-logs
     command: ["redis-server", "--maxmemory", "512mb", "--maxmemory-policy", "allkeys-lru", "--save", "", "--appendonly", "no"]
     ports:
       - "127.0.0.1:6379:6379"
@@ -51,11 +59,12 @@ services:
       retries: 12
 
   qdrant:
-    image: qdrant/qdrant:v1.12.4
+    image: qdrant/qdrant:v1.20.0
     container_name: chisa_qdrant
     restart: unless-stopped
+    logging: *no-logs
     ports:
       - "127.0.0.1:6333:6333"
       - "127.0.0.1:6334:6334"
     volumes:
-      - qdrant_data:/qdrant/storage
+      - qdrant_v1_20_data:/qdrant/storage
