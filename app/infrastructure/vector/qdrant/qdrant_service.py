@@ -871,7 +871,10 @@ class QdrantService(IVectorStore):
             
             if prunable and num_to_delete > 0:
                 to_delete = prunable[:num_to_delete]
-                ids_to_delete = [p.id for p in to_delete]
+                # Client 1.20 may type ids as UUID; the vector-store port takes str | int.
+                ids_to_delete = [
+                    p.id if isinstance(p.id, str | int) else str(p.id) for p in to_delete
+                ]
                 await self.delete_points(collection, ids_to_delete)
                 log.info("Pruned LTM entries mapping to bounds", user_id=user_id, conversation_id=conversation_id, pruned_count=len(ids_to_delete))
 
@@ -929,19 +932,37 @@ class QdrantService(IVectorStore):
 
         user_filter = Filter(must=must_conditions)
 
-        results = await self._client.search(
-            collection_name=self._active_collection_name(collection),
-            query_vector=query_vector,
-            query_filter=user_filter,
-            limit=limit,
-            score_threshold=score_threshold,
-            with_payload=True,
+        results = await self._dense_query(
+            self._active_collection_name(collection),
+            query_vector,
+            user_filter,
+            limit,
+            score_threshold,
         )
 
         return [
             {"id": r.id, "score": r.score, "payload": r.payload or {}}
             for r in results
         ]
+
+    async def _dense_query(
+        self,
+        collection_name: str,
+        query_vector: list[float],
+        query_filter: Filter | None,
+        limit: int,
+        score_threshold: float,
+    ) -> list[Any]:
+        """Query the unnamed dense vector; client 1.20 removed `search` in favour of Query API."""
+        response = await self._client.query_points(
+            collection_name=collection_name,
+            query=query_vector,
+            query_filter=query_filter,
+            limit=limit,
+            score_threshold=score_threshold,
+            with_payload=True,
+        )
+        return list(response.points)
 
     async def search_guild_memories(
         self,
@@ -970,13 +991,12 @@ class QdrantService(IVectorStore):
         else:
             guild_filter = Filter(must=must_conditions)
 
-        results = await self._client.search(
-            collection_name=self._active_collection_name(collection),
-            query_vector=query_vector,
-            query_filter=guild_filter,
-            limit=limit,
-            score_threshold=score_threshold,
-            with_payload=True,
+        results = await self._dense_query(
+            self._active_collection_name(collection),
+            query_vector,
+            guild_filter,
+            limit,
+            score_threshold,
         )
 
         return [
@@ -1144,13 +1164,8 @@ class QdrantService(IVectorStore):
         hybrid_enabled: bool,
     ) -> list[dict[str, Any]]:
         if not hybrid_enabled:
-            results = await self._client.search(
-                collection_name=collection_name,
-                query_vector=query_vector,
-                query_filter=query_filter,
-                limit=limit,
-                score_threshold=score_threshold,
-                with_payload=True,
+            results = await self._dense_query(
+                collection_name, query_vector, query_filter, limit, score_threshold
             )
             return [
                 {

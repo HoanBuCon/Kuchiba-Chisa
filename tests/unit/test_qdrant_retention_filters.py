@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from types import SimpleNamespace
 from unittest.mock import AsyncMock
 
 import pytest
@@ -14,7 +15,7 @@ async def test_guild_memory_query_excludes_expiry_at_current_second(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     client = AsyncMock()
-    client.search.return_value = []
+    client.query_points.return_value = SimpleNamespace(points=[])
     monkeypatch.setattr(
         "app.infrastructure.vector.qdrant.qdrant_service.time.time",
         lambda: 1_700_000_000,
@@ -27,7 +28,7 @@ async def test_guild_memory_query_excludes_expiry_at_current_second(
         guild_id="guild_123",
     )
 
-    query_filter = client.search.call_args.kwargs["query_filter"]
+    query_filter = client.query_points.call_args.kwargs["query_filter"]
     expiry_filter = query_filter.must_not[0]
     assert expiry_filter.key == "expires_at"
     assert expiry_filter.range.lte == 1_700_000_000

@@ -134,14 +134,15 @@ class ImageMemoryRetriever:
         )
 
         try:
-            results = await qdrant_client.search(
+            response = await qdrant_client.query_points(
                 collection_name=COLLECTION_IMAGE_MEMORIES,
-                query_vector=query_vector,
+                query=query_vector,
                 query_filter=search_filter,
                 limit=limit,
                 score_threshold=score_threshold,
                 with_payload=True,
             )
+            results = response.points
         except Exception as e:
             log.error("Failed to query image memories from Qdrant", user_id=user_id, error=str(e))
             return []

@@ -108,7 +108,7 @@ async def test_orphan_cleanup_revalidates_exact_payload_before_delete(tmp_path) 
         id="point-1", score=0.9, payload={**original_payload, "visual_caption": "repaired"}
     )
     client = AsyncMock()
-    client.search.return_value = [hit]
+    client.query_points.return_value = SimpleNamespace(points=[hit])
     client.retrieve.return_value = [changed]
     vector_store = MagicMock()
     vector_store._client = client
@@ -135,7 +135,7 @@ async def test_unchanged_orphan_is_deleted_with_server_side_identity_filter(tmp_
     }
     hit = SimpleNamespace(id="point-1", score=0.9, payload=payload)
     client = AsyncMock()
-    client.search.return_value = [hit]
+    client.query_points.return_value = SimpleNamespace(points=[hit])
     client.retrieve.return_value = [hit]
     vector_store = MagicMock()
     vector_store._client = client
