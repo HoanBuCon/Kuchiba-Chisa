@@ -11,6 +11,11 @@
 # ─────────────────────────────────────────────────────────────────────────────
 name: kuchiba_chisa
 
+# Development containers write no log files: protects the SSD from constant small writes.
+# `docker logs` shows nothing; to debug a container, drop its `logging` line and recreate it.
+x-no-logs: &no-logs
+  driver: none
+
 volumes:
   postgres_data:
   qdrant_data:
@@ -21,6 +26,7 @@ services:
     image: postgres:16-alpine
     container_name: chisa_postgres
     restart: unless-stopped
+    logging: *no-logs
     environment:
       POSTGRES_USER: chisa
       POSTGRES_PASSWORD: ${CHISA_DEV_POSTGRES_PASSWORD:?run through "chisa dev start" (derives it from DATABASE_URL)}
@@ -39,6 +45,7 @@ services:
     image: redis:7-alpine
     container_name: chisa_redis
     restart: unless-stopped
+    logging: *no-logs
     command: ["redis-server", "--maxmemory", "512mb", "--maxmemory-policy", "allkeys-lru", "--save", "", "--appendonly", "no"]
     ports:
       - "127.0.0.1:6379:6379"
@@ -54,6 +61,7 @@ services:
     image: qdrant/qdrant:v1.12.4
     container_name: chisa_qdrant
     restart: unless-stopped
+    logging: *no-logs
     ports:
       - "127.0.0.1:6333:6333"
       - "127.0.0.1:6334:6334"
