@@ -7,6 +7,7 @@ import hashlib
 import json
 import os
 from dataclasses import asdict
+from datetime import datetime
 from pathlib import Path
 
 from app.domain.interfaces.wiki_ingestion import ParsedPage
@@ -40,8 +41,18 @@ class FileBronzeStore:
         os.replace(temporary, target)
         return key
 
-    def load(self, key: str) -> dict:
+    def load(self, key: str) -> ParsedPage:
         path = (self._root / key).resolve()
         if not path.is_relative_to(self._root.resolve()):
             raise ValueError("bronze key escapes the store root")
-        return json.loads(gzip.decompress(path.read_bytes()))
+        record = json.loads(gzip.decompress(path.read_bytes()))
+        record.pop("schema_version", None)
+        return ParsedPage(
+            **{
+                **record,
+                "categories": tuple(record["categories"]),
+                "templates": tuple(record["templates"]),
+                "sections": tuple(record["sections"]),
+                "fetched_at": datetime.fromisoformat(record["fetched_at"]),
+            }
+        )

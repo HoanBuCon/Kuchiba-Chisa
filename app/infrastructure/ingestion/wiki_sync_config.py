@@ -25,6 +25,7 @@ class _Family(_Strict):
     categories: tuple[str, ...] = ()
     titles: tuple[str, ...] = ()
     subcategory_parents: tuple[str, ...] = ()
+    excluded_categories: tuple[str, ...] = ()
 
 
 class _Families(_Strict):

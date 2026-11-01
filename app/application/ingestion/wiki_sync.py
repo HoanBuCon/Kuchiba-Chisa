@@ -68,24 +68,30 @@ class SyncReport:
 
 def _needs_details(previous: PageState | None, info: WikiPageInfo) -> bool:
     # `touched` moves on every edit and re-render, the only events that can change categories.
-    return previous is None or info.touched != previous.touched
+    if previous is None or info.touched != previous.touched:
+        return True
+    # Rows written before categories were stored have nothing to classify from.
+    return not previous.categories
 
 
-def _classified(state: PageState, info: WikiPageInfo, catalog: FamilyCatalog) -> PageState:
-    rule = catalog.classify(info.title, info.categories)
+def _classified(state: PageState, catalog: FamilyCatalog) -> PageState:
+    rule = catalog.classify(state.title, state.categories)
     return replace(state, family=rule.name if rule else None, tier=rule.tier if rule else None)
 
 
-def _observe(
-    previous: PageState | None, info: WikiPageInfo, catalog: FamilyCatalog, detailed: bool
-) -> PageState:
+def _observe(previous: PageState | None, info: WikiPageInfo, catalog: FamilyCatalog) -> PageState:
     if previous is None:
         state = PageState(
-            info.page_id, info.title, info.last_revid, info.touched, templates=info.templates
+            info.page_id,
+            info.title,
+            info.last_revid,
+            info.touched,
+            templates=info.templates,
+            categories=info.categories,
         )
     else:
         state = previous.observe(info)
-    return _classified(state, info, catalog) if detailed else state
+    return _classified(state, catalog)
 
 
 def _oldest_pending_touch(states: Mapping[int, PageState], now: datetime) -> datetime:
@@ -194,7 +200,7 @@ class WikiSyncService:
             categories, templates = details.get(info.page_id, ((), ()))
             observed = replace(info, categories=categories, templates=templates)
             previous = stored.get(info.page_id)
-            state = _observe(previous, observed, catalog, info.page_id in details)
+            state = _observe(previous, observed, catalog)
             if state != previous:
                 changed[info.page_id] = state
 

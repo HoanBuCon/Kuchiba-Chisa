@@ -297,3 +297,31 @@ async def test_concurrent_run_is_refused(source, inventory) -> None:
     report = await _service(source, inventory).sync()
 
     assert report.status == RunStatus.LOCKED and inventory.runs == {}
+
+
+async def test_changed_family_rules_reclassify_without_asking_the_wiki(source, inventory) -> None:
+    source.add(1, "Resonator", categories=("Category:Resonators", "Category:Terminology"))
+    await _service(source, inventory).sync()
+    source.detail_requests.clear()
+    vetoed = FamilyRule(
+        "resonator", "A", categories=("Resonators",), excluded_categories=("Terminology",)
+    )
+    rules = replace(RULES, catalog=replace(RULES.catalog, rules=(vetoed,)))
+
+    await _service(source, inventory, rules=rules).sync()
+
+    assert inventory.states[1].family is None
+    assert source.detail_requests == []
+
+
+async def test_rows_without_stored_categories_get_details_once(source, inventory) -> None:
+    source.add(1, "Chisa", categories=("Category:Resonators",))
+    await _service(source, inventory).sync()
+    inventory.states[1] = replace(inventory.states[1], categories=())
+    source.detail_requests.clear()
+
+    await _service(source, inventory).sync()
+    await _service(source, inventory).sync()
+
+    assert source.detail_requests == [[1]]
+    assert inventory.states[1].family == "resonator"

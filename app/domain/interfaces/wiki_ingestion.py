@@ -57,6 +57,8 @@ class IBronzeStore(Protocol):
         """Persist the page and return its store-relative key."""
         ...
 
+    def load(self, key: str) -> ParsedPage: ...
+
 
 @dataclass(frozen=True)
 class SyncRun:
