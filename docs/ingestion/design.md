@@ -273,9 +273,7 @@ Trang chưa từng có LKG mà bị quarantine thì chưa vào corpus; nó chỉ
 - **Cache** theo khoá ở L4: chỉ chunk có chữ mới mới phải embed. Một tuần bình thường chỉ embed vài trăm chunk.
 - Gọi **inference service** ([ADR-0004](../adr/0004-inference-service.md)) ở làn `passage`, lô 4 (service cho tối đa 8), một lô tại một thời điểm, **nghỉ giữa các lô khi có người dùng hoạt động**. Query của người dùng đi làn riêng; đo được p95 khoảng 78 ms trong lúc embed passage liên tục.
 - **Một backend embedding cho mỗi release** (ghi vào manifest). Query side bắt buộc dùng cùng model, revision và backend. Startup từ chối nếu lệch (KNW-005).
-- Kênh lexical (BM25) chọn ở I0 theo kết quả kiểm chứng ASM-002:
-  - **sparse vector BM25 do Qdrant tự sinh** (có từ 1.15.2);
-  - hoặc **BM25 trên full-text payload index** (mới có ở 1.20.0, phát hành 2026-10-22).
+- Kênh lexical (BM25): **sparse vector BM25 do Qdrant tự sinh** (`qdrant/bm25`, modifier IDF). Đã chọn ở I0 ([số đo](i0-spike.md)): một mình đạt Hit@5 0,53 so với 0,34 của BM25 trên full-text index; trong hybrid hai kênh ngang nhau.
 
 ### 6.7 S7 Load staging
 
@@ -402,12 +400,12 @@ Tốc độ tải bị chặn có chủ đích bởi lịch sự (1 req/s). Hệ
 
 | File | Nội dung |
 |---|---|
-| `config/ingestion/families.yaml` | Họ trang: luật nhận dạng (hậu tố, category, template infobox), tier, bộ làm sạch + version, chính sách chunk, collection đích, độ ưu tiên sở hữu khi khử trùng |
-| `config/ingestion/templates.yaml` | Phân loại template `content` / `chrome` |
-| `config/ingestion/cleaning.yaml` | Selector bỏ, mẫu boilerplate, mẫu residue (version hoá) |
-| `config/ingestion/gates.yaml` | Ngưỡng cổng và phong bì thường lệ |
-| `config/ingestion/schedule.yaml` | Lịch, trễ ổn định, ngân sách mỗi lần chạy, tốc độ |
-| `config/ingestion/overrides/*.yaml` | Overlay của người (alias curated, ghim/loại trang, luật sở hữu đặc biệt, miễn trừ safety): **đầu vào thủ công duy nhất**, áp dụng như một stage |
+| `app/config/ingestion/families.yaml` | Họ trang: luật nhận dạng (hậu tố, category, template infobox), tier, bộ làm sạch + version, chính sách chunk, collection đích, độ ưu tiên sở hữu khi khử trùng |
+| `app/config/ingestion/templates.yaml` | Phân loại template `content` / `chrome` |
+| `app/config/ingestion/cleaning.yaml` | Selector bỏ, mẫu boilerplate, mẫu residue (version hoá) |
+| `app/config/ingestion/gates.yaml` | Ngưỡng cổng và phong bì thường lệ |
+| `app/config/ingestion/schedule.yaml` | Lịch, trễ ổn định, ngân sách mỗi lần chạy, tốc độ |
+| `app/config/ingestion/overrides/*.yaml` | Overlay của người (alias curated, ghim/loại trang, luật sở hữu đặc biệt, miễn trừ safety): **đầu vào thủ công duy nhất**, áp dụng như một stage |
 
 **Thêm một họ trang mới:**
 1. Thêm khai báo vào `families.yaml`.
@@ -508,7 +506,7 @@ Báo cáo **HTML tĩnh**, sinh bằng Jinja2 sau mỗi lần chạy, lưu cùng 
 | D-ING-5 | Không dùng orchestrator ngoài | **Đồng ý** |
 | D-ING-6 | Phạm vi văn bản R1 = Tier A; kho có cấu trúc phủ toàn wiki ngay từ R1 | **Đồng ý** |
 | D-ING-7 | Alias suy luận có bằng chứng, dùng sau khi eval chứng minh không tăng nhầm lẫn | **Đồng ý** |
-| D-ING-8 | Kênh lexical: sparse BM25 (Qdrant ≥ 1.15) hay BM25 full-text index (1.20) | **Quyết ở I0** bằng thử nghiệm trên golden v2 |
+| D-ING-8 | Kênh lexical: sparse BM25 (Qdrant ≥ 1.15) hay BM25 full-text index (1.20) | **Đã quyết ở I0: sparse BM25** ([số đo](i0-spike.md)) |
 
 ---
 

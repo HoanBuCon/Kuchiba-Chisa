@@ -21,7 +21,7 @@
 5. **D-ING-5** Không dùng orchestrator ngoài (Airflow, Dagster, Prefect).
 6. **D-ING-6** Phạm vi văn bản R1 là Tier A; kho có cấu trúc phủ toàn wiki ngay từ R1.
 7. **D-ING-7** Alias suy luận có bằng chứng, chỉ dùng cho entity linking sau khi eval chứng minh không tăng nhầm lẫn.
-8. **D-ING-8** Chọn kênh lexical (sparse BM25 hay BM25 full-text index) bằng spike I0.
+8. **D-ING-8** Chọn kênh lexical (sparse BM25 hay BM25 full-text index) bằng spike I0. Kết quả: **sparse BM25** ([số đo](../ingestion/i0-spike.md)).
 
 Kèm theo từ rà soát SRS: golden v2 tối thiểu 100 câu lore và 50 câu mỗi nhóm khác trước khi bật tự publish; truy hồi xuyên ngữ bằng entity linking song ngữ tất định (ADV-010); văn bản trí nhớ v2 lưu ở Postgres (MEM-011); RPO 24 giờ, RTO 4 giờ.
 
@@ -29,7 +29,7 @@ Kèm theo từ rà soát SRS: golden v2 tối thiểu 100 câu lore và 50 câu 
 
 - Chu kỳ tuần bình thường không cần thao tác của người; dự kiến ≤ 1 lần can thiệp mỗi tháng.
 - Trước khi golden v2 đủ cỡ mẫu, cổng truy hồi chỉ báo cáo, nên mọi release lúc đầu đều ở `HELD` và cần chủ dự án publish tay.
-- Thêm cấu hình `config/ingestion/*.yaml` và 4 cảnh báo ingestion có runbook.
+- Thêm cấu hình `app/config/ingestion/*.yaml` và 4 cảnh báo ingestion có runbook.
 - `CorpusQualityReport` và luồng publish trong code phải sửa cho khớp ING-008.
 
 ## Phương án đã cân nhắc

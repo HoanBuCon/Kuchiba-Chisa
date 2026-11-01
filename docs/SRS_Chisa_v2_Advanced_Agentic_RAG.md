@@ -3,7 +3,7 @@
 | Thuộc tính | Giá trị |
 |---|---|
 | Tài liệu | SRS cho hệ thống mới của Kuchiba Chisa: hai chế độ Advanced RAG / Agentic RAG, phân quyền 4 vai trò, trí nhớ và cảm xúc |
-| Phiên bản | 2.2.1 |
+| Phiên bản | 2.2.2 |
 | Ngày lập / phê duyệt | 2026-10-30 / **2026-10-31** |
 | Trạng thái | **ĐÃ PHÊ DUYỆT** bởi chủ dự án. Là baseline yêu cầu cho hệ thống mới, **thay thế** [SRS v1.1](../reports/SRS_Kuchiba_Chisa.md) cho mọi phát triển mới. v1.1 được giữ nguyên làm tài liệu lịch sử và chỉ áp dụng cho việc sửa lỗi hệ hiện tại trong thời gian chuyển đổi. Các mục "Vấn đề mở" (mục 12) vẫn cần quyết định riêng |
 | Bản chất dự án | Dự án cá nhân; không còn ràng buộc với đồ án môn học |
@@ -29,6 +29,7 @@
 | 2.1 | 2026-10-31 | Chủ dự án (uỷ quyền đề xuất) | Hệ thống ingestion theo [ADR-0002](adr/0002-ingestion-system.md) và [thiết kế](ingestion/design.md): sửa ING-002/006/008, thêm ING-013…018, ADV-010, GRD-005, MEM-011; cập nhật ASM-002, KNW-004, KNW-006, ADM-005, CAP-003, SEC-DATA-004, mục 3.3/3.4/3.5.2, 6.5; chốt O1–O9 và kết quả [rà soát](reviews/2026-10-31-srs-v2-audit.md) |
 | 2.2 | 2026-10-31 | Chủ dự án | Bài học từ IndexBeast ([báo cáo](ingestion/indexbeast-lessons.md)): ING-004 ngưỡng chunk tối thiểu và gộp unit; ING-007 đường dẫn tương đối, lưu trạng thái, xác minh artifact; ING-002 nén gzip. **Mở phạm vi ảnh thực thể từ wiki, lấy kích thước gốc** ([ADR-0003](adr/0003-wiki-entity-images.md)): thêm ING-019, KNW-010, CAP-004; cập nhật 1.2, 3.3, lộ trình R1/R2/R5 |
 | 2.2.1 | 2026-10-31 | Chủ dự án (uỷ quyền đề xuất) | Inference service tự xây trên fastembed/ONNX thay TEI ([ADR-0004](adr/0004-inference-service.md)); ngân sách RAM inference 1.400 MB theo số đo cgroup Linux; api 1.200 MB, worker 700 MB; tổng 6.440 MB |
+| 2.2.2 | 2026-11-02 | Chủ dự án (uỷ quyền đề xuất) | Kết quả spike I0 ([báo cáo](ingestion/i0-spike.md)): ASM-002 chốt sparse BM25; cấu hình ingestion nằm ở `app/config/ingestion/`; e5-small int8 chưa thay fp32 (KNW-006 đánh giá lại khi golden v2 đủ lớn) |
 
 ## Quyết định đã chốt của chủ dự án (đầu vào của tài liệu)
 
@@ -134,7 +135,7 @@ Chisa là dự án cá nhân, một chủ dự án kiêm Admin duy nhất ở gi
 | ID | Giả định | Pha xác nhận |
 |---|---|---|
 | ASM-001 | DeepSeek V4 Flash hỗ trợ tool-calling ở cả chế độ thinking; yêu cầu gửi lại `reasoning_content` trong vòng tool | R2 |
-| ASM-002 | Kênh lexical: Qdrant ≥ 1.15.2 sinh sparse BM25 phía server; Qdrant 1.20.0 (2026-10-22) thêm BM25 trên full-text payload index; weighted RRF có từ 1.17. Chọn một trong hai bằng spike I0 trên golden v2. BM25 chỉ hiệu quả với truy vấn tiếng Anh (ADV-010) | R1 (I0) |
+| ASM-002 | Kênh lexical: Qdrant ≥ 1.15.2 sinh sparse BM25 phía server; Qdrant 1.20.0 (2026-10-22) thêm BM25 trên full-text payload index; weighted RRF có từ 1.17. Spike I0 đã chọn **sparse BM25** ([số đo](ingestion/i0-spike.md)). BM25 chỉ hiệu quả với truy vấn tiếng Anh (ADV-010) | R1 (I0) |
 | ASM-003 | Google trả claim `email_verified`; Discord OAuth trả trường `verified` khi có scope `email` | R3 |
 | ASM-004 | LangGraph 1.2.x: checkpointer Postgres, `interrupt`, streaming có kiểu hoạt động như tài liệu | R2 |
 | ASM-005 | Chi phí và độ trễ ở mục 6 là ước tính; đo thật ở R2–R4 | R2–R4 |
@@ -210,7 +211,7 @@ flowchart TB
 | postgres | 768 MB | + checkpoints, audit |
 | redis | 256 MB | |
 | qdrant | 1.200 MB | ~15–20k điểm lore + memories |
-| inference (fastembed/ONNX, ADR-0004) | 1.400 MB | e5-small fp32: nạp ~0,82 GB, đỉnh 1,07 GB ở lô 8 (đo cgroup Linux 2026-10-31); lô tối đa 8; reranker local tuỳ chọn. Bản int8 (118 MB) đánh giá ở I0 có thể hạ ngân sách |
+| inference (fastembed/ONNX, ADR-0004) | 1.400 MB | e5-small fp32: nạp ~0,82 GB, đỉnh 1,07 GB ở lô 8 (đo cgroup Linux 2026-10-31); lô tối đa 8; reranker local tuỳ chọn. Bản int8 tiết kiệm khoảng 330 MB nhưng mất 3/32 câu ở dense-only (I0); giữ fp32 tới khi chọn model KNW-006 |
 | api (2 worker, **không** nạp model) | 1.200 MB | |
 | worker | 700 MB | |
 | discord | 300 MB | |
@@ -1032,7 +1033,7 @@ Control plane giữ nguyên tinh thần `v1:FR-ING-001/005/007/008/010` (source 
 | ING-003 | Làm sạch HTML thành block có kiểu (prose, quote, infobox, table, dialogue theo lượt, list), gồm: tách infobox trước khi duyệt heading; tooltip → glossary; bỏ biến thể `.hidden`/`.mobile-only` bị lặp; bỏ audio/URL, card, tab, navbox, section do DPL sinh (giữ thành quan hệ); có nhật ký loại bỏ kèm lý do | Rác markup = 0 trên toàn corpus (khảo sát còn 51 chỗ do lỗi template của wiki, cần luật riêng) |
 | ING-004 | Chunk theo **token thật** của model embedding, ≤ giới hạn model trừ biên an toàn (ví dụ ≤ 450 với model 512), overlap theo câu/lượt; dialogue chia theo **cảnh** rồi theo lượt; bảng lặp header; unit nguyên tử không overlap; bất biến bao phủ (không hở, không đổi chữ). **Chống chunk vụn**: unit kề nhau cùng section path, cùng collection và ngôn ngữ được gộp tới mục tiêu ~250–400 token; chunk dưới ngưỡng tối thiểu (~120 token, cấu hình) chỉ được phép khi section chỉ có chừng đó nội dung; infobox thành **một thẻ hồ sơ** mỗi trang, không mỗi trường một chunk | 100% chunk ≤ giới hạn; test bao phủ; cổng dữ liệu báo tỷ lệ chunk < 60 token và số thân chunk trùng nhau |
 | ING-005 | Sinh **thẻ quest**, **hồ sơ thực thể**, alias, glossary vào kho có cấu trúc; registry thực thể version theo release | Kiểm tra số lượng so với inventory |
-| ING-006 | Lỗi mức trang thì **quarantine** và dùng **last-known-good** của trang đó; sụt token > 40% so với LKG thì giữ LKG tới khi thay đổi ổn định qua 2 lần chạy. Lỗi mức release theo ngưỡng cấu hình có version (`config/ingestion/gates.yaml`) thì **chặn publish** | Test từng ngưỡng; trang lỗi không biến mất khỏi release |
+| ING-006 | Lỗi mức trang thì **quarantine** và dùng **last-known-good** của trang đó; sụt token > 40% so với LKG thì giữ LKG tới khi thay đổi ổn định qua 2 lần chạy. Lỗi mức release theo ngưỡng cấu hình có version (`app/config/ingestion/gates.yaml`) thì **chặn publish** | Test từng ngưỡng; trang lỗi không biến mất khỏi release |
 | ING-007 | Mỗi stage ghi artifact có version, checksum, cache theo `(input, config, code version)`, chạy lại được từ một stage. Artifact và manifest **chỉ dùng đường dẫn tương đối** so với gốc `data/ingestion/`; trạng thái chạy lưu ở Postgres (hoặc SQLite khi chạy offline), log tiến độ JSONL append-only, không ghi đè file trạng thái lớn theo từng item; xác minh lúc chạy theo `(size, mtime, sha256 đã lưu)`, băm lại toàn bộ chỉ ở `chisa ingest verify` | `chisa ingest run --from chunk` không tải lại wiki; test không có đường dẫn tuyệt đối trong artifact |
 | ING-008 | Cổng release ba lớp: **dữ liệu** (tất định), **truy hồi** (golden v2 mức truy hồi + canary, không gọi LLM), **sinh câu trả lời** (chỉ khi đổi runtime/prompt/model hoặc vượt phong bì). **Tự publish** khi hai lớp đầu đạt và thay đổi trong phong bì thường lệ; ngược lại release ở `HELD`. **Tự rollback** khi kiểm tra sau publish (MON-070, canary) tụt | Test publish/hold/rollback theo từng nhánh |
 | ING-009 | Dữ liệu lore cũ (`data/raw_wiki`, `clean_wiki`, `canonical.jsonl`, `chunks.jsonl`, `ingestion.sqlite`, collection lore cũ) **không được migrate**; xoá sau khi release đầu tiên của hệ mới được publish | Checklist dọn dẹp |
