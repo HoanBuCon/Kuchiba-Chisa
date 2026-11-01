@@ -52,6 +52,8 @@ class Settings(BaseSettings):
     INGESTION_WIKI_CATEGORIES: str = "Resonators,Factions,Regions,Lore"
     INGESTION_ALLOWED_SOURCE_HOSTS: str = "wutheringwaves.fandom.com"
     INGESTION_RAW_STORAGE_DIR: str = "data/raw_wiki_revisions"
+    # v2 ingestion artifacts (bronze/silver/gold); keys inside are relative to this root (ING-007).
+    INGESTION_DATA_DIR: str = "data/ingestion"
     INGESTION_SOURCE_TIMEOUT_SECONDS: float = Field(default=20.0, gt=0, le=120.0)
     INGESTION_SOURCE_MAX_RETRIES: int = Field(default=2, ge=0, le=5)
 

@@ -1,0 +1,16 @@
+# Template classes for change detection (ING-002). A `touched` page is re-fetched only when an
+# edited template it uses is content. Unlisted templates count as content (safe default).
+# Measured 2026-11-01: every template edited in 7 days was a navbox; Resonator Navbox alone
+# re-renders 478 pages.
+version: 1
+content_patterns:
+  - 'Infobox'
+  - 'Dialogue'
+  - '^Template:(Quote|Description|Quest Description|Tt|Texttip|Other Languages|Rubi|Lang|Rover)$'
+chrome_patterns:
+  - 'Navbox'
+  - 'Gallery'
+  - '^Template:(Clr|MessageBox|Stub|Namespace|Exists|Linkless exists|IsDesktop|Desktop)$'
+  - '^Template:(Change History|Extension DPL|Card|Card List|CustomTabs|Resonator Tabs|Reflist)$'
+  - '^Template:(Color|Nowrap|Column|Array|Icon|Icon/.+|DIcon|Node|Link Label|Quest Rewards)$'
+  - '^Template:(Character Mentions|Quests and Events|S|W|A|MC|Get|Main|Transclude)$'

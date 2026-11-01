@@ -1,0 +1,34 @@
+# Page families (ADR-0002, design §10.2). First matching rule wins: keep suffix rules before
+# category rules. Tier A is enabled for R1; Tier B rules exist so they can be switched on in R5.
+version: 1
+enabled_tiers: [A]
+excluded_suffixes:
+  - Change History
+  - Gallery
+  - Combat
+  - Outfits
+  - List
+  - Chinese
+  - Japanese
+  - Korean
+families:
+  - {name: resonator_backstory, tier: A, suffixes: [Backstory], categories: [Resonator Backstory]}
+  - {name: voicelines, tier: A, suffixes: [Voicelines]}
+  - {name: forte_report, tier: A, suffixes: [Forte Examination Report]}
+  - {name: developer_archive, tier: A, suffixes: [Archive]}
+  - {name: resonator, tier: A, categories: [Resonators]}
+  - {name: main_quest, tier: A, categories: [Main Quests]}
+  - {name: lore, tier: A, categories: [Lore]}
+  - {name: terminology, tier: A, categories: [Terminology]}
+  # Factions are grouped one category level down (e.g. Category:Black Shores members).
+  - {name: faction, tier: A, categories: [Factions], subcategory_parents: [Factions]}
+  - {name: region, tier: A, categories: [Regions]}
+  - {name: event_story, tier: B, suffixes: [Story], categories: [Event Stories]}
+  - {name: quest, tier: B, categories: [Quests]}
+  - {name: npc, tier: B, categories: [Characters]}
+  - {name: location, tier: B, categories: [Locations]}
+  - {name: echo, tier: B, suffixes: [Echo], categories: [Echoes]}
+  - {name: weapon, tier: B, categories: [Weapons]}
+  - {name: sonata, tier: B, categories: [Sonatas]}
+  - {name: mail, tier: B, categories: [Mails], subcategory_parents: [Mails]}
+  - {name: item, tier: B, categories: [Items]}

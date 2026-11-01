@@ -47,6 +47,7 @@ from app.infrastructure.database.models.privacy import (
 )
 from app.infrastructure.database.models.user import User
 from app.infrastructure.database.models.user_stats import UserStats
+from app.infrastructure.database.models.wiki_inventory import WikiPageModel, WikiSyncRunModel
 
 __all__ = [
     "AccountIdentityModel",
@@ -74,6 +75,8 @@ __all__ = [
     "UserStats",
     "LoreParentModel",
     "WikiSyncStateModel",
+    "WikiPageModel",
+    "WikiSyncRunModel",
     "ChunkStateModel",
     "CorpusReleaseModel",
     "CorpusReleaseAuditEventModel",
