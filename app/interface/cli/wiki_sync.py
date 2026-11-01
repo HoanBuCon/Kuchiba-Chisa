@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import asyncio
 import json
+import sys
 from collections import Counter
 from collections.abc import Sequence
 from contextlib import asynccontextmanager
@@ -22,6 +23,10 @@ from app.infrastructure.ingestion.wiki_sync_config import WikiSyncConfig, load_w
 
 MAX_REDIRECTS = 3
 PREVIEW_DECISIONS = 20
+
+
+def _emit(payload: dict[str, object]) -> None:
+    sys.stdout.write(json.dumps(payload, ensure_ascii=False, indent=1) + "\n")
 
 
 def _parser() -> argparse.ArgumentParser:
@@ -90,12 +95,12 @@ async def _status() -> dict[str, object]:
 async def _run(args: argparse.Namespace) -> int:
     try:
         if args.command == "status":
-            print(json.dumps(await _status(), ensure_ascii=False, indent=1))
+            _emit(await _status())
             return 0
         config = load_wiki_sync_config()
         async with _service(config, release_mode=getattr(args, "release_mode", False)) as service:
             report = await (service.plan() if args.command == "plan" else service.sync())
-        print(json.dumps(_summary(report), ensure_ascii=False, indent=1))
+        _emit(_summary(report))
         return 0 if report.status in {RunStatus.PLANNED, RunStatus.SUCCEEDED} else 1
     finally:
         await engine.dispose()
