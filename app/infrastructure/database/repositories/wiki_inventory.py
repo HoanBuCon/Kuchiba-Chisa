@@ -34,6 +34,7 @@ def _to_state(row: WikiPageModel) -> PageState:
         tier=row.tier,
         templates=tuple(row.templates),
         categories=tuple(row.categories),
+        redirects=tuple(row.redirects),
         status=PageStatus(row.status),
         fetched_revid=row.fetched_revid,
         fetched_touched=row.fetched_touched,
@@ -51,6 +52,7 @@ def _to_row(state: PageState) -> dict[str, object]:
         "templates": list(state.templates),
         "aliases": list(state.aliases),
         "categories": list(state.categories),
+        "redirects": list(state.redirects),
     }
 
 

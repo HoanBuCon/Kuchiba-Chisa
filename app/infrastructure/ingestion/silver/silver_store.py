@@ -36,7 +36,11 @@ def document_from_dict(record: dict[str, Any]) -> CanonicalDocument:
         infoboxes=tuple(record["infoboxes"]),
         glossary=tuple(GlossaryEntry(**entry) for entry in record["glossary"]),
         links=tuple(record["links"]),
+        other_names=tuple((lang, name) for lang, name in record.get("other_names", [])),
         removed=dict(record["removed"]),
+        source_chars=record.get("source_chars", 0),
+        unexplained_text=tuple(record.get("unexplained_text", ())),
+        unknown_markup=tuple(record.get("unknown_markup", ())),
     )
 
 

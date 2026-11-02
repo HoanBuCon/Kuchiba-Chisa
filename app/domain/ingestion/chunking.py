@@ -40,6 +40,10 @@ class Chunk:
     text: str
     embedding_text: str
     tokens: int
+    # Filled from the knowledge base once the whole corpus is known (KNW-003).
+    entities: tuple[str, ...] = ()
+    nation: str | None = None
+    game_version: str | None = None
 
 
 def embedding_text(unit: Unit, text: str, policy: ChunkPolicy) -> str:

@@ -14,9 +14,11 @@ from pathlib import Path
 from typing import Any
 
 from app.domain.ingestion.chunking import Chunk
+from app.domain.ingestion.knowledge import KnowledgeBase
 
 CHUNKS_FILE = "chunks.jsonl.gz"
 DUPLICATES_FILE = "duplicate_of.json.gz"
+KNOWLEDGE_FILE = "knowledge.json.gz"
 MANIFEST_FILE = "manifest.json"
 
 
@@ -45,6 +47,7 @@ class FileGoldStore:
         version: str,
         chunks: Sequence[Chunk],
         duplicate_of: Mapping[str, int],
+        knowledge: KnowledgeBase,
         manifest: Mapping[str, Any],
     ) -> str:
         target = self._gold / version
@@ -58,6 +61,9 @@ class FileGoldStore:
             CHUNKS_FILE: _gzip_bytes(lines.encode("utf-8")),
             DUPLICATES_FILE: _gzip_bytes(
                 json.dumps(dict(duplicate_of), sort_keys=True).encode("utf-8")
+            ),
+            KNOWLEDGE_FILE: _gzip_bytes(
+                json.dumps(asdict(knowledge), ensure_ascii=False).encode("utf-8")
             ),
         }
         for name, content in files.items():

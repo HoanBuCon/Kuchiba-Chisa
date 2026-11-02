@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import re
 from collections import Counter, defaultdict
 from collections.abc import Callable, Mapping, Sequence
@@ -18,6 +19,8 @@ from app.domain.ingestion.chunking import (
 )
 from app.domain.ingestion.dedup import OwnerPolicy, deduplicate, drop_duplicate_bodies, fingerprint
 from app.domain.ingestion.documents import CanonicalDocument
+from app.domain.ingestion.knowledge import build_knowledge, enrich_chunks, knowledge_counts
+from app.domain.ingestion.pages import PageState
 from app.domain.ingestion.units import Unit, document_units
 from app.domain.interfaces.gold import IGoldStore
 from app.domain.interfaces.silver import ISilverLedger, ISilverStore
@@ -34,6 +37,7 @@ class GoldSettings:
     chunk_policy: ChunkPolicy
     owner_policy: OwnerPolicy
     tiny_chunk_tokens: int
+    tokenizer_sha256: str = ""
 
 
 @dataclass(frozen=True)
@@ -41,6 +45,14 @@ class GoldReport:
     corpus_version: str
     path: str
     quality: dict[str, int]
+
+
+def corpus_fingerprint(chunks: Sequence[Chunk]) -> str:
+    """Equal for two runs with the same content, whatever their dates, so a no-op is visible."""
+    digest = hashlib.sha256()
+    for evidence, text in sorted((chunk.evidence_id, chunk.text) for chunk in chunks):
+        digest.update(f"{evidence}\0{text}\0".encode())
+    return digest.hexdigest()
 
 
 def _collapsed(text: str) -> str:
@@ -104,12 +116,16 @@ class GoldStage:
         self._clock = clock
 
     async def run(self) -> GoldReport:
-        documents, missing = await self._effective_documents()
+        states = await self._inventory.load()
+        documents, missing = await self._effective_documents(states)
         units = [unit for document in documents for unit in document_units(document)]
         deduped = deduplicate(units, self._settings.owner_policy)
         chunked = self._chunker.chunk(deduped.units)
         uncovered = uncovered_units(deduped.units, chunked)
-        chunks = drop_duplicate_bodies(chunked, self._settings.owner_policy)
+        knowledge = build_knowledge(documents, states)
+        chunks = enrich_chunks(
+            drop_duplicate_bodies(chunked, self._settings.owner_policy), knowledge
+        )
         quality = {
             **quality_report(chunks, self._settings.chunk_policy, self._settings.tiny_chunk_tokens),
             "pages": len(documents),
@@ -119,12 +135,14 @@ class GoldStage:
         }
         version = self._gold.next_version(self._clock().date())
         manifest = self._manifest(version, documents, chunks, quality)
-        path = self._gold.write(version, chunks, deduped.duplicate_of, manifest)
+        manifest["counts"]["knowledge"] = knowledge_counts(knowledge)
+        path = self._gold.write(version, chunks, deduped.duplicate_of, knowledge, manifest)
         return GoldReport(version, path, quality)
 
-    async def _effective_documents(self) -> tuple[list[CanonicalDocument], int]:
+    async def _effective_documents(
+        self, states: Mapping[int, PageState]
+    ) -> tuple[list[CanonicalDocument], int]:
         """Use each page's last-known-good; a page that never passed its checks stays out."""
-        states = await self._inventory.load()
         entries = await self._ledger.load()
         documents, missing = [], 0
         for page_id in sorted(states):
@@ -153,6 +171,7 @@ class GoldStage:
                 "config_hash": settings.config_hash,
                 "cleaners": sorted({document.cleaner_version for document in documents}),
                 "tokenizer": settings.tokenizer_model,
+                "tokenizer_sha256": settings.tokenizer_sha256,
                 "passage_prefix": settings.chunk_policy.passage_prefix,
             },
             "source_snapshot": {str(d.page_id): d.revid for d in documents},
@@ -161,5 +180,6 @@ class GoldStage:
                 "family": dict(Counter(chunk.family or "" for chunk in chunks)),
                 "kind": dict(Counter(chunk.kind for chunk in chunks)),
             },
+            "logical_sha256": corpus_fingerprint(chunks),
             "quality": dict(quality),
         }

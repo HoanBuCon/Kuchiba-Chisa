@@ -8,10 +8,16 @@ from datetime import UTC, date, datetime
 
 import pytest
 
-from app.application.ingestion.gold_stage import GoldSettings, GoldStage, uncovered_units
+from app.application.ingestion.gold_stage import (
+    GoldSettings,
+    GoldStage,
+    corpus_fingerprint,
+    uncovered_units,
+)
 from app.domain.ingestion.chunking import Chunker, ChunkPolicy
 from app.domain.ingestion.dedup import OwnerPolicy
 from app.domain.ingestion.documents import Block, BlockKind, CanonicalDocument
+from app.domain.ingestion.knowledge import KnowledgeBase
 from app.domain.ingestion.page_checks import Verdict
 from app.domain.ingestion.pages import PageState, PageStatus
 from app.domain.ingestion.units import Collection, Unit
@@ -20,6 +26,7 @@ from app.infrastructure.ingestion.gold.config import load_gold_settings
 from app.infrastructure.ingestion.gold.gold_store import FileGoldStore
 
 NOW = datetime(2026, 11, 2, 8, tzinfo=UTC)
+EMPTY_KNOWLEDGE = KnowledgeBase((), (), (), (), ())
 SETTINGS = GoldSettings(
     assembler_version="gold-test",
     config_hash="abc",
@@ -154,10 +161,10 @@ async def test_each_run_gets_a_new_version_and_leaves_no_staging_directory(tmp_p
 
 def test_store_refuses_to_overwrite_a_version(tmp_path) -> None:
     store = FileGoldStore(tmp_path)
-    store.write("2026.11.02-1", [], {}, {})
+    store.write("2026.11.02-1", [], {}, EMPTY_KNOWLEDGE, {})
 
     with pytest.raises(FileExistsError):
-        store.write("2026.11.02-1", [], {}, {})
+        store.write("2026.11.02-1", [], {}, EMPTY_KNOWLEDGE, {})
     assert store.next_version(date(2026, 11, 2)) == "2026.11.02-2"
 
 
@@ -187,3 +194,30 @@ def test_long_turn_cut_with_overlap_counts_as_covered_but_lost_sentences_do_not(
     assert len(chunks) > 1
     assert uncovered_units([turn], chunks) == []
     assert uncovered_units([turn], chunks[:-1]) == [turn]
+
+
+def test_fingerprint_ignores_order_but_not_content() -> None:
+    units = [
+        Unit(1, "T", "lore", Collection.CANON, "prose", (), "a", "First text."),
+        Unit(1, "T", "lore", Collection.CANON, "prose", (), "b", "Second text."),
+    ]
+    chunks = Chunker(_count, SETTINGS.chunk_policy).chunk(units)
+
+    assert corpus_fingerprint(chunks) == corpus_fingerprint(list(reversed(chunks)))
+    assert corpus_fingerprint(chunks) != corpus_fingerprint(chunks[:1])
+
+
+async def test_knowledge_and_fingerprint_are_published_with_the_corpus(tmp_path) -> None:
+    report = await _stage(
+        tmp_path, [_state(1)], [_entry(1, "a")], {"a": _doc(1, "Some page text here.")}
+    ).run()
+
+    directory = tmp_path / report.path
+    manifest = json.loads((directory / "manifest.json").read_text(encoding="utf-8"))
+    knowledge = json.loads(gzip.decompress((directory / "knowledge.json.gz").read_bytes()))
+    assert manifest["counts"]["knowledge"]["entities"] == 1
+    assert len(manifest["logical_sha256"]) == 64
+    assert "knowledge.json.gz" in manifest["checksums"]
+    assert knowledge["entities"][0]["title"] == "P1"
+    [chunk] = _read_chunks(tmp_path, report)
+    assert chunk["entities"] == ["P1"]

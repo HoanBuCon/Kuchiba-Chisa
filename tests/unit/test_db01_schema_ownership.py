@@ -26,7 +26,7 @@ RUNTIME_DDL = re.compile(
 
 
 def test_repository_has_one_detectable_alembic_head() -> None:
-    assert expected_schema_heads() == frozenset({"9b3f6d2a8c41"})
+    assert expected_schema_heads() == frozenset({"c4e8a1d7f352"})
 
 
 def test_revision_contract_accepts_head_and_rejects_drift() -> None:
@@ -47,7 +47,7 @@ def test_revision_contract_accepts_head_and_rejects_drift() -> None:
 @pytest.mark.asyncio
 async def test_database_revision_verification_is_read_only() -> None:
     result = Mock()
-    result.all.return_value = [("9b3f6d2a8c41",)]
+    result.all.return_value = [("c4e8a1d7f352",)]
     session = AsyncMock()
     session.execute.return_value = result
 

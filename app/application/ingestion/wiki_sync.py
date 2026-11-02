@@ -211,6 +211,8 @@ class WikiSyncService:
             mark_absent(stored, present, await self._confirmed_deletions(stored, present, now))
         )
         states = {**stored, **changed}
+        changed.update(await self._redirect_changes(states))
+        states = {**states, **changed}
         since = _oldest_pending_touch(states, now)
         changed_templates = (
             await self._source.changed_templates(since) if since < now else frozenset()
@@ -222,6 +224,18 @@ class WikiSyncService:
             changed_templates=changed_templates,
             stats=self._reconcile_stats(stored, states, len(listed), len(detail_ids)),
         )
+
+    async def _redirect_changes(self, states: Mapping[int, PageState]) -> dict[int, PageState]:
+        """A new redirect does not touch its target, so in-scope pages are asked every run."""
+        in_scope = sorted(pid for pid, state in states.items() if state.in_text_scope)
+        if not in_scope:
+            return {}
+        found = await self._source.redirects(in_scope)
+        return {
+            pid: replace(states[pid], redirects=titles)
+            for pid, titles in found.items()
+            if states[pid].redirects != titles
+        }
 
     async def _expanded_catalog(self) -> FamilyCatalog:
         catalog = self._rules.catalog

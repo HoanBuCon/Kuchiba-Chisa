@@ -32,6 +32,9 @@ class CheckPolicy:
     max_shrink: float = 0.4
     # Runs a shrunken page must stay unchanged before it replaces its last-known-good.
     hold_runs: int = 2
+    # Conservation check, calibrated on Tier A: above both limits the cleaner lost real text.
+    max_unexplained_ratio: float = 0.02
+    min_unexplained_chars: int = 50
 
 
 @dataclass(frozen=True)
@@ -70,6 +73,8 @@ def check_page(
     """`unchanged_runs` counts consecutive runs that produced this same silver output."""
     if hits := residue_hits(document, policy.residue):
         return PageCheck(Verdict.QUARANTINE, tuple(f"residue:{hit}" for hit in sorted(set(hits))))
+    if _lost_text(document, policy):
+        return PageCheck(Verdict.QUARANTINE, ("unexplained_text",))
     if not document.blocks:
         return _empty_or_hold(last_known_good, policy, unchanged_runs)
     if violations := contract_violations(document, contract):
@@ -77,6 +82,12 @@ def check_page(
     if _shrank(document, last_known_good, policy) and unchanged_runs < policy.hold_runs:
         return PageCheck(Verdict.HOLD, ("shrink",))
     return PageCheck(Verdict.ACCEPT)
+
+
+def _lost_text(document: CanonicalDocument, policy: CheckPolicy) -> bool:
+    lost = document.unexplained_chars
+    limit = policy.max_unexplained_ratio * document.source_chars
+    return lost >= policy.min_unexplained_chars and lost > limit
 
 
 def _empty_or_hold(
