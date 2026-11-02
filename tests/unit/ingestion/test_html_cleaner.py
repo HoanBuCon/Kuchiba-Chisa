@@ -256,3 +256,73 @@ def test_empty_pages_yield_no_blocks(html: str) -> None:
 
 def test_version_changes_with_the_config() -> None:
     assert HtmlCleaner(RULES).version == f"{RULES.cleaner_version}+{RULES.config_hash}"
+
+
+def test_ruby_glosses_stay_readable_instead_of_gluing_words() -> None:
+    doc = _clean("<p>Our <ruby>gourds<rp>(</rp><rt>Terminals</rt><rp>)</rp></ruby> are out.</p>")
+
+    assert doc.blocks[0].text == "Our gourds (Terminals) are out."
+
+
+def test_horizontal_rules_separate_lines() -> None:
+    doc = _clean("<div><big><b>Field Report</b></big><hr/><b>No. 10826</b></div>")
+
+    assert doc.blocks[0].text == "Field Report\nNo. 10826"
+
+
+def test_tables_inside_wrapper_divs_stay_tables() -> None:
+    doc = _clean(
+        '<div class="mw-collapsible"><p>Rank table</p><table><tr><th>UL</th><th>EXP</th></tr>'
+        "<tr><td>1</td><td>400</td></tr></table></div>"
+    )
+
+    assert [(b.kind, b.text) for b in doc.blocks] == [
+        (BlockKind.PROSE, "Rank table"),
+        (BlockKind.TABLE, "UL: 1; EXP: 400"),
+    ]
+
+
+def test_broken_file_embeds_leave_no_file_name() -> None:
+    doc = _clean(
+        '<p>See <span typeof="mw:Error mw:File"><a><span>File:Lily.png</span></a></span> here.</p>'
+    )
+
+    assert doc.blocks[0].text == "See here."
+
+
+def test_dpl_listing_is_dropped_but_its_links_become_relations() -> None:
+    doc = _clean(
+        "<p>Intro stays.</p><p><b>1</b> Resonator matches the category selection:</p>"
+        '<table><tr><th>Resonator</th></tr><tr><td><a title="Lily">Lily</a></td></tr></table>'
+    )
+
+    assert [b.text for b in doc.blocks] == ["Intro stays."]
+    assert doc.links == ("Lily",)
+    assert doc.removed["generated_table"] > 0
+
+
+def test_game_client_tags_are_resolved() -> None:
+    doc = _clean(
+        "<p>The next 2 {Cus:Sap,S=stage P=stages SapTag=A} use "
+        "{Cus:Ipt,Touch=Tap PC=Press Gamepad=Press}.</p>"
+    )
+
+    assert doc.blocks[0].text == "The next 2 stages use Tap."
+
+
+def test_infobox_values_keep_tooltip_toggles_only() -> None:
+    value = (
+        '<span class="custom-tt-wrapper"><span class="mw-collapsible-toggle">Lord</span>'
+        '<span class="mw-collapsible-content">Text for male Rover</span></span> Arbiter'
+    )
+    infobox = [{"data": [{"type": "data", "data": {"source": "title2", "value": value}}]}]
+
+    doc = _clean("<p>Body.</p>", properties={"infoboxes": json.dumps(infobox)})
+
+    assert doc.infoboxes == ({"title2": "Lord Arbiter"},)
+
+
+def test_gendered_game_tags_and_attachment_markers_are_repaired() -> None:
+    doc = _clean("<p>An army in {Male=him;Female=her}! [ATTACHMENT:Lemonblast.jpg]</p>")
+
+    assert doc.blocks[0].text == "An army in him/her!"

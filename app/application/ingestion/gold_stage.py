@@ -9,7 +9,13 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import Any
 
-from app.domain.ingestion.chunking import Chunk, Chunker, ChunkPolicy, TokenCounter
+from app.domain.ingestion.chunking import (
+    SENTENCE_END,
+    Chunk,
+    Chunker,
+    ChunkPolicy,
+    TokenCounter,
+)
 from app.domain.ingestion.dedup import OwnerPolicy, deduplicate, drop_duplicate_bodies, fingerprint
 from app.domain.ingestion.documents import CanonicalDocument
 from app.domain.ingestion.units import Unit, document_units
@@ -47,7 +53,19 @@ def uncovered_units(units: Sequence[Unit], chunks: Sequence[Chunk]) -> list[Unit
     for chunk in chunks:
         by_page[chunk.page_id].append(chunk.text)
     corpus = {page: _collapsed(" ".join(texts)) for page, texts in by_page.items()}
-    return [unit for unit in units if _collapsed(unit.text) not in corpus.get(unit.page_id, "")]
+    return [unit for unit in units if not _is_covered(unit.text, corpus.get(unit.page_id, ""))]
+
+
+def _is_covered(text: str, corpus: str) -> bool:
+    """Long turns are cut with overlap, so they may only appear whole sentence by sentence."""
+    if _collapsed(text) in corpus:
+        return True
+    return all(_sentence_covered(_collapsed(s), corpus) for s in SENTENCE_END.split(text))
+
+
+def _sentence_covered(sentence: str, corpus: str) -> bool:
+    # A sentence over the model limit is the one case cut between words.
+    return sentence in corpus or all(word in corpus for word in sentence.split(" "))
 
 
 def quality_report(

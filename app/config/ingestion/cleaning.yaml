@@ -1,12 +1,12 @@
 # Silver cleaning rules (ING-003, ING-012, E3-E5). Bump cleaner_version on any change that alters output.
 version: 1
-cleaner_version: silver-2
+cleaner_version: silver-5
 # Elements removed with their whole subtree, by CSS class or tag; the key is the removal reason.
 drop:
   ui:
     classes: [navbox, toc, mw-editsection, custom-tabs, mbox, notice, hatnote, toggle-tooltip-icon,
               mw-empty-elt, change-history, description-separator]
-    tags: [script, style, noscript, figure, img, audio, hr, annotation]
+    tags: [script, style, noscript, figure, img, audio, annotation]
   media:
     classes: [audio-button, mobile-player-container, wikia-gallery, gallery]
     # Image and file embeds; a missing file renders its raw `File:` name.
@@ -41,6 +41,7 @@ boilerplate_lines:
   - "^See also:"
   - ^Disclaimer:.*compilation of Skip summary
   - ^Looks like this map doesn't have a page yet
+  - ^Description from the Official Website$
   - ^- (Next|Previous) Page\b
 # Wiki-side template bugs that leak markup into rendered text; repaired before the residue check.
 repairs:
@@ -49,15 +50,25 @@ repairs:
   # Page titles are capitalised words, so lower-case words before them are kept.
   - {pattern: '(?:[A-Z][\w''-]* ){0,3}[A-Z][\w''-]*\|([^\]\n]*)\]\]', replace: '\1'}
   - {pattern: '\{\{|\}\}', replace: ''}
-  - {pattern: '\bFile:[^\s;]*', replace: ''}
+  # Game-client text tags: plural form and the touch-input verb stand in for the variable.
+  - {pattern: '\{Cus:Sap,S=\S+ P=(\S+)[^}]*\}', replace: '\1'}
+  - {pattern: '\{Cus:Ipt,Touch=(\S+)[^}]*\}', replace: '\1'}
+  - {pattern: '\{Male=([^;}]*);Female=([^}]*)\}', replace: '\1/\2'}
+  - {pattern: '\[ATTACHMENT:[^\]]*\]', replace: ''}
+# Intro sentences of DPL-generated listings; the sentence and the table after it are dropped.
+generated_table_intros:
+  - matches the category selection
+  - has \d+ occurrences?\b
 # Markup that must never survive cleaning; any hit quarantines the page (ING-006).
 residue_patterns:
   - "\\{\\{|\\}\\}"
+  - "\\{[A-Za-z]+[:=]"
+  - "\\.(png|jpe?g|webp)\\b"
   - "\\[\\[|\\]\\]"
   - "\\{\\|"
   - "&nbsp;|&amp;"
   - "https?://"
-  - "\\bMedia:|\\bFile:"
+  - "Media:|File:"
   - "\\.ogg\\b"
   - "\\[ ?\\]"
 # A (th, td) row whose cell is longer than this is a titled passage, not a fact.

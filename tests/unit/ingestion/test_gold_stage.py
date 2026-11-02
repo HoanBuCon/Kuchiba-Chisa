@@ -175,3 +175,15 @@ def test_shipped_gold_config_loads_within_the_model_limit() -> None:
     assert settings.chunk_policy.max_tokens == 450
     assert settings.chunk_policy.passage_prefix == "passage: "
     assert settings.owner_policy.family_priority[0] == "resonator_backstory"
+
+
+def test_long_turn_cut_with_overlap_counts_as_covered_but_lost_sentences_do_not() -> None:
+    sentences = [f"Sentence number {i} of the long report." for i in range(40)]
+    turn = Unit(
+        1, "T", "lore", Collection.DIALOGUE, "dialogue", (), "g", " ".join(sentences), True, 1
+    )
+    chunks = Chunker(_count, SETTINGS.chunk_policy).chunk([turn])
+
+    assert len(chunks) > 1
+    assert uncovered_units([turn], chunks) == []
+    assert uncovered_units([turn], chunks[:-1]) == [turn]
