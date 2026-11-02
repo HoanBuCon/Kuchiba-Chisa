@@ -27,6 +27,10 @@ from app.infrastructure.ingestion.silver.rules import CleaningRules
 
 HEADINGS = {"h2": 2, "h3": 3, "h4": 4, "h5": 5, "h6": 6}
 LINE_BREAKING = {"p", "div", "li", "tr", "dd", "dt", "dl", "ul", "ol", "table", "blockquote"}
+LINE_ENDING = {"br", "hr"}
+NESTED_STRUCTURE = (
+    './/table|.//div[contains(@class, "wds-tabber")]|.//div[contains(@class, "dialogue")]'
+)
 LIST_TAGS = {"ul", "ol", "dl"}
 INLINE_TAGS = {
     "a",
@@ -65,23 +69,33 @@ def _first(element: HtmlElement, class_name: str) -> HtmlElement | None:
 def extract_text(element: HtmlElement, *, skip_tags: frozenset[str] = frozenset()) -> str:
     """Visible text with line breaks where the browser would break lines."""
     parts: list[str] = []
-
-    def walk(node: HtmlElement) -> None:
-        # A line break ends one line; block elements also separate paragraphs.
-        if node.tag == "br" or node.tag in LINE_BREAKING:
-            parts.append("\n")
-        if node.text:
-            parts.append(node.text)
-        for child in node:
-            if isinstance(child.tag, str) and child.tag not in skip_tags:
-                walk(child)
-            if child.tail:
-                parts.append(child.tail)
-        if node.tag in LINE_BREAKING:
-            parts.append("\n")
-
-    walk(element)
+    _collect_text(element, skip_tags, parts)
     return normalize_text("".join(parts))
+
+
+def _collect_text(node: HtmlElement, skip_tags: frozenset[str], parts: list[str]) -> None:
+    if node.tag == "rp":
+        return
+    opening, closing = _text_boundaries(node.tag)
+    parts.append(opening)
+    if node.text:
+        parts.append(node.text)
+    for child in node:
+        if isinstance(child.tag, str) and child.tag not in skip_tags:
+            _collect_text(child, skip_tags, parts)
+        if child.tail:
+            parts.append(child.tail)
+    parts.append(closing)
+
+
+def _text_boundaries(tag: str) -> tuple[str, str]:
+    # Ruby glosses carry meaning ("gourds" read as "Terminals"), so keep both readable.
+    if tag == "rt":
+        return " (", ")"
+    # A line break ends one line; block elements also separate paragraphs.
+    if tag in LINE_ENDING:
+        return "\n", ""
+    return ("\n", "\n") if tag in LINE_BREAKING else ("", "")
 
 
 def _remove(element: HtmlElement) -> None:
@@ -117,6 +131,7 @@ class HtmlCleaner:
             raise CleaningError(f"page {page.page_id}: unparseable HTML") from error
         _resolve_tooltips(body, context)
         _drop_noise(body, context)
+        _drop_generated_tables(body, context)
         dom_infoboxes = _take_infoboxes(body, context)
         _wrap_inline_runs(body)
         blocks = tuple(self._blocks(body, context))
@@ -224,8 +239,12 @@ def _flatten_infobox(infobox: dict) -> dict[str, str]:
 
 def _infobox_value(html: str) -> str:
     fragment = lxml.html.fromstring(f"<div>{html}</div>")
-    for citation in fragment.xpath('.//sup[contains(@class, "reference")]'):
-        _remove(citation)
+    # Citations and tooltip bodies are not part of the field's value.
+    hidden = (
+        './/sup[contains(@class, "reference")]|.//*[contains(@class, "mw-collapsible-content")]'
+    )
+    for node in fragment.xpath(hidden):
+        _remove(node)
     return extract_text(fragment)
 
 
@@ -272,21 +291,35 @@ def _drop_noise(body: HtmlElement, context: _Context) -> None:
     for element in list(body.iter()):
         if not isinstance(element.tag, str) or element.getparent() is None:
             continue
-        reason = (
-            rules.drop_tags.get(element.tag)
-            or rules.drop_typeof.get(element.get("typeof") or "")
-            or next(
-                (rules.drop_classes[c] for c in _classes(element) if c in rules.drop_classes), None
-            )
-        )
-        if (
-            reason is None
-            and _has_class(element, "hidden")
-            and element.tag not in rules.keep_hidden_tags
-        ):
-            reason = "hidden_variant"
+        reason = _drop_reason(element, rules)
         if reason is not None and _attached(element, body):
             context.discard(element, reason)
+
+
+def _drop_reason(element: HtmlElement, rules: CleaningRules) -> str | None:
+    if element.tag in rules.drop_tags:
+        return rules.drop_tags[element.tag]
+    # Broken embeds are typed "mw:Error mw:File", so match each token.
+    for token in (element.get("typeof") or "").split():
+        if token in rules.drop_typeof:
+            return rules.drop_typeof[token]
+    for name in _classes(element):
+        if name in rules.drop_classes:
+            return rules.drop_classes[name]
+    hidden = _has_class(element, "hidden") and element.tag not in rules.keep_hidden_tags
+    return "hidden_variant" if hidden else None
+
+
+def _drop_generated_tables(body: HtmlElement, context: _Context) -> None:
+    """DPL listings repeat other pages' data (ING-003); only their links survive, as relations."""
+    for intro in body.xpath(".//p"):
+        if not context.rules.generated_table_intro.search(extract_text(intro)):
+            continue
+        table = intro.getnext()
+        if table is not None and table.tag == "table":
+            _collect_links(table, context)
+            context.discard(table, "generated_table")
+        context.discard(intro, "generated_table")
 
 
 def _attached(element: HtmlElement, body: HtmlElement) -> bool:
@@ -308,7 +341,15 @@ def _element_blocks(
 ) -> Iterator[Block]:
     if _has_class(element, "wds-tabber"):
         yield from _tabber_blocks(element, section, rules)
-    elif _has_class(element, "dialogue") or element.xpath('.//div[contains(@class, "dialogue")]'):
+    elif _has_class(element, "dialogue"):
+        yield from _dialogue_blocks(element, section)
+    elif _has_class(element, "description-wrapper") or element.xpath(
+        './div[contains(@class, "description-wrapper")]'
+    ):
+        yield from _description_block(element, section)
+    elif element.tag == "div" and element.xpath(NESTED_STRUCTURE):
+        yield from _container_blocks(element, section, rules)
+    elif element.xpath('.//div[contains(@class, "dialogue")]'):
         yield from _dialogue_blocks(element, section)
     elif element.tag == "table":
         yield from _table_blocks(element, section, rules)
@@ -316,12 +357,18 @@ def _element_blocks(
         yield from _list_block(element, section)
     elif element.tag == "blockquote" or _has_class(element, "pull-quote"):
         yield from _text_block(BlockKind.QUOTE, element, section)
-    elif _has_class(element, "description-wrapper") or element.xpath(
-        './div[contains(@class, "description-wrapper")]'
-    ):
-        yield from _description_block(element, section)
     else:
         yield from _text_block(BlockKind.PROSE, element, section)
+
+
+def _container_blocks(
+    container: HtmlElement, section: tuple[str, ...], rules: CleaningRules
+) -> Iterator[Block]:
+    """Wrapper divs must not flatten the tables or dialogue inside them into glued prose."""
+    _wrap_inline_runs(container)
+    for child in container:
+        if isinstance(child.tag, str):
+            yield from _element_blocks(child, section, rules)
 
 
 def _tabber_blocks(

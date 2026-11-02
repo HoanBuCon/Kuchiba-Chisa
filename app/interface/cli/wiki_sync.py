@@ -13,6 +13,7 @@ from pathlib import Path
 
 import httpx
 
+from app.application.ingestion.gold_stage import GoldStage
 from app.application.ingestion.silver_stage import SilverStage
 from app.application.ingestion.wiki_sync import RunStatus, SyncReport, SyncRules, WikiSyncService
 from app.config.settings import settings
@@ -21,6 +22,9 @@ from app.infrastructure.database.engine import AsyncSessionFactory, engine
 from app.infrastructure.database.repositories.wiki_inventory import PostgresWikiInventory
 from app.infrastructure.database.repositories.wiki_silver import PostgresSilverLedger
 from app.infrastructure.ingestion.bronze_store import FileBronzeStore
+from app.infrastructure.ingestion.gold.config import load_gold_settings
+from app.infrastructure.ingestion.gold.gold_store import FileGoldStore
+from app.infrastructure.ingestion.gold.token_counter import load_token_counter
 from app.infrastructure.ingestion.mediawiki_client import MediaWikiClient
 from app.infrastructure.ingestion.silver.html_cleaner import HtmlCleaner
 from app.infrastructure.ingestion.silver.rules import load_cleaning_rules
@@ -46,6 +50,7 @@ def _parser() -> argparse.ArgumentParser:
         "--release-mode", action="store_true", help="use the shorter stabilisation window"
     )
     commands.add_parser("clean", help="clean fetched pages into silver and check them (ING-006)")
+    commands.add_parser("assemble", help="build a versioned gold corpus from accepted silver")
     commands.add_parser("status", help="show the last successful run and inventory counts")
     return parser
 
@@ -116,10 +121,28 @@ async def _clean() -> dict[str, object]:
     return {"stats": report.stats, "flagged": flagged}
 
 
+async def _assemble() -> dict[str, object]:
+    gold_settings = load_gold_settings()
+    root = Path(settings.INGESTION_DATA_DIR)
+    stage = GoldStage(
+        PostgresWikiInventory(engine, AsyncSessionFactory),
+        FileSilverStore(root),
+        PostgresSilverLedger(AsyncSessionFactory),
+        FileGoldStore(root),
+        load_token_counter(gold_settings.tokenizer_model, settings.INGESTION_TOKENIZER_CACHE_DIR),
+        gold_settings,
+    )
+    report = await stage.run()
+    return {"corpus_version": report.corpus_version, "path": report.path, "quality": report.quality}
+
+
 async def _run(args: argparse.Namespace) -> int:
     try:
         if args.command == "status":
             _emit(await _status())
+            return 0
+        if args.command == "assemble":
+            _emit(await _assemble())
             return 0
         if args.command == "clean":
             _emit(await _clean())

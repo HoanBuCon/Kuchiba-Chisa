@@ -10,7 +10,7 @@ from app.application.ingestion.wiki_sync import RunStatus, SyncRules, WikiSyncSe
 from app.domain.ingestion.change_detection import FetchPolicy, FetchReason, TemplateClassifier
 from app.domain.ingestion.families import FamilyCatalog, FamilyRule
 from app.domain.ingestion.pages import PageStatus, WikiPageInfo
-from app.domain.interfaces.wiki_ingestion import ParsedPage, WikiSourceError
+from app.domain.interfaces.wiki_ingestion import ParsedPage, SyncRun, WikiSourceError
 
 NOW = datetime(2026, 11, 2, tzinfo=UTC)
 OLD = NOW - timedelta(days=5)
@@ -95,6 +95,12 @@ class FakeInventory:
 
     async def record_run(self, run):
         self.runs[run.run_id] = run
+
+    async def abandon_unfinished_runs(self, finished_at):
+        stale = [r for r in self.runs.values() if r.status == RunStatus.RUNNING]
+        for run in stale:
+            self.runs[run.run_id] = replace(run, status="abandoned", finished_at=finished_at)
+        return len(stale)
 
     @asynccontextmanager
     async def exclusive_run(self):
@@ -325,3 +331,14 @@ async def test_rows_without_stored_categories_get_details_once(source, inventory
 
     assert source.detail_requests == [[1]]
     assert inventory.states[1].family == "resonator"
+
+
+async def test_a_run_that_died_is_marked_abandoned_by_the_next_one(source, inventory) -> None:
+    source.add(1, "Chisa", categories=("Category:Resonators",))
+    dead = SyncRun("dead", OLD, None, RunStatus.RUNNING, {})
+    await inventory.record_run(dead)
+
+    await _service(source, inventory).sync()
+
+    assert inventory.runs["dead"].status == "abandoned"
+    assert inventory.runs["dead"].finished_at == NOW

@@ -21,3 +21,7 @@ def test_normalize_text(raw: str, expected: str) -> None:
 
 def test_query_and_index_agree_on_the_player_name() -> None:
     assert normalize_text("(Rover)") == normalize_text("Rover")
+
+
+def test_raw_player_name_variable_becomes_the_name() -> None:
+    assert normalize_text("Hello, {PlayerName}.") == "Hello, Rover."

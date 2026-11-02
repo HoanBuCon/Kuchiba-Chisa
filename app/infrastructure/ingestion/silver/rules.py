@@ -44,6 +44,7 @@ class _Cleaning(_Strict):
     variant_tooltips: tuple[str, ...] = ()
     boilerplate_lines: tuple[str, ...] = ()
     repairs: tuple[_Repair, ...] = ()
+    generated_table_intros: tuple[str, ...] = ()
     residue_patterns: tuple[str, ...] = Field(min_length=1)
     story_min_chars: int = Field(gt=0)
     contracts: dict[str, _Contract] = {}
@@ -67,6 +68,7 @@ class CleaningRules:
     variant_tooltips: re.Pattern[str]
     boilerplate_lines: re.Pattern[str]
     repairs: tuple[tuple[re.Pattern[str], str], ...]
+    generated_table_intro: re.Pattern[str]
     residue: re.Pattern[str]
     story_min_chars: int
     contracts: dict[str, FamilyContract]
@@ -86,6 +88,7 @@ def load_cleaning_rules(path: Path = CONFIG_DIR / "cleaning.yaml") -> CleaningRu
         variant_tooltips=_any_of(raw.variant_tooltips),
         boilerplate_lines=_any_of(raw.boilerplate_lines),
         repairs=tuple((re.compile(r.pattern), r.replace) for r in raw.repairs),
+        generated_table_intro=_any_of(raw.generated_table_intros),
         residue=_any_of(raw.residue_patterns),
         story_min_chars=raw.story_min_chars,
         contracts={

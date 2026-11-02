@@ -9,8 +9,8 @@ PLAYER_NAME = "Rover"
 _ZERO_WIDTH = re.compile("[​‌‍⁠﻿­]")
 _SPACES = re.compile(r"[ \t   ]+")
 _BLANK_LINES = re.compile(r"\n\s*\n+")
-# The wiki wraps the player-name placeholder as "(Rover)"; dialogue reads naturally without it.
-_NAME_PLACEHOLDER = re.compile(rf"\(\s*{PLAYER_NAME}\s*\)")
+# The wiki writes the player name as "(Rover)" or a raw "{PlayerName}"; both read as the name.
+_NAME_PLACEHOLDER = re.compile(rf"\(\s*{PLAYER_NAME}\s*\)|\{{PlayerName\}}")
 
 
 def normalize_text(text: str) -> str:
