@@ -20,6 +20,7 @@ from app.application.ingestion.silver_stage import SilverStage
 from app.application.ingestion.vector_stage import VectorSettings, VectorStage
 from app.application.ingestion.wiki_sync import RunStatus, SyncReport, SyncRules, WikiSyncService
 from app.config.settings import settings
+from app.domain.ingestion.corpus_safety import CorpusSafetyPolicy
 from app.domain.ingestion.page_checks import CheckPolicy
 from app.domain.ingestion.release_gates import GateReport, evaluate_data_gate
 from app.infrastructure.database.engine import AsyncSessionFactory, engine
@@ -28,6 +29,7 @@ from app.infrastructure.database.repositories.wiki_inventory import PostgresWiki
 from app.infrastructure.database.repositories.wiki_silver import PostgresSilverLedger
 from app.infrastructure.embeddings.fastembed_adapter import FastEmbedAdapter
 from app.infrastructure.ingestion.bronze_store import FileBronzeStore
+from app.infrastructure.ingestion.corpus_safety_exceptions import load_page_safety_exceptions
 from app.infrastructure.ingestion.gold.config import load_gold_settings
 from app.infrastructure.ingestion.gold.gold_store import FileGoldStore
 from app.infrastructure.ingestion.gold.passage_embedder import FastEmbedPassageEmbedder
@@ -36,10 +38,11 @@ from app.infrastructure.ingestion.gold.token_counter import load_token_counter, 
 from app.infrastructure.ingestion.gold.vector_cache import FileVectorCache
 from app.infrastructure.ingestion.mediawiki_client import MediaWikiClient
 from app.infrastructure.ingestion.silver.html_cleaner import HtmlCleaner
-from app.infrastructure.ingestion.silver.rules import load_cleaning_rules
+from app.infrastructure.ingestion.silver.rules import CONFIG_DIR, load_cleaning_rules
 from app.infrastructure.ingestion.silver.silver_store import FileSilverStore
 from app.infrastructure.ingestion.wiki_sync_config import WikiSyncConfig, load_wiki_sync_config
 
+SAFETY_EXCEPTIONS = CONFIG_DIR / "safety_exceptions.json"
 MAX_REDIRECTS = 3
 PREVIEW_DECISIONS = 20
 # Offline embedding shares the machine, so it stays on the service's thread budget.
@@ -135,6 +138,9 @@ async def _clean() -> dict[str, object]:
         PostgresSilverLedger(AsyncSessionFactory),
         policy=CheckPolicy(residue=rules.residue),
         contracts=rules.contracts,
+        safety=CorpusSafetyPolicy(
+            exceptions=load_page_safety_exceptions(SAFETY_EXCEPTIONS).exceptions
+        ),
     )
     report = await stage.run()
     flagged = [{"title": title, "reasons": list(reasons)} for title, reasons in report.flagged]

@@ -20,7 +20,7 @@ from app.domain.ingestion.chunking import (
 from app.domain.ingestion.dedup import OwnerPolicy, deduplicate, drop_duplicate_bodies, fingerprint
 from app.domain.ingestion.documents import CanonicalDocument
 from app.domain.ingestion.knowledge import build_knowledge, enrich_chunks, knowledge_counts
-from app.domain.ingestion.page_checks import Verdict
+from app.domain.ingestion.page_checks import SAFETY_REASON_PREFIX, Verdict
 from app.domain.ingestion.pages import PageState
 from app.domain.ingestion.units import Unit, document_units
 from app.domain.interfaces.gold import IGoldStore
@@ -138,7 +138,8 @@ class GoldStage:
             "pages_quarantined": sum(e.verdict is Verdict.QUARANTINE for e in verdicts),
             "pages_held": sum(e.verdict is Verdict.HOLD for e in verdicts),
             "pages_safety_blocked": sum(
-                any(reason.startswith("safety:") for reason in e.reasons) for e in verdicts
+                any(reason.startswith(SAFETY_REASON_PREFIX) for reason in e.reasons)
+                for e in verdicts
             ),
         }
         version = self._gold.next_version(self._clock().date())

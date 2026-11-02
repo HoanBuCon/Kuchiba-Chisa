@@ -10,7 +10,13 @@ from datetime import UTC, datetime
 
 from app.domain.ingestion.corpus_safety import CorpusSafetyPolicy
 from app.domain.ingestion.documents import CanonicalDocument
-from app.domain.ingestion.page_checks import CheckPolicy, FamilyContract, Verdict, check_page
+from app.domain.ingestion.page_checks import (
+    SAFETY_REASON_PREFIX,
+    CheckPolicy,
+    FamilyContract,
+    Verdict,
+    check_page,
+)
 from app.domain.ingestion.pages import PageState
 from app.domain.interfaces.silver import (
     CleaningError,
@@ -44,8 +50,12 @@ def output_hash(document: CanonicalDocument) -> str:
 
 
 def _needs_check(previous: SilverEntry | None, path: str) -> bool:
-    # Held pages are re-checked every run so their stability count can reach the threshold.
-    return previous is None or previous.silver_path != path or previous.verdict is Verdict.HOLD
+    if previous is None or previous.silver_path != path:
+        return True
+    # Held pages build up their stability count; blocked pages may have gained an approval.
+    return previous.verdict is Verdict.HOLD or any(
+        reason.startswith(SAFETY_REASON_PREFIX) for reason in previous.reasons
+    )
 
 
 class SilverStage:
@@ -109,7 +119,8 @@ class SilverStage:
     def _check(
         self, state: PageState, bronze_key: str, key: str, previous: SilverEntry | None
     ) -> tuple[SilverEntry, CanonicalDocument]:
-        document = self._cleaner.clean(self._bronze.load(bronze_key), state.family)
+        cleaned = self._cleaner.clean(self._bronze.load(bronze_key), state.family)
+        document = self._safety.redact_emails(cleaned)
         path = self._silver.save(key, document)
         digest = output_hash(document)
         unchanged = (
