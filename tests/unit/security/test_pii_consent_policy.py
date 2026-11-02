@@ -316,3 +316,10 @@ async def test_memory_consent_route_uses_verified_principal_not_client_identity(
     assert isinstance(asserted_user_id, UUID)
     assert response.enabled is True
     session.commit.assert_awaited_once()
+
+
+def test_email_at_the_end_of_a_sentence_is_redacted() -> None:
+    result = PiiRedactor().redact("Write to support@example.com.")
+
+    assert result.value == "Write to [REDACTED_EMAIL]."
+    assert result.categories == {"email": 1}
