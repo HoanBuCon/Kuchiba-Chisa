@@ -6,6 +6,7 @@ import gzip
 import hashlib
 import json
 import os
+import re
 import shutil
 from collections.abc import Mapping, Sequence
 from dataclasses import asdict
@@ -14,12 +15,50 @@ from pathlib import Path
 from typing import Any
 
 from app.domain.ingestion.chunking import Chunk
-from app.domain.ingestion.knowledge import KnowledgeBase
+from app.domain.ingestion.knowledge import (
+    Alias,
+    Entity,
+    GlossaryTerm,
+    KnowledgeBase,
+    LocationEdge,
+    Quest,
+)
+from app.domain.ingestion.units import Collection
 
 CHUNKS_FILE = "chunks.jsonl.gz"
 DUPLICATES_FILE = "duplicate_of.json.gz"
 KNOWLEDGE_FILE = "knowledge.json.gz"
 MANIFEST_FILE = "manifest.json"
+VERSION = re.compile(r"\d{4}\.\d{2}\.\d{2}-\d+")
+
+
+def _version_order(version: str) -> tuple[str, int]:
+    day, number = version.rsplit("-", 1)
+    return day, int(number)
+
+
+def _chunk(record: dict[str, Any]) -> Chunk:
+    return Chunk(
+        **{
+            **record,
+            "collection": Collection(record["collection"]),
+            "section": tuple(record["section"]),
+            "entities": tuple(record["entities"]),
+        }
+    )
+
+
+def _knowledge(record: dict[str, Any]) -> KnowledgeBase:
+    def tuples(item: dict[str, Any]) -> dict[str, Any]:
+        return {k: tuple(v) if isinstance(v, list) else v for k, v in item.items()}
+
+    return KnowledgeBase(
+        entities=tuple(Entity(**item) for item in record["entities"]),
+        aliases=tuple(Alias(**tuples(item)) for item in record["aliases"]),
+        glossary=tuple(GlossaryTerm(**tuples(item)) for item in record["glossary"]),
+        quests=tuple(Quest(**tuples(item)) for item in record["quests"]),
+        locations=tuple(LocationEdge(**item) for item in record["locations"]),
+    )
 
 
 def _gzip_bytes(payload: bytes) -> bytes:
@@ -41,6 +80,18 @@ class FileGoldStore:
         while f"{prefix}{number}" in taken:
             number += 1
         return f"{prefix}{number}"
+
+    def latest_version(self) -> str | None:
+        versions = [p.name for p in self._gold.glob("*") if VERSION.fullmatch(p.name)]
+        return max(versions, key=_version_order) if versions else None
+
+    def read_chunks(self, version: str) -> list[Chunk]:
+        raw = gzip.decompress((self._gold / version / CHUNKS_FILE).read_bytes())
+        return [_chunk(json.loads(line)) for line in raw.decode("utf-8").splitlines()]
+
+    def read_knowledge(self, version: str) -> KnowledgeBase:
+        raw = gzip.decompress((self._gold / version / KNOWLEDGE_FILE).read_bytes())
+        return _knowledge(json.loads(raw))
 
     def write(
         self,

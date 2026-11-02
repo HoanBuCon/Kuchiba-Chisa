@@ -128,13 +128,17 @@ cases:
       - [stagnant dawn on wastelands]
       - [flowing starlight in the iris]
       - [wishes in the bell]
-    min_fact_recall: 0.67
+      - [when the unknown thrums]
+      - [wishes in the bell epilogue, "wishes in the bell: epilogue"]
+    min_fact_recall: 0.6
     relevant_pages:
       - {title: Stagnant Dawn on Wastelands, pageid: 37334}
       - {title: Flowing Starlight in the Iris, pageid: 37370}
+      - {title: When the Unknown Thrums, pageid: 38197}
       - {title: Wishes in the Bell, pageid: 40759}
-    verified: false
-    notes: List derived from quest text, not the location graph; the owner must confirm completeness (KNW-004).
+      - {title: "Wishes in the Bell: Epilogue", pageid: 40765}
+    verified: true
+    notes: Owner confirmed this list on 2026-11-02 against an external summary citing Fandom and Game8 (KNW-004); main quests only.
   - id: enum-003
     category: enumeration
     language: vi
