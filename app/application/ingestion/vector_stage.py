@@ -8,12 +8,14 @@ from dataclasses import dataclass
 from typing import Any
 
 from app.domain.ingestion.chunking import Chunk
+from app.domain.ingestion.knowledge import knowledge_counts
 from app.domain.ingestion.units import Collection
-from app.domain.interfaces.gold import IGoldStore
+from app.domain.interfaces.gold import IGoldStore, IKnowledgeStore
 from app.domain.interfaces.vectors import (
     IPassageEmbedder,
     IStagingIndex,
     IVectorCache,
+    StagingError,
     StagingPoint,
 )
 
@@ -41,6 +43,7 @@ class EmbedReport:
 class StagingReport:
     corpus_version: str
     collections: dict[str, int]
+    knowledge: dict[str, int]
 
 
 def vector_key(model_id: str, chunk: Chunk) -> str:
@@ -87,12 +90,14 @@ class VectorStage:
         embedder: IPassageEmbedder,
         cache: IVectorCache,
         index: IStagingIndex,
+        knowledge_store: IKnowledgeStore,
         settings: VectorSettings,
     ) -> None:
         self._gold = gold
         self._embedder = embedder
         self._cache = cache
         self._index = index
+        self._knowledge_store = knowledge_store
         self._settings = settings
 
     async def embed(self, version: str) -> EmbedReport:
@@ -133,7 +138,16 @@ class VectorStage:
                 await self._index.upsert(name, points)
             await self._index.verify(name, len(members))
             counts[name] = len(members)
-        return StagingReport(version, counts)
+        return StagingReport(version, counts, await self._load_knowledge(version))
+
+    async def _load_knowledge(self, version: str) -> dict[str, int]:
+        """Counts are read back, so a partial write cannot pass as a staged release (S7)."""
+        knowledge = self._gold.read_knowledge(version)
+        await self._knowledge_store.publish(version, knowledge)
+        stored = await self._knowledge_store.count(version)
+        if stored != knowledge_counts(knowledge):
+            raise StagingError(f"knowledge rows {stored} do not match the corpus")
+        return stored
 
     @staticmethod
     def _point(chunk: Chunk, vector: Sequence[float], version: str) -> StagingPoint:

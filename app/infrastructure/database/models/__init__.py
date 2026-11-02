@@ -30,6 +30,13 @@ from app.infrastructure.database.models.ingestion import (
     PipelineJobModel,
     WikiSyncStateModel,
 )
+from app.infrastructure.database.models.knowledge import (
+    KbAliasModel,
+    KbEntityModel,
+    KbGlossaryModel,
+    KbLocationEdgeModel,
+    KbQuestModel,
+)
 from app.infrastructure.database.models.lore_parent import LoreParentModel
 from app.infrastructure.database.models.memory_metadata import MemoryMetadata, MemoryType
 from app.infrastructure.database.models.message import Message, MessageRole
@@ -79,6 +86,11 @@ __all__ = [
     "WikiPageModel",
     "WikiSyncRunModel",
     "WikiPageSilverModel",
+    "KbAliasModel",
+    "KbEntityModel",
+    "KbGlossaryModel",
+    "KbLocationEdgeModel",
+    "KbQuestModel",
     "ChunkStateModel",
     "CorpusReleaseModel",
     "CorpusReleaseAuditEventModel",

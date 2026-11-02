@@ -22,6 +22,7 @@ from app.application.ingestion.wiki_sync import RunStatus, SyncReport, SyncRules
 from app.config.settings import settings
 from app.domain.ingestion.page_checks import CheckPolicy
 from app.infrastructure.database.engine import AsyncSessionFactory, engine
+from app.infrastructure.database.repositories.knowledge_store import PostgresKnowledgeStore
 from app.infrastructure.database.repositories.wiki_inventory import PostgresWikiInventory
 from app.infrastructure.database.repositories.wiki_silver import PostgresSilverLedger
 from app.infrastructure.embeddings.fastembed_adapter import FastEmbedAdapter
@@ -168,6 +169,7 @@ def _vector_stage() -> tuple[VectorStage, FileGoldStore, AsyncQdrantClient]:
         embedder,
         FileVectorCache(root, embedder.model_id),
         QdrantStagingIndex(client),
+        PostgresKnowledgeStore(AsyncSessionFactory),
         VectorSettings(),
     )
     return stage, gold, client
