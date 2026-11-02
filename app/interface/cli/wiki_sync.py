@@ -21,7 +21,9 @@ from app.application.ingestion.vector_stage import VectorSettings, VectorStage
 from app.application.ingestion.wiki_sync import RunStatus, SyncReport, SyncRules, WikiSyncService
 from app.config.settings import settings
 from app.domain.ingestion.page_checks import CheckPolicy
+from app.domain.ingestion.release_gates import GateReport, evaluate_data_gate
 from app.infrastructure.database.engine import AsyncSessionFactory, engine
+from app.infrastructure.database.repositories.knowledge_store import PostgresKnowledgeStore
 from app.infrastructure.database.repositories.wiki_inventory import PostgresWikiInventory
 from app.infrastructure.database.repositories.wiki_silver import PostgresSilverLedger
 from app.infrastructure.embeddings.fastembed_adapter import FastEmbedAdapter
@@ -66,6 +68,9 @@ def _parser() -> argparse.ArgumentParser:
     load = commands.add_parser("load", help="load an embedded corpus into staging collections")
     load.add_argument("--version", help="corpus version; defaults to the newest")
     load.add_argument("--replace", action="store_true", help="recreate existing collections")
+    gate = commands.add_parser("gate", help="run the data gate on a corpus version")
+    gate.add_argument("--version", help="corpus version; defaults to the newest")
+    gate.add_argument("--previous", help="active corpus version to compare against")
     commands.add_parser("status", help="show the last successful run and inventory counts")
     return parser
 
@@ -168,6 +173,7 @@ def _vector_stage() -> tuple[VectorStage, FileGoldStore, AsyncQdrantClient]:
         embedder,
         FileVectorCache(root, embedder.model_id),
         QdrantStagingIndex(client),
+        PostgresKnowledgeStore(AsyncSessionFactory),
         VectorSettings(),
     )
     return stage, gold, client
@@ -186,11 +192,31 @@ async def _vectors(args: argparse.Namespace) -> dict[str, object]:
         await client.close()
 
 
+def _data_gate(args: argparse.Namespace) -> GateReport:
+    gold = FileGoldStore(Path(settings.INGESTION_DATA_DIR))
+    version = args.version or gold.latest_version()
+    if version is None:
+        raise SystemExit("no gold corpus to gate; run assemble first")
+    previous = gold.read_manifest(args.previous) if args.previous else None
+    report = evaluate_data_gate(gold.read_manifest(version), previous)
+    _emit(
+        {
+            "corpus_version": version,
+            "passed": report.passed,
+            "failures": list(report.failures),
+            "checks": {check.name: check.detail for check in report.checks},
+        }
+    )
+    return report
+
+
 async def _run(args: argparse.Namespace) -> int:
     try:
         if args.command == "status":
             _emit(await _status())
             return 0
+        if args.command == "gate":
+            return 0 if _data_gate(args).passed else 1
         if args.command in {"embed", "load"}:
             _emit(await _vectors(args))
             return 0

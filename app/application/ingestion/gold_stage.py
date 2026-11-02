@@ -20,6 +20,7 @@ from app.domain.ingestion.chunking import (
 from app.domain.ingestion.dedup import OwnerPolicy, deduplicate, drop_duplicate_bodies, fingerprint
 from app.domain.ingestion.documents import CanonicalDocument
 from app.domain.ingestion.knowledge import build_knowledge, enrich_chunks, knowledge_counts
+from app.domain.ingestion.page_checks import Verdict
 from app.domain.ingestion.pages import PageState
 from app.domain.ingestion.units import Unit, document_units
 from app.domain.interfaces.gold import IGoldStore
@@ -118,6 +119,8 @@ class GoldStage:
     async def run(self) -> GoldReport:
         states = await self._inventory.load()
         documents, missing = await self._effective_documents(states)
+        entries = await self._ledger.load()
+        verdicts = [entries[pid] for pid, s in states.items() if s.in_text_scope and pid in entries]
         units = [unit for document in documents for unit in document_units(document)]
         deduped = deduplicate(units, self._settings.owner_policy)
         chunked = self._chunker.chunk(deduped.units)
@@ -132,6 +135,11 @@ class GoldStage:
             "pages_without_silver": missing,
             "units_removed_as_duplicates": len(units) - len(deduped.units),
             "uncovered_units": len(uncovered),
+            "pages_quarantined": sum(e.verdict is Verdict.QUARANTINE for e in verdicts),
+            "pages_held": sum(e.verdict is Verdict.HOLD for e in verdicts),
+            "pages_safety_blocked": sum(
+                any(reason.startswith("safety:") for reason in e.reasons) for e in verdicts
+            ),
         }
         version = self._gold.next_version(self._clock().date())
         manifest = self._manifest(version, documents, chunks, quality)

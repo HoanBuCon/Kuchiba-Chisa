@@ -25,10 +25,10 @@ class PiiRedactor:
     detection. It is a minimization control, not an authorization mechanism.
     """
 
-    _EMAIL = re.compile(r"(?<![\w.+-])[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}(?![\w.-])", re.I)
+    # A trailing dot ends the sentence, so only a dot followed by more host text rejects the match.
+    _EMAIL = re.compile(r"(?<![\w.+-])[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}(?![\w-]|\.[\w-])", re.I)
     _IPV4 = re.compile(
-        r"(?<![\d.])(?:25[0-5]|2[0-4]\d|1?\d?\d)"
-        r"(?:\.(?:25[0-5]|2[0-4]\d|1?\d?\d)){3}(?![\d.])"
+        r"(?<![\d.])(?:25[0-5]|2[0-4]\d|1?\d?\d)" r"(?:\.(?:25[0-5]|2[0-4]\d|1?\d?\d)){3}(?![\d.])"
     )
     _PHONE = re.compile(r"(?<!\d)(?:\+?84|0)(?:[ .-]?\d){8,10}(?!\d)")
     _VIETNAM_ID = re.compile(r"(?<!\d)\d{12}(?!\d)")

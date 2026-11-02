@@ -10,7 +10,7 @@ from app.application.ingestion.vector_stage import (
     vector_key,
 )
 from app.domain.ingestion.chunking import Chunk
-from app.domain.ingestion.knowledge import KnowledgeBase
+from app.domain.ingestion.knowledge import KnowledgeBase, knowledge_counts
 from app.domain.ingestion.units import Collection
 from app.domain.interfaces.vectors import StagingError
 from app.infrastructure.ingestion.gold.gold_store import FileGoldStore
@@ -54,6 +54,20 @@ class FakeEmbedder:
         return [[float(len(text)), 1.0] for text in texts]
 
 
+class FakeKnowledgeStore:
+    def __init__(self, drop_rows: bool = False) -> None:
+        self.published: dict[str, KnowledgeBase] = {}
+        self.drop_rows = drop_rows
+
+    async def publish(self, version, knowledge):
+        self.published[version] = knowledge
+        return knowledge_counts(knowledge)
+
+    async def count(self, version):
+        counts = knowledge_counts(self.published[version])
+        return {**counts, "entities": counts["entities"] + 1} if self.drop_rows else counts
+
+
 class FakeIndex:
     def __init__(self) -> None:
         self.created: dict[str, bool] = {}
@@ -81,9 +95,16 @@ def gold(tmp_path):
     return store
 
 
-def _stage(tmp_path, gold, embedder, index=None, **settings) -> VectorStage:
+def _stage(tmp_path, gold, embedder, index=None, store=None, **settings) -> VectorStage:
     cache = FileVectorCache(tmp_path, embedder.model_id)
-    return VectorStage(gold, embedder, cache, index or FakeIndex(), VectorSettings(**settings))
+    return VectorStage(
+        gold,
+        embedder,
+        cache,
+        index or FakeIndex(),
+        store or FakeKnowledgeStore(),
+        VectorSettings(**settings),
+    )
 
 
 def test_gold_chunks_round_trip_and_latest_version_orders_numerically(tmp_path) -> None:
@@ -155,3 +176,22 @@ def test_payload_carries_the_knw003_metadata() -> None:
     assert (payload["nation"], payload["game_version"]) == ("Huanglong", "1.0")
     assert payload["section_path"] == ["S"]
     assert staging_collection(Collection.CANON, VERSION) == "lore_canon__2026_11_02_1"
+
+
+async def test_load_publishes_knowledge_and_reports_its_counts(tmp_path, gold) -> None:
+    store = FakeKnowledgeStore()
+    stage = _stage(tmp_path, gold, FakeEmbedder(), store=store)
+    await stage.embed(VERSION)
+
+    report = await stage.load(VERSION)
+
+    assert store.published[VERSION] == EMPTY
+    assert report.knowledge == knowledge_counts(EMPTY)
+
+
+async def test_load_fails_when_stored_knowledge_differs_from_the_corpus(tmp_path, gold) -> None:
+    stage = _stage(tmp_path, gold, FakeEmbedder(), store=FakeKnowledgeStore(drop_rows=True))
+    await stage.embed(VERSION)
+
+    with pytest.raises(StagingError, match="knowledge rows"):
+        await stage.load(VERSION)
