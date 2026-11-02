@@ -8,6 +8,7 @@ from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 
+from app.domain.ingestion.corpus_safety import CorpusSafetyPolicy
 from app.domain.ingestion.documents import CanonicalDocument
 from app.domain.ingestion.page_checks import CheckPolicy, FamilyContract, Verdict, check_page
 from app.domain.ingestion.pages import PageState
@@ -58,6 +59,7 @@ class SilverStage:
         *,
         policy: CheckPolicy,
         contracts: Mapping[str, FamilyContract],
+        safety: CorpusSafetyPolicy | None = None,
         clock: Callable[[], datetime] = lambda: datetime.now(UTC),
     ) -> None:
         self._inventory = inventory
@@ -67,6 +69,7 @@ class SilverStage:
         self._ledger = ledger
         self._policy = policy
         self._contracts = contracts
+        self._safety = safety or CorpusSafetyPolicy()
         self._clock = clock
 
     async def run(self) -> SilverReport:
@@ -120,6 +123,7 @@ class SilverStage:
             contract=self._contracts.get(state.family or ""),
             last_known_good=last_good,
             unchanged_runs=unchanged,
+            safety_findings=self._safety.scan(document),
         )
         entry = SilverEntry(
             page_id=state.page_id,

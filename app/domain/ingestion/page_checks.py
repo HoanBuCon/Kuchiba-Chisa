@@ -69,8 +69,11 @@ def check_page(
     contract: FamilyContract | None,
     last_known_good: CanonicalDocument | None,
     unchanged_runs: int = 0,
+    safety_findings: tuple[str, ...] = (),
 ) -> PageCheck:
     """`unchanged_runs` counts consecutive runs that produced this same silver output."""
+    if safety_findings:
+        return PageCheck(Verdict.QUARANTINE, tuple(f"safety:{rule}" for rule in safety_findings))
     if hits := residue_hits(document, policy.residue):
         return PageCheck(Verdict.QUARANTINE, tuple(f"residue:{hit}" for hit in sorted(set(hits))))
     if _lost_text(document, policy):

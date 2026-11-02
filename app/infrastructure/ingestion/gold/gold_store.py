@@ -89,6 +89,9 @@ class FileGoldStore:
         raw = gzip.decompress((self._gold / version / CHUNKS_FILE).read_bytes())
         return [_chunk(json.loads(line)) for line in raw.decode("utf-8").splitlines()]
 
+    def read_manifest(self, version: str) -> dict[str, Any]:
+        return json.loads((self._gold / version / MANIFEST_FILE).read_text(encoding="utf-8"))
+
     def read_knowledge(self, version: str) -> KnowledgeBase:
         raw = gzip.decompress((self._gold / version / KNOWLEDGE_FILE).read_bytes())
         return _knowledge(json.loads(raw))

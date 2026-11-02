@@ -29,6 +29,8 @@ class IGoldStore(Protocol):
 
     def read_knowledge(self, version: str) -> KnowledgeBase: ...
 
+    def read_manifest(self, version: str) -> dict[str, Any]: ...
+
     def write(
         self,
         version: str,
