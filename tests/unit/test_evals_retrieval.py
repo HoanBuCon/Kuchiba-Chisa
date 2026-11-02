@@ -2,7 +2,14 @@
 
 from types import SimpleNamespace
 
-from evals.retrieval import CaseOutcome, fuse_ranked, ranked_pages, summarize
+from evals.retrieval import (
+    CaseOutcome,
+    fuse_ranked,
+    ranked_pages,
+    rerank_document,
+    rerank_order,
+    summarize,
+)
 
 
 def _point(point_id: str, page_id: int) -> SimpleNamespace:
@@ -46,3 +53,17 @@ def test_summary_groups_by_category_and_language_with_confidence_interval() -> N
 
 def test_empty_evaluation_reports_no_rates() -> None:
     assert summarize([])["overall"]["hit_at_5"] is None
+
+
+def test_rerank_reorders_the_head_and_keeps_the_tail() -> None:
+    points = [_point("a", 1), _point("b", 2), _point("c", 3), _point("d", 4)]
+
+    assert [p.id for p in rerank_order(points, [0.1, 0.9, 0.5])] == ["b", "c", "a", "d"]
+
+
+def test_rerank_document_carries_title_and_section() -> None:
+    point = SimpleNamespace(
+        payload={"title": "Chisa", "section_path": ["Story", "Early"], "text": "Body"}
+    )
+
+    assert rerank_document(point) == "Chisa\nStory > Early\nBody"

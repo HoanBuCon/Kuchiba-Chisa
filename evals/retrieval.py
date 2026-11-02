@@ -1,6 +1,7 @@
 """Retrieval-level evaluation of a staged corpus: no LLM, safe to run on every release (S8).
 
 Usage: python -m evals.retrieval --version 2026.11.02-7 [--mode hybrid] [--report out.json]
+`--mode reranked` calls the prepaid Jina API and spends tokens; `all` never does.
 """
 
 from __future__ import annotations
@@ -17,6 +18,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+import httpx
 from qdrant_client import AsyncQdrantClient, models
 
 from app.application.ingestion.vector_stage import staging_collection
@@ -27,6 +29,10 @@ from app.domain.ingestion.units import Collection
 from app.infrastructure.embeddings.fastembed_adapter import FastEmbedAdapter
 from app.infrastructure.ingestion.gold.gold_store import FileGoldStore
 from app.infrastructure.ingestion.gold.staging_index import DENSE, LEXICAL, LEXICAL_MODEL
+from app.infrastructure.rag.api_cross_encoder_reranker import (
+    ApiCrossEncoderReranker,
+    ApiRerankerProvider,
+)
 from evals.dataset import GoldenCase, load_golden_set
 from evals.metrics import hit_at_k, reciprocal_rank, wilson_interval
 
@@ -37,6 +43,13 @@ CANDIDATES = 50
 RRF_K = 60
 EMBED_THREADS = 2
 MODES = ("dense", "lexical", "hybrid", "linked")
+RERANKED = "reranked"
+# Best on the first 32 cases; 30 candidates scored no better and cost twice the tokens.
+RERANK_MODEL = "jina-reranker-v3"
+RERANK_CANDIDATES = 15
+RERANK_TIMEOUT_SECONDS = 30
+# Paced to stay under the key's tokens-per-minute limit, which otherwise skews results.
+RERANK_PAUSE_SECONDS = 4
 
 
 @dataclass(frozen=True)
@@ -65,6 +78,18 @@ def fuse_ranked(result_lists: Sequence[Sequence[Any]], k: int = RRF_K) -> list[A
             scores[point.id] += 1.0 / (k + rank)
             points[point.id] = point
     return [points[point_id] for point_id in sorted(scores, key=lambda p: -scores[p])]
+
+
+def rerank_order(points: Sequence[Any], scores: Sequence[float]) -> list[Any]:
+    """Scored head first by score; candidates beyond the reranker's reach keep their order."""
+    head = sorted(range(len(scores)), key=lambda index: -scores[index])
+    return [points[index] for index in head] + list(points[len(scores) :])
+
+
+def rerank_document(point: Any) -> str:
+    payload = point.payload
+    section = " > ".join(payload.get("section_path") or [])
+    return f"{payload['title']}\n{section}\n{payload['text']}"
 
 
 def score_case(case: GoldenCase, question: str, ranked: Sequence[int]) -> CaseOutcome:
@@ -122,7 +147,7 @@ class StagedCorpusSearch:
             using=using,
             query_filter=query_filter,
             limit=CANDIDATES,
-            with_payload=["page_id"],
+            with_payload=["page_id", "title", "text", "section_path"],
         )
         return list(response.points)
 
@@ -146,7 +171,7 @@ class StagedCorpusSearch:
         if mode == "lexical":
             return await self._lexical(text)
         channels = [await self._dense(vector), await self._lexical(text)]
-        if mode == "linked":
+        if mode in {"linked", RERANKED}:
             channels.extend(await self._entity_channels(text, vector))
         return fuse_ranked(channels)
 
@@ -163,6 +188,8 @@ async def evaluate(version: str, mode: str) -> tuple[dict[str, Any], list[CaseOu
     client = AsyncQdrantClient(url=settings.QDRANT_URL, api_key=settings.QDRANT_API_KEY, timeout=60)
     search = StagedCorpusSearch(client, version, EntityLinker.from_knowledge(knowledge))
     outcomes = []
+    http = httpx.AsyncClient()
+    reranker = _jina_reranker(http) if mode == RERANKED else None
     try:
         for case in golden.cases:
             if not case.relevant_pages:
@@ -170,10 +197,29 @@ async def evaluate(version: str, mode: str) -> tuple[dict[str, Any], list[CaseOu
             question = normalize_text(case.turns[-1].message)
             vector = await embedder.embed_text(question, prefix="query: ")
             points = await search.search(mode, question, vector)
+            if reranker is not None:
+                head = points[:RERANK_CANDIDATES]
+                scores = await reranker.rerank(question, [rerank_document(p) for p in head])
+                points = rerank_order(points, scores)
+                await asyncio.sleep(RERANK_PAUSE_SECONDS)
             outcomes.append(score_case(case, question, ranked_pages(points)))
     finally:
         await client.close()
+        await http.aclose()
     return summarize(outcomes), outcomes
+
+
+def _jina_reranker(http: httpx.AsyncClient) -> ApiCrossEncoderReranker:
+    if not settings.JINA_API_KEY:
+        raise SystemExit("reranked mode needs JINA_API_KEY")
+    return ApiCrossEncoderReranker(
+        provider=ApiRerankerProvider.JINA,
+        api_key=settings.JINA_API_KEY,
+        model_name=RERANK_MODEL,
+        timeout_seconds=RERANK_TIMEOUT_SECONDS,
+        max_documents=RERANK_CANDIDATES,
+        http_client=http,
+    )
 
 
 async def _main(args: argparse.Namespace) -> int:
@@ -204,7 +250,7 @@ async def _main(args: argparse.Namespace) -> int:
 def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="evals.retrieval", description=__doc__)
     parser.add_argument("--version", required=True)
-    parser.add_argument("--mode", choices=(*MODES, "all"), default="all")
+    parser.add_argument("--mode", choices=(*MODES, RERANKED, "all"), default="all")
     parser.add_argument("--report", help="also write the JSON report to this path")
     return asyncio.run(_main(parser.parse_args(argv)))
 
