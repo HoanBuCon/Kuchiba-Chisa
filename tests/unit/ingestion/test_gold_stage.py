@@ -221,3 +221,18 @@ async def test_knowledge_and_fingerprint_are_published_with_the_corpus(tmp_path)
     assert knowledge["entities"][0]["title"] == "P1"
     [chunk] = _read_chunks(tmp_path, report)
     assert chunk["entities"] == ["P1"]
+
+
+async def test_published_knowledge_reads_back_unchanged(tmp_path) -> None:
+    states = [
+        _state(1, redirects=("Other Name",), categories=("Category:Released in Version 2.0",))
+    ]
+    report = await _stage(
+        tmp_path, states, [_entry(1, "a")], {"a": _doc(1, "Some page text here.")}
+    ).run()
+
+    knowledge = FileGoldStore(tmp_path).read_knowledge(report.corpus_version)
+
+    assert knowledge.entities[0].game_version == "2.0"
+    assert knowledge.aliases[0].alias == "Other Name"
+    assert isinstance(knowledge.aliases[0].evidence, tuple)

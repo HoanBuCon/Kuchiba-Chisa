@@ -9,23 +9,29 @@ import sys
 from collections import Counter
 from collections.abc import Sequence
 from contextlib import asynccontextmanager
-from dataclasses import replace
+from dataclasses import asdict, replace
 from pathlib import Path
 
 import httpx
+from qdrant_client import AsyncQdrantClient
 
 from app.application.ingestion.gold_stage import GoldStage
 from app.application.ingestion.silver_stage import SilverStage
+from app.application.ingestion.vector_stage import VectorSettings, VectorStage
 from app.application.ingestion.wiki_sync import RunStatus, SyncReport, SyncRules, WikiSyncService
 from app.config.settings import settings
 from app.domain.ingestion.page_checks import CheckPolicy
 from app.infrastructure.database.engine import AsyncSessionFactory, engine
 from app.infrastructure.database.repositories.wiki_inventory import PostgresWikiInventory
 from app.infrastructure.database.repositories.wiki_silver import PostgresSilverLedger
+from app.infrastructure.embeddings.fastembed_adapter import FastEmbedAdapter
 from app.infrastructure.ingestion.bronze_store import FileBronzeStore
 from app.infrastructure.ingestion.gold.config import load_gold_settings
 from app.infrastructure.ingestion.gold.gold_store import FileGoldStore
+from app.infrastructure.ingestion.gold.passage_embedder import FastEmbedPassageEmbedder
+from app.infrastructure.ingestion.gold.staging_index import QdrantStagingIndex
 from app.infrastructure.ingestion.gold.token_counter import load_token_counter, tokenizer_sha256
+from app.infrastructure.ingestion.gold.vector_cache import FileVectorCache
 from app.infrastructure.ingestion.mediawiki_client import MediaWikiClient
 from app.infrastructure.ingestion.silver.html_cleaner import HtmlCleaner
 from app.infrastructure.ingestion.silver.rules import load_cleaning_rules
@@ -34,6 +40,9 @@ from app.infrastructure.ingestion.wiki_sync_config import WikiSyncConfig, load_w
 
 MAX_REDIRECTS = 3
 PREVIEW_DECISIONS = 20
+# Offline embedding shares the machine, so it stays on the service's thread budget.
+EMBED_THREADS = 2
+QDRANT_TIMEOUT_SECONDS = 120
 
 
 def _emit(payload: dict[str, object]) -> None:
@@ -52,6 +61,11 @@ def _parser() -> argparse.ArgumentParser:
     )
     commands.add_parser("clean", help="clean fetched pages into silver and check them (ING-006)")
     commands.add_parser("assemble", help="build a versioned gold corpus from accepted silver")
+    embed = commands.add_parser("embed", help="embed a gold corpus through the vector cache")
+    embed.add_argument("--version", help="corpus version; defaults to the newest")
+    load = commands.add_parser("load", help="load an embedded corpus into staging collections")
+    load.add_argument("--version", help="corpus version; defaults to the newest")
+    load.add_argument("--replace", action="store_true", help="recreate existing collections")
     commands.add_parser("status", help="show the last successful run and inventory counts")
     return parser
 
@@ -142,10 +156,43 @@ async def _assemble() -> dict[str, object]:
     return {"corpus_version": report.corpus_version, "path": report.path, "quality": report.quality}
 
 
+def _vector_stage() -> tuple[VectorStage, FileGoldStore, AsyncQdrantClient]:
+    root = Path(settings.INGESTION_DATA_DIR)
+    gold = FileGoldStore(root)
+    client = AsyncQdrantClient(
+        url=settings.QDRANT_URL, api_key=settings.QDRANT_API_KEY, timeout=QDRANT_TIMEOUT_SECONDS
+    )
+    embedder = FastEmbedPassageEmbedder(FastEmbedAdapter(threads=EMBED_THREADS))
+    stage = VectorStage(
+        gold,
+        embedder,
+        FileVectorCache(root, embedder.model_id),
+        QdrantStagingIndex(client),
+        VectorSettings(),
+    )
+    return stage, gold, client
+
+
+async def _vectors(args: argparse.Namespace) -> dict[str, object]:
+    stage, gold, client = _vector_stage()
+    version = args.version or gold.latest_version()
+    if version is None:
+        raise SystemExit("no gold corpus to work on; run assemble first")
+    try:
+        if args.command == "embed":
+            return asdict(await stage.embed(version))
+        return asdict(await stage.load(version, replace=args.replace))
+    finally:
+        await client.close()
+
+
 async def _run(args: argparse.Namespace) -> int:
     try:
         if args.command == "status":
             _emit(await _status())
+            return 0
+        if args.command in {"embed", "load"}:
+            _emit(await _vectors(args))
             return 0
         if args.command == "assemble":
             _emit(await _assemble())
