@@ -1,6 +1,7 @@
 """Page checks (ING-006): residue and layout quarantine, shrink hold, expected-empty pages."""
 
 import re
+from dataclasses import replace
 
 from app.domain.ingestion.documents import Block, BlockKind, CanonicalDocument
 from app.domain.ingestion.page_checks import CheckPolicy, FamilyContract, Verdict, check_page
@@ -65,3 +66,18 @@ def test_shrink_over_forty_percent_is_held_then_accepted_when_stable() -> None:
     assert _check(_doc("x" * 59), lkg=lkg, unchanged=1).verdict is Verdict.HOLD
     assert _check(_doc("x" * 59), lkg=lkg, unchanged=2).verdict is Verdict.ACCEPT
     assert _check(_doc("x" * 60), lkg=lkg).verdict is Verdict.ACCEPT
+
+
+def test_conservation_check_quarantines_only_above_both_limits() -> None:
+    def lost(source: int, chars: int):
+        return replace(_doc("Body."), source_chars=source, unexplained_text=("x" * chars,))
+
+    assert _check(lost(1_000, 60)).reasons == ("unexplained_text",)
+    assert _check(lost(1_000, 40)).verdict is Verdict.ACCEPT
+    assert _check(lost(100_000, 60)).verdict is Verdict.ACCEPT
+
+
+def test_page_emptied_by_a_cleaner_bug_is_not_mistaken_for_expected_empty() -> None:
+    document = replace(_doc(), source_chars=500, unexplained_text=("x" * 500,))
+
+    assert _check(document).verdict is Verdict.QUARANTINE

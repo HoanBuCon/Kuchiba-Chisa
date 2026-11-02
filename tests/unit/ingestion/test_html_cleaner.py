@@ -6,7 +6,9 @@ from datetime import UTC, datetime
 import pytest
 
 from app.domain.ingestion.documents import BlockKind, TurnKind
+from app.domain.interfaces.silver import CleaningError
 from app.domain.interfaces.wiki_ingestion import ParsedPage
+from app.infrastructure.ingestion.silver import html_cleaner
 from app.infrastructure.ingestion.silver.html_cleaner import HtmlCleaner
 from app.infrastructure.ingestion.silver.rules import load_cleaning_rules
 
@@ -326,3 +328,141 @@ def test_gendered_game_tags_and_attachment_markers_are_repaired() -> None:
     doc = _clean("<p>An army in {Male=him;Female=her}! [ATTACHMENT:Lemonblast.jpg]</p>")
 
     assert doc.blocks[0].text == "An army in him/her!"
+
+
+def test_other_languages_are_read_before_the_section_is_skipped() -> None:
+    doc = _clean(
+        '<h2><span class="mw-headline" id="Other_Languages">Other Languages</span></h2>'
+        "<table><tr><th>Language</th><th>Official Name</th></tr>"
+        "<tr><td>English</td><td>Chisa</td></tr><tr><td>Japanese</td><td>\u5343\u54b2</td></tr></table>"
+    )
+
+    assert doc.other_names == (("Japanese", "\u5343\u54b2"),)
+    assert doc.blocks == ()
+
+
+def test_chat_messages_inside_dialogue_become_turns_in_order() -> None:
+    doc = _clean(
+        '<div class="dialogue"><dl><dt>Open the chat</dt></dl>'
+        '<div class="wuwawl-container"><div class="wuwawl-group"><div class="wuwawl-group-content">'
+        '<div class="wuwawl-author">Chisa</div><div class="wuwawl-content">Are you okay?</div>'
+        '<div class="wuwawl-content">Please reply.</div></div></div>'
+        '<div class="wuwawl-notice">Friend sent a nudge</div>'
+        '<div class="wuwawl-choice"><div class="wuwawl-choice-header">Send</div>'
+        '<div class="wuwawl-choice-content">Sorry.</div></div></div></div>'
+    )
+
+    [block] = doc.blocks
+    assert [(t.kind, t.speaker, t.text) for t in block.turns] == [
+        (TurnKind.NARRATION, None, "Open the chat"),
+        (TurnKind.LINE, "Chisa", "Are you okay?"),
+        (TurnKind.LINE, "Chisa", "Please reply."),
+        (TurnKind.LINE, None, "Friend sent a nudge"),
+        (TurnKind.CHOICE, None, "Sorry."),
+    ]
+
+
+def test_text_beside_dialogue_lists_is_kept_as_narration() -> None:
+    doc = _clean(
+        '<div class="dialogue"><p>(Cutscene plays)</p><dl><dd><b>A:</b> Hi.</dd></dl>'
+        "<h3>Idle</h3><ul><li>Bye.</li></ul>Loose text</div>"
+    )
+
+    assert [t.text for t in doc.blocks[0].turns] == [
+        "(Cutscene plays)",
+        "Hi.",
+        "Idle",
+        "Bye.",
+        "Loose text",
+    ]
+
+
+def test_sections_swallowed_by_a_dialogue_box_still_obey_skip_rules() -> None:
+    doc = _clean(
+        '<div class="dialogue"><dl><dd><b>A:</b> Hi.</dd></dl><h2>Gallery</h2><p>Dropped.</p>'
+        "<h2>Trivia</h2><p>Kept.</p></div>"
+    )
+
+    assert [t.text for t in doc.blocks[0].turns] == ["Hi.", "Trivia", "Kept."]
+
+
+def test_nested_dl_directly_inside_a_dl_is_kept_one_level_deeper() -> None:
+    doc = _clean('<div class="dialogue"><dl><dt>Go</dt><dl><dd>Inner line.</dd></dl></dl></div>')
+
+    assert [(t.text, t.depth) for t in doc.blocks[0].turns] == [("Go", 0), ("Inner line.", 1)]
+
+
+def test_lost_dialogue_text_fails_the_page_instead_of_passing_silently(monkeypatch) -> None:
+    monkeypatch.setattr(html_cleaner, "_dialogue_child", lambda child, depth: iter(()))
+
+    with pytest.raises(CleaningError, match="lost source text"):
+        _clean('<div class="dialogue"><dl><dd><b>A:</b> Hi.</dd></dl></div>')
+
+
+def test_lines_written_after_a_nested_branch_stay_after_it() -> None:
+    doc = _clean(
+        '<div class="dialogue"><dl><dd>Pick one<dl><dd><b>A:</b> Branch line.</dd></dl>'
+        "<b>B:</b> Line after the branch.</dd></dl></div>"
+    )
+
+    assert [(t.kind, t.speaker, t.text, t.depth) for t in doc.blocks[0].turns] == [
+        (TurnKind.CHOICE, None, "Pick one", 0),
+        (TurnKind.LINE, "A", "Branch line.", 1),
+        (TurnKind.LINE, "B", "Line after the branch.", 0),
+    ]
+
+
+def test_sticker_only_chat_message_does_not_fail_the_page() -> None:
+    doc = _clean(
+        '<div class="dialogue"><div class="wuwawl-container"><div class="wuwawl-group">'
+        '<div class="wuwawl-author">Rover</div></div>'
+        '<div class="wuwawl-group"><div class="wuwawl-author">Chisa</div>'
+        '<div class="wuwawl-content">Hello.</div></div></div></div>'
+    )
+
+    assert [(t.speaker, t.text) for t in doc.blocks[0].turns] == [("Chisa", "Hello.")]
+
+
+def test_clean_page_explains_all_of_its_source_text() -> None:
+    doc = _clean(
+        '<h2>Story</h2><p>Kept text<sup class="reference">[1]</sup>.</p>'
+        '<table class="navbox"><tr><td>Nav</td></tr></table><h2>Gallery</h2><p>Skipped.</p>'
+        "<p>See [[Cubie Wars|]].</p>"
+    )
+
+    assert doc.unexplained_text == ()
+    assert doc.source_chars > 0
+
+
+def test_text_the_cleaner_silently_drops_is_reported(monkeypatch) -> None:
+    monkeypatch.setattr(html_cleaner, "_element_blocks", lambda element, section, rules: iter(()))
+
+    doc = _clean("<p>This important lore vanished.</p>")
+
+    assert doc.unexplained_text == ("thisimportantlorevanished",)
+    assert doc.unexplained_chars == doc.source_chars
+
+
+def test_classes_outside_the_baseline_are_reported_with_digits_folded() -> None:
+    doc = _clean('<p class="tocsection-11 brand-new-widget-7">Hi</p>')
+
+    assert doc.unknown_markup == ("brand-new-widget-N",)
+
+
+def test_table_labels_no_row_lines_up_with_are_kept() -> None:
+    doc = _clean(
+        "<table><tr><th>Icon</th><th>Rarity</th><th>Name</th></tr>"
+        "<tr><td>A</td><td>B</td></tr></table>"
+    )
+
+    assert doc.blocks[0].text == "Icon; Rarity; Name\nA; B"
+    assert doc.unexplained_text == ()
+
+
+def test_story_entries_without_a_body_keep_their_title() -> None:
+    doc = _clean(
+        '<table><tr><th>Top of the Tower</th><th>Unlocks at Lv. 3</th></tr>'
+        '<tr><td colspan="2"></td></tr></table>'
+    )
+
+    assert doc.blocks[0].text == "Top of the Tower Unlocks at Lv. 3"

@@ -39,6 +39,7 @@ class FakeSource:
         self.detail_requests: list[list[int]] = []
         self.parsed: list[int] = []
         self.template_since: list[datetime] = []
+        self.redirect_titles: dict[int, tuple[str, ...]] = {}
 
     def add(
         self, page_id, title, *, revid=1, touched=OLD, revised=OLD, categories=(), templates=()
@@ -59,6 +60,9 @@ class FakeSource:
 
     async def subcategories(self, parent):
         return self.subcats.get(parent, [])
+
+    async def redirects(self, page_ids):
+        return {pid: self.redirect_titles.get(pid, ()) for pid in page_ids}
 
     async def changed_templates(self, since):
         self.template_since.append(since)
@@ -342,3 +346,16 @@ async def test_a_run_that_died_is_marked_abandoned_by_the_next_one(source, inven
 
     assert inventory.runs["dead"].status == "abandoned"
     assert inventory.runs["dead"].finished_at == NOW
+
+
+async def test_redirects_are_refreshed_for_in_scope_pages_every_run(source, inventory) -> None:
+    source.add(1, "Chisa", categories=("Category:Resonators",))
+    source.add(2, "Main Page")
+    await _service(source, inventory).sync()
+    assert inventory.states[1].redirects == ()
+
+    source.redirect_titles = {1: ("Kuchiba Chisa",), 2: ("Home",)}
+    await _service(source, inventory).sync()
+
+    assert inventory.states[1].redirects == ("Kuchiba Chisa",)
+    assert inventory.states[2].redirects == ()

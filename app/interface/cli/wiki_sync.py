@@ -9,6 +9,7 @@ import sys
 from collections import Counter
 from collections.abc import Sequence
 from contextlib import asynccontextmanager
+from dataclasses import replace
 from pathlib import Path
 
 import httpx
@@ -24,7 +25,7 @@ from app.infrastructure.database.repositories.wiki_silver import PostgresSilverL
 from app.infrastructure.ingestion.bronze_store import FileBronzeStore
 from app.infrastructure.ingestion.gold.config import load_gold_settings
 from app.infrastructure.ingestion.gold.gold_store import FileGoldStore
-from app.infrastructure.ingestion.gold.token_counter import load_token_counter
+from app.infrastructure.ingestion.gold.token_counter import load_token_counter, tokenizer_sha256
 from app.infrastructure.ingestion.mediawiki_client import MediaWikiClient
 from app.infrastructure.ingestion.silver.html_cleaner import HtmlCleaner
 from app.infrastructure.ingestion.silver.rules import load_cleaning_rules
@@ -118,18 +119,23 @@ async def _clean() -> dict[str, object]:
     )
     report = await stage.run()
     flagged = [{"title": title, "reasons": list(reasons)} for title, reasons in report.flagged]
-    return {"stats": report.stats, "flagged": flagged}
+    return {"stats": report.stats, "flagged": flagged, "unknown_markup": report.unknown_markup}
 
 
 async def _assemble() -> dict[str, object]:
+    cache_dir = settings.INGESTION_TOKENIZER_CACHE_DIR
     gold_settings = load_gold_settings()
+    gold_settings = replace(
+        gold_settings,
+        tokenizer_sha256=tokenizer_sha256(gold_settings.tokenizer_model, cache_dir),
+    )
     root = Path(settings.INGESTION_DATA_DIR)
     stage = GoldStage(
         PostgresWikiInventory(engine, AsyncSessionFactory),
         FileSilverStore(root),
         PostgresSilverLedger(AsyncSessionFactory),
         FileGoldStore(root),
-        load_token_counter(gold_settings.tokenizer_model, settings.INGESTION_TOKENIZER_CACHE_DIR),
+        load_token_counter(gold_settings.tokenizer_model, cache_dir),
         gold_settings,
     )
     report = await stage.run()

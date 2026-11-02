@@ -5,7 +5,7 @@ from __future__ import annotations
 import hashlib
 from collections import Counter
 from collections.abc import Callable, Mapping
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import UTC, datetime
 
 from app.domain.ingestion.documents import CanonicalDocument
@@ -26,6 +26,8 @@ class SilverReport:
     stats: dict[str, int]
     # (title, reasons) for every page that did not produce usable silver this run.
     flagged: tuple[tuple[str, tuple[str, ...]], ...] = ()
+    # CSS class -> pages using it, for classes outside the known baseline (schema drift).
+    unknown_markup: dict[str, int] = field(default_factory=dict)
 
 
 def silver_key(state: PageState, cleaner_version: str) -> str:
@@ -73,6 +75,7 @@ class SilverStage:
         stats: Counter[str] = Counter()
         updated: list[SilverEntry] = []
         flagged: list[tuple[str, tuple[str, ...]]] = []
+        unknown: Counter[str] = Counter()
         for state in states.values():
             if not state.in_text_scope or state.bronze_key is None:
                 continue
@@ -82,21 +85,27 @@ class SilverStage:
                 stats["unchanged"] += 1
                 continue
             try:
-                entry = self._check(state, state.bronze_key, key, previous)
+                entry, document = self._check(state, state.bronze_key, key, previous)
             except (OSError, CleaningError) as error:
                 stats["failed"] += 1
                 flagged.append((state.title, (f"error:{type(error).__name__}",)))
                 continue
             updated.append(entry)
             stats[entry.verdict.value] += 1
+            stats["unexplained_chars"] += document.unexplained_chars
+            unknown.update(document.unknown_markup)
             if entry.verdict in {Verdict.QUARANTINE, Verdict.HOLD}:
                 flagged.append((state.title, entry.reasons))
         await self._ledger.upsert(updated)
-        return SilverReport(stats={"checked": len(updated), **stats}, flagged=tuple(flagged))
+        return SilverReport(
+            stats={"checked": len(updated), **stats},
+            flagged=tuple(flagged),
+            unknown_markup=dict(unknown.most_common()),
+        )
 
     def _check(
         self, state: PageState, bronze_key: str, key: str, previous: SilverEntry | None
-    ) -> SilverEntry:
+    ) -> tuple[SilverEntry, CanonicalDocument]:
         document = self._cleaner.clean(self._bronze.load(bronze_key), state.family)
         path = self._silver.save(key, document)
         digest = output_hash(document)
@@ -112,7 +121,7 @@ class SilverStage:
             last_known_good=last_good,
             unchanged_runs=unchanged,
         )
-        return SilverEntry(
+        entry = SilverEntry(
             page_id=state.page_id,
             silver_path=path,
             output_hash=digest,
@@ -122,3 +131,4 @@ class SilverStage:
             checked_at=self._clock(),
             lkg_path=path if result.usable else last_good_path,
         )
+        return entry, document

@@ -69,8 +69,19 @@ class CanonicalDocument:
     infoboxes: tuple[dict, ...] = ()
     glossary: tuple[GlossaryEntry, ...] = ()
     links: tuple[str, ...] = ()
+    # (language, name) rows of the page's Other Languages table (KNW-004).
+    other_names: tuple[tuple[str, str], ...] = ()
     removed: dict[str, int] = field(default_factory=dict)
+    # Source text neither kept nor removed with a reason (conservation check, page checks).
+    source_chars: int = 0
+    unexplained_text: tuple[str, ...] = ()
+    # CSS classes outside the known markup baseline: the wiki's schema drifting.
+    unknown_markup: tuple[str, ...] = ()
 
     @property
     def text_length(self) -> int:
         return sum(len(block.text) for block in self.blocks)
+
+    @property
+    def unexplained_chars(self) -> int:
+        return sum(len(text) for text in self.unexplained_text)

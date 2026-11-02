@@ -116,7 +116,7 @@ async def test_accepted_page_becomes_its_own_last_known_good(parts) -> None:
     report = await _stage(parts).run()
 
     entry = parts[4].entries[1]
-    assert report.stats == {"checked": 1, "accept": 1}
+    assert report.stats == {"checked": 1, "accept": 1, "unexplained_chars": 0}
     assert entry.verdict is Verdict.ACCEPT and entry.lkg_path == entry.silver_path
 
 
@@ -189,3 +189,23 @@ async def test_unreadable_bronze_or_html_is_reported_not_fatal(parts) -> None:
 
     assert report.stats == {"checked": 0, "failed": 2}
     assert {title for title, _ in report.flagged} == {"Page", "Two"}
+
+
+async def test_report_sums_unexplained_text_and_unknown_markup(parts) -> None:
+    _set_text(parts, "x" * 100)
+    cleaner = parts[2]
+    original = cleaner.clean
+
+    def clean(page, family):
+        return replace(
+            original(page, family),
+            unexplained_text=("abc",),
+            unknown_markup=("new-widget",),
+        )
+
+    cleaner.clean = clean
+
+    report = await _stage(parts).run()
+
+    assert report.stats["unexplained_chars"] == 3
+    assert report.unknown_markup == {"new-widget": 1}

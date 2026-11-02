@@ -25,6 +25,7 @@ class WikiPageModel(Base):
     tier: Mapped[str | None] = mapped_column(String(8), nullable=True)
     templates: Mapped[list[str]] = mapped_column(JSONB, nullable=False, default=list)
     categories: Mapped[list[str]] = mapped_column(JSONB, nullable=False, default=list)
+    redirects: Mapped[list[str]] = mapped_column(JSONB, nullable=False, default=list)
     status: Mapped[str] = mapped_column(String(16), nullable=False, index=True)
     fetched_revid: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
     fetched_touched: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)

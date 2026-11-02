@@ -72,6 +72,11 @@ class CleaningRules:
     residue: re.Pattern[str]
     story_min_chars: int
     contracts: dict[str, FamilyContract]
+    known_classes: frozenset[str] = frozenset()
+
+
+def _known_classes(path: Path) -> frozenset[str]:
+    return frozenset(yaml.safe_load(path.read_text(encoding="utf-8"))["classes"])
 
 
 def load_cleaning_rules(path: Path = CONFIG_DIR / "cleaning.yaml") -> CleaningRules:
@@ -95,4 +100,5 @@ def load_cleaning_rules(path: Path = CONFIG_DIR / "cleaning.yaml") -> CleaningRu
             family: FamilyContract(c.requires_infobox, frozenset(c.required_kinds))
             for family, c in raw.contracts.items()
         },
+        known_classes=_known_classes(path.with_name("known_markup.yaml")),
     )

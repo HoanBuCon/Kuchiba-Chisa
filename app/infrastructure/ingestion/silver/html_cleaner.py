@@ -5,7 +5,8 @@ from __future__ import annotations
 import json
 import re
 from collections import Counter
-from collections.abc import Iterator
+from collections.abc import Iterable, Iterator
+from copy import deepcopy
 from dataclasses import dataclass, field, replace
 
 import lxml.html
@@ -28,6 +29,13 @@ from app.infrastructure.ingestion.silver.rules import CleaningRules
 HEADINGS = {"h2": 2, "h3": 3, "h4": 4, "h5": 5, "h6": 6}
 LINE_BREAKING = {"p", "div", "li", "tr", "dd", "dt", "dl", "ul", "ol", "table", "blockquote"}
 LINE_ENDING = {"br", "hr"}
+DIGITS = re.compile(r"\d+")
+TOP_LEVEL_DIALOGUE = (
+    './/div[contains(@class, "dialogue")][not(ancestor::div[contains(@class, "dialogue")])]'
+)
+DIALOGUE_STRUCTURE = (
+    './/dl|.//div[contains(@class, "wuwawl-container")]|.//div[contains(@class, "wds-tabber")]'
+)
 NESTED_STRUCTURE = (
     './/table|.//div[contains(@class, "wds-tabber")]|.//div[contains(@class, "dialogue")]'
 )
@@ -98,6 +106,42 @@ def _text_boundaries(tag: str) -> tuple[str, str]:
     return ("\n", "\n") if tag in LINE_BREAKING else ("", "")
 
 
+def _comparable(text: str) -> str:
+    """Spacing, case and punctuation differ legitimately between source and output."""
+    return _alphanumeric(normalize_text(text)).casefold()
+
+
+def _source_fragments(body: HtmlElement) -> list[str]:
+    """Every text node once; comparing nodes survives gluing, reordering and repeated labels."""
+    fragments: dict[str, None] = {}
+    for element in body.iter():
+        parts = (element.text if isinstance(element.tag, str) else None, element.tail)
+        for part in parts if element is not body else parts[:1]:
+            comparable = _comparable(part or "")
+            if comparable:
+                fragments.setdefault(comparable, None)
+    return list(fragments)
+
+
+def _unexplained(
+    fragments: Iterable[str], blocks: Iterable[Block], accounted: Iterable[str]
+) -> tuple[str, ...]:
+    """Conservation check: source text must be kept or removed with a recorded reason."""
+    kept = (part for block in blocks for part in (block.text, block.title, block.variant) if part)
+    explained = _comparable("\n".join((*kept, *accounted)))
+    return tuple(fragment for fragment in fragments if fragment not in explained)
+
+
+def _markup_classes(body: HtmlElement) -> set[str]:
+    """Numbered classes ("tocsection-11") are one class to the census."""
+    return {
+        DIGITS.sub("N", name)
+        for element in body.iter()
+        if isinstance(element.tag, str)
+        for name in _classes(element)
+    }
+
+
 def _remove(element: HtmlElement) -> None:
     # drop_tree keeps the tail text, which belongs to the parent's flow.
     element.drop_tree()
@@ -110,8 +154,11 @@ class _Context:
     glossary: dict[str, str] = field(default_factory=dict)
     links: dict[str, None] = field(default_factory=dict)
 
+    accounted: list[str] = field(default_factory=list)
+
     def discard(self, element: HtmlElement, reason: str) -> None:
         self.removed[reason] += len(element.text_content())
+        self.accounted.append(extract_text(element))
         _remove(element)
 
 
@@ -129,9 +176,13 @@ class HtmlCleaner:
             body = _body(lxml.html.fromstring(page.html or "<div></div>"))
         except etree.ParserError as error:
             raise CleaningError(f"page {page.page_id}: unparseable HTML") from error
+        unknown_markup = _markup_classes(body) - self._rules.known_classes
         _resolve_tooltips(body, context)
+        fragments = _source_fragments(body)
         _drop_noise(body, context)
         _drop_generated_tables(body, context)
+        _drop_sections_inside_dialogue(body, context)
+        other_names = _other_names(body)
         dom_infoboxes = _take_infoboxes(body, context)
         _wrap_inline_runs(body)
         blocks = tuple(self._blocks(body, context))
@@ -145,7 +196,11 @@ class HtmlCleaner:
             infoboxes=_pageprops_infoboxes(page.properties) or dom_infoboxes,
             glossary=tuple(GlossaryEntry(t, d) for t, d in context.glossary.items()),
             links=tuple(context.links),
+            other_names=other_names,
             removed=dict(context.removed),
+            source_chars=sum(len(fragment) for fragment in fragments),
+            unexplained_text=_unexplained(fragments, blocks, context.accounted),
+            unknown_markup=tuple(sorted(unknown_markup)),
         )
 
     def _blocks(self, body: HtmlElement, context: _Context) -> Iterator[Block]:
@@ -154,6 +209,7 @@ class HtmlCleaner:
             if not isinstance(element.tag, str):
                 continue
             if element.tag in HEADINGS:
+                context.accounted.append(extract_text(element))
                 path = _push_heading(path, HEADINGS[element.tag], element)
                 continue
             section = tuple(name for _, name in path)
@@ -296,6 +352,22 @@ def _drop_noise(body: HtmlElement, context: _Context) -> None:
             context.discard(element, reason)
 
 
+def _other_names(body: HtmlElement) -> tuple[tuple[str, str], ...]:
+    """Read the table before its section is skipped; English repeats the page title."""
+    headings = body.xpath('.//*[@id="Other_Languages"]/parent::*')
+    table = headings[0].getnext() if headings else None
+    if table is None or table.tag != "table":
+        return ()
+    names = []
+    for row in table.xpath(".//tr[td]"):
+        cells = row.xpath("./th|./td")
+        if len(cells) >= 2:
+            language, name = extract_text(cells[0]), extract_text(cells[1])
+            if name and language and language != "English":
+                names.append((language, name))
+    return tuple(names)
+
+
 def _drop_reason(element: HtmlElement, rules: CleaningRules) -> str | None:
     if element.tag in rules.drop_tags:
         return rules.drop_tags[element.tag]
@@ -308,6 +380,19 @@ def _drop_reason(element: HtmlElement, rules: CleaningRules) -> str | None:
             return rules.drop_classes[name]
     hidden = _has_class(element, "hidden") and element.tag not in rules.keep_hidden_tags
     return "hidden_variant" if hidden else None
+
+
+def _drop_sections_inside_dialogue(body: HtmlElement, context: _Context) -> None:
+    """An unclosed dialogue box swallows later headings, so skip rules must apply inside it too."""
+    for box in body.xpath(TOP_LEVEL_DIALOGUE):
+        skipping = False
+        for child in list(box):
+            if not isinstance(child.tag, str):
+                continue
+            if child.tag in HEADINGS:
+                skipping = bool(context.rules.skip_sections.search(extract_text(child)))
+            if skipping:
+                context.discard(child, "skipped_section")
 
 
 def _drop_generated_tables(body: HtmlElement, context: _Context) -> None:
@@ -440,6 +525,8 @@ def _table_blocks(
             pending_title = None
         else:
             generic.append(row)
+    if pending_title:
+        facts.append(pending_title.replace("\n", " "))
     if facts:
         yield Block(BlockKind.FACTS, section, "\n".join(facts))
     yield from _generic_table(generic, section)
@@ -462,6 +549,9 @@ def _titled_cell(
 ) -> Iterator[Block]:
     text = extract_text(cell)
     if not text:
+        # An entry with no body yet (an unreleased story) still names what exists.
+        if title:
+            facts.append(title.replace("\n", " "))
         return
     heading, _, variant = (title or "").partition("\n")
     if len(text) < rules.story_min_chars and heading:
@@ -479,52 +569,133 @@ def _generic_table(rows: list[HtmlElement], section: tuple[str, ...]) -> Iterato
     header = [extract_text(cell) for cell in rows[0].xpath("./th")]
     body_rows = rows[1:] if header and not rows[0].xpath("./td") else rows
     lines = []
+    header_used = False
     for row in body_rows:
         values = [extract_text(cell) for cell in row.xpath("./th|./td")]
-        pairs = (
-            zip(header, values, strict=False)
-            if len(header) == len(values)
-            else (("", v) for v in values)
-        )
+        aligned = len(header) == len(values)
+        header_used = header_used or aligned
+        pairs = zip(header, values, strict=False) if aligned else (("", v) for v in values)
         line = "; ".join(f"{k}: {v}" if k else v for k, v in pairs if v)
         if line:
             lines.append(line)
+    # Column labels no row lines up with still describe the table, so they lead it.
+    if header and not header_used:
+        lines.insert(0, "; ".join(filter(None, header)))
     if lines:
         yield Block(BlockKind.TABLE, section, "\n".join(lines))
 
 
 def _dialogue_blocks(element: HtmlElement, section: tuple[str, ...]) -> Iterator[Block]:
-    containers = (
-        [element]
-        if _has_class(element, "dialogue")
-        else element.xpath('.//div[contains(@class, "dialogue")]')
-    )
+    containers = [element] if _has_class(element, "dialogue") else element.xpath(TOP_LEVEL_DIALOGUE)
     turns = tuple(turn for container in containers for turn in _dialogue_turns(container, depth=0))
+    _require_complete_turns(containers, turns)
     if turns:
         yield Block(BlockKind.DIALOGUE, section, "\n".join(t.render() for t in turns), turns=turns)
 
 
+def _alphanumeric(text: str) -> str:
+    return "".join(character for character in text if character.isalnum())
+
+
+def _require_complete_turns(containers: list[HtmlElement], turns: tuple[DialogueTurn, ...]) -> None:
+    """Every source character must survive in order; chats may repeat a speaker, not lose a line."""
+    source = "".join(_alphanumeric(extract_text(container)) for container in containers)
+    rendered = iter("".join(_alphanumeric(turn.render()) for turn in turns))
+    if not all(character in rendered for character in source):
+        raise CleaningError("dialogue turns lost source text")
+
+
 def _dialogue_turns(container: HtmlElement, depth: int) -> Iterator[DialogueTurn]:
-    for dl in container.xpath("./dl"):
-        for item in dl:
-            if item.tag == "dt":
-                text = extract_text(item)
-                if text:
-                    yield DialogueTurn(TurnKind.NARRATION, text, depth=depth)
-            elif item.tag == "dd":
-                yield from _dialogue_item(item, depth)
+    """Walk every child in order: dialogue boxes also hold chats, notes, headings and tabs."""
+    _wrap_inline_runs(container)
+    for child in container:
+        if isinstance(child.tag, str):
+            yield from _dialogue_child(child, depth)
+
+
+def _dialogue_child(child: HtmlElement, depth: int) -> Iterator[DialogueTurn]:
+    if child.tag == "dl":
+        for item in child:
+            if isinstance(item.tag, str):
+                yield from _dl_item(item, depth)
+    elif child.tag == "dd":
+        yield from _dialogue_item(child, depth)
+    elif _has_class(child, "wuwawl-container"):
+        yield from _chat_turns(child, depth)
+    elif child.tag == "div" and child.xpath(DIALOGUE_STRUCTURE):
+        yield from _dialogue_turns(child, depth)
+    else:
+        text = extract_text(child)
+        if text:
+            yield DialogueTurn(TurnKind.NARRATION, text, depth=depth)
+
+
+def _dl_item(item: HtmlElement, depth: int) -> Iterator[DialogueTurn]:
+    if item.tag == "dd":
+        yield from _dialogue_item(item, depth)
+    elif item.tag == "dl":
+        yield from _dialogue_child(item, depth + 1)
+    else:
+        text = extract_text(item)
+        if text:
+            yield DialogueTurn(TurnKind.NARRATION, text, depth=depth)
+
+
+def _chat_turns(node: HtmlElement, depth: int) -> Iterator[DialogueTurn]:
+    """In-game chat: authored message groups, reply choices and system notices."""
+    for child in node:
+        if not isinstance(child.tag, str):
+            continue
+        if _has_class(child, "wuwawl-group"):
+            yield from _chat_group(child, depth)
+        elif _has_class(child, "wuwawl-choice-content"):
+            yield DialogueTurn(TurnKind.CHOICE, extract_text(child), depth=depth)
+        elif child.xpath('.//*[contains(@class, "wuwawl-")]'):
+            yield from _chat_turns(child, depth)
+        elif text := extract_text(child):
+            yield DialogueTurn(TurnKind.LINE, text, depth=depth)
+
+
+def _chat_group(group: HtmlElement, depth: int) -> Iterator[DialogueTurn]:
+    author = _first(group, "wuwawl-author")
+    speaker = extract_text(author) if author is not None else None
+    messages = [extract_text(m) for m in group.xpath('.//*[contains(@class, "wuwawl-content")]')]
+    if author is not None and not any(messages):
+        # A sticker-only message has no text for its author to be attributed to.
+        _remove(author)
+    for text in filter(None, messages):
+        yield DialogueTurn(TurnKind.LINE, text, speaker=speaker or None, depth=depth)
 
 
 def _dialogue_item(item: HtmlElement, depth: int) -> Iterator[DialogueTurn]:
-    own_text = extract_text(item, skip_tags=frozenset({"dl"}))
-    nested = item.xpath("./dl")
-    if nested:
-        if own_text:
-            yield DialogueTurn(TurnKind.CHOICE, own_text, depth=depth)
-        yield from _dialogue_turns(item, depth + 1)
+    if not item.xpath("./dl"):
+        text = extract_text(item)
+        if text:
+            yield _line(item, text, depth)
         return
-    if own_text:
-        yield _line(item, own_text, depth)
+    for position, segment in enumerate(_item_segments(item)):
+        text = "" if segment.tag == "dl" else extract_text(segment)
+        if segment.tag == "dl":
+            yield from _dialogue_child(segment, depth + 1)
+        elif text and position == 0:
+            yield DialogueTurn(TurnKind.CHOICE, text, depth=depth)
+        elif text:
+            yield _line(segment, text, depth)
+
+
+def _item_segments(item: HtmlElement) -> Iterator[HtmlElement]:
+    """Split around nested lists so lines written after a branch stay after it."""
+    holder = item.makeelement("div")
+    holder.text = item.text
+    for child in item:
+        if child.tag == "dl":
+            yield holder
+            yield child
+            holder = item.makeelement("div")
+            holder.text = child.tail
+        else:
+            holder.append(deepcopy(child))
+    yield holder
 
 
 def _line(item: HtmlElement, text: str, depth: int) -> DialogueTurn:
@@ -542,6 +713,7 @@ def _without_boilerplate(block: Block, rules: CleaningRules, context: _Context) 
     if block.kind is not BlockKind.DIALOGUE:
         kept = [line for line in text.split("\n") if not rules.boilerplate_lines.search(line)]
         context.removed["boilerplate"] += len(text) - sum(len(line) for line in kept)
+        context.accounted.extend(line for line in text.split("\n") if line not in kept)
         text = normalize_text("\n".join(kept))
     if not text:
         return None
@@ -550,6 +722,10 @@ def _without_boilerplate(block: Block, rules: CleaningRules, context: _Context) 
 
 def _repaired(text: str, rules: CleaningRules, context: _Context) -> str:
     for pattern, replacement in rules.repairs:
-        text, count = pattern.subn(replacement, text)
-        context.removed["repaired_markup"] += count
+        repaired, count = pattern.subn(replacement, text)
+        if count:
+            context.removed["repaired_markup"] += count
+            # The original spelling is explained by the rule that rewrote it.
+            context.accounted.append(text)
+        text = repaired
     return text

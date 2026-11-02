@@ -7,6 +7,7 @@ from datetime import date
 from typing import Any, Protocol
 
 from app.domain.ingestion.chunking import Chunk
+from app.domain.ingestion.knowledge import KnowledgeBase
 
 
 class IGoldStore(Protocol):
@@ -19,6 +20,7 @@ class IGoldStore(Protocol):
         version: str,
         chunks: Sequence[Chunk],
         duplicate_of: Mapping[str, int],
+        knowledge: KnowledgeBase,
         manifest: Mapping[str, Any],
     ) -> str:
         """Publish the version atomically and return its store-relative directory."""

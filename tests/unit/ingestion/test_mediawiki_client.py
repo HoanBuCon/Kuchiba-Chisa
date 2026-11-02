@@ -214,3 +214,18 @@ async def test_parse_without_html_is_an_error() -> None:
 
     with pytest.raises(WikiSourceError, match="missing parsed HTML"):
         await _client(handler).parse(7)
+
+
+async def test_redirects_are_collected_per_target_page() -> None:
+    payload = {
+        "query": {
+            "pages": [
+                {"pageid": 7, "redirects": [{"title": "Kuchiba Chisa"}, {"title": "Chisa K."}]},
+                {"pageid": 8},
+            ]
+        }
+    }
+
+    found = await _client(_responses(httpx.Response(200, json=payload))).redirects([7, 8])
+
+    assert found == {7: ("Chisa K.", "Kuchiba Chisa"), 8: ()}

@@ -40,6 +40,8 @@ class PageState:
     templates: tuple[str, ...] = ()
     # Kept so a families.yaml change re-classifies every page without asking the wiki again.
     categories: tuple[str, ...] = ()
+    # Titles that redirect here, the highest-confidence alias source (KNW-004).
+    redirects: tuple[str, ...] = ()
     status: PageStatus = PageStatus.ACTIVE
     fetched_revid: int | None = None
     fetched_touched: datetime | None = None

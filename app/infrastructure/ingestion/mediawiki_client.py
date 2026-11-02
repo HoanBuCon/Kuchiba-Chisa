@@ -187,6 +187,23 @@ class MediaWikiClient:
                     templates.update(t["title"] for t in page.get("templates", []))
         return {pid: (tuple(sorted(c)), tuple(sorted(t))) for pid, (c, t) in details.items()}
 
+    async def redirects(self, page_ids: Sequence[int]) -> dict[int, tuple[str, ...]]:
+        found: dict[int, set[str]] = {}
+        for start in range(0, len(page_ids), BATCH):
+            batches = await self._continued(
+                action="query",
+                prop="redirects",
+                rdprop="title",
+                rdnamespace=0,
+                rdlimit="max",
+                pageids="|".join(map(str, page_ids[start : start + BATCH])),
+            )
+            for payload in batches:
+                for page in payload.get("query", {}).get("pages", []):
+                    titles = found.setdefault(page["pageid"], set())
+                    titles.update(r["title"] for r in page.get("redirects", []))
+        return {pid: tuple(sorted(titles)) for pid, titles in found.items()}
+
     async def subcategories(self, parent: str) -> list[str]:
         batches = await self._continued(
             action="query",
