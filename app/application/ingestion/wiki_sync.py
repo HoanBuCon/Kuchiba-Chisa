@@ -151,6 +151,8 @@ class WikiSyncService:
     async def _locked_sync(self) -> SyncReport:
         started = self._clock()
         run_id = f"{started:%Y%m%dT%H%M%SZ}-{uuid4().hex[:8]}"
+        # Holding the single-writer lock proves any run still marked running has died.
+        await self._inventory.abandon_unfinished_runs(started)
         await self._inventory.record_run(SyncRun(run_id, started, None, RunStatus.RUNNING, {}))
         try:
             reconciliation = await self._reconcile(started)

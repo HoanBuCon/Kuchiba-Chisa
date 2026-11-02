@@ -1,0 +1,31 @@
+# Corpus assembly (ING-004, ING-011). Bump assembler_version on any change that alters chunks.
+version: 1
+assembler_version: gold-1
+tokenizer_model: intfloat/multilingual-e5-small
+chunking:
+  target_tokens: 350
+  max_tokens: 450
+  min_tokens: 120
+  overlap_turns: 1
+  passage_prefix: "passage: "
+dedup:
+  min_chars: 80
+  # Owner of a shared passage, first wins: specific pages beat aggregate ones (ING-011).
+  family_priority:
+    - resonator_backstory
+    - voicelines
+    - forte_report
+    - developer_archive
+    - main_quest
+    - event_story
+    - quest
+    - resonator
+    - npc
+    - faction
+    - location
+    - region
+    - lore
+    - terminology
+# Reported to the data gate (ING-004); the gate itself decides what blocks a release.
+report:
+  tiny_chunk_tokens: 60

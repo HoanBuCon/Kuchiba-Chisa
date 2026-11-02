@@ -81,3 +81,15 @@ async def test_advisory_lock_is_exclusive_and_released(inventory) -> None:
         assert first is True and second is False
     async with inventory.exclusive_run() as again:
         assert again is True
+
+
+@pytest.mark.asyncio
+async def test_unfinished_runs_are_abandoned_and_finished_ones_untouched(inventory) -> None:
+    running = SyncRun(f"it-{uuid.uuid4().hex[:8]}", NOW, None, "running", {})
+    done = SyncRun(f"it-{uuid.uuid4().hex[:8]}", NOW, NOW, "succeeded", {})
+    await inventory.record_run(running)
+    await inventory.record_run(done)
+
+    assert await inventory.abandon_unfinished_runs(NOW) == 1
+    assert await inventory.abandon_unfinished_runs(NOW) == 0
+    assert (await inventory.last_successful_run()).run_id == done.run_id

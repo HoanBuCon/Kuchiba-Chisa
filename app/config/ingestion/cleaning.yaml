@@ -1,6 +1,6 @@
 # Silver cleaning rules (ING-003, ING-012, E3-E5). Bump cleaner_version on any change that alters output.
 version: 1
-cleaner_version: silver-1
+cleaner_version: silver-2
 # Elements removed with their whole subtree, by CSS class or tag; the key is the removal reason.
 drop:
   ui:
@@ -27,7 +27,7 @@ skip_sections:
   - ^(Gallery|Other Languages|Change History|Navigation|References|Videos|Contents|Glossary)$
   - ^(Character Mentions|Character Voicelines|Quests and Events|Availability|Event Convenes)$
   - ^(Combat|Combat Overview|Ascension Materials|Forte|Resonance Chain|Rewards|Drops|Shop)$
-  - ^(Obtained From|Used In|Recipe|Stats|Upgrade|Ascension|Gameplay Notes|Enemies)$
+  - ^(Obtained From|Used In|Recipe|Stats|Upgrade|Ascension|Gameplay Notes|Enemies|See Also)$
 # Tooltips whose definition is a rendering hint, not a glossary term (E3, E5).
 variant_tooltips:
   - ^Text for (male|female) Rover$
@@ -40,6 +40,8 @@ boilerplate_lines:
   - "^Main article:"
   - "^See also:"
   - ^Disclaimer:.*compilation of Skip summary
+  - ^Looks like this map doesn't have a page yet
+  - ^- (Next|Previous) Page\b
 # Wiki-side template bugs that leak markup into rendered text; repaired before the residue check.
 repairs:
   - {pattern: '\[\[([^\]|]*)(?:\|[^\]]*)?\]\]', replace: '\1'}

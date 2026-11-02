@@ -5,8 +5,9 @@ from __future__ import annotations
 from collections.abc import AsyncIterator, Iterable
 from contextlib import asynccontextmanager
 from dataclasses import fields
+from datetime import datetime
 
-from sqlalchemy import func, select
+from sqlalchemy import func, select, update
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker
 
@@ -18,6 +19,8 @@ from app.infrastructure.database.models.wiki_inventory import WikiPageModel, Wik
 SYNC_LOCK_KEY = 0x57494B49
 UPSERT_BATCH = 500
 SUCCEEDED = "succeeded"
+RUNNING = "running"
+ABANDONED = "abandoned"
 _PAGE_COLUMNS = tuple(field.name for field in fields(PageState))
 
 
@@ -89,6 +92,18 @@ class PostgresWikiInventory:
         if row is None:
             return None
         return SyncRun(row.run_id, row.started_at, row.finished_at, row.status, dict(row.stats))
+
+    async def abandon_unfinished_runs(self, finished_at: datetime) -> int:
+        statement = (
+            update(WikiSyncRunModel)
+            .where(WikiSyncRunModel.status == RUNNING)
+            .values(status=ABANDONED, finished_at=finished_at)
+            .returning(WikiSyncRunModel.run_id)
+        )
+        async with self._session_factory() as session:
+            abandoned = (await session.scalars(statement)).all()
+            await session.commit()
+        return len(abandoned)
 
     async def record_run(self, run: SyncRun) -> None:
         values = {
