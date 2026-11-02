@@ -81,3 +81,42 @@ class CorpusSafetyExceptionManifest(BaseModel):
         if len(ids) != len(set(ids)):
             raise ValueError("corpus safety exception IDs must be unique")
         return self
+
+
+class ApprovedPageSafetyException(BaseModel):
+    """An owner's decision bound to one rule and one exact text of one wiki page."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid", strict=True)
+
+    exception_id: str = Field(min_length=1, max_length=160)
+    page_id: int = Field(ge=0)
+    title: str = Field(min_length=1, max_length=256)
+    rule_id: Literal["sensitive_disclosure"]
+    content_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    curator_reason: str = Field(min_length=1, max_length=1000)
+    approved_by: str = Field(min_length=1, max_length=128)
+    approved_at: datetime
+    approval_authority: Literal["user/project owner"]
+
+    @field_validator("approved_at")
+    @classmethod
+    def require_timezone(cls, value: datetime) -> datetime:
+        if value.tzinfo is None or value.utcoffset() is None:
+            raise ValueError("approved_at must be timezone-aware")
+        return value
+
+
+class PageSafetyExceptionManifest(BaseModel):
+    """Version-controlled owner approvals consumed by the v2 silver stage."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid", strict=True)
+
+    schema_version: Literal[1]
+    exceptions: tuple[ApprovedPageSafetyException, ...]
+
+    @model_validator(mode="after")
+    def require_unique_exception_ids(self) -> PageSafetyExceptionManifest:
+        ids = [exception.exception_id for exception in self.exceptions]
+        if len(ids) != len(set(ids)):
+            raise ValueError("page safety exception IDs must be unique")
+        return self

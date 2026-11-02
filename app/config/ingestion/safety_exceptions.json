@@ -1,0 +1,82 @@
+{
+  "schema_version": 1,
+  "exceptions": [
+    {
+      "exception_id": "2026-11-02-gold-suspended-in-shadows",
+      "page_id": 40073,
+      "title": "Gold Suspended in Shadows",
+      "rule_id": "sensitive_disclosure",
+      "content_sha256": "8febf00fb77f2bdccb10b6d4d31a520e4825f5cf6894a6e44a3538f9d2783277",
+      "curator_reason": "Character dialogue asking about another character's skills; not aimed at the assistant.",
+      "approved_by": "HoanBuCon",
+      "approved_at": "2026-11-02T23:13:00+07:00",
+      "approval_authority": "user/project owner"
+    },
+    {
+      "exception_id": "2026-11-02-lucy-backstory",
+      "page_id": 41784,
+      "title": "Lucy/Backstory",
+      "rule_id": "sensitive_disclosure",
+      "content_sha256": "3fb024fb43d25cb953ba48e48bd9200c670ebe5b6f32b0ca5df791816176a6e9",
+      "curator_reason": "Backstory narration: 'shown' and 'top-secret' are near each other by chance.",
+      "approved_by": "HoanBuCon",
+      "approved_at": "2026-11-02T23:13:00+07:00",
+      "approval_authority": "user/project owner"
+    },
+    {
+      "exception_id": "2026-11-02-song-of-the-heart-sword",
+      "page_id": 74691,
+      "title": "Song of the Heart Sword",
+      "rule_id": "sensitive_disclosure",
+      "content_sha256": "da656c2148503c443fb3aaa15a419584901560263a40f1c814a7e1d37e46c8b6",
+      "curator_reason": "Quest dialogue about an oath of secrecy; not aimed at the assistant.",
+      "approved_by": "HoanBuCon",
+      "approved_at": "2026-11-02T23:13:00+07:00",
+      "approval_authority": "user/project owner"
+    },
+    {
+      "exception_id": "2026-11-02-simulacrum-of-the-heart",
+      "page_id": 77596,
+      "title": "Simulacrum of the Heart",
+      "rule_id": "sensitive_disclosure",
+      "content_sha256": "d608ca7f33b442f6bc3349aab14a84ab716df23d1eedc3b58ba4078d0c647303",
+      "curator_reason": "Quest dialogue about forbidden knowledge; not aimed at the assistant.",
+      "approved_by": "HoanBuCon",
+      "approved_at": "2026-11-02T23:13:00+07:00",
+      "approval_authority": "user/project owner"
+    },
+    {
+      "exception_id": "2026-11-02-glossary",
+      "page_id": 74695,
+      "title": "Glossary",
+      "rule_id": "sensitive_disclosure",
+      "content_sha256": "fd1da3309e2a28108b13c4692a284479ccb164d721d94f1f1a0bb2ec5813b912",
+      "curator_reason": "Term description of an in-game legend; not aimed at the assistant.",
+      "approved_by": "HoanBuCon",
+      "approved_at": "2026-11-02T23:13:00+07:00",
+      "approval_authority": "user/project owner"
+    },
+    {
+      "exception_id": "2026-11-02-baizhi-backstory",
+      "page_id": 1094,
+      "title": "Baizhi/Backstory",
+      "rule_id": "sensitive_disclosure",
+      "content_sha256": "7f5397d170a0e4eaae759c7f31cb6e25e0676a69901e8d5b30532af6ebc2e79d",
+      "curator_reason": "Backstory narration: the match spans two sentences.",
+      "approved_by": "HoanBuCon",
+      "approved_at": "2026-11-02T23:13:00+07:00",
+      "approval_authority": "user/project owner"
+    },
+    {
+      "exception_id": "2026-11-02-troupe-of-fools",
+      "page_id": 25657,
+      "title": "Troupe of Fools",
+      "rule_id": "sensitive_disclosure",
+      "content_sha256": "e13909d2c7c836da122b1b403c2e48ed8f2d1aabc85d7253d8f0c3a51f1f72f8",
+      "curator_reason": "Story summary about a faction's plan; not aimed at the assistant.",
+      "approved_by": "HoanBuCon",
+      "approved_at": "2026-11-02T23:13:00+07:00",
+      "approval_authority": "user/project owner"
+    }
+  ]
+}

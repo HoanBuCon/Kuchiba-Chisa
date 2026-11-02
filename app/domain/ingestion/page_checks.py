@@ -8,6 +8,8 @@ from enum import StrEnum
 
 from app.domain.ingestion.documents import BlockKind, CanonicalDocument
 
+SAFETY_REASON_PREFIX = "safety:"
+
 
 class Verdict(StrEnum):
     ACCEPT = "accept"
@@ -73,7 +75,9 @@ def check_page(
 ) -> PageCheck:
     """`unchanged_runs` counts consecutive runs that produced this same silver output."""
     if safety_findings:
-        return PageCheck(Verdict.QUARANTINE, tuple(f"safety:{rule}" for rule in safety_findings))
+        return PageCheck(
+            Verdict.QUARANTINE, tuple(f"{SAFETY_REASON_PREFIX}{rule}" for rule in safety_findings)
+        )
     if hits := residue_hits(document, policy.residue):
         return PageCheck(Verdict.QUARANTINE, tuple(f"residue:{hit}" for hit in sorted(set(hits))))
     if _lost_text(document, policy):
