@@ -32,7 +32,7 @@ os.environ["REDIS_PASSWORD"] = ""
 os.environ["REDIS_USERNAME"] = ""
 os.environ.setdefault("CELERY_BROKER_URL", "redis://localhost:56379/14")
 os.environ.setdefault("CELERY_RESULT_BACKEND", "redis://localhost:56379/14")
-os.environ.setdefault("QDRANT_URL", "http://localhost:16333")
+os.environ.setdefault("QDRANT_URL", "http://localhost:26333")
 os.environ["QDRANT_API_KEY"] = ""
 os.environ.setdefault("GROQ_API_KEY", "test_groq_key_placeholder")
 os.environ.setdefault("JWT_SECRET", "test_jwt_secret_that_is_long_enough_for_validation")
@@ -243,7 +243,7 @@ def _assert_isolated_test_endpoints() -> None:
     from app.config.settings import settings
 
     allowed_database_hosts = ("@localhost:55432/", "@postgres:5432/")
-    allowed_qdrant_urls = ("http://localhost:16333", "http://qdrant:6333")
+    allowed_qdrant_urls = ("http://localhost:26333", "http://qdrant:6333")
     allowed_redis_urls = ("localhost:56379", "redis:6379")
 
     if settings.APP_ENV != "test":

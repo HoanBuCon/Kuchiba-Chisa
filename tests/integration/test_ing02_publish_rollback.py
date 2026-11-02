@@ -142,7 +142,7 @@ def _quality(release_id: uuid.UUID) -> CorpusQualityReport:
 async def test_isolated_publish_and_rollback_are_atomic_and_durably_audited() -> None:
     assert settings.is_test
     assert settings.QDRANT_URL.rstrip("/") in {
-        "http://localhost:16333",
+        "http://localhost:26333",
         "http://qdrant:6333",
     }
     run_suffix = uuid.uuid4().hex[:10]
