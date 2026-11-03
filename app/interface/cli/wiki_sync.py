@@ -30,6 +30,7 @@ from app.infrastructure.database.repositories.wiki_silver import PostgresSilverL
 from app.infrastructure.embeddings.fastembed_adapter import FastEmbedAdapter
 from app.infrastructure.ingestion.bronze_store import FileBronzeStore
 from app.infrastructure.ingestion.corpus_safety_exceptions import load_page_safety_exceptions
+from app.infrastructure.ingestion.gates_config import load_gate_policies
 from app.infrastructure.ingestion.gold.config import load_gold_settings
 from app.infrastructure.ingestion.gold.gold_store import FileGoldStore
 from app.infrastructure.ingestion.gold.passage_embedder import FastEmbedPassageEmbedder
@@ -204,7 +205,8 @@ def _data_gate(args: argparse.Namespace) -> GateReport:
     if version is None:
         raise SystemExit("no gold corpus to gate; run assemble first")
     previous = gold.read_manifest(args.previous) if args.previous else None
-    report = evaluate_data_gate(gold.read_manifest(version), previous)
+    policy, _ = load_gate_policies()
+    report = evaluate_data_gate(gold.read_manifest(version), previous, policy)
     _emit(
         {
             "corpus_version": version,

@@ -1,0 +1,25 @@
+# Release gate thresholds and the routine envelope (ING-008, design 6.8).
+data:
+  max_quarantined_ratio: 0.02
+  max_chunk_change_ratio: 0.10
+  max_knowledge_change_ratio: 0.05
+retrieval:
+  # QUAL-003 targets, and the golden size below which the result proves nothing.
+  min_hit_at_5: 0.90
+  min_mrr_at_10: 0.80
+  min_cases: 100
+  max_drop_from_active: 0.02
+  # Owner-verified questions whose target page must always stay findable.
+  canary_case_ids:
+    - lore-001
+    - lore-002
+    - lore-003
+    - lore-004
+    - lore-005
+    - lore-006
+    - lore-007
+    - lore-008
+    - lore-009
+    - lore-010
+    - lore-011
+    - lore-012

@@ -77,6 +77,17 @@
       "approved_by": "HoanBuCon",
       "approved_at": "2026-11-02T23:13:00+07:00",
       "approval_authority": "user/project owner"
+    },
+    {
+      "exception_id": "2026-11-03-resonance-nexus-genesis-nexus",
+      "page_id": 32481,
+      "title": "Resonance Nexus",
+      "rule_id": "sensitive_disclosure",
+      "content_sha256": "ef031ab17af3a21e5cc0b543ca03188a5ddf6734828316839edaaf54894e2776",
+      "curator_reason": "Glossary definition of an in-game legend; not aimed at the assistant.",
+      "approved_by": "HoanBuCon",
+      "approved_at": "2026-11-03T00:00:00+07:00",
+      "approval_authority": "user/project owner"
     }
   ]
 }
