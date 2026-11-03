@@ -193,7 +193,7 @@ class HtmlCleaner:
             family=family,
             cleaner_version=self.version,
             blocks=blocks,
-            infoboxes=_pageprops_infoboxes(page.properties) or dom_infoboxes,
+            infoboxes=pageprops_infoboxes(page.properties) or dom_infoboxes,
             glossary=tuple(GlossaryEntry(t, d) for t, d in context.glossary.items()),
             links=tuple(context.links),
             other_names=other_names,
@@ -277,7 +277,7 @@ def _take_infoboxes(body: HtmlElement, context: _Context) -> tuple[dict, ...]:
     return tuple(boxes)
 
 
-def _pageprops_infoboxes(properties: dict[str, str]) -> tuple[dict, ...]:
+def pageprops_infoboxes(properties: dict[str, str]) -> tuple[dict, ...]:
     """Flatten PortableInfobox JSON to {source: text}; values are HTML snippets."""
     try:
         raw = json.loads(properties.get("infoboxes") or "[]")

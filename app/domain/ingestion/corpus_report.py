@@ -7,7 +7,7 @@ from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
 
 from app.domain.ingestion.chunking import Chunk
-from app.domain.ingestion.knowledge import AliasKind, KnowledgeBase
+from app.domain.ingestion.knowledge import AliasKind, KnowledgeBase, has_corpus_text
 from app.domain.ingestion.page_checks import Verdict
 from app.domain.interfaces.silver import SilverEntry
 
@@ -56,6 +56,7 @@ class FamilyDistribution:
 @dataclass(frozen=True)
 class KnowledgeSummary:
     entities: int
+    structured_only: int
     aliases: int
     inferred_aliases: int
     inferred_with_evidence: int
@@ -134,6 +135,7 @@ def knowledge_summary(knowledge: KnowledgeBase) -> KnowledgeSummary:
     inferred = [alias for alias in knowledge.aliases if alias.kind == AliasKind.INFERRED]
     return KnowledgeSummary(
         entities=len(knowledge.entities),
+        structured_only=sum(not has_corpus_text(e) for e in knowledge.entities),
         aliases=len(knowledge.aliases),
         inferred_aliases=len(inferred),
         inferred_with_evidence=sum(bool(alias.evidence) for alias in inferred),

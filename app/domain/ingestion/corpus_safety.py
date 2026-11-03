@@ -80,6 +80,19 @@ class CorpusSafetyPolicy:
             findings.update(f"pii:{name}" for name in self._pii.redact(text).categories)
         return tuple(sorted(findings))
 
+    def vet_infoboxes(
+        self, page_id: int, infoboxes: tuple[dict[str, str], ...]
+    ) -> tuple[tuple[dict[str, str], ...], tuple[str, ...]]:
+        """Masked infobox data and its findings, for pages that skip the silver stage."""
+        masked = _map_strings(infoboxes, self._without_email)
+        findings: set[str] = set()
+        for text in _strings(masked):
+            rule = self._rule(text, page_id)
+            if rule:
+                findings.add(rule)
+            findings.update(f"pii:{name}" for name in self._pii.redact(text).categories)
+        return masked, tuple(sorted(findings))
+
     def _redact_block(self, block: Block) -> Block:
         return replace(
             block,

@@ -23,7 +23,7 @@ from app.domain.ingestion.knowledge import build_knowledge, enrich_chunks, knowl
 from app.domain.ingestion.page_checks import SAFETY_REASON_PREFIX, Verdict
 from app.domain.ingestion.pages import PageState
 from app.domain.ingestion.units import Unit, document_units
-from app.domain.interfaces.gold import IGoldStore
+from app.domain.interfaces.gold import IGoldStore, IStructuredStore
 from app.domain.interfaces.silver import ISilverLedger, ISilverStore
 from app.domain.interfaces.wiki_ingestion import IWikiInventory
 
@@ -122,6 +122,7 @@ class GoldStage:
         count_tokens: TokenCounter,
         settings: GoldSettings,
         *,
+        structured: IStructuredStore | None = None,
         clock: Callable[[], datetime] = lambda: datetime.now(UTC),
     ) -> None:
         self._inventory = inventory
@@ -130,6 +131,7 @@ class GoldStage:
         self._gold = gold
         self._chunker = Chunker(count_tokens, settings.chunk_policy)
         self._settings = settings
+        self._structured = structured
         self._clock = clock
 
     async def run(self) -> GoldReport:
@@ -141,7 +143,8 @@ class GoldStage:
         deduped = deduplicate(units, self._settings.owner_policy)
         chunked = self._chunker.chunk(deduped.units)
         uncovered = uncovered_units(deduped.units, chunked)
-        knowledge = build_knowledge(documents, states)
+        wiki_wide = self._structured.load() if self._structured else {}
+        knowledge = build_knowledge(documents, states, wiki_wide)
         chunks = with_attribution(
             enrich_chunks(drop_duplicate_bodies(chunked, self._settings.owner_policy), knowledge),
             documents,
@@ -162,6 +165,13 @@ class GoldStage:
         version = self._gold.next_version(self._clock().date())
         manifest = self._manifest(version, documents, chunks, quality)
         manifest["counts"]["knowledge"] = knowledge_counts(knowledge)
+        manifest["counts"]["entity_types"] = dict(
+            Counter(e.entity_type for e in knowledge.entities)
+        )
+        manifest["counts"]["structured_pages"] = {
+            "checked": len(wiki_wide),
+            "with_infobox": sum(bool(page.infoboxes) for page in wiki_wide.values()),
+        }
         path = self._gold.write(version, chunks, deduped.duplicate_of, knowledge, manifest)
         return GoldReport(version, path, quality)
 
