@@ -18,6 +18,8 @@ DOC = CanonicalDocument(
     revid=3,
     family="resonator",
     cleaner_version="silver-1+abc",
+    url="https://w/Chisa",
+    license="CC-BY-SA",
     blocks=(
         Block(BlockKind.STORY, ("Voicelines",), "Line.", title="Thoughts: I", variant="Male"),
         Block(

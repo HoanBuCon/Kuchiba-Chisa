@@ -1,6 +1,6 @@
 # Silver cleaning rules (ING-003, ING-012, E3-E5). Bump cleaner_version on any change that alters output.
 version: 1
-cleaner_version: silver-12
+cleaner_version: silver-13
 # Elements removed with their whole subtree, by CSS class or tag; the key is the removal reason.
 drop:
   ui:
