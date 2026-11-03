@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from typing import Protocol
 
@@ -61,6 +61,8 @@ class LoreSearchSettings:
     candidates: int = 50
     rerank_candidates: int = 15
     top_k: int = 8
+    # Top score each reranker must reach; its scale is its own, so an unknown one is not judged.
+    min_scores: Mapping[str, float] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)
@@ -70,6 +72,8 @@ class LoreSearchResult:
     entities: tuple[str, ...]
     # Machine-readable reasons a step fell back, for metrics and ADV-009 degraded replies.
     degraded: tuple[str, ...] = field(default=())
+    strong: bool = True
+    vector: tuple[float, ...] = ()
 
 
 def rerank_document(hit: LoreHit) -> str:
@@ -126,9 +130,11 @@ class LoreSearchService:
             mentioned=entities,
             limit=self._settings.candidates,
         )
-        ranked = await self._reranked(query, hits, degraded)
+        ranked, strong = await self._reranked(query, hits, degraded)
         evidence = tuple(to_evidence(hit, score) for hit, score in ranked[: self._settings.top_k])
-        return LoreSearchResult(evidence, query, entities, tuple(degraded))
+        return LoreSearchResult(
+            evidence, query, entities, tuple(degraded), strong and bool(hits), tuple(vector)
+        )
 
     async def _english(self, question: str, degraded: list[str]) -> str:
         try:
@@ -139,7 +145,7 @@ class LoreSearchService:
 
     async def _reranked(
         self, query: str, hits: list[LoreHit], degraded: list[str]
-    ) -> list[tuple[LoreHit, float]]:
+    ) -> tuple[list[tuple[LoreHit, float]], bool]:
         head = hits[: self._settings.rerank_candidates]
         documents = [rerank_document(hit) for hit in head]
         for reranker in self._rerankers:
@@ -150,7 +156,10 @@ class LoreSearchService:
                 continue
             order = sorted(range(len(head)), key=lambda index: -scores[index])
             tail = hits[len(head) :]
-            return [(head[i], scores[i]) for i in order] + [(hit, hit.score) for hit in tail]
+            ranked = [(head[i], scores[i]) for i in order] + [(hit, hit.score) for hit in tail]
+            minimum = self._settings.min_scores.get(reranker.provider_name)
+            strong = minimum is None or not scores or max(scores) >= minimum
+            return ranked, strong
         # Fusion order stays meaningful, so losing every reranker lowers quality but not safety.
         degraded.append("rerank_skipped")
-        return [(hit, hit.score) for hit in hits]
+        return [(hit, hit.score) for hit in hits], True
