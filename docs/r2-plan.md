@@ -11,7 +11,7 @@ R1 đạt cổng thoát trên corpus `2026.11.03-4`: golden v2 đã duyệt đ�
 | # | Nội dung | Yêu cầu chính | Trạng thái |
 |---|---|---|---|
 | S1 | `search_lore`: dịch câu hỏi, entity linking, truy hồi lai phía server, rerank có fallback, Evidence | ADV-002, ADV-004, ADV-006, ADV-010, KNW-001 | Xong phần lõi và index; adapter dịch làm ở S5 |
-| S2 | `get_entity`, `list_quests`, `get_quest` trên kho có cấu trúc | ADV-004, KNW-004 | |
+| S2 | `get_entity`, `find_entities`, `list_quests`, `get_quest` trên kho có cấu trúc | ADV-004, KNW-004 | Xong công cụ; định tuyến theo loại câu hỏi làm ở S3 |
 | S3 | Sửa sai tất định và abstain | ADV-007 | |
 | S4 | Composer gọi `ContextBuilder` tại chỗ, grounding, ảnh chụp trích dẫn | PER-001, GRD-001..005 | |
 | S5 | Thread, chế độ, `POST /api/v2/chat/turns` (SSE), ngân sách | CONV-001, MODE-001..007, ADV-001, ADV-009 | |
