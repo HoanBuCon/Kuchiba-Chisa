@@ -1,11 +1,13 @@
-# Golden v2 (SRS v2 §9, QUAL-003..009). DRAFT: the owner must review every case before it gates a release.
+# Golden v2 (SRS v2 §9, QUAL-003..009). Reviewed and approved by the project owner on 2026-11-04.
 # Ground truth comes from the Wuthering Waves Fandom wiki snapshot of 2026-10-30; pages are referenced by
-# wiki pageid so cases survive corpus rebuilds. `verified: false` marks facts the owner must confirm.
+# wiki pageid so cases survive corpus rebuilds. New cases stay unverified until the owner confirms them.
 # expected_facts: each item is one fact; any listed surface form matches (case and diacritics ignored).
-dataset_version: golden-v2-draft.1
+dataset_version: golden-v2.1
 source_snapshot: wuwa-wiki-20261030
 approval:
-  status: draft
+  status: approved
+  approved_by: HoanBuCon
+  approved_at: "2026-11-04"
 abstain_markers:
   - không biết
   - không rõ
@@ -109,280 +111,280 @@ cases:
     turns: [{message: "Lumi sinh ra ở đâu và thuộc hệ gì?"}]
     expected_facts: [["huanglong"], ["electro"]]
     relevant_pages: [{title: "Lumi", pageid: 20501}]
-    verified: false
+    verified: true
   - id: lore-102
     category: lore_single_hop
     language: vi
     turns: [{message: "Rebecca dùng loại vũ khí nào?"}]
     expected_facts: [["pistols", "súng"]]
     relevant_pages: [{title: "Rebecca", pageid: 40856}]
-    verified: false
+    verified: true
   - id: lore-103
     category: lore_single_hop
     language: vi
     turns: [{message: "Xiangli Yao làm việc ở học viện nào?"}]
     expected_facts: [["huaxu academy", "huaxu"]]
     relevant_pages: [{title: "Xiangli Yao", pageid: 1567}]
-    verified: false
+    verified: true
   - id: lore-104
     category: lore_single_hop
     language: en
     turns: [{message: "What attribute does Sanhua have and what weapon does she use?"}]
     expected_facts: [["glacio"], ["sword"]]
     relevant_pages: [{title: "Sanhua", pageid: 588}]
-    verified: false
+    verified: true
   - id: lore-105
     category: lore_single_hop
     language: vi_no_diacritics
     turns: [{message: "danjin thuoc to chuc nao"}]
     expected_facts: [["midnight rangers"]]
     relevant_pages: [{title: "Danjin", pageid: 530}]
-    verified: false
+    verified: true
   - id: lore-106
     category: lore_single_hop
     language: vi
     turns: [{message: "Qingxiao là Resonator loại Natural hay Mutant?"}]
     expected_facts: [["natural"]]
     relevant_pages: [{title: "Qingxiao", pageid: 41351}]
-    verified: false
+    verified: true
   - id: lore-107
     category: lore_single_hop
     language: teencode
     turns: [{message: "jianxin dùng vũ khí j z"}]
     expected_facts: [["gauntlets", "găng"]]
     relevant_pages: [{title: "Jianxin", pageid: 633}]
-    verified: false
+    verified: true
   - id: lore-108
     category: lore_single_hop
     language: vi
     turns: [{message: "Tên đầy đủ của Ciaccona là gì?"}]
     expected_facts: [["ciaccona toccata", "toccata"]]
     relevant_pages: [{title: "Ciaccona", pageid: 28670}]
-    verified: false
+    verified: true
   - id: lore-109
     category: lore_single_hop
     language: vi
     turns: [{message: "Jingran thuộc hệ gì và dùng vũ khí nào?"}]
     expected_facts: [["fusion"], ["broadblade", "đại kiếm"]]
     relevant_pages: [{title: "Jingran", pageid: 41349}]
-    verified: false
+    verified: true
   - id: lore-110
     category: lore_single_hop
     language: vi
     turns: [{message: "Fenrico thuộc tổ chức nào?"}]
     expected_facts: [["order of the deep"]]
     relevant_pages: [{title: "Fenrico", pageid: 26069}]
-    verified: false
+    verified: true
   - id: lore-111
     category: lore_single_hop
     language: vi
     turns: [{message: "Giáo sư Cauchy dạy ở lớp nào tại Học viện Startorch?"}]
     expected_facts: [["exostrider engineering", "exostrider"]]
     relevant_pages: [{title: "Cauchy", pageid: 39052}]
-    verified: false
+    verified: true
   - id: lore-112
     category: lore_single_hop
     language: en
     turns: [{message: "What does Arsenio accept in exchange for rewards?"}]
     expected_facts: [["tapes of last words"]]
     relevant_pages: [{title: "Arsenio", pageid: 38336}]
-    verified: false
+    verified: true
   - id: lore-113
     category: lore_single_hop
     language: vi
     turns: [{message: "Anh chị em của Bei Shi tên là gì?"}]
     expected_facts: [["bei ji"]]
     relevant_pages: [{title: "Bei Shi", pageid: 9446}]
-    verified: false
+    verified: true
   - id: lore-114
     category: lore_single_hop
     language: vi
     turns: [{message: "Zhuyi làm công việc gì trong Pioneer Association?"}]
     expected_facts: [["photographer", "nhiếp ảnh"]]
     relevant_pages: [{title: "Zhuyi", pageid: 4280}]
-    verified: false
+    verified: true
   - id: lore-115
     category: lore_single_hop
     language: vi
     turns: [{message: "Lynae của Fractsidus đã chết như thế nào?"}]
     expected_facts: [["mercenaries", "lính đánh thuê"]]
     relevant_pages: [{title: "Lynae (Fractsidus)", pageid: 38659}]
-    verified: false
+    verified: true
   - id: lore-116
     category: lore_single_hop
     language: vi
     turns: [{message: "Wuming Bay nằm ở đâu?"}]
     expected_facts: [["huanglong"], ["jinzhou"]]
     relevant_pages: [{title: "Wuming Bay", pageid: 2194}]
-    verified: false
+    verified: true
   - id: lore-117
     category: lore_single_hop
     language: vi
     turns: [{message: "Bjartr Woods là nơi sinh sống của tộc và sinh vật nào?"}]
     expected_facts: [["roya"], ["soliskin"]]
     relevant_pages: [{title: "Bjartr Woods", pageid: 37654}]
-    verified: false
+    verified: true
   - id: lore-118
     category: lore_single_hop
     language: en
     turns: [{message: "Which area is Rebirth Uplands located in?"}]
     expected_facts: [["roya frostlands"]]
     relevant_pages: [{title: "Rebirth Uplands", pageid: 38240}]
-    verified: false
+    verified: true
   - id: lore-119
     category: lore_single_hop
     language: vi
     turns: [{message: "Bão Void Storm do Threnodian nào gây ra và xuất hiện ở đâu?"}]
     expected_facts: [["aleph-1", "aleph 1"], ["lahai-roi"]]
     relevant_pages: [{title: "Void Storm", pageid: 39212}]
-    verified: false
+    verified: true
   - id: lore-120
     category: lore_single_hop
     language: vi
     turns: [{message: "Tacetite được xếp vào nhóm hiện tượng nào?"}]
     expected_facts: [["waveworn"]]
     relevant_pages: [{title: "Tacetite", pageid: 1084}]
-    verified: false
+    verified: true
   - id: lore-121
     category: lore_single_hop
     language: vi
     turns: [{message: "Anchoring trong cốt truyện nghĩa là gì?"}]
     expected_facts: [["memory", "presence", "ký ức", "hiện diện"]]
     relevant_pages: [{title: "Anchoring", pageid: 80173}]
-    verified: false
+    verified: true
   - id: lore-122
     category: lore_single_hop
     language: vi
     turns: [{message: "Stargram dùng để làm gì?"}]
     expected_facts: [["mech", "điều khiển"]]
     relevant_pages: [{title: "Stargram", pageid: 74510}]
-    verified: false
+    verified: true
   - id: lore-123
     category: lore_single_hop
     language: vi
     turns: [{message: "Harbinger của Dark Tide do ai chọn?"}]
     expected_facts: [["leviathan"]]
     relevant_pages: [{title: "Harbinger", pageid: 37304}]
-    verified: false
+    verified: true
   - id: lore-124
     category: lore_single_hop
     language: vi
     turns: [{message: "Ai lãnh đạo nhóm lính đánh thuê Ghost Hounds?"}]
     expected_facts: [["calcharo"]]
     relevant_pages: [{title: "Ghost Hounds", pageid: 897}]
-    verified: false
+    verified: true
   - id: lore-125
     category: lore_single_hop
     language: vi
     turns: [{message: "Concerto Energy dùng để làm gì trong chiến đấu?"}]
     expected_facts: [["outro", "intro"]]
     relevant_pages: [{title: "Concerto Energy", pageid: 9317}]
-    verified: false
+    verified: true
   - id: lore-126
     category: lore_single_hop
     language: vi
     turns: [{message: "Common Class là cấp bậc nào của kẻ địch và Echo?"}]
     expected_facts: [["lowest", "thấp nhất"]]
     relevant_pages: [{title: "Common Class", pageid: 24906}]
-    verified: false
+    verified: true
   - id: lore-127
     category: lore_single_hop
     language: en
     turns: [{message: "When does a Resonator's Outro Skill trigger?"}]
     expected_facts: [["maximum concerto", "max concerto", "concerto energy"]]
     relevant_pages: [{title: "Outro Skill", pageid: 3038}]
-    verified: false
+    verified: true
   - id: lore-128
     category: lore_single_hop
     language: vi
     turns: [{message: "Trước nhiệm vụ The Maiden, The Defier, The Death Crier là nhiệm vụ nào?"}]
     expected_facts: [["what yesterday wept"]]
     relevant_pages: [{title: "The Maiden, The Defier, The Death Crier", pageid: 28932}]
-    verified: false
+    verified: true
   - id: lore-129
     category: lore_single_hop
     language: vi
     turns: [{message: "Sau nhiệm vụ Rewinding Raindrops là nhiệm vụ nào?"}]
     expected_facts: [["grand warstorm"]]
     relevant_pages: [{title: "Rewinding Raindrops", pageid: 2322}]
-    verified: false
+    verified: true
   - id: lore-130
     category: lore_single_hop
     language: vi
     turns: [{message: "Nhiệm vụ The Sacred Breeze So Often Breathes diễn ra ở vùng đất nào?"}]
     expected_facts: [["ragunna"]]
     relevant_pages: [{title: "The Sacred Breeze So Often Breathes", pageid: 25801}]
-    verified: false
+    verified: true
   - id: lore-131
     category: lore_single_hop
     language: vi
     turns: [{message: "Nhiệm vụ Dawn of Snowstorm kết thúc thế nào với Mt. Firmament?"}]
     expected_facts: [["mt. firmament", "firmament"]]
     relevant_pages: [{title: "Dawn of Snowstorm", pageid: 20476}]
-    verified: false
+    verified: true
   - id: lore-132
     category: lore_single_hop
     language: vi
     turns: [{message: "Trong The Chant of Unseen Ties, học viện nào mời Yangyang kiểm tra Spectrum?"}]
     expected_facts: [["huaxu"]]
     relevant_pages: [{title: "The Chant of Unseen Ties", pageid: 42236}]
-    verified: false
+    verified: true
   - id: lore-133
     category: lore_single_hop
     language: vi
     turns: [{message: "Dreamweaver's Ascent thuộc chương nào?"}]
     expected_facts: [["chapter i", "chương i"]]
     relevant_pages: [{title: "Dreamweaver's Ascent", pageid: 9491}]
-    verified: false
+    verified: true
   - id: lore-134
     category: lore_single_hop
     language: vi
     turns: [{message: "Trong When the Night Knocks, những nhân vật nào xuất hiện cùng Rover?"}]
     expected_facts: [["lumi"], ["zhezhi"]]
     relevant_pages: [{title: "When the Night Knocks", pageid: 23268}]
-    verified: false
+    verified: true
   - id: lore-135
     category: lore_single_hop
     language: vi
     turns: [{message: "Nhiệm vụ nào đứng ngay trước Advance toward the Future from Today?"}]
     expected_facts: [["legacy of the lasting night"]]
     relevant_pages: [{title: "Advance toward the Future from Today", pageid: 21680}]
-    verified: false
+    verified: true
   - id: dialog-101
     category: dialogue_detail
     language: vi
     turns: [{message: "Roccia nói người bạn thân nhất của cô là ai?"}]
     expected_facts: [["pero"]]
     relevant_pages: [{title: "Roccia/Voicelines", pageid: 27415}]
-    verified: false
+    verified: true
   - id: dialog-102
     category: dialogue_detail
     language: vi
     turns: [{message: "Tên mà cha mẹ đặt cho Galbrena là gì?"}]
     expected_facts: [["angel"]]
     relevant_pages: [{title: "Galbrena/Voicelines", pageid: 36686}]
-    verified: false
+    verified: true
   - id: dialog-103
     category: dialogue_detail
     language: vi
     turns: [{message: "Taoqi mong General Jiyan làm điều gì?"}]
     expected_facts: [["time off", "rest", "nghỉ"]]
     relevant_pages: [{title: "Taoqi/Voicelines", pageid: 2484}]
-    verified: false
+    verified: true
   - id: dialog-104
     category: dialogue_detail
     language: vi
     turns: [{message: "Jiyan khuyên nên nói chuyện với Mortefi như thế nào?"}]
     expected_facts: [["direct", "thẳng"]]
     relevant_pages: [{title: "Jiyan/Voicelines", pageid: 2486}]
-    verified: false
+    verified: true
   - id: dialog-105
     category: dialogue_detail
     language: vi
     turns: [{message: "Trong backstory của Aemeath, giáo sư nào rất nghiêm khắc?"}]
     expected_facts: [["sakya"]]
     relevant_pages: [{title: "Aemeath/Backstory", pageid: 39398}]
-    verified: false
+    verified: true
   # Enumeration and quests ("Honami" style)
   - id: enum-001
     category: enumeration
@@ -669,249 +671,249 @@ cases:
     turns: [{message: "Kế hoạch phong tỏa Startorch và toàn bộ Lahai-Roi để ngăn Aleph-1 có tên là gì?"}]
     expected_facts: [["duskveil"]]
     relevant_pages: [{title: "Duskveil", pageid: 60050}]
-    verified: false
+    verified: true
   - id: lore-202
     category: lore_single_hop
     language: vi
     turns: [{message: "Món đồ chơi con cừu điện tử gỉ sét đã khơi dậy niềm đam mê máy móc của cô bé nào?"}]
     expected_facts: [["dhalifa"]]
     relevant_pages: [{title: "Dhalifa's Cherished Item", pageid: 39516}]
-    verified: false
+    verified: true
   - id: lore-203
     category: lore_single_hop
     language: vi
     turns: [{message: "Sinh vật nào ở Lahai-Roi được hình thành từ tàn tích của Exostrider?"}]
     expected_facts: [["exoswarm"]]
     relevant_pages: [{title: "Exoswarm", pageid: 39255}]
-    verified: false
+    verified: true
   - id: lore-204
     category: lore_single_hop
     language: vi
     turns: [{message: "Tên gọi chung cho các dị tượng sau Lament như mưa Retroact và mất trọng lực là gì?"}]
     expected_facts: [["waveworn"]]
     relevant_pages: [{title: "Waveworn Phenomenon", pageid: 1005}]
-    verified: false
+    verified: true
   - id: lore-205
     category: lore_single_hop
     language: vi
     turns: [{message: "Bộ tộc Roya dùng ống kính nào để dự đoán Void Storm?"}]
     expected_facts: [["heliogyre"]]
     relevant_pages: [{title: "Heliogyre", pageid: 39559}]
-    verified: false
+    verified: true
   - id: lore-206
     category: lore_single_hop
     language: vi
     turns: [{message: "Sáu người được chọn để giải mã ống kính của bộ tộc Roya được gọi là gì?"}]
     expected_facts: [["heliodic six"]]
     relevant_pages: [{title: "Heliogyre", pageid: 39559}]
-    verified: false
+    verified: true
   - id: lore-207
     category: lore_single_hop
     language: vi
     turns: [{message: "Danh xưng quyền lực nào đối với các Sentinel mà Rover vẫn giữ dù đã mất trí nhớ?"}]
     expected_facts: [["arbiter"]]
     relevant_pages: [{title: "Arbiter", pageid: 9279}]
-    verified: false
+    verified: true
   - id: lore-208
     category: lore_single_hop
     language: vi
     turns: [{message: "Chiều không gian bên trong Aleph-1, nơi mọi thứ bị nuốt chửng tồn tại vĩnh viễn, gọi là gì?"}]
     expected_facts: [["voidspace"]]
     relevant_pages: [{title: "Voidspace", pageid: 39609}]
-    verified: false
+    verified: true
   - id: lore-209
     category: lore_single_hop
     language: vi
     turns: [{message: "Cô gái nào ở đài quan sát Spacetrek phải nhờ Talkie diễn đạt lời nói sau một trận Void Storm?"}]
     expected_facts: [["dhalifa"]]
     relevant_pages: [{title: "Dhalifa", pageid: 38408}]
-    verified: false
+    verified: true
   - id: lore-210
     category: lore_single_hop
     language: vi
     turns: [{message: "Kẻ thù chính của chương II từng bị Cartethyia phong ấn trong Fleurdelys là ai?"}]
     expected_facts: [["leviathan"]]
     relevant_pages: [{title: "Leviathan", pageid: 27120}]
-    verified: false
+    verified: true
   - id: lore-211
     category: lore_single_hop
     language: vi
     turns: [{message: "Grand Architect đã giả danh NPC nào trong nhiệm vụ The Star That Voyages Far?"}]
     expected_facts: [["nivora"]]
     relevant_pages: [{title: "Nivora", pageid: 39813}]
-    verified: false
+    verified: true
   - id: lore-212
     category: lore_single_hop
     language: vi
     turns: [{message: "Người đeo mặt nạ kể chuyện ở Egla Town, được dân thị trấn gọi là \"Drama Maniac\", là ai?"}]
     expected_facts: [["lorenzo"]]
     relevant_pages: [{title: "Lorenzo", pageid: 37101}]
-    verified: false
+    verified: true
   - id: lore-213
     category: lore_single_hop
     language: vi
     turns: [{message: "Kẻ lợi dụng nỗi bất an của Sigrika để tấn công tâm lý Startorch xuất hiện dưới hình dạng con vật gì?"}]
     expected_facts: [["rabbit", "thỏ"]]
     relevant_pages: [{title: "Strange Rabbit", pageid: 40570}]
-    verified: false
+    verified: true
   - id: lore-214
     category: lore_single_hop
     language: vi
     turns: [{message: "Ai là cựu helmsmaster chi nhánh Jianshui của Zhuojun Atelier?"}]
     expected_facts: [["muyu"]]
     relevant_pages: [{title: "Muyu", pageid: 42318}]
-    verified: false
+    verified: true
   - id: lore-215
     category: lore_single_hop
     language: vi
     turns: [{message: "Overseer nào của Fractsidus tin rằng con người phải hấp thụ Tacet Discord để tiến hóa?"}]
     expected_facts: [["scar"]]
     relevant_pages: [{title: "Scar", pageid: 901}]
-    verified: false
+    verified: true
   - id: lore-216
     category: lore_single_hop
     language: vi
     turns: [{message: "Đoàn khảo sát phát hiện bãi tích tụ tàn tích Spacetrek và mảnh Exoswarm ở khu vực nào của Roya Frostlands?"}]
     expected_facts: [["silent crag"]]
     relevant_pages: [{title: "Silent Crag", pageid: 40785}]
-    verified: false
+    verified: true
   - id: lore-217
     category: lore_single_hop
     language: vi
     turns: [{message: "Cuốn sổ coi phản bội là công cụ và lòng tham là đức tính ghi quy tắc của gia tộc nào?"}]
     expected_facts: [["fisalia"]]
     relevant_pages: [{title: "Beohr Waters", pageid: 28698}]
-    verified: false
+    verified: true
   - id: lore-218
     category: lore_single_hop
     language: vi
     turns: [{message: "Khu mỏ phía nam Jinzhou chủ yếu khai thác loại khoáng gì?"}]
     expected_facts: [["lampylumen"]]
     relevant_pages: [{title: "Tiger's Maw", pageid: 2160}]
-    verified: false
+    verified: true
   - id: lore-219
     category: lore_single_hop
     language: vi
     turns: [{message: "Vùng nào của Huanglong có bức tượng Ovathrax khổng lồ và các tòa nhà lơ lửng?"}]
     expected_facts: [["norfall barrens"]]
     relevant_pages: [{title: "Norfall Barrens", pageid: 5025}]
-    verified: false
+    verified: true
   - id: lore-220
     category: lore_single_hop
     language: vi
     turns: [{message: "Vùng nào ở Huanglong từng là thung lũng sông màu mỡ trước khi dị tượng làm cạn nguồn nước?"}]
     expected_facts: [["desorock highland"]]
     relevant_pages: [{title: "Desorock Highland", pageid: 4972}]
-    verified: false
+    verified: true
   - id: lore-221
     category: lore_single_hop
     language: vi
     turns: [{message: "Theo sách hướng dẫn du lịch Septimont, các Gladiator hành hương đến đấu trường theo con đường nào?"}]
     expected_facts: [["hero's way"]]
     relevant_pages: [{title: "A Traveler's Guide to Septimont", pageid: 31476}]
-    verified: false
+    verified: true
   - id: lore-222
     category: lore_single_hop
     language: vi
     turns: [{message: "Debuff kéo dài 8 giây xuất hiện khi Tune Break kẻ địch đang dính Shifting tên là gì?"}]
     expected_facts: [["interfered"]]
     relevant_pages: [{title: "Tune Rupture/Tune Rupture - Interfered", pageid: 40225}]
-    verified: false
+    verified: true
   - id: lore-223
     category: lore_single_hop
     language: vi
     turns: [{message: "Công thức sát thương tổng quát trong game gồm những thành phần nào?"}]
     expected_facts: [["base dmg"], ["resistances"], ["bonuses"]]
     relevant_pages: [{title: "Damage", pageid: 2366}]
-    verified: false
+    verified: true
   - id: lore-224
     category: lore_single_hop
     language: vi
     turns: [{message: "Bài điếu văn của ông Chase tưởng niệm đoàn thám hiểm nào đã bỏ mạng trên vùng băng giá?"}]
     expected_facts: [["roald"]]
     relevant_pages: [{title: "Mr. Chase's Published Eulogy", pageid: 39343}]
-    verified: false
+    verified: true
   - id: lore-225
     category: lore_single_hop
     language: vi
     turns: [{message: "Lễ hội kéo dài bảy ngày hằng năm ở Ragunna để tạ ơn Sentinel là lễ hội gì?"}]
     expected_facts: [["carnevale"]]
     relevant_pages: [{title: "Carnevale", pageid: 26167}]
-    verified: false
+    verified: true
   - id: lore-226
     category: lore_single_hop
     language: vi
     turns: [{message: "Resonator nào có Tacet Mark nằm trên mặt lưỡi?"}]
     expected_facts: [["cantarella"]]
     relevant_pages: [{title: "Cantarella/Backstory", pageid: 28993}]
-    verified: false
+    verified: true
   - id: lore-227
     category: lore_single_hop
     language: vi_no_diacritics
     turns: [{message: "ai la nguoi ke thua fengyiquan"}]
     expected_facts: [["jianxin"]]
     relevant_pages: [{title: "Jianxin/Backstory", pageid: 1120}]
-    verified: false
+    verified: true
   - id: lore-228
     category: lore_single_hop
     language: teencode
     turns: [{message: "đại phó của gánh hát Fool's Troupe là ai z, ng hay ngồi trên cái hộp to á"}]
     expected_facts: [["roccia"]]
     relevant_pages: [{title: "Roccia/Backstory", pageid: 26995}]
-    verified: false
+    verified: true
   - id: lore-229
     category: lore_single_hop
     language: vi
     turns: [{message: "Resonator nào đã đánh cắp danh tính một điệp viên Fractsidus để vào học ở Startorch?"}]
     expected_facts: [["lynae"]]
     relevant_pages: [{title: "Lynae", pageid: 37543}]
-    verified: false
+    verified: true
   - id: lore-230
     category: lore_single_hop
     language: vi
     turns: [{message: "Ai từng là Tổng thư ký Central Secretariat ở Mingting và nay là cố vấn của Thái thú Jinzhou?"}]
     expected_facts: [["changli"]]
     relevant_pages: [{title: "Changli", pageid: 1126}]
-    verified: false
+    verified: true
   - id: lore-231
     category: lore_single_hop
     language: en
     turns: [{message: "Whose Forte manifests a golden core on the chest along with shadow-like thorns?"}]
     expected_facts: [["calcharo"]]
     relevant_pages: [{title: "Calcharo/Forte Examination Report", pageid: 1089}]
-    verified: false
+    verified: true
   - id: lore-232
     category: lore_single_hop
     language: en
     turns: [{message: "Which Resonator shows feather-like changes at the ends of her hair when her frequency surges?"}]
     expected_facts: [["yangyang"]]
     relevant_pages: [{title: "Yangyang/Forte Examination Report", pageid: 26164}]
-    verified: false
+    verified: true
   - id: lore-233
     category: lore_single_hop
     language: en
     turns: [{message: "Which information broker works as a Black Shores consultant and performs magic tricks?"}]
     expected_facts: [["aalto"]]
     relevant_pages: [{title: "Aalto/Archive", pageid: 644}]
-    verified: false
+    verified: true
   - id: multi-234
     category: multi_hop
     language: vi
     turns: [{message: "Con thỏ phản diện ở Startorch là một dạng khác của thực thể nào, và thực thể đó còn giả danh nhân vật nào?"}]
     expected_facts: [["schwarzloch"], ["nivora"]]
     relevant_pages: [{title: "Strange Rabbit", pageid: 40570}, {title: "Nivora", pageid: 39813}]
-    verified: false
+    verified: true
   - id: multi-235
     category: multi_hop
     language: vi
     turns: [{message: "Người có hai cháu là Batti và Leto thuộc gánh hát nào, và đại phó của gánh hát đó là ai?"}]
     expected_facts: [["troupe of fools", "fool's troupe"], ["roccia"]]
     relevant_pages: [{title: "Lorenzo", pageid: 37101}, {title: "Roccia/Backstory", pageid: 26995}]
-    verified: false
+    verified: true
   - id: multi-236
     category: multi_hop
     language: vi
     turns: [{message: "Threnodian bị Cartethyia phong ấn kiểm soát dị tượng bản địa nào của Rinascita?"}]
     expected_facts: [["dark tide"]]
     relevant_pages: [{title: "Leviathan", pageid: 27120}]
-    verified: false
+    verified: true

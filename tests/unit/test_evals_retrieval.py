@@ -2,14 +2,22 @@
 
 from types import SimpleNamespace
 
+import pytest
+
+from evals.dataset import Category, GoldenCase, Language, PageRef, Turn, load_golden_set
 from evals.retrieval import (
+    GOLDEN_PATH,
+    TRANSLATIONS_PATH,
     CaseOutcome,
     fuse_ranked,
+    load_translations,
     ranked_pages,
     rerank_document,
     rerank_order,
+    search_query,
     summarize,
 )
+from evals.translate_queries import needs_translation
 
 
 def _point(point_id: str, page_id: int) -> SimpleNamespace:
@@ -67,3 +75,42 @@ def test_rerank_document_carries_title_and_section() -> None:
     )
 
     assert rerank_document(point) == "Chisa\nStory > Early\nBody"
+
+
+def _case(language: Language) -> GoldenCase:
+    return GoldenCase(
+        id="lore-001",
+        category=Category.LORE_SINGLE_HOP,
+        language=language,
+        turns=(Turn(message="q"),),
+        expected_facts=(("a",),),
+    )
+
+
+def test_english_question_searches_as_asked() -> None:
+    assert search_query(_case(Language.EN), "Where?", {}) == "Where?"
+
+
+def test_other_languages_search_with_the_frozen_translation() -> None:
+    assert search_query(_case(Language.VI), "Ở đâu?", {"lore-001": "Where?"}) == "Where?"
+
+
+def test_missing_translation_stops_the_run() -> None:
+    with pytest.raises(SystemExit):
+        search_query(_case(Language.VI), "Ở đâu?", {})
+
+
+def test_translation_is_needed_only_for_retrieval_cases_not_yet_stored() -> None:
+    page = {"relevant_pages": (PageRef(title="P", pageid=1),)}
+    case = _case(Language.VI).model_copy(update=page)
+
+    assert needs_translation(case, {})
+    assert not needs_translation(case, {"lore-001": "Where?"})
+    assert not needs_translation(_case(Language.VI), {})
+    assert not needs_translation(_case(Language.EN).model_copy(update=page), {})
+
+
+def test_every_golden_retrieval_case_has_a_frozen_translation() -> None:
+    stored = load_translations(TRANSLATIONS_PATH)
+
+    assert [c.id for c in load_golden_set(GOLDEN_PATH).cases if needs_translation(c, stored)] == []

@@ -69,3 +69,26 @@ Batch 3 adds 36 unverified cases that do not name their target, written before a
 | All | 108 | 0.852 / 0.658 | 0.880 / 0.807 |
 
 QUAL-003 is not met: the retrieval gate fails on Hit@5 in both modes and on MRR@10 in `linked`. Of the 13 reranked misses, 7 rank below the reranker's top 15 candidates, 3 are inside it but not lifted to the top 5, and 3 are not in the top 50 at all. Batch 3 labels still await owner review.
+
+
+## English query translation and reranker depth (2026-11-04)
+
+ADV-010 allows LLM translation only when evaluation proves the need. It does: Vietnamese questions match an English wiki poorly. Questions were translated once through the LLM gateway (`deepseek-v4-flash`, median 0.86 s, 96 calls, about 37,700 tokens) and frozen in `query_translations.yaml`, so the gate calls no LLM. Corpus `2026.11.03-1`, 108 cases:
+
+| Pipeline | Hit@5 | MRR@10 | Dev half Hit@5 / MRR@10 | Hard batch Hit@5 / MRR@10 |
+|---|---|---|---|---|
+| Vietnamese, no reranker | 0.852 | 0.658 | 0.816 / 0.609 | 0.611 / 0.326 |
+| Vietnamese, Jina top 15 | 0.880 | 0.807 | | 0.694 / 0.649 |
+| Translated, no reranker | 0.944 | 0.727 | 0.898 / 0.688 | 0.889 / 0.504 |
+| Translated, local MiniLM-L-6 top 15 | 0.944 | 0.834 | 0.898 / 0.785 | 0.889 / 0.847 |
+| Translated, Jina top 15 | 0.944 | 0.877 | 0.898 / 0.810 | 0.889 / 0.819 |
+| Translated, Jina top 30 | 0.944 | 0.899 | 0.898 / 0.829 | 0.889 / 0.833 |
+| Translated, Jina top 50 | 0.972 | 0.920 | 0.959 / 0.870 | 0.972 / 0.875 |
+
+Local models were measured on 2 CPU threads: MiniLM-L-6 top 15 took a median of 687 ms. MiniLM-L-12 and Jina tiny and turbo scored no better. `bge-reranker-v2-m3-int8` failed to load its tokenizer in this fastembed version and was not measured.
+
+Decisions and limits:
+- The gate uses translated questions with local MiniLM-L-6 top 15, because it is free and needs no LLM. It understates the paid runtime reranker.
+- Jina top 50 is the runtime candidate. Its latency and the 1.5 s reranker timeout must be measured in R2 before the setting changes; it costs about 3x the tokens of top 15.
+- At runtime each non-English question spends one of ADV-009's two LLM calls on translation. R2 must define the fallback when that call fails.
+- The owner approved the golden set on 2026-11-04, so the gate counts every retrieval case. QUAL-003 is met on this set, with one limit: the agent wrote batch 3 from the wiki text, the pipeline was chosen on this same set, and the holdout half was seen during comparison. Real user questions may score lower, so R2 should add cases from real use.

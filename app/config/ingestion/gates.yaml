@@ -4,7 +4,7 @@ data:
   max_chunk_change_ratio: 0.10
   max_knowledge_change_ratio: 0.05
 retrieval:
-  # QUAL-003 targets, and the golden size below which the result proves nothing.
+  # QUAL-003 targets, and the owner-verified golden size below which the result proves nothing.
   min_hit_at_5: 0.90
   min_mrr_at_10: 0.80
   min_cases: 100

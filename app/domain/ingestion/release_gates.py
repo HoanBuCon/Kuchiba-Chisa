@@ -145,7 +145,8 @@ def evaluate_retrieval_gate(
     overall = summary["overall"]
     missed = [case for case in policy.canary_case_ids if case not in hit_case_ids]
     checks = [
-        _at_least("golden_cases", overall["cases"], policy.min_cases),
+        # Unreviewed labels can measure progress but cannot approve a release.
+        _at_least("golden_verified_cases", summary["verified_cases"], policy.min_cases),
         _at_least("hit_at_5", overall["hit_at_5"], policy.min_hit_at_5),
         _at_least("mrr_at_10", overall["mrr_at_10"], policy.min_mrr_at_10),
         GateCheck("canary_configured", bool(policy.canary_case_ids), "canary list"),

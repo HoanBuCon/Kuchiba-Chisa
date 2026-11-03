@@ -79,13 +79,14 @@ def test_manifest_that_never_measured_safety_fails() -> None:
 
 
 SUMMARY = {
-    "overall": {"cases": 100, "hit_at_5": 0.95, "hit_at_5_ci95": [0.9, 0.98], "mrr_at_10": 0.85}
+    "verified_cases": 100,
+    "overall": {"cases": 100, "hit_at_5": 0.95, "hit_at_5_ci95": [0.9, 0.98], "mrr_at_10": 0.85},
 }
 RETRIEVAL = RetrievalGatePolicy(canary_case_ids=("a", "b"))
 
 
 def _summary(**overall) -> dict:
-    return {"overall": SUMMARY["overall"] | overall}
+    return {"verified_cases": 100, "overall": SUMMARY["overall"] | overall}
 
 
 def _retrieval_failures(summary: dict, hits=("a", "b"), active=None) -> tuple[str, ...]:
@@ -97,7 +98,7 @@ def test_retrieval_gate_passes_at_the_targets() -> None:
 
 
 def test_retrieval_gate_fails_on_each_target() -> None:
-    assert _retrieval_failures(_summary(cases=99)) == ("golden_cases",)
+    assert _retrieval_failures(SUMMARY | {"verified_cases": 99}) == ("golden_verified_cases",)
     assert _retrieval_failures(_summary(hit_at_5=0.89)) == ("hit_at_5",)
     assert _retrieval_failures(_summary(mrr_at_10=0.79)) == ("mrr_at_10",)
 
