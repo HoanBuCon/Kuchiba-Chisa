@@ -3,7 +3,7 @@
 | Thuộc tính | Giá trị |
 |---|---|
 | Tài liệu | SRS cho hệ thống mới của Kuchiba Chisa: hai chế độ Advanced RAG / Agentic RAG, phân quyền 4 vai trò, trí nhớ và cảm xúc |
-| Phiên bản | 2.2.2 |
+| Phiên bản | 2.2.3 |
 | Ngày lập / phê duyệt | 2026-10-30 / **2026-10-31** |
 | Trạng thái | **ĐÃ PHÊ DUYỆT** bởi chủ dự án. Là baseline yêu cầu cho hệ thống mới, **thay thế** [SRS v1.1](../reports/SRS_Kuchiba_Chisa.md) cho mọi phát triển mới. v1.1 được giữ nguyên làm tài liệu lịch sử và chỉ áp dụng cho việc sửa lỗi hệ hiện tại trong thời gian chuyển đổi. Các mục "Vấn đề mở" (mục 12) vẫn cần quyết định riêng |
 | Bản chất dự án | Dự án cá nhân; không còn ràng buộc với đồ án môn học |
@@ -30,6 +30,7 @@
 | 2.2 | 2026-10-31 | Chủ dự án | Bài học từ IndexBeast ([báo cáo](ingestion/indexbeast-lessons.md)): ING-004 ngưỡng chunk tối thiểu và gộp unit; ING-007 đường dẫn tương đối, lưu trạng thái, xác minh artifact; ING-002 nén gzip. **Mở phạm vi ảnh thực thể từ wiki, lấy kích thước gốc** ([ADR-0003](adr/0003-wiki-entity-images.md)): thêm ING-019, KNW-010, CAP-004; cập nhật 1.2, 3.3, lộ trình R1/R2/R5 |
 | 2.2.1 | 2026-10-31 | Chủ dự án (uỷ quyền đề xuất) | Inference service tự xây trên fastembed/ONNX thay TEI ([ADR-0004](adr/0004-inference-service.md)); ngân sách RAM inference 1.400 MB theo số đo cgroup Linux; api 1.200 MB, worker 700 MB; tổng 6.440 MB |
 | 2.2.2 | 2026-11-02 | Chủ dự án (uỷ quyền đề xuất) | Kết quả spike I0 ([báo cáo](ingestion/i0-spike.md)): ASM-002 chốt sparse BM25; cấu hình ingestion nằm ở `app/config/ingestion/`; e5-small int8 chưa thay fp32 (KNW-006 đánh giá lại khi golden v2 đủ lớn) |
+| 2.2.3 | 2026-11-03 | Chủ dự án | Thêm mục 10.1 backlog: BL-001 Chisa Theorycrafter, BL-002 sandbox chạy code; chưa phải yêu cầu, chưa lên lịch |
 
 ## Quyết định đã chốt của chủ dự án (đầu vào của tài liệu)
 
@@ -1336,6 +1337,53 @@ Lộ trình đã được chủ dự án phê duyệt ngày 2026-10-31 ([ADR-000
 **Tạm gác ngoài v2.0:** multi-agent; tự động chuyển chế độ thay người dùng; phương án "trả lời nhanh rồi đào sâu"; lọc spoiler theo phiên bản; Monitoring M1; Telegram/Facebook; fine-tune; đổi model embedding khi chưa có bằng chứng eval.
 
 **Hệ thống hiện tại trong thời gian chuyển đổi:** đóng băng tính năng, chỉ sửa lỗi bảo mật và lỗi nghiêm trọng.
+
+## 10.1 Tính năng dự kiến mở rộng (backlog)
+
+Mục này **không phải yêu cầu** và không thuộc phạm vi phê duyệt của các pha R0–R6: chưa có tiêu chí chấp nhận, chưa lên lịch. Mỗi mục muốn triển khai phải có ADR (STD-DOC-002) và yêu cầu có ID riêng.
+
+### BL-001 Chisa Theorycrafter
+
+**Ý tưởng:** mở rộng Agentic RAG để Chisa nghiên cứu cơ chế combat Wuthering Waves: xây đội hình, rotation, combo, build, có so sánh bằng số liệu.
+
+**Thời điểm đề xuất:** sau R4, khi Agentic RAG đã đạt QUAL-007.
+
+**Hướng kỹ thuật đề xuất:**
+
+| Lớp | Nội dung |
+|---|---|
+| Dữ liệu | Dữ liệu combat có cấu trúc, gắn phiên bản game và nguồn. Cần mở lại các trang `/Combat` đang bị loại và bật các họ Tier B (vũ khí, Echo, Sonata) |
+| Combat Engine | Phần mềm tất định tính sát thương, Concerto, Energy, buff, Tune Break; không gọi LLM. LLM không tự tính số |
+| Công cụ agent | Công cụ chỉ đọc, có kiểu (STD-AI-006), ví dụ `validate_rotation`, `simulate_rotation`, `compare_teams`; rotation do LLM đề xuất ở dạng JSON và được Engine kiểm tra |
+| Trả lời | Kết quả là `Evidence` (AGT-004), nêu rõ giả định, phiên bản game, độ tin cậy |
+| Tác vụ nặng | Tối ưu Echo và quét nhiều đội chạy nền qua worker, cache theo phiên bản, không chạy trong lượt chat |
+
+**Lộ trình gợi ý:** T0 tra cứu bộ kỹ năng; T1 giải thích cơ chế và gợi ý đội theo luật; T2 mô phỏng sát thương và tài nguyên; T3 so sánh đội và tối ưu Echo; T4 đề xuất rotation mới, gắn nhãn "chưa kiểm chứng".
+
+**Vấn đề cần giải quyết trước khi triển khai:**
+- Wiki có hệ số kỹ năng, cooldown, Resonance Cost, Concerto Regen, nhưng chưa thấy dữ liệu frame. DPS chỉ là ước tính cho đến khi có thời gian đo trong game; T2 cần số đo thật.
+- Quy tắc chỉ dùng Fandom làm nguồn cần được chủ dự án xem xét lại từ T2 (đề xuất: chấp nhận số đo trong game, không dùng dữ liệu datamine).
+- Công thức sát thương chi tiết (DEF, RES, Amplify) chưa được xác minh.
+- Ngân sách AGT-006 có thể không đủ cho nghiên cứu nhiều bước; cần đo lại.
+- Meta đổi theo bản cập nhật game, nên câu trả lời phải ghi rõ phiên bản.
+
+### BL-002 Sandbox chạy code do LLM viết
+
+**Ý tưởng:** môi trường cách ly để Chisa chạy code tùy ý cho các phân tích ngoài công cụ sẵn có, tương tự code execution của ChatGPT và Claude. Tùy chọn triển khai: một VPS riêng hoặc dịch vụ ngoài.
+
+**Đề xuất hiện tại:** chưa làm và chưa thuê VPS, vì Combat Engine của BL-001 chỉ chạy code đã được viết và kiểm thử.
+
+**Tín hiệu để xem xét lại:**
+- có nhu cầu thực tế về code tùy ý mà công cụ có kiểu không đáp ứng được; hoặc
+- đo thật cho thấy job tối ưu làm chậm VPS chính. Khi đó chỉ cần một máy tính toán chạy code của dự án, chưa cần sandbox.
+
+**Ràng buộc tối thiểu nếu triển khai:**
+- chỉ dành cho Chía-con và Admin, có quota và timeout;
+- không chạy trên VPS chính; không có secret, kết nối DB hay dữ liệu người dùng;
+- mỗi lần chạy một sandbox mới (gVisor hoặc microVM, không dùng Docker thường), chặn mạng ra Internet ở tường lửa của máy chủ;
+- kết nối riêng một chiều (ví dụ WireGuard); kết quả là dữ liệu không tin cậy, phải kiểm tra schema và giới hạn dung lượng;
+- khi sandbox lỗi, Chisa báo không tính được, không được đoán số;
+- có ADR vì ngoại lệ với STD-AI-006, ưu tiên hình thức trả trước nếu dùng dịch vụ ngoài.
 
 ---
 
