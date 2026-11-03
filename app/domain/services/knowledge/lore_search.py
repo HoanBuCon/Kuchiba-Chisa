@@ -9,6 +9,7 @@ from typing import Protocol
 from app.domain.ingestion.entity_linking import EntityLinker
 from app.domain.ingestion.text_normalization import normalize_text
 from app.domain.interfaces.embedding_provider import IEmbeddingProvider
+from app.domain.interfaces.llm_provider import LLMCallBudget
 from app.domain.interfaces.reranker import ICrossEncoderReranker, RerankerUnavailableError
 from app.domain.models.evidence import (
     Evidence,
@@ -25,7 +26,7 @@ class QueryTranslationError(RuntimeError):
 
 
 class IQueryTranslator(Protocol):
-    async def to_english(self, question: str) -> str: ...
+    async def to_english(self, question: str, budget: LLMCallBudget | None = None) -> str: ...
 
 
 @dataclass(frozen=True)
@@ -117,10 +118,10 @@ class LoreSearchService:
         self._rerankers = tuple(rerankers)
         self._settings = settings or LoreSearchSettings()
 
-    async def search(self, question: str) -> LoreSearchResult:
+    async def search(self, question: str, budget: LLMCallBudget | None = None) -> LoreSearchResult:
         original = normalize_text(question)
         degraded: list[str] = []
-        query = await self._english(original, degraded)
+        query = await self._english(original, degraded, budget)
         # Aliases are bilingual, so either wording may be the one that names the entity.
         entities = tuple(dict.fromkeys((*self._linker.link(query), *self._linker.link(original))))
         vector = await self._embedder.embed_text(query, prefix=QUERY_PREFIX)
@@ -137,9 +138,11 @@ class LoreSearchService:
             evidence, query, entities, tuple(degraded), strong and bool(hits), tuple(vector)
         )
 
-    async def _english(self, question: str, degraded: list[str]) -> str:
+    async def _english(
+        self, question: str, degraded: list[str], budget: LLMCallBudget | None
+    ) -> str:
         try:
-            return normalize_text(await self._translator.to_english(question)) or question
+            return normalize_text(await self._translator.to_english(question, budget)) or question
         except QueryTranslationError:
             degraded.append("translation_failed")
             return question

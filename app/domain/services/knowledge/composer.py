@@ -20,6 +20,7 @@ from app.domain.services.chisa_voice import (
     GROUNDED_ABSTENTION,
     GROUNDED_ANSWER_LEAD,
     GROUNDED_EXTRACTIVE_FRAME,
+    GROUNDED_LIST_LEAD,
 )
 from app.domain.services.context_builder import ContextBuilder
 from app.domain.services.guardrails import (
@@ -95,6 +96,16 @@ class GroundedComposer:
         self._assembler = assembler or GroundedOutputAssembler()
         self._leakage_guard = leakage_guard or PromptLeakageGuard()
         self._embedder = embedder
+
+    def compose_list(self, listed: Sequence[Evidence]) -> ComposedAnswer:
+        """An exact lookup needs no LLM: nothing can be invented, and a call is saved."""
+        lines = (f"- {item.text.splitlines()[0]}" for item in listed)
+        return ComposedAnswer(
+            text="\n".join((GROUNDED_LIST_LEAD, *lines)),
+            abstained=False,
+            citations=_snapshots([item.evidence_id for item in listed], listed),
+            status="listed",
+        )
 
     async def compose(
         self,

@@ -21,7 +21,7 @@ from app.infrastructure.observability import (
     shutdown_observability,
 )
 from app.infrastructure.vector.qdrant.qdrant_service import qdrant_service
-from app.interface.api.routes import admin_ingestion, auth, chat, community, health
+from app.interface.api.routes import admin_ingestion, auth, chat, chat_v2, community, health
 from app.interface.middlewares.observability import ObservabilityMiddleware
 from app.interface.middlewares.rate_limiter import RateLimitMiddleware
 from app.interface.middlewares.request_body_limit import RequestBodyLimitMiddleware
@@ -181,6 +181,7 @@ def create_app() -> FastAPI:
     # app.include_router(users.router, prefix="/api/v1", tags=["Users"])
 
     app.include_router(admin_ingestion.router, prefix="/api/v1")
+    app.include_router(chat_v2.router, prefix="/api/v2")
 
     if ASSETS_DIR.is_dir():
         app.mount("/assets", StaticFiles(directory=str(ASSETS_DIR)), name="assets")

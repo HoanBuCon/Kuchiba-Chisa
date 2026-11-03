@@ -104,3 +104,4 @@ __all__ = [
     "AliasModel",
     "EntityRelationshipModel",
 ]
+from app.infrastructure.database.models.thread import ThreadModel, ThreadTurnModel

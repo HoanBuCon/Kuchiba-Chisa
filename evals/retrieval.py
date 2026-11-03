@@ -302,7 +302,7 @@ class _FrozenTranslator:
             if case.relevant_pages
         }
 
-    async def to_english(self, question: str) -> str:
+    async def to_english(self, question: str, budget: Any = None) -> str:
         return self._english[question]
 
 

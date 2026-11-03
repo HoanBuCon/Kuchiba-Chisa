@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from app.domain.interfaces.llm_provider import LLMCallBudget
 from app.domain.models.evidence import Evidence
 from app.domain.services.knowledge.lore_search import (
     ILoreIndex,
@@ -24,6 +25,9 @@ class AdvancedEvidence:
     abstain: bool
     expanded: bool
     degraded: tuple[str, ...]
+    # An exact list from structured data; given to the Composer alone, because the LLM
+    # skipped these short lines for longer passages when it saw both.
+    listed: tuple[Evidence, ...] = ()
 
 
 class AdvancedRetrieval:
@@ -39,8 +43,10 @@ class AdvancedRetrieval:
         self._router = router
         self._dialogue = dialogue
 
-    async def retrieve(self, question: str) -> AdvancedEvidence:
-        found = await self._search.search(question)
+    async def retrieve(
+        self, question: str, budget: LLMCallBudget | None = None
+    ) -> AdvancedEvidence:
+        found = await self._search.search(question, budget)
         route = self._router.route((question, found.query), found.entities)
         listed = self._listed(route)
         profiles = tuple(
@@ -61,6 +67,7 @@ class AdvancedRetrieval:
             abstain=not sufficient and not extra,
             expanded=expanded,
             degraded=found.degraded,
+            listed=listed,
         )
 
     def _listed(self, route: QuestionRoute) -> tuple[Evidence, ...]:
