@@ -201,6 +201,8 @@ class HtmlCleaner:
             source_chars=sum(len(fragment) for fragment in fragments),
             unexplained_text=_unexplained(fragments, blocks, context.accounted),
             unknown_markup=tuple(sorted(unknown_markup)),
+            url=page.url,
+            license=page.license,
         )
 
     def _blocks(self, body: HtmlElement, context: _Context) -> Iterator[Block]:

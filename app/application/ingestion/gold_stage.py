@@ -6,7 +6,7 @@ import hashlib
 import re
 from collections import Counter, defaultdict
 from collections.abc import Callable, Mapping, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import UTC, datetime
 from typing import Any
 
@@ -96,6 +96,22 @@ def quality_report(
     }
 
 
+def with_attribution(
+    chunks: Sequence[Chunk], documents: Sequence[CanonicalDocument]
+) -> list[Chunk]:
+    """Every point names its source page, revision and licence (ING-018)."""
+    by_page = {document.page_id: document for document in documents}
+    return [
+        replace(
+            chunk,
+            url=by_page[chunk.page_id].url,
+            license=by_page[chunk.page_id].license,
+            revid=by_page[chunk.page_id].revid,
+        )
+        for chunk in chunks
+    ]
+
+
 class GoldStage:
     def __init__(
         self,
@@ -126,8 +142,9 @@ class GoldStage:
         chunked = self._chunker.chunk(deduped.units)
         uncovered = uncovered_units(deduped.units, chunked)
         knowledge = build_knowledge(documents, states)
-        chunks = enrich_chunks(
-            drop_duplicate_bodies(chunked, self._settings.owner_policy), knowledge
+        chunks = with_attribution(
+            enrich_chunks(drop_duplicate_bodies(chunked, self._settings.owner_policy), knowledge),
+            documents,
         )
         quality = {
             **quality_report(chunks, self._settings.chunk_policy, self._settings.tiny_chunk_tokens),

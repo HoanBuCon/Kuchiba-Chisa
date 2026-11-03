@@ -77,6 +77,9 @@ class CanonicalDocument:
     unexplained_text: tuple[str, ...] = ()
     # CSS classes outside the known markup baseline: the wiki's schema drifting.
     unknown_markup: tuple[str, ...] = ()
+    # Attribution every citation must carry (ING-018).
+    url: str = ""
+    license: str = ""
 
     @property
     def text_length(self) -> int:

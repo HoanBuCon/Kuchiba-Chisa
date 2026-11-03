@@ -13,6 +13,7 @@ from app.application.ingestion.gold_stage import (
     GoldStage,
     corpus_fingerprint,
     uncovered_units,
+    with_attribution,
 )
 from app.domain.ingestion.chunking import Chunker, ChunkPolicy
 from app.domain.ingestion.dedup import OwnerPolicy
@@ -20,7 +21,7 @@ from app.domain.ingestion.documents import Block, BlockKind, CanonicalDocument
 from app.domain.ingestion.knowledge import KnowledgeBase
 from app.domain.ingestion.page_checks import Verdict
 from app.domain.ingestion.pages import PageState, PageStatus
-from app.domain.ingestion.units import Collection, Unit
+from app.domain.ingestion.units import Collection, Unit, document_units
 from app.domain.interfaces.silver import SilverEntry
 from app.infrastructure.ingestion.gold.config import load_gold_settings
 from app.infrastructure.ingestion.gold.gold_store import FileGoldStore
@@ -236,3 +237,13 @@ async def test_published_knowledge_reads_back_unchanged(tmp_path) -> None:
     assert knowledge.entities[0].game_version == "2.0"
     assert knowledge.aliases[0].alias == "Other Name"
     assert isinstance(knowledge.aliases[0].evidence, tuple)
+
+
+def test_chunks_carry_the_attribution_of_their_page() -> None:
+    chunk = Chunker(_count, ChunkPolicy()).chunk(document_units(_doc(1, "Plain text.")))[0]
+    document = replace(_doc(1, "Plain text."), url="https://w/P", license="CC-BY-SA")
+
+    attributed = with_attribution([chunk], [document])[0]
+
+    assert (attributed.url, attributed.license) == ("https://w/P", "CC-BY-SA")
+    assert attributed.revid == document.revid
