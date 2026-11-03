@@ -17,6 +17,7 @@ from qdrant_client import AsyncQdrantClient
 
 from app.application.ingestion.gold_stage import GoldStage
 from app.application.ingestion.image_stage import ImageStage
+from app.application.ingestion.report_stage import ReportStage
 from app.application.ingestion.silver_stage import SilverStage
 from app.application.ingestion.vector_stage import VectorSettings, VectorStage
 from app.application.ingestion.wiki_sync import RunStatus, SyncReport, SyncRules, WikiSyncService
@@ -31,6 +32,7 @@ from app.infrastructure.database.repositories.wiki_inventory import PostgresWiki
 from app.infrastructure.database.repositories.wiki_silver import PostgresSilverLedger
 from app.infrastructure.embeddings.fastembed_adapter import FastEmbedAdapter
 from app.infrastructure.ingestion.bronze_store import FileBronzeStore
+from app.infrastructure.ingestion.corpus_explorer import HtmlCorpusExplorer
 from app.infrastructure.ingestion.corpus_safety_exceptions import load_page_safety_exceptions
 from app.infrastructure.ingestion.entity_image_store import (
     FileImageVault,
@@ -80,6 +82,10 @@ def _parser() -> argparse.ArgumentParser:
     load.add_argument("--version", help="corpus version; defaults to the newest")
     load.add_argument("--replace", action="store_true", help="recreate existing collections")
     commands.add_parser("images", help="fetch and vet entity images (ING-019)")
+    report = commands.add_parser("report", help="render the Corpus Explorer (ING-017)")
+    report.add_argument("--version", help="corpus version; defaults to the newest")
+    report.add_argument("--previous", help="active corpus version to compare against")
+    report.add_argument("--eval", help="retrieval report from evals.retrieval")
     gate = commands.add_parser("gate", help="run the data gate on a corpus version")
     gate.add_argument("--version", help="corpus version; defaults to the newest")
     gate.add_argument("--previous", help="active corpus version to compare against")
@@ -230,6 +236,24 @@ async def _images(config: WikiSyncConfig) -> ImageReport:
     return report
 
 
+async def _report(args: argparse.Namespace) -> dict[str, object]:
+    root = Path(settings.INGESTION_DATA_DIR)
+    gold = FileGoldStore(root)
+    version = args.version or gold.latest_version()
+    if version is None:
+        raise SystemExit("no gold corpus to report on; run assemble first")
+    evaluation = json.loads(Path(args.eval).read_text(encoding="utf-8")) if args.eval else None
+    stage = ReportStage(
+        PostgresWikiInventory(engine, AsyncSessionFactory),
+        FileBronzeStore(root),
+        FileSilverStore(root),
+        PostgresSilverLedger(AsyncSessionFactory),
+        gold,
+        HtmlCorpusExplorer(root),
+    )
+    return {"report": await stage.run(version, args.previous, evaluation)}
+
+
 def _data_gate(args: argparse.Namespace) -> GateReport:
     gold = FileGoldStore(Path(settings.INGESTION_DATA_DIR))
     version = args.version or gold.latest_version()
@@ -253,6 +277,9 @@ async def _run(args: argparse.Namespace) -> int:
     try:
         if args.command == "status":
             _emit(await _status())
+            return 0
+        if args.command == "report":
+            _emit(await _report(args))
             return 0
         if args.command == "gate":
             return 0 if _data_gate(args).passed else 1

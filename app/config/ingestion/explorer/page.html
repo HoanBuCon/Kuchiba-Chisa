@@ -1,0 +1,15 @@
+{% extends "layout.html" %}
+{% block title %}{{ p.title }}{% endblock %}
+{% block body %}
+<p><a href="../index.html">Back to {{ version }}</a></p>
+<h1>{{ p.title }}</h1>
+<p class="muted">Page {{ p.page_id }}. {{ p.chunks|length }} chunks.</p>
+<h2>Removal log</h2>
+{% if p.removed %}<table><tr><th>Reason</th><th>Count</th></tr>
+{% for reason, count in p.removed.items() %}<tr><td>{{ reason }}</td><td>{{ count }}</td></tr>{% endfor %}</table>{% else %}<p>Nothing removed.</p>{% endif %}
+<div class="grid">
+<section><h2>Raw HTML ({{ raw|length }} of {{ p.raw_html|length }} characters)</h2><pre>{{ raw }}</pre></section>
+<section><h2>Silver</h2>{% for kind, section, text in p.silver_blocks %}<p class="muted">{{ kind }}{% if section %}: {{ section }}{% endif %}</p><pre>{{ text }}</pre>{% endfor %}</section>
+<section><h2>Chunks</h2>{% for c in p.chunks %}<p class="muted">#{{ c.offset }}, {{ c.tokens }} tokens, {{ c.collection.value }}</p><pre>{{ c.text }}</pre>{% endfor %}</section>
+</div>
+{% endblock %}
