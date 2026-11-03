@@ -1,0 +1,11 @@
+# Entity image flow (ING-019, ADR-0003, design 6.10).
+allowed_hosts:
+  - static.wikia.nocookie.net
+# The wiki's placeholder appears on pages with no real image of their own.
+excluded_files:
+  - Site-logo.png
+max_bytes: 26214400
+max_pixels: 60000000
+display_edge: 1024
+batch_size: 50
+max_failure_ratio: 0.02

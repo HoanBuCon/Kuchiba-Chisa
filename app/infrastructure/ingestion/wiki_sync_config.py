@@ -51,6 +51,7 @@ class SourceSettings(_Strict):
     max_retries: int = Field(ge=0, le=5)
     max_wait_seconds: float = Field(gt=0)
     max_response_bytes: int = Field(gt=0)
+    max_image_bytes: int = Field(default=26_214_400, gt=0)
 
 
 class _Fetch(_Strict):
