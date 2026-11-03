@@ -1,6 +1,7 @@
 """Retrieval-level evaluation of a staged corpus: no LLM, safe to run on every release (S8).
 
 Usage: python -m evals.retrieval --version 2026.11.02-7 [--mode hybrid] [--report out.json]
+`--gate` judges the free `linked` mode against gates.yaml; `--active` is the live release's report.
 `--mode reranked` calls the prepaid Jina API and spends tokens; `all` never does.
 """
 
@@ -24,9 +25,11 @@ from qdrant_client import AsyncQdrantClient, models
 from app.application.ingestion.vector_stage import staging_collection
 from app.config.settings import settings
 from app.domain.ingestion.entity_linking import EntityLinker
+from app.domain.ingestion.release_gates import GateReport, evaluate_retrieval_gate
 from app.domain.ingestion.text_normalization import normalize_text
 from app.domain.ingestion.units import Collection
 from app.infrastructure.embeddings.fastembed_adapter import FastEmbedAdapter
+from app.infrastructure.ingestion.gates_config import load_gate_policies
 from app.infrastructure.ingestion.gold.gold_store import FileGoldStore
 from app.infrastructure.ingestion.gold.staging_index import DENSE, LEXICAL, LEXICAL_MODEL
 from app.infrastructure.rag.api_cross_encoder_reranker import (
@@ -42,7 +45,8 @@ RANK_K = 10
 CANDIDATES = 50
 RRF_K = 60
 EMBED_THREADS = 2
-MODES = ("dense", "lexical", "hybrid", "linked")
+LINKED = "linked"
+MODES = ("dense", "lexical", "hybrid", LINKED)
 RERANKED = "reranked"
 # Best on the first 32 cases; 30 candidates scored no better and cost twice the tokens.
 RERANK_MODEL = "jina-reranker-v3"
@@ -222,9 +226,26 @@ def _jina_reranker(http: httpx.AsyncClient) -> ApiCrossEncoderReranker:
     )
 
 
+def _selected_modes(args: argparse.Namespace) -> Sequence[str]:
+    if args.gate:
+        return (LINKED,)
+    return MODES if args.mode == "all" else (args.mode,)
+
+
+def _retrieval_gate(
+    summary: dict[str, Any], outcomes: Sequence[CaseOutcome], active_report: str | None
+) -> GateReport:
+    _, policy = load_gate_policies()
+    active = None
+    if active_report:
+        active = json.loads(Path(active_report).read_text(encoding="utf-8"))["modes"][LINKED]
+    return evaluate_retrieval_gate(summary, {o.case_id for o in outcomes if o.hit}, active, policy)
+
+
 async def _main(args: argparse.Namespace) -> int:
     report: dict[str, Any] = {"corpus_version": args.version, "modes": {}, "misses": {}}
-    for mode in MODES if args.mode == "all" else (args.mode,):
+    gate: GateReport | None = None
+    for mode in _selected_modes(args):
         started = time.perf_counter()
         summary, outcomes = await evaluate(args.version, mode)
         summary["seconds"] = round(time.perf_counter() - started, 1)
@@ -240,11 +261,20 @@ async def _main(args: argparse.Namespace) -> int:
             for o in outcomes
             if not o.hit
         ]
+        if args.gate:
+            gate = _retrieval_gate(summary, outcomes, args.active)
+    if gate is not None:
+        report["gate"] = {
+            "passed": gate.passed,
+            "failures": list(gate.failures),
+            "checks": {check.name: check.detail for check in gate.checks},
+        }
     text = json.dumps(report, ensure_ascii=False, indent=1)
     if args.report:
         Path(args.report).write_text(text, encoding="utf-8")
-    sys.stdout.write(text + "\n")
-    return 0
+    # Questions are Vietnamese, which a legacy Windows console codec cannot print.
+    sys.stdout.buffer.write((text + "\n").encode("utf-8"))
+    return 1 if gate is not None and not gate.passed else 0
 
 
 def main(argv: Sequence[str] | None = None) -> int:
@@ -252,6 +282,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--version", required=True)
     parser.add_argument("--mode", choices=(*MODES, RERANKED, "all"), default="all")
     parser.add_argument("--report", help="also write the JSON report to this path")
+    parser.add_argument("--gate", action="store_true", help="exit 1 unless the gate passes")
+    parser.add_argument("--active", help="retrieval report of the active release")
     return asyncio.run(_main(parser.parse_args(argv)))
 
 

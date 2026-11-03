@@ -44,3 +44,15 @@ Model được chọn trên chính 32 câu này, nên số 0,810 dễ lạc quan
 - Đợt golden khó hơn: không nêu tên trực tiếp, nhiều bước suy luận, nhân vật ngoài Chisa.
 - Tra kho có cấu trúc cho câu liệt kê.
 - Fusion hiện chạy phía client trong bộ đo; ADV-004 yêu cầu RRF có trọng số phía server ở runtime.
+
+
+## Release `2026.11.03-1`: gates (2026-11-03)
+
+Data gate passed: 9,872 chunks, 0 over limit, 0 duplicates, 0 uncovered, 0 quarantined, with 8 owner-approved safety exceptions.
+
+| Mode | Cases | Hit@5 (95% CI) | MRR@10 |
+|---|---|---|---|
+| `linked` (free, used by the gate) | 72 | 0.972 (0.904-0.992) | 0.823 |
+| `linked` + `jina-reranker-v3` top 15 | 72 | 0.972 (0.904-0.992) | 0.885 |
+
+The retrieval gate fails on `golden_cases` (72 of 100), so QUAL-003 is still not proven. These numbers include batch 2, which is easy and not owner-verified, and the reranker was chosen on the first 32 cases. Both misses are enumeration questions, which belong to typed lookups.

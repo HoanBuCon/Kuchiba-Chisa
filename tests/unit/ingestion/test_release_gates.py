@@ -2,7 +2,12 @@
 
 from copy import deepcopy
 
-from app.domain.ingestion.release_gates import evaluate_data_gate
+from app.domain.ingestion.release_gates import (
+    RetrievalGatePolicy,
+    evaluate_data_gate,
+    evaluate_retrieval_gate,
+)
+from app.infrastructure.ingestion.gates_config import load_gate_policies
 
 MANIFEST = {
     "quality": {
@@ -71,3 +76,54 @@ def test_manifest_that_never_measured_safety_fails() -> None:
     del manifest["quality"]["pages_safety_blocked"]
 
     assert evaluate_data_gate(manifest).failures == ("manifest_complete",)
+
+
+SUMMARY = {
+    "overall": {"cases": 100, "hit_at_5": 0.95, "hit_at_5_ci95": [0.9, 0.98], "mrr_at_10": 0.85}
+}
+RETRIEVAL = RetrievalGatePolicy(canary_case_ids=("a", "b"))
+
+
+def _summary(**overall) -> dict:
+    return {"overall": SUMMARY["overall"] | overall}
+
+
+def _retrieval_failures(summary: dict, hits=("a", "b"), active=None) -> tuple[str, ...]:
+    return evaluate_retrieval_gate(summary, hits, active, RETRIEVAL).failures
+
+
+def test_retrieval_gate_passes_at_the_targets() -> None:
+    assert _retrieval_failures(SUMMARY) == ()
+
+
+def test_retrieval_gate_fails_on_each_target() -> None:
+    assert _retrieval_failures(_summary(cases=99)) == ("golden_cases",)
+    assert _retrieval_failures(_summary(hit_at_5=0.89)) == ("hit_at_5",)
+    assert _retrieval_failures(_summary(mrr_at_10=0.79)) == ("mrr_at_10",)
+
+
+def test_one_missed_canary_fails_the_gate() -> None:
+    assert _retrieval_failures(SUMMARY, hits=("a",)) == ("canary",)
+
+
+def test_empty_canary_list_cannot_pass() -> None:
+    report = evaluate_retrieval_gate(SUMMARY, (), None, RetrievalGatePolicy())
+
+    assert report.failures == ("canary_configured",)
+
+
+def test_drop_from_active_counts_only_beyond_the_interval() -> None:
+    active = _summary(hit_at_5=0.97, mrr_at_10=0.85)
+    assert _retrieval_failures(SUMMARY, active=active) == ()
+
+    noisy_free = _summary(hit_at_5=0.95, hit_at_5_ci95=[0.9, 0.96])
+    assert _retrieval_failures(noisy_free, active=active) == ("hit_at_5_vs_active",)
+    assert _retrieval_failures(_summary(mrr_at_10=0.82), active=active) == ("mrr_at_10_vs_active",)
+
+
+def test_shipped_gate_config_loads_with_canaries() -> None:
+    data, retrieval = load_gate_policies()
+
+    assert data.max_quarantined_ratio == 0.02
+    assert (retrieval.min_hit_at_5, retrieval.min_mrr_at_10) == (0.90, 0.80)
+    assert len(retrieval.canary_case_ids) >= 10
