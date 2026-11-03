@@ -1,0 +1,43 @@
+{% extends "layout.html" %}
+{% block title %}Corpus Explorer {{ r.version }}{% endblock %}
+{% block body %}
+<h1>Corpus Explorer: {{ r.version }}</h1>
+<p class="muted">Compared with {{ r.previous or "nothing: first release" }}.</p>
+<h2>Data gate:
+{% if r.gate.passed %}<span class="pass">PASS</span>{% else %}<span class="fail">FAIL</span>{% endif %}</h2>
+<table><tr><th>Check</th><th>Result</th><th>Detail</th></tr>
+{% for c in r.gate.checks %}<tr><td>{{ c.name }}</td>
+<td class="{{ 'pass' if c.passed else 'fail' }}">{{ 'pass' if c.passed else 'FAIL' }}</td><td>{{ c.detail }}</td></tr>{% endfor %}
+</table>
+<h2>Diff</h2>
+<p>{{ r.diff.added|length }} pages added, {{ r.diff.changed|length }} changed, {{ r.diff.removed|length }} removed.</p>
+{% for name, rows in [("Added", r.diff.added), ("Changed", r.diff.changed), ("Removed", r.diff.removed)] if rows %}
+<h3>{{ name }}</h3><table><tr><th>Page</th><th>Chunks added</th><th>Chunks removed</th></tr>
+{% for c in rows %}<tr><td>{{ page_link(c.page_id, c.title) }}</td><td>{{ c.added_chunks }}</td><td>{{ c.removed_chunks }}</td></tr>{% endfor %}
+</table>{% endfor %}
+<h2>Quarantine and hold ({{ r.flagged|length }})</h2>
+{% if r.flagged %}<table><tr><th>Page</th><th>Family</th><th>Verdict</th><th>Reasons</th></tr>
+{% for f in r.flagged %}<tr><td>{{ page_link(f.page_id, f.title) }}</td><td>{{ f.family }}</td><td>{{ f.verdict }}</td><td>{{ f.reasons|join(", ") }}</td></tr>{% endfor %}
+</table>{% else %}<p>None.</p>{% endif %}
+<h2>Distribution</h2>
+<table><tr><th>Family</th><th>Pages</th><th>Chunks</th><th>Median tokens</th><th>Tokens by bucket (from: chunks)</th></tr>
+{% for d in r.distributions %}<tr><td>{{ d.family }}</td><td>{{ d.pages }}</td><td>{{ d.chunks }}</td><td>{{ d.median_tokens }}</td>
+<td>{% for bucket, count in d.histogram.items() %}{{ bucket }}: {{ count }}{% if not loop.last %}, {% endif %}{% endfor %}</td></tr>{% endfor %}
+</table>
+<table><tr><th>Entities</th><th>Aliases</th><th>Inferred aliases</th><th>Inferred with evidence</th><th>Glossary</th><th>Quests</th></tr>
+<tr><td>{{ r.knowledge.entities }}</td><td>{{ r.knowledge.aliases }}</td><td>{{ r.knowledge.inferred_aliases }}</td>
+<td>{{ r.knowledge.inferred_with_evidence }}</td><td>{{ r.knowledge.glossary }}</td><td>{{ r.knowledge.quests }}</td></tr></table>
+<h2>Retrieval evaluation</h2>
+{% if r.evaluation %}{% for mode, m in r.evaluation.modes.items() %}
+<h3>{{ mode }}</h3><table><tr><th>Group</th><th>Cases</th><th>Hit@5</th><th>MRR@10</th></tr>
+<tr><td>overall</td><td>{{ m.overall.cases }}</td><td>{{ m.overall.hit_at_5 }}</td><td>{{ m.overall.mrr_at_10 }}</td></tr>
+{% for name, g in m.by_category.items() %}<tr><td>{{ name }}</td><td>{{ g.cases }}</td><td>{{ g.hit_at_5 }}</td><td>{{ g.mrr_at_10 }}</td></tr>{% endfor %}
+{% for name, g in m.by_language.items() %}<tr><td>{{ name }}</td><td>{{ g.cases }}</td><td>{{ g.hit_at_5 }}</td><td>{{ g.mrr_at_10 }}</td></tr>{% endfor %}
+</table>{% endfor %}
+{% if r.evaluation.gate %}<p>Retrieval gate:
+{% if r.evaluation.gate.passed %}<span class="pass">PASS</span>{% else %}<span class="fail">FAIL: {{ r.evaluation.gate.failures|join(", ") }}</span>{% endif %}</p>{% endif %}
+{% else %}<p class="muted">No evaluation report was given.</p>{% endif %}
+<h2>Inspector ({{ r.inspections|length }} pages)</h2>
+<p class="muted">Changed and flagged pages, plus a fixed sample from each family.</p>
+<ul>{% for p in r.inspections %}<li>{{ page_link(p.page_id, p.title) }}</li>{% endfor %}</ul>
+{% endblock %}

@@ -13,11 +13,13 @@ from collections.abc import Callable, Sequence
 from datetime import UTC, datetime
 from email.utils import parsedate_to_datetime
 from typing import Any
-from urllib.parse import quote, urlsplit
+from urllib.parse import parse_qsl, quote, urlencode, urlsplit, urlunsplit
 
 import httpx
 
+from app.domain.ingestion.entity_images import ImageInfo
 from app.domain.ingestion.pages import WikiPageInfo
+from app.domain.interfaces.entity_images import ImageDownloadError
 from app.domain.interfaces.wiki_ingestion import ParsedPage, WikiSourceError
 from app.infrastructure.ingestion.wiki_sync_config import SourceSettings
 
@@ -41,6 +43,29 @@ def retry_after_seconds(header: str | None, attempt: int, now: datetime) -> floa
             except (TypeError, ValueError, OverflowError):
                 pass
     return float(2 ** (attempt + 1))
+
+
+def _original_url(url: str) -> str:
+    """The image CDN serves a smaller WebP unless the original is requested."""
+    parts = urlsplit(url)
+    query = urlencode([*parse_qsl(parts.query), ("format", "original")])
+    return urlunsplit(parts._replace(query=query))
+
+
+def _image_info(page: dict[str, Any]) -> ImageInfo | None:
+    infos = page.get("imageinfo") or []
+    if page.get("missing") or not infos:
+        return None
+    info = infos[0]
+    return ImageInfo(
+        name=page["title"].removeprefix("File:"),
+        url=_original_url(info["url"]),
+        sha1=info["sha1"],
+        size=info["size"],
+        mime=info["mime"],
+        file_page_url=info["descriptionurl"],
+        revid=page.get("lastrevid", 0),
+    )
 
 
 class MediaWikiClient:
@@ -245,6 +270,35 @@ class MediaWikiClient:
             for e in b["query"]["logevents"]
             if e.get("action") != "restore"
         )
+
+    async def image_info(self, names: Sequence[str]) -> list[ImageInfo]:
+        """Metadata of existing files; a missing file is simply absent from the result."""
+        payload = await self.api(
+            action="query",
+            titles="|".join(f"File:{name}" for name in names),
+            prop="imageinfo|info",
+            iiprop="url|sha1|size|mime",
+        )
+        pages = (payload.get("query") or {}).get("pages", [])
+        return [info for info in (_image_info(page) for page in pages) if info is not None]
+
+    async def download(self, url: str) -> bytes:
+        """Paced like every wiki request; the byte limit also holds for a lying server."""
+        await self._pace()
+        self.requests += 1
+        try:
+            # A redirect could leave the vetted image host, so it counts as a failure.
+            async with self._client.stream("GET", url, follow_redirects=False) as response:
+                if response.status_code != 200:
+                    raise ImageDownloadError(f"HTTP {response.status_code}")
+                content = bytearray()
+                async for piece in response.aiter_bytes():
+                    content.extend(piece)
+                    if len(content) > self._settings.max_image_bytes:
+                        raise ImageDownloadError("response exceeds the byte limit")
+        except httpx.HTTPError as error:
+            raise ImageDownloadError(type(error).__name__) from error
+        return bytes(content)
 
     async def parse(self, page_id: int) -> ParsedPage:
         payload = await self.api(

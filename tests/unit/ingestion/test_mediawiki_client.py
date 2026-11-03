@@ -5,6 +5,7 @@ from datetime import UTC, datetime
 import httpx
 import pytest
 
+from app.domain.interfaces.entity_images import ImageDownloadError
 from app.domain.interfaces.wiki_ingestion import WikiSourceError
 from app.infrastructure.ingestion.mediawiki_client import MediaWikiClient, retry_after_seconds
 from app.infrastructure.ingestion.wiki_sync_config import SourceSettings
@@ -229,3 +230,50 @@ async def test_redirects_are_collected_per_target_page() -> None:
     found = await _client(_responses(httpx.Response(200, json=payload))).redirects([7, 8])
 
     assert found == {7: ("Chisa K.", "Kuchiba Chisa"), 8: ()}
+
+
+async def test_image_info_reads_files_and_skips_missing_ones() -> None:
+    pages = [
+        {
+            "title": "File:A B.png",
+            "lastrevid": 9,
+            "imageinfo": [
+                {
+                    "url": "https://static.example/a.png/revision/latest?cb=1",
+                    "sha1": "s",
+                    "size": 3,
+                    "mime": "image/png",
+                    "descriptionurl": "https://w/File:A_B.png",
+                }
+            ],
+        },
+        {"title": "File:Gone.png", "missing": True},
+    ]
+    client = _client(_responses(httpx.Response(200, json={"query": {"pages": pages}})))
+
+    infos = await client.image_info(["A B.png", "Gone.png"])
+
+    assert [(i.name, i.sha1, i.revid) for i in infos] == [("A B.png", "s", 9)]
+    assert infos[0].url == "https://static.example/a.png/revision/latest?cb=1&format=original"
+
+
+async def test_download_returns_the_body() -> None:
+    client = _client(_responses(httpx.Response(200, content=b"bytes")))
+
+    assert await client.download("https://static.example/a.png") == b"bytes"
+
+
+async def test_download_treats_a_redirect_as_a_failure() -> None:
+    redirect = httpx.Response(302, headers={"Location": "http://169.254.169.254/"})
+    client = _client(_responses(redirect))
+
+    with pytest.raises(ImageDownloadError):
+        await client.download("https://static.example/a.png")
+
+
+async def test_download_stops_past_the_byte_limit() -> None:
+    client = _client(_responses(httpx.Response(200, content=b"x" * 11)))
+    client._settings = SETTINGS.model_copy(update={"max_image_bytes": 10})
+
+    with pytest.raises(ImageDownloadError):
+        await client.download("https://static.example/a.png")
