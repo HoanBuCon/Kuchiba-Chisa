@@ -239,7 +239,7 @@ async def test_image_info_reads_files_and_skips_missing_ones() -> None:
             "lastrevid": 9,
             "imageinfo": [
                 {
-                    "url": "https://static.example/a.png",
+                    "url": "https://static.example/a.png/revision/latest?cb=1",
                     "sha1": "s",
                     "size": 3,
                     "mime": "image/png",
@@ -254,6 +254,7 @@ async def test_image_info_reads_files_and_skips_missing_ones() -> None:
     infos = await client.image_info(["A B.png", "Gone.png"])
 
     assert [(i.name, i.sha1, i.revid) for i in infos] == [("A B.png", "s", 9)]
+    assert infos[0].url == "https://static.example/a.png/revision/latest?cb=1&format=original"
 
 
 async def test_download_returns_the_body() -> None:

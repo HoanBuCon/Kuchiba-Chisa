@@ -25,6 +25,7 @@
 
 ## Hệ quả
 
+- Fandom mặc định trả WebP đã nén, nên phải thêm `format=original`. Bản nhận về vẫn có thể lệch vài byte so với file gốc (đo 18 byte ở một ảnh), nên `sha1` của wiki chỉ dùng để phát hiện thay đổi, không dùng kiểm tính toàn vẹn.
 - Thêm khoảng 1 GB đĩa cho Tier A (cộng khoảng 10% cho bản hiển thị). Ảnh không cần backup vì tải lại được từ wiki.
 - Tải lần đầu thêm khoảng 15–20 phút ở 1 req/s, chạy sau text với ngân sách riêng.
 - Fair use phù hợp với dự án cá nhân phi thương mại có ghi nguồn. Nếu thương mại hoá hoặc phân phối lại bộ ảnh thì phải xem lại quyết định này.

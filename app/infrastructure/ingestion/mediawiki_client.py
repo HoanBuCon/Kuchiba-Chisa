@@ -13,7 +13,7 @@ from collections.abc import Callable, Sequence
 from datetime import UTC, datetime
 from email.utils import parsedate_to_datetime
 from typing import Any
-from urllib.parse import quote, urlsplit
+from urllib.parse import parse_qsl, quote, urlencode, urlsplit, urlunsplit
 
 import httpx
 
@@ -45,6 +45,13 @@ def retry_after_seconds(header: str | None, attempt: int, now: datetime) -> floa
     return float(2 ** (attempt + 1))
 
 
+def _original_url(url: str) -> str:
+    """The image CDN serves a smaller WebP unless the original is requested."""
+    parts = urlsplit(url)
+    query = urlencode([*parse_qsl(parts.query), ("format", "original")])
+    return urlunsplit(parts._replace(query=query))
+
+
 def _image_info(page: dict[str, Any]) -> ImageInfo | None:
     infos = page.get("imageinfo") or []
     if page.get("missing") or not infos:
@@ -52,7 +59,7 @@ def _image_info(page: dict[str, Any]) -> ImageInfo | None:
     info = infos[0]
     return ImageInfo(
         name=page["title"].removeprefix("File:"),
-        url=info["url"],
+        url=_original_url(info["url"]),
         sha1=info["sha1"],
         size=info["size"],
         mime=info["mime"],
