@@ -10,7 +10,11 @@ from app.domain.models.evidence import (
     EvidenceProvenance,
     EvidenceScore,
 )
-from app.domain.services.chisa_voice import GROUNDED_ABSTENTION, GROUNDED_ANSWER_LEAD
+from app.domain.services.chisa_voice import (
+    GROUNDED_ABSTENTION,
+    GROUNDED_ANSWER_LEAD,
+    GROUNDED_LIST_LEAD,
+)
 from app.domain.services.context_builder import ContextBuilder
 from app.domain.services.knowledge.composer import GroundedComposer
 
@@ -185,3 +189,20 @@ async def test_every_delivered_answer_addresses_senpai() -> None:
     assert "Senpai" in plain.text
     assert "Senpai" in quoted.text
     assert quoted.text.count("Senpai") == 1
+
+
+def test_list_is_rendered_without_the_llm_and_cites_every_item() -> None:
+    llm = FakeLLM({})
+    first = _evidence("First Light (Chapter III)\nextra: field", "kb:v:quests:1")
+    second = _evidence("Far Shore (Chapter II)", "kb:v:quests:2")
+
+    result = GroundedComposer(llm, ContextBuilder()).compose_list([first, second])
+
+    assert llm.prompts == []
+    assert result.text.splitlines() == [
+        GROUNDED_LIST_LEAD,
+        "- First Light (Chapter III)",
+        "- Far Shore (Chapter II)",
+    ]
+    assert "Senpai" in result.text
+    assert [c.evidence_id for c in result.citations] == ["kb:v:quests:1", "kb:v:quests:2"]

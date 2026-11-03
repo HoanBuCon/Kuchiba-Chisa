@@ -159,3 +159,17 @@ async def test_unknown_reranker_scale_does_not_abstain_on_its_own() -> None:
     flow = AdvancedRetrieval(search, StructuredTools(KNOWLEDGE, VERSION), ROUTER, Index([]))
 
     assert not (await flow.retrieve("x")).abstain
+
+
+async def test_listing_is_returned_apart_from_search_evidence() -> None:
+    flow, _ = _flow("Which main quests take place in Honami?", score=0.6)
+
+    result = await flow.retrieve("Nhiệm vụ nào diễn ra ở Honami?")
+
+    assert [item.provenance.source_id for item in result.listed] == ["First Light"]
+
+
+async def test_plain_question_has_no_listing() -> None:
+    flow, _ = _flow("Where was Chisa born?", score=0.6)
+
+    assert (await flow.retrieve("Chisa sinh ra ở đâu?")).listed == ()

@@ -216,6 +216,10 @@ class Settings(BaseSettings):
     # ── LLM cost / abuse quotas (per UTC day; Redis; fail-closed) ─
     # Applied once per chat request (POST /chat, /chat/stream, /community/chat).
     CHAT_QUOTA_ENABLED: bool = True
+    # v2 chat runs beside v1 until it passes QUAL-001..004; off by default (section 10).
+    CHAT_V2_ENABLED: bool = False
+    # The corpus release v2 answers from, until automated publishing arrives in I5.
+    KNOWLEDGE_CORPUS_VERSION: str = ""
     CHAT_MESSAGE_RATE_LIMIT_PER_MINUTE: int = Field(default=10, ge=1, le=600)
     QUOTA_WEB_ANON_PER_SUBJECT_DAILY: int = Field(default=30, ge=1)
     QUOTA_WEB_ANON_PER_IP_DAILY: int = Field(default=100, ge=1)

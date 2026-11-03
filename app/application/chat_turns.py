@@ -1,0 +1,231 @@
+"""One v2 chat turn as typed events: mode, retrieval, Composer, persistence (ADV-001, ADV-009)."""
+
+from __future__ import annotations
+
+import re
+from collections.abc import AsyncIterator, Sequence
+from dataclasses import asdict, dataclass, replace
+from typing import Any, Protocol
+from uuid import UUID, uuid4
+
+from app.domain.entities.emotion import EmotionState
+from app.domain.interfaces.llm_provider import LLMCallBudget
+from app.domain.interfaces.threads import IThreadStore
+from app.domain.models.evidence import Evidence
+from app.domain.models.thread import ChatMode, ModeDecision, Thread, TurnRecord, resolve_mode
+from app.domain.services.chisa_voice import INPUT_BLOCKED
+from app.domain.services.guardrails.injection_guard import (
+    ContentSource,
+    GuardAction,
+    InjectionGuard,
+)
+from app.domain.services.guardrails.pii_redaction import PiiRedactor
+from app.domain.services.knowledge.advanced_retrieval import AdvancedEvidence
+from app.domain.services.knowledge.composer import ComposedAnswer
+
+# The translation and the Composer; a turn never spends a third call (ADV-009).
+ADVANCED_MAX_LLM_CALLS = 2
+ADVANCED_DEADLINE_SECONDS = 30.0
+LANE_ADVANCED = "advanced"
+HISTORY_TURNS = 6
+EVENT_STARTED = "turn.started"
+EVENT_EVIDENCE = "evidence.added"
+EVENT_TOKEN = "token"
+EVENT_COMPLETED = "turn.completed"
+EVENT_FAILED = "turn.failed"
+STATUS_INPUT_BLOCKED = "input_blocked"
+_SENTENCE = re.compile(r"(?<=[.!?])\s+")
+
+
+class ThreadNotFoundError(LookupError):
+    """The thread is missing or belongs to someone else; the two are not told apart."""
+
+
+@dataclass(frozen=True)
+class TurnRequest:
+    owner: str
+    channel: str
+    message: str
+    turn_id: UUID
+    thread_id: UUID | None = None
+    mode_override: ChatMode | None = None
+    can_use_agentic: bool = False
+
+
+@dataclass(frozen=True)
+class TurnEvent:
+    type: str
+    data: dict[str, Any]
+
+
+class IEvidenceFlow(Protocol):
+    async def retrieve(
+        self, question: str, budget: LLMCallBudget | None = None
+    ) -> AdvancedEvidence: ...
+
+
+class IAnswerComposer(Protocol):
+    def compose_list(self, listed: Sequence[Evidence]) -> ComposedAnswer: ...
+
+    async def compose(
+        self,
+        question: str,
+        evidence: Sequence[Evidence],
+        *,
+        emotion: EmotionState,
+        history: list[dict[str, str]],
+        memories: list[str],
+        summary: str | None,
+        budget: LLMCallBudget,
+    ) -> ComposedAnswer: ...
+
+
+def _history(turns: list[TurnRecord]) -> list[dict[str, str]]:
+    messages: list[dict[str, str]] = []
+    for turn in turns:
+        messages.append({"role": "user", "content": turn.question})
+        messages.append({"role": "assistant", "content": turn.answer})
+    return messages
+
+
+def _completed(record: TurnRecord, replayed: bool) -> TurnEvent:
+    return TurnEvent(
+        EVENT_COMPLETED,
+        {
+            "turn_id": str(record.turn_id),
+            "thread_id": str(record.thread_id),
+            "response": record.answer,
+            "citations": list(record.citations),
+            "status": record.status,
+            "replayed": replayed,
+        },
+    )
+
+
+class AdvancedTurnService:
+    """Agentic does not exist yet, so the mode is decided here and always clamps to Advanced."""
+
+    def __init__(
+        self,
+        threads: IThreadStore,
+        flow: IEvidenceFlow,
+        composer: IAnswerComposer,
+        *,
+        injection_guard: InjectionGuard | None = None,
+        pii: PiiRedactor | None = None,
+    ) -> None:
+        self._threads = threads
+        self._flow = flow
+        self._composer = composer
+        self._injection_guard = injection_guard or InjectionGuard()
+        self._pii = pii or PiiRedactor()
+
+    async def run(self, request: TurnRequest) -> AsyncIterator[TurnEvent]:
+        thread = await self._thread(request)
+        existing = await self._threads.find_turn(thread.id, request.turn_id)
+        if existing is not None:
+            # A retried request must not spend LLM calls or store the exchange twice.
+            yield _completed(existing, replayed=True)
+            return
+        decision = resolve_mode(
+            override=request.mode_override,
+            thread_mode=thread.mode,
+            account_default=None,
+            can_use_agentic=request.can_use_agentic,
+        )
+        yield self._started(request, thread, decision)
+        # Everything below reaches providers or storage, so it sees only the masked text.
+        request = replace(request, message=self._pii.redact(request.message).value)
+        budget = LLMCallBudget.with_deadline(
+            max_calls=ADVANCED_MAX_LLM_CALLS, timeout_seconds=ADVANCED_DEADLINE_SECONDS
+        )
+        assessment = self._injection_guard.assess(request.message, ContentSource.USER)
+        if assessment.action is GuardAction.BLOCK:
+            refused = ComposedAnswer(INPUT_BLOCKED, abstained=True, status=STATUS_INPUT_BLOCKED)
+            record = self._record(request, thread, decision, refused, (), budget)
+            await self._threads.save_turn(record)
+            yield _completed(record, replayed=False)
+            return
+        found = await self._flow.retrieve(request.message, budget)
+        for item in found.evidence:
+            yield TurnEvent(
+                EVENT_EVIDENCE,
+                {
+                    "evidence_id": item.evidence_id,
+                    "source_kind": item.provenance.source_type,
+                    "title": item.provenance.source_id,
+                },
+            )
+        answer = await self._compose(request, thread, found, budget)
+        record = self._record(request, thread, decision, answer, found.degraded, budget)
+        await self._threads.save_turn(record)
+        for piece in _SENTENCE.split(answer.text):
+            yield TurnEvent(EVENT_TOKEN, {"delta": piece})
+        yield _completed(record, replayed=False)
+
+    async def _thread(self, request: TurnRequest) -> Thread:
+        if request.thread_id is None:
+            return await self._threads.create(request.owner, request.channel, ChatMode.ADVANCED)
+        thread = await self._threads.get(request.thread_id, request.owner)
+        if thread is None:
+            raise ThreadNotFoundError(str(request.thread_id))
+        return thread
+
+    @staticmethod
+    def _started(request: TurnRequest, thread: Thread, decision: ModeDecision) -> TurnEvent:
+        reason = decision.downgrade_reason
+        return TurnEvent(
+            EVENT_STARTED,
+            {
+                "turn_id": str(request.turn_id),
+                "thread_id": str(thread.id),
+                "mode_effective": decision.effective.value,
+                "lane": LANE_ADVANCED,
+                "downgrade_reason": reason.value if reason else None,
+            },
+        )
+
+    async def _compose(
+        self,
+        request: TurnRequest,
+        thread: Thread,
+        found: AdvancedEvidence,
+        budget: LLMCallBudget,
+    ) -> ComposedAnswer:
+        if found.listed:
+            return self._composer.compose_list(found.listed)
+        recent = await self._threads.recent_turns(thread.id, HISTORY_TURNS)
+        return await self._composer.compose(
+            request.message,
+            () if found.abstain else found.evidence,
+            # Emotion and memory arrive with slice S6; a fresh state keeps the voice neutral.
+            emotion=EmotionState(user_id=uuid4()),
+            history=_history(recent),
+            memories=[],
+            summary=None,
+            budget=budget,
+        )
+
+    @staticmethod
+    def _record(
+        request: TurnRequest,
+        thread: Thread,
+        decision: ModeDecision,
+        answer: ComposedAnswer,
+        degraded: tuple[str, ...],
+        budget: LLMCallBudget,
+    ) -> TurnRecord:
+        return TurnRecord(
+            thread_id=thread.id,
+            turn_id=request.turn_id,
+            question=request.message,
+            answer=answer.text,
+            mode_requested=decision.requested,
+            mode_effective=decision.effective,
+            lane=LANE_ADVANCED,
+            status=answer.status,
+            downgrade_reason=decision.downgrade_reason,
+            llm_calls=budget.used_calls,
+            citations=tuple(asdict(citation) for citation in answer.citations),
+            degraded=degraded,
+        )

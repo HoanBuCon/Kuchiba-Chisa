@@ -1,15 +1,19 @@
 from __future__ import annotations
 
+import asyncio
+from dataclasses import dataclass
 from functools import cached_property
 from typing import Any
 
 import httpx
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.application.chat_turns import AdvancedTurnService
 from app.config.settings import settings
 from app.domain.interfaces.embedding_provider import IEmbeddingProvider
 from app.domain.interfaces.llm_provider import BaseLLMAdapter
 from app.domain.interfaces.session import IDbSession
+from app.domain.interfaces.threads import IThreadStore
 from app.domain.services.chat_engine import ChatEngine
 from app.domain.services.community.topic_summarizer import CommunityTopicSummarizer
 from app.domain.services.context_builder import ContextBuilder
@@ -553,6 +557,70 @@ class AppContainer:
 
 
 container = AppContainer()
+
+
+@dataclass(frozen=True)
+class ChatTurnRuntime:
+    threads: IThreadStore
+    turns: AdvancedTurnService
+
+
+_chat_turn_runtime: ChatTurnRuntime | None = None
+_chat_turn_runtime_lock = asyncio.Lock()
+# Calibrated per reranker scale on golden v2 (docs/r2-plan.md); none wrongly abstained.
+RERANK_MIN_SCORES = {"jina": 0.20, "local": -0.5}
+
+
+async def _build_chat_turn_runtime() -> ChatTurnRuntime:
+    from app.application.ingestion.vector_stage import staging_collection
+    from app.domain.ingestion.entity_linking import EntityLinker
+    from app.domain.ingestion.units import Collection
+    from app.domain.services.context_builder import ContextBuilder
+    from app.domain.services.knowledge.advanced_retrieval import AdvancedRetrieval
+    from app.domain.services.knowledge.composer import GroundedComposer
+    from app.domain.services.knowledge.lore_search import LoreSearchService, LoreSearchSettings
+    from app.domain.services.knowledge.question_router import QuestionRouter
+    from app.domain.services.knowledge.structured_tools import StructuredTools
+    from app.infrastructure.cache.redis.redis_service import redis_service
+    from app.infrastructure.database.engine import AsyncSessionFactory
+    from app.infrastructure.database.repositories.knowledge_store import PostgresKnowledgeStore
+    from app.infrastructure.database.repositories.thread_store import PostgresThreadStore
+    from app.infrastructure.knowledge.llm_query_translator import LlmQueryTranslator
+    from app.infrastructure.knowledge.qdrant_lore_index import QdrantLoreIndex
+    from app.infrastructure.vector.qdrant.qdrant_service import get_qdrant_client
+
+    version = settings.KNOWLEDGE_CORPUS_VERSION
+    if not version:
+        raise RuntimeError("CHAT_V2_ENABLED requires KNOWLEDGE_CORPUS_VERSION")
+    knowledge = await PostgresKnowledgeStore(AsyncSessionFactory).load(version)
+    client = get_qdrant_client()
+    reranker = container.cross_encoder_reranker
+    search = LoreSearchService(
+        QdrantLoreIndex(client, staging_collection(Collection.CANON, version)),
+        container.embedder,
+        LlmQueryTranslator(container.llm, redis_service),
+        EntityLinker.from_knowledge(knowledge),
+        [reranker] if reranker is not None else [],
+        LoreSearchSettings(min_scores=RERANK_MIN_SCORES),
+    )
+    flow = AdvancedRetrieval(
+        search,
+        StructuredTools(knowledge, version),
+        QuestionRouter(knowledge),
+        QdrantLoreIndex(client, staging_collection(Collection.DIALOGUE, version)),
+    )
+    composer = GroundedComposer(container.llm, ContextBuilder(), embedder=container.embedder)
+    threads = PostgresThreadStore(AsyncSessionFactory)
+    return ChatTurnRuntime(threads, AdvancedTurnService(threads, flow, composer))
+
+
+async def get_chat_turn_runtime() -> ChatTurnRuntime:
+    """Built once, because it loads a whole corpus release into memory."""
+    global _chat_turn_runtime
+    async with _chat_turn_runtime_lock:
+        if _chat_turn_runtime is None:
+            _chat_turn_runtime = await _build_chat_turn_runtime()
+    return _chat_turn_runtime
 
 
 def get_chat_engine() -> ChatEngine:

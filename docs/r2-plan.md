@@ -14,9 +14,11 @@ R1 đạt cổng thoát trên corpus `2026.11.03-4`: golden v2 đã duyệt đ�
 | S2 | `get_entity`, `find_entities`, `list_quests`, `get_quest` trên kho có cấu trúc | ADV-004, KNW-004 | Xong công cụ; định tuyến theo loại câu hỏi làm ở S3 |
 | S3 | Định tuyến câu hỏi tất định, sửa sai tất định và abstain | ADV-001, ADV-002, ADV-007 | Xong |
 | S4 | Composer gọi `ContextBuilder` tại chỗ, grounding, ảnh chụp trích dẫn | PER-001, PER-005, GRD-001..005 | Xong phần lõi |
-| S5 | Thread, chế độ, `POST /api/v2/chat/turns` (SSE), ngân sách | CONV-001, MODE-001..007, ADV-001, ADV-009 | |
+| S5 | Thread, chế độ, `POST /api/v2/chat/turns` (SSE), ngân sách | CONV-001, MODE-001..007, ADV-001, ADV-009 | Xong, sau cờ `CHAT_V2_ENABLED` (mặc định tắt); chưa đo TTFT trên endpoint |
 | S6 | Core memory, `recall_lite`, RESONA | MEM-001, MEM-002 | |
 | S7 | Làn companion, triage; chạy song song hệ cũ, chuyển web rồi Discord | QUAL-001..004, QUAL-009 | |
+
+Lệch nhỏ so với mục 7.1 của SRS: lượt v2 lưu ở bảng `thread_turns` thay vì thêm cột vào `messages`, vì `messages` bắt buộc có `user_id` và `conversation_id` mà khách vãng lai không có, và hệ cũ phải tiếp tục chạy. Gộp lại khi gỡ hệ cũ ở R6.
 
 Nội dung persona ở `context_builder.py` và `persona_loader.py` được giữ nguyên tại chỗ. Muốn chuyển sang tài sản có version thì phải có chủ dự án duyệt (PER-002).
 
@@ -27,6 +29,7 @@ Nội dung persona ở `context_builder.py` và `persona_loader.py` được gi�
 | Dịch mọi câu hỏi không phải tiếng Anh | Chỉ dịch khi không nhận diện được thực thể: 0,898 / 0,748; dịch mọi câu: 0,944 / 0,727 trước rerank |
 | Runtime rerank top 15 | Jina p95: top 15 là 761 ms, top 30 là 2.452 ms, top 50 là 9.295 ms; PERF-009 yêu cầu 750 ms |
 | Tra cứu có cấu trúc cho câu liệt kê | Đo trên golden: 24/24 dữ kiện của 6 câu liệt kê có trong bằng chứng |
+| Câu liệt kê do server trình bày, không gọi LLM | Khi thấy cả danh sách và đoạn dài, LLM bỏ qua danh sách và viết từ đoạn nhiễu. Danh sách từ tra cứu tất định nên không có gì để bịa |
 | Reranker local làm fallback | MiniLM-L-6 top 15: 0,944 / 0,834, trung vị 687 ms |
 | Ngưỡng abstain thận trọng: Jina 0,20, local -0,5 | Trên 108 câu trả lời được, không abstain nhầm câu nào. Với 6 câu ngoài phạm vi, Jina bắt được 2 câu theo điểm số, còn đường lui local không bắt được câu nào. Claim guard ở S4 vì vậy là bắt buộc |
 
@@ -50,6 +53,13 @@ Chạy đầu cuối với LLM thật trên 24 câu trả lời được và 6 c
 
 ## Rủi ro cần xác nhận
 
-**PERF-003 (TTFT p50 ≤ 1,8 giây).** Dịch có trung vị 1,05 giây và rerank 0,4 giây, chưa tính thời gian đến token đầu của Composer. Vì vậy mục tiêu p50 có nguy cơ không đạt. Hướng giảm: cache bản dịch theo câu hỏi đã chuẩn hoá, thử model dịch nhanh hơn. Chỉ đề xuất đổi mục tiêu sau khi đo TTFT thật ở S5.
+**PERF-003 (TTFT p50 ≤ 1,8 giây, p95 ≤ 3,5 giây).** Đo qua HTTP thật trên máy dev, 10 lượt:
+
+| Lượt | TTFT p50 | Tối đa | Ghi chú |
+|---|---|---|---|
+| Có cache bản dịch một phần | 2,15 giây | 3,87 giây | Câu liệt kê 0,8 giây vì không gọi Composer |
+| Chưa có cache | 3,55 giây | 5,45 giây | Trước khi tách câu liệt kê |
+
+Tổng thời gian đạt PERF-004 (p95 ≤ 8 giây). Riêng TTFT vẫn trên mục tiêu, vì câu trả lời phải được kiểm chứng xong mới gửi (GRD-001..003), nên token đầu tiên gần như đến cùng lúc với cả câu. `turn.started` và `evidence.added` thì đến sớm. Mẫu nhỏ và là máy dev, cần đo lại trên VPS. Nếu vẫn không đạt thì phải chọn giữa đổi mục tiêu và đổi cách đo; đây là quyết định của chủ dự án.
 
 **PERF-007 (truy hồi p95 ≤ 150 ms).** Bộ đo cũ gọi Qdrant 4 lần tuần tự, hết trung vị 1.113 ms. S1 gộp thành một truy vấn với RRF phía server: p50 274 ms, p95 289 ms trên máy dev (Docker trên Windows, gồm cả sinh sparse BM25). Chất lượng giữ nguyên 0,944 / 0,834. Cần đo lại trên VPS.

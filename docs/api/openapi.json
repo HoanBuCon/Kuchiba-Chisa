@@ -203,6 +203,14 @@
         "title": "ChangePasswordRequest",
         "type": "object"
       },
+      "ChatMode": {
+        "enum": [
+          "advanced",
+          "agentic"
+        ],
+        "title": "ChatMode",
+        "type": "string"
+      },
       "ChatRequest": {
         "additionalProperties": false,
         "description": "Untrusted chat content only; identity comes from ``PrincipalContext``.",
@@ -1259,6 +1267,115 @@
           "status"
         ],
         "title": "StatusResponse",
+        "type": "object"
+      },
+      "ThreadPatch": {
+        "additionalProperties": false,
+        "properties": {
+          "mode": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ChatMode"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "title": {
+            "anyOf": [
+              {
+                "maxLength": 255,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          }
+        },
+        "title": "ThreadPatch",
+        "type": "object"
+      },
+      "ThreadView": {
+        "properties": {
+          "channel": {
+            "title": "Channel",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "mode": {
+            "$ref": "#/components/schemas/ChatMode"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          }
+        },
+        "required": [
+          "id",
+          "channel",
+          "mode",
+          "title"
+        ],
+        "title": "ThreadView",
+        "type": "object"
+      },
+      "TurnBody": {
+        "additionalProperties": false,
+        "properties": {
+          "message": {
+            "maxLength": 4000,
+            "minLength": 1,
+            "title": "Message",
+            "type": "string"
+          },
+          "mode_override": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ChatMode"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "thread_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Thread Id"
+          },
+          "turn_id": {
+            "format": "uuid",
+            "title": "Turn Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "message",
+          "turn_id"
+        ],
+        "title": "TurnBody",
         "type": "object"
       },
       "ValidationError": {
@@ -2521,6 +2638,198 @@
         "tags": [
           "Community",
           "community"
+        ]
+      }
+    },
+    "/api/v2/chat/turns": {
+      "post": {
+        "operationId": "create_turn_api_v2_chat_turns_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TurnBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Turn",
+        "tags": [
+          "Chat v2"
+        ]
+      }
+    },
+    "/api/v2/threads": {
+      "get": {
+        "operationId": "list_threads_api_v2_threads_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ThreadView"
+                  },
+                  "title": "Response List Threads Api V2 Threads Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "List Threads",
+        "tags": [
+          "Chat v2"
+        ]
+      }
+    },
+    "/api/v2/threads/{thread_id}": {
+      "delete": {
+        "operationId": "delete_thread_api_v2_threads__thread_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "thread_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Thread Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Delete Thread",
+        "tags": [
+          "Chat v2"
+        ]
+      },
+      "get": {
+        "operationId": "get_thread_api_v2_threads__thread_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "thread_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Thread Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ThreadView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Thread",
+        "tags": [
+          "Chat v2"
+        ]
+      },
+      "patch": {
+        "operationId": "patch_thread_api_v2_threads__thread_id__patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "thread_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Thread Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ThreadPatch"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ThreadView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Patch Thread",
+        "tags": [
+          "Chat v2"
         ]
       }
     },

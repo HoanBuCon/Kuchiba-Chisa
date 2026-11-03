@@ -36,7 +36,7 @@ class Translator:
     def __init__(self, reply="Where does Chisa study?", error=False) -> None:
         self.reply, self.error = reply, error
 
-    async def to_english(self, question):
+    async def to_english(self, question, budget=None):
         if self.error:
             raise QueryTranslationError("down")
         return self.reply
