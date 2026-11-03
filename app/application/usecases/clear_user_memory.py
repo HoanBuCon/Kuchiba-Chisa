@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domain.interfaces.cache_provider import ICacheProvider
 from app.domain.interfaces.image_storage import IImageStorageProvider
+from app.domain.interfaces.personal_context import IPersonalDataPurge
 from app.domain.interfaces.repositories import (
     IConversationRepository,
     IEmotionRepository,
@@ -35,6 +36,7 @@ class ClearUserMemoryUseCase:
         vector_store: IVectorStore,
         cache_provider: ICacheProvider | None = None,
         image_storage: IImageStorageProvider | None = None,
+        personal_data_factory: Callable[[AsyncSession], IPersonalDataPurge] | None = None,
     ) -> None:
         self.uow_factory = uow_factory
         self.user_repo_factory = user_repo_factory
@@ -44,6 +46,7 @@ class ClearUserMemoryUseCase:
         self.vector_store = vector_store
         self.cache_provider = cache_provider
         self.image_storage = image_storage
+        self.personal_data_factory = personal_data_factory
 
     async def execute(self, session: AsyncSession, user_id: str) -> dict[str, Any]:
         user_uuid = normalize_user_id(user_id)
@@ -82,6 +85,10 @@ class ClearUserMemoryUseCase:
 
             current_store = "postgres"
             async with self.uow_factory(session):
+                if self.personal_data_factory is not None:
+                    personal_data = self.personal_data_factory(session)
+                    await personal_data.delete_threads(canonical_user_id)
+                    await personal_data.delete_core_memory(canonical_user_id)
                 await self.conv_repo_factory(session).delete_all_for_user(user_uuid)
                 await self.emotion_repo_factory(session).delete_all_for_user(user_uuid)
                 await self.user_repo_factory(session).delete_all_for_user(user_uuid)

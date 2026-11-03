@@ -6,8 +6,9 @@ import uuid
 from collections.abc import Callable
 from datetime import UTC, datetime
 
-from app.domain.interfaces.privacy import IPrivacyPreferenceRepository
 from app.domain.interfaces.image_storage import IImageStorageProvider
+from app.domain.interfaces.personal_context import IPersonalDataPurge
+from app.domain.interfaces.privacy import IPrivacyPreferenceRepository
 from app.domain.interfaces.repositories import IConversationRepository, IUserRepository
 from app.domain.interfaces.session import IDbSession
 from app.domain.interfaces.vector_store import IVectorStore
@@ -25,12 +26,14 @@ class MemoryPolicyService:
         privacy_repo_factory: Callable[[IDbSession], IPrivacyPreferenceRepository],
         vector_store: IVectorStore,
         image_storage: IImageStorageProvider,
+        personal_data_factory: Callable[[IDbSession], IPersonalDataPurge] | None = None,
     ) -> None:
         self._user_repo_factory = user_repo_factory
         self._conversation_repo_factory = conversation_repo_factory
         self._privacy_repo_factory = privacy_repo_factory
         self._vector_store = vector_store
         self._image_storage = image_storage
+        self._personal_data_factory = personal_data_factory
 
     async def get(self, session: IDbSession, user_id: uuid.UUID) -> MemoryPrivacyPolicy:
         return await self._privacy_repo_factory(session).get_memory_policy(user_id)
@@ -63,4 +66,6 @@ class MemoryPolicyService:
             image_ids = await self._conversation_repo_factory(session).get_image_ids_for_user(user_id)
             for image_id in image_ids:
                 await self._image_storage.delete_image(image_id)
+            if self._personal_data_factory is not None:
+                await self._personal_data_factory(session).delete_core_memory(str(user_id))
         return policy

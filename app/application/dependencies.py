@@ -12,6 +12,7 @@ from app.application.chat_turns import AdvancedTurnService
 from app.config.settings import settings
 from app.domain.interfaces.embedding_provider import IEmbeddingProvider
 from app.domain.interfaces.llm_provider import BaseLLMAdapter
+from app.domain.interfaces.personal_context import ICoreMemoryStore
 from app.domain.interfaces.session import IDbSession
 from app.domain.interfaces.threads import IThreadStore
 from app.domain.services.chat_engine import ChatEngine
@@ -26,6 +27,14 @@ def _require_async_session(session: IDbSession) -> AsyncSession:
     if not isinstance(session, AsyncSession):
         raise TypeError("AppContainer repository factories require SQLAlchemy AsyncSession.")
     return session
+
+def _personal_data_purge(session: IDbSession):
+    from app.infrastructure.database.repositories.core_memory_store import (
+        SqlAlchemyPersonalDataPurge,
+    )
+
+    return SqlAlchemyPersonalDataPurge(session)
+
 
 class AppContainer:
     """Dependency Injection Container for the application."""
@@ -419,6 +428,7 @@ class AppContainer:
             privacy_repo_factory=privacy_repo_factory,
             vector_store=qdrant_service,
             image_storage=get_image_storage_provider(),
+            personal_data_factory=_personal_data_purge,
         )
 
     @cached_property
@@ -449,6 +459,7 @@ class AppContainer:
             vector_store=qdrant_service,
             cache_provider=redis_service,
             image_storage=get_image_storage_provider(),
+            personal_data_factory=_personal_data_purge,
         )
 
     @cached_property
@@ -563,6 +574,7 @@ container = AppContainer()
 class ChatTurnRuntime:
     threads: IThreadStore
     turns: AdvancedTurnService
+    core_memory: ICoreMemoryStore
 
 
 _chat_turn_runtime: ChatTurnRuntime | None = None
@@ -581,11 +593,16 @@ async def _build_chat_turn_runtime() -> ChatTurnRuntime:
     from app.domain.services.knowledge.lore_search import LoreSearchService, LoreSearchSettings
     from app.domain.services.knowledge.question_router import QuestionRouter
     from app.domain.services.knowledge.structured_tools import StructuredTools
+    from app.domain.services.rag.retriever_memory import MemoryRetriever
     from app.infrastructure.cache.redis.redis_service import redis_service
     from app.infrastructure.database.engine import AsyncSessionFactory
+    from app.infrastructure.database.repositories.core_memory_store import (
+        PostgresCoreMemoryStore,
+    )
     from app.infrastructure.database.repositories.knowledge_store import PostgresKnowledgeStore
     from app.infrastructure.database.repositories.thread_store import PostgresThreadStore
     from app.infrastructure.knowledge.llm_query_translator import LlmQueryTranslator
+    from app.infrastructure.knowledge.personal_context import PostgresPersonalContext
     from app.infrastructure.knowledge.qdrant_lore_index import QdrantLoreIndex
     from app.infrastructure.vector.qdrant.qdrant_service import get_qdrant_client
 
@@ -611,7 +628,15 @@ async def _build_chat_turn_runtime() -> ChatTurnRuntime:
     )
     composer = GroundedComposer(container.llm, ContextBuilder(), embedder=container.embedder)
     threads = PostgresThreadStore(AsyncSessionFactory)
-    return ChatTurnRuntime(threads, AdvancedTurnService(threads, flow, composer))
+    core_memory = PostgresCoreMemoryStore(AsyncSessionFactory)
+    personal = PostgresPersonalContext(
+        AsyncSessionFactory,
+        MemoryRetriever(vector_store=qdrant_service),
+        container.embedder,
+        core_memory,
+    )
+    turns = AdvancedTurnService(threads, flow, composer, personal=personal)
+    return ChatTurnRuntime(threads, turns, core_memory)
 
 
 async def get_chat_turn_runtime() -> ChatTurnRuntime:

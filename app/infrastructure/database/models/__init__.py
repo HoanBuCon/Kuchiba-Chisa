@@ -52,13 +52,18 @@ from app.infrastructure.database.models.privacy import (
     PrivacyPolicyAuditModel,
     UserPrivacyPreferenceModel,
 )
-from app.infrastructure.database.models.thread import ThreadModel, ThreadTurnModel
+from app.infrastructure.database.models.thread import (
+    CoreMemoryModel,
+    ThreadModel,
+    ThreadTurnModel,
+)
 from app.infrastructure.database.models.user import User
 from app.infrastructure.database.models.user_stats import UserStats
 from app.infrastructure.database.models.wiki_inventory import WikiPageModel, WikiSyncRunModel
 from app.infrastructure.database.models.wiki_silver import WikiPageSilverModel
 
 __all__ = [
+    "CoreMemoryModel",
     "ThreadModel",
     "ThreadTurnModel",
     "AccountIdentityModel",

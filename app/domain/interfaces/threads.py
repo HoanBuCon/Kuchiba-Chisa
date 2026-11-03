@@ -25,7 +25,9 @@ class IThreadStore(Protocol):
 
     async def find_turn(self, thread_id: UUID, turn_id: UUID) -> TurnRecord | None: ...
 
-    async def save_turn(self, record: TurnRecord) -> None: ...
+    async def save_turn(self, record: TurnRecord) -> bool:
+        """False when a racing retry stored this turn first."""
+        ...
 
     async def recent_turns(self, thread_id: UUID, limit: int) -> list[TurnRecord]:
         """Oldest first, so they read as a conversation."""

@@ -55,3 +55,14 @@ class ThreadTurnModel(Base, UUIDMixin):
         UniqueConstraint("thread_id", "turn_id", name="uq_thread_turns_turn"),
         Index("ix_thread_turns_thread_created", "thread_id", "created_at"),
     )
+
+
+class CoreMemoryModel(Base):
+    __tablename__ = "core_memory"
+
+    owner_principal: Mapped[str] = mapped_column(String(OWNER_LENGTH), primary_key=True)
+    version: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+    content: Mapped[dict] = mapped_column(JSONB, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False
+    )

@@ -8,6 +8,10 @@ import pytest
 
 from app.domain.models.thread import ChatMode, TurnRecord
 from app.infrastructure.database.engine import AsyncSessionFactory
+from app.infrastructure.database.repositories.core_memory_store import (
+    PostgresCoreMemoryStore,
+    SqlAlchemyPersonalDataPurge,
+)
 from app.infrastructure.database.repositories.thread_store import PostgresThreadStore
 
 OWNER = f"it-owner-{uuid4()}"
@@ -82,3 +86,34 @@ async def test_deleting_a_thread_deletes_its_turns(store) -> None:
     assert await store.delete(thread.id, OWNER)
 
     assert await store.find_turn(thread.id, record.turn_id) is None
+
+
+async def test_purge_removes_threads_turns_and_core_memory(store) -> None:
+    owner = f"it-purge-{uuid4()}"
+    thread = await store.create(owner, "web", ChatMode.ADVANCED)
+    record = _turn(thread.id)
+    await store.save_turn(record)
+    core = PostgresCoreMemoryStore(AsyncSessionFactory)
+    await core.put(owner, {"nickname": "A"})
+
+    async with AsyncSessionFactory() as session:
+        purge = SqlAlchemyPersonalDataPurge(session)
+        await purge.delete_threads(owner)
+        await purge.delete_core_memory(owner)
+        await session.commit()
+
+    assert await store.get(thread.id, owner) is None
+    assert await store.find_turn(thread.id, record.turn_id) is None
+    assert await core.get(owner) is None
+
+
+async def test_core_memory_round_trip_and_version(store) -> None:
+    owner = f"it-core-{uuid4()}"
+    core = PostgresCoreMemoryStore(AsyncSessionFactory)
+
+    await core.put(owner, {"nickname": "A"})
+    await core.put(owner, {"nickname": "B"})
+
+    assert await core.get(owner) == {"nickname": "B"}
+    assert await core.delete(owner)
+    assert not await core.delete(owner)

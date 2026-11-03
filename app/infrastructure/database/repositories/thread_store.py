@@ -111,11 +111,11 @@ class PostgresThreadStore:
             )
             return _turn(row) if row else None
 
-    async def save_turn(self, record: TurnRecord) -> None:
+    async def save_turn(self, record: TurnRecord) -> bool:
         """Two racing retries of one turn store it once, by the unique constraint."""
         reason = record.downgrade_reason
         async with self._sessions() as session:
-            await session.execute(
+            result = await session.execute(
                 insert(ThreadTurnModel)
                 .values(
                     thread_id=record.thread_id,
@@ -134,6 +134,7 @@ class PostgresThreadStore:
                 .on_conflict_do_nothing(constraint="uq_thread_turns_turn")
             )
             await session.commit()
+            return bool(result.rowcount)
 
     async def recent_turns(self, thread_id: UUID, limit: int) -> list[TurnRecord]:
         async with self._sessions() as session:
