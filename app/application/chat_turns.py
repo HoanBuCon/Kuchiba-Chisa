@@ -10,6 +10,7 @@ from uuid import UUID, uuid4
 
 from app.domain.entities.emotion import EmotionState
 from app.domain.interfaces.llm_provider import LLMCallBudget
+from app.domain.interfaces.personal_context import IPersonalContext, PersonalContext
 from app.domain.interfaces.threads import IThreadStore
 from app.domain.models.evidence import Evidence
 from app.domain.models.thread import ChatMode, ModeDecision, Thread, TurnRecord, resolve_mode
@@ -50,6 +51,7 @@ class TurnRequest:
     thread_id: UUID | None = None
     mode_override: ChatMode | None = None
     can_use_agentic: bool = False
+    is_guest: bool = True
 
 
 @dataclass(frozen=True)
@@ -113,12 +115,14 @@ class AdvancedTurnService:
         *,
         injection_guard: InjectionGuard | None = None,
         pii: PiiRedactor | None = None,
+        personal: IPersonalContext | None = None,
     ) -> None:
         self._threads = threads
         self._flow = flow
         self._composer = composer
         self._injection_guard = injection_guard or InjectionGuard()
         self._pii = pii or PiiRedactor()
+        self._personal = personal
 
     async def run(self, request: TurnRequest) -> AsyncIterator[TurnEvent]:
         thread = await self._thread(request)
@@ -158,7 +162,10 @@ class AdvancedTurnService:
             )
         answer = await self._compose(request, thread, found, budget)
         record = self._record(request, thread, decision, answer, found.degraded, budget)
-        await self._threads.save_turn(record)
+        stored = await self._threads.save_turn(record)
+        # Only the retry that stored the turn may move emotion, so it moves once (EMO-003).
+        if stored is not False and answer.sentiment and self._personal is not None:
+            await self._personal.apply_sentiment(request.owner, answer.sentiment)
         for piece in _SENTENCE.split(answer.text):
             yield TurnEvent(EVENT_TOKEN, {"delta": piece})
         yield _completed(record, replayed=False)
@@ -195,15 +202,22 @@ class AdvancedTurnService:
         if found.listed:
             return self._composer.compose_list(found.listed)
         recent = await self._threads.recent_turns(thread.id, HISTORY_TURNS)
+        personal = await self._personal_context(request)
         return await self._composer.compose(
             request.message,
             () if found.abstain else found.evidence,
-            # Emotion and memory arrive with slice S6; a fresh state keeps the voice neutral.
-            emotion=EmotionState(user_id=uuid4()),
+            emotion=personal.emotion,
             history=_history(recent),
-            memories=[],
+            memories=list(personal.memories),
             summary=None,
             budget=budget,
+        )
+
+    async def _personal_context(self, request: TurnRequest) -> PersonalContext:
+        if self._personal is None:
+            return PersonalContext(EmotionState(user_id=uuid4()))
+        return await self._personal.load(
+            request.owner, is_guest=request.is_guest, question=request.message
         )
 
     @staticmethod

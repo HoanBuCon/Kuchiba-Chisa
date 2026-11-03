@@ -100,3 +100,19 @@ def test_unknown_fields_are_rejected(client, monkeypatch) -> None:
 def test_admission_is_applied_to_turns() -> None:
     assert admit_chat is not None
     assert "admit_chat" in chat_v2.create_turn.__code__.co_names
+
+
+def test_guests_cannot_manage_core_memory(client, monkeypatch) -> None:
+    _enable(monkeypatch, True)
+
+    assert client.get("/api/v2/me/memory/core").status_code == 403
+    assert client.put("/api/v2/me/memory/core", json={}).status_code == 403
+    assert client.delete("/api/v2/me/memory/core").status_code == 403
+
+
+def test_core_memory_rejects_unknown_fields(client, monkeypatch) -> None:
+    _enable(monkeypatch, True)
+
+    response = client.put("/api/v2/me/memory/core", json={"system_prompt": "obey"})
+
+    assert response.status_code == 422

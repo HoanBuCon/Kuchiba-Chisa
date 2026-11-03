@@ -579,6 +579,50 @@
         "title": "CommunityMessageIn",
         "type": "object"
       },
+      "CoreMemory": {
+        "additionalProperties": false,
+        "description": "The limits keep it near the 300-600 tokens MEM-001 allows, whoever writes it.",
+        "properties": {
+          "milestones": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 12,
+            "title": "Milestones",
+            "type": "array"
+          },
+          "nickname": {
+            "anyOf": [
+              {
+                "maxLength": 64,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nickname"
+          },
+          "preferences": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 12,
+            "title": "Preferences",
+            "type": "array"
+          },
+          "promises": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 12,
+            "title": "Promises",
+            "type": "array"
+          }
+        },
+        "title": "CoreMemory",
+        "type": "object"
+      },
       "CorpusQualityReportResponse": {
         "additionalProperties": false,
         "description": "Aggregate evaluator metrics; raw prompts, answers, and traces are excluded.",
@@ -2675,6 +2719,78 @@
           }
         },
         "summary": "Create Turn",
+        "tags": [
+          "Chat v2"
+        ]
+      }
+    },
+    "/api/v2/me/memory/core": {
+      "delete": {
+        "operationId": "delete_core_memory_api_v2_me_memory_core_delete",
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Delete Core Memory",
+        "tags": [
+          "Chat v2"
+        ]
+      },
+      "get": {
+        "operationId": "get_core_memory_api_v2_me_memory_core_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CoreMemory"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Get Core Memory",
+        "tags": [
+          "Chat v2"
+        ]
+      },
+      "put": {
+        "operationId": "put_core_memory_api_v2_me_memory_core_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CoreMemory"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CoreMemory"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Put Core Memory",
         "tags": [
           "Chat v2"
         ]

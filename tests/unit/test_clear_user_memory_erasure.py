@@ -46,6 +46,9 @@ def _use_case(
         vector_store=vector_store
         or SimpleNamespace(delete_by_user=AsyncMock()),
         image_storage=image_storage,
+        personal_data=SimpleNamespace(
+            delete_threads=AsyncMock(), delete_core_memory=AsyncMock()
+        ),
     )
     use_case = ClearUserMemoryUseCase(
         uow_factory=lambda session: _UnitOfWork(),
@@ -56,6 +59,7 @@ def _use_case(
         vector_store=dependencies.vector_store,
         cache_provider=dependencies.cache,
         image_storage=dependencies.image_storage,
+        personal_data_factory=lambda session: dependencies.personal_data,
     )
     return use_case, dependencies
 
@@ -132,3 +136,17 @@ async def test_user_erasure_requires_object_storage_when_user_images_exist() -> 
     assert result["stores"]["failed_store"] == "images"
     dependencies.conversation_repo.delete_all_for_user.assert_not_awaited()
     assert dependencies.erasure_repo.finish.await_args.kwargs["status"] == "RETRY_REQUIRED"
+
+
+@pytest.mark.asyncio
+async def test_user_erasure_reaches_v2_threads_and_core_memory() -> None:
+    image_storage = SimpleNamespace(delete_image=AsyncMock(return_value=True))
+    use_case, dependencies = _use_case(image_ids=[], image_storage=image_storage)
+    user_id = "web:subject-a"
+
+    result = await use_case.execute(SimpleNamespace(), user_id)
+
+    canonical = normalize_user_id_str(user_id)
+    assert result["status"] == "completed"
+    dependencies.personal_data.delete_threads.assert_awaited_once_with(canonical)
+    dependencies.personal_data.delete_core_memory.assert_awaited_once_with(canonical)

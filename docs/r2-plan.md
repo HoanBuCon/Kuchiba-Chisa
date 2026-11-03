@@ -15,7 +15,7 @@ R1 đạt cổng thoát trên corpus `2026.11.03-4`: golden v2 đã duyệt đ�
 | S3 | Định tuyến câu hỏi tất định, sửa sai tất định và abstain | ADV-001, ADV-002, ADV-007 | Xong |
 | S4 | Composer gọi `ContextBuilder` tại chỗ, grounding, ảnh chụp trích dẫn | PER-001, PER-005, GRD-001..005 | Xong phần lõi |
 | S5 | Thread, chế độ, `POST /api/v2/chat/turns` (SSE), ngân sách | CONV-001, MODE-001..007, ADV-001, ADV-009 | Xong, sau cờ `CHAT_V2_ENABLED` (mặc định tắt); chưa đo TTFT trên endpoint |
-| S6 | Core memory, `recall_lite`, RESONA | MEM-001, MEM-002 | |
+| S6 | Core memory, `recall_lite`, RESONA | MEM-001, MEM-002, MEM-007, EMO-001..003 | Xong đọc, recall, cảm xúc và API sửa tay; job tự cập nhật core memory (MEM-005, MEM-010) còn thiếu |
 | S7 | Làn companion, triage; chạy song song hệ cũ, chuyển web rồi Discord | QUAL-001..004, QUAL-009 | |
 
 Lệch nhỏ so với mục 7.1 của SRS: lượt v2 lưu ở bảng `thread_turns` thay vì thêm cột vào `messages`, vì `messages` bắt buộc có `user_id` và `conversation_id` mà khách vãng lai không có, và hệ cũ phải tiếp tục chạy. Gộp lại khi gỡ hệ cũ ở R6.

@@ -323,3 +323,29 @@ def test_email_at_the_end_of_a_sentence_is_redacted() -> None:
 
     assert result.value == "Write to [REDACTED_EMAIL]."
     assert result.categories == {"email": 1}
+
+
+async def test_revoking_consent_removes_core_memory() -> None:
+    user_id = uuid4()
+    privacy_repo = MagicMock()
+    privacy_repo.set_memory_policy = AsyncMock(return_value=MemoryPrivacyPolicy())
+    user_repo = MagicMock()
+    user_repo.get_or_create_user = AsyncMock()
+    conversation_repo = MagicMock()
+    conversation_repo.get_image_ids_for_user = AsyncMock(return_value=[])
+    vector_store = MagicMock()
+    vector_store.delete_by_user = AsyncMock()
+    personal_data = MagicMock()
+    personal_data.delete_core_memory = AsyncMock()
+    service = MemoryPolicyService(
+        user_repo_factory=lambda _: user_repo,
+        conversation_repo_factory=lambda _: conversation_repo,
+        privacy_repo_factory=lambda _: privacy_repo,
+        vector_store=vector_store,
+        image_storage=MagicMock(),
+        personal_data_factory=lambda _: personal_data,
+    )
+
+    await service.update(MagicMock(), user_id, enabled=False, retention_days=None)
+
+    personal_data.delete_core_memory.assert_awaited_once_with(str(user_id))
