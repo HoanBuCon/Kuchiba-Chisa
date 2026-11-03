@@ -72,7 +72,8 @@ class PillowImageInspector:
         edge = self._policy.display_edge
         try:
             with Image.open(io.BytesIO(content)) as image:
-                frame = image.convert("RGBA" if "A" in image.getbands() else "RGB")
+                clear = "A" in image.getbands() or "transparency" in image.info
+                frame = image.convert("RGBA" if clear else "RGB")
         except OSError as error:
             # verify() does not decode pixels, so damage in the body first shows up here.
             raise ImageRejectedError("image data is damaged") from error

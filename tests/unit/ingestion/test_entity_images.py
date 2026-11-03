@@ -225,3 +225,12 @@ def test_display_copy_of_a_damaged_body_is_rejected() -> None:
 
     with pytest.raises(ImageRejectedError):
         PillowImageInspector(POLICY).display_copy(damaged)
+
+
+def test_display_copy_keeps_the_transparency_of_palette_images() -> None:
+    output = io.BytesIO()
+    Image.new("P", (8, 8), 0).save(output, format="PNG", transparency=0)
+
+    display = PillowImageInspector(POLICY).display_copy(output.getvalue())
+
+    assert Image.open(io.BytesIO(display)).getchannel("A").getextrema() == (0, 0)
