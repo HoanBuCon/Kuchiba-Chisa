@@ -11,8 +11,8 @@ R1 đạt cổng thoát trên corpus `2026.11.03-4`: golden v2 đã duyệt đ�
 | # | Nội dung | Yêu cầu chính | Trạng thái |
 |---|---|---|---|
 | S1 | `search_lore`: dịch câu hỏi, entity linking, truy hồi lai phía server, rerank có fallback, Evidence | ADV-002, ADV-004, ADV-006, ADV-010, KNW-001 | Xong phần lõi và index; adapter dịch làm ở S5 |
-| S2 | `get_entity`, `list_quests`, `get_quest` trên kho có cấu trúc | ADV-004, KNW-004 | |
-| S3 | Sửa sai tất định và abstain | ADV-007 | |
+| S2 | `get_entity`, `find_entities`, `list_quests`, `get_quest` trên kho có cấu trúc | ADV-004, KNW-004 | Xong công cụ; định tuyến theo loại câu hỏi làm ở S3 |
+| S3 | Định tuyến câu hỏi tất định, sửa sai tất định và abstain | ADV-001, ADV-002, ADV-007 | Xong |
 | S4 | Composer gọi `ContextBuilder` tại chỗ, grounding, ảnh chụp trích dẫn | PER-001, GRD-001..005 | |
 | S5 | Thread, chế độ, `POST /api/v2/chat/turns` (SSE), ngân sách | CONV-001, MODE-001..007, ADV-001, ADV-009 | |
 | S6 | Core memory, `recall_lite`, RESONA | MEM-001, MEM-002 | |
@@ -26,7 +26,9 @@ Nội dung persona ở `context_builder.py` và `persona_loader.py` được gi�
 |---|---|
 | Dịch mọi câu hỏi không phải tiếng Anh | Chỉ dịch khi không nhận diện được thực thể: 0,898 / 0,748; dịch mọi câu: 0,944 / 0,727 trước rerank |
 | Runtime rerank top 15 | Jina p95: top 15 là 761 ms, top 30 là 2.452 ms, top 50 là 9.295 ms; PERF-009 yêu cầu 750 ms |
+| Tra cứu có cấu trúc cho câu liệt kê | Đo trên golden: 24/24 dữ kiện của 6 câu liệt kê có trong bằng chứng |
 | Reranker local làm fallback | MiniLM-L-6 top 15: 0,944 / 0,834, trung vị 687 ms |
+| Ngưỡng abstain thận trọng: Jina 0,20, local -0,5 | Trên 108 câu trả lời được, không abstain nhầm câu nào. Với 6 câu ngoài phạm vi, Jina bắt được 2 câu theo điểm số, còn đường lui local không bắt được câu nào. Claim guard ở S4 vì vậy là bắt buộc |
 
 ## Rủi ro cần xác nhận
 

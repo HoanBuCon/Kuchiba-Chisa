@@ -67,3 +67,19 @@ def quests_in_chapter(knowledge: KnowledgeBase, chapter: str) -> list[Quest]:
             for value in _field_values(quest.fields.get("chapter"))
         )
     ]
+
+
+def quests_at_location(knowledge: KnowledgeBase, location: str) -> list[Quest]:
+    """Inferred aliases count here: they exist to name places, as with Honami (KNW-004)."""
+    wanted = fold_for_matching(location)
+    places = {wanted}
+    places.update(
+        fold_for_matching(alias.target)
+        for alias in knowledge.aliases
+        if fold_for_matching(alias.alias) == wanted
+    )
+    return [
+        quest
+        for quest in knowledge.quests
+        if places.intersection(map(fold_for_matching, quest.locations))
+    ]
