@@ -90,6 +90,7 @@ def to_evidence(hit: LoreHit, score: float) -> Evidence:
             source_type=hit.source_kind,
             collection=f"lore_{hit.source_kind}",
             source_version=hit.corpus_version,
+            source_revision=hit.revid or None,
             page_id=hit.page_id,
             section_id=" > ".join(hit.section_path) or None,
             chunk_index=hit.offset,
