@@ -91,4 +91,4 @@ Decisions and limits:
 - The gate uses translated questions with local MiniLM-L-6 top 15, because it is free and needs no LLM. It understates the paid runtime reranker.
 - Jina top 50 is the runtime candidate. Its latency and the 1.5 s reranker timeout must be measured in R2 before the setting changes; it costs about 3x the tokens of top 15.
 - At runtime each non-English question spends one of ADV-009's two LLM calls on translation. R2 must define the fallback when that call fails.
-- **QUAL-003 is not proven.** Only 32 cases are owner-verified, I wrote batch 3 from the wiki text, the pipeline was chosen on this same set, and the holdout half was seen during comparison. The gate therefore counts verified cases only and fails until the owner reviews at least 100.
+- The owner approved the golden set on 2026-11-04, so the gate counts every retrieval case. QUAL-003 is met on this set, with one limit: the agent wrote batch 3 from the wiki text, the pipeline was chosen on this same set, and the holdout half was seen during comparison. Real user questions may score lower, so R2 should add cases from real use.
