@@ -56,3 +56,16 @@ Data gate passed: 9,872 chunks, 0 over limit, 0 duplicates, 0 uncovered, 0 quara
 | `linked` + `jina-reranker-v3` top 15 | 72 | 0.972 (0.904-0.992) | 0.885 |
 
 The retrieval gate fails on `golden_cases` (72 of 100), so QUAL-003 is still not proven. These numbers include batch 2, which is easy and not owner-verified, and the reranker was chosen on the first 32 cases. Both misses are enumeration questions, which belong to typed lookups.
+
+## Golden batch 3: hard cases (2026-11-03)
+
+Batch 3 adds 36 unverified cases that do not name their target, written before any retrieval run. Corpus `2026.11.03-1`, 108 cases:
+
+| Set | Cases | `linked` Hit@5 / MRR@10 | + reranker Hit@5 / MRR@10 |
+|---|---|---|---|
+| First 32 | 32 | 0.938 / 0.729 | 0.938 / 0.810 |
+| Batch 2 (easy) | 40 | 1.000 / 0.899 | 1.000 / 0.946 |
+| Batch 3 (hard) | 36 | 0.611 / 0.326 | 0.694 / 0.649 |
+| All | 108 | 0.852 / 0.658 | 0.880 / 0.807 |
+
+QUAL-003 is not met: the retrieval gate fails on Hit@5 in both modes and on MRR@10 in `linked`. Of the 13 reranked misses, 7 rank below the reranker's top 15 candidates, 3 are inside it but not lifted to the top 5, and 3 are not in the top 50 at all. Batch 3 labels still await owner review.
