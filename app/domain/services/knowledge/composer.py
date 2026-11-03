@@ -7,6 +7,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from app.domain.entities.emotion import EmotionState
+from app.domain.interfaces.embedding_provider import IEmbeddingProvider
 from app.domain.interfaces.llm_provider import (
     BaseLLMAdapter,
     LLMCallBudget,
@@ -15,7 +16,11 @@ from app.domain.interfaces.llm_provider import (
 )
 from app.domain.models.evidence import Evidence
 from app.domain.services.budget_mode import BudgetMode
-from app.domain.services.chisa_voice import GROUNDED_ABSTENTION, GROUNDED_EXTRACTIVE_FRAME
+from app.domain.services.chisa_voice import (
+    GROUNDED_ABSTENTION,
+    GROUNDED_ANSWER_LEAD,
+    GROUNDED_EXTRACTIVE_FRAME,
+)
 from app.domain.services.context_builder import ContextBuilder
 from app.domain.services.guardrails import (
     GroundedOutputAssembler,
@@ -23,8 +28,10 @@ from app.domain.services.guardrails import (
     PromptLeakageGuard,
     build_grounded_response_schema,
 )
+from app.domain.services.knowledge.cross_language_claims import CrossLanguageClaimCheck
 
 CONTRACT_NAME = "submit_grounded_answer"
+ADDRESSING = "Senpai"
 INTENT_NAME = "lore"
 
 
@@ -65,6 +72,11 @@ def _snapshots(ids: Sequence[str], evidence: Sequence[Evidence]) -> tuple[Citati
     )
 
 
+def _in_chisa_voice(text: str) -> str:
+    """A reply that already addresses Senpai keeps its wording; quote frames always do."""
+    return text if ADDRESSING in text else f"{GROUNDED_ANSWER_LEAD}{text}"
+
+
 def _abstained(status: str) -> ComposedAnswer:
     return ComposedAnswer(GROUNDED_ABSTENTION, abstained=True, status=status)
 
@@ -76,11 +88,13 @@ class GroundedComposer:
         builder: ContextBuilder,
         assembler: GroundedOutputAssembler | None = None,
         leakage_guard: PromptLeakageGuard | None = None,
+        embedder: IEmbeddingProvider | None = None,
     ) -> None:
         self._llm = llm
         self._builder = builder
         self._assembler = assembler or GroundedOutputAssembler()
         self._leakage_guard = leakage_guard or PromptLeakageGuard()
+        self._embedder = embedder
 
     async def compose(
         self,
@@ -98,12 +112,14 @@ class GroundedComposer:
             return _abstained("no_evidence")
         prompt = self._prompt(question, evidence, emotion, history, memories, summary, budget)
         response = await self._llm.generate(prompt)
+        check = await self._claim_check(response.parsed)
         try:
             envelope = self._assembler.assemble(
                 payload=response.parsed,
                 evidence=prompt.retrieved_evidence,
                 abstention_answer=GROUNDED_ABSTENTION,
                 extractive_frame=GROUNDED_EXTRACTIVE_FRAME,
+                claim_check=check,
             )
         except (GroundedOutputValidationError, ValueError):
             return _abstained("invalid_output")
@@ -117,11 +133,25 @@ class GroundedComposer:
         if envelope.abstained:
             return _abstained("no_evidence")
         return ComposedAnswer(
-            text=envelope.presented_answer or envelope.answer,
+            text=_in_chisa_voice(envelope.presented_answer or envelope.answer),
             abstained=False,
             citations=_snapshots(envelope.citations, prompt.retrieved_evidence),
             sentiment=response.parsed.get("sentiment", {}),
         )
+
+    async def _claim_check(self, parsed: Mapping[str, Any]) -> CrossLanguageClaimCheck | None:
+        """Quotes may need resolving against the source, so both forms of each pair are prepared."""
+        claims = parsed.get("claims")
+        if self._embedder is None or not isinstance(claims, list):
+            return None
+        pairs = [
+            (claim["text"], claim["evidence_quote"])
+            for claim in claims
+            if isinstance(claim, dict)
+            and isinstance(claim.get("text"), str)
+            and isinstance(claim.get("evidence_quote"), str)
+        ]
+        return await CrossLanguageClaimCheck.prepare(self._embedder, pairs)
 
     def _prompt(
         self,

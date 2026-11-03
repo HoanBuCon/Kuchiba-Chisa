@@ -5,7 +5,7 @@ from __future__ import annotations
 import html
 import re
 import unicodedata
-from collections.abc import Mapping, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from difflib import SequenceMatcher
 from typing import Any
 
@@ -100,12 +100,14 @@ class GroundedOutputAssembler:
         attachment_ids: Sequence[str] = (),
         abstention_answer: str = "Insufficient evidence is available to answer accurately.",
         extractive_frame: str = "{quote}",
+        claim_check: Callable[[str, str, str], bool] | None = None,
     ) -> GroundedAnswerEnvelope:
         """``extractive_frame`` presents verbatim quotes (``{quote}``) in the caller's voice.
 
         ``answer`` (what every grounding check verifies) is unchanged. The frame only
         shapes ``presented_answer``: each run of consecutive extractive quotes is
         joined and placed in the frame once; the quote text itself is never altered.
+        ``claim_check`` (claim, quote, evidence) may accept a claim term overlap cannot judge.
         """
         model_payload = GroundedModelPayload.model_validate(payload)
         if model_payload.decision == "abstain":
@@ -163,7 +165,11 @@ class GroundedOutputAssembler:
                 evidence=[support_evidence],
                 citation_ids=[source.evidence_id],
             )
-            if verification.supported:
+            supported = verification.supported or (
+                claim_check is not None
+                and claim_check(claim.text, resolved_quote, source.text)
+            )
+            if supported:
                 if extractive_run:
                     presented.append(extractive_frame.format(quote=" ".join(extractive_run)))
                     extractive_run = []

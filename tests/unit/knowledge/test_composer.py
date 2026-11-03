@@ -10,7 +10,7 @@ from app.domain.models.evidence import (
     EvidenceProvenance,
     EvidenceScore,
 )
-from app.domain.services.chisa_voice import GROUNDED_ABSTENTION
+from app.domain.services.chisa_voice import GROUNDED_ABSTENTION, GROUNDED_ANSWER_LEAD
 from app.domain.services.context_builder import ContextBuilder
 from app.domain.services.knowledge.composer import GroundedComposer
 
@@ -127,3 +127,61 @@ async def test_citation_outside_the_evidence_abstains() -> None:
 
     assert result.abstained
     assert result.citations == ()
+
+
+class SameVectorEmbedder:
+    """Every text gets the same vector, so similarity passes and the literal checks decide."""
+
+    async def embed_batch(self, texts, prefix="query: "):
+        return [[1.0, 0.0] for _ in texts]
+
+
+async def _compose_with_check(llm):
+    composer = GroundedComposer(llm, ContextBuilder(), embedder=SameVectorEmbedder())
+    return await composer.compose(
+        "Chisa học ở đâu?",
+        [_evidence()],
+        emotion=EmotionState(user_id=uuid4()),
+        history=[],
+        memories=[],
+        summary=None,
+        budget=LLMCallBudget(max_calls=2),
+    )
+
+
+async def test_faithful_vietnamese_claim_is_delivered_in_vietnamese() -> None:
+    claim = _claim(text="Cô ấy theo học tại Startorch Academy ở vùng Lahai-Roi.")
+
+    result = await _compose_with_check(FakeLLM(_answer(claim)))
+
+    assert result.text == (
+        f"{GROUNDED_ANSWER_LEAD}Cô ấy theo học tại Startorch Academy ở vùng Lahai-Roi."
+    )
+
+
+async def test_vietnamese_claim_with_a_foreign_name_falls_back_to_the_quote() -> None:
+    claim = _claim(text="Cô ấy theo học tại Ragunna Academy ở vùng Lahai-Roi.")
+
+    result = await _compose_with_check(FakeLLM(_answer(claim)))
+
+    assert "Ragunna" not in result.text
+    assert TEXT in result.text
+
+
+async def test_without_the_check_a_vietnamese_paraphrase_stays_a_quote() -> None:
+    claim = _claim(text="Cô ấy học ở trường đó thuộc vùng phía bắc.")
+
+    result = await _compose(FakeLLM(_answer(claim)))
+
+    assert TEXT in result.text
+
+
+async def test_every_delivered_answer_addresses_senpai() -> None:
+    plain = await _compose_with_check(
+        FakeLLM(_answer(_claim(text="Cô ấy học tại Startorch Academy ở vùng Lahai-Roi.")))
+    )
+    quoted = await _compose(FakeLLM(_answer(_claim(text="Cô ấy học ở trường đó."))))
+
+    assert "Senpai" in plain.text
+    assert "Senpai" in quoted.text
+    assert quoted.text.count("Senpai") == 1

@@ -30,6 +30,24 @@ Nội dung persona ở `context_builder.py` và `persona_loader.py` được gi�
 | Reranker local làm fallback | MiniLM-L-6 top 15: 0,944 / 0,834, trung vị 687 ms |
 | Ngưỡng abstain thận trọng: Jina 0,20, local -0,5 | Trên 108 câu trả lời được, không abstain nhầm câu nào. Với 6 câu ngoài phạm vi, Jina bắt được 2 câu theo điểm số, còn đường lui local không bắt được câu nào. Claim guard ở S4 vì vậy là bắt buộc |
 
+## Xác minh claim xuyên ngữ
+
+Guard cũ so khớp từ khoá nên không xác minh được claim tiếng Việt với bằng chứng tiếng Anh: chỉ giữ 13% claim đúng, phần còn lại rơi về trích dẫn tiếng Anh nguyên văn. Độ tương đồng embedding một mình không an toàn: claim đúng 0,884, đổi tên 0,867, phủ định 0,871.
+
+Vì vậy `CrossLanguageClaimCheck` kiểm tra nguyên văn tên, số và phủ định so với bằng chứng, rồi mới yêu cầu similarity ≥ 0,80. Chỉ Composer mới dùng; hành vi của guard dùng chung và pipeline cũ không đổi. Hiệu chuẩn trên 224 claim thật:
+
+| Loại | Tỷ lệ được chấp nhận |
+|---|---|
+| Claim đúng | 62% |
+| Gắn sai trích dẫn | 0% |
+| Đổi số | 0% |
+| Phủ định | 1,4% |
+| Đổi tên | 2,3% |
+
+Chạy đầu cuối với LLM thật trên 24 câu trả lời được và 6 câu ngoài phạm vi: câu chỉ có trích dẫn tiếng Anh giảm từ 13 xuống 3, dữ kiện đúng từ 37/40 lên 39/40, và 6/6 câu ngoài phạm vi đều abstain.
+
+**Giới hạn:** nhãn "claim đúng" là output của LLM, chưa được người kiểm từng câu; mẫu âm là biến đổi tự động; ngưỡng được đọc trên chính bộ này. Cần theo dõi trên câu hỏi thật. Nhóm câu chỉ khác nhau về nghĩa mà không đổi tên, số hay phủ định thì bộ kiểm tra này không phát hiện được.
+
 ## Rủi ro cần xác nhận
 
 **PERF-003 (TTFT p50 ≤ 1,8 giây).** Dịch có trung vị 1,05 giây và rerank 0,4 giây, chưa tính thời gian đến token đầu của Composer. Vì vậy mục tiêu p50 có nguy cơ không đạt. Hướng giảm: cache bản dịch theo câu hỏi đã chuẩn hoá, thử model dịch nhanh hơn. Chỉ đề xuất đổi mục tiêu sau khi đo TTFT thật ở S5.
