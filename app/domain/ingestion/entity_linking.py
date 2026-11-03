@@ -7,7 +7,7 @@ import unicodedata
 from collections import defaultdict
 from collections.abc import Iterable, Mapping
 
-from app.domain.ingestion.knowledge import Alias, KnowledgeBase
+from app.domain.ingestion.knowledge import Alias, KnowledgeBase, has_corpus_text
 
 MIN_NAME_LENGTH = 4
 HIGH_CONFIDENCE = "high"
@@ -34,7 +34,7 @@ class EntityLinker:
         cls, knowledge: KnowledgeBase, extra_aliases: Iterable[Alias] = ()
     ) -> EntityLinker:
         pages: dict[str, list[str]] = defaultdict(list)
-        for entity in knowledge.entities:
+        for entity in filter(has_corpus_text, knowledge.entities):
             pages[entity.title.split("/")[0]].append(entity.title)
         names = {root: root for root in pages if len(root) >= MIN_NAME_LENGTH}
         for alias in (*extra_aliases, *knowledge.aliases):

@@ -7,7 +7,7 @@ from datetime import date
 from typing import Any, Protocol
 
 from app.domain.ingestion.chunking import Chunk
-from app.domain.ingestion.knowledge import KnowledgeBase
+from app.domain.ingestion.knowledge import KnowledgeBase, StructuredPage
 
 
 class IKnowledgeStore(Protocol):
@@ -16,6 +16,20 @@ class IKnowledgeStore(Protocol):
         ...
 
     async def count(self, version: str) -> dict[str, int]: ...
+
+
+class IStructuredSource(Protocol):
+    async def structured_pages(
+        self, page_ids: Sequence[int]
+    ) -> dict[int, tuple[tuple[dict[str, str], ...], tuple[str, ...]]]:
+        """Page ID -> (flattened infoboxes, redirect titles)."""
+        ...
+
+
+class IStructuredStore(Protocol):
+    def load(self) -> dict[int, StructuredPage]: ...
+
+    def save(self, pages: Mapping[int, StructuredPage]) -> None: ...
 
 
 class IGoldStore(Protocol):

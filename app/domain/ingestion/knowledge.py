@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import re
 from collections import Counter, defaultdict
-from collections.abc import Iterable, Mapping, Sequence
+from collections.abc import Iterable, Iterator, Mapping, Sequence
 from dataclasses import dataclass, replace
 
 from app.domain.ingestion.chunking import Chunk
@@ -38,6 +38,19 @@ class AliasKind:
     INFERRED = "inferred"
 
 
+# Entities known only from infobox data: their pages are in no text tier yet (ING-014).
+STRUCTURED_ONLY = "structured"
+
+
+@dataclass(frozen=True)
+class StructuredPage:
+    """Infobox data of a page outside the text tiers; a page with none stays recorded."""
+
+    revid: int
+    infoboxes: tuple[dict[str, str], ...]
+    redirects: tuple[str, ...] = ()
+
+
 @dataclass(frozen=True)
 class LocationEdge:
     child: str
@@ -65,6 +78,11 @@ class Entity:
     nation_source: str | None
     game_version: str | None
     version_source: str | None
+
+
+def has_corpus_text(entity: Entity) -> bool:
+    """A name with no text to retrieve would only send entity channels to empty results."""
+    return entity.entity_type != STRUCTURED_ONLY
 
 
 @dataclass(frozen=True)
@@ -444,7 +462,9 @@ def enrich_chunks(chunks: Sequence[Chunk], knowledge: KnowledgeBase) -> list[Chu
     """Add the KNW-003 metadata; only trusted aliases count, inferred ones wait for eval."""
     if not knowledge.entities:
         return list(chunks)
-    canonical = {entity.title: entity.title for entity in knowledge.entities}
+    canonical = {
+        entity.title: entity.title for entity in knowledge.entities if has_corpus_text(entity)
+    }
     known = frozenset(canonical)
     for alias in knowledge.aliases:
         if alias.confidence == "high" and alias.target in known:
@@ -477,17 +497,67 @@ def knowledge_counts(knowledge: KnowledgeBase) -> dict[str, int]:
     }
 
 
+def _structured_entities(
+    structured: Mapping[int, StructuredPage],
+    states: Mapping[int, PageState],
+    edges: Iterable[LocationEdge],
+    nations: frozenset[str],
+) -> list[Entity]:
+    parents = _parents_of(edges)
+    entities = []
+    for page_id, page in sorted(structured.items()):
+        state = states.get(page_id)
+        if state is None or not page.infoboxes:
+            continue
+        fields: dict[str, str] = {}
+        for box in page.infoboxes:
+            for key, value in box.items():
+                fields.setdefault(key, value)
+        nation, nation_source = _infer_nation(state.title, fields, parents, nations)
+        version = _version_of(state)
+        entities.append(
+            Entity(
+                page_id,
+                state.title,
+                STRUCTURED_ONLY,
+                fields,
+                nation,
+                nation_source,
+                version,
+                "category" if version else None,
+            )
+        )
+    return entities
+
+
+def _structured_aliases(
+    structured: Mapping[int, StructuredPage], states: Mapping[int, PageState]
+) -> Iterator[Alias]:
+    for page_id, page in sorted(structured.items()):
+        state = states.get(page_id)
+        if state is None or not page.infoboxes:
+            continue
+        yield from (Alias(t, state.title, AliasKind.REDIRECT, "high") for t in page.redirects)
+        yield from (Alias(t, state.title, AliasKind.RENAME, "high") for t in state.aliases)
+
+
 def build_knowledge(
-    documents: Sequence[CanonicalDocument], states: Mapping[int, PageState]
+    documents: Sequence[CanonicalDocument],
+    states: Mapping[int, PageState],
+    structured: Mapping[int, StructuredPage] | None = None,
 ) -> KnowledgeBase:
     """Locations use every known page, so places outside the text tiers still anchor the graph."""
     edges = build_location_edges(states.values())
     places = _place_names(edges)
-    aliases = tuple(build_aliases(documents, states, edges))
+    wiki_wide = structured or {}
+    aliases = (*build_aliases(documents, states, edges), *_structured_aliases(wiki_wide, states))
     built = (build_quest(d, places) for d in documents if d.family in QUEST_FAMILIES)
     quests = tuple(quest for quest in built if _is_playable(quest))
     return KnowledgeBase(
-        entities=tuple(build_entities(documents, states, edges)),
+        entities=(
+            *build_entities(documents, states, edges),
+            *_structured_entities(wiki_wide, states, edges, _known_nations(documents)),
+        ),
         aliases=aliases,
         glossary=tuple(build_glossary(documents)),
         quests=_with_named_places(quests, places, aliases),

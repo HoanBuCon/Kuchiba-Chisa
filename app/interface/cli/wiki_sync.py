@@ -19,6 +19,7 @@ from app.application.ingestion.gold_stage import GoldStage
 from app.application.ingestion.image_stage import ImageStage
 from app.application.ingestion.report_stage import ReportStage
 from app.application.ingestion.silver_stage import SilverStage
+from app.application.ingestion.structured_stage import StructuredStage
 from app.application.ingestion.vector_stage import VectorSettings, VectorStage
 from app.application.ingestion.wiki_sync import RunStatus, SyncReport, SyncRules, WikiSyncService
 from app.config.settings import settings
@@ -44,6 +45,7 @@ from app.infrastructure.ingestion.gold.config import load_gold_settings
 from app.infrastructure.ingestion.gold.gold_store import FileGoldStore
 from app.infrastructure.ingestion.gold.passage_embedder import FastEmbedPassageEmbedder
 from app.infrastructure.ingestion.gold.staging_index import QdrantStagingIndex
+from app.infrastructure.ingestion.gold.structured_store import FileStructuredStore
 from app.infrastructure.ingestion.gold.token_counter import load_token_counter, tokenizer_sha256
 from app.infrastructure.ingestion.gold.vector_cache import FileVectorCache
 from app.infrastructure.ingestion.mediawiki_client import MediaWikiClient
@@ -81,6 +83,7 @@ def _parser() -> argparse.ArgumentParser:
     load = commands.add_parser("load", help="load an embedded corpus into staging collections")
     load.add_argument("--version", help="corpus version; defaults to the newest")
     load.add_argument("--replace", action="store_true", help="recreate existing collections")
+    commands.add_parser("structured", help="fetch infoboxes of the whole wiki (ING-014)")
     commands.add_parser("images", help="fetch and vet entity images (ING-019)")
     report = commands.add_parser("report", help="render the Corpus Explorer (ING-017)")
     report.add_argument("--version", help="corpus version; defaults to the newest")
@@ -177,6 +180,7 @@ async def _assemble() -> dict[str, object]:
         FileGoldStore(root),
         load_token_counter(gold_settings.tokenizer_model, cache_dir),
         gold_settings,
+        structured=FileStructuredStore(root),
     )
     report = await stage.run()
     return {"corpus_version": report.corpus_version, "path": report.path, "quality": report.quality}
@@ -211,6 +215,22 @@ async def _vectors(args: argparse.Namespace) -> dict[str, object]:
         return asdict(await stage.load(version, replace=args.replace))
     finally:
         await client.close()
+
+
+async def _structured(config: WikiSyncConfig) -> dict[str, object]:
+    source = config.source
+    async with httpx.AsyncClient(
+        headers={"User-Agent": source.user_agent},
+        timeout=source.timeout_seconds,
+        follow_redirects=True,
+        max_redirects=MAX_REDIRECTS,
+    ) as client:
+        stage = StructuredStage(
+            PostgresWikiInventory(engine, AsyncSessionFactory),
+            MediaWikiClient(client, source),
+            FileStructuredStore(Path(settings.INGESTION_DATA_DIR)),
+        )
+        return asdict(await stage.run())
 
 
 async def _images(config: WikiSyncConfig) -> ImageReport:
@@ -293,6 +313,9 @@ async def _run(args: argparse.Namespace) -> int:
             _emit(await _clean())
             return 0
         config = load_wiki_sync_config()
+        if args.command == "structured":
+            _emit(await _structured(config))
+            return 0
         if args.command == "images":
             return 0 if (await _images(config)).passed else 1
         async with _service(config, release_mode=getattr(args, "release_mode", False)) as service:

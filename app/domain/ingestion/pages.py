@@ -50,6 +50,10 @@ class PageState:
     aliases: tuple[str, ...] = field(default=())
 
     @property
+    def is_active(self) -> bool:
+        return self.status is PageStatus.ACTIVE
+
+    @property
     def in_text_scope(self) -> bool:
         return self.status is PageStatus.ACTIVE and self.family is not None
 

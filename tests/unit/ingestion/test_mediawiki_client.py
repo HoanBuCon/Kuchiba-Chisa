@@ -1,5 +1,6 @@
 """MediaWiki client: pacing, Retry-After, maxlag, continuation guard, host and payload checks."""
 
+import json
 from datetime import UTC, datetime
 
 import httpx
@@ -277,3 +278,24 @@ async def test_download_stops_past_the_byte_limit() -> None:
 
     with pytest.raises(ImageDownloadError):
         await client.download("https://static.example/a.png")
+
+
+async def test_structured_pages_merge_continued_redirects_and_flatten_infoboxes() -> None:
+    title = {"type": "title", "data": {"source": "name", "value": "Sword"}}
+    boxes = json.dumps([{"data": [title]}])
+    first = {
+        "continue": {"rdcontinue": "1|2", "continue": "||"},
+        "query": {
+            "pages": [
+                {"pageid": 2, "pageprops": {"infoboxes": boxes}, "redirects": [{"title": "Blade"}]},
+                {"pageid": 3},
+            ]
+        },
+    }
+    second = {"query": {"pages": [{"pageid": 2, "redirects": [{"title": "Edge"}]}, {"pageid": 3}]}}
+    client = _client(_responses(httpx.Response(200, json=first), httpx.Response(200, json=second)))
+
+    found = await client.structured_pages([2, 3])
+
+    assert found[2] == (({"name": "Sword"},), ("Blade", "Edge"))
+    assert found[3] == ((), ())

@@ -21,6 +21,7 @@ from app.domain.ingestion.entity_images import ImageInfo
 from app.domain.ingestion.pages import WikiPageInfo
 from app.domain.interfaces.entity_images import ImageDownloadError
 from app.domain.interfaces.wiki_ingestion import ParsedPage, WikiSourceError
+from app.infrastructure.ingestion.silver.html_cleaner import pageprops_infoboxes
 from app.infrastructure.ingestion.wiki_sync_config import SourceSettings
 
 RETRYABLE_STATUS = frozenset({429, 500, 502, 503, 504})
@@ -270,6 +271,30 @@ class MediaWikiClient:
             for e in b["query"]["logevents"]
             if e.get("action") != "restore"
         )
+
+    async def structured_pages(
+        self, page_ids: Sequence[int]
+    ) -> dict[int, tuple[tuple[dict, ...], tuple[str, ...]]]:
+        """Infoboxes and redirect titles; one page may span several continued responses."""
+        responses = await self._continued(
+            action="query",
+            pageids="|".join(str(page_id) for page_id in page_ids),
+            prop="pageprops|redirects",
+            ppprop="infoboxes",
+            rdprop="title",
+            rdlimit="max",
+        )
+        boxes: dict[int, tuple[dict, ...]] = {}
+        redirects: dict[int, list[str]] = {}
+        for payload in responses:
+            for page in (payload.get("query") or {}).get("pages", []):
+                page_id = page["pageid"]
+                found = pageprops_infoboxes(page.get("pageprops") or {})
+                boxes[page_id] = boxes.get(page_id) or found
+                redirects.setdefault(page_id, []).extend(
+                    item["title"] for item in page.get("redirects", [])
+                )
+        return {page_id: (boxes[page_id], tuple(redirects[page_id])) for page_id in boxes}
 
     async def image_info(self, names: Sequence[str]) -> list[ImageInfo]:
         """Metadata of existing files; a missing file is simply absent from the result."""
