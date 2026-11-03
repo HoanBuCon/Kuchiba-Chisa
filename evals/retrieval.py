@@ -1,8 +1,9 @@
 """Retrieval-level evaluation of a staged corpus: no LLM, safe to run on every release (S8).
 
 Usage: python -m evals.retrieval --version 2026.11.02-7 [--mode hybrid] [--report out.json]
-`--gate` judges the free `linked` mode against gates.yaml; `--active` is the live release's report.
-`--mode reranked` calls the prepaid Jina API and spends tokens; `all` never does.
+`--gate` judges the free `translated_local` mode against gates.yaml; `--active` is the live report.
+Modes ending in `reranked` spend prepaid Jina tokens; `all` never does.
+`translated` modes search with frozen English questions (ADV-010), so they call no LLM.
 """
 
 from __future__ import annotations
@@ -14,12 +15,14 @@ import statistics
 import sys
 import time
 from collections import defaultdict
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
 import httpx
+import yaml
+from fastembed.rerank.cross_encoder import TextCrossEncoder
 from qdrant_client import AsyncQdrantClient, models
 
 from app.application.ingestion.vector_stage import staging_collection
@@ -36,24 +39,35 @@ from app.infrastructure.rag.api_cross_encoder_reranker import (
     ApiCrossEncoderReranker,
     ApiRerankerProvider,
 )
-from evals.dataset import GoldenCase, load_golden_set
+from evals.dataset import GoldenCase, Language, load_golden_set
 from evals.metrics import hit_at_k, reciprocal_rank, wilson_interval
 
 GOLDEN_PATH = Path("data/evaluations/golden_v2/golden_v2.yaml")
+TRANSLATIONS_PATH = Path("data/evaluations/golden_v2/query_translations.yaml")
 HIT_K = 5
 RANK_K = 10
 CANDIDATES = 50
 RRF_K = 60
 EMBED_THREADS = 2
 LINKED = "linked"
-MODES = ("dense", "lexical", "hybrid", LINKED)
+TRANSLATED = "translated"
+TRANSLATED_LOCAL = "translated_local"
+MODES = ("dense", "lexical", "hybrid", LINKED, TRANSLATED, TRANSLATED_LOCAL)
 RERANKED = "reranked"
-# Best on the first 32 cases; 30 candidates scored no better and cost twice the tokens.
+TRANSLATED_RERANKED = "translated_reranked"
+PAID_MODES = (RERANKED, TRANSLATED_RERANKED)
+TRANSLATED_MODES = (TRANSLATED, TRANSLATED_LOCAL, TRANSLATED_RERANKED)
+GATE_MODE = TRANSLATED_LOCAL
+# On translated questions 50 candidates beat 15 and 30 on the dev half, at about 3x the tokens.
 RERANK_MODEL = "jina-reranker-v3"
-RERANK_CANDIDATES = 15
+RERANK_CANDIDATES = 50
+# Free and good enough to gate a release; deeper candidates scored no better and cost time.
+LOCAL_RERANK_MODEL = "Xenova/ms-marco-MiniLM-L-6-v2"
+LOCAL_RERANK_CANDIDATES = 15
+LOCAL_RERANK_BATCH = 8
 RERANK_TIMEOUT_SECONDS = 30
 # Paced to stay under the key's tokens-per-minute limit, which otherwise skews results.
-RERANK_PAUSE_SECONDS = 4
+RERANK_PAUSE_SECONDS = 13
 
 
 @dataclass(frozen=True)
@@ -66,6 +80,19 @@ class CaseOutcome:
     ranked: tuple[int, ...]
     hit: bool
     reciprocal: float
+
+
+def load_translations(path: Path) -> dict[str, str]:
+    return yaml.safe_load(path.read_text(encoding="utf-8")) or {} if path.exists() else {}
+
+
+def search_query(case: GoldenCase, question: str, translations: Mapping[str, str]) -> str:
+    """English questions search as asked; a missing translation stops the run, not skews it."""
+    if case.language is Language.EN:
+        return question
+    if case.id not in translations:
+        raise SystemExit(f"{case.id} has no frozen translation; run evals.translate_queries")
+    return normalize_text(translations[case.id])
 
 
 def ranked_pages(points: Sequence[Any]) -> list[int]:
@@ -175,7 +202,7 @@ class StagedCorpusSearch:
         if mode == "lexical":
             return await self._lexical(text)
         channels = [await self._dense(vector), await self._lexical(text)]
-        if mode in {"linked", RERANKED}:
+        if mode in {LINKED, RERANKED}:
             channels.extend(await self._entity_channels(text, vector))
         return fuse_ranked(channels)
 
@@ -193,24 +220,44 @@ async def evaluate(version: str, mode: str) -> tuple[dict[str, Any], list[CaseOu
     search = StagedCorpusSearch(client, version, EntityLinker.from_knowledge(knowledge))
     outcomes = []
     http = httpx.AsyncClient()
-    reranker = _jina_reranker(http) if mode == RERANKED else None
+    reranker: Any = _jina_reranker(http) if mode in PAID_MODES else None
+    if mode == TRANSLATED_LOCAL:
+        reranker = _LocalReranker()
+    depth = LOCAL_RERANK_CANDIDATES if mode == TRANSLATED_LOCAL else RERANK_CANDIDATES
+    pause = 0 if mode == TRANSLATED_LOCAL else RERANK_PAUSE_SECONDS
+    translated = mode in TRANSLATED_MODES
+    translations = load_translations(TRANSLATIONS_PATH) if translated else {}
     try:
         for case in golden.cases:
             if not case.relevant_pages:
                 continue
             question = normalize_text(case.turns[-1].message)
-            vector = await embedder.embed_text(question, prefix="query: ")
-            points = await search.search(mode, question, vector)
+            query = search_query(case, question, translations) if translated else question
+            vector = await embedder.embed_text(query, prefix="query: ")
+            points = await search.search(LINKED if translated else mode, query, vector)
             if reranker is not None:
-                head = points[:RERANK_CANDIDATES]
-                scores = await reranker.rerank(question, [rerank_document(p) for p in head])
+                head = points[:depth]
+                scores = await reranker.rerank(query, [rerank_document(p) for p in head])
                 points = rerank_order(points, scores)
-                await asyncio.sleep(RERANK_PAUSE_SECONDS)
+                await asyncio.sleep(pause)
             outcomes.append(score_case(case, question, ranked_pages(points)))
     finally:
         await client.close()
         await http.aclose()
-    return summarize(outcomes), outcomes
+    summary = summarize(outcomes)
+    summary["verified_cases"] = sum(c.verified and bool(c.relevant_pages) for c in golden.cases)
+    return summary, outcomes
+
+
+class _LocalReranker:
+    """Runs in-process for the gate; the runtime uses local models via the inference service."""
+
+    def __init__(self) -> None:
+        self._model = TextCrossEncoder(LOCAL_RERANK_MODEL, threads=EMBED_THREADS)
+
+    async def rerank(self, query: str, documents: list[str]) -> list[float]:
+        scores = self._model.rerank(query, documents, batch_size=LOCAL_RERANK_BATCH)
+        return list(scores)
 
 
 def _jina_reranker(http: httpx.AsyncClient) -> ApiCrossEncoderReranker:
@@ -228,7 +275,7 @@ def _jina_reranker(http: httpx.AsyncClient) -> ApiCrossEncoderReranker:
 
 def _selected_modes(args: argparse.Namespace) -> Sequence[str]:
     if args.gate:
-        return (LINKED,)
+        return (GATE_MODE,)
     return MODES if args.mode == "all" else (args.mode,)
 
 
@@ -238,7 +285,8 @@ def _retrieval_gate(
     _, policy = load_gate_policies()
     active = None
     if active_report:
-        active = json.loads(Path(active_report).read_text(encoding="utf-8"))["modes"][LINKED]
+        report = json.loads(Path(active_report).read_text(encoding="utf-8"))
+        active = report["modes"][GATE_MODE]
     return evaluate_retrieval_gate(summary, {o.case_id for o in outcomes if o.hit}, active, policy)
 
 
@@ -280,7 +328,7 @@ async def _main(args: argparse.Namespace) -> int:
 def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="evals.retrieval", description=__doc__)
     parser.add_argument("--version", required=True)
-    parser.add_argument("--mode", choices=(*MODES, RERANKED, "all"), default="all")
+    parser.add_argument("--mode", choices=(*MODES, *PAID_MODES, "all"), default="all")
     parser.add_argument("--report", help="also write the JSON report to this path")
     parser.add_argument("--gate", action="store_true", help="exit 1 unless the gate passes")
     parser.add_argument("--active", help="retrieval report of the active release")
