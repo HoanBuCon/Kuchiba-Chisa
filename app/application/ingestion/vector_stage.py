@@ -19,7 +19,7 @@ from app.domain.interfaces.vectors import (
     StagingPoint,
 )
 
-SOURCE_KIND = "wiki"
+SOURCE_KINDS = {Collection.CANON: "canon", Collection.DIALOGUE: "dialogue"}
 ACCESS_SCOPE = "public"
 
 
@@ -62,7 +62,7 @@ def point_payload(chunk: Chunk, version: str) -> dict[str, Any]:
     return {
         "evidence_id": chunk.evidence_id,
         "corpus_version": version,
-        "source_kind": SOURCE_KIND,
+        "source_kind": SOURCE_KINDS[chunk.collection],
         "access_scope": ACCESS_SCOPE,
         "page_id": chunk.page_id,
         "title": chunk.title,
@@ -75,6 +75,10 @@ def point_payload(chunk: Chunk, version: str) -> dict[str, Any]:
         "game_version": chunk.game_version,
         "text": chunk.text,
         "tokens": chunk.tokens,
+        "offset": chunk.offset,
+        "url": chunk.url,
+        "license": chunk.license,
+        "revid": chunk.revid,
     }
 
 

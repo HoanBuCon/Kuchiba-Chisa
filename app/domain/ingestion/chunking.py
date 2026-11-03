@@ -44,6 +44,12 @@ class Chunk:
     entities: tuple[str, ...] = ()
     nation: str | None = None
     game_version: str | None = None
+    # Reading position within the page, so context can be expanded by window (KNW-003).
+    offset: int = 0
+    # Attribution copied from the page (ING-018).
+    url: str = ""
+    license: str = ""
+    revid: int = 0
 
 
 def embedding_text(unit: Unit, text: str, policy: ChunkPolicy) -> str:
@@ -175,11 +181,14 @@ def evidence_id(page_id: int, text: str) -> str:
 
 def _with_evidence_ids(chunks: list[Chunk]) -> list[Chunk]:
     seen: dict[str, int] = {}
+    positions: dict[int, int] = {}
     result = []
     for chunk in chunks:
+        offset = positions.get(chunk.page_id, 0)
+        positions[chunk.page_id] = offset + 1
         base = evidence_id(chunk.page_id, chunk.text)
         seen[base] = seen.get(base, 0) + 1
         identifier = base if seen[base] == 1 else f"{base}:{seen[base]}"
         point = str(uuid.uuid5(POINT_NAMESPACE, identifier))
-        result.append(replace(chunk, evidence_id=identifier, point_id=point))
+        result.append(replace(chunk, evidence_id=identifier, point_id=point, offset=offset))
     return result

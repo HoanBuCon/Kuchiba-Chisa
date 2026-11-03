@@ -237,3 +237,15 @@ def test_chunk_level_pass_removes_short_exact_duplicates_keeping_the_owner() -> 
     )
 
     assert [c.page_id for c in drop_duplicate_bodies(chunks, OWNERS)] == [2]
+
+
+def test_offset_counts_reading_order_within_each_page() -> None:
+    units = [
+        _unit(_words(29, "a"), group="1"),
+        _unit(_words(29, "b"), group="2"),
+        _unit(_words(29, "c"), page_id=2, group="1"),
+    ]
+
+    chunks = Chunker(_count, POLICY).chunk(units)
+
+    assert [(chunk.page_id, chunk.offset) for chunk in chunks] == [(1, 0), (1, 1), (2, 0)]

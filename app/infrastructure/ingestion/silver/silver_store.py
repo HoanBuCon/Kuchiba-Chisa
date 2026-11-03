@@ -41,6 +41,8 @@ def document_from_dict(record: dict[str, Any]) -> CanonicalDocument:
         source_chars=record.get("source_chars", 0),
         unexplained_text=tuple(record.get("unexplained_text", ())),
         unknown_markup=tuple(record.get("unknown_markup", ())),
+        url=record.get("url", ""),
+        license=record.get("license", ""),
     )
 
 

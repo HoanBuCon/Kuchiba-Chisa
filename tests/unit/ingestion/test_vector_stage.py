@@ -171,7 +171,9 @@ def test_payload_carries_the_knw003_metadata() -> None:
     payload = point_payload(_chunk(1), VERSION)
 
     assert payload["corpus_version"] == VERSION
-    assert payload["source_kind"] == "wiki"
+    assert payload["source_kind"] == "canon"
+    assert point_payload(_chunk(1, Collection.DIALOGUE), VERSION)["source_kind"] == "dialogue"
+    assert {"offset", "url", "license", "revid"} <= payload.keys()
     assert payload["entities"] == ["T"]
     assert (payload["nation"], payload["game_version"]) == ("Huanglong", "1.0")
     assert payload["section_path"] == ["S"]
