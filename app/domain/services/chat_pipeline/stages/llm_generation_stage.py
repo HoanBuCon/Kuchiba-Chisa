@@ -23,6 +23,7 @@ from app.domain.models.intent_result import ChatIntent
 from app.domain.services.attachment_manifest import resolve_attachment_manifests
 from app.domain.services.chat_pipeline.context import ChatContext
 from app.domain.services.chat_pipeline.stage import PipelineStage
+from app.domain.services.chisa_voice import GROUNDED_ABSTENTION, GROUNDED_EXTRACTIVE_FRAME
 from app.domain.services.guardrails import (
     CitationValidationError,
     ClaimEvidenceGuard,
@@ -38,15 +39,8 @@ from app.shared.utils.token_estimator import TokenEstimator
 
 log = get_logger(__name__)
 
-# Grounded-path wording follows the frozen persona addressing rules (self: "Em",
-# user: "Senpai"; see ContextBuilder). The abstention decision is unchanged.
-_GROUNDED_ABSTENTION = (
-    "Em chưa có đủ bằng chứng trong nguồn hiện tại để trả lời chính xác. "
-    "Senpai có thể cho em thêm ngữ cảnh hoặc hỏi theo cách khác không?"
-)
-# Verbatim, server-verified quotes (used when a paraphrase cannot be verified across
-# languages) are presented in Chisa's voice; the quote text itself is never altered.
-_GROUNDED_EXTRACTIVE_FRAME = "Em tìm được trong tư liệu gốc nè Senpai: “{quote}”"
+_GROUNDED_ABSTENTION = GROUNDED_ABSTENTION
+_GROUNDED_EXTRACTIVE_FRAME = GROUNDED_EXTRACTIVE_FRAME
 _GROUNDED_INTENTS = {
     ChatIntent.KNOWLEDGE_OR_TASK,
     ChatIntent.LORE,
