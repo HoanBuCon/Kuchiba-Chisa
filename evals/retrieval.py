@@ -1,7 +1,7 @@
 """Retrieval-level evaluation of a staged corpus: no LLM, safe to run on every release (S8).
 
 Usage: python -m evals.retrieval --version 2026.11.02-7 [--mode hybrid] [--report out.json]
-`--gate` judges the free `translated_local` mode against gates.yaml; `--active` is the live report.
+`--gate` judges the free `runtime_local` mode against gates.yaml; `--active` is the live report.
 Modes ending in `reranked` spend prepaid Jina tokens; `all` never does.
 `translated` modes search with frozen English questions (ADV-010), so they call no LLM.
 """
@@ -31,10 +31,13 @@ from app.domain.ingestion.entity_linking import EntityLinker
 from app.domain.ingestion.release_gates import GateReport, evaluate_retrieval_gate
 from app.domain.ingestion.text_normalization import normalize_text
 from app.domain.ingestion.units import Collection
+from app.domain.interfaces.reranker import RerankerDataBoundary
+from app.domain.services.knowledge.lore_search import LoreSearchService, LoreSearchSettings
 from app.infrastructure.embeddings.fastembed_adapter import FastEmbedAdapter
 from app.infrastructure.ingestion.gates_config import load_gate_policies
 from app.infrastructure.ingestion.gold.gold_store import FileGoldStore
 from app.infrastructure.ingestion.gold.staging_index import DENSE, LEXICAL, LEXICAL_MODEL
+from app.infrastructure.knowledge.qdrant_lore_index import QdrantLoreIndex
 from app.infrastructure.rag.api_cross_encoder_reranker import (
     ApiCrossEncoderReranker,
     ApiRerankerProvider,
@@ -52,22 +55,24 @@ EMBED_THREADS = 2
 LINKED = "linked"
 TRANSLATED = "translated"
 TRANSLATED_LOCAL = "translated_local"
-MODES = ("dense", "lexical", "hybrid", LINKED, TRANSLATED, TRANSLATED_LOCAL)
+# The runtime `search_lore` service itself, with frozen translations and the local reranker.
+RUNTIME_LOCAL = "runtime_local"
+MODES = ("dense", "lexical", "hybrid", LINKED, TRANSLATED, TRANSLATED_LOCAL, RUNTIME_LOCAL)
 RERANKED = "reranked"
 TRANSLATED_RERANKED = "translated_reranked"
 PAID_MODES = (RERANKED, TRANSLATED_RERANKED)
 TRANSLATED_MODES = (TRANSLATED, TRANSLATED_LOCAL, TRANSLATED_RERANKED)
-GATE_MODE = TRANSLATED_LOCAL
-# On translated questions 50 candidates beat 15 and 30 on the dev half, at about 3x the tokens.
+GATE_MODE = RUNTIME_LOCAL
+# Top 50 scored best but its p95 was 9.3 s; top 15 is the depth that meets PERF-009.
 RERANK_MODEL = "jina-reranker-v3"
-RERANK_CANDIDATES = 50
+RERANK_CANDIDATES = 15
 # Free and good enough to gate a release; deeper candidates scored no better and cost time.
 LOCAL_RERANK_MODEL = "Xenova/ms-marco-MiniLM-L-6-v2"
 LOCAL_RERANK_CANDIDATES = 15
 LOCAL_RERANK_BATCH = 8
 RERANK_TIMEOUT_SECONDS = 30
 # Paced to stay under the key's tokens-per-minute limit, which otherwise skews results.
-RERANK_PAUSE_SECONDS = 13
+RERANK_PAUSE_SECONDS = 4
 
 
 @dataclass(frozen=True)
@@ -212,8 +217,44 @@ def _any_of(field: str, values: Sequence[str]) -> models.Filter:
     return models.Filter(must=[condition])
 
 
+async def _evaluate_runtime(version: str) -> list[CaseOutcome]:
+    golden = load_golden_set(GOLDEN_PATH)
+    knowledge = FileGoldStore(Path(settings.INGESTION_DATA_DIR)).read_knowledge(version)
+    client = AsyncQdrantClient(url=settings.QDRANT_URL, api_key=settings.QDRANT_API_KEY, timeout=60)
+    service = LoreSearchService(
+        QdrantLoreIndex(client, staging_collection(Collection.CANON, version)),
+        FastEmbedAdapter(threads=EMBED_THREADS),
+        _FrozenTranslator(golden.cases, load_translations(TRANSLATIONS_PATH)),
+        EntityLinker.from_knowledge(knowledge),
+        [_LocalReranker()],
+        LoreSearchSettings(
+            candidates=CANDIDATES,
+            rerank_candidates=LOCAL_RERANK_CANDIDATES,
+            top_k=CANDIDATES,
+        ),
+    )
+    outcomes = []
+    try:
+        for case in golden.cases:
+            if not case.relevant_pages:
+                continue
+            question = normalize_text(case.turns[-1].message)
+            result = await service.search(question)
+            located = (e.provenance.page_id for e in result.evidence)
+            pages = list(dict.fromkeys(page for page in located if page is not None))
+            outcomes.append(score_case(case, question, pages))
+    finally:
+        await client.close()
+    return outcomes
+
+
 async def evaluate(version: str, mode: str) -> tuple[dict[str, Any], list[CaseOutcome]]:
     golden = load_golden_set(GOLDEN_PATH)
+    if mode == RUNTIME_LOCAL:
+        outcomes = await _evaluate_runtime(version)
+        summary = summarize(outcomes)
+        summary["verified_cases"] = sum(c.verified and bool(c.relevant_pages) for c in golden.cases)
+        return summary, outcomes
     knowledge = FileGoldStore(Path(settings.INGESTION_DATA_DIR)).read_knowledge(version)
     embedder = FastEmbedAdapter(threads=EMBED_THREADS)
     client = AsyncQdrantClient(url=settings.QDRANT_URL, api_key=settings.QDRANT_API_KEY, timeout=60)
@@ -249,14 +290,33 @@ async def evaluate(version: str, mode: str) -> tuple[dict[str, Any], list[CaseOu
     return summary, outcomes
 
 
+class _FrozenTranslator:
+    """Gives the service the stored translation, so measuring it never calls an LLM."""
+
+    def __init__(self, cases: Sequence[GoldenCase], translations: Mapping[str, str]) -> None:
+        self._english = {
+            normalize_text(case.turns[-1].message): search_query(
+                case, normalize_text(case.turns[-1].message), translations
+            )
+            for case in cases
+            if case.relevant_pages
+        }
+
+    async def to_english(self, question: str) -> str:
+        return self._english[question]
+
+
 class _LocalReranker:
     """Runs in-process for the gate; the runtime uses local models via the inference service."""
+
+    provider_name = "local"
+    data_boundary = RerankerDataBoundary.LOCAL
 
     def __init__(self) -> None:
         self._model = TextCrossEncoder(LOCAL_RERANK_MODEL, threads=EMBED_THREADS)
 
-    async def rerank(self, query: str, documents: list[str]) -> list[float]:
-        scores = self._model.rerank(query, documents, batch_size=LOCAL_RERANK_BATCH)
+    async def rerank(self, query: str, documents: Sequence[str]) -> list[float]:
+        scores = self._model.rerank(query, list(documents), batch_size=LOCAL_RERANK_BATCH)
         return list(scores)
 
 
