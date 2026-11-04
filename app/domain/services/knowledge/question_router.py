@@ -21,6 +21,8 @@ ASKS_RESONATORS = re.compile(
     r"|\bresonators?\W+nao\b.*\b(?:va|and|hoac|or|o|tai|from|sinh|thuoc)\b"
 )
 CHAPTER = re.compile(r"\bchapter ([ivx]+)(?:\W+(prologue|segue|epilogue|act [ivx]+))?\b")
+NAMED_CHAPTER = re.compile(r"\bchapter (\d+|[ivx]+)\b")
+ROMAN_NUMERALS = ("i", "ii", "iii", "iv", "v", "vi", "vii", "viii", "ix", "x")
 RESONATOR_TYPE = "resonator"
 # Fields whose values name a category worth listing by, not a free-text description.
 LISTABLE_FIELDS = ("attribute", "weapon", "birthplace", "class", "gender")
@@ -35,6 +37,8 @@ class QuestionRoute:
     quest_chapter: str | None = None
     quest_character: str | None = None
     entity_fields: dict[str, str] = field(default_factory=dict)
+    # The question names a chapter no quest belongs to, so nothing can answer it.
+    unknown_chapter: bool = False
 
     @property
     def lists_quests(self) -> bool:
@@ -43,6 +47,13 @@ class QuestionRoute:
 
 def _word_in(needle: str, text: str) -> bool:
     return re.search(rf"\b{re.escape(needle)}\b", text) is not None
+
+
+def _as_roman(numeral: str) -> str:
+    """A number past the table stays a number, which no known chapter equals."""
+    if numeral.isdigit() and 1 <= int(numeral) <= len(ROMAN_NUMERALS):
+        return ROMAN_NUMERALS[int(numeral) - 1]
+    return numeral
 
 
 def _chapter_label(match: re.Match[str]) -> str:
@@ -57,6 +68,13 @@ class QuestionRouter:
             entity.title for entity in knowledge.entities if entity.entity_type in PERSON_TYPES
         )
         self._values = self._field_values(knowledge)
+        self._chapters = frozenset(
+            numeral
+            for quest in knowledge.quests
+            for numeral in NAMED_CHAPTER.findall(
+                fold_for_matching(quest.fields.get("chapter") or "")
+            )
+        )
 
     @staticmethod
     def _place_names(knowledge: KnowledgeBase) -> Mapping[str, str]:
@@ -90,7 +108,20 @@ class QuestionRouter:
             character = next((name for name in entities if name in self._people), None)
         if any(ASKS_RESONATORS.search(text) for text in folded):
             route_fields = self._find_fields(folded)
-        return QuestionRoute(entities, location, chapter, character, route_fields)
+        return QuestionRoute(
+            entities,
+            location,
+            chapter,
+            character,
+            route_fields,
+            self._names_unknown_chapter(folded),
+        )
+
+    def _names_unknown_chapter(self, folded: list[str]) -> bool:
+        if not self._chapters:
+            return False
+        named = (_as_roman(numeral) for text in folded for numeral in NAMED_CHAPTER.findall(text))
+        return any(numeral not in self._chapters for numeral in named)
 
     def _find_place(self, folded: list[str]) -> str | None:
         # The longest name wins, so "Jinzhou City" is not read as "Jinzhou".
