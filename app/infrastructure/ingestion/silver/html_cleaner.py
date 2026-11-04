@@ -73,6 +73,9 @@ def _first(element: HtmlElement, class_name: str) -> HtmlElement | None:
     )
     return found[0] if found else None
 
+# MediaWiki stores interwiki links in pageprops as this unexpanded parser marker.
+UNRESOLVED_LINK = "<!--IWLINK"
+
 
 def extract_text(element: HtmlElement, *, skip_tags: frozenset[str] = frozenset()) -> str:
     """Visible text with line breaks where the browser would break lines."""
@@ -193,7 +196,7 @@ class HtmlCleaner:
             family=family,
             cleaner_version=self.version,
             blocks=blocks,
-            infoboxes=pageprops_infoboxes(page.properties) or dom_infoboxes,
+            infoboxes=_with_dom_values(page.properties, dom_infoboxes) or dom_infoboxes,
             glossary=tuple(GlossaryEntry(t, d) for t, d in context.glossary.items()),
             links=tuple(context.links),
             other_names=other_names,
@@ -277,22 +280,55 @@ def _take_infoboxes(body: HtmlElement, context: _Context) -> tuple[dict, ...]:
     return tuple(boxes)
 
 
+def _raw_infoboxes(properties: dict[str, str]) -> list[dict]:
+    try:
+        return json.loads(properties.get("infoboxes") or "[]")
+    except json.JSONDecodeError:
+        return []
+
+
 def pageprops_infoboxes(properties: dict[str, str]) -> tuple[dict, ...]:
     """Flatten PortableInfobox JSON to {source: text}; values are HTML snippets."""
-    try:
-        raw = json.loads(properties.get("infoboxes") or "[]")
-    except json.JSONDecodeError:
-        return ()
-    return tuple(box for box in (_flatten_infobox(item) for item in raw) if box)
+    boxes = (_flatten_infobox(item) for item in _raw_infoboxes(properties))
+    return tuple(box for box in boxes if box)
+
+
+def _with_dom_values(properties: dict[str, str], dom_boxes: tuple[dict, ...]) -> tuple[dict, ...]:
+    """Pageprops stay preferred, but only the DOM has the text of an interwiki link."""
+    merged = []
+    for index, infobox in enumerate(_raw_infoboxes(properties)):
+        dom = dom_boxes[index] if index < len(dom_boxes) else {}
+        fields = _flatten_infobox(infobox)
+        recovered = {
+            source: dom[source] for source in _unresolved_sources(infobox) if dom.get(source)
+        }
+        if fields or recovered:
+            merged.append({**fields, **recovered})
+    return tuple(merged)
 
 
 def _flatten_infobox(infobox: dict) -> dict[str, str]:
     fields: dict[str, str] = {}
     for item_type, data in _infobox_items(infobox.get("data", [])):
         source, value = data.get("source"), data.get("value")
-        if item_type in {"data", "title"} and source and isinstance(value, str) and value.strip():
+        if (
+            item_type in {"data", "title"}
+            and source
+            and isinstance(value, str)
+            and value.strip()
+            # A placeholder would leave nothing, or a fragment like "(Female)", as the value.
+            and UNRESOLVED_LINK not in value
+        ):
             fields[source] = _infobox_value(value)
     return fields
+
+
+def _unresolved_sources(infobox: dict) -> list[str]:
+    return [
+        data["source"]
+        for _, data in _infobox_items(infobox.get("data", []))
+        if data.get("source") and UNRESOLVED_LINK in str(data.get("value"))
+    ]
 
 
 def _infobox_value(html: str) -> str:
