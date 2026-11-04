@@ -40,7 +40,9 @@ The set is `approval.status: draft` and must not gate a release until the owner:
   this is a *citation* hit rate, not true retrieval recall; R1 adds a retrieval-level target.
 - **Persona**: requires "Senpai" and none of the case's forbidden patterns.
 
-No LLM judge is used yet; groundedness and citation precision (QUAL-001/002) arrive with the evidence ledger.
+Groundedness and citation precision (QUAL-001/002) come from `python -m evals.judge REPORT.json`, an LLM judge
+over the answers and their cited quotes in a v2 report. It spends tokens, the judge is not independent of the
+model family that answered, and its failed and serious verdicts must be read by a person.
 
 ## Running
 

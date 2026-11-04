@@ -12,6 +12,12 @@ GROUNDED_EXTRACTIVE_FRAME = "Em tìm được trong tư liệu gốc nè Senpai:
 GROUNDED_ANSWER_LEAD = "Em tra được thế này nè Senpai: "
 # A bare quote may not name its subject, so the page it came from is stated (ING-018).
 GROUNDED_QUOTE_SOURCES = "\n(Nguồn: {titles})"
+# The person calls themselves "anh", which the model can read as Chisa talking about herself.
+COMPANION_ADDRESS_NOTE = (
+    'Trong tin nhắn của người dùng, "anh" và "Senpai" là chính người dùng. '
+    'Câu như "anh hay uống gì" hỏi về người dùng: trả lời dựa trên lịch sử và ký ức, '
+    "không kể về bản thân Chisa."
+)
 GROUNDED_LIST_LEAD = "Em tra được danh sách này nè Senpai:"
 INPUT_BLOCKED = "Yêu cầu này em không làm theo được đâu Senpai. Senpai hỏi em chuyện khác nhé?"
 TURN_FAILED = "Em đang gặp trục trặc nên chưa trả lời được, Senpai thử lại sau một lát nhé."

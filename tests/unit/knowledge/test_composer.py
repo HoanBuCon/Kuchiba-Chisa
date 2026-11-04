@@ -10,7 +10,9 @@ from app.domain.models.evidence import (
     EvidenceProvenance,
     EvidenceScore,
 )
+from app.domain.services.budget_mode import BudgetMode
 from app.domain.services.chisa_voice import (
+    COMPANION_ADDRESS_NOTE,
     GROUNDED_ABSTENTION,
     GROUNDED_ANSWER_LEAD,
     GROUNDED_LIST_LEAD,
@@ -254,6 +256,28 @@ async def test_companion_returns_the_model_reply_with_its_sentiment() -> None:
     assert (result.text, result.status) == ("Em nhớ mà Senpai.", "companion")
     assert result.sentiment == SENTIMENT
     assert llm.prompts[0].purpose is LLMPurpose.CHAT_RESPONSE
+
+
+async def test_companion_prompt_keeps_the_persona_and_adds_who_anh_means() -> None:
+    llm = FakeLLM({"response": "Dạ.", "sentiment": SENTIMENT})
+
+    await _companion(llm)
+
+    system = llm.prompts[0].system
+    built = ContextBuilder().build(
+        emotion=EmotionState(user_id=uuid4()),
+        attachment_bonus=0.0,
+        memories=["Tên: Khoa"],
+        lore=[],
+        history=[],
+        user_message="Anh tên là gì nhỉ?",
+        intent_name="conversational",
+        conversation_summary=None,
+        budget_mode=BudgetMode.SMALL_TALK,
+        is_small_talk=True,
+    ).prompt.system
+    assert system.startswith(built)
+    assert system.endswith(COMPANION_ADDRESS_NOTE)
 
 
 async def test_companion_with_no_reply_fails_in_chisa_voice() -> None:
