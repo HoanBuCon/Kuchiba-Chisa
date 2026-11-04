@@ -54,6 +54,9 @@ def _extract_contract_arguments(
     return arguments
 
 
+HTTP_PAYMENT_REQUIRED = 402
+
+
 class DeepSeekAdapter(BaseLLMAdapter):
     """
     DeepSeek API adapter using direct httpx calls to avoid OpenAI-HTTPX proxies conflicts.
@@ -145,6 +148,8 @@ class DeepSeekAdapter(BaseLLMAdapter):
                 raise LLMRateLimitError()
             elif response.status_code == 413:
                 raise LLMError("Payload too large", retryable=False, code="PAYLOAD_TOO_LARGE")
+            elif response.status_code == HTTP_PAYMENT_REQUIRED:
+                raise LLMError("DeepSeek balance exhausted", retryable=False, code="BILLING")
             elif response.status_code >= 500:
                 raise LLMError(
                     f"Server error: {response.status_code}",
@@ -293,6 +298,12 @@ class DeepSeekAdapter(BaseLLMAdapter):
                             "DeepSeek authentication failed",
                             retryable=False,
                             code="AUTH_CONFIG",
+                        )
+                    if response.status_code == HTTP_PAYMENT_REQUIRED:
+                        raise LLMError(
+                            "DeepSeek balance exhausted",
+                            retryable=False,
+                            code="BILLING",
                         )
                     if response.status_code >= 500:
                         raise LLMError(

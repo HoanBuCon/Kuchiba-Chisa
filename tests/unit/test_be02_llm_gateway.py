@@ -882,6 +882,17 @@ async def test_caller_cancellation_stops_retry_and_fallback() -> None:
 
 
 @pytest.mark.asyncio
+async def test_exhausted_balance_is_reported_apart_and_not_retried() -> None:
+    provider = FakeAdapter([LLMError("balance", retryable=False, code="BILLING")])
+    gateway = _gateway([_provider("primary", provider)])
+
+    outcome = await gateway.execute(_prompt())
+
+    assert outcome.status is LLMGatewayStatus.FAILURE
+    assert outcome.failure_class is LLMFailureClass.BILLING
+    assert provider.calls == 1
+
+
 async def test_auth_configuration_failure_is_not_retried() -> None:
     provider = FakeAdapter(
         [LLMError("secret payload", retryable=False, code="AUTH_CONFIG")]
