@@ -38,6 +38,7 @@ class EvidenceProvenance(BaseModel):
     collection: str = Field(min_length=1)
     source_version: str | None = None
     source_revision: int | None = None
+    source_title: str | None = None
     parent_id: str | None = None
     page_id: int | None = None
     section_id: str | None = None

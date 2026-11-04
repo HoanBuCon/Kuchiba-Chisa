@@ -173,3 +173,18 @@ async def test_plain_question_has_no_listing() -> None:
     flow, _ = _flow("Where was Chisa born?", score=0.6)
 
     assert (await flow.retrieve("Chisa sinh ra ở đâu?")).listed == ()
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "Which NPC did the Grand Architect disguise as in the quest Far Shore?",
+        "Who is Chisa in this quest?",
+        "Which Resonator has a Tacet Mark on her tongue?",
+    ],
+)
+def test_a_question_about_one_thing_is_not_a_list(text) -> None:
+    route = ROUTER.route((text,), ("Chisa",))
+
+    assert not route.lists_quests
+    assert route.entity_fields == {}

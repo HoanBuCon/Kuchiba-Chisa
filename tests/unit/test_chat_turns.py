@@ -81,6 +81,9 @@ class Composer:
     def compose_list(self, listed):
         return ComposedAnswer("- A", False, status="listed")
 
+    async def compose_companion(self, question, **context):
+        raise AssertionError("this test expects the grounded lane")
+
     async def compose(self, question, evidence, **context):
         self.calls.append((question, evidence, context))
         citation = CitationSnapshot("wiki:1:a", "https://w/P", "canon", "v1", "Fact.", 7)
@@ -88,7 +91,7 @@ class Composer:
 
 
 def _request(**changes) -> TurnRequest:
-    base = TurnRequest(owner=OWNER, channel="web", message="Chisa là ai?", turn_id=uuid4())
+    base = TurnRequest(owner=OWNER, channel="web", message="Tacet Field là gì?", turn_id=uuid4())
     return replace(base, **changes)
 
 
@@ -184,7 +187,7 @@ async def test_history_reaches_the_composer() -> None:
 
     await _events(service, _request(thread_id=thread_id))
 
-    assert composer.calls[1][2]["history"][0] == {"role": "user", "content": "Chisa là ai?"}
+    assert composer.calls[1][2]["history"][0] == {"role": "user", "content": "Tacet Field là gì?"}
 
 
 async def test_budget_allows_translation_and_composer_only() -> None:
@@ -217,7 +220,7 @@ async def test_injection_is_refused_before_any_provider_call() -> None:
 async def test_pii_is_masked_before_retrieval_and_storage() -> None:
     service, threads, flow, composer = _service()
 
-    await _events(service, _request(message="Mail tôi ở a@example.com nhé Chisa là ai?"))
+    await _events(service, _request(message="Tacet Field là gì, gửi về a@example.com"))
 
     assert "a@example.com" not in flow.questions[0]
     assert "a@example.com" not in composer.calls[0][0]
@@ -237,3 +240,30 @@ async def test_exact_list_skips_the_llm_composer() -> None:
     assert composer.calls == []
     assert events[-1].data["status"] == "listed"
     assert threads.turns[0].status == "listed"
+
+
+class CompanionComposer(Composer):
+    async def compose_companion(self, question, **context):
+        self.calls.append((question, None, context))
+        return ComposedAnswer("Em nghe nè Senpai.", False, status="companion")
+
+
+async def test_conversation_skips_retrieval_and_records_the_lane() -> None:
+    service, threads, flow, composer = _service(composer=CompanionComposer())
+
+    events = await _events(service, _request(message="Anh thích trà sữa lắm."))
+
+    assert flow.questions == []
+    assert composer.calls[0][0] == "Anh thích trà sữa lắm."
+    assert threads.turns[0].lane == "companion"
+    assert events[-1].data["status"] == "companion"
+
+
+async def test_companion_sees_the_thread_history() -> None:
+    service, _, _, composer = _service(composer=CompanionComposer())
+    events = await _events(service, _request(message="Anh tên là Khoa nhé."))
+    thread_id = UUID(events[-1].data["thread_id"])
+
+    await _events(service, _request(message="Anh tên là gì nhỉ?", thread_id=thread_id))
+
+    assert composer.calls[1][2]["history"][0]["content"] == "Anh tên là Khoa nhé."

@@ -13,7 +13,7 @@ import httpx
 from evals.dataset import Category, GoldenSet, load_golden_set
 from evals.report import write_report
 from evals.runner import run_golden_set
-from evals.targets import HttpChatTarget
+from evals.targets import HttpChatTarget, HttpChatV2Target
 
 DEFAULT_DATASET = Path("data/evaluations/golden_v2/golden_v2.yaml")
 DEFAULT_OUTPUT = Path("reports/eval")
@@ -28,6 +28,7 @@ def _parser() -> argparse.ArgumentParser:
     commands.add_parser("validate", help="validate the golden set and print its composition")
     run = commands.add_parser("run", help="run the golden set against the v1 HTTP API")
     run.add_argument("--base-url", required=True)
+    run.add_argument("--api", choices=("v1", "v2"), default="v1")
     run.add_argument("--category", choices=[category.value for category in Category])
     run.add_argument("--limit", type=int)
     run.add_argument("--output", type=Path, default=DEFAULT_OUTPUT)
@@ -49,7 +50,7 @@ async def _run(golden: GoldenSet, args: argparse.Namespace) -> int:
     cases = [case for case in golden.cases if args.category in (None, case.category.value)]
     cases = cases[: args.limit] if args.limit else cases
     async with httpx.AsyncClient(base_url=args.base_url, timeout=HTTP_TIMEOUT_SECONDS) as client:
-        target = HttpChatTarget(client)
+        target = HttpChatV2Target(client) if args.api == "v2" else HttpChatTarget(client)
         report = await run_golden_set(target, golden, cases)
     stem = f"{golden.dataset_version}-{target.name}-{datetime.now(UTC):%Y%m%dT%H%M%SZ}"
     json_path, markdown_path = write_report(report, args.output, stem)

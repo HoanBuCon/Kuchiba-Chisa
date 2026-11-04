@@ -9,6 +9,7 @@ from typing import Any, Protocol
 from uuid import UUID, uuid4
 
 from app.domain.entities.emotion import EmotionState
+from app.domain.ingestion.entity_linking import EntityLinker
 from app.domain.interfaces.llm_provider import LLMCallBudget
 from app.domain.interfaces.personal_context import IPersonalContext, PersonalContext
 from app.domain.interfaces.threads import IThreadStore
@@ -23,6 +24,7 @@ from app.domain.services.guardrails.injection_guard import (
 from app.domain.services.guardrails.pii_redaction import PiiRedactor
 from app.domain.services.knowledge.advanced_retrieval import AdvancedEvidence
 from app.domain.services.knowledge.composer import ComposedAnswer
+from app.domain.services.knowledge.lane_router import Lane, choose_lane
 
 # The translation and the Composer; a turn never spends a third call (ADV-009).
 ADVANCED_MAX_LLM_CALLS = 2
@@ -67,6 +69,17 @@ class IEvidenceFlow(Protocol):
 
 
 class IAnswerComposer(Protocol):
+    async def compose_companion(
+        self,
+        question: str,
+        *,
+        emotion: EmotionState,
+        history: list[dict[str, str]],
+        memories: list[str],
+        summary: str | None,
+        budget: LLMCallBudget,
+    ) -> ComposedAnswer: ...
+
     def compose_list(self, listed: Sequence[Evidence]) -> ComposedAnswer: ...
 
     async def compose(
@@ -116,6 +129,7 @@ class AdvancedTurnService:
         injection_guard: InjectionGuard | None = None,
         pii: PiiRedactor | None = None,
         personal: IPersonalContext | None = None,
+        linker: EntityLinker | None = None,
     ) -> None:
         self._threads = threads
         self._flow = flow
@@ -123,6 +137,7 @@ class AdvancedTurnService:
         self._injection_guard = injection_guard or InjectionGuard()
         self._pii = pii or PiiRedactor()
         self._personal = personal
+        self._linker = linker
 
     async def run(self, request: TurnRequest) -> AsyncIterator[TurnEvent]:
         thread = await self._thread(request)
@@ -146,9 +161,15 @@ class AdvancedTurnService:
         assessment = self._injection_guard.assess(request.message, ContentSource.USER)
         if assessment.action is GuardAction.BLOCK:
             refused = ComposedAnswer(INPUT_BLOCKED, abstained=True, status=STATUS_INPUT_BLOCKED)
-            record = self._record(request, thread, decision, refused, (), budget)
+            record = self._record(request, thread, decision, refused, (), budget, Lane.ADVANCED)
             await self._threads.save_turn(record)
             yield _completed(record, replayed=False)
+            return
+        if self._lane(request.message) is Lane.COMPANION:
+            answer = await self._companion(request, thread, budget)
+            record = self._record(request, thread, decision, answer, (), budget, Lane.COMPANION)
+            async for event in self._deliver(request, record, answer):
+                yield event
             return
         found = await self._flow.retrieve(request.message, budget)
         for item in found.evidence:
@@ -161,7 +182,15 @@ class AdvancedTurnService:
                 },
             )
         answer = await self._compose(request, thread, found, budget)
-        record = self._record(request, thread, decision, answer, found.degraded, budget)
+        record = self._record(
+            request, thread, decision, answer, found.degraded, budget, Lane.ADVANCED
+        )
+        async for event in self._deliver(request, record, answer):
+            yield event
+
+    async def _deliver(
+        self, request: TurnRequest, record: TurnRecord, answer: ComposedAnswer
+    ) -> AsyncIterator[TurnEvent]:
         stored = await self._threads.save_turn(record)
         # Only the retry that stored the turn may move emotion, so it moves once (EMO-003).
         if stored is not False and answer.sentiment and self._personal is not None:
@@ -169,6 +198,24 @@ class AdvancedTurnService:
         for piece in _SENTENCE.split(answer.text):
             yield TurnEvent(EVENT_TOKEN, {"delta": piece})
         yield _completed(record, replayed=False)
+
+    def _lane(self, message: str) -> Lane:
+        entities = self._linker.link(message) if self._linker is not None else ()
+        return choose_lane(message, entities)
+
+    async def _companion(
+        self, request: TurnRequest, thread: Thread, budget: LLMCallBudget
+    ) -> ComposedAnswer:
+        recent = await self._threads.recent_turns(thread.id, HISTORY_TURNS)
+        personal = await self._personal_context(request)
+        return await self._composer.compose_companion(
+            request.message,
+            emotion=personal.emotion,
+            history=_history(recent),
+            memories=list(personal.memories),
+            summary=None,
+            budget=budget,
+        )
 
     async def _thread(self, request: TurnRequest) -> Thread:
         if request.thread_id is None:
@@ -228,6 +275,7 @@ class AdvancedTurnService:
         answer: ComposedAnswer,
         degraded: tuple[str, ...],
         budget: LLMCallBudget,
+        lane: Lane,
     ) -> TurnRecord:
         return TurnRecord(
             thread_id=thread.id,
@@ -236,7 +284,7 @@ class AdvancedTurnService:
             answer=answer.text,
             mode_requested=decision.requested,
             mode_effective=decision.effective,
-            lane=LANE_ADVANCED,
+            lane=lane.value,
             status=answer.status,
             downgrade_reason=decision.downgrade_reason,
             llm_calls=budget.used_calls,

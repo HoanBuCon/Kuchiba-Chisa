@@ -32,6 +32,7 @@ def _evidence(kind: str, page_id: int, title: str, text: str, version: str) -> E
         text=text,
         provenance=EvidenceProvenance(
             source_id=title,
+            source_title=title,
             source_type="canon",
             collection=f"kb_{kind}",
             source_version=version,
