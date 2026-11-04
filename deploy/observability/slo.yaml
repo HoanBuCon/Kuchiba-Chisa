@@ -27,13 +27,13 @@ spec:
             type: Prometheus
             spec:
               query: >-
-                sum(rate(chisa_http_requests_total{chisa_route=~"/api/v1/chat|/api/v1/chat/stream|/api/v1/community/chat",chisa_status_class=~"2xx|3xx"}[30d]))
+                sum(rate(chisa_http_requests_total{chisa_route=~"/api/v1/chat|/api/v1/chat/stream|/api/v2/chat/turns|/api/v1/community/chat",chisa_status_class=~"2xx|3xx"}[30d]))
         total:
           metricSource:
             type: Prometheus
             spec:
               query: >-
-                sum(rate(chisa_http_requests_total{chisa_route=~"/api/v1/chat|/api/v1/chat/stream|/api/v1/community/chat",chisa_status_class=~"2xx|3xx|5xx"}[30d]))
+                sum(rate(chisa_http_requests_total{chisa_route=~"/api/v1/chat|/api/v1/chat/stream|/api/v2/chat/turns|/api/v1/community/chat",chisa_status_class=~"2xx|3xx|5xx"}[30d]))
   timeWindow:
     - duration: 30d
       isRolling: true
@@ -95,12 +95,12 @@ spec:
           metricSource:
             type: Prometheus
             spec:
-              query: sum(rate(chisa_http_ttft_seconds_bucket{chisa_route="/api/v1/chat/stream",le="1.5"}[30d]))
+              query: sum(rate(chisa_http_ttft_seconds_bucket{chisa_route=~"/api/v1/chat/stream|/api/v2/chat/turns",le="1.5"}[30d]))
         total:
           metricSource:
             type: Prometheus
             spec:
-              query: sum(rate(chisa_http_ttft_seconds_count{chisa_route="/api/v1/chat/stream"}[30d]))
+              query: sum(rate(chisa_http_ttft_seconds_count{chisa_route=~"/api/v1/chat/stream|/api/v2/chat/turns"}[30d]))
   timeWindow:
     - duration: 30d
       isRolling: true
@@ -128,12 +128,12 @@ spec:
           metricSource:
             type: Prometheus
             spec:
-              query: sum(rate(chisa_http_ttft_seconds_bucket{chisa_route="/api/v1/chat/stream",le="3.5"}[30d]))
+              query: sum(rate(chisa_http_ttft_seconds_bucket{chisa_route=~"/api/v1/chat/stream|/api/v2/chat/turns",le="3.5"}[30d]))
         total:
           metricSource:
             type: Prometheus
             spec:
-              query: sum(rate(chisa_http_ttft_seconds_count{chisa_route="/api/v1/chat/stream"}[30d]))
+              query: sum(rate(chisa_http_ttft_seconds_count{chisa_route=~"/api/v1/chat/stream|/api/v2/chat/turns"}[30d]))
   timeWindow:
     - duration: 30d
       isRolling: true
@@ -161,12 +161,12 @@ spec:
           metricSource:
             type: Prometheus
             spec:
-              query: sum(rate(chisa_http_server_duration_seconds_bucket{chisa_route=~"/api/v1/chat|/api/v1/chat/stream",le="8.0"}[30d]))
+              query: sum(rate(chisa_http_server_duration_seconds_bucket{chisa_route=~"/api/v1/chat|/api/v1/chat/stream|/api/v2/chat/turns",le="8.0"}[30d]))
         total:
           metricSource:
             type: Prometheus
             spec:
-              query: sum(rate(chisa_http_server_duration_seconds_count{chisa_route=~"/api/v1/chat|/api/v1/chat/stream"}[30d]))
+              query: sum(rate(chisa_http_server_duration_seconds_count{chisa_route=~"/api/v1/chat|/api/v1/chat/stream|/api/v2/chat/turns"}[30d]))
   timeWindow:
     - duration: 30d
       isRolling: true
@@ -194,12 +194,12 @@ spec:
           metricSource:
             type: Prometheus
             spec:
-              query: sum(rate(chisa_http_server_duration_seconds_bucket{chisa_route=~"/api/v1/chat|/api/v1/chat/stream",le="15.0"}[30d]))
+              query: sum(rate(chisa_http_server_duration_seconds_bucket{chisa_route=~"/api/v1/chat|/api/v1/chat/stream|/api/v2/chat/turns",le="15.0"}[30d]))
         total:
           metricSource:
             type: Prometheus
             spec:
-              query: sum(rate(chisa_http_server_duration_seconds_count{chisa_route=~"/api/v1/chat|/api/v1/chat/stream"}[30d]))
+              query: sum(rate(chisa_http_server_duration_seconds_count{chisa_route=~"/api/v1/chat|/api/v1/chat/stream|/api/v2/chat/turns"}[30d]))
   timeWindow:
     - duration: 30d
       isRolling: true

@@ -28,6 +28,7 @@ from app.domain.interfaces.observability import (
     TraceOperation,
 )
 from app.infrastructure.observability.otel import (
+    _ROUTES,
     DelegatingOperationalTelemetry,
     OpenTelemetryOperationalTelemetry,
 )
@@ -341,3 +342,9 @@ def test_instrumentation_failure_is_nonfatal_at_the_stable_runtime_boundary() ->
 def test_v2_routes_have_their_own_groups_without_identifiers() -> None:
     assert _route_group("/api/v2/chat/turns") == "/api/v2/chat/turns"
     assert _route_group("/api/v2/threads/{thread_id}") == "/api/v2/other"
+
+
+def test_exporter_keeps_the_v2_route_groups() -> None:
+    # A group missing from the exporter taxonomy is silently relabelled "other".
+    assert _route_group("/api/v2/chat/turns") in _ROUTES
+    assert _route_group("/api/v2/threads/{thread_id}") in _ROUTES

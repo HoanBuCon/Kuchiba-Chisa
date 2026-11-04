@@ -29,3 +29,4 @@ Ghi đúng trạng thái PR, kể cả khi chưa merge. Không ghi secret hay d�
 |---|---|---|
 | 2026-11-04 | R2 S7 | [Triage, làn companion và đánh giá qua API v2](2026-11-04_r2-s7_triage-lan-companion.md) |
 | 2026-11-04 | R2 S7 | [Web chạy trên API v2 và hoàn thiện API v2](2026-11-04_r2-s7_web-chat-v2.md) |
+| 2026-11-04 | R2 S7 | [Gộp khung trích dẫn và giám sát route v2](2026-11-04_r2-s7_khung-trich-dan-giam-sat-v2.md) |

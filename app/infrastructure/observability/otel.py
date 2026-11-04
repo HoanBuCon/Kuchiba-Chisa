@@ -27,7 +27,8 @@ _ROUTES = frozenset(
     {
         "/health", "/ready", "/api/v1/chat", "/api/v1/chat/stream",
         "/api/v1/community/chat", "/api/v1/auth/other", "/api/v1/chat/other",
-        "/api/v1/community/other", "/api/v1/admin/other", "/assets/*", "/static/*", "other",
+        "/api/v1/community/other", "/api/v1/admin/other", "/api/v2/chat/turns", "/api/v2/other",
+        "/assets/*", "/static/*", "other",
     }
 )
 _STAGES = frozenset(

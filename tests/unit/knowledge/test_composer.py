@@ -140,11 +140,11 @@ class SameVectorEmbedder:
         return [[1.0, 0.0] for _ in texts]
 
 
-async def _compose_with_check(llm):
+async def _compose_with_check(llm, evidence=None):
     composer = GroundedComposer(llm, ContextBuilder(), embedder=SameVectorEmbedder())
     return await composer.compose(
         "Chisa học ở đâu?",
-        [_evidence()],
+        evidence or [_evidence()],
         emotion=EmotionState(user_id=uuid4()),
         history=[],
         memories=[],
@@ -170,6 +170,22 @@ async def test_vietnamese_claim_with_a_foreign_name_falls_back_to_the_quote() ->
 
     assert "Ragunna" not in result.text
     assert TEXT in result.text
+
+
+async def test_quotes_share_one_frame_after_the_verified_claims() -> None:
+    second = "Chisa reads Tacet records."
+    source = f"{TEXT} {second}"
+    verified = "Cô ấy theo học tại Startorch Academy ở vùng Lahai-Roi."
+    claims = (
+        _claim(text="Cô ấy theo học tại Ragunna Academy ở vùng Lahai-Roi.", quote=TEXT),
+        _claim(text=verified, quote=TEXT),
+        _claim(text="Ragunna Academy lưu giữ hồ sơ.", quote=second),
+    )
+
+    result = await _compose_with_check(FakeLLM(_answer(*claims)), [_evidence(source)])
+
+    assert result.text.count("tư liệu gốc") == 1
+    assert result.text.index(verified) < result.text.index(TEXT) < result.text.index(second)
 
 
 async def test_without_the_check_a_vietnamese_paraphrase_stays_a_quote() -> None:
