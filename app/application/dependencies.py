@@ -611,12 +611,13 @@ async def _build_chat_turn_runtime() -> ChatTurnRuntime:
         raise RuntimeError("CHAT_V2_ENABLED requires KNOWLEDGE_CORPUS_VERSION")
     knowledge = await PostgresKnowledgeStore(AsyncSessionFactory).load(version)
     client = get_qdrant_client()
+    linker = EntityLinker.from_knowledge(knowledge)
     reranker = container.cross_encoder_reranker
     search = LoreSearchService(
         QdrantLoreIndex(client, staging_collection(Collection.CANON, version)),
         container.embedder,
         LlmQueryTranslator(container.llm, redis_service),
-        EntityLinker.from_knowledge(knowledge),
+        linker,
         [reranker] if reranker is not None else [],
         LoreSearchSettings(min_scores=RERANK_MIN_SCORES),
     )
@@ -635,7 +636,9 @@ async def _build_chat_turn_runtime() -> ChatTurnRuntime:
         container.embedder,
         core_memory,
     )
-    turns = AdvancedTurnService(threads, flow, composer, personal=personal)
+    turns = AdvancedTurnService(
+        threads, flow, composer, personal=personal, linker=linker
+    )
     return ChatTurnRuntime(threads, turns, core_memory)
 
 

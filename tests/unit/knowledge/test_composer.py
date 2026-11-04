@@ -206,3 +206,42 @@ def test_list_is_rendered_without_the_llm_and_cites_every_item() -> None:
     ]
     assert "Senpai" in result.text
     assert [c.evidence_id for c in result.citations] == ["kb:v:quests:1", "kb:v:quests:2"]
+
+
+async def test_quote_only_reply_names_its_source() -> None:
+    claim = _claim(text="Cô ấy học ở trường đó.")
+    evidence = _evidence().model_copy(
+        update={"provenance": _evidence().provenance.model_copy(update={"source_title": "Chisa"})}
+    )
+
+    result = await _compose(FakeLLM(_answer(claim)), evidence=[evidence])
+
+    assert result.text.endswith("(Nguồn: Chisa)")
+
+
+async def _companion(llm):
+    return await GroundedComposer(llm, ContextBuilder()).compose_companion(
+        "Anh tên là gì nhỉ?",
+        emotion=EmotionState(user_id=uuid4()),
+        history=[],
+        memories=["Tên: Khoa"],
+        summary=None,
+        budget=LLMCallBudget(max_calls=2),
+    )
+
+
+async def test_companion_returns_the_model_reply_with_its_sentiment() -> None:
+    llm = FakeLLM({"response": "Em nhớ mà Senpai.", "sentiment": SENTIMENT})
+
+    result = await _companion(llm)
+
+    assert (result.text, result.status) == ("Em nhớ mà Senpai.", "companion")
+    assert result.sentiment == SENTIMENT
+    assert llm.prompts[0].purpose is LLMPurpose.CHAT_RESPONSE
+
+
+async def test_companion_with_no_reply_fails_in_chisa_voice() -> None:
+    result = await _companion(FakeLLM({"sentiment": SENTIMENT}))
+
+    assert result.status == "invalid_output"
+    assert "Senpai" in result.text

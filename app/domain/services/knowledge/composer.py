@@ -21,6 +21,8 @@ from app.domain.services.chisa_voice import (
     GROUNDED_ANSWER_LEAD,
     GROUNDED_EXTRACTIVE_FRAME,
     GROUNDED_LIST_LEAD,
+    GROUNDED_QUOTE_SOURCES,
+    TURN_FAILED,
 )
 from app.domain.services.context_builder import ContextBuilder
 from app.domain.services.guardrails import (
@@ -34,6 +36,9 @@ from app.domain.services.knowledge.cross_language_claims import CrossLanguageCla
 CONTRACT_NAME = "submit_grounded_answer"
 ADDRESSING = "Senpai"
 INTENT_NAME = "lore"
+COMPANION_INTENT = "conversational"
+# Same warmth the v1 path uses for casual talk.
+COMPANION_TEMPERATURE = 0.8
 
 
 @dataclass(frozen=True)
@@ -76,6 +81,14 @@ def _snapshots(ids: Sequence[str], evidence: Sequence[Evidence]) -> tuple[Citati
 def _in_chisa_voice(text: str) -> str:
     """A reply that already addresses Senpai keeps its wording; quote frames always do."""
     return text if ADDRESSING in text else f"{GROUNDED_ANSWER_LEAD}{text}"
+
+
+def _quote_sources(ids: Sequence[str], evidence: Sequence[Evidence]) -> str:
+    by_id = {item.evidence_id: item for item in evidence}
+    titles = dict.fromkeys(
+        title for title in (by_id[i].provenance.source_title for i in ids if i in by_id) if title
+    )
+    return GROUNDED_QUOTE_SOURCES.format(titles=", ".join(titles)) if titles else ""
 
 
 def _abstained(status: str) -> ComposedAnswer:
@@ -143,8 +156,13 @@ class GroundedComposer:
             return _abstained("output_leakage")
         if envelope.abstained:
             return _abstained("no_evidence")
+        sources = (
+            _quote_sources(envelope.citations, prompt.retrieved_evidence)
+            if envelope.extractive_claims
+            else ""
+        )
         return ComposedAnswer(
-            text=_in_chisa_voice(envelope.presented_answer or envelope.answer),
+            text=_in_chisa_voice(envelope.presented_answer or envelope.answer) + sources,
             abstained=False,
             citations=_snapshots(envelope.citations, prompt.retrieved_evidence),
             sentiment=response.parsed.get("sentiment", {}),
@@ -163,6 +181,49 @@ class GroundedComposer:
             and isinstance(claim.get("evidence_quote"), str)
         ]
         return await CrossLanguageClaimCheck.prepare(self._embedder, pairs)
+
+    async def compose_companion(
+        self,
+        question: str,
+        *,
+        emotion: EmotionState,
+        history: list[dict[str, str]],
+        memories: list[str],
+        summary: str | None,
+        budget: LLMCallBudget,
+    ) -> ComposedAnswer:
+        """Conversation in Chisa's own voice; no retrieval and no claims to bind (MODE-008)."""
+        built = self._builder.build(
+            emotion=emotion,
+            attachment_bonus=0.0,
+            memories=memories,
+            lore=[],
+            history=history,
+            user_message=question,
+            intent_name=COMPANION_INTENT,
+            conversation_summary=summary,
+            budget_mode=BudgetMode.SMALL_TALK,
+            is_small_talk=True,
+        ).prompt
+        prompt = built.model_copy(
+            update={
+                "temperature": COMPANION_TEMPERATURE,
+                "purpose": LLMPurpose.CHAT_RESPONSE,
+                "call_budget": budget,
+            }
+        )
+        response = await self._llm.generate(prompt)
+        text = response.parsed.get("response")
+        if not isinstance(text, str) or not text.strip():
+            return ComposedAnswer(TURN_FAILED, abstained=True, status="invalid_output")
+        if self._leakage_guard.inspect(prompt.system, text, allowed_source_texts=[]).leaked:
+            return ComposedAnswer(TURN_FAILED, abstained=True, status="output_leakage")
+        return ComposedAnswer(
+            text=text,
+            abstained=False,
+            sentiment=response.parsed.get("sentiment", {}),
+            status="companion",
+        )
 
     def _prompt(
         self,

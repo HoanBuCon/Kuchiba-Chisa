@@ -16,7 +16,7 @@ R1 đạt cổng thoát trên corpus `2026.11.03-4`: golden v2 đã duyệt đ�
 | S4 | Composer gọi `ContextBuilder` tại chỗ, grounding, ảnh chụp trích dẫn | PER-001, PER-005, GRD-001..005 | Xong phần lõi |
 | S5 | Thread, chế độ, `POST /api/v2/chat/turns` (SSE), ngân sách | CONV-001, MODE-001..007, ADV-001, ADV-009 | Xong, sau cờ `CHAT_V2_ENABLED` (mặc định tắt); chưa đo TTFT trên endpoint |
 | S6 | Core memory, `recall_lite`, RESONA | MEM-001, MEM-002, MEM-007, EMO-001..003 | Xong đọc, recall, cảm xúc và API sửa tay; job tự cập nhật core memory (MEM-005, MEM-010) còn thiếu |
-| S7 | Làn companion, triage; chạy song song hệ cũ, chuyển web rồi Discord | QUAL-001..004, QUAL-009 | |
+| S7 | Làn companion, triage; chạy song song hệ cũ, chuyển web rồi Discord | MODE-008, QUAL-001..006, QUAL-009 | Xong triage, làn companion và target đánh giá `--api v2`; còn chuyển web và Discord |
 
 Lệch nhỏ so với mục 7.1 của SRS: lượt v2 lưu ở bảng `thread_turns` thay vì thêm cột vào `messages`, vì `messages` bắt buộc có `user_id` và `conversation_id` mà khách vãng lai không có, và hệ cũ phải tiếp tục chạy. Gộp lại khi gỡ hệ cũ ở R6.
 
@@ -50,6 +50,24 @@ Vì vậy `CrossLanguageClaimCheck` kiểm tra nguyên văn tên, số và phủ
 Chạy đầu cuối với LLM thật trên 24 câu trả lời được và 6 câu ngoài phạm vi: câu chỉ có trích dẫn tiếng Anh giảm từ 13 xuống 3, dữ kiện đúng từ 37/40 lên 39/40, và 6/6 câu ngoài phạm vi đều abstain.
 
 **Giới hạn:** nhãn "claim đúng" là output của LLM, chưa được người kiểm từng câu; mẫu âm là biến đổi tự động; ngưỡng được đọc trên chính bộ này. Cần theo dõi trên câu hỏi thật. Nhóm câu chỉ khác nhau về nghĩa mà không đổi tên, số hay phủ định thì bộ kiểm tra này không phát hiện được.
+
+## Đánh giá toàn bộ golden qua `/api/v2`
+
+Dùng `python -m evals run --api v2`, corpus `2026.11.03-4`, LLM thật, 118 câu chấm được (2 câu nhiều phiên bị bỏ qua vì khách vãng lai không có trí nhớ dài hạn):
+
+| Chỉ số | Trước S7 | Sau S7 | Mục tiêu |
+|---|---|---|---|
+| Độ đúng | 0,881 | 0,924 (khoảng tin cậy 95%: 0,861–0,959) | |
+| Lore một bước | 0,925 | 0,950 | |
+| Liệt kê, chi tiết thoại | 1,0 | 1,0 | |
+| Nhiều bước | 0,556 | 0,444 | Chờ Agentic |
+| Ngoài phạm vi được abstain | 5/6 | 6/6 | |
+| Abstain nhầm (QUAL-004) | 6,2% | 3,6% | ≤ 5% |
+| Precision của abstain (QUAL-004) | 0,417 | 0,6 | ≥ 0,90: **chưa đạt** |
+| Xưng hô (QUAL-005) | 100% | 100% | 100% |
+| Triage sai (QUAL-006) | | 0/125 lượt | ≤ 10% |
+
+**Giới hạn:** luật triage và router được chỉnh ngay trên bộ này, nên số còn lạc quan. Bộ chấm chỉ tìm từ khoá: ví dụ `memory-002` được tính đúng dù Chisa nói về đồ uống của mình thay vì của người dùng, nên chất lượng làn companion chưa được đo thật. QUAL-001 và QUAL-002 chưa có phép đo riêng, và 2 câu nhiều phiên của QUAL-008 chưa chạy được. Các số này chưa đủ để bật v2 cho người dùng.
 
 ## Rủi ro cần xác nhận
 

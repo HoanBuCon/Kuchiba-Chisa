@@ -9,9 +9,17 @@ from dataclasses import dataclass, field
 from app.domain.ingestion.entity_linking import fold_for_matching
 from app.domain.ingestion.knowledge import AliasKind, KnowledgeBase
 
-LISTING_CUE = re.compile(r"\b(list|which|what are|all the|name all|liet ke|nhung|cac)\b")
-QUEST_WORD = re.compile(r"\b(quests?|missions?|nhiem vu)\b")
-RESONATOR_WORD = re.compile(r"\bresonators?\b")
+# The cue must ask for quests themselves: "which NPC ... in that quest" is not a list.
+ASKS_QUESTS = re.compile(
+    r"\b(which|what|list|all|name|liet ke|nhung|cac)\W+(?:\w+\W+){0,2}"
+    r"(?:quests?|missions?|nhiem vu)\b"
+    r"|\b(?:quests?|nhiem vu)(?:\W+\w+){0,2}\W+nao\b"
+)
+# Likewise for lists of Resonators.
+ASKS_RESONATORS = re.compile(
+    r"\b(which|what|list|all|name|liet ke|nhung|cac)\W+(?:\w+\W+){0,1}resonators?\b"
+    r"|\bresonators?\W+nao\b.*\b(?:va|and|hoac|or|o|tai|from|sinh|thuoc)\b"
+)
 CHAPTER = re.compile(r"\bchapter ([ivx]+)(?:\W+(prologue|segue|epilogue|act [ivx]+))?\b")
 RESONATOR_TYPE = "resonator"
 # Fields whose values name a category worth listing by, not a free-text description.
@@ -74,15 +82,13 @@ class QuestionRouter:
     def route(self, texts: Iterable[str], entities: tuple[str, ...]) -> QuestionRoute:
         """`texts` are the original and translated wording; a cue in either one counts."""
         folded = [fold_for_matching(text) for text in texts]
-        listing = any(LISTING_CUE.search(text) for text in folded)
-        quests = any(QUEST_WORD.search(text) for text in folded)
         route_fields: dict[str, str] = {}
         location = chapter = character = None
-        if listing and quests:
+        if any(ASKS_QUESTS.search(text) for text in folded):
             location = self._find_place(folded)
             chapter = self._find_chapter(folded)
             character = next((name for name in entities if name in self._people), None)
-        if listing and any(RESONATOR_WORD.search(text) for text in folded):
+        if any(ASKS_RESONATORS.search(text) for text in folded):
             route_fields = self._find_fields(folded)
         return QuestionRoute(entities, location, chapter, character, route_fields)
 
