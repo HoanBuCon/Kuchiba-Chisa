@@ -6,7 +6,9 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from enum import StrEnum
 from typing import Any
-from uuid import UUID
+from uuid import UUID, uuid5
+
+CHANNEL_THREAD_NAMESPACE = UUID("6f3c1d52-8a47-5e0b-9c21-4d7e8a10b3f6")
 
 
 class ChatMode(StrEnum):
@@ -34,6 +36,11 @@ class Thread:
     title: str | None
     created_at: datetime
     archived_at: datetime | None = None
+
+
+def channel_thread_id(owner: str, tenant_id: str | None, channel_id: str) -> UUID:
+    """One thread per person per channel, because a bot keeps no thread id (CONV-001)."""
+    return uuid5(CHANNEL_THREAD_NAMESPACE, f"{tenant_id or ''}:{channel_id}:{owner}")
 
 
 @dataclass(frozen=True)

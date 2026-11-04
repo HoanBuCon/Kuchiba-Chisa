@@ -308,6 +308,7 @@ services:
     environment:
       CORE_RAG_BASE_URL: http://app:8000
       CORE_RAG_CHAT_PATH: /api/v1/chat
+      CORE_RAG_CHAT_V2: ${CORE_RAG_CHAT_V2:-false}
       CORE_RAG_CLEAR_PATH_TEMPLATE: /api/v1/chat/clear/{user_id}
     networks:
       - chisa_edge

@@ -55,6 +55,8 @@ class TurnRequest:
     mode_override: ChatMode | None = None
     can_use_agentic: bool = False
     is_guest: bool = True
+    # Set for bots, which keep no thread id: the same channel always means the same thread.
+    channel_thread_id: UUID | None = None
 
 
 @dataclass(frozen=True)
@@ -225,6 +227,10 @@ class AdvancedTurnService:
         )
 
     async def _thread(self, request: TurnRequest) -> Thread:
+        if request.thread_id is None and request.channel_thread_id is not None:
+            return await self._threads.get_or_create(
+                request.channel_thread_id, request.owner, request.channel, ChatMode.ADVANCED
+            )
         if request.thread_id is None:
             return await self._threads.create(request.owner, request.channel, ChatMode.ADVANCED)
         thread = await self._threads.get(request.thread_id, request.owner)

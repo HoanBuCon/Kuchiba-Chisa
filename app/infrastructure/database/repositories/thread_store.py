@@ -55,6 +55,21 @@ class PostgresThreadStore:
             await session.refresh(row)
             return _thread(row)
 
+    async def get_or_create(
+        self, thread_id: UUID, owner: str, channel: str, mode: ChatMode
+    ) -> Thread:
+        async with self._sessions() as session:
+            await session.execute(
+                insert(ThreadModel)
+                .values(id=thread_id, owner_principal=owner, channel=channel, mode=mode.value)
+                .on_conflict_do_nothing(index_elements=[ThreadModel.id])
+            )
+            await session.commit()
+            row = await self._owned(session, thread_id, owner)
+            if row is None:
+                raise LookupError(str(thread_id))
+            return _thread(row)
+
     async def _owned(self, session: Any, thread_id: UUID, owner: str) -> ThreadModel | None:
         return await session.scalar(
             select(ThreadModel).where(

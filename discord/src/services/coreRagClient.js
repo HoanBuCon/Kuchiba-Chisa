@@ -5,10 +5,32 @@ import crypto from 'node:crypto';
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const encodeJwtPart = (value) => Buffer.from(JSON.stringify(value)).toString('base64url');
 
+// The same Discord message always maps to one turn, so a retry never answers twice (CH-004).
+export function discordTurnId(messageId) {
+  if (!messageId) return crypto.randomUUID();
+  const hex = crypto.createHash('sha1').update(`discord:${messageId}`).digest('hex');
+  const variant = ((parseInt(hex[16], 16) & 0x3) | 0x8).toString(16);
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-5${hex.slice(13, 16)}-${variant}${hex.slice(17, 20)}-${hex.slice(20, 32)}`;
+}
+
+export function parseTurnEvents(text) {
+  return text
+    .split(/\r?\n\r?\n/)
+    .filter((block) => block.trim())
+    .map((block) => {
+      const lines = block.split(/\r?\n/);
+      const event = lines.find((line) => line.startsWith('event:'))?.slice(6).trim();
+      const data = lines.find((line) => line.startsWith('data:'))?.slice(5).trim();
+      return { event, data: data ? JSON.parse(data) : {} };
+    });
+}
+
 export class CoreRagClient {
   constructor() {
     this.baseUrl = env.coreRag.baseUrl;
     this.chatPath = env.coreRag.chatPath;
+    this.chatV2Enabled = env.coreRag.chatV2Enabled;
+    this.chatV2Path = env.coreRag.chatV2Path;
     this.clearPathTemplate = env.coreRag.clearPathTemplate;
     this.timeoutMs = env.coreRag.timeoutMs;
     this.retryCount = env.coreRag.retryCount;
@@ -95,7 +117,47 @@ export class CoreRagClient {
     throw lastError;
   }
 
-  async ask({ coreUserId, guildId = null, channelId = null, message, username, channelName, guildName, images = [], isEphemeralReference = false } = {}) {
+  // Images and reply references have no v2 equivalent yet, so those messages stay on v1.
+  usesChatV2({ images = [], isEphemeralReference = false }) {
+    return this.chatV2Enabled && images.length === 0 && !isEphemeralReference;
+  }
+
+  async askV2({ coreUserId, guildId = null, channelId = null, message, username, messageId = null }) {
+    const workloadToken = this.createWorkloadToken({
+      subjectId: coreUserId,
+      tenantId: guildId,
+      channelId,
+      displayName: username,
+      scopes: ['chat:write'],
+    });
+    const payload = await this.requestJson(this.buildUrl(this.chatV2Path), {
+      method: 'POST',
+      headers: { authorization: `Bearer ${workloadToken}` },
+      body: JSON.stringify({ message, turn_id: discordTurnId(messageId) }),
+    });
+    const events = parseTurnEvents(payload.raw ?? '');
+    const failed = events.find((item) => item.event === 'turn.failed');
+    if (failed) {
+      return { response: failed.data.message, emotions: null, loopThinkingActivated: false, imagesProcessed: [], attachedImages: [], raw: failed.data };
+    }
+    const completed = events.find((item) => item.event === 'turn.completed');
+    if (!completed) {
+      throw new Error('Core v2 stream ended without a final event');
+    }
+    return {
+      response: completed.data.response ?? '',
+      emotions: completed.data.emotions ?? null,
+      loopThinkingActivated: false,
+      imagesProcessed: [],
+      attachedImages: [],
+      raw: completed.data,
+    };
+  }
+
+  async ask({ coreUserId, guildId = null, channelId = null, message, username, channelName, guildName, images = [], isEphemeralReference = false, messageId = null } = {}) {
+    if (this.usesChatV2({ images, isEphemeralReference })) {
+      return this.askV2({ coreUserId, guildId, channelId, message, username, messageId });
+    }
     const url = this.buildUrl(this.chatPath);
     const workloadToken = this.createWorkloadToken({
       subjectId: coreUserId,
