@@ -53,6 +53,8 @@ export const env = {
   coreRag: {
     baseUrl: trimTrailingSlash(process.env.CORE_RAG_BASE_URL ?? 'http://localhost:8000'),
     chatPath: process.env.CORE_RAG_CHAT_PATH ?? '/api/v1/chat',
+    chatV2Enabled: parseBoolean(process.env.CORE_RAG_CHAT_V2, false),
+    chatV2Path: process.env.CORE_RAG_CHAT_V2_PATH ?? '/api/v2/chat/turns',
     clearPathTemplate: process.env.CORE_RAG_CLEAR_PATH_TEMPLATE ?? '/api/v1/chat/clear/{user_id}',
     timeoutMs: parseInteger(process.env.CORE_RAG_TIMEOUT_MS, 60_000),
     retryCount: parseInteger(process.env.CORE_RAG_RETRY_COUNT, 0),

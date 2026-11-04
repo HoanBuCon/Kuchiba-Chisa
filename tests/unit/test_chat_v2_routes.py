@@ -8,7 +8,7 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from app.domain.interfaces.llm_provider import LLMError
-from app.domain.models.thread import ChatMode, Thread, TurnRecord
+from app.domain.models.thread import ChatMode, Thread, TurnRecord, channel_thread_id
 from app.domain.services.chisa_voice import TURN_FAILED
 from app.domain.value_objects.principal import PrincipalContext
 from app.interface.api.dependencies.chat_admission import admit_chat
@@ -215,3 +215,61 @@ def test_stream_disables_proxy_buffering(client, monkeypatch) -> None:
     response = client.post("/api/v2/chat/turns", json=_turn())
 
     assert response.headers["x-accel-buffering"] == "no"
+
+
+class RecordingTurns:
+    def __init__(self) -> None:
+        self.requests = []
+
+    async def run(self, request):
+        self.requests.append(request)
+        return
+        yield
+
+
+def _bot(**changes) -> PrincipalContext:
+    values = {
+        "subject_id": "user-1",
+        "tenant_id": "guild-1",
+        "channel_id": "channel-1",
+        "source": "discord",
+        "kind": "workload",
+        "scopes": frozenset({"chat:write"}),
+        "authentication": "workload",
+        **changes,
+    }
+    return PrincipalContext(**values)
+
+
+def _recorded_request(client, monkeypatch, principal):
+    _enable(monkeypatch, True)
+    turns = RecordingTurns()
+    monkeypatch.setattr(Runtime, "turns", turns)
+    client.app.dependency_overrides[get_current_principal] = lambda: principal
+    assert client.post("/api/v2/chat/turns", json=_turn()).status_code == 200
+    return turns.requests[0]
+
+
+def test_bot_users_keep_long_term_memory_and_one_thread_per_channel(client, monkeypatch) -> None:
+    request = _recorded_request(client, monkeypatch, _bot())
+
+    assert request.is_guest is False
+    assert request.channel_thread_id == channel_thread_id(
+        chat_v2.normalize_user_id_str("user-1"), "guild-1", "channel-1"
+    )
+
+
+def test_web_guests_stay_guests_and_get_no_channel_thread(client, monkeypatch) -> None:
+    request = _recorded_request(client, monkeypatch, PRINCIPAL)
+
+    assert request.is_guest is True
+    assert request.channel_thread_id is None
+
+
+def test_channel_threads_differ_by_person_and_by_channel() -> None:
+    base = channel_thread_id("a", "g", "c")
+
+    assert base == channel_thread_id("a", "g", "c")
+    assert base != channel_thread_id("b", "g", "c")
+    assert base != channel_thread_id("a", "g", "d")
+    assert base != channel_thread_id("a", None, "c")
