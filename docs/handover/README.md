@@ -1,0 +1,30 @@
+# Báo cáo bàn giao
+
+Mỗi tính năng hoàn thành có một báo cáo ngắn, nằm trong cùng PR với tính năng đó. Viết cô đọng; mục nào không có nội dung thì bỏ.
+
+## Đặt tên
+
+```text
+<YYYY-MM-DD>_<lát-cắt>_<ten-ngan-khong-dau>.md
+```
+
+Ví dụ: `2026-11-04_r2-s7_triage-lan-companion.md`.
+
+## Nội dung
+
+Bảng đầu file gồm ngày, người thực hiện, nhánh và PR, rồi đến các mục:
+
+1. **Thay đổi:** phần vừa làm và cách dùng.
+2. **Quyết định:** quy ước mới hoặc đánh đổi cần biết.
+3. **Sự cố:** lỗi đã gặp và cách xử lý.
+4. **Kiểm tra:** kết quả thực tế, tách test với lần chạy thật.
+5. **Chưa kiểm tra.**
+6. **Việc còn lại.**
+
+Ghi đúng trạng thái PR, kể cả khi chưa merge. Không ghi secret hay dữ liệu người dùng thật.
+
+## Danh sách
+
+| Ngày | Lát cắt | Chủ đề |
+|---|---|---|
+| 2026-11-04 | R2 S7 | [Triage, làn companion và đánh giá qua API v2](2026-11-04_r2-s7_triage-lan-companion.md) |
