@@ -336,3 +336,8 @@ def test_instrumentation_failure_is_nonfatal_at_the_stable_runtime_boundary() ->
     telemetry.count(CounterSignal.HTTP_REQUESTS, dimensions)
     telemetry.observe(HistogramSignal.HTTP_DURATION, 0.01, dimensions)
     telemetry.set_gauge(GaugeSignal.HTTP_ACTIVE_REQUESTS, 0, dimensions)
+
+
+def test_v2_routes_have_their_own_groups_without_identifiers() -> None:
+    assert _route_group("/api/v2/chat/turns") == "/api/v2/chat/turns"
+    assert _route_group("/api/v2/threads/{thread_id}") == "/api/v2/other"

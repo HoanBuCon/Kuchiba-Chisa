@@ -26,7 +26,7 @@ The source of truth is **[SRS v2](SRS_Chisa_v2_Advanced_Agentic_RAG.md)**. Secti
   commented-out code, banners or emoji; one-sentence docstrings; `TODO` must cite a requirement ID or issue.
 - When touching legacy code, clean what you touch (STD-PY-013).
 - Every change needs tests. Run the mandatory checks for the change type (SRS §14.10).
-- Every finished feature gets a short handover report in the same PR ([format](handover/README.md)).
+- Every finished feature gets a short handover report in the same PR (STD-DOC-007, [format](handover/README.md)).
 
 ## Commands
 

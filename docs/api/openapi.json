@@ -1313,6 +1313,17 @@
         "title": "StatusResponse",
         "type": "object"
       },
+      "ThreadCreate": {
+        "additionalProperties": false,
+        "properties": {
+          "mode": {
+            "$ref": "#/components/schemas/ChatMode",
+            "default": "advanced"
+          }
+        },
+        "title": "ThreadCreate",
+        "type": "object"
+      },
       "ThreadPatch": {
         "additionalProperties": false,
         "properties": {
@@ -1420,6 +1431,48 @@
           "turn_id"
         ],
         "title": "TurnBody",
+        "type": "object"
+      },
+      "TurnView": {
+        "properties": {
+          "answer": {
+            "title": "Answer",
+            "type": "string"
+          },
+          "citations": {
+            "items": {
+              "type": "object"
+            },
+            "title": "Citations",
+            "type": "array"
+          },
+          "lane": {
+            "title": "Lane",
+            "type": "string"
+          },
+          "question": {
+            "title": "Question",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "turn_id": {
+            "format": "uuid",
+            "title": "Turn Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "turn_id",
+          "question",
+          "answer",
+          "lane",
+          "status",
+          "citations"
+        ],
+        "title": "TurnView",
         "type": "object"
       },
       "ValidationError": {
@@ -2819,6 +2872,45 @@
         "tags": [
           "Chat v2"
         ]
+      },
+      "post": {
+        "operationId": "create_thread_api_v2_threads_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ThreadCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ThreadView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Thread",
+        "tags": [
+          "Chat v2"
+        ]
       }
     },
     "/api/v2/threads/{thread_id}": {
@@ -2944,6 +3036,53 @@
           }
         },
         "summary": "Patch Thread",
+        "tags": [
+          "Chat v2"
+        ]
+      }
+    },
+    "/api/v2/threads/{thread_id}/turns": {
+      "get": {
+        "operationId": "list_thread_turns_api_v2_threads__thread_id__turns_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "thread_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Thread Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/TurnView"
+                  },
+                  "title": "Response List Thread Turns Api V2 Threads  Thread Id  Turns Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Thread Turns",
         "tags": [
           "Chat v2"
         ]

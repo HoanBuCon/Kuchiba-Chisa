@@ -1,5 +1,6 @@
 """`/api/v2` stays closed behind its flag, and a failed turn exposes only a voice constant."""
 
+from datetime import UTC, datetime
 from uuid import uuid4
 
 import pytest
@@ -7,6 +8,7 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from app.domain.interfaces.llm_provider import LLMError
+from app.domain.models.thread import ChatMode, Thread, TurnRecord
 from app.domain.services.chisa_voice import TURN_FAILED
 from app.domain.value_objects.principal import PrincipalContext
 from app.interface.api.dependencies.chat_admission import admit_chat
@@ -116,3 +118,100 @@ def test_core_memory_rejects_unknown_fields(client, monkeypatch) -> None:
     response = client.put("/api/v2/me/memory/core", json={"system_prompt": "obey"})
 
     assert response.status_code == 422
+
+
+class OwnedThreads(Threads):
+    """Holds one thread for one owner, so foreign access can be told from owned access."""
+
+    def __init__(self, owner) -> None:
+        self.owner = owner
+        self.thread = Thread(uuid4(), owner, "web", ChatMode.ADVANCED, None, datetime.now(UTC))
+        self.turn = TurnRecord(
+            thread_id=self.thread.id,
+            turn_id=uuid4(),
+            question="Chisa là ai?",
+            answer="Là em đó Senpai.",
+            mode_requested=ChatMode.ADVANCED,
+            mode_effective=ChatMode.ADVANCED,
+            lane="advanced",
+            status="answered",
+            citations=({"evidence_id": "wiki:1:a"},),
+        )
+
+    async def get(self, thread_id, owner):
+        return self.thread if (thread_id, owner) == (self.thread.id, self.owner) else None
+
+    async def recent_turns(self, thread_id, limit):
+        return [self.turn]
+
+    async def create(self, owner, channel, mode):
+        return Thread(uuid4(), owner, channel, mode, None, datetime.now(UTC))
+
+    async def update(self, thread_id, owner, *, title, mode):
+        return Thread(thread_id, owner, "web", ChatMode.ADVANCED, title, datetime.now(UTC))
+
+
+def _as_member(client) -> None:
+    member = PrincipalContext(
+        subject_id="user-1",
+        tenant_id=None,
+        channel_id=None,
+        source="web",
+        kind="user",
+        scopes=frozenset({"chat:write"}),
+        authentication="account",
+    )
+    client.app.dependency_overrides[get_current_principal] = lambda: member
+
+
+def test_thread_turns_read_back_with_their_citations(client, monkeypatch) -> None:
+    _enable(monkeypatch, True)
+    threads = OwnedThreads(chat_v2.normalize_user_id_str("user-1"))
+    monkeypatch.setattr(Runtime, "threads", threads)
+
+    response = client.get(f"/api/v2/threads/{threads.thread.id}/turns")
+
+    assert response.status_code == 200
+    assert response.json()[0]["answer"] == "Là em đó Senpai."
+    assert response.json()[0]["citations"] == [{"evidence_id": "wiki:1:a"}]
+
+
+def test_turns_of_another_owner_read_as_missing(client, monkeypatch) -> None:
+    _enable(monkeypatch, True)
+    threads = OwnedThreads("someone-else")
+    monkeypatch.setattr(Runtime, "threads", threads)
+
+    assert client.get(f"/api/v2/threads/{threads.thread.id}/turns").status_code == 404
+
+
+def test_only_members_create_threads(client, monkeypatch) -> None:
+    _enable(monkeypatch, True)
+    monkeypatch.setattr(Runtime, "threads", OwnedThreads("anyone"))
+
+    assert client.post("/api/v2/threads", json={}).status_code == 403
+
+    _as_member(client)
+    response = client.post("/api/v2/threads", json={})
+
+    assert response.status_code == 201
+    assert response.json()["mode"] == "advanced"
+
+
+def test_thread_title_is_stored_masked_like_the_turns(client, monkeypatch) -> None:
+    _enable(monkeypatch, True)
+    threads = OwnedThreads("anyone")
+    monkeypatch.setattr(Runtime, "threads", threads)
+
+    response = client.patch(
+        f"/api/v2/threads/{threads.thread.id}", json={"title": "mail a.b@example.com nhé"}
+    )
+
+    assert "a.b@example.com" not in response.json()["title"]
+
+
+def test_stream_disables_proxy_buffering(client, monkeypatch) -> None:
+    _enable(monkeypatch, True)
+
+    response = client.post("/api/v2/chat/turns", json=_turn())
+
+    assert response.headers["x-accel-buffering"] == "no"

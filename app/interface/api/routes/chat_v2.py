@@ -14,19 +14,22 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.application.chat_turns import (
     EVENT_FAILED,
+    EVENT_TOKEN,
     ThreadNotFoundError,
     TurnRequest,
 )
 from app.application.dependencies import get_chat_turn_runtime, get_memory_policy_service
 from app.config.settings import settings
 from app.domain.interfaces.llm_provider import LLMError
-from app.domain.models.thread import ChatMode, Thread
+from app.domain.models.thread import ChatMode, Thread, TurnRecord
 from app.domain.services.chisa_voice import TURN_FAILED
 from app.domain.services.core_memory import CoreMemory
+from app.domain.services.guardrails.pii_redaction import PiiRedactor
 from app.domain.value_objects.principal import PrincipalContext
 from app.infrastructure.database.engine import get_db_session
 from app.interface.api.dependencies.chat_admission import Admission, admit_chat
 from app.interface.api.dependencies.security import require_scope
+from app.interface.middlewares.observability import mark_stream_first_token
 from app.shared.utils.user_identity import normalize_user_id, normalize_user_id_str
 
 router = APIRouter(tags=["Chat v2"])
@@ -34,7 +37,14 @@ Writer = Annotated[PrincipalContext, Depends(require_scope("chat:write"))]
 MAX_MESSAGE_CHARS = 4000
 MAX_TITLE_CHARS = 255
 THREAD_LIST_LIMIT = 50
+THREAD_TURNS_LIMIT = 50
+STREAM_HEADERS = {
+    "Cache-Control": "no-cache",
+    "Connection": "keep-alive",
+    "X-Accel-Buffering": "no",
+}
 ACCOUNT_AUTHENTICATION = "account"
+PII_REDACTOR = PiiRedactor()
 
 
 class TurnBody(BaseModel):
@@ -44,6 +54,12 @@ class TurnBody(BaseModel):
     turn_id: UUID
     thread_id: UUID | None = None
     mode_override: ChatMode | None = None
+
+
+class ThreadCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    mode: ChatMode = ChatMode.ADVANCED
 
 
 class ThreadPatch(BaseModel):
@@ -60,8 +76,28 @@ class ThreadView(BaseModel):
     title: str | None
 
 
+class TurnView(BaseModel):
+    turn_id: UUID
+    question: str
+    answer: str
+    lane: str
+    status: str
+    citations: list[dict[str, Any]]
+
+
 def _view(thread: Thread) -> ThreadView:
     return ThreadView(id=thread.id, channel=thread.channel, mode=thread.mode, title=thread.title)
+
+
+def _turn_view(turn: TurnRecord) -> TurnView:
+    return TurnView(
+        turn_id=turn.turn_id,
+        question=turn.question,
+        answer=turn.answer,
+        lane=turn.lane,
+        status=turn.status,
+        citations=list(turn.citations),
+    )
 
 
 def _owner(principal: PrincipalContext) -> str:
@@ -112,12 +148,14 @@ async def create_turn(
     async def events() -> AsyncIterator[str]:
         try:
             async for event in runtime.turns.run(request):
+                if event.type == EVENT_TOKEN:
+                    mark_stream_first_token(http_request.scope)
                 yield _sse(event.type, event.data)
         except (LLMError, ThreadNotFoundError) as error:
             # Only a bounded class name leaves the server; the message is a voice constant.
             yield _sse(EVENT_FAILED, {"code": type(error).__name__, "message": TURN_FAILED})
 
-    return StreamingResponse(events(), media_type="text/event-stream")
+    return StreamingResponse(events(), media_type="text/event-stream", headers=STREAM_HEADERS)
 
 
 @router.get("/threads", dependencies=[Depends(_enabled)])
@@ -125,6 +163,23 @@ async def list_threads(principal: Writer) -> list[ThreadView]:
     runtime = await get_chat_turn_runtime()
     threads = await runtime.threads.list_for(_owner(principal), THREAD_LIST_LIMIT)
     return [_view(thread) for thread in threads]
+
+
+@router.post("/threads", dependencies=[Depends(_enabled)], status_code=status.HTTP_201_CREATED)
+async def create_thread(body: ThreadCreate, principal: Writer) -> ThreadView:
+    _require_member(principal)
+    runtime = await get_chat_turn_runtime()
+    return _view(await runtime.threads.create(_owner(principal), principal.source, body.mode))
+
+
+@router.get("/threads/{thread_id}/turns", dependencies=[Depends(_enabled)])
+async def list_thread_turns(thread_id: UUID, principal: Writer) -> list[TurnView]:
+    runtime = await get_chat_turn_runtime()
+    # The store reads turns by thread alone, so ownership is settled here first.
+    if await runtime.threads.get(thread_id, _owner(principal)) is None:
+        raise _not_found()
+    turns = await runtime.threads.recent_turns(thread_id, THREAD_TURNS_LIMIT)
+    return [_turn_view(turn) for turn in turns]
 
 
 @router.get("/threads/{thread_id}", dependencies=[Depends(_enabled)])
@@ -139,9 +194,9 @@ async def get_thread(thread_id: UUID, principal: Writer) -> ThreadView:
 @router.patch("/threads/{thread_id}", dependencies=[Depends(_enabled)])
 async def patch_thread(thread_id: UUID, body: ThreadPatch, principal: Writer) -> ThreadView:
     runtime = await get_chat_turn_runtime()
-    thread = await runtime.threads.update(
-        thread_id, _owner(principal), title=body.title, mode=body.mode
-    )
+    # Clients title a thread from its first message, which turns only ever store masked.
+    title = PII_REDACTOR.redact(body.title).value if body.title else None
+    thread = await runtime.threads.update(thread_id, _owner(principal), title=title, mode=body.mode)
     if thread is None:
         raise _not_found()
     return _view(thread)

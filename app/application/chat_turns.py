@@ -25,11 +25,11 @@ from app.domain.services.guardrails.pii_redaction import PiiRedactor
 from app.domain.services.knowledge.advanced_retrieval import AdvancedEvidence
 from app.domain.services.knowledge.composer import ComposedAnswer
 from app.domain.services.knowledge.lane_router import Lane, choose_lane
+from app.domain.services.state_manager import StateManager
 
 # The translation and the Composer; a turn never spends a third call (ADV-009).
 ADVANCED_MAX_LLM_CALLS = 2
 ADVANCED_DEADLINE_SECONDS = 30.0
-LANE_ADVANCED = "advanced"
 HISTORY_TURNS = 6
 EVENT_STARTED = "turn.started"
 EVENT_EVIDENCE = "evidence.added"
@@ -37,7 +37,8 @@ EVENT_TOKEN = "token"
 EVENT_COMPLETED = "turn.completed"
 EVENT_FAILED = "turn.failed"
 STATUS_INPUT_BLOCKED = "input_blocked"
-_SENTENCE = re.compile(r"(?<=[.!?])\s+")
+# Keeps the whitespace, so the deltas of a turn join back into its exact text.
+_SENTENCE = re.compile(r"(?<=[.!?]\s)")
 
 
 class ThreadNotFoundError(LookupError):
@@ -103,20 +104,6 @@ def _history(turns: list[TurnRecord]) -> list[dict[str, str]]:
     return messages
 
 
-def _completed(record: TurnRecord, replayed: bool) -> TurnEvent:
-    return TurnEvent(
-        EVENT_COMPLETED,
-        {
-            "turn_id": str(record.turn_id),
-            "thread_id": str(record.thread_id),
-            "response": record.answer,
-            "citations": list(record.citations),
-            "status": record.status,
-            "replayed": replayed,
-        },
-    )
-
-
 class AdvancedTurnService:
     """Agentic does not exist yet, so the mode is decided here and always clamps to Advanced."""
 
@@ -144,7 +131,7 @@ class AdvancedTurnService:
         existing = await self._threads.find_turn(thread.id, request.turn_id)
         if existing is not None:
             # A retried request must not spend LLM calls or store the exchange twice.
-            yield _completed(existing, replayed=True)
+            yield await self._completed(request.owner, existing, replayed=True)
             return
         decision = resolve_mode(
             override=request.mode_override,
@@ -152,20 +139,22 @@ class AdvancedTurnService:
             account_default=None,
             can_use_agentic=request.can_use_agentic,
         )
-        yield self._started(request, thread, decision)
         # Everything below reaches providers or storage, so it sees only the masked text.
         request = replace(request, message=self._pii.redact(request.message).value)
+        assessment = self._injection_guard.assess(request.message, ContentSource.USER)
+        blocked = assessment.action is GuardAction.BLOCK
+        lane = Lane.ADVANCED if blocked else self._lane(request.message)
+        yield self._started(request, thread, decision, lane)
         budget = LLMCallBudget.with_deadline(
             max_calls=ADVANCED_MAX_LLM_CALLS, timeout_seconds=ADVANCED_DEADLINE_SECONDS
         )
-        assessment = self._injection_guard.assess(request.message, ContentSource.USER)
-        if assessment.action is GuardAction.BLOCK:
+        if blocked:
             refused = ComposedAnswer(INPUT_BLOCKED, abstained=True, status=STATUS_INPUT_BLOCKED)
             record = self._record(request, thread, decision, refused, (), budget, Lane.ADVANCED)
             await self._threads.save_turn(record)
-            yield _completed(record, replayed=False)
+            yield await self._completed(request.owner, record, replayed=False)
             return
-        if self._lane(request.message) is Lane.COMPANION:
+        if lane is Lane.COMPANION:
             answer = await self._companion(request, thread, budget)
             record = self._record(request, thread, decision, answer, (), budget, Lane.COMPANION)
             async for event in self._deliver(request, record, answer):
@@ -197,7 +186,25 @@ class AdvancedTurnService:
             await self._personal.apply_sentiment(request.owner, answer.sentiment)
         for piece in _SENTENCE.split(answer.text):
             yield TurnEvent(EVENT_TOKEN, {"delta": piece})
-        yield _completed(record, replayed=False)
+        yield await self._completed(request.owner, record, replayed=False)
+
+    async def _completed(self, owner: str, record: TurnRecord, replayed: bool) -> TurnEvent:
+        emotion = await self._personal.current_emotion(owner) if self._personal else None
+        return TurnEvent(
+            EVENT_COMPLETED,
+            {
+                "turn_id": str(record.turn_id),
+                "thread_id": str(record.thread_id),
+                "response": record.answer,
+                "citations": list(record.citations),
+                "status": record.status,
+                "replayed": replayed,
+                "emotions": emotion.values() if emotion else None,
+                "emotion_caption": (
+                    StateManager.get_emotion_summary_caption(emotion) if emotion else None
+                ),
+            },
+        )
 
     def _lane(self, message: str) -> Lane:
         entities = self._linker.link(message) if self._linker is not None else ()
@@ -226,7 +233,9 @@ class AdvancedTurnService:
         return thread
 
     @staticmethod
-    def _started(request: TurnRequest, thread: Thread, decision: ModeDecision) -> TurnEvent:
+    def _started(
+        request: TurnRequest, thread: Thread, decision: ModeDecision, lane: Lane
+    ) -> TurnEvent:
         reason = decision.downgrade_reason
         return TurnEvent(
             EVENT_STARTED,
@@ -234,7 +243,7 @@ class AdvancedTurnService:
                 "turn_id": str(request.turn_id),
                 "thread_id": str(thread.id),
                 "mode_effective": decision.effective.value,
-                "lane": LANE_ADVANCED,
+                "lane": lane.value,
                 "downgrade_reason": reason.value if reason else None,
             },
         )

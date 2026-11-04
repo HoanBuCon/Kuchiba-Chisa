@@ -267,3 +267,33 @@ async def test_companion_sees_the_thread_history() -> None:
     await _events(service, _request(message="Anh tên là gì nhỉ?", thread_id=thread_id))
 
     assert composer.calls[1][2]["history"][0]["content"] == "Anh tên là Khoa nhé."
+
+
+async def test_started_event_names_the_lane_the_turn_takes() -> None:
+    grounded, _, _, _ = _service()
+    companion, _, _, _ = _service(composer=CompanionComposer())
+
+    grounded_events = await _events(grounded, _request())
+    companion_events = await _events(companion, _request(message="Anh thích trà sữa lắm."))
+
+    assert grounded_events[0].data["lane"] == "advanced"
+    assert companion_events[0].data["lane"] == "companion"
+
+
+async def test_without_personal_context_the_completed_event_has_no_emotion() -> None:
+    service, _, _, _ = _service()
+
+    events = await _events(service, _request())
+
+    assert events[-1].data["emotions"] is None
+    assert events[-1].data["emotion_caption"] is None
+
+
+async def test_token_deltas_join_back_into_the_exact_answer() -> None:
+    service, _, _, _ = _service()
+
+    events = await _events(service, _request())
+
+    deltas = [event.data["delta"] for event in events if event.type == EVENT_TOKEN]
+    assert len(deltas) == 2
+    assert "".join(deltas) == events[-1].data["response"]

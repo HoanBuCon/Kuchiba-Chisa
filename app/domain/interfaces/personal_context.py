@@ -25,6 +25,10 @@ class IPersonalContext(Protocol):
         """Update RESONA once for a stored turn (EMO-002, EMO-003)."""
         ...
 
+    async def current_emotion(self, owner: str) -> EmotionState | None:
+        """None when it cannot be read: the answer is already stored and must still arrive."""
+        ...
+
 
 class IPersonalDataPurge(Protocol):
     """Runs in the caller's transaction, so erasure succeeds or fails as one (MEM-008)."""
