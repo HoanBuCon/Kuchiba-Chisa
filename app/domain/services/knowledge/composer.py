@@ -17,6 +17,7 @@ from app.domain.interfaces.llm_provider import (
 from app.domain.models.evidence import Evidence
 from app.domain.services.budget_mode import BudgetMode
 from app.domain.services.chisa_voice import (
+    COMPANION_ADDRESS_NOTE,
     GROUNDED_ABSTENTION,
     GROUNDED_ANSWER_LEAD,
     GROUNDED_EXTRACTIVE_FRAME,
@@ -209,6 +210,8 @@ class GroundedComposer:
         ).prompt
         prompt = built.model_copy(
             update={
+                # Added here so the protected persona prompts stay verbatim (CON-001).
+                "system": f"{built.system}\n\n{COMPANION_ADDRESS_NOTE}",
                 "temperature": COMPANION_TEMPERATURE,
                 "purpose": LLMPurpose.CHAT_RESPONSE,
                 "call_budget": budget,

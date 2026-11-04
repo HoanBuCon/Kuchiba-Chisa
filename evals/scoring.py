@@ -22,6 +22,11 @@ HIT_K = 5
 MRR_K = 10
 
 
+def _citations(observation: Observation) -> tuple[object, ...]:
+    cited = observation.raw.get("citations")
+    return tuple(cited) if isinstance(cited, list) else ()
+
+
 class Status(StrEnum):
     SCORED = "scored"
     SKIPPED = "skipped"
@@ -42,6 +47,7 @@ class CaseResult:
     latency_ms: float | None = None
     answer: str = ""
     detail: str = ""
+    citations: tuple[object, ...] = ()
 
 
 def detect_abstain(observation: Observation, markers: Sequence[str]) -> bool:
@@ -85,6 +91,7 @@ def score_case(
         persona_ok=persona_ok(case, observation.answer),
         latency_ms=observation.latency_ms,
         answer=observation.answer,
+        citations=_citations(observation),
     )
 
 
