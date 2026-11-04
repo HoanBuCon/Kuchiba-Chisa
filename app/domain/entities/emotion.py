@@ -1,6 +1,18 @@
 from dataclasses import dataclass
 from uuid import UUID
 
+EMOTION_DIMENSIONS = (
+    "joy",
+    "sadness",
+    "trust",
+    "attachment",
+    "irritation",
+    "shyness",
+    "curiosity",
+    "comfort",
+)
+
+
 @dataclass
 class EmotionState:
     user_id: UUID
@@ -13,6 +25,10 @@ class EmotionState:
     curiosity: float = 0.10
     comfort: float = 0.50
     updated_at: int = 0
+
+    def values(self) -> dict[str, float]:
+        """The eight RESONA dimensions by name."""
+        return {name: getattr(self, name) for name in EMOTION_DIMENSIONS}
 
 
 @dataclass(frozen=True)

@@ -86,3 +86,24 @@ def test_anonymous_session_key_uses_only_trusted_network_address(monkeypatch):
     assert limiter._anonymous_session_key(client_ip) == limiter._anonymous_session_key(
         "198.51.100.20"
     )
+
+
+def test_every_v2_chat_surface_is_rate_limited() -> None:
+    prefixes = RateLimitMiddleware.RATE_LIMITED_PREFIXES
+
+    for path in ("/api/v2/chat/turns", "/api/v2/threads", "/api/v2/me/memory/core"):
+        assert any(path.startswith(prefix) for prefix in prefixes)
+
+
+def test_v2_turns_use_the_tighter_message_bucket() -> None:
+    bucket = RateLimitMiddleware._route_bucket("POST", "/api/v2/chat/turns")
+
+    assert bucket in RateLimitMiddleware.CHAT_MESSAGE_ROUTES
+
+
+def test_v2_thread_ids_cannot_create_new_buckets() -> None:
+    first = RateLimitMiddleware._route_bucket("GET", "/api/v2/threads/a/turns")
+    second = RateLimitMiddleware._route_bucket("GET", "/api/v2/threads/b/turns")
+
+    assert first == second
+    assert first != RateLimitMiddleware._route_bucket("GET", "/api/v2/threads/a")

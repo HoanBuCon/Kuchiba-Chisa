@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+from collections.abc import MutableMapping
 from time import monotonic
 from typing import Any
 
@@ -21,7 +22,7 @@ from app.domain.interfaces.observability import (
 _STREAM_FIRST_TOKEN_AT_KEY = "chisa.observability.first_token_at"
 
 
-def mark_stream_first_token(scope: dict[str, Any]) -> None:
+def mark_stream_first_token(scope: MutableMapping[str, Any]) -> None:
     """Record the first emitted token time without inspecting stream content."""
     scope.setdefault(_STREAM_FIRST_TOKEN_AT_KEY, monotonic())
 
@@ -29,8 +30,15 @@ def mark_stream_first_token(scope: dict[str, Any]) -> None:
 def _route_group(path_template: str | None) -> str:
     if path_template in {"/health", "/ready"}:
         return path_template
-    if path_template in {"/api/v1/chat", "/api/v1/chat/stream", "/api/v1/community/chat"}:
+    if path_template in {
+        "/api/v1/chat",
+        "/api/v1/chat/stream",
+        "/api/v1/community/chat",
+        "/api/v2/chat/turns",
+    }:
         return path_template
+    if path_template and path_template.startswith("/api/v2/"):
+        return "/api/v2/other"
     for prefix in ("auth", "chat", "community", "admin"):
         if path_template and path_template.startswith(f"/api/v1/{prefix}"):
             return f"/api/v1/{prefix}/other"

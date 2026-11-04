@@ -7,7 +7,7 @@ from typing import Any
 
 from sqlalchemy.exc import SQLAlchemyError
 
-from app.domain.entities.emotion import EmotionMutation, EmotionState
+from app.domain.entities.emotion import EMOTION_DIMENSIONS, EmotionMutation, EmotionState
 from app.domain.interfaces.embedding_provider import IEmbeddingProvider
 from app.domain.interfaces.personal_context import ICoreMemoryStore, PersonalContext
 from app.domain.services.core_memory import render_core_memory
@@ -26,11 +26,6 @@ MEMORY_COLLECTION = "memories"
 RECALL_CANDIDATES = 10
 RECALL_TOP_K = 5
 QUERY_PREFIX = "query: "
-EMOTION_FIELDS = ("joy", "sadness", "trust", "attachment", "irritation", "shyness", "curiosity")
-
-
-def _emotion_values(emotion: EmotionState) -> dict[str, float]:
-    return {name: getattr(emotion, name) for name in (*EMOTION_FIELDS, "comfort")}
 
 
 class PostgresPersonalContext:
@@ -76,7 +71,7 @@ class PostgresPersonalContext:
             collection=MEMORY_COLLECTION,
             query_vector=vector,
             user_id=user_id,
-            current_emotion=_emotion_values(emotion),
+            current_emotion=emotion.values(),
             limit=RECALL_CANDIDATES,
             top_k=RECALL_TOP_K,
         )
@@ -90,7 +85,18 @@ class PostgresPersonalContext:
             emotion = await repository.get_emotion_state(user_id)
             delta = self._engine.update(emotion, sentiment_analysis=dict(sentiment))
             mutation = EmotionMutation(
-                **{name: getattr(delta, name) for name in (*EMOTION_FIELDS, "comfort")}
+                **{name: getattr(delta, name) for name in EMOTION_DIMENSIONS}
             )
             await repository.apply_mutation(user_id, mutation, updated_at=emotion.updated_at)
             await session.commit()
+
+    async def current_emotion(self, owner: str) -> EmotionState | None:
+        user_id = normalize_user_id(owner)
+        try:
+            async with self._sessions() as session:
+                await SqlAlchemyUserRepository(session).get_or_create_user(user_id)
+                emotion = await SqlAlchemyEmotionRepository(session).get_emotion_state(user_id)
+                await session.commit()
+        except SQLAlchemyError:
+            return None
+        return emotion

@@ -3,7 +3,7 @@
 | Thuộc tính | Giá trị |
 |---|---|
 | Tài liệu | SRS cho hệ thống mới của Kuchiba Chisa: hai chế độ Advanced RAG / Agentic RAG, phân quyền 4 vai trò, trí nhớ và cảm xúc |
-| Phiên bản | 2.2.3 |
+| Phiên bản | 2.2.4 |
 | Ngày lập / phê duyệt | 2026-10-30 / **2026-10-31** |
 | Trạng thái | **ĐÃ PHÊ DUYỆT** bởi chủ dự án. Là baseline yêu cầu cho hệ thống mới, **thay thế** [SRS v1.1](../reports/SRS_Kuchiba_Chisa.md) cho mọi phát triển mới. v1.1 được giữ nguyên làm tài liệu lịch sử và chỉ áp dụng cho việc sửa lỗi hệ hiện tại trong thời gian chuyển đổi. Các mục "Vấn đề mở" (mục 12) vẫn cần quyết định riêng |
 | Bản chất dự án | Dự án cá nhân; không còn ràng buộc với đồ án môn học |
@@ -31,6 +31,7 @@
 | 2.2.1 | 2026-10-31 | Chủ dự án (uỷ quyền đề xuất) | Inference service tự xây trên fastembed/ONNX thay TEI ([ADR-0004](adr/0004-inference-service.md)); ngân sách RAM inference 1.400 MB theo số đo cgroup Linux; api 1.200 MB, worker 700 MB; tổng 6.440 MB |
 | 2.2.2 | 2026-11-02 | Chủ dự án (uỷ quyền đề xuất) | Kết quả spike I0 ([báo cáo](ingestion/i0-spike.md)): ASM-002 chốt sparse BM25; cấu hình ingestion nằm ở `app/config/ingestion/`; e5-small int8 chưa thay fp32 (KNW-006 đánh giá lại khi golden v2 đủ lớn) |
 | 2.2.3 | 2026-11-03 | Chủ dự án | Thêm mục 10.1 backlog: BL-001 Chisa Theorycrafter, BL-002 sandbox chạy code; chưa phải yêu cầu, chưa lên lịch |
+| 2.2.4 | 2026-11-04 | Chủ dự án | STD-DOC-007: mỗi tính năng hoàn thành có báo cáo bàn giao ngắn gọn |
 
 ## Quyết định đã chốt của chủ dự án (đầu vào của tài liệu)
 
@@ -1810,6 +1811,7 @@ Chính sách: khi đốt quá 50% error budget trong 7 ngày, chủ dự án ưu
 | STD-DOC-004 | Runbook vận hành: deploy, rollback, backup/restore, xoay khoá, break-glass Admin, xử lý sự cố, cùng runbook cho từng cảnh báo | CI kiểm tồn tại |
 | STD-DOC-005 | Tài liệu cho người dùng (privacy notice, hướng dẫn hai chế độ) cập nhật cùng tính năng | Review |
 | STD-DOC-006 | Mỗi module cấp cao có README nêu trách nhiệm và ranh giới | Review |
+| STD-DOC-007 | Mỗi tính năng hoàn thành PHẢI có báo cáo bàn giao ngắn gọn trong `docs/handover/`, nằm cùng PR, theo định dạng ở `docs/handover/README.md` | Review |
 
 ## 14.13 Vận hành và công cụ thực thi
 

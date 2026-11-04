@@ -37,7 +37,13 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
     accepted as rate-limit identities.
     """
 
-    RATE_LIMITED_PREFIXES = ("/api/v1/chat", "/api/v1/community")
+    RATE_LIMITED_PREFIXES = (
+        "/api/v1/chat",
+        "/api/v1/community",
+        "/api/v2/chat",
+        "/api/v2/threads",
+        "/api/v2/me",
+    )
     ANONYMOUS_SESSION_PATH = "/api/v1/auth/anonymous-session"
     # Pre-authentication account endpoints: brute-force/credential-stuffing control
     # keyed by trusted client network address and route.
@@ -57,7 +63,9 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         }
     )
     # LLM-backed routes get a tighter per-minute bucket than reads (history, etc.).
-    CHAT_MESSAGE_ROUTES = frozenset({"POST:chat", "POST:chat.stream", "POST:community.chat"})
+    CHAT_MESSAGE_ROUTES = frozenset(
+        {"POST:chat", "POST:chat.stream", "POST:chat.turns", "POST:community.chat"}
+    )
 
     def __init__(self, app: ASGIApp) -> None:
         super().__init__(app)
@@ -195,6 +203,8 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
     @staticmethod
     def _route_bucket(method: str, path: str) -> str:
         """Collapse path parameters so they cannot create quota bypass keys."""
+        if path.startswith("/api/v2/"):
+            return RateLimitMiddleware._v2_route_bucket(method, path)
         if path.startswith("/api/v1/chat/history/"):
             return "GET:chat.history"
         if path.startswith("/api/v1/chat/emotions/"):
@@ -209,6 +219,15 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
             return "DELETE:community.clear"
         if path == "/api/v1/community/chat":
             return "POST:community.chat"
+        return f"{method.upper()}:{path}"
+
+    @staticmethod
+    def _v2_route_bucket(method: str, path: str) -> str:
+        if path == "/api/v2/chat/turns":
+            return "POST:chat.turns"
+        if path.startswith("/api/v2/threads/"):
+            resource = "turns" if path.endswith("/turns") else "item"
+            return f"{method.upper()}:threads.{resource}"
         return f"{method.upper()}:{path}"
 
     async def _check_rate(

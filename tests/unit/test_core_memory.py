@@ -6,7 +6,7 @@ from uuid import uuid4
 import pytest
 from pydantic import ValidationError
 
-from app.domain.entities.emotion import EmotionState
+from app.domain.entities.emotion import EMOTION_DIMENSIONS, EmotionState
 from app.domain.interfaces.personal_context import PersonalContext
 from app.domain.services.core_memory import MAX_ITEMS, CoreMemory, render_core_memory
 from app.domain.services.knowledge.composer import ComposedAnswer
@@ -25,6 +25,9 @@ class Personal:
 
     async def apply_sentiment(self, owner, sentiment):
         self.sentiments.append((owner, sentiment))
+
+    async def current_emotion(self, owner):
+        return EmotionState(user_id=uuid4(), joy=0.7)
 
 
 class FeelingComposer(Composer):
@@ -122,3 +125,26 @@ async def test_blocked_input_loads_nothing_personal() -> None:
 
     assert personal.loads == []
     assert personal.sentiments == []
+
+
+async def test_completed_event_carries_the_current_emotion_and_its_caption() -> None:
+    service, _, _ = _service(Personal())
+
+    events = await _events(service, _request())
+
+    assert events[-1].data["emotions"]["joy"] == 0.7
+    assert set(events[-1].data["emotions"]) == set(EMOTION_DIMENSIONS)
+    assert events[-1].data["emotion_caption"]
+
+
+async def test_unreadable_emotion_does_not_lose_the_answer() -> None:
+    class Unreadable(Personal):
+        async def current_emotion(self, owner):
+            return None
+
+    service, _, _ = _service(Unreadable())
+
+    events = await _events(service, _request())
+
+    assert events[-1].data["response"]
+    assert events[-1].data["emotions"] is None

@@ -4,6 +4,15 @@ import { Send, MessageSquare, Trash2, Zap, Heart, Smile, Frown, Shield, Plus, X,
 import ReactMarkdown from 'react-markdown';
 import { AccountStatus, AuthModal } from './AuthPanel.jsx';
 import {
+  citationLinks,
+  newTurnBody,
+  streamTurn,
+  threadApi,
+  threadTitle,
+  toConversations,
+  turnsToMessages,
+} from './chatV2.js';
+import {
   bootstrapSession,
   changePassword,
   consumeAuthFragment,
@@ -59,6 +68,9 @@ const saveConversations = (convs) => {
 };
 
 const BASE = import.meta.env.VITE_API_BASE_URL ?? '/api/v1';
+const CHAT_V2 = import.meta.env.VITE_CHAT_V2 === 'true';
+const V2_BASE = import.meta.env.VITE_API_V2_BASE_URL ?? '/api/v2';
+const UNTITLED_THREAD = 'Cuộc trò chuyện mới';
 const GREETING = { role: 'chisa', content: 'Chào Senpai~ Em là Chisa đây ♡  Hôm nay Senpai có gì muốn tâm sự với em không?' };
 
 // ── SSE Chat Streaming Handler ───────────────────────────────────────────
@@ -231,6 +243,19 @@ function getEmotionStatusSummary(emotions = {}) {
 }
 
 // ── Message Component ───────────────────────────────────────────────────
+function MessageSources({ citations }) {
+  const links = citationLinks(citations);
+  if (!links.length) return null;
+  return (
+    <div className="chisa-msg-sources">
+      <span>Nguồn: </span>
+      {links.map((link) => (
+        <a key={link.href} href={link.href} target="_blank" rel="noopener noreferrer">{link.label}</a>
+      ))}
+    </div>
+  );
+}
+
 function Message({ msg }) {
   if (msg.role === 'user') {
     if (msg.content === '/clear') {
@@ -263,6 +288,7 @@ function Message({ msg }) {
               <span>{msg.caption}</span>
             </div>
           )}
+          <MessageSources citations={msg.citations} />
         </div>
       </div>
     </div>
@@ -404,8 +430,9 @@ function Sidebar({
 
 // ── Main App ─────────────────────────────────────────────────────────────
 export default function App() {
-  const [conversations, setConversations]   = useState(getStoredConversations);
-  const [activeSessionId, setActiveSessionId] = useState(() => conversations[0]?.id || getDeviceId());
+  const [conversations, setConversations]   = useState(CHAT_V2 ? [] : getStoredConversations);
+  const [activeSessionId, setActiveSessionId] = useState(() => (CHAT_V2 ? null : conversations[0]?.id || getDeviceId()));
+  const selectedThreadRef = useRef(null);
   const [messages, setMessages]             = useState([]);
   const [input, setInput]                   = useState('');
   const [isLoading, setIsLoading]           = useState(false);
@@ -532,6 +559,21 @@ export default function App() {
   };
 
   // Backend memory belongs to the verified principal, never a local UI thread ID.
+  // A slow read must not overwrite the thread the person has since opened.
+  const showThread = async (id, accessToken) => {
+    selectedThreadRef.current = id;
+    const turns = id ? await threadApi(V2_BASE, accessToken).turns(id) : [];
+    if (selectedThreadRef.current === id) setMessages(turnsToMessages(turns, GREETING));
+  };
+
+  const loadThreads = async (accessToken) => {
+    const threads = await threadApi(V2_BASE, accessToken).list();
+    const first = threads[0]?.id ?? null;
+    setConversations(toConversations(threads, UNTITLED_THREAD));
+    setActiveSessionId(first);
+    await showThread(first, accessToken);
+  };
+
   const subjectId = webSession?.subject_id;
   useEffect(() => {
     if (!subjectId) return undefined;
@@ -543,14 +585,17 @@ export default function App() {
     const config = { headers: { authorization: `Bearer ${session.access_token}` } };
     
     // Fetch History
-    axios.get(`${BASE}/chat/history/${session.subject_id}?limit=50`, config)
-      .then(res => {
-        const hist = res.data?.history || [];
-        setMessages(hist.length
-          ? hist.map(m => ({ role: m.role === 'assistant' ? 'chisa' : m.role, content: m.content }))
-          : [GREETING]
-        );
-      })
+    const history = CHAT_V2
+      ? loadThreads(session.access_token)
+      : axios.get(`${BASE}/chat/history/${session.subject_id}?limit=50`, config)
+        .then(res => {
+          const hist = res.data?.history || [];
+          setMessages(hist.length
+            ? hist.map(m => ({ role: m.role === 'assistant' ? 'chisa' : m.role, content: m.content }))
+            : [GREETING]
+          );
+        });
+    history
       .catch(() => setMessages([GREETING]))
       .finally(() => setIsHistoryLoading(false));
 
@@ -581,6 +626,14 @@ export default function App() {
 
   // Create a new conversation thread
   const handleCreateNewChat = () => {
+    if (CHAT_V2) {
+      if (isLoading) return;
+      // The server creates the thread with its first turn, so an empty chat leaves no record.
+      selectedThreadRef.current = null;
+      setActiveSessionId(null);
+      setMessages([GREETING]);
+      return;
+    }
     const newId = `chisa-conv-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
     const newTitle = `Cuộc trò chuyện ${conversations.length + 1}`;
     const newConv = { id: newId, title: newTitle, createdAt: Date.now() };
@@ -594,14 +647,36 @@ export default function App() {
 
   // Select a conversation thread
   const handleSelectSession = (id) => {
-    if (id === activeSessionId) return;
+    if (id === activeSessionId || (CHAT_V2 && isLoading)) return;
     setActiveSessionId(id);
+    if (!CHAT_V2) return;
+    setIsHistoryLoading(true);
+    ensureSession()
+      .then(session => showThread(id, session.access_token))
+      .catch(console.error)
+      .finally(() => setIsHistoryLoading(false));
+  };
+
+  const removeThread = async (id) => {
+    const session = await ensureSession();
+    await threadApi(V2_BASE, session.access_token).remove(id);
+    const remaining = conversations.filter(c => c.id !== id);
+    setConversations(remaining);
+    if (id !== activeSessionId) return;
+    const next = remaining[0]?.id ?? null;
+    setActiveSessionId(next);
+    await showThread(next, session.access_token);
   };
 
   // Delete a conversation thread (Wipes backend memory + removes from local session list)
   const handleDeleteSession = async (e, id) => {
     e.stopPropagation();
     if (!window.confirm("Senpai có chắc chắn muốn xóa đoạn hội thoại này không?")) {
+      return;
+    }
+
+    if (CHAT_V2) {
+      if (!isLoading) await removeThread(id).catch(console.error);
       return;
     }
 
@@ -636,7 +711,10 @@ export default function App() {
 
   // Clear memory for current session
   const handleClearMemory = async () => {
-    if (!window.confirm("Senpai có chắc chắn muốn xóa đi mọi kỷ niệm của đoạn hội thoại này không?")) {
+    const clearPrompt = CHAT_V2
+      ? "Senpai có chắc chắn muốn xóa đi mọi kỷ niệm và mọi đoạn hội thoại không?"
+      : "Senpai có chắc chắn muốn xóa đi mọi kỷ niệm của đoạn hội thoại này không?";
+    if (!window.confirm(clearPrompt)) {
       return;
     }
     setMessages(prev => [...prev, { role: 'user', content: '/clear' }]);
@@ -649,6 +727,11 @@ export default function App() {
         { headers: { authorization: `Bearer ${session.access_token}` } },
       );
       setMessages([{ role: 'chisa', content: `🌸 ${res.data?.message || 'Ký ức đã được xóa!'}` }]);
+      if (CHAT_V2) {
+        selectedThreadRef.current = null;
+        setConversations([]);
+        setActiveSessionId(null);
+      }
       setEmotions({ joy: 0.1, sadness: 0.0, trust: 0.5, irritation: 0.0, attachment: 0.0 });
       setEmotionCaption('🍃 Chisa ở trạng thái Kuudere điềm tĩnh, ấm áp ngầm và quan tâm Senpai tinh tế.');
     } catch {
@@ -657,6 +740,22 @@ export default function App() {
       setIsLoading(false);
     }
   };
+
+  // The first turn creates the thread on the server, and the sidebar adopts it from there.
+  const sendTurnV2 = (userText, accessToken) => streamTurn({
+    base: V2_BASE,
+    accessToken,
+    body: newTurnBody(userText, activeSessionId),
+    onStarted: ({ thread_id: threadId }) => {
+      if (activeSessionId) return;
+      const title = threadTitle(userText);
+      selectedThreadRef.current = threadId;
+      setActiveSessionId(threadId);
+      setConversations(prev => [{ id: threadId, title }, ...prev]);
+      threadApi(V2_BASE, accessToken).rename(threadId, title).catch(console.error);
+    },
+    onToken: (delta) => setStreamedText(prev => prev + delta),
+  });
 
   // Send message
   const handleSend = async () => {
@@ -669,7 +768,7 @@ export default function App() {
 
     // Auto-update conversation title if it's generic ("Cuộc trò chuyện X")
     const currentConv = conversations.find(c => c.id === activeSessionId);
-    if (currentConv && currentConv.title.startsWith('Cuộc trò chuyện')) {
+    if (!CHAT_V2 && currentConv && currentConv.title.startsWith('Cuộc trò chuyện')) {
       const truncatedTitle = userText.length > 22 ? `${userText.slice(0, 22)}...` : userText;
       const updatedConvs = conversations.map(c => 
         c.id === activeSessionId ? { ...c, title: truncatedTitle } : c
@@ -685,23 +784,25 @@ export default function App() {
 
     try {
       const session = await ensureSession();
-      const res = await streamChatResponse(
-        { message: userText },
-        session.access_token,
-        {
-          onLoopThinkingStart: () => {
-            setIsThinkingMode(true);
+      const res = CHAT_V2
+        ? await sendTurnV2(userText, session.access_token)
+        : await streamChatResponse(
+          { message: userText },
+          session.access_token,
+          {
+            onLoopThinkingStart: () => {
+              setIsThinkingMode(true);
+            },
+            onToken: (token) => {
+              setIsThinkingMode(false);
+              setStreamedText(prev => prev + token);
+            }
           },
-          onToken: (token) => {
-            setIsThinkingMode(false);
-            setStreamedText(prev => prev + token);
-          }
-        },
-      );
+        );
 
       if (res?.response) {
         const caption = res.emotion_caption || '';
-        setMessages(prev => [...prev, { role: 'chisa', content: res.response, caption }]);
+        setMessages(prev => [...prev, { role: 'chisa', content: res.response, caption, citations: res.citations }]);
         if (res.emotions) {
           setEmotions(res.emotions);
           if (caption) setEmotionCaption(caption);

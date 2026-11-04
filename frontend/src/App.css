@@ -40,3 +40,15 @@
 .read-the-docs {
   color: #888;
 }
+
+.chisa-msg-sources {
+  margin-top: 8px;
+  font-size: 0.75rem;
+  opacity: 0.75;
+}
+
+.chisa-msg-sources a {
+  margin-right: 8px;
+  color: inherit;
+  text-decoration: underline;
+}

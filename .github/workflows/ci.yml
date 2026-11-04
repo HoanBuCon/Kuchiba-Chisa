@@ -44,6 +44,17 @@ jobs:
       - name: Dependency vulnerabilities (STD-SEC-006)
         run: pip-audit --requirement requirements.txt --progress-spinner off
 
+  web-client-tests:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Run web client tests
+        working-directory: frontend
+        run: npm test
+
   secret-scan:
     runs-on: ubuntu-24.04
     steps:
