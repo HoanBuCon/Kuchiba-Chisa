@@ -9,7 +9,7 @@ from app.domain.ingestion.documents import BlockKind, TurnKind
 from app.domain.interfaces.silver import CleaningError
 from app.domain.interfaces.wiki_ingestion import ParsedPage
 from app.infrastructure.ingestion.silver import html_cleaner
-from app.infrastructure.ingestion.silver.html_cleaner import HtmlCleaner
+from app.infrastructure.ingestion.silver.html_cleaner import HtmlCleaner, pageprops_infoboxes
 from app.infrastructure.ingestion.silver.rules import load_cleaning_rules
 
 RULES = load_cleaning_rules()
@@ -240,6 +240,47 @@ def test_pageprops_infobox_is_flattened_and_preferred_over_the_dom() -> None:
 
     assert doc.infoboxes == ({"name": "Chisa", "voiceCN": "Zhang Qi", "ally": "A\nB"},)
     assert [b.text for b in doc.blocks] == ["Body."]
+
+
+def _voice_infobox(english: str) -> list[dict]:
+    return [
+        {
+            "data": [
+                {"type": "data", "data": {"source": "name", "value": "Chisa"}},
+                {"type": "data", "data": {"source": "voiceEN", "value": english}},
+            ]
+        }
+    ]
+
+
+VOICE_DOM = (
+    '<aside class="portable-infobox"><div class="pi-data" data-source="voiceEN">'
+    '<div class="pi-data-value"><a class="extiw" href="https://imdb.example/1">Leader Looi</a>'
+    '<sup class="reference">[1]</sup></div></div></aside><p>Body text.</p>'
+)
+
+
+def test_interwiki_link_in_pageprops_is_recovered_from_the_dom() -> None:
+    marker = '<!--IWLINK\'" 21--><sup class="reference">[1]</sup>'
+
+    doc = _clean(VOICE_DOM, properties={"infoboxes": json.dumps(_voice_infobox(marker))})
+
+    assert doc.infoboxes == ({"name": "Chisa", "voiceEN": "Leader Looi"},)
+
+
+def test_partly_resolved_value_never_stays_as_a_fragment() -> None:
+    fragment = '<!--IWLINK\'" 3--> (Female)'
+    infobox = _voice_infobox(fragment)
+
+    assert pageprops_infoboxes({"infoboxes": json.dumps(infobox)}) == ({"name": "Chisa"},)
+
+
+def test_marker_with_no_dom_value_leaves_the_field_out() -> None:
+    marker = '<!--IWLINK\'" 21-->'
+
+    doc = _clean("<p>Body text.</p>", properties={"infoboxes": json.dumps(_voice_infobox(marker))})
+
+    assert doc.infoboxes == ({"name": "Chisa"},)
 
 
 def test_dom_infobox_is_the_fallback() -> None:
