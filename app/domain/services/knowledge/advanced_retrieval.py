@@ -48,6 +48,9 @@ class AdvancedRetrieval:
     ) -> AdvancedEvidence:
         found = await self._search.search(question, budget)
         route = self._router.route((question, found.query), found.entities)
+        if route.unknown_chapter:
+            # Search would find a similar name, like "Act VII" for an unreleased "Chapter VII".
+            return AdvancedEvidence((), found.query, True, False, found.degraded)
         listed = self._listed(route)
         profiles = tuple(
             item for item in map(self._tools.get_entity, route.profiles) if item is not None

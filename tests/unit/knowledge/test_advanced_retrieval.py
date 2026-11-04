@@ -88,6 +88,37 @@ def test_router_needs_a_listing_cue_and_a_subject() -> None:
     assert ROUTER.route(("Is Havoc strong?",), ()).entity_fields == {}
 
 
+@pytest.mark.parametrize(
+    ("text", "unknown"),
+    [
+        ("How does Chapter VII end?", True),
+        ("How does Chapter 7 end?", True),
+        ("How does Chapter 40 end?", True),
+        ("How does Chapter III end?", False),
+        ("How does Chapter 2 end?", False),
+        ("What happens in Act VII?", False),
+    ],
+)
+def test_router_knows_which_chapters_exist(text, unknown) -> None:
+    assert ROUTER.route((text,), ()).unknown_chapter is unknown
+
+
+def test_router_without_chapter_data_assumes_nothing() -> None:
+    empty = KnowledgeBase(entities=(), aliases=(), glossary=(), quests=(), locations=())
+
+    assert QuestionRouter(empty).route(("How does Chapter VII end?",), ()).unknown_chapter is False
+
+
+async def test_unknown_chapter_abstains_even_with_a_strong_search() -> None:
+    flow, dialogue = _flow("How does Chapter VII end?", score=0.9)
+
+    result = await flow.retrieve("Cốt truyện Chapter VII kết thúc như thế nào?")
+
+    assert result.abstain
+    assert result.evidence == ()
+    assert dialogue.calls == []
+
+
 def test_a_place_is_not_read_as_a_quest_character() -> None:
     route = ROUTER.route(("Which quests happen at Startorch Academy?",), ("Startorch Academy",))
 
