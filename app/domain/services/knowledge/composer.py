@@ -17,7 +17,6 @@ from app.domain.interfaces.llm_provider import (
 from app.domain.models.evidence import Evidence
 from app.domain.services.budget_mode import BudgetMode
 from app.domain.services.chisa_voice import (
-    COMPANION_ADDRESS_NOTE,
     GROUNDED_ABSTENTION,
     GROUNDED_ANSWER_LEAD,
     GROUNDED_EXTRACTIVE_FRAME,
@@ -40,6 +39,8 @@ INTENT_NAME = "lore"
 COMPANION_INTENT = "conversational"
 # Same warmth the v1 path uses for casual talk.
 COMPANION_TEMPERATURE = 0.8
+# Conversation has no sources, so her canon profile is what keeps facts about her consistent.
+COMPANION_TRAITS = "BOTH"
 
 
 @dataclass(frozen=True)
@@ -104,9 +105,11 @@ class GroundedComposer:
         assembler: GroundedOutputAssembler | None = None,
         leakage_guard: PromptLeakageGuard | None = None,
         embedder: IEmbeddingProvider | None = None,
+        companion_builder: ContextBuilder | None = None,
     ) -> None:
         self._llm = llm
         self._builder = builder
+        self._companion_builder = companion_builder or builder
         self._assembler = assembler or GroundedOutputAssembler()
         self._leakage_guard = leakage_guard or PromptLeakageGuard()
         self._embedder = embedder
@@ -196,7 +199,7 @@ class GroundedComposer:
         budget: LLMCallBudget,
     ) -> ComposedAnswer:
         """Conversation in Chisa's own voice; no retrieval and no claims to bind (MODE-008)."""
-        built = self._builder.build(
+        built = self._companion_builder.build(
             emotion=emotion,
             attachment_bonus=0.0,
             memories=memories,
@@ -207,11 +210,10 @@ class GroundedComposer:
             conversation_summary=summary,
             budget_mode=BudgetMode.SMALL_TALK,
             is_small_talk=True,
+            persona_trait_type=COMPANION_TRAITS,
         ).prompt
         prompt = built.model_copy(
             update={
-                # Added here so the protected persona prompts stay verbatim (CON-001).
-                "system": f"{built.system}\n\n{COMPANION_ADDRESS_NOTE}",
                 "temperature": COMPANION_TEMPERATURE,
                 "purpose": LLMPurpose.CHAT_RESPONSE,
                 "call_budget": budget,

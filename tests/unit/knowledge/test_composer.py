@@ -10,15 +10,14 @@ from app.domain.models.evidence import (
     EvidenceProvenance,
     EvidenceScore,
 )
-from app.domain.services.budget_mode import BudgetMode
 from app.domain.services.chisa_voice import (
-    COMPANION_ADDRESS_NOTE,
     GROUNDED_ABSTENTION,
     GROUNDED_ANSWER_LEAD,
     GROUNDED_LIST_LEAD,
 )
 from app.domain.services.context_builder import ContextBuilder
 from app.domain.services.knowledge.composer import GroundedComposer
+from app.domain.services.persona_v2 import CompanionContextBuilder, GroundedContextBuilder
 
 TEXT = "Chisa studies at Startorch Academy in the Lahai-Roi region."
 SENTIMENT = {"joy_delta": 0.0}
@@ -258,26 +257,44 @@ async def test_companion_returns_the_model_reply_with_its_sentiment() -> None:
     assert llm.prompts[0].purpose is LLMPurpose.CHAT_RESPONSE
 
 
-async def test_companion_prompt_keeps_the_persona_and_adds_who_anh_means() -> None:
+async def test_companion_uses_its_own_prompt_and_the_canon_profile() -> None:
     llm = FakeLLM({"response": "Dạ.", "sentiment": SENTIMENT})
+    composer = GroundedComposer(
+        llm, GroundedContextBuilder(), companion_builder=CompanionContextBuilder()
+    )
 
-    await _companion(llm)
+    await composer.compose_companion(
+        "Em thích ăn gì?",
+        emotion=EmotionState(user_id=uuid4()),
+        history=[],
+        memories=[],
+        summary=None,
+        budget=LLMCallBudget(max_calls=2),
+    )
 
     system = llm.prompts[0].system
-    built = ContextBuilder().build(
+    assert "đừng tự đặt ra sở thích" in system
+    assert "socola đen" in system
+
+
+async def test_grounded_answer_uses_the_grounded_prompt() -> None:
+    llm = FakeLLM(_answer(_claim()))
+    composer = GroundedComposer(
+        llm, GroundedContextBuilder(), companion_builder=CompanionContextBuilder()
+    )
+
+    await composer.compose(
+        "Chisa học ở đâu?",
+        [_evidence()],
         emotion=EmotionState(user_id=uuid4()),
-        attachment_bonus=0.0,
-        memories=["Tên: Khoa"],
-        lore=[],
         history=[],
-        user_message="Anh tên là gì nhỉ?",
-        intent_name="conversational",
-        conversation_summary=None,
-        budget_mode=BudgetMode.SMALL_TALK,
-        is_small_talk=True,
-    ).prompt.system
-    assert system.startswith(built)
-    assert system.endswith(COMPANION_ADDRESS_NOTE)
+        memories=[],
+        summary=None,
+        budget=LLMCallBudget(max_calls=2),
+    )
+
+    assert '"evidence_quote"' in llm.prompts[0].system
+    assert "TRẢ LỜI THEO NGUỒN" in llm.prompts[0].system
 
 
 async def test_companion_with_no_reply_fails_in_chisa_voice() -> None:

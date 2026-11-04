@@ -34,3 +34,4 @@ Ghi đúng trạng thái PR, kể cả khi chưa merge. Không ghi secret hay d�
 | 2026-11-04 | R2 S7 | [Chấm độ có căn cứ, trích dẫn và ghi chú "anh"](2026-11-04_r2-s7_cham-can-cu-va-ghi-chu-anh.md) |
 | 2026-11-04 | R2 S7 | [Khôi phục trường infobox bị mất do link interwiki](2026-11-04_r2-s7_sua-truong-interwiki-infobox.md) |
 | 2026-11-04 | R2 S7 | [Báo riêng lỗi hết tiền của LLM](2026-11-04_r2-s7_bao-loi-het-tien-llm.md) |
+| 2026-11-04 | R2 S7 | [Persona v2 (bản nháp)](2026-11-04_r2-s7_persona-v2.md) |
