@@ -174,6 +174,15 @@ spec:
           annotations:
             summary: Active corpus and Qdrant index identity disagree
             intent: Stop publication or rollback through the authorized versioned corpus workflow.
+        - alert: ChisaLlmBillingExhausted
+          expr: sum(increase(chisa_llm_degraded_total{chisa_failure_class="billing"}[5m])) > 0
+          for: 1m
+          labels:
+            severity: page
+            requirement: NFR-OPS-003
+          annotations:
+            summary: An LLM provider rejected requests because the account balance is exhausted
+            intent: Top up the provider account; retries and waiting cannot restore service.
         - alert: ChisaLlmCostBudgetAnomaly
           expr: sum(increase(chisa_llm_budget_exhausted_total[15m])) > 0
           for: 5m

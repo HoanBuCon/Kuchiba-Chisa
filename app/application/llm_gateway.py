@@ -773,6 +773,7 @@ class LLMGateway(BaseLLMAdapter):
         )
         terminal_failures = {
             LLMFailureClass.AUTH_CONFIG,
+            LLMFailureClass.BILLING,
             LLMFailureClass.TOKEN_OVERFLOW,
         }
         dimensions = TelemetryDimensions(
@@ -813,6 +814,8 @@ def classify_llm_failure(error: BaseException) -> LLMFailureClass:
         code = (error.code or "").upper()
         if code in {"AUTH", "AUTH_CONFIG", "CONFIG", "INVALID_API_KEY"}:
             return LLMFailureClass.AUTH_CONFIG
+        if code == "BILLING":
+            return LLMFailureClass.BILLING
         if code in {"PROVIDER_5XX", "SERVER_ERROR"}:
             return LLMFailureClass.PROVIDER_5XX
         if code in {"TRANSPORT", "NETWORK"}:

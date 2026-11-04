@@ -97,7 +97,7 @@ _ALLOWED_VALUES: dict[str, frozenset[str]] = {
     "failure_class": frozenset(
         {
             "none", "unhandled", "unknown", "timeout", "transport", "rate_limit",
-            "provider_5xx", "auth_config", "token_overflow", "invalid_response",
+            "provider_5xx", "auth_config", "billing", "token_overflow", "invalid_response",
             "provider_unavailable", "circuit_open", "bulkhead_rejected", "budget_exhausted",
             "deadline_exceeded", "no_compatible_provider", "client_cancelled", "output_leakage",
             "cross_tenant_denial", "grounding_failed", "dependency_unavailable",

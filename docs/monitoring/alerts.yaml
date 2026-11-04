@@ -22,6 +22,11 @@ alerts:
     source: chisa.llm.breaker.state
     condition: every configured provider breaker open for 2 minutes
     channels: [email, discord]
+  - id: chisa-llm-billing-exhausted
+    severity: P1
+    source: chisa.llm.degraded with failure_class billing
+    condition: any provider rejects a request because the account balance is exhausted
+    channels: [email, discord]
   - id: chisa-datastore-down
     severity: P1
     source: container metrics and API readiness

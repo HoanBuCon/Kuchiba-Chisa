@@ -5,7 +5,7 @@ import httpx
 import pytest
 
 from app.config.settings import settings
-from app.domain.interfaces.llm_provider import LLMResponse, StructuredPrompt
+from app.domain.interfaces.llm_provider import LLMError, LLMResponse, StructuredPrompt
 from app.domain.services.context_builder import ContextBuilder
 from app.infrastructure.llm.adapters.deepseek import DeepSeekAdapter
 
@@ -157,3 +157,26 @@ async def test_deepseek_stream_collects_grounded_tool_arguments() -> None:
     await client.aclose()
 
     assert "".join(chunks) == arguments
+
+
+def _rejected_with_402() -> DeepSeekAdapter:
+    transport = httpx.MockTransport(lambda request: httpx.Response(402, json={}))
+    return DeepSeekAdapter(http_client=httpx.AsyncClient(transport=transport))
+
+
+def _billing_prompt() -> StructuredPrompt:
+    return StructuredPrompt(
+        system="system",
+        history=[],
+        user_message="Hello",
+        response_schema=ContextBuilder.get_response_schema(),
+    )
+
+
+@pytest.mark.asyncio
+async def test_deepseek_reports_an_exhausted_balance_as_billing() -> None:
+    with pytest.raises(LLMError) as raised:
+        await _rejected_with_402().generate(_billing_prompt())
+
+    assert raised.value.code == "BILLING"
+    assert raised.value.retryable is False

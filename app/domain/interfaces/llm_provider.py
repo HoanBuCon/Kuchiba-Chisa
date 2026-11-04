@@ -47,6 +47,7 @@ class LLMFailureClass(str, Enum):
     PROVIDER_5XX = "provider_5xx"
     INVALID_RESPONSE = "invalid_response"
     AUTH_CONFIG = "auth_config"
+    BILLING = "billing"
     TOKEN_OVERFLOW = "token_overflow"
     BULKHEAD_REJECTED = "bulkhead_rejected"
     CIRCUIT_OPEN = "circuit_open"
