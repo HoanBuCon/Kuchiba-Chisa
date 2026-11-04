@@ -10,11 +10,11 @@ spec:
       rules:
         - alert: ChisaChatAdmissionAvailabilityFastBurn
           expr: >-
-            (sum(rate(chisa_http_errors_total{chisa_route=~"/api/v1/chat|/api/v1/chat/stream|/api/v1/community/chat",chisa_status_class="5xx"}[5m]))
-            / clamp_min(sum(rate(chisa_http_requests_total{chisa_route=~"/api/v1/chat|/api/v1/chat/stream|/api/v1/community/chat",chisa_status_class=~"2xx|3xx|5xx"}[5m])), 1e-9)) > 0.0144
+            (sum(rate(chisa_http_errors_total{chisa_route=~"/api/v1/chat|/api/v1/chat/stream|/api/v2/chat/turns|/api/v1/community/chat",chisa_status_class="5xx"}[5m]))
+            / clamp_min(sum(rate(chisa_http_requests_total{chisa_route=~"/api/v1/chat|/api/v1/chat/stream|/api/v2/chat/turns|/api/v1/community/chat",chisa_status_class=~"2xx|3xx|5xx"}[5m])), 1e-9)) > 0.0144
             and
-            (sum(rate(chisa_http_errors_total{chisa_route=~"/api/v1/chat|/api/v1/chat/stream|/api/v1/community/chat",chisa_status_class="5xx"}[1h]))
-            / clamp_min(sum(rate(chisa_http_requests_total{chisa_route=~"/api/v1/chat|/api/v1/chat/stream|/api/v1/community/chat",chisa_status_class=~"2xx|3xx|5xx"}[1h])), 1e-9)) > 0.0144
+            (sum(rate(chisa_http_errors_total{chisa_route=~"/api/v1/chat|/api/v1/chat/stream|/api/v2/chat/turns|/api/v1/community/chat",chisa_status_class="5xx"}[1h]))
+            / clamp_min(sum(rate(chisa_http_requests_total{chisa_route=~"/api/v1/chat|/api/v1/chat/stream|/api/v2/chat/turns|/api/v1/community/chat",chisa_status_class=~"2xx|3xx|5xx"}[1h])), 1e-9)) > 0.0144
           for: 2m
           labels:
             severity: page
@@ -25,11 +25,11 @@ spec:
             intent: 14.4x burn across 5m and 1h for the approved 99.9 percent SLO.
         - alert: ChisaChatAdmissionAvailabilitySlowBurn
           expr: >-
-            (sum(rate(chisa_http_errors_total{chisa_route=~"/api/v1/chat|/api/v1/chat/stream|/api/v1/community/chat",chisa_status_class="5xx"}[30m]))
-            / clamp_min(sum(rate(chisa_http_requests_total{chisa_route=~"/api/v1/chat|/api/v1/chat/stream|/api/v1/community/chat",chisa_status_class=~"2xx|3xx|5xx"}[30m])), 1e-9)) > 0.006
+            (sum(rate(chisa_http_errors_total{chisa_route=~"/api/v1/chat|/api/v1/chat/stream|/api/v2/chat/turns|/api/v1/community/chat",chisa_status_class="5xx"}[30m]))
+            / clamp_min(sum(rate(chisa_http_requests_total{chisa_route=~"/api/v1/chat|/api/v1/chat/stream|/api/v2/chat/turns|/api/v1/community/chat",chisa_status_class=~"2xx|3xx|5xx"}[30m])), 1e-9)) > 0.006
             and
-            (sum(rate(chisa_http_errors_total{chisa_route=~"/api/v1/chat|/api/v1/chat/stream|/api/v1/community/chat",chisa_status_class="5xx"}[6h]))
-            / clamp_min(sum(rate(chisa_http_requests_total{chisa_route=~"/api/v1/chat|/api/v1/chat/stream|/api/v1/community/chat",chisa_status_class=~"2xx|3xx|5xx"}[6h])), 1e-9)) > 0.006
+            (sum(rate(chisa_http_errors_total{chisa_route=~"/api/v1/chat|/api/v1/chat/stream|/api/v2/chat/turns|/api/v1/community/chat",chisa_status_class="5xx"}[6h]))
+            / clamp_min(sum(rate(chisa_http_requests_total{chisa_route=~"/api/v1/chat|/api/v1/chat/stream|/api/v2/chat/turns|/api/v1/community/chat",chisa_status_class=~"2xx|3xx|5xx"}[6h])), 1e-9)) > 0.006
           for: 15m
           labels:
             severity: ticket
@@ -72,11 +72,11 @@ spec:
       rules:
         - alert: ChisaTextRagLatencyFastBurn
           expr: >-
-            (1 - sum(rate(chisa_http_server_duration_seconds_bucket{chisa_route=~"/api/v1/chat|/api/v1/chat/stream",le="8.0"}[5m]))
-            / clamp_min(sum(rate(chisa_http_server_duration_seconds_count{chisa_route=~"/api/v1/chat|/api/v1/chat/stream"}[5m])), 1e-9)) > 0.72
+            (1 - sum(rate(chisa_http_server_duration_seconds_bucket{chisa_route=~"/api/v1/chat|/api/v1/chat/stream|/api/v2/chat/turns",le="8.0"}[5m]))
+            / clamp_min(sum(rate(chisa_http_server_duration_seconds_count{chisa_route=~"/api/v1/chat|/api/v1/chat/stream|/api/v2/chat/turns"}[5m])), 1e-9)) > 0.72
             and
-            (1 - sum(rate(chisa_http_server_duration_seconds_bucket{chisa_route=~"/api/v1/chat|/api/v1/chat/stream",le="8.0"}[1h]))
-            / clamp_min(sum(rate(chisa_http_server_duration_seconds_count{chisa_route=~"/api/v1/chat|/api/v1/chat/stream"}[1h])), 1e-9)) > 0.72
+            (1 - sum(rate(chisa_http_server_duration_seconds_bucket{chisa_route=~"/api/v1/chat|/api/v1/chat/stream|/api/v2/chat/turns",le="8.0"}[1h]))
+            / clamp_min(sum(rate(chisa_http_server_duration_seconds_count{chisa_route=~"/api/v1/chat|/api/v1/chat/stream|/api/v2/chat/turns"}[1h])), 1e-9)) > 0.72
           for: 2m
           labels:
             severity: page
@@ -87,11 +87,11 @@ spec:
             intent: 14.4x burn across 5m and 1h for the approved 95 percent within 8 seconds objective.
         - alert: ChisaTextRagLatencySlowBurn
           expr: >-
-            (1 - sum(rate(chisa_http_server_duration_seconds_bucket{chisa_route=~"/api/v1/chat|/api/v1/chat/stream",le="8.0"}[30m]))
-            / clamp_min(sum(rate(chisa_http_server_duration_seconds_count{chisa_route=~"/api/v1/chat|/api/v1/chat/stream"}[30m])), 1e-9)) > 0.3
+            (1 - sum(rate(chisa_http_server_duration_seconds_bucket{chisa_route=~"/api/v1/chat|/api/v1/chat/stream|/api/v2/chat/turns",le="8.0"}[30m]))
+            / clamp_min(sum(rate(chisa_http_server_duration_seconds_count{chisa_route=~"/api/v1/chat|/api/v1/chat/stream|/api/v2/chat/turns"}[30m])), 1e-9)) > 0.3
             and
-            (1 - sum(rate(chisa_http_server_duration_seconds_bucket{chisa_route=~"/api/v1/chat|/api/v1/chat/stream",le="8.0"}[6h]))
-            / clamp_min(sum(rate(chisa_http_server_duration_seconds_count{chisa_route=~"/api/v1/chat|/api/v1/chat/stream"}[6h])), 1e-9)) > 0.3
+            (1 - sum(rate(chisa_http_server_duration_seconds_bucket{chisa_route=~"/api/v1/chat|/api/v1/chat/stream|/api/v2/chat/turns",le="8.0"}[6h]))
+            / clamp_min(sum(rate(chisa_http_server_duration_seconds_count{chisa_route=~"/api/v1/chat|/api/v1/chat/stream|/api/v2/chat/turns"}[6h])), 1e-9)) > 0.3
           for: 15m
           labels:
             severity: ticket

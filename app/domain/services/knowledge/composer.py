@@ -143,6 +143,8 @@ class GroundedComposer:
                 evidence=prompt.retrieved_evidence,
                 abstention_answer=GROUNDED_ABSTENTION,
                 extractive_frame=GROUNDED_EXTRACTIVE_FRAME,
+                # A second frame mid-answer reads as Chisa repeating herself.
+                gather_quotes=True,
                 claim_check=check,
             )
         except (GroundedOutputValidationError, ValueError):

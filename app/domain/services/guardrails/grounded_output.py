@@ -100,6 +100,7 @@ class GroundedOutputAssembler:
         attachment_ids: Sequence[str] = (),
         abstention_answer: str = "Insufficient evidence is available to answer accurately.",
         extractive_frame: str = "{quote}",
+        gather_quotes: bool = False,
         claim_check: Callable[[str, str, str], bool] | None = None,
     ) -> GroundedAnswerEnvelope:
         """``extractive_frame`` presents verbatim quotes (``{quote}``) in the caller's voice.
@@ -107,6 +108,7 @@ class GroundedOutputAssembler:
         ``answer`` (what every grounding check verifies) is unchanged. The frame only
         shapes ``presented_answer``: each run of consecutive extractive quotes is
         joined and placed in the frame once; the quote text itself is never altered.
+        ``gather_quotes`` moves all quotes into one frame after the verified claims.
         ``claim_check`` (claim, quote, evidence) may accept a claim term overlap cannot judge.
         """
         model_payload = GroundedModelPayload.model_validate(payload)
@@ -170,7 +172,7 @@ class GroundedOutputAssembler:
                 and claim_check(claim.text, resolved_quote, source.text)
             )
             if supported:
-                if extractive_run:
+                if extractive_run and not gather_quotes:
                     presented.append(extractive_frame.format(quote=" ".join(extractive_run)))
                     extractive_run = []
                 rendered.append(claim.text.strip())

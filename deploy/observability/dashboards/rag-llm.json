@@ -23,12 +23,12 @@
       "id": 1,
       "targets": [
         {
-          "expr": "histogram_quantile(0.50, sum by (le) (rate(chisa_http_ttft_seconds_bucket{chisa_route=\"/api/v1/chat/stream\"}[$__rate_interval])))",
+          "expr": "histogram_quantile(0.50, sum by (le) (rate(chisa_http_ttft_seconds_bucket{chisa_route=~\"/api/v1/chat/stream|/api/v2/chat/turns\"}[$__rate_interval])))",
           "legendFormat": "p50",
           "refId": "A"
         },
         {
-          "expr": "histogram_quantile(0.95, sum by (le) (rate(chisa_http_ttft_seconds_bucket{chisa_route=\"/api/v1/chat/stream\"}[$__rate_interval])))",
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(chisa_http_ttft_seconds_bucket{chisa_route=~\"/api/v1/chat/stream|/api/v2/chat/turns\"}[$__rate_interval])))",
           "legendFormat": "p95",
           "refId": "B"
         }
@@ -55,12 +55,12 @@
       "id": 2,
       "targets": [
         {
-          "expr": "histogram_quantile(0.95, sum by (le) (rate(chisa_http_server_duration_seconds_bucket{chisa_route=~\"/api/v1/chat|/api/v1/chat/stream\"}[$__rate_interval])))",
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(chisa_http_server_duration_seconds_bucket{chisa_route=~\"/api/v1/chat|/api/v1/chat/stream|/api/v2/chat/turns\"}[$__rate_interval])))",
           "legendFormat": "p95",
           "refId": "A"
         },
         {
-          "expr": "histogram_quantile(0.99, sum by (le) (rate(chisa_http_server_duration_seconds_bucket{chisa_route=~\"/api/v1/chat|/api/v1/chat/stream\"}[$__rate_interval])))",
+          "expr": "histogram_quantile(0.99, sum by (le) (rate(chisa_http_server_duration_seconds_bucket{chisa_route=~\"/api/v1/chat|/api/v1/chat/stream|/api/v2/chat/turns\"}[$__rate_interval])))",
           "legendFormat": "p99",
           "refId": "B"
         },

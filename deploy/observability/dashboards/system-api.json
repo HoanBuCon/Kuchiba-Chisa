@@ -25,7 +25,7 @@
       "id": 1,
       "targets": [
         {
-          "expr": "1 - (sum(rate(chisa_http_errors_total{chisa_route=~\"/api/v1/chat|/api/v1/chat/stream|/api/v1/community/chat\",chisa_status_class=\"5xx\"}[30d])) / clamp_min(sum(rate(chisa_http_requests_total{chisa_route=~\"/api/v1/chat|/api/v1/chat/stream|/api/v1/community/chat\",chisa_status_class=~\"2xx|3xx|5xx\"}[30d])), 1e-9))",
+          "expr": "1 - (sum(rate(chisa_http_errors_total{chisa_route=~\"/api/v1/chat|/api/v1/chat/stream|/api/v2/chat/turns|/api/v1/community/chat\",chisa_status_class=\"5xx\"}[30d])) / clamp_min(sum(rate(chisa_http_requests_total{chisa_route=~\"/api/v1/chat|/api/v1/chat/stream|/api/v2/chat/turns|/api/v1/community/chat\",chisa_status_class=~\"2xx|3xx|5xx\"}[30d])), 1e-9))",
           "refId": "A"
         }
       ],
