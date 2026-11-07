@@ -67,13 +67,15 @@ jobs:
         run: npm ci
       - name: Run bot tests
         working-directory: discord
-        run: npm test
-        # Placeholders: the bot config requires them at import, and the tests call nothing real.
+        # The bot config requires these at import and the tests call nothing real. The signing
+        # secret is generated per run, so no key-like literal is ever committed.
         env:
           DISCORD_TOKEN: test-placeholder
           DISCORD_CLIENT_ID: "100000000000000000"
           DATABASE_URL: postgresql://test:test@127.0.0.1:5432/test
-          CORE_RAG_WORKLOAD_JWT_SECRET: test-placeholder-of-at-least-32-characters
+        run: |
+          export CORE_RAG_WORKLOAD_JWT_SECRET="$(openssl rand -hex 32)"
+          npm test
 
   secret-scan:
     runs-on: ubuntu-24.04
