@@ -590,10 +590,10 @@ async def _build_chat_turn_runtime() -> ChatTurnRuntime:
     from app.domain.services.context_builder import ContextBuilder
     from app.domain.services.knowledge.advanced_retrieval import AdvancedRetrieval
     from app.domain.services.knowledge.composer import GroundedComposer
-    from app.domain.services.persona_v2 import CompanionContextBuilder, GroundedContextBuilder
     from app.domain.services.knowledge.lore_search import LoreSearchService, LoreSearchSettings
     from app.domain.services.knowledge.question_router import QuestionRouter
     from app.domain.services.knowledge.structured_tools import StructuredTools
+    from app.domain.services.persona_v2 import CompanionContextBuilder, GroundedContextBuilder
     from app.domain.services.rag.retriever_memory import MemoryRetriever
     from app.infrastructure.cache.redis.redis_service import redis_service
     from app.infrastructure.database.engine import AsyncSessionFactory
