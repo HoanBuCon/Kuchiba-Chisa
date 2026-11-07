@@ -11,6 +11,12 @@ from app.domain.models.thread import ChatMode, Thread, TurnRecord
 class IThreadStore(Protocol):
     async def create(self, owner: str, channel: str, mode: ChatMode) -> Thread: ...
 
+    async def get_or_create(
+        self, thread_id: UUID, owner: str, channel: str, mode: ChatMode
+    ) -> Thread:
+        """Racing first messages of a channel end up in the same thread."""
+        ...
+
     async def get(self, thread_id: UUID, owner: str) -> Thread | None:
         """A thread of another owner reads as missing, so its existence does not leak."""
         ...

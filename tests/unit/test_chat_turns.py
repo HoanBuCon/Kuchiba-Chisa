@@ -47,6 +47,10 @@ class Threads:
         self.threads[thread.id] = thread
         return thread
 
+    async def get_or_create(self, thread_id, owner, channel, mode):
+        thread = Thread(thread_id, owner, channel, mode, None, datetime.now(UTC))
+        return self.threads.setdefault(thread_id, thread)
+
     async def get(self, thread_id, owner):
         thread = self.threads.get(thread_id)
         return thread if thread and thread.owner_principal == owner else None
@@ -297,3 +301,14 @@ async def test_token_deltas_join_back_into_the_exact_answer() -> None:
     deltas = [event.data["delta"] for event in events if event.type == EVENT_TOKEN]
     assert len(deltas) == 2
     assert "".join(deltas) == events[-1].data["response"]
+
+
+async def test_a_bot_channel_keeps_one_thread_across_messages() -> None:
+    service, threads, _, _ = _service()
+    stable = uuid4()
+
+    first = await _events(service, _request(channel_thread_id=stable))
+    second = await _events(service, _request(channel_thread_id=stable))
+
+    assert first[0].data["thread_id"] == second[0].data["thread_id"] == str(stable)
+    assert len(threads.threads) == 1
