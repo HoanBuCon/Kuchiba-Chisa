@@ -21,7 +21,7 @@ from app.application.chat_turns import (
 from app.application.dependencies import get_chat_turn_runtime, get_memory_policy_service
 from app.config.settings import settings
 from app.domain.interfaces.llm_provider import LLMError
-from app.domain.models.thread import ChatMode, Thread, TurnRecord
+from app.domain.models.thread import ChatMode, Thread, TurnRecord, channel_thread_id
 from app.domain.services.chisa_voice import TURN_FAILED
 from app.domain.services.core_memory import CoreMemory
 from app.domain.services.guardrails.pii_redaction import PiiRedactor
@@ -44,6 +44,8 @@ STREAM_HEADERS = {
     "X-Accel-Buffering": "no",
 }
 ACCOUNT_AUTHENTICATION = "account"
+ANONYMOUS_AUTHENTICATION = "anonymous"
+WORKLOAD_KIND = "workload"
 PII_REDACTOR = PiiRedactor()
 
 
@@ -105,6 +107,12 @@ def _owner(principal: PrincipalContext) -> str:
     return normalize_user_id_str(principal.subject_id)
 
 
+def _bot_thread(principal: PrincipalContext) -> UUID | None:
+    if principal.kind != WORKLOAD_KIND or not principal.channel_id:
+        return None
+    return channel_thread_id(_owner(principal), principal.tenant_id, principal.channel_id)
+
+
 def _require_member(principal: PrincipalContext) -> None:
     """Guests have no long-term memory, so they have no memory to manage (MEM-007)."""
     if principal.authentication != ACCOUNT_AUTHENTICATION:
@@ -137,7 +145,9 @@ async def create_turn(
         turn_id=body.turn_id,
         thread_id=body.thread_id,
         mode_override=body.mode_override,
-        is_guest=principal.authentication != ACCOUNT_AUTHENTICATION,
+        # Bot users keep the long-term memory they have on v1; consent still decides per person.
+        is_guest=principal.authentication == ANONYMOUS_AUTHENTICATION,
+        channel_thread_id=_bot_thread(principal),
     )
     if (
         body.thread_id is not None

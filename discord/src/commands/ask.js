@@ -186,6 +186,7 @@ export async function execute(client, interaction, discordUser) {
         guildName: interaction.guild ? interaction.guild.name : null,
         images,
         isEphemeralReference: false,
+        messageId: interaction.id,
       });
     }
 
@@ -292,6 +293,7 @@ export async function executePrefix(client, message, question, discordUser, opti
         guildName: message.guild ? message.guild.name : null,
         images,
         isEphemeralReference,
+        messageId: message.id,
       });
     }
 

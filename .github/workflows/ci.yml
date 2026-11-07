@@ -55,6 +55,28 @@ jobs:
         working-directory: frontend
         run: npm test
 
+  discord-bot-tests:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install bot dependencies
+        working-directory: discord
+        run: npm ci
+      - name: Run bot tests
+        working-directory: discord
+        # The bot config requires these at import and the tests call nothing real. The signing
+        # secret is generated per run, so no key-like literal is ever committed.
+        env:
+          DISCORD_TOKEN: test-placeholder
+          DISCORD_CLIENT_ID: "100000000000000000"
+          DATABASE_URL: postgresql://test:test@127.0.0.1:5432/test
+        run: |
+          export CORE_RAG_WORKLOAD_JWT_SECRET="$(openssl rand -hex 32)"
+          npm test
+
   secret-scan:
     runs-on: ubuntu-24.04
     steps:
