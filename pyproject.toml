@@ -12,6 +12,8 @@ ignore = ["B008"]
 # CLI scripts report on stdout by design; STD-PY-008 targets application code.
 "scripts/**" = ["T20"]
 "evals/__main__.py" = ["T20"]
+# Persona lines stay whole so they can be compared word for word with the frozen prompt.
+"app/domain/services/persona_v2.py" = ["E501"]
 
 [tool.mypy]
 python_version = "3.11"

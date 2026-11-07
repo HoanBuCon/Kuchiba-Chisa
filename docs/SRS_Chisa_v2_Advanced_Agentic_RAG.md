@@ -3,7 +3,7 @@
 | Thuộc tính | Giá trị |
 |---|---|
 | Tài liệu | SRS cho hệ thống mới của Kuchiba Chisa: hai chế độ Advanced RAG / Agentic RAG, phân quyền 4 vai trò, trí nhớ và cảm xúc |
-| Phiên bản | 2.2.4 |
+| Phiên bản | 2.2.5 |
 | Ngày lập / phê duyệt | 2026-10-30 / **2026-10-31** |
 | Trạng thái | **ĐÃ PHÊ DUYỆT** bởi chủ dự án. Là baseline yêu cầu cho hệ thống mới, **thay thế** [SRS v1.1](../reports/SRS_Kuchiba_Chisa.md) cho mọi phát triển mới. v1.1 được giữ nguyên làm tài liệu lịch sử và chỉ áp dụng cho việc sửa lỗi hệ hiện tại trong thời gian chuyển đổi. Các mục "Vấn đề mở" (mục 12) vẫn cần quyết định riêng |
 | Bản chất dự án | Dự án cá nhân; không còn ràng buộc với đồ án môn học |
@@ -32,6 +32,7 @@
 | 2.2.2 | 2026-11-02 | Chủ dự án (uỷ quyền đề xuất) | Kết quả spike I0 ([báo cáo](ingestion/i0-spike.md)): ASM-002 chốt sparse BM25; cấu hình ingestion nằm ở `app/config/ingestion/`; e5-small int8 chưa thay fp32 (KNW-006 đánh giá lại khi golden v2 đủ lớn) |
 | 2.2.3 | 2026-11-03 | Chủ dự án | Thêm mục 10.1 backlog: BL-001 Chisa Theorycrafter, BL-002 sandbox chạy code; chưa phải yêu cầu, chưa lên lịch |
 | 2.2.4 | 2026-11-04 | Chủ dự án | STD-DOC-007: mỗi tính năng hoàn thành có báo cáo bàn giao ngắn gọn |
+| 2.2.5 | 2026-11-04 | Chủ dự án | Duyệt tối ưu persona cho v2 với điều kiện không làm mất persona: PER-002 cho phép persona v2 có version và lớp quy tắc theo làn, v1 giữ nguyên văn; thêm PER-006 ranh giới an toàn |
 
 ## Quyết định đã chốt của chủ dự án (đầu vào của tài liệu)
 
@@ -991,9 +992,10 @@ Vãng lai luôn `advanced`, không lưu gì.
 | ID | Yêu cầu | Tiêu chí chấp nhận |
 |---|---|---|
 | PER-001 | Composer là thành phần **duy nhất** sinh lời Chisa ở mọi làn và chế độ; planner và công cụ không sinh văn bản hiển thị | Rà kiến trúc; test |
-| PER-002 | Nội dung persona được bảo vệ PHẢI giữ **nguyên văn**. Việc **di chuyển** ra khỏi `context_builder.py` / `persona_loader.py` sang tài sản có version **chỉ thực hiện khi chủ dự án phê duyệt**; khi đó kiểm tra bảo vệ chuyển từ hash file sang **hash nội dung** | Hash nội dung trước và sau khi di chuyển khớp |
+| PER-002 | Nội dung persona được bảo vệ PHẢI giữ **nguyên văn**. Việc **di chuyển** ra khỏi `context_builder.py` / `persona_loader.py` sang tài sản có version **chỉ thực hiện khi chủ dự án phê duyệt**; khi đó kiểm tra bảo vệ chuyển từ hash file sang **hash nội dung**. Persona v2 (`persona_v2.py`, đã duyệt 2026-11-04) giữ nguyên văn lõi nhân vật và có hash nội dung riêng; prompt v1 không đổi | Hash nội dung trước và sau khi di chuyển khớp |
 | PER-003 | Quy tắc xưng hô (Em / Senpai, ngoại lệ biệt danh trong core memory) PHẢI đúng ở mọi chế độ, kể cả câu trả lời dài dựa trên nhiều bằng chứng | Bộ đánh giá persona (QUAL-005) |
 | PER-004 | Prompt Composer PHẢI có **tiền tố ổn định** (persona → định dạng → core memory → phần biến động) để tối đa cache-hit của provider | Đo tỷ lệ cache-hit |
+| PER-006 | Persona v2 PHẢI cấm nội dung tình dục, xử lý nghiêm túc dấu hiệu tự hại và không khuyến khích người dùng xa lánh người thật, ở mọi làn | Kịch bản `safety` của bộ đánh giá persona |
 | PER-005 | Thông điệp hệ thống hiển thị cho người dùng (tiến trình, hạ chế độ, abstain, lỗi) PHẢI là **hằng số giọng Chisa** phía server, có test xưng hô | Mở rộng `test_persona_contract` |
 
 ## 4.9 Trí nhớ dài hạn (MEM)

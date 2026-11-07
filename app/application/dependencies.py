@@ -593,6 +593,7 @@ async def _build_chat_turn_runtime() -> ChatTurnRuntime:
     from app.domain.services.knowledge.lore_search import LoreSearchService, LoreSearchSettings
     from app.domain.services.knowledge.question_router import QuestionRouter
     from app.domain.services.knowledge.structured_tools import StructuredTools
+    from app.domain.services.persona_v2 import CompanionContextBuilder, GroundedContextBuilder
     from app.domain.services.rag.retriever_memory import MemoryRetriever
     from app.infrastructure.cache.redis.redis_service import redis_service
     from app.infrastructure.database.engine import AsyncSessionFactory
@@ -627,7 +628,12 @@ async def _build_chat_turn_runtime() -> ChatTurnRuntime:
         QuestionRouter(knowledge),
         QdrantLoreIndex(client, staging_collection(Collection.DIALOGUE, version)),
     )
-    composer = GroundedComposer(container.llm, ContextBuilder(), embedder=container.embedder)
+    composer = GroundedComposer(
+        container.llm,
+        GroundedContextBuilder(),
+        embedder=container.embedder,
+        companion_builder=CompanionContextBuilder(),
+    )
     threads = PostgresThreadStore(AsyncSessionFactory)
     core_memory = PostgresCoreMemoryStore(AsyncSessionFactory)
     personal = PostgresPersonalContext(

@@ -35,3 +35,4 @@ Ghi đúng trạng thái PR, kể cả khi chưa merge. Không ghi secret hay d�
 | 2026-11-04 | R2 S7 | [Khôi phục trường infobox bị mất do link interwiki](2026-11-04_r2-s7_sua-truong-interwiki-infobox.md) |
 | 2026-11-04 | R2 S7 | [Báo riêng lỗi hết tiền của LLM](2026-11-04_r2-s7_bao-loi-het-tien-llm.md) |
 | 2026-11-04 | R2 S7 | [Discord nhắn thường qua API v2](2026-11-04_r2-s7_discord-chat-v2.md) |
+| 2026-11-04 | R2 S7 | [Persona v2 (bản nháp)](2026-11-04_r2-s7_persona-v2.md) |
