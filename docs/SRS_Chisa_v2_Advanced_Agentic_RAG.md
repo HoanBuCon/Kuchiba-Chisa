@@ -3,7 +3,7 @@
 | Thuộc tính | Giá trị |
 |---|---|
 | Tài liệu | SRS cho hệ thống mới của Kuchiba Chisa: hai chế độ Advanced RAG / Agentic RAG, phân quyền 4 vai trò, trí nhớ và cảm xúc |
-| Phiên bản | 2.2.5 |
+| Phiên bản | 2.2.6 |
 | Ngày lập / phê duyệt | 2026-10-30 / **2026-10-31** |
 | Trạng thái | **ĐÃ PHÊ DUYỆT** bởi chủ dự án. Là baseline yêu cầu cho hệ thống mới, **thay thế** [SRS v1.1](../reports/SRS_Kuchiba_Chisa.md) cho mọi phát triển mới. v1.1 được giữ nguyên làm tài liệu lịch sử và chỉ áp dụng cho việc sửa lỗi hệ hiện tại trong thời gian chuyển đổi. Các mục "Vấn đề mở" (mục 12) vẫn cần quyết định riêng |
 | Bản chất dự án | Dự án cá nhân; không còn ràng buộc với đồ án môn học |
@@ -33,6 +33,7 @@
 | 2.2.3 | 2026-11-03 | Chủ dự án | Thêm mục 10.1 backlog: BL-001 Chisa Theorycrafter, BL-002 sandbox chạy code; chưa phải yêu cầu, chưa lên lịch |
 | 2.2.4 | 2026-11-04 | Chủ dự án | STD-DOC-007: mỗi tính năng hoàn thành có báo cáo bàn giao ngắn gọn |
 | 2.2.5 | 2026-11-04 | Chủ dự án | Duyệt tối ưu persona cho v2 với điều kiện không làm mất persona: PER-002 cho phép persona v2 có version và lớp quy tắc theo làn, v1 giữ nguyên văn; thêm PER-006 ranh giới an toàn |
+| 2.2.6 | 2026-11-14 | Chủ dự án | Persona v2: mức ngọt ngào tăng theo độ thân thiết, Kuudere chiếm ưu thế khi mới quen, không làm quá. PERF-003 ghi là nợ kỹ thuật cho tới khi có VPS |
 
 ## Quyết định đã chốt của chủ dự án (đầu vào của tài liệu)
 

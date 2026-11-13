@@ -90,6 +90,22 @@ def test_companion_format_stays_the_chat_reply() -> None:
     assert CompanionContextBuilder.build_format_section() == ContextBuilder.build_format_section()
 
 
+@pytest.mark.parametrize("builder", BUILDERS)
+def test_sweetness_follows_closeness_in_every_lane(builder) -> None:
+    text = builder.PERSONA_TEXT
+
+    assert "theo độ thân thiết" in text
+    assert "không làm quá" in text
+    assert "Trust Level" in text
+
+
+def test_closeness_rule_reads_the_levels_the_state_section_prints() -> None:
+    system = _build(CompanionContextBuilder).system
+
+    assert "- Trust Level:" in system
+    assert "- Attachment Level:" in system
+
+
 def test_companion_is_told_not_to_invent_facts_about_herself() -> None:
     assert "đừng tự đặt ra sở thích" in CompanionContextBuilder.PERSONA_TEXT
 

@@ -71,7 +71,7 @@ Dùng `python -m evals run --api v2`, corpus `2026.11.03-4`, LLM thật, 118 câ
 
 ## Rủi ro cần xác nhận
 
-**PERF-003 (TTFT p50 ≤ 1,8 giây, p95 ≤ 3,5 giây).** Đo qua HTTP thật trên máy dev, 10 lượt:
+**PERF-003 (TTFT p50 ≤ 1,8 giây, p95 ≤ 3,5 giây). Nợ kỹ thuật:** chưa có VPS để đo; chủ dự án quyết mục tiêu sau khi đo (14/11/2026). Đo qua HTTP thật trên máy dev, 10 lượt:
 
 | Lượt | TTFT p50 | Tối đa | Ghi chú |
 |---|---|---|---|
