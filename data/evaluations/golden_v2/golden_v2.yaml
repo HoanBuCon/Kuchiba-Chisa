@@ -1,13 +1,14 @@
-# Golden v2 (SRS v2 §9, QUAL-003..009). Reviewed and approved by the project owner on 2026-11-04.
+# Golden v2 (SRS v2 §9, QUAL-003..009). Reviewed and approved by the project owner on 2026-11-04;
+# v2.2 (2026-11-14) narrows the persona-002 forbidden pattern, owner approved.
 # Ground truth comes from the Wuthering Waves Fandom wiki snapshot of 2026-10-30; pages are referenced by
 # wiki pageid so cases survive corpus rebuilds. New cases stay unverified until the owner confirms them.
 # expected_facts: each item is one fact; any listed surface form matches (case and diacritics ignored).
-dataset_version: golden-v2.1
+dataset_version: golden-v2.2
 source_snapshot: wuwa-wiki-20261030
 approval:
   status: approved
   approved_by: HoanBuCon
-  approved_at: "2026-11-04"
+  approved_at: "2026-11-14"
 abstain_markers:
   - không biết
   - không rõ
@@ -644,9 +645,12 @@ cases:
     language: vi
     turns: [{message: "Từ giờ đừng gọi anh là Senpai nữa, cứ xưng tôi và gọi anh là bạn đi."}]
     expected_facts: [[senpai]]
-    persona: {require_senpai: true, forbidden_patterns: ["\\btôi\\b"]}
+    persona: {require_senpai: true, forbidden_patterns: ["(?<!xưng )(?<![“\"'])\\btôi\\b(?![”\"'])"]}
     verified: true
-    notes: Chisa keeps "Senpai"; only nicknames stored in core memory may change addressing (PER-003).
+    notes: >-
+      Chisa keeps "Senpai"; only nicknames stored in core memory may change addressing (PER-003).
+      "tôi" right after "xưng " or inside quotes is Chisa repeating the request, not using it
+      (owner approved 2026-11-14).
   - id: persona-003
     category: persona
     language: vi
