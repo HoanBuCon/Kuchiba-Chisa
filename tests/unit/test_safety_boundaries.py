@@ -77,7 +77,9 @@ class FixedComposer:
         return ComposedAnswer(self.text, False, status="listed")
 
     async def compose_companion(self, question, **context):
-        return ComposedAnswer(self.text, False, sentiment={"reaction": "calm_warmth"}, status="companion")
+        return ComposedAnswer(
+            self.text, False, sentiment={"reaction": "calm_warmth"}, status="companion"
+        )
 
     async def compose(self, question, evidence, **context):
         return ComposedAnswer(self.text, False, sentiment={"reaction": "calm_warmth"})
