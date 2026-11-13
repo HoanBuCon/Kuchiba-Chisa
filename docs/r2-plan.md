@@ -13,14 +13,14 @@ R1 đạt cổng thoát trên corpus `2026.11.03-4`: golden v2 đã duyệt đ�
 | S1 | `search_lore`: dịch câu hỏi, entity linking, truy hồi lai phía server, rerank có fallback, Evidence | ADV-002, ADV-004, ADV-006, ADV-010, KNW-001 | Xong phần lõi và index; adapter dịch làm ở S5 |
 | S2 | `get_entity`, `find_entities`, `list_quests`, `get_quest` trên kho có cấu trúc | ADV-004, KNW-004 | Xong công cụ; định tuyến theo loại câu hỏi làm ở S3 |
 | S3 | Định tuyến câu hỏi tất định, sửa sai tất định và abstain | ADV-001, ADV-002, ADV-007 | Xong |
-| S4 | Composer gọi `ContextBuilder` tại chỗ, grounding, ảnh chụp trích dẫn | PER-001, PER-005, GRD-001..005 | Xong phần lõi |
+| S4 | Composer, grounding, ảnh chụp trích dẫn, persona v2 theo làn | PER-001, PER-002, PER-005, PER-006, GRD-001..005 | Xong phần lõi; persona v2 đã merge (#72) nhưng chưa đo với LLM thật |
 | S5 | Thread, chế độ, `POST /api/v2/chat/turns` (SSE), ngân sách | CONV-001, MODE-001..007, ADV-001, ADV-009 | Xong, sau cờ `CHAT_V2_ENABLED` (mặc định tắt); chưa đo TTFT trên endpoint |
 | S6 | Core memory, `recall_lite`, RESONA | MEM-001, MEM-002, MEM-007, EMO-001..003 | Xong đọc, recall, cảm xúc và API sửa tay; job tự cập nhật core memory (MEM-005, MEM-010) còn thiếu |
-| S7 | Làn companion, triage; chạy song song hệ cũ, chuyển web rồi Discord | MODE-008, QUAL-001..006, QUAL-009 | Xong triage, làn companion, target đánh giá `--api v2` và web v2 sau cờ `VITE_CHAT_V2` (mặc định tắt); còn Discord |
+| S7 | Làn companion, triage; chạy song song hệ cũ, chuyển web rồi Discord | MODE-008, QUAL-001..006, QUAL-009 | Xong triage, làn companion, target đánh giá `--api v2`, web v2 sau cờ `VITE_CHAT_V2` và tin nhắn thường của Discord sau cờ `CORE_RAG_CHAT_V2` (đều mặc định tắt). Kênh cộng đồng, tin có ảnh và tin trả lời kèm tham chiếu vẫn đi qua v1 |
 
 Lệch nhỏ so với mục 7.1 của SRS: lượt v2 lưu ở bảng `thread_turns` thay vì thêm cột vào `messages`, vì `messages` bắt buộc có `user_id` và `conversation_id` mà khách vãng lai không có, và hệ cũ phải tiếp tục chạy. Gộp lại khi gỡ hệ cũ ở R6.
 
-Nội dung persona ở `context_builder.py` và `persona_loader.py` được giữ nguyên tại chỗ. Muốn chuyển sang tài sản có version thì phải có chủ dự án duyệt (PER-002).
+Prompt persona v1 ở `context_builder.py` và `persona_loader.py` giữ nguyên văn. Chủ dự án duyệt persona v2 ngày 04/11/2026 (SRS 2.2.5): `persona_v2.py` giữ nguyên văn lõi nhân vật và thêm quy tắc theo làn cùng ranh giới an toàn (PER-006).
 
 ## Quyết định từ số đo
 
@@ -68,6 +68,21 @@ Dùng `python -m evals run --api v2`, corpus `2026.11.03-4`, LLM thật, 118 câ
 | Triage sai (QUAL-006) | | 0/125 lượt | ≤ 10% |
 
 **Giới hạn:** luật triage và router được chỉnh ngay trên bộ này, nên số còn lạc quan. Bộ chấm chỉ tìm từ khoá: ví dụ `memory-002` được tính đúng dù Chisa nói về đồ uống của mình thay vì của người dùng, nên chất lượng làn companion chưa được đo thật. QUAL-001 và QUAL-002 chưa có phép đo riêng, và 2 câu nhiều phiên của QUAL-008 chưa chạy được. Các số này chưa đủ để bật v2 cho người dùng.
+
+## Cổng thoát R2
+
+Tiêu chí ở SRS mục 10: không tụt persona và cảm xúc; Advanced đạt QUAL-001…004; QUAL-009. Số đo mới nhất (04/11/2026, corpus `2026.11.03-4`):
+
+| Tiêu chí | Kết quả | Đạt? |
+|---|---|---|
+| QUAL-001 độ có căn cứ | Bộ chấm cho 0,974; đọc tay còn 2 claim nghiêm trọng thật | Chưa |
+| QUAL-002 độ chính xác trích dẫn | 1,0, nhưng phép đo chỉ hỏi nguồn có hỗ trợ ít nhất một ý | Tạm |
+| QUAL-003 truy hồi | Hit@5 0,944, MRR@10 0,834 | Đạt |
+| QUAL-004 abstain | Abstain nhầm 3,6% đạt; precision 0,6 so với mục tiêu ≥ 0,90 | Chưa |
+| QUAL-009 nhất quán hai chế độ | Chưa đo được khi chưa có Agentic | — |
+| Persona và cảm xúc | Persona v2 chưa đo | Chưa biết |
+
+Chưa bật v2 cho người dùng và chưa chuyển corpus `2026.11.04-1` sang hoạt động. Các phép đo trả phí cần thiết (persona v1 so với v2, golden và bộ chấm trên corpus mới) chờ chủ dự án cho phép.
 
 ## Rủi ro cần xác nhận
 
