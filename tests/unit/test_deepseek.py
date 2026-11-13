@@ -180,3 +180,12 @@ async def test_deepseek_reports_an_exhausted_balance_as_billing() -> None:
 
     assert raised.value.code == "BILLING"
     assert raised.value.retryable is False
+
+
+@pytest.mark.asyncio
+async def test_deepseek_stream_reports_an_exhausted_balance_as_billing() -> None:
+    with pytest.raises(LLMError) as raised:
+        _ = [chunk async for chunk in _rejected_with_402().stream(_billing_prompt())]
+
+    assert raised.value.code == "BILLING"
+    assert raised.value.retryable is False
