@@ -3,6 +3,9 @@
 The source of truth is **[SRS v2](SRS_Chisa_v2_Advanced_Agentic_RAG.md)**. Section 14 ("Quy ước hệ thống") is
 **mandatory** (STD-GOV-001). When rules conflict: approved SRS > accepted ADR (`docs/adr/`) > section 14 > existing code.
 
+New to the project, or starting a new session? Read the [knowledge map](knowledge-map.md) first: it maps the
+whole system, its real state against the SRS, and the traps already met.
+
 ## Before you change anything
 
 - Read the requirement IDs your change touches and cite them in commits/PRs (`Refs: ADV-004, MON-012`).
