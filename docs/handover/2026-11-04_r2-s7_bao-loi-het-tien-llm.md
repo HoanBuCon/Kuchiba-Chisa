@@ -20,11 +20,10 @@ DeepSeek trả 402 khi hết số dư, nhưng gateway xếp vào `UNKNOWN`, nên
 
 | Kiểm tra | Kết quả |
 |---|---|
-| Test gateway và adapter (gọi thường) | Đạt |
+| Test gateway và adapter (gọi thường và stream) | Đạt; test stream bổ sung ngày 14/11 |
 | Test tài sản giám sát, `check_runbooks.py` | Đạt; 17 alert đều có runbook |
 
 ## Chưa kiểm tra
 
-- Nhánh stream của adapter chưa có test riêng cho 402.
 - Alert chưa được nạp vào Prometheus thật.
 - Các adapter khác chưa được đổi; hết tiền ở các bên đó vẫn là lỗi cũ.
