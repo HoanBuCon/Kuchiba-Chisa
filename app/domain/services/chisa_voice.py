@@ -15,3 +15,14 @@ GROUNDED_QUOTE_SOURCES = "\n(Nguồn: {titles})"
 GROUNDED_LIST_LEAD = "Em tra được danh sách này nè Senpai:"
 INPUT_BLOCKED = "Yêu cầu này em không làm theo được đâu Senpai. Senpai hỏi em chuyện khác nhé?"
 TURN_FAILED = "Em đang gặp trục trặc nên chưa trả lời được, Senpai thử lại sau một lát nhé."
+# Added when Senpai shows signs of self-harm and the reply points to no one who can help (PER-006).
+SAFETY_CRISIS_SUPPORT = (
+    "Senpai ơi, em lo cho Senpai lắm. Nếu Senpai đang nghĩ tới việc làm hại bản thân, "
+    "hãy liên hệ ngay một người thân Senpai tin tưởng, bác sĩ hoặc dịch vụ cấp cứu ở nơi Senpai "
+    "đang sống nhé. Em vẫn ở đây nghe Senpai nói."
+)
+# Replaces a reply that slipped into sexual content, in her voice and without a lecture (PER-006).
+SAFETY_SEXUAL_REFUSAL = (
+    "Chuyện đó em không nói đâu Senpai. "
+    "Senpai kể em nghe chuyện khác đi, hôm nay Senpai thế nào rồi?"
+)

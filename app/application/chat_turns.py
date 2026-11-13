@@ -22,6 +22,7 @@ from app.domain.services.guardrails.injection_guard import (
     InjectionGuard,
 )
 from app.domain.services.guardrails.pii_redaction import PiiRedactor
+from app.domain.services.guardrails.safety_boundaries import apply_boundaries
 from app.domain.services.knowledge.advanced_retrieval import AdvancedEvidence
 from app.domain.services.knowledge.composer import ComposedAnswer
 from app.domain.services.knowledge.lane_router import Lane, choose_lane
@@ -37,6 +38,7 @@ EVENT_TOKEN = "token"
 EVENT_COMPLETED = "turn.completed"
 EVENT_FAILED = "turn.failed"
 STATUS_INPUT_BLOCKED = "input_blocked"
+STATUS_BOUNDARY_REFUSED = "boundary_refused"
 # Keeps the whitespace, so the deltas of a turn join back into its exact text.
 _SENTENCE = re.compile(r"(?<=[.!?]\s)")
 
@@ -106,6 +108,14 @@ def _history(turns: list[TurnRecord]) -> list[dict[str, str]]:
     return messages
 
 
+def _bounded(message: str, answer: ComposedAnswer) -> ComposedAnswer:
+    """A refused reply keeps no sentiment, so it cannot move Chisa's emotions (EMO-002)."""
+    check = apply_boundaries(message, answer.text)
+    if check.replaced:
+        return ComposedAnswer(check.text, abstained=False, status=STATUS_BOUNDARY_REFUSED)
+    return replace(answer, text=check.text)
+
+
 class AdvancedTurnService:
     """Agentic does not exist yet, so the mode is decided here and always clamps to Advanced."""
 
@@ -157,7 +167,7 @@ class AdvancedTurnService:
             yield await self._completed(request.owner, record, replayed=False)
             return
         if lane is Lane.COMPANION:
-            answer = await self._companion(request, thread, budget)
+            answer = _bounded(request.message, await self._companion(request, thread, budget))
             record = self._record(request, thread, decision, answer, (), budget, Lane.COMPANION)
             async for event in self._deliver(request, record, answer):
                 yield event
@@ -172,7 +182,7 @@ class AdvancedTurnService:
                     "title": item.provenance.source_id,
                 },
             )
-        answer = await self._compose(request, thread, found, budget)
+        answer = _bounded(request.message, await self._compose(request, thread, found, budget))
         record = self._record(
             request, thread, decision, answer, found.degraded, budget, Lane.ADVANCED
         )
