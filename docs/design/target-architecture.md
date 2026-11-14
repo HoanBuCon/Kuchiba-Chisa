@@ -85,7 +85,7 @@ Thay đổi so với code hiện tại, và lý do:
 | 2 | Claim có cả bản tiếng Anh và tiếng Việt | Kiểm chứng xuyên ngữ bằng embedding chỉ nhận 62% claim đúng; 45/118 câu trả lời golden phải hiện trích dẫn tiếng Anh. Kiểm cùng ngôn ngữ chặt hơn và ít loại nhầm hơn |
 | 3 | Lời dẫn và lời kết do LLM viết theo giọng Chisa | Câu dẫn cố định làm câu trả lời lore mất chất nhân vật |
 | 4 | Nạp trí nhớ song song với truy hồi | Chuỗi hiện tại tuần tự hoàn toàn |
-| 5 | Lưu lượt, cập nhật cảm xúc và ghi outbox trong một giao dịch; khoá theo thread; hoàn quota khi lượt lỗi | EMO-003, MODE-005, REL-003, REL-004 |
+| 5 | Lưu lượt, cập nhật cảm xúc và ghi outbox trong một giao dịch; khoá theo thread; hoàn quota khi lượt lỗi | EMO-003, MODE-005, REL-007 |
 | 6 | Prompt xếp lại: persona → định dạng → core memory → phần biến động | PER-004: tăng phần đầu ổn định để trúng cache của provider. Làm trong builder của persona v2, không sửa file được bảo vệ |
 
 Giữ nguyên: truy hồi lai và RRF, rerank top 15, luật liệt kê và luật chapter, danh sách do server trình bày, ngưỡng abstain, guard ranh giới an toàn, ngân sách 2 lời gọi LLM.

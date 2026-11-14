@@ -3,7 +3,7 @@
 - Trạng thái: **Accepted**
 - Ngày: 2026-11-14
 - Người quyết định: chủ dự án (uỷ quyền chọn kiến trúc và công nghệ tối ưu hiệu năng trên chi phí, VPS 4 vCPU / 8–10 GB)
-- Liên quan: SRS v2.2.7 (mục 3.1, 3.2, 3.5.4, 3.5.6, 10; ASM-001, ASM-004; AGT-001…012; STD-AI-001, STD-AI-006), [thiết kế kiến trúc mục tiêu](../design/target-architecture.md)
+- Liên quan: SRS v2.3.0 (mục 3.1, 3.2, 3.5.4, 3.5.6, 10; ASM-001, ASM-004; AGT-001…012; STD-AI-001, STD-AI-006), [thiết kế kiến trúc mục tiêu](../design/target-architecture.md)
 
 ## Bối cảnh
 
