@@ -29,7 +29,7 @@
 
 ## Chưa kiểm tra
 
-- Khoá Redis chưa thử với Redis thật và hai worker chạy đồng thời.
+- Khoá Redis đã thử trên Redis dev (5 lời gọi đua nhau, 1 cái giữ được; sai token không nhả được), nhưng chưa thử với hai worker API chạy thật.
 - Chưa chạy đầu cuối với LLM thật sau thay đổi này.
 - Lượt bị ngắt kết nối giữa chừng (client đóng SSE) không được hoàn quota.
 
