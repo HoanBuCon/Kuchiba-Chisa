@@ -37,3 +37,4 @@ Ghi đúng trạng thái PR, kể cả khi chưa merge. Không ghi secret hay d�
 | 2026-11-04 | R2 S7 | [Discord nhắn thường qua API v2](2026-11-04_r2-s7_discord-chat-v2.md) |
 | 2026-11-04 | R2 S7 | [Persona v2 (bản nháp)](2026-11-04_r2-s7_persona-v2.md) |
 | 2026-11-14 | R2 S7 | [Guard đầu ra cho ranh giới an toàn](2026-11-14_r2-s7_guard-ranh-gioi-an-toan.md) |
+| 2026-11-14 | R2 S7 | [Đo persona v2 và golden trên corpus mới](2026-11-14_r2-s7_do-persona-v2-va-corpus-moi.md) |
