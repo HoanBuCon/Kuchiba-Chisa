@@ -330,9 +330,11 @@ class Lock:
 class Commit:
     def __init__(self) -> None:
         self.calls = []
+        self.remembered = []
 
-    async def commit(self, record, owner, sentiment):
+    async def commit(self, record, owner, sentiment, *, remember=False):
         self.calls.append((record, owner, sentiment))
+        self.remembered.append(remember)
         return True
 
 
@@ -384,3 +386,22 @@ async def test_turn_and_sentiment_go_through_one_commit() -> None:
     assert (owner, sentiment) == (OWNER, {"reaction": "calm_warmth"})
     assert record.answer == "Câu."
     assert threads.turns == []
+
+
+@pytest.mark.parametrize(
+    ("message", "is_guest", "remembered"),
+    [
+        ("Anh thích trà sữa lắm.", False, True),
+        ("Anh thích trà sữa lắm.", True, False),
+        ("Tacet Field là gì?", False, False),
+    ],
+)
+async def test_only_a_members_conversation_is_queued_for_memory(
+    message, is_guest, remembered
+) -> None:
+    commit = Commit()
+    service, _ = _locked_service(Lock(), composer=CompanionComposer(), commit=commit)
+
+    await _events(service, _request(message=message, is_guest=is_guest))
+
+    assert commit.remembered == [remembered]

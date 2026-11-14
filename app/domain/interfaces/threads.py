@@ -42,8 +42,18 @@ class IThreadStore(Protocol):
 
 
 class ITurnCommit(Protocol):
-    async def commit(self, record: TurnRecord, owner: str, sentiment: Mapping[str, Any]) -> bool:
-        """Store the turn and move emotion in one transaction; False if a retry stored it first."""
+    async def commit(
+        self,
+        record: TurnRecord,
+        owner: str,
+        sentiment: Mapping[str, Any],
+        *,
+        remember: bool = False,
+    ) -> bool:
+        """One transaction for the turn, its emotion and, if `remember`, its memory job.
+
+        False when a racing retry stored the turn first; then nothing else is written.
+        """
         ...
 
 

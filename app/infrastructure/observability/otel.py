@@ -57,7 +57,8 @@ _CAPABILITY_PROFILES = frozenset(
 )
 _JOB_TYPES = frozenset(
     {
-        "memory_extraction.v1", "private_summary.v1", "community_summary.v1",
+        "memory_extraction.v1", "thread_memory_extraction.v1", "private_summary.v1",
+        "community_summary.v1",
         "visual_memory.v1", "user_state_cache.v1", "private_summary_cache.v1",
         "community_state.v1",
     }

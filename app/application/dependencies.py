@@ -650,7 +650,7 @@ async def _build_chat_turn_runtime() -> ChatTurnRuntime:
         composer,
         personal=personal,
         linker=linker,
-        commit=PostgresTurnCommit(AsyncSessionFactory),
+        commit=PostgresTurnCommit(AsyncSessionFactory, queue=container.background_job_queue),
         lock=RedisTurnLock(redis_service),
     )
     return ChatTurnRuntime(threads, turns, core_memory)
