@@ -29,6 +29,9 @@ from app.infrastructure.background.job_handlers import (
     UserStateCacheJobHandler,
     VisualMemoryJobHandler,
 )
+from app.infrastructure.background.thread_memory_handler import (
+    ThreadMemoryExtractionJobHandler,
+)
 from app.infrastructure.cache.redis.redis_service import redis_service
 from app.infrastructure.database.engine import (
     AsyncSessionFactory,
@@ -73,6 +76,9 @@ async def run_worker() -> None:
         handlers={
             BackgroundJobType.MEMORY_EXTRACTION: MemoryExtractionJobHandler(
                 source, container.memory_extractor
+            ),
+            BackgroundJobType.THREAD_MEMORY_EXTRACTION: ThreadMemoryExtractionJobHandler(
+                AsyncSessionFactory, source, container.memory_extractor
             ),
             BackgroundJobType.PRIVATE_SUMMARY: PrivateSummaryJobHandler(
                 source, container.chat_engine._unified_auto_summarize

@@ -112,6 +112,11 @@ def _history(turns: list[TurnRecord]) -> list[dict[str, str]]:
     return messages
 
 
+def _worth_remembering(request: TurnRequest, record: TurnRecord) -> bool:
+    """Guests have no long-term memory, and only conversation carries facts about the person."""
+    return not request.is_guest and record.lane == Lane.COMPANION.value
+
+
 def _bounded(message: str, answer: ComposedAnswer) -> ComposedAnswer:
     """A refused reply keeps no sentiment, so it cannot move Chisa's emotions (EMO-002)."""
     check = apply_boundaries(message, answer.text)
@@ -220,7 +225,8 @@ class AdvancedTurnService:
         self, request: TurnRequest, record: TurnRecord, answer: ComposedAnswer
     ) -> None:
         if self._commit is not None:
-            await self._commit.commit(record, request.owner, answer.sentiment)
+            remember = _worth_remembering(request, record)
+            await self._commit.commit(record, request.owner, answer.sentiment, remember=remember)
             return
         stored = await self._threads.save_turn(record)
         # Only the retry that stored the turn may move emotion, so it moves once (EMO-003).
