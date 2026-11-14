@@ -3,7 +3,7 @@
 | Thuộc tính | Giá trị |
 |---|---|
 | Tài liệu | SRS cho hệ thống mới của Kuchiba Chisa: hai chế độ Advanced RAG / Agentic RAG, phân quyền 4 vai trò, trí nhớ và cảm xúc |
-| Phiên bản | 2.2.7 |
+| Phiên bản | 2.3.0 |
 | Ngày lập / phê duyệt | 2026-10-30 / **2026-10-31** |
 | Trạng thái | **ĐÃ PHÊ DUYỆT** bởi chủ dự án. Là baseline yêu cầu cho hệ thống mới, **thay thế** [SRS v1.1](../reports/SRS_Kuchiba_Chisa.md) cho mọi phát triển mới. v1.1 được giữ nguyên làm tài liệu lịch sử và chỉ áp dụng cho việc sửa lỗi hệ hiện tại trong thời gian chuyển đổi. Các mục "Vấn đề mở" (mục 12) vẫn cần quyết định riêng |
 | Bản chất dự án | Dự án cá nhân; không còn ràng buộc với đồ án môn học |
@@ -34,7 +34,7 @@
 | 2.2.4 | 2026-11-04 | Chủ dự án | STD-DOC-007: mỗi tính năng hoàn thành có báo cáo bàn giao ngắn gọn |
 | 2.2.5 | 2026-11-04 | Chủ dự án | Duyệt tối ưu persona cho v2 với điều kiện không làm mất persona: PER-002 cho phép persona v2 có version và lớp quy tắc theo làn, v1 giữ nguyên văn; thêm PER-006 ranh giới an toàn |
 | 2.2.6 | 2026-11-14 | Chủ dự án | Persona v2: mức ngọt ngào tăng theo độ thân thiết, Kuudere chiếm ưu thế khi mới quen, không làm quá. PERF-003 ghi là nợ kỹ thuật cho tới khi có VPS |
-| 2.2.7 | 2026-11-14 | Chủ dự án | ADR-0005 (chủ dự án uỷ quyền chọn kiến trúc): bộ điều phối lượt chat và Advanced RAG viết bằng Python thuần; LangGraph chỉ dùng cho làn Agentic. ASM-004 đã kiểm chứng trên máy dev (mục 2.6, 3.1, 3.2, 3.5.4, 3.5.6, 10). Thiết kế mục tiêu ở `docs/design/target-architecture.md` |
+| 2.3.0 | 2026-11-14 | Chủ dự án (uỷ quyền chọn kiến trúc và công nghệ) | Kiến trúc sau nghiên cứu, theo ADR-0005 và `docs/design/target-architecture.md`: bộ điều phối và Advanced RAG viết bằng Python thuần, LangGraph chỉ cho làn Agentic (ASM-004 đã kiểm chứng trên máy dev); bước hiểu câu hỏi gộp chọn làn và viết lại câu hỏi (MODE-008, ADV-001…003, ADV-010); claim hai ngôn ngữ và lời dẫn theo giọng Chisa (GRD-001, GRD-003); Redis Streams chỉ bắt buộc cho Agentic (CH-001); thêm REL-007; cập nhật mục 3.2, 3.3, 3.4, 3.5.4, 3.5.6, 3.5.7, 3.5.10, 8.2, 10 |
 
 ## Quyết định đã chốt của chủ dự án (đầu vào của tài liệu)
 
@@ -191,8 +191,8 @@ flowchart TB
 | Ingress | AuthN, RBAC, entitlement chế độ, quota CU, khoá theo thread, idempotency | Nâng cấp từ auth/admission hiện có |
 | Agent Runtime | Bộ điều phối Python thuần: guard, triage, làn companion và Advanced, Composer, lưu, sự kiện. Làn Agentic là đồ thị LangGraph có interrupt và checkpoint (ADR-0005) | **Mới** (thay `ChatPipeline` 12 stage) |
 | Knowledge layer | Công cụ có kiểu, lọc ACL ở tầng công cụ | **Mới**; dùng lại scorer memory |
-| Composer | Lời Chisa; output `{response, sentiment, claims/citations}` | Tách từ `ContextBuilder`, persona nguyên văn |
-| Grounding | Claim/citation guard, extractive fallback trong khung persona | Giữ RAG-06, mở rộng cho sổ bằng chứng |
+| Composer | Lời Chisa; output làn companion `{response, sentiment}`, làn có bằng chứng `{decision, lead, claims, closing, sentiment}` (GRD-001) | Persona v1 nguyên văn; persona v2 có version (PER-002) |
+| Grounding | Kiểm chứng claim hai ngôn ngữ, citation guard, extractive fallback trong khung persona, guard ranh giới an toàn (PER-006) | Giữ RAG-06, mở rộng cho sổ bằng chứng |
 | RESONA | Cập nhật cảm xúc 8 chiều tất định | **Giữ** `emotion_engine.py`, `state_manager.py` |
 | LLM Gateway | Messages/tools API, breaker, bulkhead, retry, fallback, ngân sách theo làn | Nâng cấp từ BE-02 |
 | Inference service | Embedding và rerank dùng chung một bản model | **Mới** (thay fastembed trong từng process) |
@@ -206,7 +206,7 @@ flowchart TB
 |---|---|
 | Postgres | accounts, identities, **roles/role_assignments**, **mfa_factors**, sessions, **admin_audit_events**, threads, messages, preferences, emotion_state, **core_memory**, **facts (temporal)**, entities/aliases/quests/glossary, corpus releases, outbox/jobs, **LangGraph checkpoints** |
 | Qdrant 1.20 | `lore_canon`, `lore_dialogue`, `memories`, `guild_memories`, `image_memories` (versioned + alias) |
-| Redis | Quota, lock, cache, **authz version**, Redis Streams sự kiện |
+| Redis | Quota, khoá theo thread, cache (gồm cache bước hiểu câu hỏi), **authz version**, Redis Streams sự kiện của làn Agentic |
 | Đĩa VPS | Ảnh người dùng (có TTL/consent); artifact ingestion `data/ingestion/` (bronze theo `(page_id, revid, render_hash)`, silver, gold, cache vector, báo cáo); **ảnh thực thể từ wiki** (bản gốc theo SHA-256 + bản hiển thị sinh tại chỗ, ING-019) |
 
 ## 3.4 Ngân sách tài nguyên VPS (mục tiêu)
@@ -217,7 +217,7 @@ flowchart TB
 | redis | 256 MB | |
 | qdrant | 1.200 MB | ~15–20k điểm lore + memories |
 | inference (fastembed/ONNX, ADR-0004) | 1.400 MB | e5-small fp32: nạp ~0,82 GB, đỉnh 1,07 GB ở lô 8 (đo cgroup Linux 2026-10-31); lô tối đa 8; reranker local tuỳ chọn. Bản int8 tiết kiệm khoảng 330 MB nhưng mất 3/32 câu ở dense-only (I0); giữ fp32 tới khi chọn model KNW-006 |
-| api (2 worker, **không** nạp model) | 1.200 MB | |
+| api (2 worker, **không** nạp model) | 1.200 MB | LangGraph thêm khoảng 57 MB mỗi tiến trình (đo trên máy dev, ADR-0005) |
 | worker | 700 MB | |
 | discord | 300 MB | |
 | web + caddy | 256 MB | |
@@ -337,31 +337,33 @@ Quy tắc: `domain` không import lớp nào khác; `application` chỉ import `
 
 ### 3.5.4 Agent Runtime tổng thể
 
-Sơ đồ dưới là luồng logic của một lượt. Theo ADR-0005, bộ điều phối viết bằng Python thuần; chỉ subgraph Agentic là đồ thị LangGraph, và chỉ nó có checkpoint.
+Sơ đồ dưới là luồng logic của một lượt. Theo ADR-0005, bộ điều phối viết bằng Python thuần; chỉ làn Agentic là đồ thị LangGraph, và chỉ nó có checkpoint.
 
 ```mermaid
 flowchart TD
-  START(("lượt mới")) --> LS["load_state<br/>thread, cửa sổ token, summary,<br/>core memory, emotion đã decay, ambient"]
-  LS --> GI["guard_in<br/>injection, PII cho provider, privacy"]
+  START(("lượt mới")) --> ING["ingress<br/>authn, quota, khoá thread, idempotent theo turn_id"]
+  ING --> GI["guard_in<br/>injection, PII cho provider, privacy"]
   GI -->|BLOCK| BLK["từ chối bằng hằng số giọng Chisa"]
   BLK --> PERS
   GI -->|OK| RM["resolve_mode<br/>override, thread, mặc định, kẹp quyền"]
-  RM --> TR{"triage trong trần chế độ"}
-  TR -->|"small talk / tâm sự"| CL["recall_lite"]
-  TR -->|"kiến thức, mode advanced"| ADV[["Advanced RAG subgraph"]]
-  TR -->|"kiến thức, mode agentic"| AGT[["Agentic RAG subgraph"]]
-  TR -->|"lệnh tường minh"| CMD["command tools<br/>em nhớ giúp anh, báo cảm xúc"]
+  RM --> UND["hiểu câu hỏi<br/>luật tất định, hoặc 1 lời gọi LLM có cache:<br/>làn + câu hỏi độc lập"]
+  UND --> LS["load_state, chạy song song với truy hồi<br/>cửa sổ token, summary, core memory, emotion đã decay"]
+  UND -->|"trò chuyện / tâm sự"| CL["recall_lite"]
+  UND -->|"kiến thức, mode advanced"| ADV[["Advanced RAG<br/>DAG Python"]]
+  UND -->|"kiến thức, mode agentic"| AGT[["Agentic RAG<br/>đồ thị LangGraph"]]
+  UND -->|"lệnh tường minh"| CMD["command tools<br/>em nhớ giúp anh, báo cảm xúc"]
   AGT -. "interrupt" .-> WAIT[("checkpoint<br/>chờ người dùng")]
   WAIT -. "lượt kế tiếp resume" .-> AGT
+  AGT -. "công cụ advanced_rag" .-> ADV
+  LS --> CMP
   CL --> CMP
   ADV --> CMP
   AGT --> CMP
   CMD --> CMP
-  CMP["compose<br/>Chisa Composer"] --> GRD["grounding guards"]
-  GRD --> GO["guard_out"]
-  GO --> EMO["appraise_emotion<br/>RESONA"]
-  EMO --> PERS["persist + outbox<br/>idempotent theo turn_id"]
-  PERS --> END(("hoàn tất"))
+  CMP["compose<br/>Chisa Composer"] --> GRD["kiểm chứng claim"]
+  GRD --> GO["guard_out<br/>lộ prompt, ranh giới an toàn"]
+  GO --> PERS["commit một giao dịch<br/>lượt + RESONA + outbox"]
+  PERS --> END(("stream và hoàn tất"))
 ```
 
 ### 3.5.5 Xác định chế độ và phân làn
@@ -396,39 +398,36 @@ flowchart TD
 
 ### 3.5.6 Advanced RAG: luồng chi tiết
 
-Advanced là một hàm DAG Python (`AdvancedRetrieval`), không phải subgraph LangGraph (ADR-0005). Làn Agentic gọi lại chính hàm này qua công cụ `advanced_rag` (AGT-007).
+Advanced là một hàm DAG Python, không phải subgraph LangGraph (ADR-0005). Làn Agentic gọi lại chính hàm này qua công cụ `advanced_rag` (AGT-007).
 
 ```mermaid
 flowchart TD
-  Q["câu hỏi + 1-2 lượt trước"] --> N["chuẩn hoá tiếng Việt<br/>dấu, teencode"]
-  N --> CR["giải đồng tham chiếu"]
-  CR --> EL["entity linking + mở rộng alias<br/>registry theo corpus release"]
-  EL --> QT{"loại câu hỏi"}
-  QT -->|"ngoài phạm vi"| OOS["abstain hoặc chuyển companion"]
-  QT -->|"hồ sơ / định nghĩa / sự kiện / quest"| AMB{"điểm mơ hồ vượt ngưỡng?"}
-  AMB -->|có| RW["LLM viết lại query<br/>tối đa 1 lời gọi"]
-  AMB -->|không| RET
-  RW --> RET
+  Q["câu hỏi độc lập tiếng Anh<br/>từ bước hiểu câu hỏi"] --> EL["entity linking + mở rộng alias<br/>registry theo corpus release"]
+  EL --> QT{"định tuyến tất định"}
+  QT -->|"nêu thứ corpus không có<br/>ví dụ chapter chưa phát hành"| ABS
+  QT -->|"liệt kê quest / Resonator"| S1["kho cấu trúc<br/>danh sách do server trình bày"]
+  QT -->|"còn lại"| RET
   subgraph RET["Truy hồi"]
     D1["dense trên lore_canon"]
-    B1["BM25 full-text trên lore_canon"]
+    B1["BM25 trên lore_canon"]
+    E1["kênh thực thể"]
     F["RRF có trọng số<br/>fusion phía server Qdrant"]
-    S1["kho cấu trúc<br/>get_entity / thẻ quest"]
     D1 --> F
     B1 --> F
+    E1 --> F
   end
-  F --> RK["rerank cross-encoder<br/>remote, fallback local"]
-  RK --> MG["gộp + khử trùng"]
-  S1 --> MG
-  MG --> EXP["mở rộng parent / cảnh"]
-  EXP --> CP["nén ngữ cảnh cấp câu<br/>sắp xếp chống lost-in-the-middle"]
-  CP --> SUF{"bằng chứng đủ?<br/>kiểm tất định"}
+  F --> RK["rerank cross-encoder top 15<br/>remote, fallback local"]
+  RK --> MG["gộp với hồ sơ thực thể, khử trùng"]
+  MG --> SUF{"bằng chứng đủ?<br/>ngưỡng rerank, kiểm tất định"}
   SUF -->|đủ| LED["evidence ledger"]
-  SUF -->|"yếu, chưa sửa"| CORR["sửa sai một lần<br/>nới filter + lore_dialogue có filter thực thể"]
-  CORR --> RET
-  SUF -->|"vẫn yếu"| ABS["abstain giọng Chisa<br/>đề nghị Agentic nếu có quyền"]
-  LED --> CMP["Composer"]
-  ABS --> CMP
+  SUF -->|"yếu, chưa sửa"| CORR["sửa sai một lần<br/>thêm lore_dialogue có filter thực thể"]
+  CORR --> SUF
+  SUF -->|"vẫn yếu"| ABS["abstain giọng Chisa, không gọi LLM<br/>đề nghị Agentic nếu có quyền"]
+  S1 --> OUT["trả lời"]
+  LED --> CMP["Composer<br/>lời dẫn, claim hai ngôn ngữ, lời kết"]
+  CMP --> VER["kiểm chứng claim"]
+  VER --> OUT
+  ABS --> OUT
 ```
 
 ### 3.5.7 Advanced RAG: tuần tự
@@ -438,31 +437,40 @@ sequenceDiagram
   autonumber
   actor U as Senpai
   participant IN as Ingress
-  participant RT as Runtime
-  participant QP as Query processing
+  participant RT as Bộ điều phối
   participant KN as Knowledge layer
   participant QD as Qdrant
   participant INF as Inference svc
+  participant RR as Reranker
   participant GW as LLM Gateway
   participant CMP as Composer
+  participant DB as Postgres
   U->>IN: POST /api/v2/chat/turns mode=advanced
   IN->>IN: AuthN, RBAC, trừ 1 CU, khoá thread
   IN->>RT: run turn_id
-  RT->>RT: load_state, guard_in, resolve_mode, triage
-  RT->>QP: chuẩn hoá, đồng tham chiếu, entity linking
-  opt điểm mơ hồ cao
-    QP->>GW: viết lại query, lời gọi LLM 1
+  RT->>RT: guard_in, resolve_mode
+  opt luật tất định chưa chắc và chưa có cache
+    RT->>GW: hiểu câu hỏi, lời gọi LLM 1
   end
-  QP->>KN: search_lore query + filters
-  KN->>INF: embed query
-  KN->>QD: hybrid dense + BM25, RRF
-  KN->>INF: rerank top-K
-  KN-->>RT: Evidence[]
-  RT->>CMP: persona + cảm xúc + core memory + evidence
-  CMP->>GW: compose, lời gọi LLM 2, stream
-  GW-->>U: token events đã qua guard theo đoạn
-  RT->>RT: grounding, RESONA, persist + outbox
-  RT-->>U: turn.completed với citations, emotions, usage
+  par truy hồi
+    RT->>KN: search_lore câu hỏi độc lập
+    KN->>INF: embed query
+    KN->>QD: hybrid dense + BM25 + thực thể, RRF
+    KN->>RR: rerank top 15
+    KN-->>RT: Evidence[]
+  and ngữ cảnh cá nhân
+    RT->>DB: cảm xúc, core memory, cửa sổ + summary
+  end
+  alt bằng chứng đủ
+    RT->>CMP: persona + cảm xúc + trí nhớ + evidence
+    CMP->>GW: compose, lời gọi LLM 2
+    RT->>RT: kiểm chứng claim, guard_out
+  else không đủ
+    RT->>RT: abstain bằng hằng số giọng Chisa
+  end
+  RT->>DB: một giao dịch: lượt + RESONA + outbox
+  RT-->>U: token events, rồi turn.completed với citations, emotions, usage
+  Note over IN,RT: lượt lỗi thì hoàn CU (REL-007)
 ```
 
 ### 3.5.8 Agentic RAG: vòng ReAct
@@ -531,19 +539,21 @@ sequenceDiagram
 ```mermaid
 flowchart LR
   subgraph PR["Prompt Composer - phần ổn định đứng trước"]
-    P1["persona nguyên văn<br/>persona_version"] --> P2["định dạng + schema output"]
+    P1["persona theo làn<br/>persona_version"] --> P2["định dạng + schema output"]
     P2 --> P3["core memory"]
     P3 --> P4["directive cảm xúc từ StateManager"]
     P4 --> P5["cửa sổ ngắn hạn + summary"]
     P5 --> P6["bằng chứng từ ledger<br/>vùng dữ liệu không tin cậy"]
     P6 --> P7["tin nhắn người dùng"]
   end
-  PR --> LLM["LLM Gateway<br/>1 lời gọi, stream"]
-  LLM --> OJ["output: response, sentiment,<br/>claims hoặc citations"]
-  OJ --> CG["claim-evidence guard"]
-  CG --> CI["citation guard<br/>ID phải thuộc ledger"]
-  CI --> OG["prompt-leak + output guard"]
-  OG --> PA["presented_answer<br/>khung persona cho trích dẫn nguyên văn"]
+  PR --> LLM["LLM Gateway<br/>1 lời gọi"]
+  LLM --> OJ["output: decision, lead,<br/>claims: evidence_id, quote, claim_en, claim_vi,<br/>closing, sentiment"]
+  OJ --> CI["citation guard<br/>ID phải thuộc ledger, quote nguyên văn"]
+  CI --> CG["claim_en so với quote<br/>cùng ngôn ngữ"]
+  CG --> CV["claim_vi so với claim_en<br/>tên riêng, con số, phủ định"]
+  CV --> LD["lead và closing<br/>không có tên riêng hay con số mới"]
+  LD --> OG["prompt-leak + ranh giới an toàn"]
+  OG --> PA["presented_answer<br/>claim trượt thì bỏ; không còn claim nào<br/>thì trích nguyên văn trong khung persona"]
   PA --> USR["người dùng"]
   OJ -. sentiment .-> RES["RESONA"]
 ```
@@ -922,7 +932,7 @@ Vãng lai luôn `advanced`, không lưu gì.
 | MODE-005 | Không đổi chế độ khi một lượt đang chạy (khoá theo thread); nếu đang chờ interrupt của Agentic thì đổi chế độ sẽ huỷ interrupt đó | Test đồng thời |
 | MODE-006 | Mỗi message PHẢI lưu `mode_requested`, `mode_effective`, `lane`, `downgrade_reason?`, số lời gọi LLM, token, chi phí ước tính | Truy vấn được theo thread |
 | MODE-007 | Yêu cầu `agentic` khi không có quyền thì hạ về `advanced` với `downgrade_reason=not_entitled`, kèm thông báo hằng số giọng Chisa; **không tốn CU Agentic** | Test với member, guest, Discord chưa liên kết |
-| MODE-008 | Chế độ là **trần**: `triage` có thể chọn làn rẻ hơn (small talk thì `companion` ở mọi chế độ; câu hỏi một bước ở Agentic có thể trả lời bằng một lần gọi `advanced_rag`) | Bộ đánh giá triage (QUAL-006) |
+| MODE-008 | Chế độ là **trần**: bước **hiểu câu hỏi** có thể chọn làn rẻ hơn (trò chuyện thì `companion` ở mọi chế độ; câu hỏi một bước ở Agentic có thể trả lời bằng một lần gọi `advanced_rag`). Câu không phải câu hỏi kiến thức (chào hỏi, khen, chê, tâm sự) KHÔNG được vào làn tra cứu | Bộ đánh giá triage (QUAL-006), gồm kịch bản persona |
 | MODE-009 | Discord: `/mode advanced|agentic` đặt chế độ cho thread hiện tại (DM hoặc kênh); admin guild CÓ THỂ đặt **trần chế độ** cho kênh (chỉ thu hẹp, không mở rộng quyền Chisa) | Guild đặt trần `advanced` thì Chía-con cũng bị kẹp ở kênh đó |
 | MODE-010 | Web: công tắc "Hỏi đáp / Chuyên sâu"; với người không có quyền thì công tắc bị khoá kèm giải thích | Kiểm thử UI |
 
@@ -940,16 +950,16 @@ Vãng lai luôn `advanced`, không lưu gì.
 
 | ID | Yêu cầu | Tiêu chí chấp nhận |
 |---|---|---|
-| ADV-001 | Advanced RAG PHẢI là **luồng cố định** (DAG): hiểu câu hỏi → (viết lại có điều kiện) → truy hồi lai → hậu xử lý → sửa sai tất định → Composer → grounding | Đồ thị khai báo tĩnh; không có bước do LLM chọn |
-| ADV-002 | Hiểu câu hỏi PHẢI tất định: chuẩn hoá tiếng Việt, giải đồng tham chiếu từ 1–2 lượt trước, **entity linking + mở rộng alias** (registry theo corpus release, gồm alias tiếng Việt), nhận dạng loại câu hỏi (hồ sơ / định nghĩa / sự kiện / quest / ngoài phạm vi) | Unit test trên tập câu hỏi mẫu; không gọi LLM |
-| ADV-003 | Viết lại query bằng LLM CÓ THỂ dùng **chỉ khi** điểm mơ hồ vượt ngưỡng; tối đa 1 lời gọi | Đo tỷ lệ viết lại; không vượt ngân sách ADV-009 |
+| ADV-001 | Advanced RAG PHẢI là **luồng cố định** (DAG): hiểu câu hỏi → truy hồi lai → hậu xử lý → sửa sai tất định → Composer → kiểm chứng. Hiện thực bằng Python thuần (ADR-0005) | Thứ tự bước cố định trong mã; không có bước do LLM chọn |
+| ADV-002 | Hiểu câu hỏi gồm hai phần. Phần tất định, luôn chạy: chuẩn hoá tiếng Việt, **entity linking + mở rộng alias** (registry theo corpus release), định tuyến liệt kê và phát hiện thứ corpus không có. Phần LLM (ADV-003) chỉ chạy khi luật tất định chưa đủ chắc | Unit test phần tất định trên tập câu hỏi mẫu, không gọi LLM |
+| ADV-003 | Bước hiểu câu hỏi bằng LLM: **tối đa 1 lời gọi**, trả đồng thời **làn** và **câu hỏi độc lập bằng tiếng Anh** viết lại từ tin nhắn cùng 1–2 lượt trước (giải đồng tham chiếu). Kết quả PHẢI được cache; luật tất định đã chắc thì bỏ qua lời gọi | Kịch bản lore nhiều lượt trong golden; đo tỷ lệ bỏ qua và cache-hit; không vượt ADV-009 |
 | ADV-004 | Truy hồi PHẢI **lai dense + BM25** trên `lore_canon` (Qdrant 1.20, fusion phía server), **RRF có trọng số cấu hình được**, lọc ACL và metadata trong truy vấn DB. Câu hỏi thuộc tính/quest PHẢI tra thêm kho có cấu trúc (`get_entity`, thẻ quest) | Ablation dense / BM25 / hybrid / hybrid+rerank trên golden v2 |
 | ADV-005 | Mặc định **không** tìm `lore_dialogue` (thoại chiếm ~68% token corpus, mật độ dữ kiện thấp) | Truy vết cho thấy không có truy vấn dialogue ở lượt bình thường |
 | ADV-006 | Hậu xử lý PHẢI gồm rerank cross-encoder (remote + fallback local), khử trùng, mở rộng parent/cảnh, nén ngữ cảnh cấp câu, sắp xếp chống lost-in-the-middle | Có metric riêng cho rerank fallback |
 | ADV-007 | **Sửa sai tất định**: bằng chứng dưới ngưỡng thì chạy **một** lượt mở rộng (nới filter, thêm `lore_dialogue` có filter thực thể). Vẫn yếu thì **abstain bằng giọng Chisa**; nếu người dùng có quyền thì **đề nghị chuyển Agentic** | Test 3 nhánh; không gọi LLM ở bước sửa sai |
 | ADV-008 | Câu trả lời Advanced CÓ THỂ cache theo khoá `(mode=advanced, câu hỏi chuẩn hoá, corpus_version, prompt_version, persona_version, ACL scope)` | Test cache: không dùng lại khi khác ACL/version |
 | ADV-009 | Ngân sách Advanced: **≤ 2 lời gọi LLM**, **≤ 2 vòng truy hồi**, giới hạn token vào/ra cấu hình; vượt ngân sách thì trả kết quả degraded có mã lý do | Test ngân sách; khớp tinh thần `v1:NFR-PERF-009` |
-| ADV-010 | **Truy hồi xuyên ngữ**: câu hỏi tiếng Việt PHẢI được entity linking song ngữ tất định (alias) và sinh thêm truy vấn tiếng Anh cho kênh lexical; dịch bằng LLM chỉ dùng khi eval chứng minh cần và nằm trong ngân sách ADV-009 | Metric truy hồi báo theo ngôn ngữ (vi / en / không dấu / teencode) |
+| ADV-010 | **Truy hồi xuyên ngữ**: câu hỏi không phải tiếng Anh PHẢI được entity linking song ngữ tất định (alias) và truy hồi bằng câu hỏi tiếng Anh từ ADV-003. Eval ngày 03/11/2026 đã chứng minh cần dịch (Hit@5 0,944 so với 0,898) | Metric truy hồi báo theo ngôn ngữ (vi / en / không dấu / teencode) |
 
 ## 4.5 Chế độ Agentic RAG (AGT)
 
@@ -987,9 +997,9 @@ Vãng lai luôn `advanced`, không lưu gì.
 
 | ID | Yêu cầu | Tiêu chí chấp nhận |
 |---|---|---|
-| GRD-001 | Composer PHẢI trả output có cấu trúc gồm `response`, `sentiment`, `claims[{text, evidence_id, quote}]` hoặc `citations[]` khi có bằng chứng | JSON Schema validate; field lạ bị chặn |
+| GRD-001 | Composer PHẢI trả output có cấu trúc. Làn companion: `response`, `sentiment`. Làn có bằng chứng: `decision`, `lead`, `claims[{evidence_id, quote, claim_en, claim_vi}]`, `closing`, `sentiment`. `claim_en` PHẢI được kiểm với `quote` cùng ngôn ngữ; `claim_vi` kiểm với `claim_en` về tên riêng, con số và phủ định; `lead` và `closing` KHÔNG được chứa tên riêng hay con số mới | JSON Schema validate; field lạ bị chặn; bộ hiệu chuẩn claim trên tập giữ lại |
 | GRD-002 | Claim guard và citation guard (RAG-06) PHẢI áp dụng cho bằng chứng từ **mọi bước** của sổ bằng chứng | Test bằng chứng từ bước 3 của Agentic được trích dẫn đúng |
-| GRD-003 | Claim không kiểm chứng được thì loại bỏ hoặc trích nguyên văn trong **khung persona** (hằng số server); không đủ bằng chứng thì abstain bằng giọng Chisa | Giữ hành vi `presented_answer` hiện tại |
+| GRD-003 | Claim không kiểm chứng được thì **loại bỏ**. Khi không còn claim nào thì trích nguyên văn trong **khung persona** (hằng số server); không đủ bằng chứng thì abstain bằng giọng Chisa | Đo tỷ lệ câu trả lời phải dùng khung trích dẫn |
 | GRD-004 | Không được dùng chỉ dẫn "trả lời như tự biết" để che nguồn hay độ bất định | Rà prompt |
 | GRD-005 | Message PHẢI lưu **ảnh chụp trích dẫn** (evidence_id, quote, url, revid, corpus_version) để lịch sử vẫn hiển thị đúng sau khi corpus đổi release; trích dẫn wiki ghi nguồn CC BY-SA (ING-018) | Test hiển thị lịch sử sau publish release mới |
 
@@ -1062,7 +1072,7 @@ Control plane giữ nguyên tinh thần `v1:FR-ING-001/005/007/008/010` (source 
 
 | ID | Yêu cầu | Tiêu chí chấp nhận |
 |---|---|---|
-| CH-001 | Web dùng SSE với giao thức sự kiện mục 8.2; nối lại được trong cửa sổ ngắn nhờ Redis Streams | Test ngắt/nối lại |
+| CH-001 | Web dùng SSE với giao thức sự kiện mục 8.2. Lượt companion và Advanced: gửi lại cùng `turn_id` PHẢI nhận lại kết quả đã lưu. Lượt Agentic PHẢI nối lại được trong cửa sổ ngắn nhờ Redis Streams | Test gửi lại `turn_id`; test ngắt/nối lại lượt Agentic |
 | CH-002 | Discord hỗ trợ trả lời dạng stream bằng cách sửa tin nhắn dần, hiển thị tiến trình ở Agentic; giữ các giới hạn nền tảng (`v1:FR-CH-007`) | Kiểm thử bot |
 | CH-003 | Discord: `/mode`, tuỳ chọn `mode` trong `/ask`, `/link` (hướng dẫn liên kết tài khoản qua web OAuth) | Test lệnh |
 | CH-004 | Giữ dedupe theo `(provider, tenant, message_id)` và tối đa một phản hồi hiển thị (`v1:FR-CH-002`) | Test retry |
@@ -1189,6 +1199,7 @@ Ranh giới: client (Web/Discord) ↔ Ingress; Runtime ↔ LLM provider; Runtime
 | REL-004 | Side effect qua outbox (giữ job queue có lease, retry, dead-letter) |
 | REL-005 | Inference service hoặc reranker lỗi: fallback có metric; truy hồi dense-only được phép nhưng phải gắn cờ degraded |
 | REL-006 | Corpus publish/rollback nguyên tử bằng alias; rollback ≤ 1 thao tác |
+| REL-007 | Lưu lượt, cập nhật cảm xúc và ghi outbox trong **một giao dịch**; mỗi thread chỉ chạy một lượt tại một thời điểm; lượt lỗi PHẢI hoàn quota đã trừ |
 
 ## 6.4 Chi phí
 
@@ -1296,9 +1307,11 @@ Xem SEC-DATA-003.
 | `agent.step` | step, tool (tên rút gọn), status, message (hằng số giọng Chisa) |
 | `evidence.added` | evidence_id, source_kind, title (không có nội dung thô) |
 | `interrupt` | prompt (hằng số giọng Chisa), options, expires_at |
-| `token` | delta văn bản đã qua output guard theo đoạn |
+| `token` | delta văn bản đã qua output guard theo đoạn; các delta ghép lại PHẢI khớp đúng `response` |
 | `turn.completed` | response, citations, emotions, emotion_caption, usage (CU) |
 | `turn.failed` | code, message (hằng số giọng Chisa) |
+
+Lượt companion và Advanced phát sự kiện trực tiếp trên kết nối SSE. Lượt Agentic phát qua Redis Streams để nối lại được (CH-001).
 
 ## 8.3 Discord
 `/ask question mode?`, `/mode advanced|agentic`, `/link`, `/forget` (xoá dữ liệu), lệnh moderator giữ như hiện có. Bot gửi `discord_user_id`, guild, channel, message_id đã xác thực; Core giải vai trò qua liên kết (IAM-009).
@@ -1335,7 +1348,7 @@ Lộ trình đã được chủ dự án phê duyệt ngày 2026-10-31 ([ADR-000
 |---|---|---|
 | **R0 — Nền móng** | SRS v2 đã duyệt; công cụ thực thi quy ước (mục 14.13); Monitoring M0 (collector, dashboard tổng quan, cảnh báo P1, uptime ngoài, heartbeat); khung đánh giá + **golden v2** (câu hỏi quest kiểu "Honami", kịch bản trí nhớ, persona) | Khung đánh giá chạy được; cảnh báo P1 thử nghiệm tới được Admin; CI chặn vi phạm quy ước |
 | **R1 — Dữ liệu Tier A** | Data plane mới cho Tier A (~1.050 trang): làm sạch HTML, chuẩn hoá (ING-012), boilerplate, khử trùng theo trang sở hữu (ING-011), chunk thoại hai tầng, thẻ quest có lời dẫn, kho có cấu trúc; ảnh thực thể Tier A (ING-019); Qdrant 1.20; inference service; đánh giá chọn model embedding | Golden v2 đạt QUAL-003; 0 khối trùng khớp chính xác; 0 rác markup |
-| **R2 — Advanced RAG v2** | LLM API mới + gateway ngân sách theo làn; runtime trên `/v2`: companion, **Advanced RAG**, Composer (persona tách nguyên văn), core memory, RESONA, grounding, threads, hiển thị ảnh thực thể (KNW-010). Chạy song song với hệ cũ, chuyển web rồi Discord | Không tụt persona/cảm xúc; Advanced đạt QUAL-001…004; QUAL-009 |
+| **R2 — Advanced RAG v2** | Thứ tự việc còn lại theo `docs/design/target-architecture.md` mục 8. LLM API mới + gateway ngân sách theo làn; runtime trên `/v2`: companion, **Advanced RAG**, Composer (persona tách nguyên văn), core memory, RESONA, grounding, threads, hiển thị ảnh thực thể (KNW-010). Chạy song song với hệ cũ, chuyển web rồi Discord | Không tụt persona/cảm xúc; Advanced đạt QUAL-001…004; QUAL-009 |
 | **R3 — IAM v2** | RBAC 4 vai trò, Discord OAuth + liên kết, Admin (CLI, MFA, phiên, step-up, audit), Admin Console tối thiểu | Bộ RBAC + bảo mật Admin xanh |
 | **R4 — Agentic beta** | Bước đầu: kiểm chứng DeepSeek gọi công cụ ở chế độ thinking (ASM-001). Sau đó: đồ thị Agentic trên LangGraph (ADR-0005), công cụ, sổ bằng chứng, interrupt, sự kiện, bulkhead, quota CU, công tắc chế độ; mở cho **Admin trước**, rồi nhóm Chía-con nhỏ | QUAL-007, CAP-001; chi phí trong COST-002 |
 | **R5 — Mở rộng** | Trí nhớ 4 lớp đầy đủ; corpus Tier B (quest phụ, NPC, event story) và ảnh thực thể Tier B; alias Hán-Việt đã duyệt (KNW-009) | QUAL-008; golden v2 mở rộng đạt ngưỡng |
