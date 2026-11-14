@@ -178,3 +178,17 @@ async def test_report_files_are_written(tmp_path) -> None:
     )
     assert "| **overall** | 1/1 |" in render_markdown(report)
     assert markdown_path.exists()
+
+
+@pytest.mark.asyncio
+async def test_report_scores_each_split_apart() -> None:
+    held_out = LORE | {"id": "lore-901", "split": "holdout"}
+    golden = _golden([LORE, held_out])
+    answered = Observation(answer="Senpai, Chisa thuộc hệ Havoc.")
+    target = ScriptedTarget({"lore-001": answered, "lore-901": TargetError("boom")})
+
+    report = await run_golden_set(target, golden, golden.cases)
+
+    assert set(report.by_split) == {"dev", "holdout"}
+    assert report.by_split["dev"].n_error == 0
+    assert report.by_split["holdout"].n_error == 1

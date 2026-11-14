@@ -4,12 +4,13 @@ from types import SimpleNamespace
 
 import pytest
 
-from evals.dataset import Category, GoldenCase, Language, PageRef, Turn, load_golden_set
+from evals.dataset import Category, GoldenCase, Language, PageRef, Split, Turn, load_golden_set
 from evals.retrieval import (
     GOLDEN_PATH,
     TRANSLATIONS_PATH,
     CaseOutcome,
     fuse_ranked,
+    in_gate,
     load_translations,
     ranked_pages,
     rerank_document,
@@ -114,3 +115,10 @@ def test_every_golden_retrieval_case_has_a_frozen_translation() -> None:
     stored = load_translations(TRANSLATIONS_PATH)
 
     assert [c.id for c in load_golden_set(GOLDEN_PATH).cases if needs_translation(c, stored)] == []
+
+
+def test_holdout_cases_wait_outside_the_gate_and_need_no_translation() -> None:
+    holdout = [c for c in load_golden_set(GOLDEN_PATH).cases if c.split is Split.HOLDOUT]
+
+    assert holdout
+    assert not any(in_gate(case) or needs_translation(case, {}) for case in holdout)

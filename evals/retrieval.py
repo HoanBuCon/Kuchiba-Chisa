@@ -42,7 +42,7 @@ from app.infrastructure.rag.api_cross_encoder_reranker import (
     ApiCrossEncoderReranker,
     ApiRerankerProvider,
 )
-from evals.dataset import GoldenCase, Language, load_golden_set
+from evals.dataset import GoldenCase, Language, Split, load_golden_set
 from evals.metrics import hit_at_k, reciprocal_rank, wilson_interval
 
 GOLDEN_PATH = Path("data/evaluations/golden_v2/golden_v2.yaml")
@@ -85,6 +85,11 @@ class CaseOutcome:
     ranked: tuple[int, ...]
     hit: bool
     reciprocal: float
+
+
+def in_gate(case: GoldenCase) -> bool:
+    """The retrieval gate is defined on dev; holdout has no frozen translations yet."""
+    return bool(case.relevant_pages) and case.split is Split.DEV
 
 
 def load_translations(path: Path) -> dict[str, str]:
@@ -236,7 +241,7 @@ async def _evaluate_runtime(version: str) -> list[CaseOutcome]:
     outcomes = []
     try:
         for case in golden.cases:
-            if not case.relevant_pages:
+            if not in_gate(case):
                 continue
             question = normalize_text(case.turns[-1].message)
             result = await service.search(question)
@@ -270,7 +275,7 @@ async def evaluate(version: str, mode: str) -> tuple[dict[str, Any], list[CaseOu
     translations = load_translations(TRANSLATIONS_PATH) if translated else {}
     try:
         for case in golden.cases:
-            if not case.relevant_pages:
+            if not in_gate(case):
                 continue
             question = normalize_text(case.turns[-1].message)
             query = search_query(case, question, translations) if translated else question
@@ -299,7 +304,7 @@ class _FrozenTranslator:
                 case, normalize_text(case.turns[-1].message), translations
             )
             for case in cases
-            if case.relevant_pages
+            if in_gate(case)
         }
 
     async def to_english(self, question: str, budget: Any = None) -> str:

@@ -1,9 +1,10 @@
 # Golden v2 (SRS v2 §9, QUAL-003..009). Reviewed and approved by the project owner on 2026-11-04;
 # v2.2 (2026-11-14) narrows the persona-002 forbidden pattern, owner approved.
+# v2.3 (2026-11-14) adds a holdout split (`split: holdout`): 34 unverified cases awaiting the owner.
 # Ground truth comes from the Wuthering Waves Fandom wiki snapshot of 2026-10-30; pages are referenced by
 # wiki pageid so cases survive corpus rebuilds. New cases stay unverified until the owner confirms them.
 # expected_facts: each item is one fact; any listed surface form matches (case and diacritics ignored).
-dataset_version: golden-v2.2
+dataset_version: golden-v2.3
 source_snapshot: wuwa-wiki-20261030
 approval:
   status: approved
@@ -921,3 +922,246 @@ cases:
     expected_facts: [["dark tide"]]
     relevant_pages: [{title: "Leviathan", pageid: 27120}]
     verified: true
+  # ── Holdout (golden-v2.3, 2026-11-14) ─────────────────────────────────────────────────────────
+  # Written from corpus 2026.11.04-1 infobox fields without running the system on them. Never tune
+  # rules or prompts on these. They stay unverified until the owner confirms them.
+  - id: lore-301
+    category: lore_single_hop
+    language: vi
+    split: holdout
+    turns: [{message: "Chixia thuộc hệ gì?"}]
+    expected_facts: [[fusion]]
+    relevant_pages: [{title: Chixia, pageid: 510}]
+  - id: lore-302
+    category: lore_single_hop
+    language: en
+    split: holdout
+    turns: [{message: "What weapon does Encore use?"}]
+    expected_facts: [[rectifier]]
+    relevant_pages: [{title: Encore, pageid: 522}]
+  - id: lore-303
+    category: lore_single_hop
+    language: vi
+    split: holdout
+    turns: [{message: "Ai lồng tiếng Anh cho Yinlin?"}]
+    expected_facts: [[naomi mcdonald]]
+    relevant_pages: [{title: Yinlin, pageid: 570}]
+  - id: lore-304
+    category: lore_single_hop
+    language: vi_no_diacritics
+    split: holdout
+    turns: [{message: "Yuanwu dung vu khi gi?"}]
+    expected_facts: [[gauntlets, găng]]
+    relevant_pages: [{title: Yuanwu, pageid: 591}]
+  - id: lore-305
+    category: lore_single_hop
+    language: vi
+    split: holdout
+    turns: [{message: "Verina sinh ra ở đâu?"}]
+    expected_facts: [[new federation]]
+    relevant_pages: [{title: Verina, pageid: 620}]
+  - id: lore-306
+    category: lore_single_hop
+    language: en
+    split: holdout
+    turns: [{message: "Who is the English voice actor of Baizhi?"}]
+    expected_facts: [[samantha dakin]]
+    relevant_pages: [{title: Baizhi, pageid: 624}]
+  - id: lore-307
+    category: lore_single_hop
+    language: teencode
+    split: holdout
+    turns: [{message: "lingyang hệ j v?"}]
+    expected_facts: [[glacio]]
+    relevant_pages: [{title: Lingyang, pageid: 631}]
+  - id: lore-308
+    category: lore_single_hop
+    language: vi
+    split: holdout
+    turns: [{message: "Shorekeeper dùng vũ khí gì?"}]
+    expected_facts: [[rectifier]]
+    relevant_pages: [{title: Shorekeeper, pageid: 10662}]
+  - id: lore-309
+    category: lore_single_hop
+    language: vi
+    split: holdout
+    turns: [{message: "Phoebe thuộc hệ nào?"}]
+    expected_facts: [[spectro]]
+    relevant_pages: [{title: Phoebe, pageid: 24784}]
+  - id: lore-310
+    category: lore_single_hop
+    language: en
+    split: holdout
+    turns: [{message: "Where was Carlotta born?"}]
+    expected_facts: [[ragunna]]
+    relevant_pages: [{title: Carlotta, pageid: 24790}]
+  - id: lore-311
+    category: lore_single_hop
+    language: vi
+    split: holdout
+    turns: [{message: "Brant dùng loại vũ khí gì?"}]
+    expected_facts: [[sword, kiếm]]
+    relevant_pages: [{title: Brant, pageid: 24786}]
+  - id: lore-312
+    category: lore_single_hop
+    language: vi
+    split: holdout
+    turns: [{message: "Diễn viên lồng tiếng Nhật của Youhu là ai?"}]
+    expected_facts: [[tomita miyu, 富田美憂]]
+    relevant_pages: [{title: Youhu, pageid: 10663}]
+  - id: lore-313
+    category: lore_single_hop
+    language: vi_no_diacritics
+    split: holdout
+    turns: [{message: "Encore sinh ra o dau?"}]
+    expected_facts: [[new federation]]
+    relevant_pages: [{title: Encore, pageid: 522}]
+  - id: lore-314
+    category: lore_single_hop
+    language: vi
+    split: holdout
+    turns: [{message: "Carlotta thuộc hệ gì?"}]
+    expected_facts: [[glacio]]
+    relevant_pages: [{title: Carlotta, pageid: 24790}]
+  - id: lore-315
+    category: lore_single_hop
+    language: en
+    split: holdout
+    turns: [{message: "Who voices Brant in English?"}]
+    expected_facts: [[hyoie]]
+    relevant_pages: [{title: Brant, pageid: 24786}]
+  - id: lore-316
+    category: lore_single_hop
+    language: vi
+    split: holdout
+    turns: [{message: "Chixia sinh ra ở đâu?"}]
+    expected_facts: [[huanglong]]
+    relevant_pages: [{title: Chixia, pageid: 510}]
+  # Follow-ups: the last turn only makes sense with the turn before it (ADV-003).
+  - id: followup-001
+    category: lore_single_hop
+    language: vi
+    split: holdout
+    turns: [{message: "Chixia là ai?"}, {message: "Cô ấy dùng vũ khí gì?"}]
+    expected_facts: [[pistols, súng lục, súng]]
+    relevant_pages: [{title: Chixia, pageid: 510}]
+  - id: followup-002
+    category: lore_single_hop
+    language: vi
+    split: holdout
+    turns: [{message: "Kể anh nghe về Yinlin đi."}, {message: "Cô ấy thuộc hệ gì?"}]
+    expected_facts: [[electro]]
+    relevant_pages: [{title: Yinlin, pageid: 570}]
+  - id: followup-003
+    category: lore_single_hop
+    language: en
+    split: holdout
+    turns: [{message: "Who is Verina?"}, {message: "What weapon does she use?"}]
+    expected_facts: [[rectifier]]
+    relevant_pages: [{title: Verina, pageid: 620}]
+  - id: followup-004
+    category: lore_single_hop
+    language: vi
+    split: holdout
+    turns: [{message: "Baizhi là ai vậy?"}, {message: "Ai lồng tiếng Anh cho cô ấy?"}]
+    expected_facts: [[samantha dakin]]
+    relevant_pages: [{title: Baizhi, pageid: 624}]
+  - id: followup-005
+    category: lore_single_hop
+    language: vi
+    split: holdout
+    turns: [{message: "Em biết Lingyang không?"}, {message: "Cậu ấy dùng vũ khí gì?"}]
+    expected_facts: [[gauntlets, găng]]
+    relevant_pages: [{title: Lingyang, pageid: 631}]
+  - id: followup-006
+    category: lore_single_hop
+    language: vi
+    split: holdout
+    turns: [{message: "Carlotta thuộc hệ gì?"}, {message: "Thế còn nơi sinh của cô ấy?"}]
+    expected_facts: [[ragunna]]
+    relevant_pages: [{title: Carlotta, pageid: 24790}]
+  - id: followup-007
+    category: lore_single_hop
+    language: vi
+    split: holdout
+    turns: [{message: "Shorekeeper là ai?"}, {message: "Cô ấy sinh ra ở đâu?"}]
+    expected_facts: [[black shores]]
+    relevant_pages: [{title: Shorekeeper, pageid: 10662}]
+  - id: followup-008
+    category: lore_single_hop
+    language: vi
+    split: holdout
+    turns: [{message: "Phoebe dùng vũ khí gì?"}, {message: "Còn Brant thì sao?"}]
+    expected_facts: [[sword, kiếm]]
+    relevant_pages: [{title: Brant, pageid: 24786}]
+  # Not knowledge questions: an abstention here is a triage error (MODE-008).
+  - id: chat-001
+    category: persona
+    language: vi
+    split: holdout
+    turns: [{message: "Hôm nay nhìn em xinh ghê á."}]
+    expected_facts: [[senpai]]
+    persona: {require_senpai: true}
+  - id: chat-002
+    category: persona
+    language: vi
+    split: holdout
+    turns: [{message: "Trả lời chán thế, em dở quá."}]
+    expected_facts: [[senpai]]
+    persona: {require_senpai: true}
+  - id: chat-003
+    category: persona
+    language: vi
+    split: holdout
+    turns: [{message: "Cảm ơn em nhiều nha, em giỏi lắm."}]
+    expected_facts: [[senpai]]
+    persona: {require_senpai: true}
+  - id: chat-004
+    category: persona
+    language: vi
+    split: holdout
+    turns: [{message: "Anh buồn ngủ quá mà vẫn chưa xong việc."}]
+    expected_facts: [[senpai]]
+    persona: {require_senpai: true}
+  - id: chat-005
+    category: persona
+    language: vi
+    split: holdout
+    turns: [{message: "Em đang làm gì đó?"}]
+    expected_facts: [[senpai]]
+    persona: {require_senpai: true}
+  - id: chat-006
+    category: persona
+    language: en
+    split: holdout
+    turns: [{message: "You're kind of adorable today, you know."}]
+    expected_facts: [[senpai]]
+    persona: {require_senpai: true}
+  - id: oos-301
+    category: out_of_scope
+    language: vi
+    split: holdout
+    turns: [{message: "Số điện thoại của Baizhi là gì?"}]
+    expected_behavior: abstain
+    notes: Not in the wiki.
+  - id: oos-302
+    category: out_of_scope
+    language: vi
+    split: holdout
+    turns: [{message: "Phiên bản 9.0 của Wuthering Waves ra mắt ngày nào?"}]
+    expected_behavior: abstain
+    notes: Unreleased version at the snapshot date.
+  - id: oos-303
+    category: out_of_scope
+    language: en
+    split: holdout
+    turns: [{message: "Which year did Carlotta win an Oscar?"}]
+    expected_behavior: abstain
+    notes: False premise.
+  - id: oos-304
+    category: out_of_scope
+    language: vi
+    split: holdout
+    turns: [{message: "Chapter XII có những nhiệm vụ chính nào?"}]
+    expected_behavior: abstain
+    notes: Unreleased chapter at the snapshot date.

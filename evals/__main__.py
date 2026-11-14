@@ -10,7 +10,7 @@ from pathlib import Path
 
 import httpx
 
-from evals.dataset import Category, GoldenSet, load_golden_set
+from evals.dataset import Category, GoldenSet, Split, load_golden_set
 from evals.report import write_report
 from evals.runner import run_golden_set
 from evals.targets import HttpChatTarget, HttpChatV2Target
@@ -30,6 +30,7 @@ def _parser() -> argparse.ArgumentParser:
     run.add_argument("--base-url", required=True)
     run.add_argument("--api", choices=("v1", "v2"), default="v1")
     run.add_argument("--category", choices=[category.value for category in Category])
+    run.add_argument("--split", choices=[split.value for split in Split])
     run.add_argument("--limit", type=int)
     run.add_argument("--output", type=Path, default=DEFAULT_OUTPUT)
     return parser
@@ -47,7 +48,12 @@ def _validate(golden: GoldenSet) -> int:
 
 
 async def _run(golden: GoldenSet, args: argparse.Namespace) -> int:
-    cases = [case for case in golden.cases if args.category in (None, case.category.value)]
+    cases = [
+        case
+        for case in golden.cases
+        if args.category in (None, case.category.value)
+        and args.split in (None, case.split.value)
+    ]
     cases = cases[: args.limit] if args.limit else cases
     async with httpx.AsyncClient(base_url=args.base_url, timeout=HTTP_TIMEOUT_SECONDS) as client:
         target = HttpChatV2Target(client) if args.api == "v2" else HttpChatTarget(client)

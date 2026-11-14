@@ -18,13 +18,13 @@ from app.domain.ingestion.text_normalization import normalize_text
 from app.infrastructure.knowledge.llm_query_translator import translation_prompt
 from app.infrastructure.llm.gateway_factory import build_llm_gateway
 from evals.dataset import GoldenCase, Language, load_golden_set
-from evals.retrieval import GOLDEN_PATH, TRANSLATIONS_PATH, load_translations
+from evals.retrieval import GOLDEN_PATH, TRANSLATIONS_PATH, in_gate, load_translations
 
 HTTP_TIMEOUT_SECONDS = 30
 
 
 def needs_translation(case: GoldenCase, stored: dict[str, str]) -> bool:
-    return bool(case.relevant_pages) and case.language != Language.EN and case.id not in stored
+    return in_gate(case) and case.language != Language.EN and case.id not in stored
 
 
 def _save(path: Path, translations: dict[str, str]) -> None:
