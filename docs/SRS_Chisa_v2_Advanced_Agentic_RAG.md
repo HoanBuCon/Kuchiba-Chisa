@@ -3,7 +3,7 @@
 | Thuộc tính | Giá trị |
 |---|---|
 | Tài liệu | SRS cho hệ thống mới của Kuchiba Chisa: hai chế độ Advanced RAG / Agentic RAG, phân quyền 4 vai trò, trí nhớ và cảm xúc |
-| Phiên bản | 2.2.6 |
+| Phiên bản | 2.2.7 |
 | Ngày lập / phê duyệt | 2026-10-30 / **2026-10-31** |
 | Trạng thái | **ĐÃ PHÊ DUYỆT** bởi chủ dự án. Là baseline yêu cầu cho hệ thống mới, **thay thế** [SRS v1.1](../reports/SRS_Kuchiba_Chisa.md) cho mọi phát triển mới. v1.1 được giữ nguyên làm tài liệu lịch sử và chỉ áp dụng cho việc sửa lỗi hệ hiện tại trong thời gian chuyển đổi. Các mục "Vấn đề mở" (mục 12) vẫn cần quyết định riêng |
 | Bản chất dự án | Dự án cá nhân; không còn ràng buộc với đồ án môn học |
@@ -34,6 +34,7 @@
 | 2.2.4 | 2026-11-04 | Chủ dự án | STD-DOC-007: mỗi tính năng hoàn thành có báo cáo bàn giao ngắn gọn |
 | 2.2.5 | 2026-11-04 | Chủ dự án | Duyệt tối ưu persona cho v2 với điều kiện không làm mất persona: PER-002 cho phép persona v2 có version và lớp quy tắc theo làn, v1 giữ nguyên văn; thêm PER-006 ranh giới an toàn |
 | 2.2.6 | 2026-11-14 | Chủ dự án | Persona v2: mức ngọt ngào tăng theo độ thân thiết, Kuudere chiếm ưu thế khi mới quen, không làm quá. PERF-003 ghi là nợ kỹ thuật cho tới khi có VPS |
+| 2.2.7 | 2026-11-14 | Chủ dự án | ADR-0005 (chủ dự án uỷ quyền chọn kiến trúc): bộ điều phối lượt chat và Advanced RAG viết bằng Python thuần; LangGraph chỉ dùng cho làn Agentic. ASM-004 đã kiểm chứng trên máy dev (mục 2.6, 3.1, 3.2, 3.5.4, 3.5.6, 10). Thiết kế mục tiêu ở `docs/design/target-architecture.md` |
 
 ## Quyết định đã chốt của chủ dự án (đầu vào của tài liệu)
 
@@ -141,7 +142,7 @@ Chisa là dự án cá nhân, một chủ dự án kiêm Admin duy nhất ở gi
 | ASM-001 | DeepSeek V4 Flash hỗ trợ tool-calling ở cả chế độ thinking; yêu cầu gửi lại `reasoning_content` trong vòng tool | R2 |
 | ASM-002 | Kênh lexical: Qdrant ≥ 1.15.2 sinh sparse BM25 phía server; Qdrant 1.20.0 (2026-10-22) thêm BM25 trên full-text payload index; weighted RRF có từ 1.17. Spike I0 đã chọn **sparse BM25** ([số đo](ingestion/i0-spike.md)). BM25 chỉ hiệu quả với truy vấn tiếng Anh (ADV-010) | R1 (I0) |
 | ASM-003 | Google trả claim `email_verified`; Discord OAuth trả trường `verified` khi có scope `email` | R3 |
-| ASM-004 | LangGraph 1.2.x: checkpointer Postgres, `interrupt`, streaming có kiểu hoạt động như tài liệu | R2 |
+| ASM-004 | LangGraph 1.2.x: checkpointer Postgres, `interrupt`, streaming có kiểu hoạt động như tài liệu; chỉ cần cho làn Agentic (ADR-0005) | Đã kiểm chứng trên máy dev 14/11/2026 (LangGraph 1.2.22); RAM đo lại trên VPS |
 | ASM-005 | Chi phí và độ trễ ở mục 6 là ước tính; đo thật ở R2–R4 | R2–R4 |
 
 ---
@@ -159,11 +160,11 @@ flowchart TB
   end
   GW[Ingress: AuthN · RBAC/entitlement · quota CU · thread lock · turn_id]
   GW --> RT
-  subgraph RT[Agent Runtime - LangGraph]
+  subgraph RT[Agent Runtime - bộ điều phối Python, ADR-0005]
     LS[load_state] --> GI[guard_in] --> TR{triage trong trần chế độ}
     TR -->|companion| RL[recall_lite]
-    TR -->|advanced| ADV[Advanced RAG subgraph - DAG cố định]
-    TR -->|agentic| AGT[Agentic subgraph - ReAct + ngân sách]
+    TR -->|advanced| ADV[Advanced RAG - DAG cố định, Python thuần]
+    TR -->|agentic| AGT[Agentic - đồ thị LangGraph, ReAct + ngân sách]
     AGT -. gọi như công cụ .-> ADV
     RL --> CMP
     ADV --> LED[evidence ledger] --> CMP
@@ -188,7 +189,7 @@ flowchart TB
 | Thành phần | Trách nhiệm | Nguồn gốc |
 |---|---|---|
 | Ingress | AuthN, RBAC, entitlement chế độ, quota CU, khoá theo thread, idempotency | Nâng cấp từ auth/admission hiện có |
-| Agent Runtime | Đồ thị trạng thái; hai subgraph; checkpoint; sự kiện | **Mới** (thay `ChatPipeline` 12 stage) |
+| Agent Runtime | Bộ điều phối Python thuần: guard, triage, làn companion và Advanced, Composer, lưu, sự kiện. Làn Agentic là đồ thị LangGraph có interrupt và checkpoint (ADR-0005) | **Mới** (thay `ChatPipeline` 12 stage) |
 | Knowledge layer | Công cụ có kiểu, lọc ACL ở tầng công cụ | **Mới**; dùng lại scorer memory |
 | Composer | Lời Chisa; output `{response, sentiment, claims/citations}` | Tách từ `ContextBuilder`, persona nguyên văn |
 | Grounding | Claim/citation guard, extractive fallback trong khung persona | Giữ RAG-06, mở rộng cho sổ bằng chứng |
@@ -232,7 +233,7 @@ Các sơ đồ dưới đây là **một phần mang tính quy phạm** của SR
 | 3.5.1 | Ngữ cảnh hệ thống | Ai/hệ nào tương tác với Chisa |
 | 3.5.2 | Container và triển khai trên VPS | Container, vùng mạng, luồng chính |
 | 3.5.3 | Phân lớp mã nguồn | Quy tắc phụ thuộc |
-| 3.5.4 | Agent Runtime tổng thể | Đồ thị node, hai subgraph, interrupt |
+| 3.5.4 | Agent Runtime tổng thể | Luồng điều phối, hai làn tri thức, interrupt của Agentic |
 | 3.5.5 | Xác định chế độ và phân làn | Kẹp quyền, lý do hạ chế độ |
 | 3.5.6 | Advanced RAG: luồng chi tiết | DAG cố định, sửa sai tất định |
 | 3.5.7 | Advanced RAG: tuần tự | Lời gọi giữa các thành phần |
@@ -336,6 +337,8 @@ Quy tắc: `domain` không import lớp nào khác; `application` chỉ import `
 
 ### 3.5.4 Agent Runtime tổng thể
 
+Sơ đồ dưới là luồng logic của một lượt. Theo ADR-0005, bộ điều phối viết bằng Python thuần; chỉ subgraph Agentic là đồ thị LangGraph, và chỉ nó có checkpoint.
+
 ```mermaid
 flowchart TD
   START(("lượt mới")) --> LS["load_state<br/>thread, cửa sổ token, summary,<br/>core memory, emotion đã decay, ambient"]
@@ -392,6 +395,8 @@ flowchart TD
 ```
 
 ### 3.5.6 Advanced RAG: luồng chi tiết
+
+Advanced là một hàm DAG Python (`AdvancedRetrieval`), không phải subgraph LangGraph (ADR-0005). Làn Agentic gọi lại chính hàm này qua công cụ `advanced_rag` (AGT-007).
 
 ```mermaid
 flowchart TD
@@ -1332,7 +1337,7 @@ Lộ trình đã được chủ dự án phê duyệt ngày 2026-10-31 ([ADR-000
 | **R1 — Dữ liệu Tier A** | Data plane mới cho Tier A (~1.050 trang): làm sạch HTML, chuẩn hoá (ING-012), boilerplate, khử trùng theo trang sở hữu (ING-011), chunk thoại hai tầng, thẻ quest có lời dẫn, kho có cấu trúc; ảnh thực thể Tier A (ING-019); Qdrant 1.20; inference service; đánh giá chọn model embedding | Golden v2 đạt QUAL-003; 0 khối trùng khớp chính xác; 0 rác markup |
 | **R2 — Advanced RAG v2** | LLM API mới + gateway ngân sách theo làn; runtime trên `/v2`: companion, **Advanced RAG**, Composer (persona tách nguyên văn), core memory, RESONA, grounding, threads, hiển thị ảnh thực thể (KNW-010). Chạy song song với hệ cũ, chuyển web rồi Discord | Không tụt persona/cảm xúc; Advanced đạt QUAL-001…004; QUAL-009 |
 | **R3 — IAM v2** | RBAC 4 vai trò, Discord OAuth + liên kết, Admin (CLI, MFA, phiên, step-up, audit), Admin Console tối thiểu | Bộ RBAC + bảo mật Admin xanh |
-| **R4 — Agentic beta** | Công cụ, sổ bằng chứng, interrupt, sự kiện, bulkhead, quota CU, công tắc chế độ; mở cho **Admin trước**, rồi nhóm Chía-con nhỏ | QUAL-007, CAP-001; chi phí trong COST-002 |
+| **R4 — Agentic beta** | Bước đầu: kiểm chứng DeepSeek gọi công cụ ở chế độ thinking (ASM-001). Sau đó: đồ thị Agentic trên LangGraph (ADR-0005), công cụ, sổ bằng chứng, interrupt, sự kiện, bulkhead, quota CU, công tắc chế độ; mở cho **Admin trước**, rồi nhóm Chía-con nhỏ | QUAL-007, CAP-001; chi phí trong COST-002 |
 | **R5 — Mở rộng** | Trí nhớ 4 lớp đầy đủ; corpus Tier B (quest phụ, NPC, event story) và ảnh thực thể Tier B; alias Hán-Việt đã duyệt (KNW-009) | QUAL-008; golden v2 mở rộng đạt ngưỡng |
 | **R6 — Dọn dẹp** | Gỡ pipeline 12 stage, visualizer, ingestion legacy, Celery; OTEL hosted ổn định; diễn tập rollback | Không còn import legacy; rollback đã diễn tập |
 

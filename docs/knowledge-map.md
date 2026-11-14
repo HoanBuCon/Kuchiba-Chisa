@@ -11,7 +11,8 @@ Tài liệu này giúp người mới, hoặc một phiên AI khác, hiểu nhan
 | 3 | [SRS v2](SRS_Chisa_v2_Advanced_Agentic_RAG.md) | Nguồn sự thật. Đọc mục 2, 3, 10, 14 trước; mục 4 tra theo mã yêu cầu |
 | 4 | [`r2-plan.md`](r2-plan.md) | Trạng thái R2, số đo, cổng thoát |
 | 5 | [`handover/`](handover/README.md) | Báo cáo bàn giao từng tính năng: quyết định, kiểm tra, việc còn lại |
-| 6 | [`adr/`](adr/) | 4 quyết định kiến trúc đã chấp nhận |
+| 6 | [`adr/`](adr/) | 5 quyết định kiến trúc đã chấp nhận |
+| 7 | [`design/target-architecture.md`](design/target-architecture.md) | Kiến trúc mục tiêu và lựa chọn công nghệ; thứ tự việc sẽ làm |
 
 ## 2. Hệ thống là gì
 
@@ -63,7 +64,7 @@ Postgres    Qdrant 1.20    Redis          Inference svc       LLM Gateway
 
 | SRS mô tả | Code hiện tại |
 |---|---|
-| Agent Runtime dựng bằng **LangGraph**, có checkpoint | Python thuần (`app/application/chat_turns.py`); không có dependency LangGraph |
+| LangGraph cho làn Agentic (ADR-0005; bộ điều phối và Advanced là Python thuần) | Chưa có dependency LangGraph; làm ở R4 |
 | Sự kiện qua **Redis Streams**, nối lại SSE được | SSE trả thẳng từ route; chưa nối lại được (CH-001 chưa đủ) |
 | Outbox, job memory/summary/reflection cho v2 | Worker chỉ có job của v1; v2 chưa có job nào |
 | Agentic subgraph, evidence ledger, interrupt | Chưa có (R4); mọi lượt bị ép về Advanced |
