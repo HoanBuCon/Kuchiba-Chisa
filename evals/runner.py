@@ -7,7 +7,7 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime
 
-from evals.dataset import Behavior, GoldenCase, GoldenSet
+from evals.dataset import Behavior, GoldenCase, GoldenSet, Split
 from evals.scoring import CaseResult, Status, Summary, score_case, summarize
 from evals.targets import EvalTarget, TargetError, UnsupportedCaseError
 
@@ -25,6 +25,7 @@ class Report:
     generated_at: str
     overall: Summary
     by_category: dict[str, Summary]
+    by_split: dict[str, Summary]
     unverified_cases: list[str]
     manual_review: list[str]
     cases: list[CaseResult]
@@ -58,6 +59,7 @@ async def run_golden_set(
     results = [await run_case(target, case, golden.abstain_markers) for case in cases]
     expected_abstain = {case.id for case in cases if case.expected_behavior is Behavior.ABSTAIN}
     categories = sorted({result.category for result in results})
+    split_of = {case.id: case.split for case in cases}
     return Report(
         evaluator_version=EVALUATOR_VERSION,
         dataset_version=golden.dataset_version,
@@ -69,6 +71,13 @@ async def run_golden_set(
         by_category={
             category: summarize([r for r in results if r.category == category], expected_abstain)
             for category in categories
+        },
+        by_split={
+            split.value: summarize(
+                [r for r in results if split_of[r.case_id] is split], expected_abstain
+            )
+            for split in Split
+            if split in split_of.values()
         },
         unverified_cases=sorted(case.id for case in cases if not case.verified),
         manual_review=manual_review_sample(

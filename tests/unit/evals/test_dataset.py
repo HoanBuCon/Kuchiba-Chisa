@@ -5,7 +5,7 @@ from pathlib import Path
 import pytest
 from pydantic import ValidationError
 
-from evals.dataset import Category, GoldenCase, load_golden_set
+from evals.dataset import Category, GoldenCase, Split, load_golden_set
 
 GOLDEN_V2 = Path("data/evaluations/golden_v2/golden_v2.yaml")
 
@@ -47,3 +47,19 @@ def test_committed_golden_v2_is_valid_and_covers_every_category() -> None:
     golden = load_golden_set(GOLDEN_V2)
     assert {case.category for case in golden.cases} == set(Category)
     assert len(golden.cases) >= 30
+
+
+def test_split_defaults_to_dev_and_rejects_unknown_values() -> None:
+    assert GoldenCase.model_validate(_case()).split is Split.DEV
+    assert GoldenCase.model_validate(_case(split="holdout")).split is Split.HOLDOUT
+    with pytest.raises(ValidationError):
+        GoldenCase.model_validate(_case(split="test"))
+
+
+def test_committed_holdout_is_unverified_until_the_owner_confirms_and_has_lore_follow_ups() -> None:
+    golden = load_golden_set(GOLDEN_V2)
+    holdout = [case for case in golden.cases if case.split is Split.HOLDOUT]
+
+    assert len(holdout) >= 30
+    assert any(len(case.turns) > 1 and case.relevant_pages for case in holdout)
+    assert {case.id for case in holdout if case.verified} == set()

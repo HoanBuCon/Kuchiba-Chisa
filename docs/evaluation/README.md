@@ -30,6 +30,12 @@ The set is `approval.status: draft` and must not gate a release until the owner:
 2. Checks Vietnamese surface forms in `expected_facts` (for example in-game Vietnamese names of attributes).
 3. Adds or removes cases, then sets `approval` to `approved` with name and date.
 
+## Dev and holdout
+
+Each case has a `split`. Rules, thresholds and prompts may be tuned on `dev` only. `holdout` cases are never
+inspected while tuning; reports score the two splits apart, and `--split holdout` runs one of them. The
+retrieval gate is defined on `dev`. New cases stay `verified: false` until the owner confirms them.
+
 ## Scoring
 
 - **Facts**: each fact matches if any surface form appears in the answer, ignoring case and diacritics.

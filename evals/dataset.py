@@ -19,6 +19,13 @@ class Category(StrEnum):
     PERSONA = "persona"
 
 
+class Split(StrEnum):
+    """Rules and prompts are tuned on dev only; holdout reports how well that generalises."""
+
+    DEV = "dev"
+    HOLDOUT = "holdout"
+
+
 class Language(StrEnum):
     VI = "vi"
     EN = "en"
@@ -61,6 +68,7 @@ class GoldenCase(_Strict):
     category: Category
     language: Language
     mode: Mode = Mode.BOTH
+    split: Split = Split.DEV
     turns: tuple[Turn, ...] = Field(min_length=1)
     expected_behavior: Behavior = Behavior.ANSWER
     # Each inner tuple is one fact; any one of its surface forms counts as a match.

@@ -47,6 +47,7 @@ def render_markdown(report: Report) -> str:
         "|" + "---|" * len(header),
         _row("**overall**", report.overall),
         *[_row(name, summary) for name, summary in report.by_category.items()],
+        *[_row(f"*split: {name}*", summary) for name, summary in report.by_split.items()],
         "",
         f"Manual review sample: {', '.join(report.manual_review) or 'none'}.",
         f"Unverified ground truth: {len(report.unverified_cases)} cases.",
