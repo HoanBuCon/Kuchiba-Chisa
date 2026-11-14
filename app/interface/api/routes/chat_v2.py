@@ -13,8 +13,10 @@ from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.application.chat_turns import (
+    EVENT_COMPLETED,
     EVENT_FAILED,
     EVENT_TOKEN,
+    ThreadBusyError,
     ThreadNotFoundError,
     TurnRequest,
 )
@@ -22,7 +24,7 @@ from app.application.dependencies import get_chat_turn_runtime, get_memory_polic
 from app.config.settings import settings
 from app.domain.interfaces.llm_provider import LLMError
 from app.domain.models.thread import ChatMode, Thread, TurnRecord, channel_thread_id
-from app.domain.services.chisa_voice import TURN_FAILED
+from app.domain.services.chisa_voice import TURN_BUSY, TURN_FAILED
 from app.domain.services.core_memory import CoreMemory
 from app.domain.services.guardrails.pii_redaction import PiiRedactor
 from app.domain.value_objects.principal import PrincipalContext
@@ -136,7 +138,7 @@ def _sse(event: str, data: dict) -> str:
 async def create_turn(
     body: TurnBody, http_request: Request, principal: Writer, admission: Admission
 ) -> StreamingResponse:
-    await admit_chat(admission, principal, http_request)
+    reservation = await admit_chat(admission, principal, http_request)
     runtime = await get_chat_turn_runtime()
     request = TurnRequest(
         owner=_owner(principal),
@@ -160,10 +162,18 @@ async def create_turn(
             async for event in runtime.turns.run(request):
                 if event.type == EVENT_TOKEN:
                     mark_stream_first_token(http_request.scope)
+                if event.type == EVENT_COMPLETED and event.data.get("replayed"):
+                    # A replay spends nothing, so it is not charged (REL-003, REL-007).
+                    await admission.refund(reservation)
                 yield _sse(event.type, event.data)
-        except (LLMError, ThreadNotFoundError) as error:
+        except (LLMError, ThreadNotFoundError, ThreadBusyError) as error:
+            await admission.refund(reservation)
+            busy = isinstance(error, ThreadBusyError)
             # Only a bounded class name leaves the server; the message is a voice constant.
-            yield _sse(EVENT_FAILED, {"code": type(error).__name__, "message": TURN_FAILED})
+            yield _sse(
+                EVENT_FAILED,
+                {"code": type(error).__name__, "message": TURN_BUSY if busy else TURN_FAILED},
+            )
 
     return StreamingResponse(events(), media_type="text/event-stream", headers=STREAM_HEADERS)
 

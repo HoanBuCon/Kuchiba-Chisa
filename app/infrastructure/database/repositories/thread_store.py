@@ -43,6 +43,29 @@ def _turn(row: ThreadTurnModel) -> TurnRecord:
     )
 
 
+def turn_insert(record: TurnRecord) -> Any:
+    """Two racing retries of one turn store it once, by the unique constraint."""
+    reason = record.downgrade_reason
+    return (
+        insert(ThreadTurnModel)
+        .values(
+            thread_id=record.thread_id,
+            turn_id=record.turn_id,
+            question=record.question,
+            answer=record.answer,
+            mode_requested=record.mode_requested.value,
+            mode_effective=record.mode_effective.value,
+            lane=record.lane,
+            status=record.status,
+            downgrade_reason=reason.value if reason else None,
+            llm_calls=record.llm_calls,
+            citations=list(record.citations),
+            degraded=list(record.degraded),
+        )
+        .on_conflict_do_nothing(constraint="uq_thread_turns_turn")
+    )
+
+
 class PostgresThreadStore:
     def __init__(self, session_factory: Callable[[], Any]) -> None:
         self._sessions = session_factory
@@ -127,27 +150,8 @@ class PostgresThreadStore:
             return _turn(row) if row else None
 
     async def save_turn(self, record: TurnRecord) -> bool:
-        """Two racing retries of one turn store it once, by the unique constraint."""
-        reason = record.downgrade_reason
         async with self._sessions() as session:
-            result = await session.execute(
-                insert(ThreadTurnModel)
-                .values(
-                    thread_id=record.thread_id,
-                    turn_id=record.turn_id,
-                    question=record.question,
-                    answer=record.answer,
-                    mode_requested=record.mode_requested.value,
-                    mode_effective=record.mode_effective.value,
-                    lane=record.lane,
-                    status=record.status,
-                    downgrade_reason=reason.value if reason else None,
-                    llm_calls=record.llm_calls,
-                    citations=list(record.citations),
-                    degraded=list(record.degraded),
-                )
-                .on_conflict_do_nothing(constraint="uq_thread_turns_turn")
-            )
+            result = await session.execute(turn_insert(record))
             await session.commit()
             return bool(result.rowcount)
 

@@ -7,9 +7,11 @@ import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
+from app.application.chat_turns import EVENT_COMPLETED, ThreadBusyError, TurnEvent
+from app.application.dependencies import get_chat_admission_control
 from app.domain.interfaces.llm_provider import LLMError
 from app.domain.models.thread import ChatMode, Thread, TurnRecord, channel_thread_id
-from app.domain.services.chisa_voice import TURN_FAILED
+from app.domain.services.chisa_voice import TURN_BUSY, TURN_FAILED
 from app.domain.value_objects.principal import PrincipalContext
 from app.interface.api.dependencies.chat_admission import admit_chat
 from app.interface.api.dependencies.security import get_current_principal
@@ -273,3 +275,61 @@ def test_channel_threads_differ_by_person_and_by_channel() -> None:
     assert base != channel_thread_id("b", "g", "c")
     assert base != channel_thread_id("a", "g", "d")
     assert base != channel_thread_id("a", None, "c")
+
+
+class RecordingAdmission:
+    def __init__(self) -> None:
+        self.refunded = []
+
+    async def refund(self, reservation):
+        self.refunded.append(reservation)
+
+
+class ScriptedTurns:
+    def __init__(self, outcome) -> None:
+        self.outcome = outcome
+
+    async def run(self, request):
+        if isinstance(self.outcome, Exception):
+            raise self.outcome
+        yield self.outcome
+
+
+def _refunds_after(client, monkeypatch, outcome) -> tuple[list, str]:
+    _enable(monkeypatch, True)
+    admission = RecordingAdmission()
+
+    async def reserved(admission_control, principal, http_request=None):
+        return "reservation"
+
+    monkeypatch.setattr(chat_v2, "admit_chat", reserved)
+    monkeypatch.setattr(Runtime, "turns", ScriptedTurns(outcome))
+    client.app.dependency_overrides[get_chat_admission_control] = lambda: admission
+    response = client.post("/api/v2/chat/turns", json=_turn())
+    return admission.refunded, response.text
+
+
+def _completed(replayed: bool) -> TurnEvent:
+    return TurnEvent(EVENT_COMPLETED, {"response": "Dạ.", "replayed": replayed})
+
+
+def test_a_stored_turn_keeps_its_quota_charge(client, monkeypatch) -> None:
+    refunded, _ = _refunds_after(client, monkeypatch, _completed(replayed=False))
+
+    assert refunded == []
+
+
+@pytest.mark.parametrize(
+    "outcome", [_completed(replayed=True), LLMError("down"), ThreadBusyError("thread")]
+)
+def test_replays_failures_and_busy_threads_are_refunded(client, monkeypatch, outcome) -> None:
+    refunded, _ = _refunds_after(client, monkeypatch, outcome)
+
+    assert refunded == ["reservation"]
+
+
+def test_a_busy_thread_answers_in_chisa_voice(client, monkeypatch) -> None:
+    _, text = _refunds_after(client, monkeypatch, ThreadBusyError("thread"))
+
+    assert TURN_BUSY in text
+    assert "Senpai" in TURN_BUSY

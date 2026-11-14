@@ -12,7 +12,7 @@ from app.domain.entities.emotion import EmotionState
 from app.domain.ingestion.entity_linking import EntityLinker
 from app.domain.interfaces.llm_provider import LLMCallBudget
 from app.domain.interfaces.personal_context import IPersonalContext, PersonalContext
-from app.domain.interfaces.threads import IThreadStore
+from app.domain.interfaces.threads import IThreadStore, ITurnCommit, ITurnLock
 from app.domain.models.evidence import Evidence
 from app.domain.models.thread import ChatMode, ModeDecision, Thread, TurnRecord, resolve_mode
 from app.domain.services.chisa_voice import INPUT_BLOCKED
@@ -41,6 +41,10 @@ STATUS_INPUT_BLOCKED = "input_blocked"
 STATUS_BOUNDARY_REFUSED = "boundary_refused"
 # Keeps the whitespace, so the deltas of a turn join back into its exact text.
 _SENTENCE = re.compile(r"(?<=[.!?]\s)")
+
+
+class ThreadBusyError(RuntimeError):
+    """Another turn is still running in this thread (MODE-005)."""
 
 
 class ThreadNotFoundError(LookupError):
@@ -129,6 +133,8 @@ class AdvancedTurnService:
         pii: PiiRedactor | None = None,
         personal: IPersonalContext | None = None,
         linker: EntityLinker | None = None,
+        commit: ITurnCommit | None = None,
+        lock: ITurnLock | None = None,
     ) -> None:
         self._threads = threads
         self._flow = flow
@@ -137,9 +143,22 @@ class AdvancedTurnService:
         self._pii = pii or PiiRedactor()
         self._personal = personal
         self._linker = linker
+        self._commit = commit
+        self._lock = lock
 
     async def run(self, request: TurnRequest) -> AsyncIterator[TurnEvent]:
         thread = await self._thread(request)
+        token = await self._lock.acquire(thread.id) if self._lock else None
+        if self._lock and token is None:
+            raise ThreadBusyError(str(thread.id))
+        try:
+            async for event in self._run_locked(request, thread):
+                yield event
+        finally:
+            if self._lock and token:
+                await self._lock.release(thread.id, token)
+
+    async def _run_locked(self, request: TurnRequest, thread: Thread) -> AsyncIterator[TurnEvent]:
         existing = await self._threads.find_turn(thread.id, request.turn_id)
         if existing is not None:
             # A retried request must not spend LLM calls or store the exchange twice.
@@ -192,13 +211,21 @@ class AdvancedTurnService:
     async def _deliver(
         self, request: TurnRequest, record: TurnRecord, answer: ComposedAnswer
     ) -> AsyncIterator[TurnEvent]:
+        await self._store(request, record, answer)
+        for piece in _SENTENCE.split(answer.text):
+            yield TurnEvent(EVENT_TOKEN, {"delta": piece})
+        yield await self._completed(request.owner, record, replayed=False)
+
+    async def _store(
+        self, request: TurnRequest, record: TurnRecord, answer: ComposedAnswer
+    ) -> None:
+        if self._commit is not None:
+            await self._commit.commit(record, request.owner, answer.sentiment)
+            return
         stored = await self._threads.save_turn(record)
         # Only the retry that stored the turn may move emotion, so it moves once (EMO-003).
         if stored is not False and answer.sentiment and self._personal is not None:
             await self._personal.apply_sentiment(request.owner, answer.sentiment)
-        for piece in _SENTENCE.split(answer.text):
-            yield TurnEvent(EVENT_TOKEN, {"delta": piece})
-        yield await self._completed(request.owner, record, replayed=False)
 
     async def _completed(self, owner: str, record: TurnRecord, replayed: bool) -> TurnEvent:
         emotion = await self._personal.current_emotion(owner) if self._personal else None

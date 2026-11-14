@@ -596,12 +596,14 @@ async def _build_chat_turn_runtime() -> ChatTurnRuntime:
     from app.domain.services.persona_v2 import CompanionContextBuilder, GroundedContextBuilder
     from app.domain.services.rag.retriever_memory import MemoryRetriever
     from app.infrastructure.cache.redis.redis_service import redis_service
+    from app.infrastructure.cache.redis.turn_lock import RedisTurnLock
     from app.infrastructure.database.engine import AsyncSessionFactory
     from app.infrastructure.database.repositories.core_memory_store import (
         PostgresCoreMemoryStore,
     )
     from app.infrastructure.database.repositories.knowledge_store import PostgresKnowledgeStore
     from app.infrastructure.database.repositories.thread_store import PostgresThreadStore
+    from app.infrastructure.database.repositories.turn_commit import PostgresTurnCommit
     from app.infrastructure.knowledge.llm_query_translator import LlmQueryTranslator
     from app.infrastructure.knowledge.personal_context import PostgresPersonalContext
     from app.infrastructure.knowledge.qdrant_lore_index import QdrantLoreIndex
@@ -643,7 +645,13 @@ async def _build_chat_turn_runtime() -> ChatTurnRuntime:
         core_memory,
     )
     turns = AdvancedTurnService(
-        threads, flow, composer, personal=personal, linker=linker
+        threads,
+        flow,
+        composer,
+        personal=personal,
+        linker=linker,
+        commit=PostgresTurnCommit(AsyncSessionFactory),
+        lock=RedisTurnLock(redis_service),
     )
     return ChatTurnRuntime(threads, turns, core_memory)
 

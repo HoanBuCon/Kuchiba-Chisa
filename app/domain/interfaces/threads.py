@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from typing import Protocol
+from collections.abc import Mapping
+from typing import Any, Protocol
 from uuid import UUID
 
 from app.domain.models.thread import ChatMode, Thread, TurnRecord
@@ -38,3 +39,17 @@ class IThreadStore(Protocol):
     async def recent_turns(self, thread_id: UUID, limit: int) -> list[TurnRecord]:
         """Oldest first, so they read as a conversation."""
         ...
+
+
+class ITurnCommit(Protocol):
+    async def commit(self, record: TurnRecord, owner: str, sentiment: Mapping[str, Any]) -> bool:
+        """Store the turn and move emotion in one transaction; False if a retry stored it first."""
+        ...
+
+
+class ITurnLock(Protocol):
+    async def acquire(self, thread_id: UUID) -> str | None:
+        """A token while this thread has no turn running, else None (MODE-005)."""
+        ...
+
+    async def release(self, thread_id: UUID, token: str) -> None: ...
