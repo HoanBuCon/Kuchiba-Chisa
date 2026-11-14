@@ -39,3 +39,4 @@ Ghi đúng trạng thái PR, kể cả khi chưa merge. Không ghi secret hay d�
 | 2026-11-14 | R2 S7 | [Guard đầu ra cho ranh giới an toàn](2026-11-14_r2-s7_guard-ranh-gioi-an-toan.md) |
 | 2026-11-14 | R2 S7 | [Đo persona v2 và golden trên corpus mới](2026-11-14_r2-s7_do-persona-v2-va-corpus-moi.md) |
 | 2026-11-14 | R2 S7 | [Tập giữ lại cho bộ đánh giá](2026-11-14_r2-s7_tap-giu-lai-danh-gia.md) |
+| 2026-11-15 | R2 S7 | [Đường lưu của lượt chat v2](2026-11-15_r2-s7_duong-luu-luot-chat.md) |

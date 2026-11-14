@@ -12,6 +12,7 @@ from app.application.chat_turns import (
     EVENT_STARTED,
     EVENT_TOKEN,
     AdvancedTurnService,
+    ThreadBusyError,
     ThreadNotFoundError,
     TurnRequest,
 )
@@ -312,3 +313,74 @@ async def test_a_bot_channel_keeps_one_thread_across_messages() -> None:
 
     assert first[0].data["thread_id"] == second[0].data["thread_id"] == str(stable)
     assert len(threads.threads) == 1
+
+
+class Lock:
+    def __init__(self, free=True) -> None:
+        self.free = free
+        self.released = []
+
+    async def acquire(self, thread_id):
+        return "token" if self.free else None
+
+    async def release(self, thread_id, token):
+        self.released.append((thread_id, token))
+
+
+class Commit:
+    def __init__(self) -> None:
+        self.calls = []
+
+    async def commit(self, record, owner, sentiment):
+        self.calls.append((record, owner, sentiment))
+        return True
+
+
+def _locked_service(lock, composer=None, commit=None):
+    threads = Threads()
+    service = AdvancedTurnService(threads, Flow(), composer or Composer(), lock=lock, commit=commit)
+    return service, threads
+
+
+async def test_a_busy_thread_refuses_a_second_turn_without_spending_anything() -> None:
+    lock = Lock(free=False)
+    service, threads = _locked_service(lock)
+
+    with pytest.raises(ThreadBusyError):
+        await _events(service, _request())
+
+    assert threads.turns == []
+    assert lock.released == []
+
+
+async def test_the_thread_lock_is_released_after_the_turn_and_after_a_failure() -> None:
+    class Failing(Composer):
+        async def compose(self, question, evidence, **context):
+            raise RuntimeError("provider down")
+
+    done, failed = Lock(), Lock()
+    service, _ = _locked_service(done)
+    broken, _ = _locked_service(failed, composer=Failing())
+
+    await _events(service, _request())
+    with pytest.raises(RuntimeError):
+        await _events(broken, _request())
+
+    assert len(done.released) == 1
+    assert len(failed.released) == 1
+
+
+async def test_turn_and_sentiment_go_through_one_commit() -> None:
+    class Feeling(Composer):
+        async def compose(self, question, evidence, **context):
+            return ComposedAnswer("Câu.", False, sentiment={"reaction": "calm_warmth"})
+
+    commit = Commit()
+    service, threads = _locked_service(Lock(), composer=Feeling(), commit=commit)
+
+    await _events(service, _request())
+
+    record, owner, sentiment = commit.calls[0]
+    assert (owner, sentiment) == (OWNER, {"reaction": "calm_warmth"})
+    assert record.answer == "Câu."
+    assert threads.turns == []

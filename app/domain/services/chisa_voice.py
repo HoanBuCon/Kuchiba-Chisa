@@ -15,6 +15,7 @@ GROUNDED_QUOTE_SOURCES = "\n(Nguồn: {titles})"
 GROUNDED_LIST_LEAD = "Em tra được danh sách này nè Senpai:"
 INPUT_BLOCKED = "Yêu cầu này em không làm theo được đâu Senpai. Senpai hỏi em chuyện khác nhé?"
 TURN_FAILED = "Em đang gặp trục trặc nên chưa trả lời được, Senpai thử lại sau một lát nhé."
+TURN_BUSY = "Em đang trả lời tin nhắn trước của Senpai, Senpai chờ em một chút nhé."
 # Added when Senpai shows signs of self-harm and the reply points to no one who can help (PER-006).
 SAFETY_CRISIS_SUPPORT = (
     "Senpai ơi, em lo cho Senpai lắm. Nếu Senpai đang nghĩ tới việc làm hại bản thân, "
