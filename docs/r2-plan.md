@@ -78,11 +78,11 @@ Tiêu chí ở SRS mục 10: không tụt persona và cảm xúc; Advanced đạ
 | QUAL-001 độ có căn cứ | Bộ chấm cho 0,974; đọc tay còn 2 claim nghiêm trọng thật | Chưa |
 | QUAL-002 độ chính xác trích dẫn | 1,0, nhưng phép đo chỉ hỏi nguồn có hỗ trợ ít nhất một ý | Tạm |
 | QUAL-003 truy hồi | Hit@5 0,944, MRR@10 0,834 | Đạt |
-| QUAL-004 abstain | Abstain nhầm 3,6% đạt; precision 0,6 so với mục tiêu ≥ 0,90 | Chưa |
+| QUAL-004 abstain | Abstain nhầm 3,7% đạt; precision 0,6 so với mục tiêu ≥ 0,90 (đo lại 14/11) | Chưa |
 | QUAL-009 nhất quán hai chế độ | Chưa đo được khi chưa có Agentic | — |
-| Persona và cảm xúc | Persona v2 chưa đo | Chưa biết |
+| Persona và cảm xúc | Rubric 0,70 với prompt v1, 0,87 với persona v2; nhóm an toàn 0,52 lên 0,94 (đo 14/11). Chủ dự án chưa đọc bản so sánh | Chờ chủ dự án |
 
-Chưa bật v2 cho người dùng và chưa chuyển corpus `2026.11.04-1` sang hoạt động. Các phép đo trả phí cần thiết (persona v1 so với v2, golden và bộ chấm trên corpus mới) chờ chủ dự án cho phép.
+Chưa bật v2 cho người dùng và chưa chuyển corpus `2026.11.04-1` sang hoạt động. Golden ngày 14/11 trên corpus này đạt độ đúng 0,948; bộ chấm QUAL-001/002 chưa chạy lại. Chi tiết ở [báo cáo đo](handover/2026-11-14_r2-s7_do-persona-v2-va-corpus-moi.md). Các bước tiếp theo theo [thiết kế mục tiêu](design/target-architecture.md).
 
 ## Rủi ro cần xác nhận
 
