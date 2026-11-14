@@ -41,3 +41,4 @@ Ghi đúng trạng thái PR, kể cả khi chưa merge. Không ghi secret hay d�
 | 2026-11-14 | R2 S7 | [Tập giữ lại cho bộ đánh giá](2026-11-14_r2-s7_tap-giu-lai-danh-gia.md) |
 | 2026-11-15 | R2 S7 | [Đường lưu của lượt chat v2](2026-11-15_r2-s7_duong-luu-luot-chat.md) |
 | 2026-11-15 | R2 S7 | [Job trích xuất trí nhớ cho v2](2026-11-15_r2-s7_job-tri-nho-v2.md) |
+| 2026-11-15 | R2 S7 | [Sửa triage cho câu khen, câu chê và "tiếng Anh"](2026-11-15_r2-s7_sua-triage-cau-noi.md) |

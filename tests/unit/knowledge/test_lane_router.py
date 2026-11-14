@@ -42,3 +42,31 @@ def test_another_entity_means_the_game_world_whatever_the_wording() -> None:
 
 def test_chisa_alone_does_not_force_retrieval_for_small_talk() -> None:
     assert choose_lane("Chisa ơi, anh nhớ em", ("Chisa",)) is Lane.COMPANION
+
+
+@pytest.mark.parametrize(
+    "remark",
+    [
+        "Chía tròn ơi, hôm nay đáng yêu thế.",
+        "Mày ngu quá, trả lời như cái máy.",
+        "Dễ thương ghê.",
+        "Trả lời chán thật.",
+    ],
+)
+def test_a_remark_that_asks_nothing_goes_to_companion(remark) -> None:
+    assert choose_lane(remark, ()) is Lane.COMPANION
+
+
+@pytest.mark.parametrize(
+    "question",
+    [
+        "Ai lồng tiếng tiếng Anh cho Chisa?",
+        "Dien vien long tieng Anh cua Chisa la ai?",
+        "Who voices Chisa in English?",
+        "Rabelle's Curve nghĩa là gì?",
+        "Liệt kê các loại vũ khí.",
+        "món đặc biệt của chisa là j z ạ",
+    ],
+)
+def test_english_as_a_language_and_bare_questions_stay_grounded(question) -> None:
+    assert choose_lane(question, ("Chisa",)) is Lane.ADVANCED
