@@ -119,10 +119,17 @@ class LoreSearchService:
         self._rerankers = tuple(rerankers)
         self._settings = settings or LoreSearchSettings()
 
-    async def search(self, question: str, budget: LLMCallBudget | None = None) -> LoreSearchResult:
+    async def search(
+        self,
+        question: str,
+        budget: LLMCallBudget | None = None,
+        *,
+        english: str | None = None,
+    ) -> LoreSearchResult:
         original = normalize_text(question)
         degraded: list[str] = []
-        query = await self._english(original, degraded, budget)
+        # A ready query spares the translation call, which the budget has already spent elsewhere.
+        query = normalize_text(english or "") or await self._english(original, degraded, budget)
         # Aliases are bilingual, so either wording may be the one that names the entity.
         entities = tuple(dict.fromkeys((*self._linker.link(query), *self._linker.link(original))))
         vector = await self._embedder.embed_text(query, prefix=QUERY_PREFIX)
