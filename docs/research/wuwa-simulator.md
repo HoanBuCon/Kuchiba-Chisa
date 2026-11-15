@@ -148,7 +148,7 @@ flowchart LR
   subgraph SIM["Wuthering Waves Simulator (repo và process riêng)"]
     API["API (FastAPI)"] --> ENG["Engine tất định<br/>(thư viện thuần, không I/O)"]
     API --> CAT["Catalog dữ liệu<br/>bản cố định theo data_version"]
-    API -. "giai đoạn sau" .-> JOB["Job tối ưu"]
+    API -.->|"giai đoạn sau"| JOB["Job tối ưu"]
     CAT --> FILES[("Dữ liệu YAML/JSON trong git<br/>có provenance")]
   end
 ```
