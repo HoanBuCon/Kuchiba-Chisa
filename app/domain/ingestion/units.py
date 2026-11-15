@@ -8,6 +8,7 @@ from dataclasses import dataclass
 from enum import StrEnum
 
 from app.domain.ingestion.documents import Block, BlockKind, CanonicalDocument, TurnKind
+from app.domain.ingestion.field_labels import field_label
 
 PARAGRAPH_BREAK = re.compile(r"\n\s*\n")
 PROFILE = "profile"
@@ -112,7 +113,7 @@ def profile_unit(document: CanonicalDocument) -> Unit | None:
         for key, value in box.items():
             parts = [part.strip() for part in value.split("\n") if part.strip()]
             if parts:
-                fields.append(f"{key}: {', '.join(parts)}")
+                fields.append(f"{field_label(key)}: {', '.join(parts)}")
     if len(fields) < MIN_PROFILE_FIELDS:
         return None
     # The page name makes each card identifiable and keeps look-alike infoboxes distinct.
