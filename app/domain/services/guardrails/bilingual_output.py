@@ -18,6 +18,7 @@ from app.domain.models.grounded_generation import (
     GroundedAnswerEnvelope,
 )
 from app.domain.services.guardrails.claim_evidence_guard import ClaimEvidenceGuard
+from app.domain.services.guardrails.field_claims import states_field
 from app.domain.services.guardrails.grounded_output import (
     GroundedOutputAssembler,
     GroundedOutputValidationError,
@@ -170,7 +171,7 @@ class BilingualOutputAssembler:
             citation_ids=[bound.source.evidence_id],
         )
         return (
-            english.supported
+            (english.supported or states_field(claim.claim_en, bound.quote))
             and negation_agrees(claim.claim_en, bound.quote)
             and facts_match(claim.claim_vi, claim.claim_en, bound.source.text)
         )

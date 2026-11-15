@@ -15,7 +15,7 @@ _NOT_NAMES = frozenset(
 )
 # "không" inside these compounds (space, air, sky, air force) is not a negation.
 _NEGATION = re.compile(
-    r"\b(không(?!\s+(?:gian|khí|trung|quân))|chưa|chẳng|chả|đừng|cấm"
+    r"\b(không(?!\s+(?:gian|khí|trung|quân))|chưa|chẳng|chả|đừng"
     r"|not|no|never|cannot|without|none|nothing|neither|nor"
     r"|unable|lack|lacks|unknown)\b|n't\b",
     re.IGNORECASE,

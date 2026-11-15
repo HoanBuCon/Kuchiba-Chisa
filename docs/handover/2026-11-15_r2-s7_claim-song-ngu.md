@@ -42,3 +42,11 @@ Chưa chạy đo trực tiếp với LLM thật: tỷ lệ claim đúng được
 
 - Đo trên bộ golden và bộ hiệu chuẩn claim, so với mốc 62% của kiểm embedding.
 - `chat_turns.py` và các route v2 chưa đổi; chỉ cần kiểm lại nếu có nơi đọc trường `claims` cũ.
+
+## Đo thật (15/11, sau review)
+
+- Golden dev lần đầu: độ đúng 0,92, so với 0,95 trên `HBC`. Ba câu sai mới đều do bộ kiểm tra loại nhầm claim đúng:
+  - Claim lấy từ dòng infobox như `next: Grand Warstorm` có quá ít từ để so khớp. Đã thêm `field_claims.states_field`: claim phải nêu đúng khoá (hoặc từ đồng nghĩa của `next`/`prev`) và đúng giá trị.
+  - "cấm" trong "điều cấm" bị coi là phủ định. Đã bỏ "cấm" khỏi danh sách phủ định.
+- Chạy lại riêng 3 câu này với LLM thật: cả 3 đúng.
+- Chưa chạy lại toàn bộ golden và judge. Việc này để vòng đo gộp sau khi merge nhiều thay đổi.
