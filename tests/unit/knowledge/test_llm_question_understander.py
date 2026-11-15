@@ -1,11 +1,14 @@
 """Question understanding: lane and standalone query from one cached LLM call."""
 
+import contextlib
 import json
+from dataclasses import fields
 from types import SimpleNamespace
 
 import pytest
 
 from app.domain.interfaces.llm_provider import LLMCallBudget, LLMError
+from app.domain.interfaces.observability import CounterSignal
 from app.domain.services.knowledge.lane_router import Lane
 from app.domain.services.knowledge.understanding import PriorTurn, UnderstandingError
 from app.infrastructure.knowledge.llm_question_understander import (
@@ -122,3 +125,57 @@ async def test_corrupt_cache_value_is_a_miss() -> None:
     assert len(llm.prompts) == 2
     assert result.query == "Where does Chisa study?"
     assert json.loads(cache.store[key])["lane"] == "advanced"
+
+
+class RecordingTelemetry:
+    def __init__(self) -> None:
+        self.counts = []
+
+    def count(self, signal, dimensions, amount=1):
+        self.counts.append((signal, dimensions, amount))
+
+    def outcomes(self):
+        return [dimensions.outcome for _, dimensions, _ in self.counts]
+
+
+async def _outcomes(llm, cache=None, message="Em dễ thương quá"):
+    telemetry = RecordingTelemetry()
+    understander = LlmQuestionUnderstander(llm, cache, telemetry=telemetry)
+    with contextlib.suppress(UnderstandingError):
+        await understander.understand(message, [])
+    return telemetry
+
+
+async def test_a_model_call_counts_one_llm_outcome_without_any_text() -> None:
+    telemetry = await _outcomes(FakeLlm(), message="Bí mật của Chisa")
+
+    assert telemetry.outcomes() == ["llm"]
+    signal, dimensions, amount = telemetry.counts[0]
+    assert signal is CounterSignal.QUESTION_UNDERSTANDING
+    assert amount == 1
+    assert {value for value in vars_of(dimensions) if value} == {"llm"}
+
+
+async def test_a_cached_answer_counts_one_cache_hit_and_no_model_call() -> None:
+    cache = FakeCache()
+    await _outcomes(FakeLlm(), cache)
+    llm = FakeLlm()
+
+    telemetry = await _outcomes(llm, cache)
+
+    assert telemetry.outcomes() == ["cache_hit"]
+    assert llm.prompts == []
+
+
+@pytest.mark.parametrize(
+    "llm",
+    [FakeLlm(error=LLMError("down")), FakeLlm({"lane": "bogus", "query": ""})],
+)
+async def test_a_provider_error_or_bad_answer_counts_one_failure(llm) -> None:
+    telemetry = await _outcomes(llm)
+
+    assert telemetry.outcomes() == ["failed"]
+
+
+def vars_of(dimensions):
+    return [getattr(dimensions, item.name) for item in fields(dimensions)]

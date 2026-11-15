@@ -105,6 +105,23 @@ def test_untrusted_dimension_values_are_collapsed_without_content_leakage() -> N
     assert all(canary not in exported_metrics for canary in canaries)
 
 
+def test_understanding_outcomes_keep_their_label_and_content_collapses() -> None:
+    telemetry, _, metric_reader = _telemetry()
+
+    for outcome in ("skipped_rules", "cache_hit", "llm", "failed", "overridden"):
+        telemetry.count(CounterSignal.QUESTION_UNDERSTANDING, TelemetryDimensions(outcome=outcome))
+    telemetry.count(
+        CounterSignal.QUESTION_UNDERSTANDING, TelemetryDimensions(outcome="Chisa học ở đâu?")
+    )
+
+    metrics_data = metric_reader.get_metrics_data()
+    assert metrics_data is not None
+    exported = str(metrics_data)
+    assert "chisa.outcome" in exported
+    assert all(f"'{value}'" in exported for value in ("skipped_rules", "cache_hit", "llm"))
+    assert "học" not in exported
+
+
 def test_dimension_cardinality_includes_other_bucket_inside_hard_limit() -> None:
     telemetry, exporter, _metric_reader = _telemetry()
 

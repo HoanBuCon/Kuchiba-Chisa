@@ -16,6 +16,7 @@ from app.application.chat_turns import (
     ThreadNotFoundError,
     TurnRequest,
 )
+from app.domain.interfaces.observability import CounterSignal
 from app.domain.models.evidence import (
     Evidence,
     EvidenceAccess,
@@ -743,3 +744,68 @@ def test_a_trigger_not_below_the_window_is_refused_when_summaries_are_on() -> No
             history_token_budget=1_000,
             summary_trigger_tokens=1_000,
         )
+class RecordingTelemetry:
+    def __init__(self) -> None:
+        self.counts = []
+
+    def count(self, signal, dimensions, amount=1):
+        self.counts.append((signal, dimensions, amount))
+
+    def outcomes(self):
+        return [dimensions.outcome for _, dimensions, _ in self.counts]
+
+
+async def _understanding_outcomes(understander, linker, message="Tacet Field là gì?"):
+    telemetry = RecordingTelemetry()
+    service = AdvancedTurnService(
+        Threads(), Flow(), CompanionComposer(),
+        understander=understander, linker=linker, telemetry=telemetry,
+    )
+    await _events(service, _request(message=message))
+    return telemetry
+
+
+async def test_a_sure_companion_message_counts_one_skipped_rules() -> None:
+    understander = Understander()
+
+    telemetry = await _understanding_outcomes(
+        understander, Linker("Chisa"), message="Chisa ơi, em dễ thương quá"
+    )
+
+    assert understander.calls == []
+    assert telemetry.outcomes() == ["skipped_rules"]
+    assert telemetry.counts[0][0] is CounterSignal.QUESTION_UNDERSTANDING
+
+
+async def test_a_companion_verdict_kept_grounded_counts_one_overridden() -> None:
+    understander = Understander(Understanding(Lane.COMPANION, ""))
+
+    telemetry = await _understanding_outcomes(understander, Linker("Chisa", "Rover"))
+
+    assert telemetry.outcomes() == ["overridden"]
+
+
+@pytest.mark.parametrize(
+    "result",
+    [Understanding(Lane.ADVANCED, "Where does she study?"), Understanding(Lane.COMPANION, "")],
+)
+async def test_the_planner_does_not_double_count_what_the_understander_counts(result) -> None:
+    telemetry = await _understanding_outcomes(Understander(result), Linker("Chisa"))
+
+    assert "llm" not in telemetry.outcomes()
+    assert "cache_hit" not in telemetry.outcomes()
+
+
+async def test_a_failed_understander_is_counted_by_the_understander_not_the_planner() -> None:
+    telemetry = await _understanding_outcomes(Understander(error=True), Linker())
+
+    assert telemetry.outcomes() == []
+
+
+async def test_counter_labels_never_carry_the_message_text() -> None:
+    message = "Chisa ơi, bí mật nhỏ của em là gì"
+
+    telemetry = await _understanding_outcomes(Understander(), Linker("Chisa"), message=message)
+
+    for _, dimensions, _ in telemetry.counts:
+        assert message not in str(dimensions)

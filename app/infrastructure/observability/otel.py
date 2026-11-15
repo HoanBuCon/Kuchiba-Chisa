@@ -78,6 +78,7 @@ _ALLOWED_VALUES: dict[str, frozenset[str]] = {
         }
     ),
     "token_type": frozenset({"input", "output", "total"}),
+    "outcome": frozenset({"skipped_rules", "cache_hit", "llm", "failed", "overridden"}),
     "cache_outcome": frozenset(
         {
             "hit", "miss", "bypass", "stale", "incompatible_version", "acl_mismatch",
