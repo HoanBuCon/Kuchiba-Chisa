@@ -9,6 +9,7 @@ from typing import Any, Protocol
 
 @dataclass(frozen=True)
 class EpisodicMemory:
+    id: str
     text: str
     created_at: int
 
@@ -21,13 +22,15 @@ class ConsolidationState:
     version: int | None = None
     consolidated_through: int = 0
     job_owned: dict[str, list[str]] = field(default_factory=dict)
+    # Ids already folded in among the memories created exactly at `consolidated_through`.
+    boundary_ids: tuple[str, ...] = ()
 
 
 class IEpisodicMemorySource(Protocol):
     async def list_user_memories_since(
         self, user_id: str, created_at_from: int, limit: int
     ) -> list[EpisodicMemory]:
-        """Oldest first, including memories created exactly at `created_at_from`."""
+        """The oldest `limit` memories created at or after the timestamp, oldest first."""
         ...
 
 
@@ -42,6 +45,7 @@ class ICoreMemoryConsolidationStore(Protocol):
         content: Mapping[str, Any] | None,
         job_owned: Mapping[str, list[str]],
         consolidated_through: int,
+        boundary_ids: tuple[str, ...],
     ) -> bool:
         """Write only if the core memory is still at `expected_version`; False means a lost race.
 

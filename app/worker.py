@@ -84,6 +84,7 @@ async def run_worker() -> None:
         vector_store=qdrant_service,
         embedder=container.embedder,
     )
+    consolidation_store = PostgresCoreMemoryConsolidationStore(AsyncSessionFactory)
     worker = DurableBackgroundWorker(
         queue=container.background_job_queue,
         handlers={
@@ -94,13 +95,17 @@ async def run_worker() -> None:
                 AsyncSessionFactory,
                 source,
                 container.memory_extractor,
-                ConsolidationJobScheduler(AsyncSessionFactory, container.background_job_queue),
+                ConsolidationJobScheduler(
+                    AsyncSessionFactory,
+                    container.background_job_queue,
+                    consolidation_store,
+                ),
             ),
             BackgroundJobType.CORE_MEMORY_CONSOLIDATION: CoreMemoryConsolidationJobHandler(
                 source,
                 CoreMemoryConsolidator(
                     container.llm,
-                    PostgresCoreMemoryConsolidationStore(AsyncSessionFactory),
+                    consolidation_store,
                     qdrant_service,
                 ),
             ),

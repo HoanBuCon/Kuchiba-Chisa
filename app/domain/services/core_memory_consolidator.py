@@ -87,9 +87,7 @@ class CoreMemoryConsolidator:
     async def consolidate(self, owner: str) -> bool:
         """False when the person edited their core memory meanwhile; the next job retries."""
         state = await self._store.load(owner)
-        memories = await self._source.list_user_memories_since(
-            owner, state.consolidated_through, MAX_MEMORIES_PER_RUN
-        )
+        memories = await self._unread(owner, state)
         if not memories:
             return True
         current = CoreMemory.model_validate(state.content)
@@ -101,10 +99,18 @@ class CoreMemoryConsolidator:
             expected_version=state.version,
             content=updated.model_dump() if changed else None,
             job_owned=job_owned,
-            consolidated_through=max(state.consolidated_through, memories[-1].created_at),
+            **_watermark(state, memories),
         )
         log.info("Core memory consolidation finished", changed=changed, stored=stored)
         return stored
+
+    async def _unread(self, owner: str, state: ConsolidationState) -> list[EpisodicMemory]:
+        # Memories at the watermark second that were already folded in come back and are skipped.
+        fetched = await self._source.list_user_memories_since(
+            owner, state.consolidated_through, MAX_MEMORIES_PER_RUN + len(state.boundary_ids)
+        )
+        done = set(state.boundary_ids)
+        return [memory for memory in fetched if memory.id not in done][:MAX_MEMORIES_PER_RUN]
 
     async def _propose(
         self, current: CoreMemory, state: ConsolidationState, memories: list[EpisodicMemory]
@@ -119,6 +125,15 @@ class CoreMemoryConsolidator:
         )
         response = await self._llm.generate(prompt)
         return _parse(response.parsed)
+
+
+def _watermark(state: ConsolidationState, read: list[EpisodicMemory]) -> dict[str, Any]:
+    """Only memories actually read count, so the mark never passes an unread one."""
+    newest = read[-1].created_at
+    at_newest = {memory.id for memory in read if memory.created_at == newest}
+    if newest == state.consolidated_through:
+        at_newest |= set(state.boundary_ids)
+    return {"consolidated_through": newest, "boundary_ids": tuple(sorted(at_newest))}
 
 
 def apply_proposal(
@@ -156,10 +171,13 @@ def _merge_list(
     seen = {_dedupe_key(item) for item in kept}
     added: list[str] = []
     for raw in adds:
-        item = raw.strip()[:MAX_ITEM_CHARS]
+        item = raw.strip()
         if len(kept) + len(added) >= MAX_ITEMS:
             break
-        if len(item) < MIN_ITEM_CHARS or _dedupe_key(item) in seen or _has_pii(item, redactor):
+        # An over-long item is dropped, not cut: a clipped sentence would misstate the fact.
+        if not MIN_ITEM_CHARS <= len(item) <= MAX_ITEM_CHARS:
+            continue
+        if _dedupe_key(item) in seen or _has_pii(item, redactor):
             continue
         added.append(item)
         seen.add(_dedupe_key(item))

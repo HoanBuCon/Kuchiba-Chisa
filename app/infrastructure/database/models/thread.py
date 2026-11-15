@@ -75,6 +75,7 @@ class CoreMemoryConsolidationModel(Base):
     owner_principal: Mapped[str] = mapped_column(String(OWNER_LENGTH), primary_key=True)
     consolidated_through: Mapped[int] = mapped_column(BigInteger, nullable=False, default=0)
     job_owned: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict)
+    boundary_ids: Mapped[list] = mapped_column(JSONB, nullable=False, default=list)
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False
     )

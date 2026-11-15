@@ -10,7 +10,10 @@ from app.domain.interfaces.core_memory_consolidation import ConsolidationState, 
 from app.domain.interfaces.llm_provider import LLMPurpose
 from app.domain.models.background_job import BackgroundJobType, ClaimedBackgroundJob
 from app.domain.services.core_memory import MAX_ITEM_CHARS, MAX_ITEMS
-from app.domain.services.core_memory_consolidator import CoreMemoryConsolidator
+from app.domain.services.core_memory_consolidator import (
+    MAX_MEMORIES_PER_RUN,
+    CoreMemoryConsolidator,
+)
 from app.infrastructure.background.core_memory_consolidation_handler import (
     CONSOLIDATION_WINDOW_SECONDS,
     ConsolidationJobScheduler,
@@ -31,12 +34,17 @@ class Store:
         self.version = version
         self.owned = owned or {}
         self.through = 0
+        self.boundary = ()
         self.commits = 0
 
     async def load(self, owner):
-        return ConsolidationState(dict(self.content), self.version, self.through, dict(self.owned))
+        return ConsolidationState(
+            dict(self.content), self.version, self.through, dict(self.owned), self.boundary
+        )
 
-    async def commit(self, owner, *, expected_version, content, job_owned, consolidated_through):
+    async def commit(
+        self, owner, *, expected_version, content, job_owned, consolidated_through, boundary_ids
+    ):
         if self.version != expected_version:
             return False
         if content is not None:
@@ -44,6 +52,7 @@ class Store:
             self.version = (self.version or 0) + 1
         self.owned = dict(job_owned)
         self.through = consolidated_through
+        self.boundary = boundary_ids
         self.commits += 1
         return True
 
@@ -59,7 +68,8 @@ class Source:
 
     async def list_user_memories_since(self, user_id, created_at_from, limit):
         self.requested_from.append(created_at_from)
-        return [m for m in self.memories if m.created_at >= created_at_from][:limit]
+        matching = [m for m in self.memories if m.created_at >= created_at_from]
+        return sorted(matching, key=lambda m: (m.created_at, m.id))[:limit]
 
 
 class Llm:
@@ -79,7 +89,9 @@ class Llm:
 
 
 def _memories(*texts, start=100):
-    return [EpisodicMemory(text, start + index) for index, text in enumerate(texts)]
+    return [
+        EpisodicMemory(f"m{start + index}", text, start + index) for index, text in enumerate(texts)
+    ]
 
 
 def _consolidator(store, llm, memories):
@@ -162,13 +174,14 @@ async def test_size_limits_hold_and_person_entries_are_never_evicted() -> None:
     typed = [f"Entry typed by the person {n}" for n in range(MAX_ITEMS - 2)]
     store = Store({"milestones": typed}, version=1)
     flood = [f"Generated milestone number {n}" for n in range(30)]
-    flood.insert(0, "x" * (MAX_ITEM_CHARS + 50))
+    flood.insert(0, "x" * (MAX_ITEM_CHARS + 1))
     llm = Llm({"add": {"milestones": flood}, "retire": {}})
 
     await _consolidator(store, llm, _memories("a lot happened")).consolidate("u")
 
     assert len(store.content["milestones"]) == MAX_ITEMS
     assert store.content["milestones"][: MAX_ITEMS - 2] == typed
+    assert "x" * (MAX_ITEM_CHARS + 1) not in store.content["milestones"]
     assert all(len(item) <= MAX_ITEM_CHARS for item in store.content["milestones"])
 
 
@@ -298,17 +311,30 @@ async def test_a_lost_race_is_a_quiet_no_op_for_the_queue() -> None:
     assert store.through == 0
 
 
-def test_a_burst_inside_one_window_shares_one_idempotency_key() -> None:
-    first = consolidation_job(USER, now=7_200.0)
-    same_window = consolidation_job(USER, now=7_200.0 + CONSOLIDATION_WINDOW_SECONDS - 1)
-    next_window = consolidation_job(USER, now=7_200.0 + CONSOLIDATION_WINDOW_SECONDS)
-    other_person = consolidation_job(uuid.uuid4(), now=7_200.0)
+def _state(through=0, version=None):
+    return ConsolidationState(version=version, consolidated_through=through)
 
-    assert first.idempotency_key == same_window.idempotency_key
-    assert first.idempotency_key != next_window.idempotency_key
+
+def test_turns_before_the_job_runs_share_one_key_and_the_next_watermark_gets_a_new_one() -> None:
+    first = consolidation_job(USER, _state(500, 2), now=7_200.0)
+    same_burst = consolidation_job(USER, _state(500, 2), now=7_300.0)
+    after_job = consolidation_job(USER, _state(900, 2), now=7_300.0)
+    after_hand_edit = consolidation_job(USER, _state(500, 3), now=7_300.0)
+    other_person = consolidation_job(uuid.uuid4(), _state(500, 2), now=7_200.0)
+
+    assert first.idempotency_key == same_burst.idempotency_key
+    assert len({first.idempotency_key, after_job.idempotency_key}) == 2
+    assert first.idempotency_key != after_hand_edit.idempotency_key
     assert first.idempotency_key != other_person.idempotency_key
     assert first.payload == {"user_id": str(USER)}
     assert first.job_type is BackgroundJobType.CORE_MEMORY_CONSOLIDATION
+
+
+def test_the_key_expires_after_a_window_so_a_same_second_memory_is_not_stuck() -> None:
+    now = 7_200.0
+    later = consolidation_job(USER, _state(), now=now + CONSOLIDATION_WINDOW_SECONDS)
+
+    assert consolidation_job(USER, _state(), now=now).idempotency_key != later.idempotency_key
 
 
 class Queue:
@@ -345,7 +371,7 @@ def _extraction_handler(stored, queue):
         Session,
         Consent(),
         Extractor(stored),
-        ConsolidationJobScheduler(Session, queue),
+        ConsolidationJobScheduler(Session, queue, Store()),
     )
     turn = SimpleNamespace(question="q", answer="a")
 
@@ -369,6 +395,19 @@ def _extraction_job():
             },
         }
     )
+
+
+async def test_a_memory_after_the_job_advanced_the_watermark_queues_a_new_job() -> None:
+    queue = Queue()
+    store = Store()
+    scheduler = ConsolidationJobScheduler(Session, queue, store)
+
+    await scheduler.schedule(USER)
+    await scheduler.schedule(USER)
+    store.through = 900
+    await scheduler.schedule(USER)
+
+    assert len(queue.jobs) == 2
 
 
 async def test_several_turns_that_store_memories_queue_one_consolidation_job() -> None:
@@ -395,3 +434,49 @@ async def test_a_queueing_failure_does_not_fail_the_extraction_job() -> None:
             raise OperationalError("insert", {}, RuntimeError("database unavailable"))
 
     await _extraction_handler(1, BrokenQueue()).handle(_extraction_job())
+
+
+async def test_the_watermark_never_passes_an_unread_memory() -> None:
+    texts = [f"fact number {n}" for n in range(MAX_MEMORIES_PER_RUN + 5)]
+    memories = _memories(*texts)
+    store = Store()
+    source = Source(memories)
+    llm = Llm({"add": {}, "retire": {}})
+    consolidator = CoreMemoryConsolidator(llm, store, source)
+
+    await consolidator.consolidate("u")
+    first_read = llm.prompts[0].user_message.count("- fact number")
+    assert first_read == MAX_MEMORIES_PER_RUN
+    assert store.through == memories[MAX_MEMORIES_PER_RUN - 1].created_at
+
+    await consolidator.consolidate("u")
+    assert "fact number 44" in llm.prompts[1].user_message
+    assert "fact number 0" not in llm.prompts[1].user_message
+
+
+async def test_memories_sharing_the_watermark_second_are_each_read_once() -> None:
+    memories = [EpisodicMemory(f"id{n}", f"same second fact {n}", 100) for n in range(3)]
+    store = Store()
+    llm = Llm({"add": {}, "retire": {}})
+    consolidator = CoreMemoryConsolidator(llm, store, Source(memories))
+
+    await consolidator.consolidate("u")
+    await consolidator.consolidate("u")
+
+    assert len(llm.prompts) == 1
+    assert store.boundary == ("id0", "id1", "id2")
+
+
+async def test_a_new_memory_in_the_watermark_second_is_still_picked_up() -> None:
+    memories = [EpisodicMemory("a", "first fact here", 100)]
+    store = Store()
+    llm = Llm({"add": {}, "retire": {}})
+    consolidator = CoreMemoryConsolidator(llm, store, Source(memories))
+    await consolidator.consolidate("u")
+
+    memories.append(EpisodicMemory("b", "late fact same second", 100))
+    await consolidator.consolidate("u")
+
+    assert len(llm.prompts) == 2
+    assert "late fact same second" in llm.prompts[1].user_message
+    assert "first fact here" not in llm.prompts[1].user_message

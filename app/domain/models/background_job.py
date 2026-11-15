@@ -60,6 +60,9 @@ class CoreMemoryConsolidationPayload:
 
     user_id: uuid.UUID
 
+    def as_json(self) -> dict[str, Any]:
+        return _json_ready(asdict(self))
+
 
 @dataclass(frozen=True)
 class ThreadSummaryPayload:

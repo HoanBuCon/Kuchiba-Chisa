@@ -25,6 +25,7 @@ def upgrade() -> None:
         sa.Column("owner_principal", sa.String(OWNER_LENGTH), primary_key=True),
         sa.Column("consolidated_through", sa.BigInteger(), nullable=False),
         sa.Column("job_owned", postgresql.JSONB(), nullable=False),
+        sa.Column("boundary_ids", postgresql.JSONB(), nullable=False),
         sa.Column(
             "updated_at",
             sa.DateTime(timezone=True),

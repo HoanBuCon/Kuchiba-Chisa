@@ -34,6 +34,7 @@ class PostgresCoreMemoryConsolidationStore:
             version=core.version if core else None,
             consolidated_through=progress.consolidated_through if progress else 0,
             job_owned=dict(progress.job_owned) if progress else {},
+            boundary_ids=tuple(progress.boundary_ids) if progress else (),
         )
 
     async def commit(
@@ -44,6 +45,7 @@ class PostgresCoreMemoryConsolidationStore:
         content: Mapping[str, Any] | None,
         job_owned: Mapping[str, list[str]],
         consolidated_through: int,
+        boundary_ids: tuple[str, ...],
     ) -> bool:
         async with self._sessions() as session:
             # The row lock makes a hand edit wait for this transaction, or fail the version check.
@@ -58,7 +60,9 @@ class PostgresCoreMemoryConsolidationStore:
                 session, owner, expected_version, content
             ):
                 return False
-            await self._write_progress(session, owner, job_owned, consolidated_through)
+            await self._write_progress(
+                session, owner, job_owned, consolidated_through, boundary_ids
+            )
             await session.commit()
         return True
 
@@ -82,12 +86,17 @@ class PostgresCoreMemoryConsolidationStore:
 
     @staticmethod
     async def _write_progress(
-        session: Any, owner: str, job_owned: Mapping[str, list[str]], consolidated_through: int
+        session: Any,
+        owner: str,
+        job_owned: Mapping[str, list[str]],
+        consolidated_through: int,
+        boundary_ids: tuple[str, ...],
     ) -> None:
         statement = insert(CoreMemoryConsolidationModel).values(
             owner_principal=owner,
             consolidated_through=consolidated_through,
             job_owned=dict(job_owned),
+            boundary_ids=list(boundary_ids),
         )
         await session.execute(
             statement.on_conflict_do_update(
@@ -95,6 +104,7 @@ class PostgresCoreMemoryConsolidationStore:
                 set_={
                     "consolidated_through": statement.excluded.consolidated_through,
                     "job_owned": statement.excluded.job_owned,
+                    "boundary_ids": statement.excluded.boundary_ids,
                 },
             )
         )

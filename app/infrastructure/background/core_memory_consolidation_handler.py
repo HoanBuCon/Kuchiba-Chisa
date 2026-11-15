@@ -9,6 +9,10 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from app.domain.interfaces.background_jobs import IDurableBackgroundJobQueue
+from app.domain.interfaces.core_memory_consolidation import (
+    ConsolidationState,
+    ICoreMemoryConsolidationStore,
+)
 from app.domain.models.background_job import (
     BackgroundJobSubmission,
     BackgroundJobType,
@@ -24,15 +28,20 @@ from app.shared.utils.logger import get_logger
 
 log = get_logger(__name__)
 
-# One job per person per window keeps a chatty hour to a single LLM call.
+# Bounds how long a memory can wait when it lands on a key that already ran (same-second ties).
 CONSOLIDATION_WINDOW_SECONDS = 3_600
 
 
-def consolidation_job(user_id: uuid.UUID, now: float | None = None) -> BackgroundJobSubmission:
+def consolidation_job(
+    user_id: uuid.UUID, state: ConsolidationState, now: float | None = None
+) -> BackgroundJobSubmission:
+    """Turns before the job runs share its key; once it moves the watermark, the key changes."""
     window = int((time.time() if now is None else now) // CONSOLIDATION_WINDOW_SECONDS)
+    # The version is in the key so a job that lost a race to a hand edit can be queued again.
+    position = f"{state.consolidated_through}:{state.version or 0}:{window}"
     return BackgroundJobSubmission(
         job_type=BackgroundJobType.CORE_MEMORY_CONSOLIDATION,
-        idempotency_key=f"core-memory-consolidation:{user_id}:{window}",
+        idempotency_key=f"core-memory-consolidation:{user_id}:{position}",
         payload=CoreMemoryConsolidationPayload(user_id).as_json(),
         principal_id=user_id,
     )
@@ -45,14 +54,17 @@ class ConsolidationJobScheduler:
         self,
         session_factory: async_sessionmaker[AsyncSession],
         queue: IDurableBackgroundJobQueue,
+        store: ICoreMemoryConsolidationStore,
     ) -> None:
         self._sessions = session_factory
         self._queue = queue
+        self._store = store
 
     async def schedule(self, user_id: uuid.UUID) -> None:
         try:
+            state = await self._store.load(str(user_id))
             async with self._sessions() as session:
-                await self._queue.enqueue(session, consolidation_job(user_id))
+                await self._queue.enqueue(session, consolidation_job(user_id, state))
                 await session.commit()
         except (SQLAlchemyError, OSError) as error:
             log.warning("Core memory consolidation was not queued", error_type=type(error).__name__)
