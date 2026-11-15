@@ -1,15 +1,16 @@
 # Golden v2 (SRS v2 §9, QUAL-003..009). Reviewed and approved by the project owner on 2026-11-04;
 # v2.2 (2026-11-14) narrows the persona-002 forbidden pattern, owner approved.
-# v2.3 (2026-11-14) adds a holdout split (`split: holdout`): 34 unverified cases awaiting the owner.
+# v2.3 (2026-11-14) adds a holdout split (`split: holdout`) of 34 cases.
+# v2.4 (2026-11-15): the owner confirmed the 34 holdout labels; no label text changed.
 # Ground truth comes from the Wuthering Waves Fandom wiki snapshot of 2026-10-30; pages are referenced by
 # wiki pageid so cases survive corpus rebuilds. New cases stay unverified until the owner confirms them.
 # expected_facts: each item is one fact; any listed surface form matches (case and diacritics ignored).
-dataset_version: golden-v2.3
+dataset_version: golden-v2.4
 source_snapshot: wuwa-wiki-20261030
 approval:
   status: approved
   approved_by: HoanBuCon
-  approved_at: "2026-11-14"
+  approved_at: "2026-11-15"
 abstain_markers:
   - không biết
   - không rõ
@@ -924,7 +925,7 @@ cases:
     verified: true
   # ── Holdout (golden-v2.3, 2026-11-14) ─────────────────────────────────────────────────────────
   # Written from corpus 2026.11.04-1 infobox fields without running the system on them. Never tune
-  # rules or prompts on these. They stay unverified until the owner confirms them.
+  # rules or prompts on these. The owner confirmed them on 2026-11-15.
   - id: lore-301
     category: lore_single_hop
     language: vi
@@ -932,6 +933,7 @@ cases:
     turns: [{message: "Chixia thuộc hệ gì?"}]
     expected_facts: [[fusion]]
     relevant_pages: [{title: Chixia, pageid: 510}]
+    verified: true
   - id: lore-302
     category: lore_single_hop
     language: en
@@ -939,6 +941,7 @@ cases:
     turns: [{message: "What weapon does Encore use?"}]
     expected_facts: [[rectifier]]
     relevant_pages: [{title: Encore, pageid: 522}]
+    verified: true
   - id: lore-303
     category: lore_single_hop
     language: vi
@@ -946,6 +949,7 @@ cases:
     turns: [{message: "Ai lồng tiếng Anh cho Yinlin?"}]
     expected_facts: [[naomi mcdonald]]
     relevant_pages: [{title: Yinlin, pageid: 570}]
+    verified: true
   - id: lore-304
     category: lore_single_hop
     language: vi_no_diacritics
@@ -953,6 +957,7 @@ cases:
     turns: [{message: "Yuanwu dung vu khi gi?"}]
     expected_facts: [[gauntlets, găng]]
     relevant_pages: [{title: Yuanwu, pageid: 591}]
+    verified: true
   - id: lore-305
     category: lore_single_hop
     language: vi
@@ -960,6 +965,7 @@ cases:
     turns: [{message: "Verina sinh ra ở đâu?"}]
     expected_facts: [[new federation]]
     relevant_pages: [{title: Verina, pageid: 620}]
+    verified: true
   - id: lore-306
     category: lore_single_hop
     language: en
@@ -967,6 +973,7 @@ cases:
     turns: [{message: "Who is the English voice actor of Baizhi?"}]
     expected_facts: [[samantha dakin]]
     relevant_pages: [{title: Baizhi, pageid: 624}]
+    verified: true
   - id: lore-307
     category: lore_single_hop
     language: teencode
@@ -974,6 +981,7 @@ cases:
     turns: [{message: "lingyang hệ j v?"}]
     expected_facts: [[glacio]]
     relevant_pages: [{title: Lingyang, pageid: 631}]
+    verified: true
   - id: lore-308
     category: lore_single_hop
     language: vi
@@ -981,6 +989,7 @@ cases:
     turns: [{message: "Shorekeeper dùng vũ khí gì?"}]
     expected_facts: [[rectifier]]
     relevant_pages: [{title: Shorekeeper, pageid: 10662}]
+    verified: true
   - id: lore-309
     category: lore_single_hop
     language: vi
@@ -988,6 +997,7 @@ cases:
     turns: [{message: "Phoebe thuộc hệ nào?"}]
     expected_facts: [[spectro]]
     relevant_pages: [{title: Phoebe, pageid: 24784}]
+    verified: true
   - id: lore-310
     category: lore_single_hop
     language: en
@@ -995,6 +1005,7 @@ cases:
     turns: [{message: "Where was Carlotta born?"}]
     expected_facts: [[ragunna]]
     relevant_pages: [{title: Carlotta, pageid: 24790}]
+    verified: true
   - id: lore-311
     category: lore_single_hop
     language: vi
@@ -1002,6 +1013,7 @@ cases:
     turns: [{message: "Brant dùng loại vũ khí gì?"}]
     expected_facts: [[sword, kiếm]]
     relevant_pages: [{title: Brant, pageid: 24786}]
+    verified: true
   - id: lore-312
     category: lore_single_hop
     language: vi
@@ -1009,6 +1021,7 @@ cases:
     turns: [{message: "Diễn viên lồng tiếng Nhật của Youhu là ai?"}]
     expected_facts: [[tomita miyu, 富田美憂]]
     relevant_pages: [{title: Youhu, pageid: 10663}]
+    verified: true
   - id: lore-313
     category: lore_single_hop
     language: vi_no_diacritics
@@ -1016,6 +1029,7 @@ cases:
     turns: [{message: "Encore sinh ra o dau?"}]
     expected_facts: [[new federation]]
     relevant_pages: [{title: Encore, pageid: 522}]
+    verified: true
   - id: lore-314
     category: lore_single_hop
     language: vi
@@ -1023,6 +1037,7 @@ cases:
     turns: [{message: "Carlotta thuộc hệ gì?"}]
     expected_facts: [[glacio]]
     relevant_pages: [{title: Carlotta, pageid: 24790}]
+    verified: true
   - id: lore-315
     category: lore_single_hop
     language: en
@@ -1030,6 +1045,7 @@ cases:
     turns: [{message: "Who voices Brant in English?"}]
     expected_facts: [[hyoie]]
     relevant_pages: [{title: Brant, pageid: 24786}]
+    verified: true
   - id: lore-316
     category: lore_single_hop
     language: vi
@@ -1038,6 +1054,7 @@ cases:
     expected_facts: [[huanglong]]
     relevant_pages: [{title: Chixia, pageid: 510}]
   # Follow-ups: the last turn only makes sense with the turn before it (ADV-003).
+    verified: true
   - id: followup-001
     category: lore_single_hop
     language: vi
@@ -1045,6 +1062,7 @@ cases:
     turns: [{message: "Chixia là ai?"}, {message: "Cô ấy dùng vũ khí gì?"}]
     expected_facts: [[pistols, súng lục, súng]]
     relevant_pages: [{title: Chixia, pageid: 510}]
+    verified: true
   - id: followup-002
     category: lore_single_hop
     language: vi
@@ -1052,6 +1070,7 @@ cases:
     turns: [{message: "Kể anh nghe về Yinlin đi."}, {message: "Cô ấy thuộc hệ gì?"}]
     expected_facts: [[electro]]
     relevant_pages: [{title: Yinlin, pageid: 570}]
+    verified: true
   - id: followup-003
     category: lore_single_hop
     language: en
@@ -1059,6 +1078,7 @@ cases:
     turns: [{message: "Who is Verina?"}, {message: "What weapon does she use?"}]
     expected_facts: [[rectifier]]
     relevant_pages: [{title: Verina, pageid: 620}]
+    verified: true
   - id: followup-004
     category: lore_single_hop
     language: vi
@@ -1066,6 +1086,7 @@ cases:
     turns: [{message: "Baizhi là ai vậy?"}, {message: "Ai lồng tiếng Anh cho cô ấy?"}]
     expected_facts: [[samantha dakin]]
     relevant_pages: [{title: Baizhi, pageid: 624}]
+    verified: true
   - id: followup-005
     category: lore_single_hop
     language: vi
@@ -1073,6 +1094,7 @@ cases:
     turns: [{message: "Em biết Lingyang không?"}, {message: "Cậu ấy dùng vũ khí gì?"}]
     expected_facts: [[gauntlets, găng]]
     relevant_pages: [{title: Lingyang, pageid: 631}]
+    verified: true
   - id: followup-006
     category: lore_single_hop
     language: vi
@@ -1080,6 +1102,7 @@ cases:
     turns: [{message: "Carlotta thuộc hệ gì?"}, {message: "Thế còn nơi sinh của cô ấy?"}]
     expected_facts: [[ragunna]]
     relevant_pages: [{title: Carlotta, pageid: 24790}]
+    verified: true
   - id: followup-007
     category: lore_single_hop
     language: vi
@@ -1087,6 +1110,7 @@ cases:
     turns: [{message: "Shorekeeper là ai?"}, {message: "Cô ấy sinh ra ở đâu?"}]
     expected_facts: [[black shores]]
     relevant_pages: [{title: Shorekeeper, pageid: 10662}]
+    verified: true
   - id: followup-008
     category: lore_single_hop
     language: vi
@@ -1095,6 +1119,7 @@ cases:
     expected_facts: [[sword, kiếm]]
     relevant_pages: [{title: Brant, pageid: 24786}]
   # Not knowledge questions: an abstention here is a triage error (MODE-008).
+    verified: true
   - id: chat-001
     category: persona
     language: vi
@@ -1102,6 +1127,7 @@ cases:
     turns: [{message: "Hôm nay nhìn em xinh ghê á."}]
     expected_facts: [[senpai]]
     persona: {require_senpai: true}
+    verified: true
   - id: chat-002
     category: persona
     language: vi
@@ -1109,6 +1135,7 @@ cases:
     turns: [{message: "Trả lời chán thế, em dở quá."}]
     expected_facts: [[senpai]]
     persona: {require_senpai: true}
+    verified: true
   - id: chat-003
     category: persona
     language: vi
@@ -1116,6 +1143,7 @@ cases:
     turns: [{message: "Cảm ơn em nhiều nha, em giỏi lắm."}]
     expected_facts: [[senpai]]
     persona: {require_senpai: true}
+    verified: true
   - id: chat-004
     category: persona
     language: vi
@@ -1123,6 +1151,7 @@ cases:
     turns: [{message: "Anh buồn ngủ quá mà vẫn chưa xong việc."}]
     expected_facts: [[senpai]]
     persona: {require_senpai: true}
+    verified: true
   - id: chat-005
     category: persona
     language: vi
@@ -1130,6 +1159,7 @@ cases:
     turns: [{message: "Em đang làm gì đó?"}]
     expected_facts: [[senpai]]
     persona: {require_senpai: true}
+    verified: true
   - id: chat-006
     category: persona
     language: en
@@ -1137,6 +1167,7 @@ cases:
     turns: [{message: "You're kind of adorable today, you know."}]
     expected_facts: [[senpai]]
     persona: {require_senpai: true}
+    verified: true
   - id: oos-301
     category: out_of_scope
     language: vi
@@ -1144,6 +1175,7 @@ cases:
     turns: [{message: "Số điện thoại của Baizhi là gì?"}]
     expected_behavior: abstain
     notes: Not in the wiki.
+    verified: true
   - id: oos-302
     category: out_of_scope
     language: vi
@@ -1151,6 +1183,7 @@ cases:
     turns: [{message: "Phiên bản 9.0 của Wuthering Waves ra mắt ngày nào?"}]
     expected_behavior: abstain
     notes: Unreleased version at the snapshot date.
+    verified: true
   - id: oos-303
     category: out_of_scope
     language: en
@@ -1158,6 +1191,7 @@ cases:
     turns: [{message: "Which year did Carlotta win an Oscar?"}]
     expected_behavior: abstain
     notes: False premise.
+    verified: true
   - id: oos-304
     category: out_of_scope
     language: vi
@@ -1165,3 +1199,4 @@ cases:
     turns: [{message: "Chapter XII có những nhiệm vụ chính nào?"}]
     expected_behavior: abstain
     notes: Unreleased chapter at the snapshot date.
+    verified: true
