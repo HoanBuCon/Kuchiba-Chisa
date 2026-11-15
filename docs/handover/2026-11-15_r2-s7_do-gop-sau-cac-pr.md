@@ -43,3 +43,9 @@ Chi phí thật từng lượt (cột mới của #98, 121 lượt):
 
 - **COST-002 chưa đạt ở làn Advanced:** 0,00148 USD/lượt, mục tiêu ≤ 0,001 USD. Hướng rẻ nhất là giảm số bằng chứng đưa vào Composer (top 8) và giữ phần đầu prompt ổn định để tăng cache.
 - Prompt: nhắc rõ không dịch tên loại vũ khí và thuộc tính.
+
+## Giảm chi phí (cùng ngày, nhánh `perf/r2-advanced-cost`)
+
+- Đưa 6 đoạn bằng chứng vào Composer thay vì 8. Thêm quy tắc không dịch tên hệ và loại vũ khí.
+- Golden dev: độ đúng 0,93 (trước 0,92). Chi phí làn Advanced 0,00140 USD/lượt (trước 0,00148). Token vào 4.999, trúng cache 2.113, token ra 437.
+- Vẫn chưa đạt COST-002 theo giá giờ cao điểm. Phần lớn chi phí đến từ khoảng 2.900 token vào không trúng cache và 437 token ra (claim song ngữ). Theo giá ngoài giờ cao điểm, chi phí là 0,0007 USD, đạt mục tiêu.

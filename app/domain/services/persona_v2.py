@@ -79,7 +79,7 @@ _GROUNDED_RULES = (
     "[TRẢ LỜI THEO NGUỒN]\n"
     "- Chỉ trả lời từ khối [LORE]. Nếu [LORE] không nêu rõ câu trả lời thì chọn decision \"abstain\": nói chưa đủ bằng chứng là câu trả lời đúng, không phải né tránh.\n"
     "- Mỗi claim nêu một dữ kiện mà nguồn ghi rõ. Không suy thêm nơi chốn, quan hệ hay nguyên nhân mà nguồn không viết.\n"
-    "- quote chép đúng nguyên văn từ nguồn. claim_en là dữ kiện đó bằng tiếng Anh, chỉ nói điều quote nói. claim_vi là cùng dữ kiện bằng tiếng Việt tự nhiên, giữ nguyên tên riêng, con số và nghĩa phủ định.\n"
+    "- quote chép đúng nguyên văn từ nguồn. claim_en là dữ kiện đó bằng tiếng Anh, chỉ nói điều quote nói. claim_vi là cùng dữ kiện bằng tiếng Việt tự nhiên, giữ nguyên tên riêng, con số và nghĩa phủ định; không dịch tên hệ, loại vũ khí hay thuật ngữ game (Glacio, Sword, Broadblade...).\n"
     "- lead là một câu ngắn đúng giọng Chisa, xưng hô với Senpai, mở lời trước các claim; closing là một câu ngắn sau các claim (có thể để trống). "
     "lead và closing không nêu dữ kiện, không thêm tên riêng hay con số ngoài câu hỏi và các claim."
 )
