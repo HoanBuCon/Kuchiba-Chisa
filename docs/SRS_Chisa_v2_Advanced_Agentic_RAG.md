@@ -3,7 +3,7 @@
 | Thuộc tính | Giá trị |
 |---|---|
 | Tài liệu | SRS cho hệ thống mới của Kuchiba Chisa: hai chế độ Advanced RAG / Agentic RAG, phân quyền 4 vai trò, trí nhớ và cảm xúc |
-| Phiên bản | 2.3.0 |
+| Phiên bản | 2.3.1 |
 | Ngày lập / phê duyệt | 2026-10-30 / **2026-10-31** |
 | Trạng thái | **ĐÃ PHÊ DUYỆT** bởi chủ dự án. Là baseline yêu cầu cho hệ thống mới, **thay thế** [SRS v1.1](../reports/SRS_Kuchiba_Chisa.md) cho mọi phát triển mới. v1.1 được giữ nguyên làm tài liệu lịch sử và chỉ áp dụng cho việc sửa lỗi hệ hiện tại trong thời gian chuyển đổi. Các mục "Vấn đề mở" (mục 12) vẫn cần quyết định riêng |
 | Bản chất dự án | Dự án cá nhân; không còn ràng buộc với đồ án môn học |
@@ -35,6 +35,7 @@
 | 2.2.5 | 2026-11-04 | Chủ dự án | Duyệt tối ưu persona cho v2 với điều kiện không làm mất persona: PER-002 cho phép persona v2 có version và lớp quy tắc theo làn, v1 giữ nguyên văn; thêm PER-006 ranh giới an toàn |
 | 2.2.6 | 2026-11-14 | Chủ dự án | Persona v2: mức ngọt ngào tăng theo độ thân thiết, Kuudere chiếm ưu thế khi mới quen, không làm quá. PERF-003 ghi là nợ kỹ thuật cho tới khi có VPS |
 | 2.3.0 | 2026-11-14 | Chủ dự án (uỷ quyền chọn kiến trúc và công nghệ) | Kiến trúc sau nghiên cứu, theo ADR-0005 và `docs/design/target-architecture.md`: bộ điều phối và Advanced RAG viết bằng Python thuần, LangGraph chỉ cho làn Agentic (ASM-004 đã kiểm chứng trên máy dev); bước hiểu câu hỏi gộp chọn làn và viết lại câu hỏi (MODE-008, ADV-001…003, ADV-010); claim hai ngôn ngữ và lời dẫn theo giọng Chisa (GRD-001, GRD-003); Redis Streams chỉ bắt buộc cho Agentic (CH-001); thêm REL-007; cập nhật mục 3.2, 3.3, 3.4, 3.5.4, 3.5.6, 3.5.7, 3.5.10, 8.2, 10 |
+| 2.3.1 | 2026-11-15 | Chủ dự án | QUAL-004 đo trong phạm vi Advanced, không tính câu nhiều bước (báo riêng, thuộc QUAL-007); báo kèm khoảng tin cậy 95% |
 
 ## Quyết định đã chốt của chủ dự án (đầu vào của tài liệu)
 
@@ -1216,7 +1217,7 @@ Ranh giới: client (Web/Discord) ↔ Ingress; Runtime ↔ LLM provider; Runtime
 | QUAL-001 | Độ đúng có căn cứ (groundedness), từng chế độ | ≥ 0,90; không có claim nghiêm trọng thiếu căn cứ |
 | QUAL-002 | Độ chính xác trích dẫn | ≥ 0,95 |
 | QUAL-003 | Advanced: Hit@5 / MRR@10 trên golden v2 (lore canon) | ≥ 0,90 / ≥ 0,80 |
-| QUAL-004 | Abstain đúng với câu hỏi không có đáp án | ≥ 0,90 precision; tỷ lệ abstain sai ≤ 5% |
+| QUAL-004 | Abstain đúng với câu hỏi không có đáp án, đo trong phạm vi Advanced: một bước, liệt kê, chi tiết thoại, ngoài phạm vi. Câu nhiều bước không tính, vì Advanced abstain và đề nghị Agentic ở đó là đúng thiết kế (ADV-007); tỷ lệ abstain câu nhiều bước báo riêng và do QUAL-007 kiểm. Báo kèm khoảng tin cậy 95% | ≥ 0,90 precision; tỷ lệ abstain sai ≤ 5% |
 | QUAL-005 | Persona: xưng hô đúng 100%; rubric giọng điệu ≥ 0,90; ở cả hai chế độ | Chặn phát hành nếu giảm |
 | QUAL-006 | Triage: chọn làn sai ≤ 10%; câu hỏi một bước ở Agentic kết thúc ≤ 2 lời gọi LLM ở ≥ 70% trường hợp | |
 | QUAL-007 | Agentic so với Advanced ở nhóm nhiều bước / liệt kê / chi tiết thoại: cải thiện độ đúng **≥ 15 điểm %** | Nếu không đạt thì không mở Agentic cho Chía-con |
