@@ -50,6 +50,7 @@ class CounterSignal(StrEnum):
     SECURITY_EVENTS = "chisa.security.events"
     GUARDRAIL_DECISIONS = "chisa.guardrail.decisions"
     GROUNDING_DECISIONS = "chisa.rag.grounding.decisions"
+    QUESTION_UNDERSTANDING = "chisa.chat.understanding"
 
 
 class HistogramSignal(StrEnum):
@@ -96,6 +97,7 @@ class TelemetryDimensions:
     dependency: str | None = None
     status: str | None = None
     token_type: str | None = None
+    outcome: str | None = None
 
 
 class SpanHandle(Protocol):
