@@ -47,3 +47,4 @@ Ghi đúng trạng thái PR, kể cả khi chưa merge. Không ghi secret hay d�
 | 2026-11-15 | R2 S7 | [Báo lỗi hết tiền cho các adapter LLM còn lại](2026-11-15_r2-s7_bao-loi-het-tien-cac-adapter.md) |
 | 2026-11-15 | Tổng hợp | [Handover tổng hợp: lỗi, đánh giá thất bại và trạng thái](2026-11-15_handover-tong-hop.md) |
 | 2026-11-15 | R2 S7 | [Nhãn trường infobox trong trích dẫn](2026-11-15_r2-s7_nhan-truong-infobox-trong-trich-dan.md) |
+| 2026-11-15 | R2 S7 | [Claim hai ngôn ngữ và lời dẫn theo giọng Chisa](2026-11-15_r2-s7_claim-song-ngu.md) |
