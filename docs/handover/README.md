@@ -50,4 +50,5 @@ Ghi đúng trạng thái PR, kể cả khi chưa merge. Không ghi secret hay d�
 | 2026-11-15 | R2 S7 | [Job hợp nhất core memory (MEM-005)](2026-11-15_r2-s7_hop-nhat-core-memory.md) |
 | 2026-11-15 | R2 S7 | [Cửa sổ cắt theo token và summary cuộn](2026-11-15_r2-s7_cua-so-token-va-summary.md) |
 | 2026-11-15 | R2 S7 | [Claim hai ngôn ngữ và lời dẫn theo giọng Chisa](2026-11-15_r2-s7_claim-song-ngu.md) |
+| 2026-11-15 | R2 S7 | [Tải ngữ cảnh song song và chi phí từng lượt](2026-11-15_r2-s7_tien-to-prompt-va-chi-phi.md) |
 | 2026-11-15 | R2 S7 | [Metric của bước hiểu câu hỏi (ADV-003)](2026-11-15_r2-s7_metric-hieu-cau-hoi.md) |

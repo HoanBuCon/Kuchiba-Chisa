@@ -8,6 +8,7 @@ from datetime import datetime
 from sqlalchemy import (
     BigInteger,
     DateTime,
+    Float,
     ForeignKey,
     Index,
     Integer,
@@ -55,6 +56,11 @@ class ThreadTurnModel(Base, UUIDMixin):
     status: Mapped[str] = mapped_column(String(LABEL_LENGTH), nullable=False)
     downgrade_reason: Mapped[str | None] = mapped_column(String(LABEL_LENGTH), nullable=True)
     llm_calls: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    # Null on turns stored before usage was recorded (COST-001).
+    input_tokens: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    cached_input_tokens: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    output_tokens: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    cost_usd: Mapped[float | None] = mapped_column(Float, nullable=True)
     citations: Mapped[list] = mapped_column(JSONB, nullable=False, default=list)
     degraded: Mapped[list] = mapped_column(JSONB, nullable=False, default=list)
     created_at: Mapped[datetime] = mapped_column(

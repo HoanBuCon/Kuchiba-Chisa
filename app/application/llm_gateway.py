@@ -669,6 +669,11 @@ class LLMGateway(BaseLLMAdapter):
                     raise
                 else:
                     span.set_status("ok")
+                    prompt.call_budget.record_usage(
+                        response.input_tokens,
+                        response.cached_input_tokens,
+                        response.output_tokens,
+                    )
                     if response.input_tokens:
                         self._telemetry.count(
                             CounterSignal.LLM_TOKENS,

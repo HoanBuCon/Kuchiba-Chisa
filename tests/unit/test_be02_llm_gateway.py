@@ -1071,3 +1071,24 @@ async def test_gateway_logs_and_errors_do_not_disclose_prompt_or_provider_secret
     assert prompt.user_message not in rendered
     assert "provider-secret-value" not in str(caught.value)
     assert caught.value.failure_class is LLMFailureClass.AUTH_CONFIG
+
+
+@pytest.mark.asyncio
+async def test_gateway_adds_provider_usage_to_the_turn_budget() -> None:
+    usage = LLMResponse(
+        raw_content="{}",
+        parsed={},
+        input_tokens=900,
+        cached_input_tokens=600,
+        output_tokens=40,
+        model="m",
+    )
+    budget = LLMCallBudget(max_calls=2)
+    gateway = _gateway([_provider("primary", FakeAdapter([usage, usage]))])
+
+    await gateway.execute(_prompt(budget=budget))
+    await gateway.execute(_prompt(budget=budget))
+
+    assert budget.input_tokens == 1800
+    assert budget.cached_input_tokens == 1200
+    assert budget.output_tokens == 80

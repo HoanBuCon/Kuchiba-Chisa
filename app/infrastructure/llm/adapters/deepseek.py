@@ -196,6 +196,7 @@ class DeepSeekAdapter(BaseLLMAdapter):
             
             usage = res_json.get("usage", {})
             input_tokens = usage.get("prompt_tokens", 0)
+            cached_input_tokens = usage.get("prompt_cache_hit_tokens", 0)
             output_tokens = usage.get("completion_tokens", 0)
             reasoning_tokens = usage.get("completion_tokens_details", {}).get("reasoning_tokens", 0)
             if not reasoning_tokens and reasoning_content:
@@ -221,6 +222,7 @@ class DeepSeekAdapter(BaseLLMAdapter):
             raw_content=raw,
             parsed=parsed,
             input_tokens=input_tokens,
+            cached_input_tokens=cached_input_tokens,
             output_tokens=output_tokens,
             reasoning_tokens=reasoning_tokens,
             vision_tokens=len(prompt.images) * 384 if prompt.images else 0,

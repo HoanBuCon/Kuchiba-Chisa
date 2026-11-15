@@ -38,6 +38,10 @@ def _turn(row: ThreadTurnModel) -> TurnRecord:
         status=row.status,
         downgrade_reason=DowngradeReason(reason) if reason else None,
         llm_calls=row.llm_calls,
+        input_tokens=row.input_tokens or 0,
+        cached_input_tokens=row.cached_input_tokens or 0,
+        output_tokens=row.output_tokens or 0,
+        cost_usd=row.cost_usd or 0.0,
         citations=tuple(row.citations),
         degraded=tuple(row.degraded),
     )
@@ -59,6 +63,10 @@ def turn_insert(record: TurnRecord) -> Any:
             status=record.status,
             downgrade_reason=reason.value if reason else None,
             llm_calls=record.llm_calls,
+            input_tokens=record.input_tokens,
+            cached_input_tokens=record.cached_input_tokens,
+            output_tokens=record.output_tokens,
+            cost_usd=record.cost_usd,
             citations=list(record.citations),
             degraded=list(record.degraded),
         )
