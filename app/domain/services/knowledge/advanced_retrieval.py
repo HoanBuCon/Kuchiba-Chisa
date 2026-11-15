@@ -44,9 +44,13 @@ class AdvancedRetrieval:
         self._dialogue = dialogue
 
     async def retrieve(
-        self, question: str, budget: LLMCallBudget | None = None
+        self,
+        question: str,
+        budget: LLMCallBudget | None = None,
+        *,
+        english: str | None = None,
     ) -> AdvancedEvidence:
-        found = await self._search.search(question, budget)
+        found = await self._search.search(question, budget, english=english)
         route = self._router.route((question, found.query), found.entities)
         if route.unknown_chapter:
             # Search would find a similar name, like "Act VII" for an unreleased "Chapter VII".

@@ -25,13 +25,20 @@ from app.domain.services.guardrails.pii_redaction import PiiRedactor
 from app.domain.services.guardrails.safety_boundaries import apply_boundaries
 from app.domain.services.knowledge.advanced_retrieval import AdvancedEvidence
 from app.domain.services.knowledge.composer import ComposedAnswer
-from app.domain.services.knowledge.lane_router import Lane, choose_lane
+from app.domain.services.knowledge.lane_router import CHISA, Lane, choose_lane
+from app.domain.services.knowledge.understanding import (
+    IQuestionUnderstander,
+    PriorTurn,
+    UnderstandingError,
+)
 from app.domain.services.state_manager import StateManager
 
-# The translation and the Composer; a turn never spends a third call (ADV-009).
+# The understanding step and the Composer; a turn never spends a third call (ADV-009).
 ADVANCED_MAX_LLM_CALLS = 2
 ADVANCED_DEADLINE_SECONDS = 30.0
 HISTORY_TURNS = 6
+UNDERSTANDING_TURNS = 2
+DEGRADED_UNDERSTANDING = "understanding_failed"
 EVENT_STARTED = "turn.started"
 EVENT_EVIDENCE = "evidence.added"
 EVENT_TOKEN = "token"
@@ -73,7 +80,11 @@ class TurnEvent:
 
 class IEvidenceFlow(Protocol):
     async def retrieve(
-        self, question: str, budget: LLMCallBudget | None = None
+        self,
+        question: str,
+        budget: LLMCallBudget | None = None,
+        *,
+        english: str | None = None,
     ) -> AdvancedEvidence: ...
 
 
@@ -117,6 +128,17 @@ def _worth_remembering(request: TurnRequest, record: TurnRecord) -> bool:
     return not request.is_guest and record.lane == Lane.COMPANION.value
 
 
+@dataclass(frozen=True)
+class _TurnPlan:
+    lane: Lane
+    english: str | None = None
+    degraded: tuple[str, ...] = ()
+
+
+def _only_chisa(entities: Sequence[str]) -> bool:
+    return all(entity == CHISA for entity in entities)
+
+
 def _bounded(message: str, answer: ComposedAnswer) -> ComposedAnswer:
     """A refused reply keeps no sentiment, so it cannot move Chisa's emotions (EMO-002)."""
     check = apply_boundaries(message, answer.text)
@@ -138,6 +160,7 @@ class AdvancedTurnService:
         pii: PiiRedactor | None = None,
         personal: IPersonalContext | None = None,
         linker: EntityLinker | None = None,
+        understander: IQuestionUnderstander | None = None,
         commit: ITurnCommit | None = None,
         lock: ITurnLock | None = None,
     ) -> None:
@@ -148,6 +171,7 @@ class AdvancedTurnService:
         self._pii = pii or PiiRedactor()
         self._personal = personal
         self._linker = linker
+        self._understander = understander
         self._commit = commit
         self._lock = lock
 
@@ -179,24 +203,28 @@ class AdvancedTurnService:
         request = replace(request, message=self._pii.redact(request.message).value)
         assessment = self._injection_guard.assess(request.message, ContentSource.USER)
         blocked = assessment.action is GuardAction.BLOCK
-        lane = Lane.ADVANCED if blocked else self._lane(request.message)
-        yield self._started(request, thread, decision, lane)
         budget = LLMCallBudget.with_deadline(
             max_calls=ADVANCED_MAX_LLM_CALLS, timeout_seconds=ADVANCED_DEADLINE_SECONDS
         )
         if blocked:
+            yield self._started(request, thread, decision, Lane.ADVANCED)
             refused = ComposedAnswer(INPUT_BLOCKED, abstained=True, status=STATUS_INPUT_BLOCKED)
             record = self._record(request, thread, decision, refused, (), budget, Lane.ADVANCED)
             await self._threads.save_turn(record)
             yield await self._completed(request.owner, record, replayed=False)
             return
-        if lane is Lane.COMPANION:
-            answer = _bounded(request.message, await self._companion(request, thread, budget))
+        recent = await self._threads.recent_turns(thread.id, HISTORY_TURNS)
+        plan = await self._plan(request, recent, budget)
+        yield self._started(request, thread, decision, plan.lane)
+        if plan.lane is Lane.COMPANION:
+            companion = await self._companion(request, recent, budget)
+            answer = _bounded(request.message, companion)
             record = self._record(request, thread, decision, answer, (), budget, Lane.COMPANION)
             async for event in self._deliver(request, record, answer):
                 yield event
             return
-        found = await self._flow.retrieve(request.message, budget)
+        found = await self._flow.retrieve(request.message, budget, english=plan.english)
+        degraded = (*plan.degraded, *found.degraded)
         for item in found.evidence:
             yield TurnEvent(
                 EVENT_EVIDENCE,
@@ -206,10 +234,9 @@ class AdvancedTurnService:
                     "title": item.provenance.source_id,
                 },
             )
-        answer = _bounded(request.message, await self._compose(request, thread, found, budget))
-        record = self._record(
-            request, thread, decision, answer, found.degraded, budget, Lane.ADVANCED
-        )
+        composed = await self._compose(request, recent, found, budget)
+        answer = _bounded(request.message, composed)
+        record = self._record(request, thread, decision, answer, degraded, budget, Lane.ADVANCED)
         async for event in self._deliver(request, record, answer):
             yield event
 
@@ -251,14 +278,28 @@ class AdvancedTurnService:
             },
         )
 
-    def _lane(self, message: str) -> Lane:
-        entities = self._linker.link(message) if self._linker is not None else ()
-        return choose_lane(message, entities)
+    async def _plan(
+        self, request: TurnRequest, recent: list[TurnRecord], budget: LLMCallBudget
+    ) -> _TurnPlan:
+        entities = self._linker.link(request.message) if self._linker is not None else ()
+        lane = choose_lane(request.message, entities)
+        # Rules that are sure of the lane leave nothing for the understander to decide (ADV-003).
+        if lane is Lane.COMPANION or self._understander is None:
+            return _TurnPlan(lane)
+        previous = [PriorTurn(turn.question, turn.answer) for turn in recent[-UNDERSTANDING_TURNS:]]
+        try:
+            understood = await self._understander.understand(request.message, previous, budget)
+        except UnderstandingError:
+            # The message itself is the query, so retrieval does not spend a second call.
+            return _TurnPlan(lane, request.message, (DEGRADED_UNDERSTANDING,))
+        if understood.lane is Lane.COMPANION and _only_chisa(entities):
+            return _TurnPlan(Lane.COMPANION)
+        # A lore question sent to companion would be answered from nothing, so it stays grounded.
+        return _TurnPlan(Lane.ADVANCED, understood.query or request.message)
 
     async def _companion(
-        self, request: TurnRequest, thread: Thread, budget: LLMCallBudget
+        self, request: TurnRequest, recent: list[TurnRecord], budget: LLMCallBudget
     ) -> ComposedAnswer:
-        recent = await self._threads.recent_turns(thread.id, HISTORY_TURNS)
         personal = await self._personal_context(request)
         return await self._composer.compose_companion(
             request.message,
@@ -300,13 +341,12 @@ class AdvancedTurnService:
     async def _compose(
         self,
         request: TurnRequest,
-        thread: Thread,
+        recent: list[TurnRecord],
         found: AdvancedEvidence,
         budget: LLMCallBudget,
     ) -> ComposedAnswer:
         if found.listed:
             return self._composer.compose_list(found.listed)
-        recent = await self._threads.recent_turns(thread.id, HISTORY_TURNS)
         personal = await self._personal_context(request)
         return await self._composer.compose(
             request.message,

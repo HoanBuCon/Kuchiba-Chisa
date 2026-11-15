@@ -199,3 +199,21 @@ async def test_evidence_carries_public_acl_and_provenance() -> None:
     assert evidence.provenance.source_version == "v1"
     assert evidence.provenance.source_id == "https://w/Chisa"
     assert evidence.provenance.chunk_index == 3
+
+
+async def test_a_ready_english_query_skips_the_translator() -> None:
+    service, index = _service([_hit(1)], Translator(error=True))
+
+    result = await service.search("Còn cô ấy học ở đâu?", english="Where does Chisa study?")
+
+    assert index.calls[0][0] == "Where does Chisa study?"
+    assert result.query == "Where does Chisa study?"
+    assert result.degraded == ()
+
+
+async def test_a_blank_english_query_falls_back_to_the_translator() -> None:
+    service, index = _service([_hit(1)])
+
+    await service.search("Chisa học ở đâu?", english="  ")
+
+    assert index.calls[0][0] == "Where does Chisa study?"

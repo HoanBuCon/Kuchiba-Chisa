@@ -26,6 +26,11 @@ from app.domain.models.thread import ChatMode, DowngradeReason, Thread, resolve_
 from app.domain.services.chisa_voice import INPUT_BLOCKED
 from app.domain.services.knowledge.advanced_retrieval import AdvancedEvidence
 from app.domain.services.knowledge.composer import CitationSnapshot, ComposedAnswer
+from app.domain.services.knowledge.lane_router import Lane
+from app.domain.services.knowledge.understanding import (
+    Understanding,
+    UnderstandingError,
+)
 
 OWNER = "user-1"
 EVIDENCE = Evidence(
@@ -72,9 +77,11 @@ class Flow:
     def __init__(self, abstain=False) -> None:
         self.abstain = abstain
         self.questions = []
+        self.english = []
 
-    async def retrieve(self, question, budget=None):
+    async def retrieve(self, question, budget=None, *, english=None):
         self.questions.append(question)
+        self.english.append(english)
         evidence = () if self.abstain else (EVIDENCE,)
         return AdvancedEvidence(evidence, question, self.abstain, False, ("translation_failed",))
 
@@ -234,8 +241,8 @@ async def test_pii_is_masked_before_retrieval_and_storage() -> None:
 
 async def test_exact_list_skips_the_llm_composer() -> None:
     class ListingFlow(Flow):
-        async def retrieve(self, question, budget=None):
-            found = await super().retrieve(question, budget)
+        async def retrieve(self, question, budget=None, *, english=None):
+            found = await super().retrieve(question, budget, english=english)
             return replace(found, listed=(EVIDENCE,))
 
     service, threads, _, composer = _service(flow=ListingFlow())
@@ -405,3 +412,129 @@ async def test_only_a_members_conversation_is_queued_for_memory(
     await _events(service, _request(message=message, is_guest=is_guest))
 
     assert commit.remembered == [remembered]
+
+
+class Understander:
+    def __init__(self, result=None, error=False) -> None:
+        self.result = result or Understanding(Lane.ADVANCED, "Where does she study?")
+        self.error = error
+        self.calls = []
+
+    async def understand(self, message, previous, budget=None):
+        self.calls.append((message, list(previous), budget))
+        if self.error:
+            raise UnderstandingError("down")
+        return self.result
+
+
+class Linker:
+    def __init__(self, *names) -> None:
+        self.names = names
+
+    def link(self, message):
+        return self.names
+
+
+def _understood_service(understander, composer=None, linker=None):
+    threads = Threads()
+    flow = Flow()
+    service = AdvancedTurnService(
+        threads, flow, composer or CompanionComposer(), understander=understander, linker=linker
+    )
+    return service, threads, flow
+
+
+async def test_follow_up_gets_the_previous_turns_and_a_ready_english_query() -> None:
+    understander = Understander()
+    service, threads, flow = _understood_service(understander)
+    first = await _events(service, _request(message="Tacet Field là gì?"))
+    thread_id = UUID(first[0].data["thread_id"])
+
+    await _events(service, _request(message="Còn cô ấy học ở đâu?", thread_id=thread_id))
+
+    message, previous, _ = understander.calls[1]
+    assert message == "Còn cô ấy học ở đâu?"
+    assert [(turn.question, turn.answer) for turn in previous] == [
+        ("Tacet Field là gì?", "Câu một. Câu hai.")
+    ]
+    assert flow.english[-1] == "Where does she study?"
+    assert flow.questions[-1] == "Còn cô ấy học ở đâu?"
+
+
+async def test_understander_sees_at_most_the_last_two_turns() -> None:
+    understander = Understander()
+    service, threads, _ = _understood_service(understander)
+    thread_id = None
+    for number in range(4):
+        events = await _events(
+            service, _request(message=f"Tacet Field {number} là gì?", thread_id=thread_id)
+        )
+        thread_id = UUID(events[0].data["thread_id"])
+
+    assert [turn.question for turn in understander.calls[3][1]] == [
+        "Tacet Field 1 là gì?",
+        "Tacet Field 2 là gì?",
+    ]
+
+
+async def test_companion_verdict_without_a_game_entity_takes_the_companion_lane() -> None:
+    understander = Understander(Understanding(Lane.COMPANION, ""))
+    service, threads, flow = _understood_service(understander, linker=Linker("Chisa"))
+
+    events = await _events(service, _request())
+
+    assert events[0].data["lane"] == "companion"
+    assert flow.questions == []
+    assert threads.turns[0].lane == "companion"
+    assert events[-1].data["status"] == "companion"
+
+
+async def test_companion_verdict_is_ignored_when_a_game_entity_is_linked() -> None:
+    understander = Understander(Understanding(Lane.COMPANION, ""))
+    service, threads, flow = _understood_service(
+        understander, composer=Composer(), linker=Linker("Chisa", "Rover")
+    )
+
+    events = await _events(service, _request())
+
+    assert events[0].data["lane"] == "advanced"
+    assert threads.turns[0].lane == "advanced"
+    assert flow.questions == ["Tacet Field là gì?"]
+    assert flow.english == ["Tacet Field là gì?"]
+
+
+async def test_failed_understanding_retrieves_with_the_message_and_is_marked_degraded() -> None:
+    understander = Understander(error=True)
+    service, threads, flow = _understood_service(understander, composer=Composer())
+
+    events = await _events(service, _request())
+
+    assert flow.english == ["Tacet Field là gì?"]
+    assert events[0].data["lane"] == "advanced"
+    assert threads.turns[0].degraded == ("understanding_failed", "translation_failed")
+
+
+async def test_a_sure_companion_message_never_calls_the_understander() -> None:
+    understander = Understander()
+    service, threads, flow = _understood_service(understander)
+
+    await _events(service, _request(message="Chào em"))
+
+    assert understander.calls == []
+    assert threads.turns[0].lane == "companion"
+
+
+async def test_understander_and_composer_share_one_call_budget() -> None:
+    class Spy(Composer):
+        async def compose(self, question, evidence, **context):
+            self.seen = context["budget"]
+            return await super().compose(question, evidence, **context)
+
+    understander = Understander()
+    composer = Spy()
+    service, _, _ = _understood_service(understander, composer=composer)
+
+    await _events(service, _request())
+
+    assert understander.calls[0][2] is composer.seen
+    assert composer.seen.max_calls == 2

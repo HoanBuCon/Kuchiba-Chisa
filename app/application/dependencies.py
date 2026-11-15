@@ -605,6 +605,7 @@ async def _build_chat_turn_runtime() -> ChatTurnRuntime:
     from app.infrastructure.database.repositories.thread_store import PostgresThreadStore
     from app.infrastructure.database.repositories.turn_commit import PostgresTurnCommit
     from app.infrastructure.knowledge.llm_query_translator import LlmQueryTranslator
+    from app.infrastructure.knowledge.llm_question_understander import LlmQuestionUnderstander
     from app.infrastructure.knowledge.personal_context import PostgresPersonalContext
     from app.infrastructure.knowledge.qdrant_lore_index import QdrantLoreIndex
     from app.infrastructure.vector.qdrant.qdrant_service import get_qdrant_client
@@ -650,6 +651,7 @@ async def _build_chat_turn_runtime() -> ChatTurnRuntime:
         composer,
         personal=personal,
         linker=linker,
+        understander=LlmQuestionUnderstander(container.llm, redis_service),
         commit=PostgresTurnCommit(AsyncSessionFactory, queue=container.background_job_queue),
         lock=RedisTurnLock(redis_service),
     )
