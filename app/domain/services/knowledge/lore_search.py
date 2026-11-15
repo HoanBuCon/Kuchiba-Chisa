@@ -61,7 +61,7 @@ class ILoreIndex(Protocol):
 class LoreSearchSettings:
     candidates: int = 50
     rerank_candidates: int = 15
-    # Golden dev kept its accuracy at six (0.93 against 0.92 at eight); each passage is paid every turn.
+    # Golden dev kept its accuracy at six (0.93, 0.92 at eight); every passage is paid each turn.
     top_k: int = 6
     # Top score each reranker must reach; its scale is its own, so an unknown one is not judged.
     min_scores: Mapping[str, float] = field(default_factory=dict)
