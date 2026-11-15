@@ -9,6 +9,7 @@ from dataclasses import asdict, dataclass, replace
 from typing import Any, Protocol
 from uuid import UUID, uuid4
 
+from app.application.entity_images import EntityImageService
 from app.domain.entities.emotion import EmotionState
 from app.domain.ingestion.entity_linking import EntityLinker
 from app.domain.interfaces.llm_provider import LLMCallBudget
@@ -74,6 +75,7 @@ EVENT_EVIDENCE = "evidence.added"
 EVENT_TOKEN = "token"
 EVENT_COMPLETED = "turn.completed"
 EVENT_FAILED = "turn.failed"
+ENTITY_COLLECTION = "kb_entities"
 STATUS_INPUT_BLOCKED = "input_blocked"
 STATUS_BOUNDARY_REFUSED = "boundary_refused"
 # Keeps the whitespace, so the deltas of a turn join back into its exact text.
@@ -200,6 +202,7 @@ class AdvancedTurnService:
         pii: PiiRedactor | None = None,
         personal: IPersonalContext | None = None,
         linker: EntityLinker | None = None,
+        images: EntityImageService | None = None,
         understander: IQuestionUnderstander | None = None,
         commit: ITurnCommit | None = None,
         lock: ITurnLock | None = None,
@@ -217,6 +220,7 @@ class AdvancedTurnService:
         self._pii = pii or PiiRedactor()
         self._personal = personal
         self._linker = linker
+        self._images = images
         self._understander = understander
         self._commit = commit
         self._lock = lock
@@ -312,7 +316,8 @@ class AdvancedTurnService:
         composed = await self._compose(request, conversation, found, personal, budget)
         answer = _bounded(request.message, composed)
         record = self._record(request, thread, decision, answer, degraded, budget, Lane.ADVANCED)
-        async for event in self._deliver(request, record, answer, conversation):
+        image = self._entity_image(found, answer)
+        async for event in self._deliver(request, record, answer, conversation, image):
             yield event
 
     async def _conversation(self, thread_id: UUID) -> _Conversation:
@@ -333,11 +338,12 @@ class AdvancedTurnService:
         record: TurnRecord,
         answer: ComposedAnswer,
         conversation: _Conversation,
+        image: dict[str, Any] | None = None,
     ) -> AsyncIterator[TurnEvent]:
         await self._store(request, record, answer, conversation)
         for piece in _SENTENCE.split(answer.text):
             yield TurnEvent(EVENT_TOKEN, {"delta": piece})
-        yield await self._completed(request.owner, record, replayed=False)
+        yield await self._completed(request.owner, record, replayed=False, image=image)
 
     async def _store(
         self,
@@ -376,7 +382,24 @@ class AdvancedTurnService:
             return None
         return conversation.summary.version if conversation.summary else 0
 
-    async def _completed(self, owner: str, record: TurnRecord, replayed: bool) -> TurnEvent:
+    def _entity_image(self, found: AdvancedEvidence, answer: ComposedAnswer) -> dict[str, Any] | None:
+        """Only a grounded answer about exactly one entity shows an image (KNW-010)."""
+        if self._images is None or answer.abstained or found.abstain or found.listed:
+            return None
+        titles = {
+            item.provenance.source_id
+            for item in found.evidence
+            if item.provenance.collection == ENTITY_COLLECTION
+        }
+        return self._images.for_entity(next(iter(titles))) if len(titles) == 1 else None
+
+    async def _completed(
+        self,
+        owner: str,
+        record: TurnRecord,
+        replayed: bool,
+        image: dict[str, Any] | None = None,
+    ) -> TurnEvent:
         emotion = await self._personal.current_emotion(owner) if self._personal else None
         return TurnEvent(
             EVENT_COMPLETED,
@@ -387,6 +410,7 @@ class AdvancedTurnService:
                 "citations": list(record.citations),
                 "status": record.status,
                 "replayed": replayed,
+                "image": image,
                 "emotions": emotion.values() if emotion else None,
                 "emotion_caption": (
                     StateManager.get_emotion_summary_caption(emotion) if emotion else None
