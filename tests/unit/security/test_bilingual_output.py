@@ -150,6 +150,19 @@ def test_lead_may_reuse_a_name_from_the_question() -> None:
     assert result.answer.startswith("Senpai hỏi về Jinhsi nè.")
 
 
+def test_lead_may_name_chisa_herself() -> None:
+    result = _assemble(_payload(_claim(), lead="Chisa tra được rồi nè Senpai."))
+
+    assert result.answer.startswith("Chisa tra được rồi nè Senpai.")
+
+
+def test_lead_that_does_not_address_senpai_is_replaced_by_the_fallback() -> None:
+    result = _assemble(_payload(_claim(), lead="Em tra được rồi nè."))
+
+    assert result.answer.startswith(FALLBACK_LEAD.strip())
+    assert "Em tra được rồi nè." not in result.answer
+
+
 def test_closing_with_a_new_number_is_removed() -> None:
     result = _assemble(_payload(_claim(), closing="Em kể được 42 chuyện nữa nha."))
 
@@ -167,6 +180,16 @@ def test_all_claims_dropped_falls_back_to_the_extractive_frame() -> None:
     assert (result.verified_claims, result.extractive_claims) == (0, 1)
     assert "extractive_quote_fallback" in result.safety_flags
     assert result.citations == ["lore:jinhsi"]
+
+
+def test_extractive_confidence_counts_each_claim_once() -> None:
+    bad = _claim(en="Jinhsi commands the Black Shores army.", vi="Jinhsi chỉ huy quân đội.")
+    unresolved = _claim(quote="A line that appears in no evidence item at all.")
+
+    result = _assemble(_payload(bad, unresolved))
+
+    assert (result.extractive_claims, result.removed_claims) == (1, 1)
+    assert result.confidence == 0.5
 
 
 def test_a_quote_missing_from_every_evidence_item_is_rejected() -> None:

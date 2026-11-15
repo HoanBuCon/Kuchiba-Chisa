@@ -1,8 +1,4 @@
-"""Literal fact checks across languages: names, numbers and negation (GRD-001, GRD-003).
-
-Embeddings cannot tell a true paraphrase from one with a swapped name or a flipped negation, so
-these facts are compared as text instead, and no model call is needed.
-"""
+"""Literal name, number and negation checks across languages (GRD-001, GRD-003)."""
 
 from __future__ import annotations
 
@@ -17,8 +13,10 @@ _NOT_NAMES = frozenset(
     {"Anh", "Ban", "Cha", "Chapter", "Con", "Em", "Hoa", "Khi", "Nhan", "Sau", "Senpai", "Ten"}
     | {"Theo", "Tin", "Trong", "Tuy"}
 )
+# "không" inside these compounds (space, air, sky, air force) is not a negation.
 _NEGATION = re.compile(
-    r"\b(không|chưa|chẳng|chả|đừng|cấm|not|no|never|cannot|without|none|nothing|neither|nor"
+    r"\b(không(?!\s+(?:gian|khí|trung|quân))|chưa|chẳng|chả|đừng|cấm"
+    r"|not|no|never|cannot|without|none|nothing|neither|nor"
     r"|unable|lack|lacks|unknown)\b|n't\b",
     re.IGNORECASE,
 )

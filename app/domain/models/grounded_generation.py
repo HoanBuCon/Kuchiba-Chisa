@@ -6,6 +6,12 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+MAX_CLAIMS = 8
+MAX_FRAMING_CHARS = 300
+MIN_QUOTE_CHARS = 12
+MAX_QUOTE_CHARS = 600
+MAX_CLAIM_CHARS = 1_000
+
 
 class GroundedClaimCandidate(BaseModel):
     """Untrusted claim proposed by the model and bound to one evidence item."""
@@ -14,7 +20,7 @@ class GroundedClaimCandidate(BaseModel):
 
     text: str = Field(min_length=1, max_length=2_000)
     evidence_id: str = Field(min_length=1, max_length=512)
-    evidence_quote: str = Field(min_length=12, max_length=600)
+    evidence_quote: str = Field(min_length=MIN_QUOTE_CHARS, max_length=MAX_QUOTE_CHARS)
 
 
 class GroundedModelPayload(BaseModel):
@@ -41,9 +47,9 @@ class BilingualClaimCandidate(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
     evidence_id: str = Field(min_length=1, max_length=512)
-    quote: str = Field(min_length=12, max_length=600)
-    claim_en: str = Field(min_length=1, max_length=1_000)
-    claim_vi: str = Field(min_length=1, max_length=1_000)
+    quote: str = Field(min_length=MIN_QUOTE_CHARS, max_length=MAX_QUOTE_CHARS)
+    claim_en: str = Field(min_length=1, max_length=MAX_CLAIM_CHARS)
+    claim_vi: str = Field(min_length=1, max_length=MAX_CLAIM_CHARS)
 
 
 class BilingualModelPayload(BaseModel):
@@ -52,9 +58,9 @@ class BilingualModelPayload(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
     decision: Literal["answer", "abstain"]
-    lead: str = Field(max_length=300)
-    claims: list[BilingualClaimCandidate] = Field(max_length=8)
-    closing: str = Field(max_length=300)
+    lead: str = Field(max_length=MAX_FRAMING_CHARS)
+    claims: list[BilingualClaimCandidate] = Field(max_length=MAX_CLAIMS)
+    closing: str = Field(max_length=MAX_FRAMING_CHARS)
     sentiment: dict[str, Any]
 
     @model_validator(mode="after")

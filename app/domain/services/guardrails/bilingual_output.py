@@ -8,6 +8,11 @@ from typing import Any, Literal
 
 from app.domain.models.evidence import Evidence
 from app.domain.models.grounded_generation import (
+    MAX_CLAIM_CHARS,
+    MAX_CLAIMS,
+    MAX_FRAMING_CHARS,
+    MAX_QUOTE_CHARS,
+    MIN_QUOTE_CHARS,
     BilingualClaimCandidate,
     BilingualModelPayload,
     GroundedAnswerEnvelope,
@@ -23,11 +28,8 @@ from app.domain.services.guardrails.literal_facts import (
     negation_agrees,
 )
 
-MAX_CLAIMS = 8
-MAX_FRAMING_CHARS = 300
-MAX_QUOTE_CHARS = 600
-MAX_CLAIM_CHARS = 1_000
-MIN_QUOTE_CHARS = 12
+ADDRESSEE = "Senpai"
+SELF_NAME = "Chisa"
 
 SafetyFlag = Literal[
     "citation_rebound", "extractive_quote_fallback", "unsupported_claim_removed"
@@ -144,7 +146,7 @@ class BilingualOutputAssembler:
         kept = [item for item in bound if self._is_supported(item)]
         removed = len(model.claims) - len(kept)
         if not kept:
-            return self._extractive(bound, removed, extractive_frame)
+            return self._extractive(bound, len(model.claims), extractive_frame)
         return self._answer(model, kept, removed, question, fallback_lead)
 
     def _bind(
@@ -182,8 +184,13 @@ class BilingualOutputAssembler:
         fallback_lead: str,
     ) -> GroundedAnswerEnvelope:
         sentences = [_one_line(item.claim.claim_vi) for item in kept]
-        known = " ".join([question, *sentences, *(item.claim.claim_en for item in kept)])
-        lead = _vetted(model.lead, known) or fallback_lead.strip()
+        # Chisa naming herself and addressing Senpai is voice, not a new fact.
+        known = " ".join(
+            [SELF_NAME, ADDRESSEE, question, *sentences, *(item.claim.claim_en for item in kept)]
+        )
+        lead = _vetted(model.lead, known)
+        if ADDRESSEE not in lead:
+            lead = fallback_lead.strip()
         text = " ".join(part for part in (lead, *sentences, _vetted(model.closing, known)) if part)
         rebound = sum(item.rebound for item in kept)
         return GroundedAnswerEnvelope(
@@ -198,7 +205,7 @@ class BilingualOutputAssembler:
         )
 
     def _extractive(
-        self, bound: Sequence[_BoundClaim], removed: int, frame: str
+        self, bound: Sequence[_BoundClaim], total: int, frame: str
     ) -> GroundedAnswerEnvelope:
         quotes = list(dict.fromkeys(item.quote for item in bound))
         rebound = sum(item.rebound for item in bound)
@@ -206,11 +213,11 @@ class BilingualOutputAssembler:
             answer=" ".join(quotes),
             presented_answer=frame.format(quote=" ".join(quotes)),
             citations=_citations(bound),
-            confidence=len(bound) / (len(bound) + removed),
-            safety_flags=_flags(removed=removed, rebound=rebound, extractive=True),
+            confidence=len(bound) / total,
+            safety_flags=_flags(removed=total - len(bound), rebound=rebound, extractive=True),
             verified_claims=0,
             extractive_claims=len(quotes),
-            removed_claims=removed,
+            removed_claims=total - len(bound),
             rebound_citations=rebound,
         )
 

@@ -55,6 +55,22 @@ def test_a_new_name_or_number_is_detected_against_a_source() -> None:
     assert introduces_new_facts("Em nhớ năm 2024.", source)
 
 
+@pytest.mark.parametrize(
+    "claim",
+    [
+        "Cô ấy đứng giữa không gian rộng.",
+        "Khu vực nằm trong không khí lạnh.",
+        "Cô ấy thuộc không quân Ashinohara.",
+    ],
+)
+def test_khong_inside_a_compound_is_not_a_negation(claim) -> None:
+    assert negation_agrees(claim, "She is in the open space of Ashinohara.")
+
+
+def test_khong_as_a_negation_is_still_detected() -> None:
+    assert not negation_agrees("Cô ấy không rời đi.", "She left.")
+
+
 def test_negation_must_agree() -> None:
     assert negation_agrees("không có", "never had")
     assert not negation_agrees("có", "never had")
