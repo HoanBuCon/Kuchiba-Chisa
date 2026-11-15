@@ -61,7 +61,7 @@ _JOB_TYPES = frozenset(
         "private_summary.v1",
         "community_summary.v1",
         "visual_memory.v1", "user_state_cache.v1", "private_summary_cache.v1",
-        "community_state.v1",
+        "community_state.v1", "core_memory_consolidation.v1",
     }
 )
 _ALLOWED_VALUES: dict[str, frozenset[str]] = {

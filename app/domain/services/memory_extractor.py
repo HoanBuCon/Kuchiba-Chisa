@@ -287,10 +287,11 @@ class MemoryExtractor:
         retention_expires_at: int | None = None,
         idempotency_key: str | None = None,
         propagate_errors: bool = False,
-    ) -> None:
+    ) -> int:
         """
         Batched background worker: Analyzes conversation window to extract multi-fact milestones,
         personal preferences, server-shared events, or guild culture, and stores them in Qdrant.
+        Returns how many new memories were stored, so callers can decide on follow-up work.
         """
         has_guild = bool(guild_id and not guild_id.startswith("CHANNEL_") and guild_id != "DM")
         
@@ -414,7 +415,7 @@ class MemoryExtractor:
                     extracted_input_context=transcript,
                     raw_facts_count=len(extracted_facts)
                 )
-                return
+                return 0
 
             # Step 2: Concurrently / sequentially embed facts & search candidates in Qdrant
             fact_candidate_pairs = []
@@ -586,10 +587,12 @@ class MemoryExtractor:
                 raw_facts_count=len(extracted_facts),
                 trace_id=trace_id
             )
+            return sum(1 for fact in stored_facts if fact["status"] == "extracted")
         except Exception as e:
             log.warning("Batch memory extraction failed", error_type=type(e).__name__)
             if propagate_errors:
                 raise
+            return 0
 
     def _record_pipeline_step(
         self,

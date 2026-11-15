@@ -18,7 +18,12 @@ from app.domain.interfaces.observability import (
 )
 from app.domain.models.background_job import BackgroundJobType
 from app.domain.services.community.topic_summarizer import CommunityTopicSummarizer
+from app.domain.services.core_memory_consolidator import CoreMemoryConsolidator
 from app.domain.services.visual_memory_ingestion import VisualMemoryIngestionWorker
+from app.infrastructure.background.core_memory_consolidation_handler import (
+    ConsolidationJobScheduler,
+    CoreMemoryConsolidationJobHandler,
+)
 from app.infrastructure.background.job_handlers import (
     BackgroundTurnSourceReader,
     CommunityStateJobHandler,
@@ -39,6 +44,9 @@ from app.infrastructure.database.engine import (
     AsyncSessionFactory,
     connect_database,
     disconnect_database,
+)
+from app.infrastructure.database.repositories.core_memory_consolidation_store import (
+    PostgresCoreMemoryConsolidationStore,
 )
 from app.infrastructure.database.repositories.thread_summary_store import (
     PostgresThreadSummaryStore,
@@ -76,6 +84,7 @@ async def run_worker() -> None:
         vector_store=qdrant_service,
         embedder=container.embedder,
     )
+    consolidation_store = PostgresCoreMemoryConsolidationStore(AsyncSessionFactory)
     worker = DurableBackgroundWorker(
         queue=container.background_job_queue,
         handlers={
@@ -83,7 +92,22 @@ async def run_worker() -> None:
                 source, container.memory_extractor
             ),
             BackgroundJobType.THREAD_MEMORY_EXTRACTION: ThreadMemoryExtractionJobHandler(
-                AsyncSessionFactory, source, container.memory_extractor
+                AsyncSessionFactory,
+                source,
+                container.memory_extractor,
+                ConsolidationJobScheduler(
+                    AsyncSessionFactory,
+                    container.background_job_queue,
+                    consolidation_store,
+                ),
+            ),
+            BackgroundJobType.CORE_MEMORY_CONSOLIDATION: CoreMemoryConsolidationJobHandler(
+                source,
+                CoreMemoryConsolidator(
+                    container.llm,
+                    consolidation_store,
+                    qdrant_service,
+                ),
             ),
             BackgroundJobType.THREAD_SUMMARY: ThreadSummaryJobHandler(
                 AsyncSessionFactory,

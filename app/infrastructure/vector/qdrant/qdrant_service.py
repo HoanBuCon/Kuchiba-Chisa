@@ -28,6 +28,7 @@ from qdrant_client.http.models import (
 
 from app.config.settings import settings
 from app.domain.entities.memory import MemoryPayload, MemoryTier
+from app.domain.interfaces.core_memory_consolidation import EpisodicMemory
 from app.domain.interfaces.corpus_publisher import CorpusPublication
 from app.domain.interfaces.lore_corpus_identity import LoreCorpusIdentity
 from app.domain.models.corpus_manifest import LoreManifestRow, lore_manifest_checksum
@@ -65,6 +66,7 @@ COLLECTION_STORY_LORE = "story_lore"
 COLLECTION_MEMORIES = "memories"
 COLLECTION_GUILD_MEMORIES = "guild_memories"
 COLLECTION_IMAGE_MEMORIES = "image_memories"
+MEMORY_SCROLL_PAGE = 256
 
 ALL_COLLECTIONS = [
     COLLECTION_CHARACTER_LORE,
@@ -945,6 +947,40 @@ class QdrantService(IVectorStore):
             for r in results
         ]
 
+    async def list_user_memories_since(
+        self, user_id: str, created_at_from: int, limit: int
+    ) -> list[EpisodicMemory]:
+        """The oldest `limit` unexpired memories of one user created at or after a timestamp.
+
+        Scroll order is arbitrary, so every match is read and sorted before cutting at the limit;
+        a user holds a few hundred memories at most (the per-user cap).
+        """
+        scroll_filter = Filter(
+            must=[
+                FieldCondition(key="user_id", match=MatchValue(value=str(user_id))),
+                FieldCondition(key="created_at", range=Range(gte=created_at_from)),
+            ]
+        )
+        now = int(time.time())
+        memories: list[EpisodicMemory] = []
+        offset = None
+        while True:
+            points, offset = await self._client.scroll(
+                collection_name=self._active_collection_name(COLLECTION_MEMORIES),
+                scroll_filter=scroll_filter,
+                limit=MEMORY_SCROLL_PAGE,
+                offset=offset,
+                with_payload=True,
+            )
+            memories += [
+                _episodic(point)
+                for point in points
+                if _is_live_memory(point.payload or {}, now)
+            ]
+            if offset is None:
+                break
+        return sorted(memories, key=lambda memory: (memory.created_at, memory.id))[:limit]
+
     async def _dense_query(
         self,
         collection_name: str,
@@ -1327,3 +1363,16 @@ class QdrantService(IVectorStore):
 
 # ── Module-level singleton ───────────────────────────────────────────
 qdrant_service = QdrantService()
+
+
+def _is_live_memory(payload: dict[str, Any], now: int) -> bool:
+    return (
+        bool(payload.get("text_content"))
+        and payload.get("created_at") is not None
+        and (payload.get("expires_at") or now + 1) > now
+    )
+
+
+def _episodic(point: Any) -> EpisodicMemory:
+    payload = point.payload
+    return EpisodicMemory(str(point.id), str(payload["text_content"]), int(payload["created_at"]))

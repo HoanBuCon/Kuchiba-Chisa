@@ -153,7 +153,7 @@ Xưng hô bất biến: Chisa xưng "Em", gọi người dùng "Senpai" (PER-003
 
 ## 10. Dữ liệu
 
-- **Postgres** (đầu migration `a7d3e9b2c418`, có test khẳng định): tài khoản và phiên (`accounts`, `account_identities`, `auth_sessions`, `account_tokens`, `users`); hội thoại v1 (`conversations`, `messages`); v2 (`threads`, `thread_turns`, `thread_summaries`, `core_memory`); cảm xúc (`emotion_state`); quyền riêng tư (`user_privacy_preferences`, `erasure_jobs`); hàng đợi (`durable_background_jobs`); ingestion (`wiki_*`, `corpus_releases`, `ingestion_sources`…); tri thức có cấu trúc (`kb_*`); legacy (`pipeline_jobs`, `chunk_state`, `entities`…).
+- **Postgres** (đầu migration `a7d3e9b21c64`, có test khẳng định): tài khoản và phiên (`accounts`, `account_identities`, `auth_sessions`, `account_tokens`, `users`); hội thoại v1 (`conversations`, `messages`); v2 (`threads`, `thread_turns`, `thread_summaries`, `core_memory`); cảm xúc (`emotion_state`); quyền riêng tư (`user_privacy_preferences`, `erasure_jobs`); hàng đợi (`durable_background_jobs`); ingestion (`wiki_*`, `corpus_releases`, `ingestion_sources`…); tri thức có cấu trúc (`kb_*`); legacy (`pipeline_jobs`, `chunk_state`, `entities`…).
 - **Qdrant:** `lore_canon__<version>`, `lore_dialogue__<version>`, `memories`, `guild_memories`, `image_memories`.
 - **Redis:** rate limit, quota, cache bản dịch và trạng thái.
 - **Đĩa:** `data/ingestion/` (bronze, silver, gold, vectors, images, reports); `.dev/` cho dữ liệu dev và kết quả đo.
