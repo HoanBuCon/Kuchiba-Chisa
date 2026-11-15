@@ -5,6 +5,7 @@ from collections.abc import AsyncIterator
 from typing import Any
 
 from google import genai
+from google.genai import errors as genai_errors
 from google.genai import types
 from PIL import Image
 
@@ -23,6 +24,7 @@ from app.domain.interfaces.llm_provider import (
     LLMTokenOverflowError,
     StructuredPrompt,
 )
+from app.infrastructure.llm.adapters.billing import HTTP_PAYMENT_REQUIRED, billing_exhausted_error
 from app.infrastructure.logging.logger import get_logger
 
 log = get_logger(__name__)
@@ -32,6 +34,8 @@ GeminiContent = types.Content | types.ContentDict | GeminiPart | list[GeminiPart
 
 
 def _translate_gemini_error(error: Exception) -> LLMError:
+    if isinstance(error, genai_errors.APIError) and error.code == HTTP_PAYMENT_REQUIRED:
+        return billing_exhausted_error("Gemini")
     normalized = str(error).lower()
     if "timeout" in normalized:
         return LLMTimeoutError()

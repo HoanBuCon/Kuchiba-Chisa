@@ -4,7 +4,7 @@ import json
 from collections.abc import AsyncIterator
 from typing import Any, cast
 
-from groq import AsyncGroq
+from groq import APIStatusError, AsyncGroq
 from groq.types.chat import ChatCompletionMessageParam
 
 from app.application.security.json_schema import (
@@ -22,12 +22,15 @@ from app.domain.interfaces.llm_provider import (
     LLMTokenOverflowError,
     StructuredPrompt,
 )
+from app.infrastructure.llm.adapters.billing import HTTP_PAYMENT_REQUIRED, billing_exhausted_error
 from app.infrastructure.logging.logger import get_logger
 
 log = get_logger(__name__)
 
 
 def _translate_groq_error(error: Exception) -> LLMError:
+    if isinstance(error, APIStatusError) and error.status_code == HTTP_PAYMENT_REQUIRED:
+        return billing_exhausted_error("Groq")
     normalized = str(error).lower()
     if "timeout" in normalized:
         return LLMTimeoutError()
