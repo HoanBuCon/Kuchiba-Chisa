@@ -7,7 +7,6 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from app.domain.entities.emotion import EmotionState
-from app.domain.interfaces.embedding_provider import IEmbeddingProvider
 from app.domain.interfaces.llm_provider import (
     BaseLLMAdapter,
     LLMCallBudget,
@@ -26,15 +25,13 @@ from app.domain.services.chisa_voice import (
 )
 from app.domain.services.context_builder import ContextBuilder
 from app.domain.services.guardrails import (
-    GroundedOutputAssembler,
+    BilingualOutputAssembler,
     GroundedOutputValidationError,
     PromptLeakageGuard,
-    build_grounded_response_schema,
+    build_bilingual_response_schema,
 )
-from app.domain.services.knowledge.cross_language_claims import CrossLanguageClaimCheck
 
 CONTRACT_NAME = "submit_grounded_answer"
-ADDRESSING = "Senpai"
 INTENT_NAME = "lore"
 COMPANION_INTENT = "conversational"
 # Same warmth the v1 path uses for casual talk.
@@ -80,11 +77,6 @@ def _snapshots(ids: Sequence[str], evidence: Sequence[Evidence]) -> tuple[Citati
     )
 
 
-def _in_chisa_voice(text: str) -> str:
-    """A reply that already addresses Senpai keeps its wording; quote frames always do."""
-    return text if ADDRESSING in text else f"{GROUNDED_ANSWER_LEAD}{text}"
-
-
 def _quote_sources(ids: Sequence[str], evidence: Sequence[Evidence]) -> str:
     by_id = {item.evidence_id: item for item in evidence}
     titles = dict.fromkeys(
@@ -102,17 +94,15 @@ class GroundedComposer:
         self,
         llm: BaseLLMAdapter,
         builder: ContextBuilder,
-        assembler: GroundedOutputAssembler | None = None,
+        assembler: BilingualOutputAssembler | None = None,
         leakage_guard: PromptLeakageGuard | None = None,
-        embedder: IEmbeddingProvider | None = None,
         companion_builder: ContextBuilder | None = None,
     ) -> None:
         self._llm = llm
         self._builder = builder
         self._companion_builder = companion_builder or builder
-        self._assembler = assembler or GroundedOutputAssembler()
+        self._assembler = assembler or BilingualOutputAssembler()
         self._leakage_guard = leakage_guard or PromptLeakageGuard()
-        self._embedder = embedder
 
     def compose_list(self, listed: Sequence[Evidence]) -> ComposedAnswer:
         """An exact lookup needs no LLM: nothing can be invented, and a call is saved."""
@@ -140,16 +130,14 @@ class GroundedComposer:
             return _abstained("no_evidence")
         prompt = self._prompt(question, evidence, emotion, history, memories, summary, budget)
         response = await self._llm.generate(prompt)
-        check = await self._claim_check(response.parsed)
         try:
             envelope = self._assembler.assemble(
                 payload=response.parsed,
                 evidence=prompt.retrieved_evidence,
+                question=question,
                 abstention_answer=GROUNDED_ABSTENTION,
                 extractive_frame=GROUNDED_EXTRACTIVE_FRAME,
-                # A second frame mid-answer reads as Chisa repeating herself.
-                gather_quotes=True,
-                claim_check=check,
+                fallback_lead=GROUNDED_ANSWER_LEAD,
             )
         except (GroundedOutputValidationError, ValueError):
             return _abstained("invalid_output")
@@ -168,25 +156,11 @@ class GroundedComposer:
             else ""
         )
         return ComposedAnswer(
-            text=_in_chisa_voice(envelope.presented_answer or envelope.answer) + sources,
+            text=(envelope.presented_answer or envelope.answer) + sources,
             abstained=False,
             citations=_snapshots(envelope.citations, prompt.retrieved_evidence),
             sentiment=response.parsed.get("sentiment", {}),
         )
-
-    async def _claim_check(self, parsed: Mapping[str, Any]) -> CrossLanguageClaimCheck | None:
-        """Quotes may need resolving against the source, so both forms of each pair are prepared."""
-        claims = parsed.get("claims")
-        if self._embedder is None or not isinstance(claims, list):
-            return None
-        pairs = [
-            (claim["text"], claim["evidence_quote"])
-            for claim in claims
-            if isinstance(claim, dict)
-            and isinstance(claim.get("text"), str)
-            and isinstance(claim.get("evidence_quote"), str)
-        ]
-        return await CrossLanguageClaimCheck.prepare(self._embedder, pairs)
 
     async def compose_companion(
         self,
@@ -259,7 +233,7 @@ class GroundedComposer:
             raise RuntimeError("Grounded generation requires the sentiment schema")
         return built.model_copy(
             update={
-                "response_schema": build_grounded_response_schema(
+                "response_schema": build_bilingual_response_schema(
                     evidence_ids=[item.evidence_id for item in built.retrieved_evidence],
                     sentiment_schema=sentiment,
                 ),

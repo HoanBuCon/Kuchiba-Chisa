@@ -51,12 +51,21 @@ class FakeLLM:
         return LLMResponse(raw_content="{}", parsed=self.parsed)
 
 
-def _claim(text=TEXT, quote=TEXT, evidence_id="wiki:1:a") -> dict:
-    return {"text": text, "evidence_id": evidence_id, "evidence_quote": quote}
+VI = "Cô ấy theo học tại Startorch Academy ở vùng Lahai-Roi."
 
 
-def _answer(*claims) -> dict:
-    return {"decision": "answer", "claims": list(claims), "sentiment": SENTIMENT}
+def _claim(vi=VI, en=TEXT, quote=TEXT, evidence_id="wiki:1:a") -> dict:
+    return {"evidence_id": evidence_id, "quote": quote, "claim_en": en, "claim_vi": vi}
+
+
+def _answer(*claims, lead="", closing="") -> dict:
+    return {
+        "decision": "answer",
+        "lead": lead,
+        "claims": list(claims),
+        "closing": closing,
+        "sentiment": SENTIMENT,
+    }
 
 
 async def _compose(llm, evidence=None):
@@ -105,7 +114,7 @@ async def test_no_evidence_abstains_without_calling_the_llm() -> None:
 
 
 async def test_model_abstention_is_delivered_in_chisa_voice() -> None:
-    parsed = {"decision": "abstain", "claims": [], "sentiment": SENTIMENT}
+    parsed = _answer() | {"decision": "abstain"}
 
     result = await _compose(FakeLLM(parsed))
 
@@ -114,7 +123,7 @@ async def test_model_abstention_is_delivered_in_chisa_voice() -> None:
 
 
 async def test_invented_claim_is_not_delivered() -> None:
-    invented = _claim(text="Chisa has blood type AB and was born in 1999.", quote=TEXT)
+    invented = _claim(vi="Cô ấy sinh năm 1999.", en="Chisa was born in 1999.")
 
     result = await _compose(FakeLLM(_answer(invented)))
 
@@ -134,74 +143,44 @@ async def test_citation_outside_the_evidence_abstains() -> None:
     assert result.citations == ()
 
 
-class SameVectorEmbedder:
-    """Every text gets the same vector, so similarity passes and the literal checks decide."""
+async def test_faithful_vietnamese_claim_is_delivered_after_the_fixed_lead() -> None:
+    result = await _compose(FakeLLM(_answer(_claim())))
 
-    async def embed_batch(self, texts, prefix="query: "):
-        return [[1.0, 0.0] for _ in texts]
-
-
-async def _compose_with_check(llm, evidence=None):
-    composer = GroundedComposer(llm, ContextBuilder(), embedder=SameVectorEmbedder())
-    return await composer.compose(
-        "Chisa học ở đâu?",
-        evidence or [_evidence()],
-        emotion=EmotionState(user_id=uuid4()),
-        history=[],
-        memories=[],
-        summary=None,
-        budget=LLMCallBudget(max_calls=2),
-    )
+    assert result.text == f"{GROUNDED_ANSWER_LEAD}{VI}"
 
 
-async def test_faithful_vietnamese_claim_is_delivered_in_vietnamese() -> None:
-    claim = _claim(text="Cô ấy theo học tại Startorch Academy ở vùng Lahai-Roi.")
+async def test_lead_and_closing_written_in_voice_frame_the_claims() -> None:
+    lead, closing = "Để em kể Senpai nghe nha.", "Còn gì nữa Senpai hỏi em nhé."
+    answer = _answer(_claim(), lead=lead, closing=closing)
 
-    result = await _compose_with_check(FakeLLM(_answer(claim)))
+    result = await _compose(FakeLLM(answer))
 
-    assert result.text == (
-        f"{GROUNDED_ANSWER_LEAD}Cô ấy theo học tại Startorch Academy ở vùng Lahai-Roi."
-    )
+    assert result.text == f"Để em kể Senpai nghe nha. {VI} Còn gì nữa Senpai hỏi em nhé."
 
 
 async def test_vietnamese_claim_with_a_foreign_name_falls_back_to_the_quote() -> None:
-    claim = _claim(text="Cô ấy theo học tại Ragunna Academy ở vùng Lahai-Roi.")
-
-    result = await _compose_with_check(FakeLLM(_answer(claim)))
-
-    assert "Ragunna" not in result.text
-    assert TEXT in result.text
-
-
-async def test_quotes_share_one_frame_after_the_verified_claims() -> None:
-    second = "Chisa reads Tacet records."
-    source = f"{TEXT} {second}"
-    verified = "Cô ấy theo học tại Startorch Academy ở vùng Lahai-Roi."
-    claims = (
-        _claim(text="Cô ấy theo học tại Ragunna Academy ở vùng Lahai-Roi.", quote=TEXT),
-        _claim(text=verified, quote=TEXT),
-        _claim(text="Ragunna Academy lưu giữ hồ sơ.", quote=second),
-    )
-
-    result = await _compose_with_check(FakeLLM(_answer(*claims)), [_evidence(source)])
-
-    assert result.text.count("tư liệu gốc") == 1
-    assert result.text.index(verified) < result.text.index(TEXT) < result.text.index(second)
-
-
-async def test_without_the_check_a_vietnamese_paraphrase_stays_a_quote() -> None:
-    claim = _claim(text="Cô ấy học ở trường đó thuộc vùng phía bắc.")
+    claim = _claim(vi="Cô ấy theo học tại Ragunna Academy ở vùng Lahai-Roi.")
 
     result = await _compose(FakeLLM(_answer(claim)))
 
+    assert "Ragunna" not in result.text
     assert TEXT in result.text
+    assert result.text.count("tư liệu gốc") == 1
+
+
+async def test_a_dropped_claim_is_not_shown_next_to_a_kept_one() -> None:
+    bad = _claim(vi="Cô ấy theo học tại Ragunna Academy.")
+
+    result = await _compose(FakeLLM(_answer(bad, _claim())))
+
+    assert VI in result.text
+    assert "Ragunna" not in result.text
+    assert "tư liệu gốc" not in result.text
 
 
 async def test_every_delivered_answer_addresses_senpai() -> None:
-    plain = await _compose_with_check(
-        FakeLLM(_answer(_claim(text="Cô ấy học tại Startorch Academy ở vùng Lahai-Roi.")))
-    )
-    quoted = await _compose(FakeLLM(_answer(_claim(text="Cô ấy học ở trường đó."))))
+    plain = await _compose(FakeLLM(_answer(_claim())))
+    quoted = await _compose(FakeLLM(_answer(_claim(vi="Cô ấy học ở Ragunna."))))
 
     assert "Senpai" in plain.text
     assert "Senpai" in quoted.text
@@ -226,7 +205,7 @@ def test_list_is_rendered_without_the_llm_and_cites_every_item() -> None:
 
 
 async def test_quote_only_reply_names_its_source() -> None:
-    claim = _claim(text="Cô ấy học ở trường đó.")
+    claim = _claim(vi="Cô ấy học ở Ragunna.")
     evidence = _evidence().model_copy(
         update={"provenance": _evidence().provenance.model_copy(update={"source_title": "Chisa"})}
     )
@@ -293,7 +272,7 @@ async def test_grounded_answer_uses_the_grounded_prompt() -> None:
         budget=LLMCallBudget(max_calls=2),
     )
 
-    assert '"evidence_quote"' in llm.prompts[0].system
+    assert '"claim_vi"' in llm.prompts[0].system
     assert "TRẢ LỜI THEO NGUỒN" in llm.prompts[0].system
 
 

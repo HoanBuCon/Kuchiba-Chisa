@@ -6,6 +6,12 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+MAX_CLAIMS = 8
+MAX_FRAMING_CHARS = 300
+MIN_QUOTE_CHARS = 12
+MAX_QUOTE_CHARS = 600
+MAX_CLAIM_CHARS = 1_000
+
 
 class GroundedClaimCandidate(BaseModel):
     """Untrusted claim proposed by the model and bound to one evidence item."""
@@ -14,7 +20,7 @@ class GroundedClaimCandidate(BaseModel):
 
     text: str = Field(min_length=1, max_length=2_000)
     evidence_id: str = Field(min_length=1, max_length=512)
-    evidence_quote: str = Field(min_length=12, max_length=600)
+    evidence_quote: str = Field(min_length=MIN_QUOTE_CHARS, max_length=MAX_QUOTE_CHARS)
 
 
 class GroundedModelPayload(BaseModel):
@@ -28,6 +34,37 @@ class GroundedModelPayload(BaseModel):
 
     @model_validator(mode="after")
     def validate_decision_claims(self) -> GroundedModelPayload:
+        if self.decision == "answer" and not self.claims:
+            raise ValueError("answer decision requires at least one claim")
+        if self.decision == "abstain" and self.claims:
+            raise ValueError("abstain decision cannot contain claims")
+        return self
+
+
+class BilingualClaimCandidate(BaseModel):
+    """Untrusted claim in English (checked against the quote) and Vietnamese (shown to the user)."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    evidence_id: str = Field(min_length=1, max_length=512)
+    quote: str = Field(min_length=MIN_QUOTE_CHARS, max_length=MAX_QUOTE_CHARS)
+    claim_en: str = Field(min_length=1, max_length=MAX_CLAIM_CHARS)
+    claim_vi: str = Field(min_length=1, max_length=MAX_CLAIM_CHARS)
+
+
+class BilingualModelPayload(BaseModel):
+    """Evidence-lane provider payload: an in-voice lead and closing around bilingual claims."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    decision: Literal["answer", "abstain"]
+    lead: str = Field(max_length=MAX_FRAMING_CHARS)
+    claims: list[BilingualClaimCandidate] = Field(max_length=MAX_CLAIMS)
+    closing: str = Field(max_length=MAX_FRAMING_CHARS)
+    sentiment: dict[str, Any]
+
+    @model_validator(mode="after")
+    def validate_decision_claims(self) -> BilingualModelPayload:
         if self.decision == "answer" and not self.claims:
             raise ValueError("answer decision requires at least one claim")
         if self.decision == "abstain" and self.claims:

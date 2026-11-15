@@ -81,7 +81,8 @@ def test_grounded_lane_may_abstain_and_drops_the_v1_rules_against_it() -> None:
 def test_grounded_format_matches_its_contract_and_keeps_the_sentiment_guide() -> None:
     section = GroundedContextBuilder.build_format_section()
 
-    assert '"decision"' in section and '"evidence_quote"' in section
+    assert '"decision"' in section and '"claim_vi"' in section
+    assert '"lead"' in section and '"closing"' in section and '"claim_en"' in section
     assert '"response"' not in section
     assert "calm_warmth:" in section
 

@@ -79,8 +79,9 @@ _GROUNDED_RULES = (
     "[TRẢ LỜI THEO NGUỒN]\n"
     "- Chỉ trả lời từ khối [LORE]. Nếu [LORE] không nêu rõ câu trả lời thì chọn decision \"abstain\": nói chưa đủ bằng chứng là câu trả lời đúng, không phải né tránh.\n"
     "- Mỗi claim nêu một dữ kiện mà nguồn ghi rõ. Không suy thêm nơi chốn, quan hệ hay nguyên nhân mà nguồn không viết.\n"
-    "- Viết claim bằng tiếng Việt tự nhiên, giữ nguyên tên riêng và con số. evidence_quote chép đúng nguyên văn từ nguồn.\n"
-    "- Claim chỉ chứa dữ kiện, không thêm lời dẫn; phần trình bày đã xưng hô với Senpai."
+    "- quote chép đúng nguyên văn từ nguồn. claim_en là dữ kiện đó bằng tiếng Anh, chỉ nói điều quote nói. claim_vi là cùng dữ kiện bằng tiếng Việt tự nhiên, giữ nguyên tên riêng, con số và nghĩa phủ định.\n"
+    "- lead là một câu ngắn đúng giọng Chisa, xưng hô với Senpai, mở lời trước các claim; closing là một câu ngắn sau các claim (có thể để trống). "
+    "lead và closing không nêu dữ kiện, không thêm tên riêng hay con số ngoài câu hỏi và các claim."
 )
 _SENTIMENT_GUIDE_MARKER = "[HỆ QUY CHIẾU PHÂN LOẠI SENTIMENT"
 
@@ -105,7 +106,9 @@ class GroundedContextBuilder(ContextBuilder):
             "Bạn BẮT BUỘC phải phản hồi dưới dạng một đối tượng JSON hợp lệ tuân thủ định dạng sau:\n"
             "{\n"
             '  "decision": "answer" | "abstain",\n'
-            '  "claims": [{"text": "dữ kiện", "evidence_id": "mã nguồn", "evidence_quote": "nguyên văn từ nguồn"}],\n'
+            '  "lead": "câu dẫn ngắn đúng giọng Chisa",\n'
+            '  "claims": [{"evidence_id": "mã nguồn", "quote": "nguyên văn từ nguồn", "claim_en": "dữ kiện bằng tiếng Anh", "claim_vi": "dữ kiện bằng tiếng Việt"}],\n'
+            '  "closing": "câu kết ngắn hoặc chuỗi rỗng",\n'
             '  "sentiment": {"reaction": ..., "user_stance": ..., "intensity": ..., "variance": ...}\n'
             "}\n\n"
             f"{guide}"
