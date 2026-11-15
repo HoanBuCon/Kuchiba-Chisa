@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import json
 from collections.abc import AsyncIterator
 from typing import Annotated, Any
@@ -49,6 +50,8 @@ ACCOUNT_AUTHENTICATION = "account"
 ANONYMOUS_AUTHENTICATION = "anonymous"
 WORKLOAD_KIND = "workload"
 PII_REDACTOR = PiiRedactor()
+# The service stores a turn before it streams the first token, so either event proves storage.
+STORED_EVENTS = frozenset({EVENT_TOKEN, EVENT_COMPLETED})
 
 
 class TurnBody(BaseModel):
@@ -87,6 +90,31 @@ class TurnView(BaseModel):
     lane: str
     status: str
     citations: list[dict[str, Any]]
+
+
+class _QuotaCharge:
+    """One quota reservation that is refunded at most once, and never once the turn is stored."""
+
+    def __init__(self, admission: Any, reservation: Any) -> None:
+        self._admission = admission
+        self._reservation = reservation
+        self._stored = False
+        self._refunded = False
+
+    def keep(self) -> None:
+        self._stored = True
+
+    async def refund(self) -> None:
+        if self._refunded:
+            return
+        self._refunded = True
+        await self._admission.refund(self._reservation)
+
+    async def refund_unless_kept(self) -> None:
+        if self._stored:
+            return
+        # Shielded so the cancellation that brought us here cannot cut the refund short.
+        await asyncio.shield(self.refund())
 
 
 def _view(thread: Thread) -> ThreadView:
@@ -157,23 +185,31 @@ async def create_turn(
     ):
         raise _not_found()
 
+    charge = _QuotaCharge(admission, reservation)
+
     async def events() -> AsyncIterator[str]:
         try:
             async for event in runtime.turns.run(request):
+                if event.type in STORED_EVENTS:
+                    charge.keep()
                 if event.type == EVENT_TOKEN:
                     mark_stream_first_token(http_request.scope)
                 if event.type == EVENT_COMPLETED and event.data.get("replayed"):
                     # A replay spends nothing, so it is not charged (REL-003, REL-007).
-                    await admission.refund(reservation)
+                    await charge.refund()
                 yield _sse(event.type, event.data)
         except (LLMError, ThreadNotFoundError, ThreadBusyError) as error:
-            await admission.refund(reservation)
+            await charge.refund()
             busy = isinstance(error, ThreadBusyError)
             # Only a bounded class name leaves the server; the message is a voice constant.
             yield _sse(
                 EVENT_FAILED,
                 {"code": type(error).__name__, "message": TURN_BUSY if busy else TURN_FAILED},
             )
+        except (asyncio.CancelledError, GeneratorExit):
+            # The client left; a turn that was never stored gave it nothing to keep (REL-007).
+            await charge.refund_unless_kept()
+            raise
 
     return StreamingResponse(events(), media_type="text/event-stream", headers=STREAM_HEADERS)
 

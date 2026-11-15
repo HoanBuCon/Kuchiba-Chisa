@@ -86,7 +86,7 @@ def test_profile_card_needs_enough_fields_and_names_the_page() -> None:
     full = _doc(title="Chisa", infoboxes=({"age": "18", "class": "Mutant", "ally": "A\nB"},))
 
     assert profile_unit(thin) is None
-    assert profile_unit(full).text == "Chisa\nage: 18\nclass: Mutant\nally: A, B"
+    assert profile_unit(full).text == "Chisa\nAge: 18\nClass: Mutant\nAlly: A, B"
 
 
 def test_owner_family_keeps_the_shared_passage() -> None:
