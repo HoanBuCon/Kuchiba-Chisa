@@ -13,6 +13,7 @@ Tài liệu này giúp người mới, hoặc một phiên AI khác, hiểu nhan
 | 5 | [`handover/`](handover/README.md) | Báo cáo bàn giao từng tính năng: quyết định, kiểm tra, việc còn lại |
 | 6 | [`adr/`](adr/) | 5 quyết định kiến trúc đã chấp nhận |
 | 7 | [`design/target-architecture.md`](design/target-architecture.md) | Kiến trúc mục tiêu và lựa chọn công nghệ; thứ tự việc sẽ làm |
+| 8 | [`research/`](research/wuwa-simulator.md) | Nghiên cứu cho backlog, không phải yêu cầu. Hiện có: Wuthering Waves Simulator (BL-001) |
 
 ## 2. Hệ thống là gì
 
