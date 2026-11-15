@@ -1,13 +1,21 @@
 """`/api/v2` stays closed behind its flag, and a failed turn exposes only a voice constant."""
 
+import asyncio
 from datetime import UTC, datetime
+from types import SimpleNamespace
 from uuid import uuid4
 
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-from app.application.chat_turns import EVENT_COMPLETED, ThreadBusyError, TurnEvent
+from app.application.chat_turns import (
+    EVENT_COMPLETED,
+    EVENT_STARTED,
+    EVENT_TOKEN,
+    ThreadBusyError,
+    TurnEvent,
+)
 from app.application.dependencies import get_chat_admission_control
 from app.domain.interfaces.llm_provider import LLMError
 from app.domain.models.thread import ChatMode, Thread, TurnRecord, channel_thread_id
@@ -333,3 +341,92 @@ def test_a_busy_thread_answers_in_chisa_voice(client, monkeypatch) -> None:
 
     assert TURN_BUSY in text
     assert "Senpai" in TURN_BUSY
+
+
+class SequencedTurns:
+    """Yields the given events, then fails with `error` if one is given."""
+
+    def __init__(self, events, error=None) -> None:
+        self.events = events
+        self.error = error
+
+    async def run(self, request):
+        for event in self.events:
+            yield event
+        if self.error is not None:
+            raise self.error
+
+
+async def _open_stream(monkeypatch, turns):
+    admission = RecordingAdmission()
+
+    async def reserved(admission_control, principal, http_request=None):
+        return "reservation"
+
+    async def runtime():
+        return SimpleNamespace(threads=Threads(), turns=turns)
+
+    monkeypatch.setattr(chat_v2, "admit_chat", reserved)
+    monkeypatch.setattr(chat_v2, "get_chat_turn_runtime", runtime)
+    body = chat_v2.TurnBody(message="Chisa là ai?", turn_id=uuid4())
+    response = await chat_v2.create_turn(body, SimpleNamespace(scope={}), PRINCIPAL, admission)
+    return response.body_iterator, admission
+
+
+_STARTED = TurnEvent(EVENT_STARTED, {})
+_TOKEN = TurnEvent(EVENT_TOKEN, {"delta": "Dạ. "})
+
+
+async def test_leaving_before_the_turn_is_stored_refunds_once(monkeypatch) -> None:
+    stream, admission = await _open_stream(monkeypatch, SequencedTurns([_STARTED, _TOKEN]))
+
+    await anext(stream)
+    with pytest.raises(asyncio.CancelledError):
+        await stream.athrow(asyncio.CancelledError())
+
+    assert admission.refunded == ["reservation"]
+
+
+async def test_closing_the_stream_before_storage_refunds_once(monkeypatch) -> None:
+    stream, admission = await _open_stream(monkeypatch, SequencedTurns([_STARTED, _TOKEN]))
+
+    await anext(stream)
+    await stream.aclose()
+
+    assert admission.refunded == ["reservation"]
+
+
+@pytest.mark.parametrize("last_event", [_TOKEN, _completed(replayed=False)])
+async def test_leaving_after_the_turn_is_stored_keeps_the_charge(monkeypatch, last_event) -> None:
+    stream, admission = await _open_stream(monkeypatch, SequencedTurns([_STARTED, last_event]))
+
+    await anext(stream)
+    await anext(stream)
+    with pytest.raises(asyncio.CancelledError):
+        await stream.athrow(asyncio.CancelledError())
+
+    assert admission.refunded == []
+
+
+async def test_leaving_after_a_failure_refunds_only_once(monkeypatch) -> None:
+    stream, admission = await _open_stream(
+        monkeypatch, SequencedTurns([_STARTED], error=LLMError("down"))
+    )
+
+    await anext(stream)
+    assert "turn.failed" in await anext(stream)
+    await stream.aclose()
+
+    assert admission.refunded == ["reservation"]
+
+
+async def test_leaving_after_a_replay_refunds_only_once(monkeypatch) -> None:
+    stream, admission = await _open_stream(
+        monkeypatch, SequencedTurns([_completed(replayed=True)])
+    )
+
+    await anext(stream)
+    with pytest.raises(asyncio.CancelledError):
+        await stream.athrow(asyncio.CancelledError())
+
+    assert admission.refunded == ["reservation"]
