@@ -10,6 +10,9 @@ from sqlalchemy import select
 
 from app.domain.models.background_job import BackgroundJobType, ClaimedBackgroundJob
 from app.domain.services.memory_extractor import MemoryExtractor
+from app.infrastructure.background.core_memory_consolidation_handler import (
+    ConsolidationJobScheduler,
+)
 from app.infrastructure.background.job_handlers import (
     BackgroundTurnSourceReader,
     DurableJobPayloadError,
@@ -25,10 +28,12 @@ class ThreadMemoryExtractionJobHandler:
         session_factory: Callable[[], Any],
         consent: BackgroundTurnSourceReader,
         extractor: MemoryExtractor,
+        consolidation: ConsolidationJobScheduler | None = None,
     ) -> None:
         self._sessions = session_factory
         self._consent = consent
         self._extractor = extractor
+        self._consolidation = consolidation
 
     async def handle(self, job: ClaimedBackgroundJob) -> None:
         if job.job_type is not BackgroundJobType.THREAD_MEMORY_EXTRACTION:
@@ -39,7 +44,7 @@ class ThreadMemoryExtractionJobHandler:
         # Consent may have been withdrawn after the turn was stored.
         await self._consent.ensure_consent(user_id)
         turn, earlier = await self._load(user_id, thread_id, turn_id)
-        await self._extractor.extract_and_store_batch(
+        stored = await self._extractor.extract_and_store_batch(
             # The same id v2 recall filters on, so what is stored here is found again.
             user_id=str(user_id),
             conversation_id=str(thread_id),
@@ -49,6 +54,8 @@ class ThreadMemoryExtractionJobHandler:
             idempotency_key=job.idempotency_key,
             propagate_errors=True,
         )
+        if stored and self._consolidation is not None:
+            await self._consolidation.schedule(user_id)
 
     async def _load(
         self, user_id: uuid.UUID, thread_id: uuid.UUID, turn_id: uuid.UUID

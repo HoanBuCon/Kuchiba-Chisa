@@ -53,6 +53,7 @@ from app.infrastructure.database.models.privacy import (
     UserPrivacyPreferenceModel,
 )
 from app.infrastructure.database.models.thread import (
+    CoreMemoryConsolidationModel,
     CoreMemoryModel,
     ThreadModel,
     ThreadTurnModel,
@@ -63,6 +64,7 @@ from app.infrastructure.database.models.wiki_inventory import WikiPageModel, Wik
 from app.infrastructure.database.models.wiki_silver import WikiPageSilverModel
 
 __all__ = [
+    "CoreMemoryConsolidationModel",
     "CoreMemoryModel",
     "ThreadModel",
     "ThreadTurnModel",

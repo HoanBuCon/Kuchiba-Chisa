@@ -18,7 +18,12 @@ from app.domain.interfaces.observability import (
 )
 from app.domain.models.background_job import BackgroundJobType
 from app.domain.services.community.topic_summarizer import CommunityTopicSummarizer
+from app.domain.services.core_memory_consolidator import CoreMemoryConsolidator
 from app.domain.services.visual_memory_ingestion import VisualMemoryIngestionWorker
+from app.infrastructure.background.core_memory_consolidation_handler import (
+    ConsolidationJobScheduler,
+    CoreMemoryConsolidationJobHandler,
+)
 from app.infrastructure.background.job_handlers import (
     BackgroundTurnSourceReader,
     CommunityStateJobHandler,
@@ -37,6 +42,9 @@ from app.infrastructure.database.engine import (
     AsyncSessionFactory,
     connect_database,
     disconnect_database,
+)
+from app.infrastructure.database.repositories.core_memory_consolidation_store import (
+    PostgresCoreMemoryConsolidationStore,
 )
 from app.infrastructure.logging.logger import configure_logging, get_logger
 from app.infrastructure.observability import (
@@ -78,7 +86,18 @@ async def run_worker() -> None:
                 source, container.memory_extractor
             ),
             BackgroundJobType.THREAD_MEMORY_EXTRACTION: ThreadMemoryExtractionJobHandler(
-                AsyncSessionFactory, source, container.memory_extractor
+                AsyncSessionFactory,
+                source,
+                container.memory_extractor,
+                ConsolidationJobScheduler(AsyncSessionFactory, container.background_job_queue),
+            ),
+            BackgroundJobType.CORE_MEMORY_CONSOLIDATION: CoreMemoryConsolidationJobHandler(
+                source,
+                CoreMemoryConsolidator(
+                    container.llm,
+                    PostgresCoreMemoryConsolidationStore(AsyncSessionFactory),
+                    qdrant_service,
+                ),
             ),
             BackgroundJobType.PRIVATE_SUMMARY: PrivateSummaryJobHandler(
                 source, container.chat_engine._unified_auto_summarize

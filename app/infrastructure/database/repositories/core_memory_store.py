@@ -8,7 +8,11 @@ from typing import Any
 from sqlalchemy import delete, select
 from sqlalchemy.dialects.postgresql import insert
 
-from app.infrastructure.database.models.thread import CoreMemoryModel, ThreadModel
+from app.infrastructure.database.models.thread import (
+    CoreMemoryConsolidationModel,
+    CoreMemoryModel,
+    ThreadModel,
+)
 
 
 class PostgresCoreMemoryStore:
@@ -53,6 +57,11 @@ class SqlAlchemyPersonalDataPurge:
     async def delete_core_memory(self, owner: str) -> None:
         await self._session.execute(
             delete(CoreMemoryModel).where(CoreMemoryModel.owner_principal == owner)
+        )
+        await self._session.execute(
+            delete(CoreMemoryConsolidationModel).where(
+                CoreMemoryConsolidationModel.owner_principal == owner
+            )
         )
 
     async def delete_threads(self, owner: str) -> None:

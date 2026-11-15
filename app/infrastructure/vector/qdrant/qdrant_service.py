@@ -28,6 +28,7 @@ from qdrant_client.http.models import (
 
 from app.config.settings import settings
 from app.domain.entities.memory import MemoryPayload, MemoryTier
+from app.domain.interfaces.core_memory_consolidation import EpisodicMemory
 from app.domain.interfaces.corpus_publisher import CorpusPublication
 from app.domain.interfaces.lore_corpus_identity import LoreCorpusIdentity
 from app.domain.models.corpus_manifest import LoreManifestRow, lore_manifest_checksum
@@ -944,6 +945,31 @@ class QdrantService(IVectorStore):
             {"id": r.id, "score": r.score, "payload": r.payload or {}}
             for r in results
         ]
+
+    async def list_user_memories_since(
+        self, user_id: str, created_at_from: int, limit: int
+    ) -> list[EpisodicMemory]:
+        """Unexpired memories of one user created at or after a timestamp, oldest first."""
+        points, _ = await self._client.scroll(
+            collection_name=self._active_collection_name(COLLECTION_MEMORIES),
+            scroll_filter=Filter(
+                must=[
+                    FieldCondition(key="user_id", match=MatchValue(value=str(user_id))),
+                    FieldCondition(key="created_at", range=Range(gte=created_at_from)),
+                ]
+            ),
+            limit=limit,
+            with_payload=True,
+        )
+        now = int(time.time())
+        memories = [
+            EpisodicMemory(text=str(payload["text_content"]), created_at=int(payload["created_at"]))
+            for payload in (point.payload or {} for point in points)
+            if payload.get("text_content")
+            and payload.get("created_at") is not None
+            and (payload.get("expires_at") or now + 1) > now
+        ]
+        return sorted(memories, key=lambda memory: memory.created_at)
 
     async def _dense_query(
         self,

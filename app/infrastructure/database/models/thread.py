@@ -5,7 +5,17 @@ from __future__ import annotations
 import uuid
 from datetime import datetime
 
-from sqlalchemy import DateTime, ForeignKey, Index, Integer, String, Text, UniqueConstraint, func
+from sqlalchemy import (
+    BigInteger,
+    DateTime,
+    ForeignKey,
+    Index,
+    Integer,
+    String,
+    Text,
+    UniqueConstraint,
+    func,
+)
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -54,6 +64,19 @@ class ThreadTurnModel(Base, UUIDMixin):
     __table_args__ = (
         UniqueConstraint("thread_id", "turn_id", name="uq_thread_turns_turn"),
         Index("ix_thread_turns_thread_created", "thread_id", "created_at"),
+    )
+
+
+class CoreMemoryConsolidationModel(Base):
+    """What the consolidation job has folded in, and which core entries it wrote itself."""
+
+    __tablename__ = "core_memory_consolidation"
+
+    owner_principal: Mapped[str] = mapped_column(String(OWNER_LENGTH), primary_key=True)
+    consolidated_through: Mapped[int] = mapped_column(BigInteger, nullable=False, default=0)
+    job_owned: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False
     )
 
 
