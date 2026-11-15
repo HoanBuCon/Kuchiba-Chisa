@@ -6,6 +6,7 @@ from app.domain.interfaces.llm_provider import LLMPurpose
 from evals.dataset import Category, GoldenCase, Language, Turn
 from evals.judge import (
     MAX_QUOTE_CHARS,
+    SYSTEM_PROMPT,
     Statement,
     Verdict,
     is_uncited_answer,
@@ -117,3 +118,7 @@ def test_scored_case_keeps_the_citations_for_the_judge() -> None:
     )
 
     assert score_case(case, observation, ()).citations == (CITATION,)
+
+
+def test_prompt_forbids_turning_question_presuppositions_into_statements() -> None:
+    assert "never turn a presupposition of the question into a statement" in SYSTEM_PROMPT

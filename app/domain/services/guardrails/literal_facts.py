@@ -8,6 +8,7 @@ import unicodedata
 # Plain ASCII capitalised words: Vietnamese sentence openers almost always carry diacritics.
 _NAME = re.compile(r"\b[A-Z][A-Za-z'’-]{2,}\b")
 _NUMBER = re.compile(r"\d+(?:[.,]\d+)?")
+_SENTENCE_END = re.compile(r"(?<=[.!?])\s+")
 # Addressing words and common capitalised Vietnamese words without diacritics are not names.
 _NOT_NAMES = frozenset(
     {"Anh", "Ban", "Cha", "Chapter", "Con", "Em", "Hoa", "Khi", "Nhan", "Sau", "Senpai", "Ten"}
@@ -36,8 +37,21 @@ def introduces_new_facts(text: str, source: str) -> bool:
     folded = _fold(source)
     if any(number not in folded for number in _NUMBER.findall(text)):
         return True
+    return _has_unknown_name(text, folded)
+
+
+def invents_names(text: str, source: str) -> bool:
+    """True when a proper name in ``text`` is absent from ``source``, ignoring sentence openers."""
+    body = " ".join(
+        sentence.split(maxsplit=1)[1] if " " in sentence.strip() else ""
+        for sentence in _SENTENCE_END.split(text.strip())
+    )
+    return _has_unknown_name(body, _fold(source))
+
+
+def _has_unknown_name(text: str, folded_source: str) -> bool:
     names = (match for match in _NAME.findall(text) if match not in _NOT_NAMES)
-    return any(_fold(name) not in folded for name in names)
+    return any(_fold(name) not in folded_source for name in names)
 
 
 def facts_match(claim: str, quote: str, evidence: str) -> bool:

@@ -234,3 +234,15 @@ def test_unknown_payload_fields_are_rejected() -> None:
 def test_an_answer_without_claims_is_rejected() -> None:
     with pytest.raises(ValueError):
         _assemble(_payload())
+
+
+def test_claim_en_with_a_name_absent_from_the_evidence_is_dropped() -> None:
+    envelope = _assemble(
+        _payload(
+            _claim(en="Jinhsi is the Magistrate of Jinzhou and wields Hack.", vi=CLAIM_VI),
+            _claim(),
+        )
+    )
+
+    assert envelope.removed_claims == 1
+    assert envelope.verified_claims == 1

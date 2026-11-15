@@ -5,6 +5,7 @@ import pytest
 from app.domain.services.guardrails.literal_facts import (
     facts_match,
     introduces_new_facts,
+    invents_names,
     negation_agrees,
 )
 
@@ -74,3 +75,15 @@ def test_khong_as_a_negation_is_still_detected() -> None:
 def test_negation_must_agree() -> None:
     assert negation_agrees("không có", "never had")
     assert not negation_agrees("có", "never had")
+
+
+def test_an_invented_name_in_english_is_caught() -> None:
+    assert invents_names("It causes Hack - Interfered.", "Tune Rupture and Tune Strain.")
+
+
+def test_a_name_in_the_evidence_is_allowed() -> None:
+    assert not invents_names("She studies at Startorch Academy.", "Startorch Academy is a school.")
+
+
+def test_a_sentence_initial_capital_is_not_a_name() -> None:
+    assert not invents_names("The school is old. Then it closed.", "a school closed")
