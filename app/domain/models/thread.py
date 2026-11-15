@@ -66,6 +66,10 @@ class TurnRecord:
     status: str
     downgrade_reason: DowngradeReason | None = None
     llm_calls: int = 0
+    input_tokens: int = 0
+    cached_input_tokens: int = 0
+    output_tokens: int = 0
+    cost_usd: float = 0.0
     citations: tuple[dict[str, Any], ...] = field(default=())
     degraded: tuple[str, ...] = ()
 

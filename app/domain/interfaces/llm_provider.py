@@ -64,6 +64,10 @@ class LLMCallBudget:
     max_calls: int = 2
     used_calls: int = 0
     deadline_at: float | None = None
+    # Token usage of the calls made so far; cached tokens are a part of the input tokens.
+    input_tokens: int = 0
+    cached_input_tokens: int = 0
+    output_tokens: int = 0
 
     @classmethod
     def with_deadline(cls, *, max_calls: int, timeout_seconds: float) -> LLMCallBudget:
@@ -79,6 +83,11 @@ class LLMCallBudget:
             return None
         self.used_calls += 1
         return self.used_calls
+
+    def record_usage(self, input_tokens: int, cached_input_tokens: int, output_tokens: int) -> None:
+        self.input_tokens += input_tokens
+        self.cached_input_tokens += cached_input_tokens
+        self.output_tokens += output_tokens
 
     def remaining_seconds(self, *, now: float | None = None) -> float | None:
         if self.deadline_at is None:
@@ -125,6 +134,8 @@ class LLMResponse(BaseModel):
     raw_content: str                # Raw JSON string from LLM
     parsed: dict[str, Any]          # Parsed and validated JSON
     input_tokens: int = 0
+    # Part of input_tokens the provider served from its prefix cache (PER-004).
+    cached_input_tokens: int = 0
     output_tokens: int = 0
     reasoning_tokens: int = 0
     vision_tokens: int = 0

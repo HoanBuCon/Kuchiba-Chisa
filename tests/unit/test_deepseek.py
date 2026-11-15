@@ -31,6 +31,7 @@ async def test_deepseek_adapter_generate_success(mock_post):
             ],
             "usage": {
                 "prompt_tokens": 12,
+                "prompt_cache_hit_tokens": 5,
                 "completion_tokens": 8
             }
         }
@@ -59,6 +60,7 @@ async def test_deepseek_adapter_generate_success(mock_post):
     )
     assert res.parsed["response"] == "Hello Senpai!"
     assert res.input_tokens == 12
+    assert res.cached_input_tokens == 5
     assert res.output_tokens == 8
     assert res.model == settings.DEEPSEEK_MODEL
 

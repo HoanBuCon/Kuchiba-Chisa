@@ -595,6 +595,7 @@ async def _build_chat_turn_runtime() -> ChatTurnRuntime:
     from app.domain.services.knowledge.structured_tools import StructuredTools
     from app.domain.services.persona_v2 import CompanionContextBuilder, GroundedContextBuilder
     from app.domain.services.rag.retriever_memory import MemoryRetriever
+    from app.domain.services.token_cost import TokenPrices
     from app.infrastructure.cache.redis.redis_service import redis_service
     from app.infrastructure.cache.redis.turn_lock import RedisTurnLock
     from app.infrastructure.database.engine import AsyncSessionFactory
@@ -659,6 +660,11 @@ async def _build_chat_turn_runtime() -> ChatTurnRuntime:
         summaries=PostgresThreadSummaryStore(AsyncSessionFactory),
         history_token_budget=settings.CHAT_HISTORY_TOKEN_BUDGET,
         summary_trigger_tokens=settings.CHAT_SUMMARY_TRIGGER_TOKENS,
+        prices=TokenPrices(
+            settings.LLM_PRICE_INPUT_PER_MTOK,
+            settings.LLM_PRICE_CACHED_INPUT_PER_MTOK,
+            settings.LLM_PRICE_OUTPUT_PER_MTOK,
+        ),
     )
     return ChatTurnRuntime(threads, turns, core_memory)
 

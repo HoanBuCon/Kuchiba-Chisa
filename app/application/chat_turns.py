@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import re
 from collections.abc import AsyncIterator, Callable, Sequence
 from dataclasses import asdict, dataclass, replace
@@ -52,6 +53,7 @@ from app.domain.services.knowledge.understanding import (
     UnderstandingError,
 )
 from app.domain.services.state_manager import StateManager
+from app.domain.services.token_cost import TokenPrices, estimate_cost_usd
 from app.shared.utils.token_estimator import TokenEstimator
 
 # The understanding step and the Composer; a turn never spends a third call (ADV-009).
@@ -199,6 +201,7 @@ class AdvancedTurnService:
         history_token_budget: int = HISTORY_TOKEN_BUDGET,
         summary_trigger_tokens: int = SUMMARY_TRIGGER_TOKENS,
         count_tokens: TokenCounter = TokenEstimator.estimate,
+        prices: TokenPrices | None = None,
     ) -> None:
         self._threads = threads
         self._flow = flow
@@ -216,6 +219,7 @@ class AdvancedTurnService:
         self._history_budget = history_token_budget
         self._summary_trigger = summary_trigger_tokens
         self._count_tokens: Callable[[str], int] = count_tokens
+        self._prices = prices or TokenPrices()
 
     async def run(self, request: TurnRequest) -> AsyncIterator[TurnEvent]:
         thread = await self._thread(request)
@@ -256,10 +260,31 @@ class AdvancedTurnService:
             yield await self._completed(request.owner, record, replayed=False)
             return
         conversation = await self._conversation(thread.id)
+        # Understanding and retrieval do not need the person's context, so it loads beside them.
+        personal = asyncio.create_task(self._personal_context(request))
+        try:
+            async for event in self._answer(
+                request, thread, decision, budget, conversation, personal
+            ):
+                yield event
+        finally:
+            personal.cancel()
+            # Awaited so a failure in the losing branch is consumed, not left unretrieved.
+            await asyncio.gather(personal, return_exceptions=True)
+
+    async def _answer(
+        self,
+        request: TurnRequest,
+        thread: Thread,
+        decision: ModeDecision,
+        budget: LLMCallBudget,
+        conversation: _Conversation,
+        personal: asyncio.Task[PersonalContext],
+    ) -> AsyncIterator[TurnEvent]:
         plan = await self._plan(request, conversation.history, budget)
         yield self._started(request, thread, decision, plan.lane)
         if plan.lane is Lane.COMPANION:
-            companion = await self._companion(request, conversation, budget)
+            companion = await self._companion(request, conversation, personal, budget)
             answer = _bounded(request.message, companion)
             record = self._record(request, thread, decision, answer, (), budget, Lane.COMPANION)
             async for event in self._deliver(request, record, answer, conversation):
@@ -276,7 +301,7 @@ class AdvancedTurnService:
                     "title": item.provenance.source_id,
                 },
             )
-        composed = await self._compose(request, conversation, found, budget)
+        composed = await self._compose(request, conversation, found, personal, budget)
         answer = _bounded(request.message, composed)
         record = self._record(request, thread, decision, answer, degraded, budget, Lane.ADVANCED)
         async for event in self._deliver(request, record, answer, conversation):
@@ -382,14 +407,18 @@ class AdvancedTurnService:
         return _TurnPlan(Lane.ADVANCED, understood.query or request.message)
 
     async def _companion(
-        self, request: TurnRequest, conversation: _Conversation, budget: LLMCallBudget
+        self,
+        request: TurnRequest,
+        conversation: _Conversation,
+        personal: asyncio.Task[PersonalContext],
+        budget: LLMCallBudget,
     ) -> ComposedAnswer:
-        personal = await self._personal_context(request)
+        loaded = await personal
         return await self._composer.compose_companion(
             request.message,
-            emotion=personal.emotion,
+            emotion=loaded.emotion,
             history=_history(conversation.history),
-            memories=list(personal.memories),
+            memories=list(loaded.memories),
             summary=conversation.summary.summary if conversation.summary else None,
             budget=budget,
         )
@@ -427,17 +456,18 @@ class AdvancedTurnService:
         request: TurnRequest,
         conversation: _Conversation,
         found: AdvancedEvidence,
+        personal: asyncio.Task[PersonalContext],
         budget: LLMCallBudget,
     ) -> ComposedAnswer:
         if found.listed:
             return self._composer.compose_list(found.listed)
-        personal = await self._personal_context(request)
+        loaded = await personal
         return await self._composer.compose(
             request.message,
             () if found.abstain else found.evidence,
-            emotion=personal.emotion,
+            emotion=loaded.emotion,
             history=_history(conversation.history),
-            memories=list(personal.memories),
+            memories=list(loaded.memories),
             summary=conversation.summary.summary if conversation.summary else None,
             budget=budget,
         )
@@ -449,8 +479,8 @@ class AdvancedTurnService:
             request.owner, is_guest=request.is_guest, question=request.message
         )
 
-    @staticmethod
     def _record(
+        self,
         request: TurnRequest,
         thread: Thread,
         decision: ModeDecision,
@@ -470,6 +500,15 @@ class AdvancedTurnService:
             status=answer.status,
             downgrade_reason=decision.downgrade_reason,
             llm_calls=budget.used_calls,
+            input_tokens=budget.input_tokens,
+            cached_input_tokens=budget.cached_input_tokens,
+            output_tokens=budget.output_tokens,
+            cost_usd=estimate_cost_usd(
+                self._prices,
+                budget.input_tokens,
+                budget.cached_input_tokens,
+                budget.output_tokens,
+            ),
             citations=tuple(asdict(citation) for citation in answer.citations),
             degraded=degraded,
         )
