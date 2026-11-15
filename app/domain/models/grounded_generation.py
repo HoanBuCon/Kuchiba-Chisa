@@ -35,6 +35,37 @@ class GroundedModelPayload(BaseModel):
         return self
 
 
+class BilingualClaimCandidate(BaseModel):
+    """Untrusted claim in English (checked against the quote) and Vietnamese (shown to the user)."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    evidence_id: str = Field(min_length=1, max_length=512)
+    quote: str = Field(min_length=12, max_length=600)
+    claim_en: str = Field(min_length=1, max_length=1_000)
+    claim_vi: str = Field(min_length=1, max_length=1_000)
+
+
+class BilingualModelPayload(BaseModel):
+    """Evidence-lane provider payload: an in-voice lead and closing around bilingual claims."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    decision: Literal["answer", "abstain"]
+    lead: str = Field(max_length=300)
+    claims: list[BilingualClaimCandidate] = Field(max_length=8)
+    closing: str = Field(max_length=300)
+    sentiment: dict[str, Any]
+
+    @model_validator(mode="after")
+    def validate_decision_claims(self) -> BilingualModelPayload:
+        if self.decision == "answer" and not self.claims:
+            raise ValueError("answer decision requires at least one claim")
+        if self.decision == "abstain" and self.claims:
+            raise ValueError("abstain decision cannot contain claims")
+        return self
+
+
 class GroundedAnswerEnvelope(BaseModel):
     """Server-owned terminal generation result for downstream delivery."""
 

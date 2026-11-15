@@ -634,7 +634,6 @@ async def _build_chat_turn_runtime() -> ChatTurnRuntime:
     composer = GroundedComposer(
         container.llm,
         GroundedContextBuilder(),
-        embedder=container.embedder,
         companion_builder=CompanionContextBuilder(),
     )
     threads = PostgresThreadStore(AsyncSessionFactory)

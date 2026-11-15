@@ -1,3 +1,7 @@
+from app.domain.services.guardrails.bilingual_output import (
+    BilingualOutputAssembler,
+    build_bilingual_response_schema,
+)
 from app.domain.services.guardrails.citation_guard import (
     CitationValidationError,
     EvidenceCitationGuard,
@@ -26,6 +30,7 @@ from app.domain.services.guardrails.injection_guard import (
 from app.domain.services.guardrails.pii_redaction import PiiRedactionResult, PiiRedactor
 
 __all__ = [
+    "BilingualOutputAssembler",
     "CorpusSafetyDecision",
     "CorpusSafetyGate",
     "CorpusSafetyViolationError",
@@ -44,5 +49,6 @@ __all__ = [
     "PiiRedactor",
     "GroundedOutputAssembler",
     "GroundedOutputValidationError",
+    "build_bilingual_response_schema",
     "build_grounded_response_schema",
 ]
