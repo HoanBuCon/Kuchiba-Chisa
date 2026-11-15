@@ -46,7 +46,7 @@ Tài liệu dùng ba nhãn:
 
 ### 1.2 Khoảng trống và hướng của dự án
 
-- **[XM]** Không simulator nào trong danh sách có lớp AI: người dùng phải tự chọn đội, tự xếp rotation và tự đọc kết quả.
+- **[XM]** WU.DA.MAGE ghi rõ không có tính năng AI. Trên các trang còn lại đã đọc, em không thấy tính năng AI; với WuwaLAB, phần simulator cần đăng nhập nên em chưa xem được. Người dùng phải tự chọn đội, tự xếp rotation và tự đọc kết quả.
 - **[GĐ]** Rào cản lớn nhất với người chơi phổ thông là phải hiểu Concerto, cancel, swap và thứ tự buff trước khi dùng được simulator.
 - **[ĐX]** Giá trị của Chisa:
   - nhận câu hỏi tự nhiên, như "Chisa của em S0, có vũ khí 4 sao này, nên chơi với ai?";
