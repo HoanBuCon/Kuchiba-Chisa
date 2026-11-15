@@ -603,6 +603,9 @@ async def _build_chat_turn_runtime() -> ChatTurnRuntime:
     )
     from app.infrastructure.database.repositories.knowledge_store import PostgresKnowledgeStore
     from app.infrastructure.database.repositories.thread_store import PostgresThreadStore
+    from app.infrastructure.database.repositories.thread_summary_store import (
+        PostgresThreadSummaryStore,
+    )
     from app.infrastructure.database.repositories.turn_commit import PostgresTurnCommit
     from app.infrastructure.knowledge.llm_query_translator import LlmQueryTranslator
     from app.infrastructure.knowledge.llm_question_understander import LlmQuestionUnderstander
@@ -635,7 +638,6 @@ async def _build_chat_turn_runtime() -> ChatTurnRuntime:
     composer = GroundedComposer(
         container.llm,
         GroundedContextBuilder(),
-        embedder=container.embedder,
         companion_builder=CompanionContextBuilder(),
     )
     threads = PostgresThreadStore(AsyncSessionFactory)
@@ -657,6 +659,9 @@ async def _build_chat_turn_runtime() -> ChatTurnRuntime:
         ),
         commit=PostgresTurnCommit(AsyncSessionFactory, queue=container.background_job_queue),
         lock=RedisTurnLock(redis_service),
+        summaries=PostgresThreadSummaryStore(AsyncSessionFactory),
+        history_token_budget=settings.CHAT_HISTORY_TOKEN_BUDGET,
+        summary_trigger_tokens=settings.CHAT_SUMMARY_TRIGGER_TOKENS,
         telemetry=operational_telemetry,
     )
     return ChatTurnRuntime(threads, turns, core_memory)

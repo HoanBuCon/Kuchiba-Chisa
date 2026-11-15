@@ -155,12 +155,21 @@ class PostgresThreadStore:
             await session.commit()
             return bool(result.rowcount)
 
-    async def recent_turns(self, thread_id: UUID, limit: int) -> list[TurnRecord]:
+    async def recent_turns(
+        self, thread_id: UUID, limit: int, *, after_turn: UUID | None = None
+    ) -> list[TurnRecord]:
+        query = select(ThreadTurnModel).where(ThreadTurnModel.thread_id == thread_id)
         async with self._sessions() as session:
+            if after_turn is not None:
+                marker_at = await session.scalar(
+                    select(ThreadTurnModel.created_at).where(
+                        ThreadTurnModel.thread_id == thread_id,
+                        ThreadTurnModel.turn_id == after_turn,
+                    )
+                )
+                if marker_at is not None:
+                    query = query.where(ThreadTurnModel.created_at > marker_at)
             rows = await session.scalars(
-                select(ThreadTurnModel)
-                .where(ThreadTurnModel.thread_id == thread_id)
-                .order_by(ThreadTurnModel.created_at.desc())
-                .limit(limit)
+                query.order_by(ThreadTurnModel.created_at.desc()).limit(limit)
             )
             return [_turn(row) for row in rows][::-1]

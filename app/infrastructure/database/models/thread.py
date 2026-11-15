@@ -57,6 +57,22 @@ class ThreadTurnModel(Base, UUIDMixin):
     )
 
 
+class ThreadSummaryModel(Base):
+    """One rolling summary per thread; the cascade removes it with the thread (CONV-004)."""
+
+    __tablename__ = "thread_summaries"
+
+    thread_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("threads.id", ondelete="CASCADE"), primary_key=True
+    )
+    summary: Mapped[str] = mapped_column(Text, nullable=False)
+    version: Mapped[int] = mapped_column(Integer, nullable=False)
+    covered_turn_id: Mapped[uuid.UUID] = mapped_column(nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False
+    )
+
+
 class CoreMemoryModel(Base):
     __tablename__ = "core_memory"
 

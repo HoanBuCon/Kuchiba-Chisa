@@ -13,6 +13,7 @@ from app.domain.services.memory_extractor import MemoryExtractor
 from app.infrastructure.background.job_handlers import (
     BackgroundTurnSourceReader,
     DurableJobPayloadError,
+    payload_uuid,
 )
 from app.infrastructure.database.models.thread import ThreadModel, ThreadTurnModel
 
@@ -33,7 +34,7 @@ class ThreadMemoryExtractionJobHandler:
     async def handle(self, job: ClaimedBackgroundJob) -> None:
         if job.job_type is not BackgroundJobType.THREAD_MEMORY_EXTRACTION:
             raise DurableJobPayloadError("job type mismatch")
-        user_id, thread_id, turn_id = (_uuid(job.payload, key) for key in _KEYS)
+        user_id, thread_id, turn_id = (payload_uuid(job.payload, key) for key in _KEYS)
         if user_id != job.principal_id:
             raise DurableJobPayloadError("job payload scope does not match trusted envelope")
         # Consent may have been withdrawn after the turn was stored.
@@ -72,13 +73,6 @@ class ThreadMemoryExtractionJobHandler:
 
 
 _KEYS = ("user_id", "thread_id", "turn_id")
-
-
-def _uuid(payload: dict[str, Any], key: str) -> uuid.UUID:
-    try:
-        return uuid.UUID(str(payload[key]))
-    except (KeyError, TypeError, ValueError) as error:
-        raise DurableJobPayloadError(f"invalid {key}") from error
 
 
 def _history(turns: list[ThreadTurnModel]) -> list[dict[str, str]]:

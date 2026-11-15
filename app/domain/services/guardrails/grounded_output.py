@@ -220,6 +220,11 @@ class GroundedOutputAssembler:
         )
 
     @classmethod
+    def resolve_quote(cls, evidence_text: str, quote: str) -> str | None:
+        """The evidence's own wording of ``quote``, or None when it is not there."""
+        return cls._resolve_quote(evidence_text, quote)
+
+    @classmethod
     def _contains_quote(cls, evidence_text: str, quote: str) -> bool:
         return cls._resolve_quote(evidence_text, quote) is not None
 
