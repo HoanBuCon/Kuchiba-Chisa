@@ -223,11 +223,11 @@ class Settings(BaseSettings):
     # Turns not yet summarized beyond this many tokens queue a rolling summary (CONV-003).
     # Below the window, so a turn is summarized before it leaves the prompt.
     CHAT_SUMMARY_TRIGGER_TOKENS: int = Field(default=1_200, ge=100, le=16_000)
-    # Dollars per million tokens for the turn cost estimate (COST-001). Defaults are DeepSeek's
-    # list prices; check them against the provider's pricing page before relying on the cost.
-    LLM_PRICE_INPUT_PER_MTOK: float = Field(default=0.28, ge=0.0)
-    LLM_PRICE_CACHED_INPUT_PER_MTOK: float = Field(default=0.028, ge=0.0)
-    LLM_PRICE_OUTPUT_PER_MTOK: float = Field(default=0.42, ge=0.0)
+    # USD per million tokens for the turn cost estimate (COST-001): deepseek-flash peak prices
+    # from api-docs.deepseek.com/quick_start/pricing, read 2026-11-15 (off-peak is half).
+    LLM_PRICE_INPUT_PER_MTOK: float = Field(default=0.3, ge=0.0)
+    LLM_PRICE_CACHED_INPUT_PER_MTOK: float = Field(default=0.006, ge=0.0)
+    LLM_PRICE_OUTPUT_PER_MTOK: float = Field(default=1.2, ge=0.0)
     # The corpus release v2 answers from, until automated publishing arrives in I5.
     KNOWLEDGE_CORPUS_VERSION: str = ""
     CHAT_MESSAGE_RATE_LIMIT_PER_MINUTE: int = Field(default=10, ge=1, le=600)

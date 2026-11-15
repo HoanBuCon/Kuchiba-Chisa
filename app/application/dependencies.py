@@ -612,6 +612,7 @@ async def _build_chat_turn_runtime() -> ChatTurnRuntime:
     from app.infrastructure.knowledge.llm_question_understander import LlmQuestionUnderstander
     from app.infrastructure.knowledge.personal_context import PostgresPersonalContext
     from app.infrastructure.knowledge.qdrant_lore_index import QdrantLoreIndex
+    from app.infrastructure.observability import operational_telemetry
     from app.infrastructure.vector.qdrant.qdrant_service import get_qdrant_client
 
     version = settings.KNOWLEDGE_CORPUS_VERSION
@@ -654,7 +655,9 @@ async def _build_chat_turn_runtime() -> ChatTurnRuntime:
         composer,
         personal=personal,
         linker=linker,
-        understander=LlmQuestionUnderstander(container.llm, redis_service),
+        understander=LlmQuestionUnderstander(
+            container.llm, redis_service, telemetry=operational_telemetry
+        ),
         commit=PostgresTurnCommit(AsyncSessionFactory, queue=container.background_job_queue),
         lock=RedisTurnLock(redis_service),
         summaries=PostgresThreadSummaryStore(AsyncSessionFactory),
@@ -665,6 +668,7 @@ async def _build_chat_turn_runtime() -> ChatTurnRuntime:
             settings.LLM_PRICE_CACHED_INPUT_PER_MTOK,
             settings.LLM_PRICE_OUTPUT_PER_MTOK,
         ),
+        telemetry=operational_telemetry,
     )
     return ChatTurnRuntime(threads, turns, core_memory)
 

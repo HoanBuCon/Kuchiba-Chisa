@@ -134,32 +134,3 @@ def test_core_content_hash_is_pinned() -> None:
 def test_companion_keeps_the_frozen_conversation_style(line) -> None:
     assert line in ContextBuilder.PERSONA_TEXT
     assert line in CompanionContextBuilder.PERSONA_TEXT
-
-
-@pytest.mark.parametrize("builder", BUILDERS)
-def test_prompt_prefix_is_stable_before_the_per_turn_state(builder) -> None:
-    system = _build(
-        builder,
-        memories=["thích trà sữa"],
-        lore=["Một dữ kiện"],
-        budget_mode=BudgetMode.RAG,
-        is_small_talk=False,
-        intent_name="lore",
-        conversation_summary="Đã chào nhau.",
-    ).system
-
-    persona = system.index("[PERSONA]")
-    output_format = system.index("[OUTPUT FORMAT]")
-    state = system.rindex("[BEHAVIORAL DIRECTIVE]")
-    summary = system.index("[CONVERSATION SUMMARY]")
-    memories = system.index("[MEMORIES — REFERENCE DATA START]")
-    assert persona < output_format < state < summary < memories
-
-
-def test_prompt_prefix_does_not_change_with_the_emotion_state() -> None:
-    calm = _build(CompanionContextBuilder, emotion=EmotionState(user_id=uuid4(), trust=0.2)).system
-    close = _build(CompanionContextBuilder, emotion=EmotionState(user_id=uuid4(), trust=0.9)).system
-
-    prefix_end = calm.rindex("[BEHAVIORAL DIRECTIVE]")
-    assert calm[:prefix_end] == close[:prefix_end]
-    assert calm != close

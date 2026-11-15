@@ -3,7 +3,7 @@
 Additive only: nullable, so turns stored before this revision stay valid.
 
 Revision ID: b3e8c1f5a926
-Revises: a7d3e9b2c418
+Revises: a7d3e9b21c64
 Create Date: 2026-11-15
 """
 
@@ -11,7 +11,7 @@ import sqlalchemy as sa
 from alembic import op
 
 revision = "b3e8c1f5a926"
-down_revision = "a7d3e9b2c418"
+down_revision = "a7d3e9b21c64"
 branch_labels = None
 depends_on = None
 

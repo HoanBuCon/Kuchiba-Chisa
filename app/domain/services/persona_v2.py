@@ -5,10 +5,7 @@ v1 keeps the frozen prompts untouched. Owner approved this rework on 2026-11-04.
 
 from __future__ import annotations
 
-from dataclasses import replace
-from typing import Any
-
-from app.domain.services.context_builder import ContextBuilder, ContextBuildResult
+from app.domain.services.context_builder import ContextBuilder
 
 PERSONA_VERSION = "v2.0"
 
@@ -87,43 +84,15 @@ _GROUNDED_RULES = (
     "lead và closing không nêu dữ kiện, không thêm tên riêng hay con số ngoài câu hỏi và các claim."
 )
 _SENTIMENT_GUIDE_MARKER = "[HỆ QUY CHIẾU PHÂN LOẠI SENTIMENT"
-_STATE_MARKER = "[BEHAVIORAL DIRECTIVE]"
-_SKELETON_KEY = "System Skeleton (Persona)"
-_FORMAT_KEY = "Output Format"
 
 
-class _StablePrefixBuilder(ContextBuilder):
-    """Puts the output format ahead of the emotion state, so the provider can cache the prefix (PER-004)."""
-
-    def build(self, *args: Any, **kwargs: Any) -> ContextBuildResult:
-        built = super().build(*args, **kwargs)
-        components = built.components or {}
-        skeleton = components[_SKELETON_KEY] or ""
-        output_format = components[_FORMAT_KEY] or ""
-        system = built.prompt.system
-        # The frozen build() puts persona, state (last in the skeleton), variable sections, then the format.
-        state_start = skeleton.rindex(_STATE_MARKER)
-        variable_parts = system[len(skeleton) : len(system) - len(output_format)].strip("\n")
-        reordered = "\n\n".join(
-            part
-            for part in (
-                skeleton[:state_start].rstrip("\n"),
-                output_format,
-                skeleton[state_start:],
-                variable_parts,
-            )
-            if part
-        )
-        return replace(built, prompt=built.prompt.model_copy(update={"system": reordered}))
-
-
-class CompanionContextBuilder(_StablePrefixBuilder):
+class CompanionContextBuilder(ContextBuilder):
     """Conversation with no sources: Chisa's profile is the only ground for facts about her."""
 
     PERSONA_TEXT = f"{_CORE}\n\n{_COMPANION_RULES}"
 
 
-class GroundedContextBuilder(_StablePrefixBuilder):
+class GroundedContextBuilder(ContextBuilder):
     """Answers bound to sources; abstaining is correct here, unlike in the frozen prompt."""
 
     PERSONA_TEXT = f"{_CORE}\n\n{_GROUNDED_RULES}"

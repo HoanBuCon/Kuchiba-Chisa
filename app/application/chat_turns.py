@@ -12,6 +12,12 @@ from uuid import UUID, uuid4
 from app.domain.entities.emotion import EmotionState
 from app.domain.ingestion.entity_linking import EntityLinker
 from app.domain.interfaces.llm_provider import LLMCallBudget
+from app.domain.interfaces.observability import (
+    CounterSignal,
+    IOperationalTelemetry,
+    NoopOperationalTelemetry,
+    TelemetryDimensions,
+)
 from app.domain.interfaces.personal_context import IPersonalContext, PersonalContext
 from app.domain.interfaces.threads import (
     IThreadStore,
@@ -202,6 +208,7 @@ class AdvancedTurnService:
         summary_trigger_tokens: int = SUMMARY_TRIGGER_TOKENS,
         count_tokens: TokenCounter = TokenEstimator.estimate,
         prices: TokenPrices | None = None,
+        telemetry: IOperationalTelemetry | None = None,
     ) -> None:
         self._threads = threads
         self._flow = flow
@@ -220,6 +227,7 @@ class AdvancedTurnService:
         self._summary_trigger = summary_trigger_tokens
         self._count_tokens: Callable[[str], int] = count_tokens
         self._prices = prices or TokenPrices()
+        self._telemetry = telemetry or NoopOperationalTelemetry()
 
     async def run(self, request: TurnRequest) -> AsyncIterator[TurnEvent]:
         thread = await self._thread(request)
@@ -393,6 +401,8 @@ class AdvancedTurnService:
         lane = choose_lane(request.message, entities)
         # Rules that are sure of the lane leave nothing for the understander to decide (ADV-003).
         if lane is Lane.COMPANION or self._understander is None:
+            if lane is Lane.COMPANION:
+                self._count_understanding("skipped_rules")
             return _TurnPlan(lane)
         recent = history[-UNDERSTANDING_TURNS:]
         previous = [PriorTurn(turn.question, turn.answer) for turn in recent]
@@ -404,7 +414,14 @@ class AdvancedTurnService:
         if understood.lane is Lane.COMPANION and _only_chisa(entities):
             return _TurnPlan(Lane.COMPANION)
         # A lore question sent to companion would be answered from nothing, so it stays grounded.
+        if understood.lane is Lane.COMPANION:
+            self._count_understanding("overridden")
         return _TurnPlan(Lane.ADVANCED, understood.query or request.message)
+
+    def _count_understanding(self, outcome: str) -> None:
+        self._telemetry.count(
+            CounterSignal.QUESTION_UNDERSTANDING, TelemetryDimensions(outcome=outcome)
+        )
 
     async def _companion(
         self,

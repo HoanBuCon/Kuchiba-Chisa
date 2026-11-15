@@ -14,6 +14,12 @@ from app.domain.interfaces.llm_provider import (
     LLMPurpose,
     StructuredPrompt,
 )
+from app.domain.interfaces.observability import (
+    CounterSignal,
+    IOperationalTelemetry,
+    NoopOperationalTelemetry,
+    TelemetryDimensions,
+)
 from app.domain.services.knowledge.lane_router import Lane
 from app.domain.services.knowledge.understanding import (
     PriorTurn,
@@ -101,9 +107,20 @@ def _from_cache(raw: str | None) -> Understanding | None:
 
 
 class LlmQuestionUnderstander:
-    def __init__(self, llm: BaseLLMAdapter, cache: ICacheProvider | None = None) -> None:
+    def __init__(
+        self,
+        llm: BaseLLMAdapter,
+        cache: ICacheProvider | None = None,
+        telemetry: IOperationalTelemetry | None = None,
+    ) -> None:
         self._llm = llm
         self._cache = cache
+        self._telemetry = telemetry or NoopOperationalTelemetry()
+
+    def _count(self, outcome: str) -> None:
+        self._telemetry.count(
+            CounterSignal.QUESTION_UNDERSTANDING, TelemetryDimensions(outcome=outcome)
+        )
 
     async def understand(
         self,
@@ -116,12 +133,19 @@ class LlmQuestionUnderstander:
         if self._cache is not None:
             cached = _from_cache(await self._cache.get(key))
             if cached is not None:
+                self._count("cache_hit")
                 return cached
         try:
             response = await self._llm.generate(understanding_prompt(message, recent, budget))
         except LLMError as error:
+            self._count("failed")
             raise UnderstandingError(type(error).__name__) from error
-        understood = _from_fields(response.parsed.get("lane"), response.parsed.get("query"))
+        try:
+            understood = _from_fields(response.parsed.get("lane"), response.parsed.get("query"))
+        except UnderstandingError:
+            self._count("failed")
+            raise
+        self._count("llm")
         if self._cache is not None:
             value = json.dumps(
                 {"lane": understood.lane.value, "query": understood.query}, ensure_ascii=False
