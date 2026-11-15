@@ -351,10 +351,10 @@ class Commit:
         self.remembered = []
         self.summarized = []
 
-    async def commit(self, record, owner, sentiment, *, remember=False, summarize=False):
+    async def commit(self, record, owner, sentiment, *, remember=False, summary_version=None):
         self.calls.append((record, owner, sentiment))
         self.remembered.append(remember)
-        self.summarized.append(summarize)
+        self.summarized.append(summary_version)
         return True
 
 
@@ -595,7 +595,7 @@ async def test_history_is_cut_by_tokens_and_keeps_the_newest_turns() -> None:
     one_turn = len("cũ 0") + len("đáp 0") + 8
     service = _windowed_service(threads, composer, history_token_budget=one_turn * 2)
 
-    await _events(service, _request(thread_id=thread.id))
+    await _events(service, _request(thread_id=thread.id, is_guest=False))
 
     history = composer.calls[0][2]["history"]
     assert [m["content"] for m in history] == ["cũ 3", "đáp 3", "cũ 4", "đáp 4"]
@@ -606,7 +606,7 @@ async def test_the_latest_turn_survives_a_budget_smaller_than_itself() -> None:
     thread = await _thread_with_turns(threads, 3)
     service = _windowed_service(threads, composer, history_token_budget=1)
 
-    await _events(service, _request(thread_id=thread.id))
+    await _events(service, _request(thread_id=thread.id, is_guest=False))
 
     assert [m["content"] for m in composer.calls[0][2]["history"]] == ["cũ 2", "đáp 2"]
 
@@ -618,7 +618,7 @@ async def test_grounded_composer_gets_the_summary_and_only_the_uncovered_turns()
     summaries = Summaries(ThreadSummary("Anh hay hỏi về Tacet Field.", 2, covered))
     service = _windowed_service(threads, composer, summaries=summaries)
 
-    await _events(service, _request(thread_id=thread.id))
+    await _events(service, _request(thread_id=thread.id, is_guest=False))
 
     context = composer.calls[0][2]
     assert context["summary"] == "Anh hay hỏi về Tacet Field."
@@ -654,11 +654,10 @@ async def test_summary_job_is_requested_only_above_the_token_threshold() -> None
     below = _windowed_service_with_commit(threads, commit, trigger=pending)
     above = _windowed_service_with_commit(threads, commit, trigger=pending - 1)
 
-    await _events(below, _request(thread_id=thread.id))
-    await _events(above, _request(thread_id=thread.id))
+    await _events(below, _request(thread_id=thread.id, is_guest=False))
+    await _events(above, _request(thread_id=thread.id, is_guest=False))
 
-    assert commit.summarized[0] is False
-    assert commit.summarized[1] is True
+    assert commit.summarized == [None, 0]
 
 
 def _windowed_service_with_commit(threads, commit, trigger):
@@ -687,19 +686,38 @@ async def test_summary_job_counts_only_turns_after_the_covered_one() -> None:
         summary_trigger_tokens=100,
     )
 
-    await _events(service, _request(thread_id=thread.id))
+    await _events(service, _request(thread_id=thread.id, is_guest=False))
 
-    assert commit.summarized == [False]
+    assert commit.summarized == [None]
 
 
-async def test_guests_may_have_a_summary_but_not_a_memory_job() -> None:
+async def test_the_job_is_requested_for_the_version_of_the_stored_summary() -> None:
+    threads, commit = Threads(), Commit()
+    thread = await _thread_with_turns(threads, 6)
+    summaries = Summaries(ThreadSummary("Tóm tắt.", 5, threads.turns[0].turn_id))
+    service = AdvancedTurnService(
+        threads,
+        Flow(),
+        Composer(),
+        commit=commit,
+        summaries=summaries,
+        count_tokens=len,
+        summary_trigger_tokens=10,
+    )
+
+    await _events(service, _request(thread_id=thread.id, is_guest=False))
+
+    assert commit.summarized == [5]
+
+
+async def test_guests_get_no_summary_job_because_they_have_no_user_row() -> None:
     threads, commit = Threads(), Commit()
     thread = await _thread_with_turns(threads, 3)
     service = _windowed_service_with_commit(threads, commit, trigger=1)
 
     await _events(service, _request(thread_id=thread.id, is_guest=True))
 
-    assert commit.summarized == [True]
+    assert commit.summarized == [None]
     assert commit.remembered == [False]
 
 
@@ -710,6 +728,18 @@ async def test_no_summary_store_means_no_summary_job() -> None:
         threads, Flow(), Composer(), commit=commit, count_tokens=len, summary_trigger_tokens=1
     )
 
-    await _events(service, _request(thread_id=thread.id))
+    await _events(service, _request(thread_id=thread.id, is_guest=False))
 
-    assert commit.summarized == [False]
+    assert commit.summarized == [None]
+
+
+def test_a_trigger_not_below_the_window_is_refused_when_summaries_are_on() -> None:
+    with pytest.raises(ValueError):
+        AdvancedTurnService(
+            Threads(),
+            Flow(),
+            Composer(),
+            summaries=Summaries(),
+            history_token_budget=1_000,
+            summary_trigger_tokens=1_000,
+        )

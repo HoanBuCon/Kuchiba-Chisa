@@ -31,11 +31,12 @@ def memory_job(record: TurnRecord, owner: str) -> BackgroundJobSubmission:
     )
 
 
-def summary_job(record: TurnRecord, owner: str) -> BackgroundJobSubmission:
+def summary_job(record: TurnRecord, owner: str, version: int) -> BackgroundJobSubmission:
+    """One job per thread and summary version, so a growing backlog queues one call, not many."""
     user_id = normalize_user_id(owner)
     return BackgroundJobSubmission(
         job_type=BackgroundJobType.THREAD_SUMMARY,
-        idempotency_key=f"thread-summary:{record.thread_id}:{record.turn_id}",
+        idempotency_key=f"thread-summary:{record.thread_id}:{version}",
         payload=ThreadSummaryPayload(user_id, record.thread_id, record.turn_id).as_json(),
         principal_id=user_id,
     )
@@ -59,7 +60,7 @@ class PostgresTurnCommit:
         sentiment: Mapping[str, Any],
         *,
         remember: bool = False,
-        summarize: bool = False,
+        summary_version: int | None = None,
     ) -> bool:
         async with self._sessions() as session:
             stored = bool((await session.execute(turn_insert(record))).rowcount)
@@ -67,17 +68,22 @@ class PostgresTurnCommit:
             if stored and sentiment:
                 await self._move_emotion(session, owner, sentiment)
             if stored and self._queue is not None:
-                await self._enqueue_jobs(session, record, owner, remember, summarize)
+                await self._enqueue_jobs(session, record, owner, remember, summary_version)
             await session.commit()
             return stored
 
     async def _enqueue_jobs(
-        self, session: Any, record: TurnRecord, owner: str, remember: bool, summarize: bool
+        self,
+        session: Any,
+        record: TurnRecord,
+        owner: str,
+        remember: bool,
+        summary_version: int | None,
     ) -> None:
         if remember:
             await self._queue.enqueue(session, memory_job(record, owner))
-        if summarize:
-            await self._queue.enqueue(session, summary_job(record, owner))
+        if summary_version is not None:
+            await self._queue.enqueue(session, summary_job(record, owner, summary_version))
 
     async def _move_emotion(self, session: Any, owner: str, sentiment: Mapping[str, Any]) -> None:
         user_id = normalize_user_id(owner)

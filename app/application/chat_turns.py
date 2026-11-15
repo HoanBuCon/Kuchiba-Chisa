@@ -19,12 +19,21 @@ from app.domain.interfaces.threads import (
     ITurnLock,
 )
 from app.domain.models.evidence import Evidence
-from app.domain.models.thread import ChatMode, ModeDecision, Thread, TurnRecord, resolve_mode
+from app.domain.models.thread import (
+    ChatMode,
+    ModeDecision,
+    Thread,
+    ThreadSummary,
+    TurnRecord,
+    resolve_mode,
+)
 from app.domain.services.chisa_voice import INPUT_BLOCKED
 from app.domain.services.conversation_window import (
     UNCOVERED_FETCH_LIMIT,
     TokenCounter,
+    require_trigger_below_budget,
     summary_due,
+    turn_tokens,
     window_turns,
 )
 from app.domain.services.guardrails.injection_guard import (
@@ -49,7 +58,7 @@ from app.shared.utils.token_estimator import TokenEstimator
 ADVANCED_MAX_LLM_CALLS = 2
 ADVANCED_DEADLINE_SECONDS = 30.0
 HISTORY_TOKEN_BUDGET = 1_500
-SUMMARY_TRIGGER_TOKENS = 2_000
+SUMMARY_TRIGGER_TOKENS = 1_200
 UNDERSTANDING_TURNS = 2
 DEGRADED_UNDERSTANDING = "understanding_failed"
 EVENT_STARTED = "turn.started"
@@ -146,8 +155,9 @@ class _Conversation:
     """The thread so far: turns the summary lacks, the part of them that fits, and the summary."""
 
     uncovered: list[TurnRecord]
+    uncovered_tokens: int
     history: list[TurnRecord]
-    summary: str | None
+    summary: ThreadSummary | None
 
 
 @dataclass(frozen=True)
@@ -200,6 +210,8 @@ class AdvancedTurnService:
         self._understander = understander
         self._commit = commit
         self._lock = lock
+        if summaries is not None:
+            require_trigger_below_budget(history_token_budget, summary_trigger_tokens)
         self._summaries = summaries
         self._history_budget = history_token_budget
         self._summary_trigger = summary_trigger_tokens
@@ -277,8 +289,10 @@ class AdvancedTurnService:
             UNCOVERED_FETCH_LIMIT,
             after_turn=summary.covered_turn_id if summary else None,
         )
-        history = window_turns(uncovered, self._history_budget, self._count_tokens)
-        return _Conversation(uncovered, history, summary.summary if summary else None)
+        # Counted once here: the window and the summary trigger both read these costs.
+        costs = [turn_tokens(turn, self._count_tokens) for turn in uncovered]
+        history = window_turns(uncovered, costs, self._history_budget)
+        return _Conversation(uncovered, sum(costs), history, summary)
 
     async def _deliver(
         self,
@@ -305,7 +319,7 @@ class AdvancedTurnService:
                 request.owner,
                 answer.sentiment,
                 remember=_worth_remembering(request, record),
-                summarize=self._summary_due(record, conversation),
+                summary_version=self._summary_version(request, record, conversation),
             )
             return
         stored = await self._threads.save_turn(record)
@@ -313,12 +327,21 @@ class AdvancedTurnService:
         if stored is not False and answer.sentiment and self._personal is not None:
             await self._personal.apply_sentiment(request.owner, answer.sentiment)
 
-    def _summary_due(self, record: TurnRecord, conversation: _Conversation) -> bool:
-        if self._summaries is None:
-            return False
-        return summary_due(
-            conversation.uncovered, record, self._summary_trigger, self._count_tokens
+    def _summary_version(
+        self, request: TurnRequest, record: TurnRecord, conversation: _Conversation
+    ) -> int | None:
+        """The stored summary version when one is due; guests have no users row for the job."""
+        if self._summaries is None or request.is_guest:
+            return None
+        due = summary_due(
+            len(conversation.uncovered),
+            conversation.uncovered_tokens,
+            turn_tokens(record, self._count_tokens),
+            self._summary_trigger,
         )
+        if not due:
+            return None
+        return conversation.summary.version if conversation.summary else 0
 
     async def _completed(self, owner: str, record: TurnRecord, replayed: bool) -> TurnEvent:
         emotion = await self._personal.current_emotion(owner) if self._personal else None
@@ -367,7 +390,7 @@ class AdvancedTurnService:
             emotion=personal.emotion,
             history=_history(conversation.history),
             memories=list(personal.memories),
-            summary=conversation.summary,
+            summary=conversation.summary.summary if conversation.summary else None,
             budget=budget,
         )
 
@@ -415,7 +438,7 @@ class AdvancedTurnService:
             emotion=personal.emotion,
             history=_history(conversation.history),
             memories=list(personal.memories),
-            summary=conversation.summary,
+            summary=conversation.summary.summary if conversation.summary else None,
             budget=budget,
         )
 

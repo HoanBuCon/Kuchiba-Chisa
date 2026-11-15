@@ -87,6 +87,7 @@ async def run_worker() -> None:
             ),
             BackgroundJobType.THREAD_SUMMARY: ThreadSummaryJobHandler(
                 AsyncSessionFactory,
+                source,
                 PostgresThreadSummaryStore(AsyncSessionFactory),
                 LlmThreadSummarizer(container.llm),
             ),

@@ -21,25 +21,36 @@ def turn_tokens(turn: TurnRecord, count: TokenCounter) -> int:
     return count(turn.question) + count(turn.answer) + overhead
 
 
-def window_turns(turns: Sequence[TurnRecord], budget: int, count: TokenCounter) -> list[TurnRecord]:
-    """The newest turns that fit the budget, oldest first; the latest turn is always kept."""
-    kept: list[TurnRecord] = []
+def require_trigger_below_budget(history_budget: int, trigger_tokens: int) -> None:
+    """A trigger at or above the window lets turns leave the prompt before any summary has them."""
+    if trigger_tokens >= history_budget:
+        raise ValueError("the summary trigger must be below the history token budget")
+
+
+def window_turns(
+    turns: Sequence[TurnRecord], costs: Sequence[int], budget: int
+) -> list[TurnRecord]:
+    """The newest turns that fit the budget, oldest first; the latest turn is always kept.
+
+    `costs[i]` is the token cost of `turns[i]`, counted once by the caller.
+    """
+    kept = 0
     used = 0
-    for turn in reversed(turns):
-        cost = turn_tokens(turn, count)
+    for cost in reversed(costs):
         if kept and used + cost > budget:
             break
-        kept.append(turn)
+        kept += 1
         used += cost
-    kept.reverse()
-    return kept
+    return list(turns[len(turns) - kept :])
 
 
 def summary_due(
-    uncovered: Sequence[TurnRecord], latest: TurnRecord, trigger_tokens: int, count: TokenCounter
+    uncovered_count: int, uncovered_tokens: int, latest_tokens: int, trigger_tokens: int
 ) -> bool:
-    """True when the turns the summary does not cover yet, with `latest`, exceed the threshold."""
-    if len(uncovered) >= UNCOVERED_FETCH_LIMIT:
+    """True when the turns the summary lacks, with the latest, exceed the threshold."""
+    if uncovered_count >= UNCOVERED_FETCH_LIMIT:
         return True
-    pending = sum(turn_tokens(turn, count) for turn in (*uncovered, latest))
-    return pending > trigger_tokens
+    # With only the newest turns left, the job would fold nothing and the version would not move.
+    if uncovered_count + 1 <= SUMMARY_KEEP_RECENT_TURNS:
+        return False
+    return uncovered_tokens + latest_tokens > trigger_tokens

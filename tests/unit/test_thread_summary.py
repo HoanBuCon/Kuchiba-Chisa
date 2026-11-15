@@ -9,9 +9,11 @@ from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
+from pydantic import ValidationError
 from sqlalchemy.dialects import postgresql
 from sqlalchemy.exc import IntegrityError
 
+from app.config.settings import Settings, settings
 from app.domain.models.background_job import BackgroundJobType, ClaimedBackgroundJob
 from app.domain.models.thread import ChatMode, ThreadSummary, TurnRecord
 from app.domain.services.conversation_window import SUMMARY_KEEP_RECENT_TURNS
@@ -25,6 +27,7 @@ from app.infrastructure.background.thread_summary_handler import (
     ThreadSummaryJobHandler,
 )
 from app.infrastructure.database.models.thread import ThreadSummaryModel
+from app.infrastructure.database.repositories.thread_store import PostgresThreadStore
 from app.infrastructure.database.repositories.thread_summary_store import (
     PostgresThreadSummaryStore,
     _first_version,
@@ -90,14 +93,14 @@ async def test_commit_queues_a_summary_job_in_the_turn_transaction() -> None:
     record = _record()
 
     stored = await PostgresTurnCommit(lambda: session, queue=queue).commit(
-        record, OWNER, {}, summarize=True
+        record, OWNER, {}, summary_version=3
     )
 
     assert stored and session.committed
     (job,) = queue.jobs
     assert job.job_type is BackgroundJobType.THREAD_SUMMARY
     assert job.principal_id == normalize_user_id(OWNER)
-    assert job.idempotency_key == f"thread-summary:{record.thread_id}:{record.turn_id}"
+    assert job.idempotency_key == f"thread-summary:{record.thread_id}:3"
     assert job.payload["through_turn_id"] == str(record.turn_id)
     assert record.question not in str(job.payload)
 
@@ -114,7 +117,7 @@ async def test_a_retry_that_lost_the_race_queues_nothing() -> None:
     session, queue = Session(rowcount=0), Queue()
 
     stored = await PostgresTurnCommit(lambda: session, queue=queue).commit(
-        _record(), OWNER, {}, remember=True, summarize=True
+        _record(), OWNER, {}, remember=True, summary_version=0
     )
 
     assert not stored
@@ -125,7 +128,7 @@ async def test_memory_and_summary_jobs_share_one_commit() -> None:
     session, queue = Session(), Queue()
 
     await PostgresTurnCommit(lambda: session, queue=queue).commit(
-        _record(), OWNER, {}, remember=True, summarize=True
+        _record(), OWNER, {}, remember=True, summary_version=0
     )
 
     assert [job.job_type for job in queue.jobs] == [
@@ -246,11 +249,23 @@ def _job(through: uuid.UUID) -> ClaimedBackgroundJob:
     )
 
 
-def _handler(store, summarizer, turns):
-    handler = ThreadSummaryJobHandler(lambda: None, store, summarizer)
+class Consent:
+    def __init__(self, error: Exception | None = None) -> None:
+        self.error = error
+        self.checked = []
+
+    async def ensure_consent(self, principal_id):
+        self.checked.append(principal_id)
+        if self.error:
+            raise self.error
+        return str(principal_id)
+
+
+def _handler(store, summarizer, turns, marker_found=True, consent=None):
+    handler = ThreadSummaryJobHandler(lambda: None, consent or Consent(), store, summarizer)
 
     async def uncovered(*_arguments):
-        return turns
+        return turns, marker_found
 
     handler._uncovered = uncovered
     return handler
@@ -317,6 +332,40 @@ async def test_handler_summarizes_a_bounded_batch() -> None:
     assert store.current.covered_turn_id == turns[MAX_TURNS_PER_SUMMARY - 1].turn_id
 
 
+async def test_handler_rebuilds_without_the_old_summary_when_its_marker_is_gone() -> None:
+    turns = _stored_turns(6)
+    store = SummaryStore(ThreadSummary("Cũ, sai.", 4, uuid.uuid4()))
+    summarizer = Summarizer()
+
+    await _handler(store, summarizer, turns, marker_found=False).handle(_job(turns[-1].turn_id))
+
+    assert summarizer.calls[0][0] is None
+    assert store.saves[0][2] == 4
+    assert store.current.version == 5
+
+
+async def test_handler_stops_when_consent_is_withdrawn() -> None:
+    turns = _stored_turns(6)
+    consent = Consent(DurableJobPayloadError("long-term memory consent is not active"))
+    store, summarizer = SummaryStore(), Summarizer()
+
+    with pytest.raises(DurableJobPayloadError):
+        await _handler(store, summarizer, turns, consent=consent).handle(_job(turns[-1].turn_id))
+
+    assert summarizer.calls == [] and store.saves == []
+
+
+async def test_handler_checks_consent_for_the_job_principal() -> None:
+    turns = _stored_turns(5)
+    consent = Consent()
+
+    await _handler(SummaryStore(), Summarizer(), turns, consent=consent).handle(
+        _job(turns[-1].turn_id)
+    )
+
+    assert consent.checked == [normalize_user_id(OWNER)]
+
+
 async def test_handler_rejects_a_payload_for_another_principal() -> None:
     job = replace(_job(uuid.uuid4()), principal_id=uuid.uuid4())
 
@@ -358,9 +407,74 @@ async def test_summarizer_refuses_an_empty_summary() -> None:
         await LlmThreadSummarizer(Llm({"summary": " "})).summarize(None, _stored_turns(1))
 
 
-def test_summary_job_idempotency_key_is_per_thread_and_turn() -> None:
-    record = _record()
+def test_summary_job_key_is_per_thread_and_summary_version_not_per_turn() -> None:
+    thread_id = uuid.uuid4()
+    first, later = _record(thread_id), _record(thread_id)
 
-    first = summary_job(record, OWNER).idempotency_key
-    assert first == summary_job(record, OWNER).idempotency_key
-    assert first != summary_job(_record(), OWNER).idempotency_key
+    key = summary_job(first, OWNER, 0).idempotency_key
+    assert key == summary_job(later, OWNER, 0).idempotency_key
+    assert key != summary_job(later, OWNER, 1).idempotency_key
+    assert key != summary_job(_record(), OWNER, 0).idempotency_key
+
+
+class IdempotentQueue(Queue):
+    """Keeps one job per idempotency key, as the outbox's unique constraint does."""
+
+    async def enqueue(self, session, submission) -> uuid.UUID:
+        if all(job.idempotency_key != submission.idempotency_key for job in self.jobs):
+            self.jobs.append(submission)
+        return uuid.uuid4()
+
+
+async def test_a_backlog_over_the_trigger_queues_one_job_per_summary_version() -> None:
+    queue = IdempotentQueue()
+    thread_id = uuid.uuid4()
+
+    for _ in range(4):
+        commit = PostgresTurnCommit(lambda: Session(), queue=queue)
+        await commit.commit(_record(thread_id), OWNER, {}, summary_version=2)
+    await PostgresTurnCommit(lambda: Session(), queue=queue).commit(
+        _record(thread_id), OWNER, {}, summary_version=3
+    )
+
+    assert len(queue.jobs) == 2
+
+
+class ScalarSession:
+    """Answers the marker lookup with `marker_at` and records the turn query."""
+
+    def __init__(self, marker_at) -> None:
+        self.marker_at = marker_at
+        self.queries = []
+
+    async def __aenter__(self):
+        return self
+
+    async def __aexit__(self, *exc) -> None:
+        return None
+
+    async def scalar(self, statement):
+        return self.marker_at
+
+    async def scalars(self, statement):
+        self.queries.append(_sql(statement))
+        return []
+
+
+async def test_a_missing_marker_falls_back_to_the_latest_turns() -> None:
+    lost, found = ScalarSession(None), ScalarSession(datetime.now(UTC))
+
+    await PostgresThreadStore(lambda: lost).recent_turns(uuid.uuid4(), 5, after_turn=uuid.uuid4())
+    await PostgresThreadStore(lambda: found).recent_turns(uuid.uuid4(), 5, after_turn=uuid.uuid4())
+
+    assert "created_at >" not in lost.queries[0]
+    assert "created_at >" in found.queries[0]
+
+
+def test_settings_refuse_a_trigger_that_is_not_below_the_window() -> None:
+    values = settings.model_dump()
+    budget = values["CHAT_HISTORY_TOKEN_BUDGET"]
+
+    assert budget > Settings.model_validate(values).CHAT_SUMMARY_TRIGGER_TOKENS
+    with pytest.raises(ValidationError):
+        Settings.model_validate({**values, "CHAT_SUMMARY_TRIGGER_TOKENS": budget})

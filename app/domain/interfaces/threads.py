@@ -39,7 +39,10 @@ class IThreadStore(Protocol):
     async def recent_turns(
         self, thread_id: UUID, limit: int, *, after_turn: UUID | None = None
     ) -> list[TurnRecord]:
-        """The newest `limit` turns, oldest first; with `after_turn`, only those stored after it."""
+        """The newest `limit` turns, oldest first; with `after_turn`, only those stored after it.
+
+        An `after_turn` that no longer exists is ignored, so a lost marker keeps the history.
+        """
         ...
 
 
@@ -69,9 +72,12 @@ class ITurnCommit(Protocol):
         sentiment: Mapping[str, Any],
         *,
         remember: bool = False,
-        summarize: bool = False,
+        summary_version: int | None = None,
     ) -> bool:
         """One transaction for the turn, its emotion and, on request, its memory and summary jobs.
+
+        `summary_version` is the version of the summary now stored (0 for none); setting it queues
+        one summary job for that version, however many turns ask for it.
 
         False when a racing retry stored the turn first; then nothing else is written.
         """
