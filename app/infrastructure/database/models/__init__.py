@@ -56,6 +56,7 @@ from app.infrastructure.database.models.thread import (
     CoreMemoryConsolidationModel,
     CoreMemoryModel,
     ThreadModel,
+    ThreadSummaryModel,
     ThreadTurnModel,
 )
 from app.infrastructure.database.models.user import User
@@ -67,6 +68,7 @@ __all__ = [
     "CoreMemoryConsolidationModel",
     "CoreMemoryModel",
     "ThreadModel",
+    "ThreadSummaryModel",
     "ThreadTurnModel",
     "AccountIdentityModel",
     "AccountModel",

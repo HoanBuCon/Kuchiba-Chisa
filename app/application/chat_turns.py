@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import re
-from collections.abc import AsyncIterator, Sequence
+from collections.abc import AsyncIterator, Callable, Sequence
 from dataclasses import asdict, dataclass, replace
 from typing import Any, Protocol
 from uuid import UUID, uuid4
@@ -12,10 +12,30 @@ from app.domain.entities.emotion import EmotionState
 from app.domain.ingestion.entity_linking import EntityLinker
 from app.domain.interfaces.llm_provider import LLMCallBudget
 from app.domain.interfaces.personal_context import IPersonalContext, PersonalContext
-from app.domain.interfaces.threads import IThreadStore, ITurnCommit, ITurnLock
+from app.domain.interfaces.threads import (
+    IThreadStore,
+    IThreadSummaryStore,
+    ITurnCommit,
+    ITurnLock,
+)
 from app.domain.models.evidence import Evidence
-from app.domain.models.thread import ChatMode, ModeDecision, Thread, TurnRecord, resolve_mode
+from app.domain.models.thread import (
+    ChatMode,
+    ModeDecision,
+    Thread,
+    ThreadSummary,
+    TurnRecord,
+    resolve_mode,
+)
 from app.domain.services.chisa_voice import INPUT_BLOCKED
+from app.domain.services.conversation_window import (
+    UNCOVERED_FETCH_LIMIT,
+    TokenCounter,
+    require_trigger_below_budget,
+    summary_due,
+    turn_tokens,
+    window_turns,
+)
 from app.domain.services.guardrails.injection_guard import (
     ContentSource,
     GuardAction,
@@ -32,11 +52,13 @@ from app.domain.services.knowledge.understanding import (
     UnderstandingError,
 )
 from app.domain.services.state_manager import StateManager
+from app.shared.utils.token_estimator import TokenEstimator
 
 # The understanding step and the Composer; a turn never spends a third call (ADV-009).
 ADVANCED_MAX_LLM_CALLS = 2
 ADVANCED_DEADLINE_SECONDS = 30.0
-HISTORY_TURNS = 6
+HISTORY_TOKEN_BUDGET = 1_500
+SUMMARY_TRIGGER_TOKENS = 1_200
 UNDERSTANDING_TURNS = 2
 DEGRADED_UNDERSTANDING = "understanding_failed"
 EVENT_STARTED = "turn.started"
@@ -129,6 +151,16 @@ def _worth_remembering(request: TurnRequest, record: TurnRecord) -> bool:
 
 
 @dataclass(frozen=True)
+class _Conversation:
+    """The thread so far: turns the summary lacks, the part of them that fits, and the summary."""
+
+    uncovered: list[TurnRecord]
+    uncovered_tokens: int
+    history: list[TurnRecord]
+    summary: ThreadSummary | None
+
+
+@dataclass(frozen=True)
 class _TurnPlan:
     lane: Lane
     english: str | None = None
@@ -163,6 +195,10 @@ class AdvancedTurnService:
         understander: IQuestionUnderstander | None = None,
         commit: ITurnCommit | None = None,
         lock: ITurnLock | None = None,
+        summaries: IThreadSummaryStore | None = None,
+        history_token_budget: int = HISTORY_TOKEN_BUDGET,
+        summary_trigger_tokens: int = SUMMARY_TRIGGER_TOKENS,
+        count_tokens: TokenCounter = TokenEstimator.estimate,
     ) -> None:
         self._threads = threads
         self._flow = flow
@@ -174,6 +210,12 @@ class AdvancedTurnService:
         self._understander = understander
         self._commit = commit
         self._lock = lock
+        if summaries is not None:
+            require_trigger_below_budget(history_token_budget, summary_trigger_tokens)
+        self._summaries = summaries
+        self._history_budget = history_token_budget
+        self._summary_trigger = summary_trigger_tokens
+        self._count_tokens: Callable[[str], int] = count_tokens
 
     async def run(self, request: TurnRequest) -> AsyncIterator[TurnEvent]:
         thread = await self._thread(request)
@@ -213,14 +255,14 @@ class AdvancedTurnService:
             await self._threads.save_turn(record)
             yield await self._completed(request.owner, record, replayed=False)
             return
-        recent = await self._threads.recent_turns(thread.id, HISTORY_TURNS)
-        plan = await self._plan(request, recent, budget)
+        conversation = await self._conversation(thread.id)
+        plan = await self._plan(request, conversation.history, budget)
         yield self._started(request, thread, decision, plan.lane)
         if plan.lane is Lane.COMPANION:
-            companion = await self._companion(request, recent, budget)
+            companion = await self._companion(request, conversation, budget)
             answer = _bounded(request.message, companion)
             record = self._record(request, thread, decision, answer, (), budget, Lane.COMPANION)
-            async for event in self._deliver(request, record, answer):
+            async for event in self._deliver(request, record, answer, conversation):
                 yield event
             return
         found = await self._flow.retrieve(request.message, budget, english=plan.english)
@@ -234,31 +276,72 @@ class AdvancedTurnService:
                     "title": item.provenance.source_id,
                 },
             )
-        composed = await self._compose(request, recent, found, budget)
+        composed = await self._compose(request, conversation, found, budget)
         answer = _bounded(request.message, composed)
         record = self._record(request, thread, decision, answer, degraded, budget, Lane.ADVANCED)
-        async for event in self._deliver(request, record, answer):
+        async for event in self._deliver(request, record, answer, conversation):
             yield event
 
+    async def _conversation(self, thread_id: UUID) -> _Conversation:
+        summary = await self._summaries.get(thread_id) if self._summaries else None
+        uncovered = await self._threads.recent_turns(
+            thread_id,
+            UNCOVERED_FETCH_LIMIT,
+            after_turn=summary.covered_turn_id if summary else None,
+        )
+        # Counted once here: the window and the summary trigger both read these costs.
+        costs = [turn_tokens(turn, self._count_tokens) for turn in uncovered]
+        history = window_turns(uncovered, costs, self._history_budget)
+        return _Conversation(uncovered, sum(costs), history, summary)
+
     async def _deliver(
-        self, request: TurnRequest, record: TurnRecord, answer: ComposedAnswer
+        self,
+        request: TurnRequest,
+        record: TurnRecord,
+        answer: ComposedAnswer,
+        conversation: _Conversation,
     ) -> AsyncIterator[TurnEvent]:
-        await self._store(request, record, answer)
+        await self._store(request, record, answer, conversation)
         for piece in _SENTENCE.split(answer.text):
             yield TurnEvent(EVENT_TOKEN, {"delta": piece})
         yield await self._completed(request.owner, record, replayed=False)
 
     async def _store(
-        self, request: TurnRequest, record: TurnRecord, answer: ComposedAnswer
+        self,
+        request: TurnRequest,
+        record: TurnRecord,
+        answer: ComposedAnswer,
+        conversation: _Conversation,
     ) -> None:
         if self._commit is not None:
-            remember = _worth_remembering(request, record)
-            await self._commit.commit(record, request.owner, answer.sentiment, remember=remember)
+            await self._commit.commit(
+                record,
+                request.owner,
+                answer.sentiment,
+                remember=_worth_remembering(request, record),
+                summary_version=self._summary_version(request, record, conversation),
+            )
             return
         stored = await self._threads.save_turn(record)
         # Only the retry that stored the turn may move emotion, so it moves once (EMO-003).
         if stored is not False and answer.sentiment and self._personal is not None:
             await self._personal.apply_sentiment(request.owner, answer.sentiment)
+
+    def _summary_version(
+        self, request: TurnRequest, record: TurnRecord, conversation: _Conversation
+    ) -> int | None:
+        """The stored summary version when one is due; guests have no users row for the job."""
+        if self._summaries is None or request.is_guest:
+            return None
+        due = summary_due(
+            len(conversation.uncovered),
+            conversation.uncovered_tokens,
+            turn_tokens(record, self._count_tokens),
+            self._summary_trigger,
+        )
+        if not due:
+            return None
+        return conversation.summary.version if conversation.summary else 0
 
     async def _completed(self, owner: str, record: TurnRecord, replayed: bool) -> TurnEvent:
         emotion = await self._personal.current_emotion(owner) if self._personal else None
@@ -279,14 +362,15 @@ class AdvancedTurnService:
         )
 
     async def _plan(
-        self, request: TurnRequest, recent: list[TurnRecord], budget: LLMCallBudget
+        self, request: TurnRequest, history: list[TurnRecord], budget: LLMCallBudget
     ) -> _TurnPlan:
         entities = self._linker.link(request.message) if self._linker is not None else ()
         lane = choose_lane(request.message, entities)
         # Rules that are sure of the lane leave nothing for the understander to decide (ADV-003).
         if lane is Lane.COMPANION or self._understander is None:
             return _TurnPlan(lane)
-        previous = [PriorTurn(turn.question, turn.answer) for turn in recent[-UNDERSTANDING_TURNS:]]
+        recent = history[-UNDERSTANDING_TURNS:]
+        previous = [PriorTurn(turn.question, turn.answer) for turn in recent]
         try:
             understood = await self._understander.understand(request.message, previous, budget)
         except UnderstandingError:
@@ -298,15 +382,15 @@ class AdvancedTurnService:
         return _TurnPlan(Lane.ADVANCED, understood.query or request.message)
 
     async def _companion(
-        self, request: TurnRequest, recent: list[TurnRecord], budget: LLMCallBudget
+        self, request: TurnRequest, conversation: _Conversation, budget: LLMCallBudget
     ) -> ComposedAnswer:
         personal = await self._personal_context(request)
         return await self._composer.compose_companion(
             request.message,
             emotion=personal.emotion,
-            history=_history(recent),
+            history=_history(conversation.history),
             memories=list(personal.memories),
-            summary=None,
+            summary=conversation.summary.summary if conversation.summary else None,
             budget=budget,
         )
 
@@ -341,7 +425,7 @@ class AdvancedTurnService:
     async def _compose(
         self,
         request: TurnRequest,
-        recent: list[TurnRecord],
+        conversation: _Conversation,
         found: AdvancedEvidence,
         budget: LLMCallBudget,
     ) -> ComposedAnswer:
@@ -352,9 +436,9 @@ class AdvancedTurnService:
             request.message,
             () if found.abstain else found.evidence,
             emotion=personal.emotion,
-            history=_history(recent),
+            history=_history(conversation.history),
             memories=list(personal.memories),
-            summary=None,
+            summary=conversation.summary.summary if conversation.summary else None,
             budget=budget,
         )
 

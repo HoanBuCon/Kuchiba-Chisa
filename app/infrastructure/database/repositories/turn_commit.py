@@ -1,4 +1,4 @@
-"""One transaction for a stored turn, its emotion and its outbox job (EMO-003, REL-007)."""
+"""One transaction for a stored turn, its emotion and its outbox jobs (EMO-003, REL-007)."""
 
 from __future__ import annotations
 
@@ -10,6 +10,7 @@ from app.domain.models.background_job import (
     BackgroundJobSubmission,
     BackgroundJobType,
     ThreadMemoryPayload,
+    ThreadSummaryPayload,
 )
 from app.domain.models.thread import TurnRecord
 from app.domain.services.emotion_engine import EmotionEngine
@@ -26,6 +27,17 @@ def memory_job(record: TurnRecord, owner: str) -> BackgroundJobSubmission:
         job_type=BackgroundJobType.THREAD_MEMORY_EXTRACTION,
         idempotency_key=f"thread-memory:{record.thread_id}:{record.turn_id}",
         payload=ThreadMemoryPayload(user_id, record.thread_id, record.turn_id).as_json(),
+        principal_id=user_id,
+    )
+
+
+def summary_job(record: TurnRecord, owner: str, version: int) -> BackgroundJobSubmission:
+    """One job per thread and summary version, so a growing backlog queues one call, not many."""
+    user_id = normalize_user_id(owner)
+    return BackgroundJobSubmission(
+        job_type=BackgroundJobType.THREAD_SUMMARY,
+        idempotency_key=f"thread-summary:{record.thread_id}:{version}",
+        payload=ThreadSummaryPayload(user_id, record.thread_id, record.turn_id).as_json(),
         principal_id=user_id,
     )
 
@@ -48,16 +60,30 @@ class PostgresTurnCommit:
         sentiment: Mapping[str, Any],
         *,
         remember: bool = False,
+        summary_version: int | None = None,
     ) -> bool:
         async with self._sessions() as session:
             stored = bool((await session.execute(turn_insert(record))).rowcount)
             # A retry that lost the race must not move emotion or queue the job again.
             if stored and sentiment:
                 await self._move_emotion(session, owner, sentiment)
-            if stored and remember and self._queue is not None:
-                await self._queue.enqueue(session, memory_job(record, owner))
+            if stored and self._queue is not None:
+                await self._enqueue_jobs(session, record, owner, remember, summary_version)
             await session.commit()
             return stored
+
+    async def _enqueue_jobs(
+        self,
+        session: Any,
+        record: TurnRecord,
+        owner: str,
+        remember: bool,
+        summary_version: int | None,
+    ) -> None:
+        if remember:
+            await self._queue.enqueue(session, memory_job(record, owner))
+        if summary_version is not None:
+            await self._queue.enqueue(session, summary_job(record, owner, summary_version))
 
     async def _move_emotion(self, session: Any, owner: str, sentiment: Mapping[str, Any]) -> None:
         user_id = normalize_user_id(owner)

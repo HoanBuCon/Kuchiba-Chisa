@@ -20,6 +20,7 @@ class BackgroundJobType(StrEnum):
     COMMUNITY_STATE = "community_state.v1"
     THREAD_MEMORY_EXTRACTION = "thread_memory_extraction.v1"
     CORE_MEMORY_CONSOLIDATION = "core_memory_consolidation.v1"
+    THREAD_SUMMARY = "thread_summary.v1"
 
 
 class BackgroundJobStatus(StrEnum):
@@ -58,6 +59,15 @@ class CoreMemoryConsolidationPayload:
     """Names only the person; the worker reads memories itself, so no content is queued."""
 
     user_id: uuid.UUID
+
+
+@dataclass(frozen=True)
+class ThreadSummaryPayload:
+    """Names the newest turn the summary may cover; the worker reads the text itself."""
+
+    user_id: uuid.UUID
+    thread_id: uuid.UUID
+    through_turn_id: uuid.UUID
 
     def as_json(self) -> dict[str, Any]:
         return _json_ready(asdict(self))

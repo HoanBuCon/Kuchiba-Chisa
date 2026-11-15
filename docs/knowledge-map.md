@@ -67,7 +67,7 @@ Postgres    Qdrant 1.20    Redis          Inference svc       LLM Gateway
 |---|---|
 | LangGraph cho làn Agentic (ADR-0005; bộ điều phối và Advanced là Python thuần) | Chưa có dependency LangGraph; làm ở R4 |
 | Sự kiện qua **Redis Streams**, nối lại SSE được | SSE trả thẳng từ route; chưa nối lại được (CH-001 chưa đủ) |
-| Outbox, job memory/summary/reflection cho v2 | Worker chỉ có job của v1; v2 chưa có job nào |
+| Outbox, job memory/summary/reflection cho v2 | Đã có outbox, job trích xuất trí nhớ và job summary cuộn; chưa có job core memory và reflection |
 | Agentic subgraph, evidence ledger, interrupt | Chưa có (R4); mọi lượt bị ép về Advanced |
 | RBAC 4 vai trò, Discord OAuth, Admin MFA | Chưa có (R3); hiện có tài khoản email/Google và phiên ẩn danh |
 | Celery | Không dùng; hàng đợi bền tự viết |
@@ -153,7 +153,7 @@ Xưng hô bất biến: Chisa xưng "Em", gọi người dùng "Senpai" (PER-003
 
 ## 10. Dữ liệu
 
-- **Postgres** (đầu migration `a7d3e9b21c64`, có test khẳng định): tài khoản và phiên (`accounts`, `account_identities`, `auth_sessions`, `account_tokens`, `users`); hội thoại v1 (`conversations`, `messages`); v2 (`threads`, `thread_turns`, `core_memory`); cảm xúc (`emotion_state`); quyền riêng tư (`user_privacy_preferences`, `erasure_jobs`); hàng đợi (`durable_background_jobs`); ingestion (`wiki_*`, `corpus_releases`, `ingestion_sources`…); tri thức có cấu trúc (`kb_*`); legacy (`pipeline_jobs`, `chunk_state`, `entities`…).
+- **Postgres** (đầu migration `a7d3e9b21c64`, có test khẳng định): tài khoản và phiên (`accounts`, `account_identities`, `auth_sessions`, `account_tokens`, `users`); hội thoại v1 (`conversations`, `messages`); v2 (`threads`, `thread_turns`, `thread_summaries`, `core_memory`); cảm xúc (`emotion_state`); quyền riêng tư (`user_privacy_preferences`, `erasure_jobs`); hàng đợi (`durable_background_jobs`); ingestion (`wiki_*`, `corpus_releases`, `ingestion_sources`…); tri thức có cấu trúc (`kb_*`); legacy (`pipeline_jobs`, `chunk_state`, `entities`…).
 - **Qdrant:** `lore_canon__<version>`, `lore_dialogue__<version>`, `memories`, `guild_memories`, `image_memories`.
 - **Redis:** rate limit, quota, cache bản dịch và trạng thái.
 - **Đĩa:** `data/ingestion/` (bronze, silver, gold, vectors, images, reports); `.dev/` cho dữ liệu dev và kết quả đo.
@@ -221,7 +221,7 @@ Chạy eval cần stack dev với `CHAT_V2_ENABLED=true KNOWLEDGE_CORPUS_VERSION
 ## 17. Việc mở chính
 
 - **Cổng R2:** precision của abstain (0,6 so với ≥ 0,90), claim ghép sai quan hệ, kết quả đo persona v2, chuyển corpus `2026.11.04-1`.
-- **v2 còn thiếu:** Discord kênh cộng đồng, ảnh, stream bằng sửa tin nhắn; summary cuộn (CONV-002/003); job core memory (MEM-005/010); EMO-003 cùng giao dịch.
+- **v2 còn thiếu:** Discord kênh cộng đồng, ảnh, stream bằng sửa tin nhắn; job core memory (MEM-005/010); EMO-003 cùng giao dịch.
 - **Nợ:** PERF-003 chờ VPS; `rarity` trống vì giá trị là ảnh; trích dẫn lộ tên trường thô; báo `billing` cho adapter khác ngoài DeepSeek.
 - **Sau R2:** R3 IAM, R4 Agentic, R5 Tier B và trí nhớ đầy đủ, R6 gỡ v1 (pipeline 12 stage, visualizer, ingestion legacy) và gộp `thread_turns` vào `messages`.
 
