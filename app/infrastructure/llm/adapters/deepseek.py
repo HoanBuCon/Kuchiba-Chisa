@@ -21,6 +21,7 @@ from app.domain.interfaces.llm_provider import (
     LLMTokenOverflowError,
     StructuredPrompt,
 )
+from app.infrastructure.llm.adapters.billing import HTTP_PAYMENT_REQUIRED, billing_exhausted_error
 from app.infrastructure.logging.logger import get_logger
 
 log = get_logger(__name__)
@@ -52,9 +53,6 @@ def _extract_contract_arguments(
     if not isinstance(arguments, str) or not arguments.strip():
         raise LLMInvalidResponseError("Structured response tool call has no arguments")
     return arguments
-
-
-HTTP_PAYMENT_REQUIRED = 402
 
 
 class DeepSeekAdapter(BaseLLMAdapter):
@@ -149,7 +147,7 @@ class DeepSeekAdapter(BaseLLMAdapter):
             elif response.status_code == 413:
                 raise LLMError("Payload too large", retryable=False, code="PAYLOAD_TOO_LARGE")
             elif response.status_code == HTTP_PAYMENT_REQUIRED:
-                raise LLMError("DeepSeek balance exhausted", retryable=False, code="BILLING")
+                raise billing_exhausted_error("DeepSeek")
             elif response.status_code >= 500:
                 raise LLMError(
                     f"Server error: {response.status_code}",
@@ -300,11 +298,7 @@ class DeepSeekAdapter(BaseLLMAdapter):
                             code="AUTH_CONFIG",
                         )
                     if response.status_code == HTTP_PAYMENT_REQUIRED:
-                        raise LLMError(
-                            "DeepSeek balance exhausted",
-                            retryable=False,
-                            code="BILLING",
-                        )
+                        raise billing_exhausted_error("DeepSeek")
                     if response.status_code >= 500:
                         raise LLMError(
                             "DeepSeek provider unavailable",
