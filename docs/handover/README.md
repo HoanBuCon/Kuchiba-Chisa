@@ -53,3 +53,4 @@ Ghi đúng trạng thái PR, kể cả khi chưa merge. Không ghi secret hay d�
 | 2026-11-15 | R2 S7 | [Tải ngữ cảnh song song và chi phí từng lượt](2026-11-15_r2-s7_tien-to-prompt-va-chi-phi.md) |
 | 2026-11-15 | R2 S7 | [Metric của bước hiểu câu hỏi (ADV-003)](2026-11-15_r2-s7_metric-hieu-cau-hoi.md) |
 | 2026-11-15 | R2 S7 | [Đo gộp sau các PR ngày 15/11](2026-11-15_r2-s7_do-gop-sau-cac-pr.md) |
+| 2026-11-15 | R2 S7 | [Phạm vi QUAL-004 và 20 ca out_of_scope mới](2026-11-15_r2-s7_pham-vi-qual004.md) |

@@ -18,6 +18,8 @@ from evals.metrics import (
 )
 from evals.targets import Observation
 
+# QUAL-004 is measured within Advanced's capability; multi-hop abstention is expected (ADV-007).
+MULTI_HOP_CATEGORY = "multi_hop"
 HIT_K = 5
 MRR_K = 10
 
@@ -115,7 +117,9 @@ class Summary:
     hit_at_5: float | None
     mrr_at_10: float | None
     abstain_precision: float | None
+    abstain_precision_ci95: tuple[float, float]
     false_abstain_rate: float | None
+    multi_hop_abstain_rate: float | None
     persona_addressing: float | None
     latency_p50_ms: float | None
     latency_p95_ms: float | None
@@ -125,8 +129,11 @@ def summarize(results: Sequence[CaseResult], expected_abstain: set[str]) -> Summ
     """Aggregate scored results; skipped and errored cases are counted but never scored."""
     scored = [result for result in results if result.status is Status.SCORED]
     correct = sum(result.correct for result in scored)
-    abstentions = [result for result in scored if result.abstained]
-    answerable = [result for result in scored if result.case_id not in expected_abstain]
+    in_scope = [result for result in scored if result.category != MULTI_HOP_CATEGORY]
+    multi_hop = [result for result in scored if result.category == MULTI_HOP_CATEGORY]
+    abstentions = [result for result in in_scope if result.abstained]
+    correct_abstentions = sum(result.case_id in expected_abstain for result in abstentions)
+    answerable = [result for result in in_scope if result.case_id not in expected_abstain]
     latencies = [result.latency_ms for result in scored if result.latency_ms is not None]
     return Summary(
         n_total=len(results),
@@ -139,7 +146,9 @@ def summarize(results: Sequence[CaseResult], expected_abstain: set[str]) -> Summ
         hit_at_5=_rate([r.hit_at_5 for r in scored if r.hit_at_5 is not None]),
         mrr_at_10=_mean([r.reciprocal_rank for r in scored if r.reciprocal_rank is not None]),
         abstain_precision=_rate([r.case_id in expected_abstain for r in abstentions]),
+        abstain_precision_ci95=wilson_interval(correct_abstentions, len(abstentions)),
         false_abstain_rate=_rate([bool(r.abstained) for r in answerable]),
+        multi_hop_abstain_rate=_rate([bool(r.abstained) for r in multi_hop]),
         persona_addressing=_rate([r.persona_ok for r in scored if r.persona_ok is not None]),
         latency_p50_ms=percentile(latencies, 0.50),
         latency_p95_ms=percentile(latencies, 0.95),

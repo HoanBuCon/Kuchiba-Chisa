@@ -16,6 +16,7 @@ _METRICS = (
     ("mrr_at_10", "MRR@10"),
     ("abstain_precision", "Abstain precision"),
     ("false_abstain_rate", "False abstain"),
+    ("multi_hop_abstain_rate", "Multi-hop abstain"),
     ("persona_addressing", "Persona addressing"),
     ("latency_p95_ms", "Latency p95 (ms)"),
 )
@@ -29,14 +30,17 @@ def _cell(value: float | None) -> str:
 
 def _row(name: str, summary: Summary) -> str:
     low, high = summary.accuracy_ci95
+    precision_low, precision_high = summary.abstain_precision_ci95
     cells = [name, f"{summary.n_scored}/{summary.n_total}"]
     cells += [_cell(getattr(summary, key)) for key, _ in _METRICS]
     cells.append(f"{low:.2f}–{high:.2f}")
+    cells.append(f"{precision_low:.2f}–{precision_high:.2f}")
     return "| " + " | ".join(cells) + " |"
 
 
 def render_markdown(report: Report) -> str:
-    header = ["Category", "Scored"] + [label for _, label in _METRICS] + ["Accuracy 95% CI"]
+    interval_labels = ["Accuracy 95% CI", "Abstain precision 95% CI"]
+    header = ["Category", "Scored"] + [label for _, label in _METRICS] + interval_labels
     lines = [
         f"# Eval report: {report.target} on {report.dataset_version}",
         "",
