@@ -26,6 +26,7 @@ from app.domain.services.guardrails.grounded_output import (
 from app.domain.services.guardrails.literal_facts import (
     facts_match,
     introduces_new_facts,
+    invents_names,
     negation_agrees,
 )
 
@@ -172,6 +173,7 @@ class BilingualOutputAssembler:
         )
         return (
             (english.supported or states_field(claim.claim_en, bound.quote))
+            and not invents_names(claim.claim_en, f"{bound.source.text} {bound.quote}")
             and negation_agrees(claim.claim_en, bound.quote)
             and facts_match(claim.claim_vi, claim.claim_en, bound.source.text)
         )

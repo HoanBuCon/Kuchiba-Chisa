@@ -81,7 +81,8 @@ _GROUNDED_RULES = (
     "- Mỗi claim nêu một dữ kiện mà nguồn ghi rõ. Không suy thêm nơi chốn, quan hệ hay nguyên nhân mà nguồn không viết.\n"
     "- quote chép đúng nguyên văn từ nguồn. claim_en là dữ kiện đó bằng tiếng Anh, chỉ nói điều quote nói. claim_vi là cùng dữ kiện bằng tiếng Việt tự nhiên, giữ nguyên tên riêng, con số và nghĩa phủ định.\n"
     "- lead là một câu ngắn đúng giọng Chisa, xưng hô với Senpai, mở lời trước các claim; closing là một câu ngắn sau các claim (có thể để trống). "
-    "lead và closing không nêu dữ kiện, không thêm tên riêng hay con số ngoài câu hỏi và các claim."
+    "lead và closing không nêu dữ kiện, không thêm tên riêng hay con số ngoài câu hỏi và các claim. "
+    "lead và closing cũng không khái quát hay kết luận chung (ví dụ \"mỗi loại một khác\"): chỉ chào, dẫn dắt hoặc ngỏ ý giúp thêm."
 )
 _SENTIMENT_GUIDE_MARKER = "[HỆ QUY CHIẾU PHÂN LOẠI SENTIMENT"
 
