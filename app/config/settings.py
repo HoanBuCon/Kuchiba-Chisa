@@ -218,6 +218,11 @@ class Settings(BaseSettings):
     CHAT_QUOTA_ENABLED: bool = True
     # v2 chat runs beside v1 until it passes QUAL-001..004; off by default (section 10).
     CHAT_V2_ENABLED: bool = False
+    # Short-term context of a v2 turn: the newest turns that fit this window (CONV-002).
+    CHAT_HISTORY_TOKEN_BUDGET: int = Field(default=1_500, ge=200, le=16_000)
+    # Turns not yet summarized beyond this many tokens queue a rolling summary (CONV-003).
+    # Below the window, so a turn is summarized before it leaves the prompt.
+    CHAT_SUMMARY_TRIGGER_TOKENS: int = Field(default=1_200, ge=100, le=16_000)
     # The corpus release v2 answers from, until automated publishing arrives in I5.
     KNOWLEDGE_CORPUS_VERSION: str = ""
     CHAT_MESSAGE_RATE_LIMIT_PER_MINUTE: int = Field(default=10, ge=1, le=600)
@@ -331,6 +336,12 @@ class Settings(BaseSettings):
         if not v.startswith("postgresql"):
             raise ValueError("DATABASE_URL must be a PostgreSQL connection string")
         return v
+
+    @model_validator(mode="after")
+    def validate_summary_trigger_below_window(self) -> Settings:
+        if self.CHAT_SUMMARY_TRIGGER_TOKENS >= self.CHAT_HISTORY_TOKEN_BUDGET:
+            raise ValueError("CHAT_SUMMARY_TRIGGER_TOKENS must be below CHAT_HISTORY_TOKEN_BUDGET")
+        return self
 
     @model_validator(mode="after")
     def validate_request_admission_limits(self) -> Settings:

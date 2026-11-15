@@ -29,14 +29,19 @@ from app.infrastructure.background.job_handlers import (
     UserStateCacheJobHandler,
     VisualMemoryJobHandler,
 )
+from app.infrastructure.background.llm_thread_summarizer import LlmThreadSummarizer
 from app.infrastructure.background.thread_memory_handler import (
     ThreadMemoryExtractionJobHandler,
 )
+from app.infrastructure.background.thread_summary_handler import ThreadSummaryJobHandler
 from app.infrastructure.cache.redis.redis_service import redis_service
 from app.infrastructure.database.engine import (
     AsyncSessionFactory,
     connect_database,
     disconnect_database,
+)
+from app.infrastructure.database.repositories.thread_summary_store import (
+    PostgresThreadSummaryStore,
 )
 from app.infrastructure.logging.logger import configure_logging, get_logger
 from app.infrastructure.observability import (
@@ -79,6 +84,12 @@ async def run_worker() -> None:
             ),
             BackgroundJobType.THREAD_MEMORY_EXTRACTION: ThreadMemoryExtractionJobHandler(
                 AsyncSessionFactory, source, container.memory_extractor
+            ),
+            BackgroundJobType.THREAD_SUMMARY: ThreadSummaryJobHandler(
+                AsyncSessionFactory,
+                source,
+                PostgresThreadSummaryStore(AsyncSessionFactory),
+                LlmThreadSummarizer(container.llm),
             ),
             BackgroundJobType.PRIVATE_SUMMARY: PrivateSummaryJobHandler(
                 source, container.chat_engine._unified_auto_summarize
