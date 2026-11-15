@@ -44,6 +44,15 @@ def channel_thread_id(owner: str, tenant_id: str | None, channel_id: str) -> UUI
 
 
 @dataclass(frozen=True)
+class ThreadSummary:
+    """Rolling summary of the turns up to and including `covered_turn_id` (CONV-002)."""
+
+    summary: str
+    version: int
+    covered_turn_id: UUID
+
+
+@dataclass(frozen=True)
 class TurnRecord:
     """One exchange, with what it cost and the citations as they were (MODE-006, GRD-005)."""
 

@@ -22,7 +22,14 @@ from app.domain.models.evidence import (
     EvidenceProvenance,
     EvidenceScore,
 )
-from app.domain.models.thread import ChatMode, DowngradeReason, Thread, resolve_mode
+from app.domain.models.thread import (
+    ChatMode,
+    DowngradeReason,
+    Thread,
+    ThreadSummary,
+    TurnRecord,
+    resolve_mode,
+)
 from app.domain.services.chisa_voice import INPUT_BLOCKED
 from app.domain.services.knowledge.advanced_retrieval import AdvancedEvidence
 from app.domain.services.knowledge.composer import CitationSnapshot, ComposedAnswer
@@ -69,8 +76,12 @@ class Threads:
     async def save_turn(self, record):
         self.turns.append(record)
 
-    async def recent_turns(self, thread_id, limit):
-        return [t for t in self.turns if t.thread_id == thread_id][-limit:]
+    async def recent_turns(self, thread_id, limit, *, after_turn=None):
+        turns = [t for t in self.turns if t.thread_id == thread_id]
+        if after_turn is not None:
+            known = [t.turn_id for t in turns]
+            turns = turns[known.index(after_turn) + 1 :]
+        return turns[-limit:]
 
 
 class Flow:
@@ -338,10 +349,12 @@ class Commit:
     def __init__(self) -> None:
         self.calls = []
         self.remembered = []
+        self.summarized = []
 
-    async def commit(self, record, owner, sentiment, *, remember=False):
+    async def commit(self, record, owner, sentiment, *, remember=False, summarize=False):
         self.calls.append((record, owner, sentiment))
         self.remembered.append(remember)
+        self.summarized.append(summarize)
         return True
 
 
@@ -538,3 +551,165 @@ async def test_understander_and_composer_share_one_call_budget() -> None:
 
     assert understander.calls[0][2] is composer.seen
     assert composer.seen.max_calls == 2
+
+
+class Summaries:
+    def __init__(self, summary=None) -> None:
+        self.summary = summary
+
+    async def get(self, thread_id):
+        return self.summary
+
+
+async def _thread_with_turns(threads, count, owner=OWNER):
+    thread = await threads.create(owner, "web", ChatMode.ADVANCED)
+    for number in range(count):
+        await threads.save_turn(
+            replace(_stored(thread.id), question=f"cũ {number}", answer=f"đáp {number}")
+        )
+    return thread
+
+
+def _stored(thread_id):
+    return TurnRecord(
+        thread_id=thread_id,
+        turn_id=uuid4(),
+        question="q",
+        answer="a",
+        mode_requested=ChatMode.ADVANCED,
+        mode_effective=ChatMode.ADVANCED,
+        lane="advanced",
+        status="grounded",
+    )
+
+
+def _windowed_service(threads, composer, **settings):
+    return AdvancedTurnService(
+        threads, Flow(), composer, count_tokens=len, **settings
+    )
+
+
+async def test_history_is_cut_by_tokens_and_keeps_the_newest_turns() -> None:
+    threads, composer = Threads(), Composer()
+    thread = await _thread_with_turns(threads, 5)
+    one_turn = len("cũ 0") + len("đáp 0") + 8
+    service = _windowed_service(threads, composer, history_token_budget=one_turn * 2)
+
+    await _events(service, _request(thread_id=thread.id))
+
+    history = composer.calls[0][2]["history"]
+    assert [m["content"] for m in history] == ["cũ 3", "đáp 3", "cũ 4", "đáp 4"]
+
+
+async def test_the_latest_turn_survives_a_budget_smaller_than_itself() -> None:
+    threads, composer = Threads(), Composer()
+    thread = await _thread_with_turns(threads, 3)
+    service = _windowed_service(threads, composer, history_token_budget=1)
+
+    await _events(service, _request(thread_id=thread.id))
+
+    assert [m["content"] for m in composer.calls[0][2]["history"]] == ["cũ 2", "đáp 2"]
+
+
+async def test_grounded_composer_gets_the_summary_and_only_the_uncovered_turns() -> None:
+    threads, composer = Threads(), Composer()
+    thread = await _thread_with_turns(threads, 4)
+    covered = threads.turns[1].turn_id
+    summaries = Summaries(ThreadSummary("Anh hay hỏi về Tacet Field.", 2, covered))
+    service = _windowed_service(threads, composer, summaries=summaries)
+
+    await _events(service, _request(thread_id=thread.id))
+
+    context = composer.calls[0][2]
+    assert context["summary"] == "Anh hay hỏi về Tacet Field."
+    assert [m["content"] for m in context["history"]] == ["cũ 2", "đáp 2", "cũ 3", "đáp 3"]
+
+
+async def test_companion_composer_gets_the_summary_too() -> None:
+    threads, composer = Threads(), CompanionComposer()
+    thread = await _thread_with_turns(threads, 2)
+    summaries = Summaries(ThreadSummary("Tóm tắt.", 1, threads.turns[0].turn_id))
+    service = _windowed_service(threads, composer, summaries=summaries)
+
+    await _events(service, _request(message="Anh thích trà sữa lắm.", thread_id=thread.id))
+
+    assert composer.calls[0][2]["summary"] == "Tóm tắt."
+
+
+async def test_a_thread_without_a_summary_passes_none() -> None:
+    threads, composer = Threads(), Composer()
+    service = _windowed_service(threads, composer, summaries=Summaries())
+
+    await _events(service, _request())
+
+    assert composer.calls[0][2]["summary"] is None
+
+
+async def test_summary_job_is_requested_only_above_the_token_threshold() -> None:
+    threads, commit = Threads(), Commit()
+    thread = await _thread_with_turns(threads, 3)
+    stored = len("cũ 0") + len("đáp 0") + 8
+    latest = len("Tacet Field là gì?") + len("Câu một. Câu hai.") + 8
+    pending = stored * 3 + latest
+    below = _windowed_service_with_commit(threads, commit, trigger=pending)
+    above = _windowed_service_with_commit(threads, commit, trigger=pending - 1)
+
+    await _events(below, _request(thread_id=thread.id))
+    await _events(above, _request(thread_id=thread.id))
+
+    assert commit.summarized[0] is False
+    assert commit.summarized[1] is True
+
+
+def _windowed_service_with_commit(threads, commit, trigger):
+    return AdvancedTurnService(
+        threads,
+        Flow(),
+        Composer(),
+        commit=commit,
+        summaries=Summaries(),
+        count_tokens=len,
+        summary_trigger_tokens=trigger,
+    )
+
+
+async def test_summary_job_counts_only_turns_after_the_covered_one() -> None:
+    threads, commit = Threads(), Commit()
+    thread = await _thread_with_turns(threads, 6)
+    summaries = Summaries(ThreadSummary("Tóm tắt.", 1, threads.turns[-1].turn_id))
+    service = AdvancedTurnService(
+        threads,
+        Flow(),
+        Composer(),
+        commit=commit,
+        summaries=summaries,
+        count_tokens=len,
+        summary_trigger_tokens=100,
+    )
+
+    await _events(service, _request(thread_id=thread.id))
+
+    assert commit.summarized == [False]
+
+
+async def test_guests_may_have_a_summary_but_not_a_memory_job() -> None:
+    threads, commit = Threads(), Commit()
+    thread = await _thread_with_turns(threads, 3)
+    service = _windowed_service_with_commit(threads, commit, trigger=1)
+
+    await _events(service, _request(thread_id=thread.id, is_guest=True))
+
+    assert commit.summarized == [True]
+    assert commit.remembered == [False]
+
+
+async def test_no_summary_store_means_no_summary_job() -> None:
+    threads, commit = Threads(), Commit()
+    thread = await _thread_with_turns(threads, 3)
+    service = AdvancedTurnService(
+        threads, Flow(), Composer(), commit=commit, count_tokens=len, summary_trigger_tokens=1
+    )
+
+    await _events(service, _request(thread_id=thread.id))
+
+    assert commit.summarized == [False]

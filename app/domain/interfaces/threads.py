@@ -6,7 +6,7 @@ from collections.abc import Mapping
 from typing import Any, Protocol
 from uuid import UUID
 
-from app.domain.models.thread import ChatMode, Thread, TurnRecord
+from app.domain.models.thread import ChatMode, Thread, ThreadSummary, TurnRecord
 
 
 class IThreadStore(Protocol):
@@ -36,8 +36,28 @@ class IThreadStore(Protocol):
         """False when a racing retry stored this turn first."""
         ...
 
-    async def recent_turns(self, thread_id: UUID, limit: int) -> list[TurnRecord]:
-        """Oldest first, so they read as a conversation."""
+    async def recent_turns(
+        self, thread_id: UUID, limit: int, *, after_turn: UUID | None = None
+    ) -> list[TurnRecord]:
+        """The newest `limit` turns, oldest first; with `after_turn`, only those stored after it."""
+        ...
+
+
+class IThreadSummaryStore(Protocol):
+    async def get(self, thread_id: UUID) -> ThreadSummary | None: ...
+
+    async def save(
+        self,
+        thread_id: UUID,
+        summary: str,
+        covered_turn_id: UUID,
+        *,
+        expected_version: int | None,
+    ) -> bool:
+        """Writes version + 1 only if the stored version is still `expected_version`.
+
+        `None` means no summary exists yet. False means another writer won, and nothing changed.
+        """
         ...
 
 
@@ -49,8 +69,9 @@ class ITurnCommit(Protocol):
         sentiment: Mapping[str, Any],
         *,
         remember: bool = False,
+        summarize: bool = False,
     ) -> bool:
-        """One transaction for the turn, its emotion and, if `remember`, its memory job.
+        """One transaction for the turn, its emotion and, on request, its memory and summary jobs.
 
         False when a racing retry stored the turn first; then nothing else is written.
         """

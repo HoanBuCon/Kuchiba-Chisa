@@ -55,6 +55,7 @@ from app.infrastructure.database.models.privacy import (
 from app.infrastructure.database.models.thread import (
     CoreMemoryModel,
     ThreadModel,
+    ThreadSummaryModel,
     ThreadTurnModel,
 )
 from app.infrastructure.database.models.user import User
@@ -65,6 +66,7 @@ from app.infrastructure.database.models.wiki_silver import WikiPageSilverModel
 __all__ = [
     "CoreMemoryModel",
     "ThreadModel",
+    "ThreadSummaryModel",
     "ThreadTurnModel",
     "AccountIdentityModel",
     "AccountModel",

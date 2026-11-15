@@ -39,6 +39,13 @@ class DurableJobPayloadError(ValueError):
     """A persisted job payload does not satisfy its trusted typed contract."""
 
 
+def payload_uuid(payload: dict[str, Any], key: str) -> uuid.UUID:
+    try:
+        return uuid.UUID(str(payload[key]))
+    except (KeyError, TypeError, ValueError) as error:
+        raise DurableJobPayloadError(f"invalid {key}") from error
+
+
 class BackgroundTurnSourceReader:
     """Rehydrate an exact committed turn while enforcing principal ownership."""
 

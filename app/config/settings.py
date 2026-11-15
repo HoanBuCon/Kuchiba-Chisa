@@ -218,6 +218,10 @@ class Settings(BaseSettings):
     CHAT_QUOTA_ENABLED: bool = True
     # v2 chat runs beside v1 until it passes QUAL-001..004; off by default (section 10).
     CHAT_V2_ENABLED: bool = False
+    # Short-term context of a v2 turn: the newest turns that fit this window (CONV-002).
+    CHAT_HISTORY_TOKEN_BUDGET: int = Field(default=1_500, ge=200, le=16_000)
+    # Turns not yet summarized beyond this many tokens queue a rolling summary (CONV-003).
+    CHAT_SUMMARY_TRIGGER_TOKENS: int = Field(default=2_000, ge=400, le=32_000)
     # The corpus release v2 answers from, until automated publishing arrives in I5.
     KNOWLEDGE_CORPUS_VERSION: str = ""
     CHAT_MESSAGE_RATE_LIMIT_PER_MINUTE: int = Field(default=10, ge=1, le=600)
