@@ -5,11 +5,13 @@ import ReactMarkdown from 'react-markdown';
 import { AccountStatus, AuthModal } from './AuthPanel.jsx';
 import {
   citationLinks,
+  entityImage,
   newTurnBody,
   streamTurn,
   threadApi,
   threadTitle,
   toConversations,
+  turnNotice,
   turnsToMessages,
 } from './chatV2.js';
 import {
@@ -25,7 +27,8 @@ import {
   register,
   resendVerification,
   resetPassword,
-  startGoogle,
+  startOAuth,
+  unlinkIdentity,
   verifyEmail,
 } from './auth.js';
 
@@ -256,7 +259,36 @@ function MessageSources({ citations }) {
   );
 }
 
+// Fixed aspect-ratio box reserves the space, so a late-loading picture never shifts the chat.
+function MessageImage({ image }) {
+  const view = entityImage(image, V2_BASE);
+  if (!view) return null;
+  return (
+    <figure className="chisa-msg-image">
+      <a href={view.originalHref} target="_blank" rel="noopener noreferrer" title="Xem ảnh gốc">
+        <img src={view.src} alt={image.alt || 'Ảnh minh hoạ trong câu trả lời của Chisa'} loading="lazy" decoding="async" />
+      </a>
+      <figcaption>
+        {view.attribution}
+        {view.sourceHref && (
+          <>
+            {' '}
+            <a href={view.sourceHref} target="_blank" rel="noopener noreferrer">Trang nguồn</a>
+          </>
+        )}
+      </figcaption>
+    </figure>
+  );
+}
+
 function Message({ msg }) {
+  if (msg.role === 'system') {
+    return (
+      <div className="msg-row">
+        <div className="msg-system" role="status">{msg.content}</div>
+      </div>
+    );
+  }
   if (msg.role === 'user') {
     if (msg.content === '/clear') {
       return (
@@ -288,6 +320,7 @@ function Message({ msg }) {
               <span>{msg.caption}</span>
             </div>
           )}
+          <MessageImage image={msg.image} />
           <MessageSources citations={msg.citations} />
         </div>
       </div>
@@ -443,7 +476,7 @@ export default function App() {
   const [isHistoryLoading, setIsHistoryLoading] = useState(true);
   const [isEmotionOpen, setIsEmotionOpen]   = useState(false);
   const [webSession, setWebSession]         = useState(null);
-  const [authCapabilities, setAuthCapabilities] = useState({ password: true, password_registration: false, google: false });
+  const [authCapabilities, setAuthCapabilities] = useState({ password: true, password_registration: false, google: false, discord: false });
   const [isAuthOpen, setIsAuthOpen]         = useState(false);
   const [authMode, setAuthMode]             = useState('login');
   const [resetToken, setResetToken]         = useState(null);
@@ -549,12 +582,23 @@ export default function App() {
     setAuthNotice({ type: 'success', text: 'Đã đăng xuất.' });
   };
 
-  const handleGoogle = async (intent = 'login') => {
+  const handleOAuth = async (provider, intent = 'login') => {
     try {
       const session = intent === 'link' ? await ensureSession() : null;
-      await startGoogle(intent, session?.access_token);
+      await startOAuth(provider, intent, session?.access_token);
     } catch (err) {
-      setAuthNotice({ type: 'error', text: err?.message || 'Không thể bắt đầu đăng nhập Google.' });
+      setAuthNotice({ type: 'error', text: err?.message || 'Không thể bắt đầu đăng nhập.' });
+    }
+  };
+
+  const handleUnlink = async (provider) => {
+    try {
+      const session = await ensureSession();
+      const account = await unlinkIdentity(session.access_token, provider);
+      applySession({ ...sessionRef.current, account });
+      setAuthNotice({ type: 'success', text: 'Đã huỷ liên kết.' });
+    } catch (err) {
+      setAuthNotice({ type: 'error', text: err?.message || 'Không thể huỷ liên kết.' });
     }
   };
 
@@ -746,8 +790,11 @@ export default function App() {
     base: V2_BASE,
     accessToken,
     body: newTurnBody(userText, activeSessionId),
-    onStarted: ({ thread_id: threadId }) => {
+    onStarted: (started) => {
+      const notice = turnNotice(started);
+      if (notice) setMessages(prev => [...prev, { role: 'system', content: notice }]);
       if (activeSessionId) return;
+      const threadId = started.thread_id;
       const title = threadTitle(userText);
       selectedThreadRef.current = threadId;
       setActiveSessionId(threadId);
@@ -802,7 +849,7 @@ export default function App() {
 
       if (res?.response) {
         const caption = res.emotion_caption || '';
-        setMessages(prev => [...prev, { role: 'chisa', content: res.response, caption, citations: res.citations }]);
+        setMessages(prev => [...prev, { role: 'chisa', content: res.response, caption, citations: res.citations, image: res.image }]);
         if (res.emotions) {
           setEmotions(res.emotions);
           if (caption) setEmotionCaption(caption);
@@ -842,7 +889,8 @@ export default function App() {
             onOpen={() => openAuth('login')}
             onChangePassword={() => openAuth('change')}
             onLogout={handleLogout}
-            onLinkGoogle={() => handleGoogle('link')}
+            onLink={(provider) => handleOAuth(provider, 'link')}
+            onUnlink={handleUnlink}
           />
         }
       />
@@ -853,7 +901,7 @@ export default function App() {
         capabilities={authCapabilities}
         onClose={() => { setIsAuthOpen(false); setResetToken(null); }}
         handlers={authHandlers}
-        onGoogle={() => handleGoogle('login')}
+        onOAuth={(provider) => handleOAuth(provider, 'login')}
       />
 
       {/* ── Main Chat Panel ── */}

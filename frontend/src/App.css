@@ -47,6 +47,44 @@
   opacity: 0.75;
 }
 
+.msg-system {
+  text-align: center;
+  font-size: 0.75rem;
+  font-style: italic;
+  color: var(--text-secondary);
+}
+
+.chisa-msg-image {
+  margin: 8px 0 0;
+  max-width: 360px;
+}
+
+.chisa-msg-image a {
+  display: block;
+}
+
+/* The reserved 16:9 box keeps the chat from jumping when the picture arrives. */
+.chisa-msg-image img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: contain;
+  border-radius: var(--radius-md);
+  background: var(--bg-elevated);
+}
+
+.chisa-msg-image figcaption {
+  margin-top: 4px;
+  font-size: 0.7rem;
+  opacity: 0.75;
+}
+
+.chisa-msg-image figcaption a {
+  display: inline;
+  color: inherit;
+  text-decoration: underline;
+}
+
 .chisa-msg-sources a {
   margin-right: 8px;
   color: inherit;
