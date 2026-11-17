@@ -79,22 +79,46 @@ class AuthzService:
         reason: str,
         expires_at: datetime | None = None,
     ) -> None:
+        await self._grant_role(
+            session, Role.CHIA_CON, account_id, granted_by, reason, expires_at
+        )
+
+    async def grant_admin(
+        self, session: Any, *, account_id: uuid.UUID, granted_by: str, reason: str
+    ) -> None:
+        """Server CLI only: no API route may call this (SEC-ADM-001, SEC-ADM-012)."""
+        await self._grant_role(session, Role.ADMIN, account_id, granted_by, reason, None)
+
+    async def revoke_admin(
+        self, session: Any, *, account_id: uuid.UUID, revoked_by: str, reason: str
+    ) -> bool:
+        """Server CLI only: no API route may call this (SEC-ADM-001, SEC-ADM-012)."""
+        return await self._revoke_role(session, Role.ADMIN, account_id, revoked_by, reason)
+
+    async def _grant_role(
+        self,
+        session: Any,
+        role: Role,
+        account_id: uuid.UUID,
+        granted_by: str,
+        reason: str,
+        expires_at: datetime | None,
+    ) -> None:
         reason = self._required_reason(reason)
         now = self._clock()
         if expires_at is not None and expires_at <= now:
             raise RoleChangeRejectedError("expiry is in the past")
         repo = self._repo_factory(session)
         summary = await self._require_summary(repo, account_id)
-        # TODO(ROLE-004): the API layer must demand a fresh step-up MFA before this call.
         rejection = grant_rejection(summary)
         if rejection is not None:
             raise GrantIneligibleError(rejection)
         # A re-grant replaces the live assignment, so there is one per account and role.
-        await repo.revoke_active(account_id, Role.CHIA_CON, granted_by, SUPERSEDED_REASON, now)
+        await repo.revoke_active(account_id, role, granted_by, SUPERSEDED_REASON, now)
         await repo.add_assignment(
             RoleAssignment(
                 account_id=account_id,
-                role=Role.CHIA_CON,
+                role=role,
                 granted_by=granted_by,
                 granted_at=now,
                 reason=reason,
@@ -107,7 +131,7 @@ class AuthzService:
                 RoleAuditAction.GRANT,
                 granted_by,
                 account_id,
-                Role.CHIA_CON,
+                role,
                 reason,
                 now,
                 expires_at,
@@ -141,12 +165,16 @@ class AuthzService:
     async def revoke_chia_con(
         self, session: Any, *, account_id: uuid.UUID, revoked_by: str, reason: str
     ) -> bool:
+        return await self._revoke_role(session, Role.CHIA_CON, account_id, revoked_by, reason)
+
+    async def _revoke_role(
+        self, session: Any, role: Role, account_id: uuid.UUID, revoked_by: str, reason: str
+    ) -> bool:
         reason = self._required_reason(reason)
         repo = self._repo_factory(session)
         await self._require_account(repo, account_id)
-        # TODO(ROLE-004): the API layer must demand a fresh step-up MFA before this call.
         now = self._clock()
-        revoked = await repo.revoke_active(account_id, Role.CHIA_CON, revoked_by, reason, now)
+        revoked = await repo.revoke_active(account_id, role, revoked_by, reason, now)
         if not revoked:
             return False
         authz_ver = await self._publish_change(repo, account_id)
@@ -155,7 +183,7 @@ class AuthzService:
                 RoleAuditAction.REVOKE,
                 revoked_by,
                 account_id,
-                Role.CHIA_CON,
+                role,
                 reason,
                 now,
                 authz_ver_after=authz_ver,

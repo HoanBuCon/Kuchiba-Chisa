@@ -408,6 +408,22 @@
         "title": "ChatResponse",
         "type": "object"
       },
+      "CodeRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "maxLength": 32,
+            "minLength": 1,
+            "title": "Code",
+            "type": "string"
+          }
+        },
+        "required": [
+          "code"
+        ],
+        "title": "CodeRequest",
+        "type": "object"
+      },
       "CommunityChatRequest": {
         "additionalProperties": false,
         "description": "Community content carried by a verified Discord workload envelope.\n\nActor, tenant, and channel claims are deliberately excluded: they are\ntaken only from the verified workload credential at the route boundary.",
@@ -978,6 +994,24 @@
         "title": "EmailRequest",
         "type": "object"
       },
+      "EnrollmentView": {
+        "properties": {
+          "provisioning_uri": {
+            "title": "Provisioning Uri",
+            "type": "string"
+          },
+          "secret": {
+            "title": "Secret",
+            "type": "string"
+          }
+        },
+        "required": [
+          "secret",
+          "provisioning_uri"
+        ],
+        "title": "EnrollmentView",
+        "type": "object"
+      },
       "GoogleStartRequest": {
         "additionalProperties": false,
         "properties": {
@@ -1192,6 +1226,27 @@
           "services"
         ],
         "title": "ReadinessResponse",
+        "type": "object"
+      },
+      "RecoveryCodesView": {
+        "properties": {
+          "recovery_codes": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Recovery Codes",
+            "type": "array"
+          },
+          "step_up_seconds": {
+            "title": "Step Up Seconds",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "recovery_codes",
+          "step_up_seconds"
+        ],
+        "title": "RecoveryCodesView",
         "type": "object"
       },
       "ResetPasswordRequest": {
@@ -1464,6 +1519,19 @@
           "status"
         ],
         "title": "StatusResponse",
+        "type": "object"
+      },
+      "StepUpView": {
+        "properties": {
+          "step_up_seconds": {
+            "title": "Step Up Seconds",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "step_up_seconds"
+        ],
+        "title": "StepUpView",
         "type": "object"
       },
       "ThreadCreate": {
@@ -3037,6 +3105,150 @@
         "summary": "Read Account Summary",
         "tags": [
           "Admin roles"
+        ]
+      }
+    },
+    "/api/v2/admin/mfa/enroll": {
+      "post": {
+        "operationId": "begin_enrollment_api_v2_admin_mfa_enroll_post",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EnrollmentView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Begin Enrollment",
+        "tags": [
+          "Admin MFA"
+        ]
+      }
+    },
+    "/api/v2/admin/mfa/enroll/confirm": {
+      "post": {
+        "operationId": "confirm_enrollment_api_v2_admin_mfa_enroll_confirm_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CodeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecoveryCodesView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Confirm Enrollment",
+        "tags": [
+          "Admin MFA"
+        ]
+      }
+    },
+    "/api/v2/admin/mfa/verify": {
+      "post": {
+        "operationId": "verify_code_api_v2_admin_mfa_verify_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CodeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StepUpView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Verify Code",
+        "tags": [
+          "Admin MFA"
+        ]
+      }
+    },
+    "/api/v2/admin/mfa/verify/recovery": {
+      "post": {
+        "operationId": "verify_recovery_code_api_v2_admin_mfa_verify_recovery_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CodeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StepUpView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Verify Recovery Code",
+        "tags": [
+          "Admin MFA"
         ]
       }
     },

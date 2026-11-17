@@ -528,6 +528,24 @@ class AppContainer:
         )
 
     @cached_property
+    def admin_mfa_service(self):
+        """Admin TOTP enrollment, verification and step-up freshness (SEC-ADM-002/006)."""
+        from app.application.security.admin_mfa_service import AdminMfaService
+        from app.infrastructure.database.repositories.admin_mfa_repository import (
+            SqlAlchemyMfaRepository,
+        )
+        from app.infrastructure.security.totp_engine import (
+            DerivedKeyMfaSecretVault,
+            PyOtpTotpEngine,
+        )
+
+        return AdminMfaService(
+            repo_factory=lambda session: SqlAlchemyMfaRepository(_require_async_session(session)),
+            totp=PyOtpTotpEngine(),
+            vault=DerivedKeyMfaSecretVault(settings.SECRET_KEY),
+        )
+
+    @cached_property
     def account_email_dispatcher(self):
         """Account e-mail over SMTP; disabled (and sign-up with it) when SMTP is unset."""
         from app.application.security.account_email import AccountEmailDispatcher
@@ -744,6 +762,11 @@ def get_account_auth_service():
 def get_authz_service():
     """FastAPI dependency for RBAC permission checks."""
     return container.authz_service
+
+
+def get_admin_mfa_service():
+    """FastAPI dependency for Admin MFA and step-up checks."""
+    return container.admin_mfa_service
 
 
 def get_google_identity_provider():

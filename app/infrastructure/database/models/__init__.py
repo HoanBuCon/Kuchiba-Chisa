@@ -10,6 +10,11 @@ from app.infrastructure.database.models.account import (
     AccountTokenModel,
     AuthSessionModel,
 )
+from app.infrastructure.database.models.admin_mfa import (
+    AdminMfaFactorModel,
+    AdminRecoveryCodeModel,
+    AdminStepUpModel,
+)
 from app.infrastructure.database.models.background_job import DurableBackgroundJobModel
 from app.infrastructure.database.models.base import Base
 from app.infrastructure.database.models.conversation import Conversation
@@ -77,6 +82,9 @@ __all__ = [
     "AuthSessionModel",
     "Base",
     "RoleAssignmentModel",
+    "AdminMfaFactorModel",
+    "AdminRecoveryCodeModel",
+    "AdminStepUpModel",
     "DurableBackgroundJobModel",
     "User",
     "Conversation",
