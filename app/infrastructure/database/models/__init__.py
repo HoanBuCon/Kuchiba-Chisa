@@ -52,6 +52,7 @@ from app.infrastructure.database.models.privacy import (
     PrivacyPolicyAuditModel,
     UserPrivacyPreferenceModel,
 )
+from app.infrastructure.database.models.role_assignment import RoleAssignmentModel
 from app.infrastructure.database.models.thread import (
     CoreMemoryConsolidationModel,
     CoreMemoryModel,
@@ -75,6 +76,7 @@ __all__ = [
     "AccountTokenModel",
     "AuthSessionModel",
     "Base",
+    "RoleAssignmentModel",
     "DurableBackgroundJobModel",
     "User",
     "Conversation",
