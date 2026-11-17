@@ -8,8 +8,8 @@ from collections.abc import AsyncIterator
 from typing import Annotated, Any
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Request, status
-from fastapi.responses import StreamingResponse
+from fastapi import APIRouter, Depends, HTTPException, Path, Request, status
+from fastapi.responses import Response, StreamingResponse
 from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -21,7 +21,12 @@ from app.application.chat_turns import (
     ThreadNotFoundError,
     TurnRequest,
 )
-from app.application.dependencies import get_chat_turn_runtime, get_memory_policy_service
+from app.application.dependencies import (
+    get_chat_turn_runtime,
+    get_entity_image_service,
+    get_memory_policy_service,
+)
+from app.application.entity_images import EntityImageService, InvalidImageLinkError
 from app.config.settings import settings
 from app.domain.interfaces.llm_provider import LLMError
 from app.domain.models.thread import ChatMode, Thread, TurnRecord, channel_thread_id
@@ -38,6 +43,7 @@ from app.shared.utils.user_identity import normalize_user_id, normalize_user_id_
 router = APIRouter(tags=["Chat v2"])
 Writer = Annotated[PrincipalContext, Depends(require_scope("chat:write"))]
 MAX_MESSAGE_CHARS = 4000
+SHA256_PATTERN = r"^[0-9a-f]{64}$"
 MAX_TITLE_CHARS = 255
 THREAD_LIST_LIMIT = 50
 THREAD_TURNS_LIMIT = 50
@@ -212,6 +218,25 @@ async def create_turn(
             raise
 
     return StreamingResponse(events(), media_type="text/event-stream", headers=STREAM_HEADERS)
+
+
+@router.get("/images/{sha256}", dependencies=[Depends(_enabled)])
+async def get_entity_image(
+    sha256: Annotated[str, Path(pattern=SHA256_PATTERN)],
+    expires: int,
+    sig: str,
+    service: Annotated[EntityImageService, Depends(get_entity_image_service)],
+    original: bool = False,
+) -> Response:
+    """Authorised by the signature alone, because an img tag cannot send a bearer token."""
+    try:
+        served = service.serve(sha256, original=original, expires=expires, signature=sig)
+    except InvalidImageLinkError:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "invalid or expired image link") from None
+    except FileNotFoundError:
+        raise _not_found() from None
+    headers = {"Cache-Control": "private, max-age=300", "X-Content-Type-Options": "nosniff"}
+    return Response(served.content, media_type=served.mime, headers=headers)
 
 
 @router.get("/threads", dependencies=[Depends(_enabled)])

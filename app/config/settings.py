@@ -33,6 +33,8 @@ class Settings(BaseSettings):
     WEB_CONCURRENCY: int = Field(default=2, ge=1, le=16)
     APP_DEBUG: bool = False
     SECRET_KEY: str = Field(min_length=32)
+    # Entity image links (KNW-010) are signed with SECRET_KEY and stop working after this.
+    IMAGE_URL_TTL_SECONDS: int = Field(default=900, ge=60, le=86_400)
 
     # ── PostgreSQL ─────────────────────────────────────────────
     DATABASE_URL: str  # postgresql+asyncpg://user:pass@host:port/db
