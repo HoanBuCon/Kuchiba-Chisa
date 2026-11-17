@@ -6,7 +6,14 @@ import uuid
 from abc import ABC, abstractmethod
 from datetime import datetime
 
-from app.domain.models.rbac import AccountAuthzState, AuthzSnapshot, Role, RoleAssignment
+from app.domain.models.rbac import (
+    AccountAuthzState,
+    AccountSummary,
+    AuthzSnapshot,
+    Role,
+    RoleAssignment,
+    RoleAuditEvent,
+)
 
 
 class IAuthzRepository(ABC):
@@ -23,6 +30,15 @@ class IAuthzRepository(ABC):
         """Revoke the live assignments of ``role``; return how many were revoked."""
 
     @abstractmethod
+    async def get_summary(self, account_id: uuid.UUID) -> AccountSummary | None: ...
+
+    @abstractmethod
+    async def revoke_expired(
+        self, revoked_by: str, reason: str, now: datetime
+    ) -> list[tuple[uuid.UUID, Role]]:
+        """Revoke every live assignment past its expiry; return each affected account and role."""
+
+    @abstractmethod
     async def bump_authz_ver(self, account_id: uuid.UUID) -> int:
         """Atomically increment and return the account's authorization version."""
 
@@ -36,3 +52,8 @@ class IAuthzSnapshotCache(ABC):
 
     @abstractmethod
     async def invalidate(self, account_id: uuid.UUID) -> None: ...
+
+
+class IRoleAuditSink(ABC):
+    @abstractmethod
+    async def record(self, event: RoleAuditEvent) -> None: ...

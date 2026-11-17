@@ -29,13 +29,18 @@ from app.domain.interfaces.threads import (
 from app.domain.models.evidence import Evidence
 from app.domain.models.thread import (
     ChatMode,
+    DowngradeReason,
     ModeDecision,
     Thread,
     ThreadSummary,
     TurnRecord,
     resolve_mode,
 )
-from app.domain.services.chisa_voice import INPUT_BLOCKED
+from app.domain.services.chisa_voice import (
+    AGENTIC_NOT_ENTITLED_NOTICE,
+    AGENTIC_ROLE_REVOKED_NOTICE,
+    INPUT_BLOCKED,
+)
 from app.domain.services.conversation_window import (
     UNCOVERED_FETCH_LIMIT,
     TokenCounter,
@@ -70,6 +75,10 @@ HISTORY_TOKEN_BUDGET = 1_500
 SUMMARY_TRIGGER_TOKENS = 1_200
 UNDERSTANDING_TURNS = 2
 DEGRADED_UNDERSTANDING = "understanding_failed"
+_DOWNGRADE_NOTICES = {
+    DowngradeReason.NOT_ENTITLED: AGENTIC_NOT_ENTITLED_NOTICE,
+    DowngradeReason.ROLE_REVOKED: AGENTIC_ROLE_REVOKED_NOTICE,
+}
 EVENT_STARTED = "turn.started"
 EVENT_EVIDENCE = "evidence.added"
 EVENT_TOKEN = "token"
@@ -491,6 +500,7 @@ class AdvancedTurnService:
                 "mode_effective": decision.effective.value,
                 "lane": lane.value,
                 "downgrade_reason": reason.value if reason else None,
+                "notice": _DOWNGRADE_NOTICES.get(reason) if reason else None,
             },
         )
 

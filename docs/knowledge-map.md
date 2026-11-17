@@ -220,10 +220,19 @@ Chạy eval cần stack dev với `CHAT_V2_ENABLED=true KNOWLEDGE_CORPUS_VERSION
 
 ## 17. Việc mở chính
 
-- **Cổng R2:** precision của abstain (0,6 so với ≥ 0,90), claim ghép sai quan hệ, kết quả đo persona v2, chuyển corpus `2026.11.04-1`.
-- **v2 còn thiếu:** Discord kênh cộng đồng, ảnh, stream bằng sửa tin nhắn; job core memory (MEM-005/010); EMO-003 cùng giao dịch.
-- **Nợ:** PERF-003 chờ VPS; `rarity` trống vì giá trị là ảnh; trích dẫn lộ tên trường thô; báo `billing` cho adapter khác ngoài DeepSeek.
-- **Sau R2:** R3 IAM, R4 Agentic, R5 Tier B và trí nhớ đầy đủ, R6 gỡ v1 (pipeline 12 stage, visualizer, ingestion legacy) và gộp `thread_turns` vào `messages`.
+Cập nhật 17/11/2026.
+
+- **Cổng R2:** đo lại một lần sau khi đã sửa Jina bị giới hạn tốc độ (#105) và lọc lại bộ golden v2.6. Holdout 0,97 vẫn dùng được. `lore-226` là lỗi truy hồi đã biết.
+- **R3 còn thiếu:** MFA cho Admin và step-up (ROLE-004, SEC-ADM), bảng audit chỉ ghi thêm (SEC-ADM-007), thông báo cấp/thu hồi vai trò (ROLE-005), CLI cấp Admin, Admin Console, nút Discord trên web, lệnh `/link` của bot.
+- **Nợ kỹ thuật vì chưa có VPS và tên miền** (chủ dự án chưa thuê, 17/11/2026):
+  - PERF-003 (TTFT) và mọi số đo hiệu năng, RAM trên Linux (CAP-001).
+  - Đăng nhập Discord OAuth: cần redirect `https://<tên miền>/api/v1/auth/discord/callback` trong Discord Developer Portal và ba biến `DISCORD_OAUTH_*`. Code đã có, đang tắt.
+  - Google OAuth trên môi trường thật: redirect phải là HTTPS trên tên miền.
+  - Ảnh thực thể trong Discord embed (KNW-010): cần URL gốc công khai cho link ảnh đã ký.
+  - Email thật: xác minh email, khôi phục mật khẩu, thông báo vai trò (ROLE-005) cần tên miền gửi thư.
+  - Giám sát hosted (OTEL M0), sao lưu và diễn tập rollback trên server.
+- **Nợ khác:** `rarity` trống vì giá trị là ảnh; nhãn infobox dễ đọc (#90) chỉ có hiệu lực khi phát hành corpus mới; provider LLM dự phòng ở backlog BL-003.
+- **Sau R3:** R4 Agentic, R5 Tier B và trí nhớ đầy đủ, R6 gỡ v1 và gộp `thread_turns` vào `messages`.
 
 ## 18. Thuật ngữ
 

@@ -24,7 +24,7 @@ from app.domain.models.account import (
     VerifiedExternalIdentity,
 )
 from app.infrastructure.security.jwt_authenticator import jwt_authenticator
-from app.infrastructure.security.password_hasher import BcryptPasswordHasher
+from app.infrastructure.security.password_hasher import PasswordHasher
 
 
 @dataclass
@@ -247,7 +247,7 @@ def make_service(
 ) -> AccountAuthService:
     return AccountAuthService(
         repo_factory=lambda _session: repo,
-        password_hasher=BcryptPasswordHasher(rounds=10),
+        password_hasher=PasswordHasher(),
         token_issuer=jwt_authenticator,
         refresh_ttl=timedelta(days=7),
         clock=clock or Clock(),

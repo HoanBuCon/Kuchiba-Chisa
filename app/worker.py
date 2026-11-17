@@ -10,6 +10,7 @@ import uuid
 
 from app.application.background.worker import DurableBackgroundWorker
 from app.application.dependencies import container
+from app.application.security.role_expiry import RoleExpirySweeper
 from app.config.settings import settings
 from app.domain.interfaces.observability import (
     CounterSignal,
@@ -152,9 +153,15 @@ async def run_worker() -> None:
             signal.signal(signal_name, lambda *_: worker.request_shutdown())
 
     heartbeat = _start_heartbeat()
+    expiry_stop = asyncio.Event()
+    expiry = asyncio.create_task(
+        RoleExpirySweeper(container.authz_service, AsyncSessionFactory).run(expiry_stop)
+    )
     try:
         await worker.run()
     finally:
+        expiry_stop.set()
+        await expiry
         await _stop_heartbeat(heartbeat)
         await redis_service.disconnect()
         await qdrant_service.disconnect()

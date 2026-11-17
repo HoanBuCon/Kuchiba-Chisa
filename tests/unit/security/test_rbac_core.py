@@ -7,6 +7,7 @@ from datetime import UTC, datetime, timedelta
 
 import jwt
 import pytest
+from authz_fakes import FakeRepo, MemoryCache, RecordingAudit
 from fastapi import Depends, FastAPI
 from fastapi.testclient import TestClient
 
@@ -17,10 +18,8 @@ from app.application.security.authz_service import (
     StaleAuthzVersionError,
 )
 from app.config.settings import settings
-from app.domain.interfaces.authz import IAuthzRepository, IAuthzSnapshotCache
 from app.domain.models.rbac import (
     ROLE_PERMISSIONS,
-    AccountAuthzState,
     AccountStatus,
     AuthzSnapshot,
     Permission,
@@ -55,61 +54,12 @@ def _assignment(**changes) -> RoleAssignment:
     return RoleAssignment(**values)
 
 
-class FakeRepo(IAuthzRepository):
-    def __init__(self, status: AccountStatus = AccountStatus.ACTIVE) -> None:
-        self.status = status
-        self.authz_ver = 1
-        self.assignments: list[RoleAssignment] = []
-        self.known = True
-
-    async def get_state(self, account_id):
-        if not self.known:
-            return None
-        return AccountAuthzState(account_id, self.status, self.authz_ver, tuple(self.assignments))
-
-    async def add_assignment(self, assignment):
-        self.assignments.append(assignment)
-
-    async def revoke_active(self, account_id, role, revoked_by, reason, now):
-        revoked = 0
-        for index, item in enumerate(self.assignments):
-            if item.role is role and item.revoked_at is None:
-                self.assignments[index] = _revoked(item, revoked_by, reason, now)
-                revoked += 1
-        return revoked
-
-    async def bump_authz_ver(self, account_id):
-        self.authz_ver += 1
-        return self.authz_ver
-
-
-def _fields(item: RoleAssignment) -> dict:
-    return {name: getattr(item, name) for name in item.__slots__}
-
-
-def _revoked(item: RoleAssignment, by: str, reason: str, now: datetime) -> RoleAssignment:
-    return RoleAssignment(
-        **{**_fields(item), "revoked_at": now, "revoked_by": by, "revoke_reason": reason}
-    )
-
-
-class MemoryCache(IAuthzSnapshotCache):
-    def __init__(self) -> None:
-        self.items: dict[uuid.UUID, AuthzSnapshot] = {}
-
-    async def get(self, account_id):
-        return self.items.get(account_id)
-
-    async def set(self, account_id, snapshot):
-        self.items[account_id] = snapshot
-
-    async def invalidate(self, account_id):
-        self.items.pop(account_id, None)
-
-
 def _service(repo: FakeRepo, cache: MemoryCache | None = None) -> AuthzService:
     return AuthzService(
-        repo_factory=lambda session: repo, cache=cache or MemoryCache(), clock=lambda: NOW
+        repo_factory=lambda session: repo,
+        cache=cache or MemoryCache(),
+        audit=RecordingAudit(),
+        clock=lambda: NOW,
     )
 
 

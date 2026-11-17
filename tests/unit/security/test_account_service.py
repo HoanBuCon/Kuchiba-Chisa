@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import uuid
 
+import bcrypt
 import pytest
 from account_fakes import Clock, InMemoryAccountRepository, make_service
 
@@ -48,7 +49,7 @@ async def test_register_hashes_password_and_issues_server_derived_identity() -> 
     issued = await service.login(SESSION, "senpai@example.com", PASSWORD)
 
     assert row.email == "senpai@example.com"
-    assert row.password_hash and row.password_hash.startswith("$2")
+    assert row.password_hash and row.password_hash.startswith("$argon2id$")
     assert PASSWORD not in row.password_hash
 
     principal = jwt_authenticator.authenticate_bearer(f"Bearer {issued.access_token}")
@@ -104,6 +105,33 @@ async def test_login_succeeds_only_with_the_right_password() -> None:
         await service.login(SESSION, "not an email", PASSWORD)
     # Identical, reason-free errors: login never reveals whether an account exists.
     assert str(wrong.value) == str(unknown.value) == str(malformed.value) == ""
+
+
+@pytest.mark.asyncio
+async def test_new_account_password_is_stored_as_argon2id() -> None:
+    repo = InMemoryAccountRepository()
+    created = await signup(make_service(repo))
+
+    assert repo.accounts[created.account.id].password_hash.startswith("$argon2id$")
+
+
+@pytest.mark.asyncio
+async def test_login_with_legacy_bcrypt_hash_succeeds_and_rehashes_to_argon2id() -> None:
+    repo = InMemoryAccountRepository()
+    service = make_service(repo)
+    created = await signup(service)
+    legacy_hash = bcrypt.hashpw(PASSWORD.encode(), bcrypt.gensalt(rounds=4)).decode("ascii")
+    repo.accounts[created.account.id].password_hash = legacy_hash
+
+    with pytest.raises(InvalidCredentialsError):
+        await service.login(SESSION, "senpai@example.com", "wrong password!!")
+    assert repo.accounts[created.account.id].password_hash == legacy_hash
+
+    await service.login(SESSION, "senpai@example.com", PASSWORD)
+
+    upgraded = repo.accounts[created.account.id].password_hash
+    assert upgraded.startswith("$argon2id$")
+    await service.login(SESSION, "senpai@example.com", PASSWORD)
 
 
 @pytest.mark.asyncio
