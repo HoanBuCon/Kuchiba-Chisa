@@ -51,8 +51,10 @@ async def get_effective_permissions(
     principal: CurrentPrincipal, service: AuthzServiceDep, session: DbSession
 ) -> frozenset[Permission]:
     """Authority comes from the database; the token only names the account (IAM-002)."""
+    if principal.authentication == "workload":
+        # The bot only names a Discord user; authority comes from a linked account (IAM-009).
+        return await service.permissions_for_discord_user(session, principal.subject_id)
     if principal.authentication != "account":
-        # Anonymous and Discord workload callers never hold more than guest (IAM-007).
         return guest_permissions()
     try:
         return await service.permissions_for_token(

@@ -83,6 +83,35 @@ export function toConversations(threads, untitled) {
   return threads.map((thread) => ({ id: thread.id, title: thread.title || untitled }));
 }
 
+// The server's one-line explanation when it answered in another mode than requested.
+export function turnNotice(started) {
+  const notice = started?.notice;
+  return typeof notice === 'string' && notice.trim() ? notice : null;
+}
+
+const WEB_URL = /^https?:\/\//i;
+
+// Server paths are relative; an absolute API base needs its origin in front of them.
+function resolveServerUrl(value, base) {
+  if (typeof value !== 'string') return null;
+  if (WEB_URL.test(value)) return value;
+  if (!/^\/(?!\/)/.test(value)) return null;
+  return WEB_URL.test(base ?? '') ? `${new URL(base).origin}${value}` : value;
+}
+
+// Only signed server URLs are displayed; the client never builds image URLs itself.
+export function entityImage(image, base) {
+  const src = resolveServerUrl(image?.url, base);
+  const originalHref = resolveServerUrl(image?.original_url, base);
+  if (!src || !originalHref) return null;
+  return {
+    src,
+    originalHref,
+    sourceHref: WEB_URL.test(image.source_page ?? '') ? image.source_page : null,
+    attribution: image.attribution ?? '',
+  };
+}
+
 export function turnsToMessages(turns, greeting) {
   if (!turns.length) return [greeting];
   return turns.flatMap((turn) => [

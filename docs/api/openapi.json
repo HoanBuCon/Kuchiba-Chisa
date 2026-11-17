@@ -80,7 +80,10 @@
           },
           "providers": {
             "items": {
-              "const": "google",
+              "enum": [
+                "google",
+                "discord"
+              ],
               "type": "string"
             },
             "title": "Providers",
@@ -217,6 +220,11 @@
       },
       "AuthCapabilitiesResponse": {
         "properties": {
+          "discord": {
+            "default": false,
+            "title": "Discord",
+            "type": "boolean"
+          },
           "google": {
             "title": "Google",
             "type": "boolean"
@@ -952,6 +960,35 @@
           "subject_id"
         ],
         "title": "CurrentIdentityResponse",
+        "type": "object"
+      },
+      "DiscordStartRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "intent": {
+            "default": "login",
+            "enum": [
+              "login",
+              "link"
+            ],
+            "title": "Intent",
+            "type": "string"
+          }
+        },
+        "title": "DiscordStartRequest",
+        "type": "object"
+      },
+      "DiscordStartResponse": {
+        "properties": {
+          "authorization_url": {
+            "title": "Authorization Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "authorization_url"
+        ],
+        "title": "DiscordStartResponse",
         "type": "object"
       },
       "EmailPasswordRequest": {
@@ -2146,9 +2183,51 @@
         ]
       }
     },
+    "/api/v1/auth/discord/start": {
+      "post": {
+        "description": "Return Discord's authorization URL (scopes ``identify email``, PKCE, state).",
+        "operationId": "discord_start_api_v1_auth_discord_start_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DiscordStartRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DiscordStartResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Discord Start",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
     "/api/v1/auth/google/start": {
       "post": {
-        "description": "Create a browser-bound OAuth transaction and return Google's authorization URL.\n\nLinking requires a verified *account* access token; the account to link is\ntaken from that token, never from request parameters.",
+        "description": "Return Google's authorization URL for a new browser-bound OAuth transaction.",
         "operationId": "google_start_api_v1_auth_google_start_post",
         "requestBody": {
           "content": {
@@ -2183,6 +2262,53 @@
           }
         },
         "summary": "Google Start",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/v1/auth/identities/{provider_name}": {
+      "delete": {
+        "description": "Unlink a provider from the signed-in account; the last sign-in method is protected.",
+        "operationId": "unlink_identity_api_v1_auth_identities__provider_name__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "provider_name",
+            "required": true,
+            "schema": {
+              "enum": [
+                "google",
+                "discord"
+              ],
+              "title": "Provider Name",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountSummary"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Unlink Identity",
         "tags": [
           "auth"
         ]

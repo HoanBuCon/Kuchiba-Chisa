@@ -25,7 +25,7 @@ class AccountSummary(BaseModel):
     email: str | None
     email_verified: bool
     has_password: bool
-    providers: list[Literal["google"]]
+    providers: list[Literal["google", "discord"]]
 
 
 class AccountSessionResponse(BaseModel):
@@ -53,12 +53,21 @@ class GoogleStartResponse(BaseModel):
     authorization_url: str
 
 
+class DiscordStartRequest(GoogleStartRequest):
+    pass
+
+
+class DiscordStartResponse(GoogleStartResponse):
+    pass
+
+
 class AuthCapabilitiesResponse(BaseModel):
     password: bool = True
     # False when e-mail delivery is not configured: sign-up, verification resend
     # and password reset are then unavailable (existing verified logins still work).
     password_registration: bool = False
     google: bool
+    discord: bool = False
 
 
 class AcceptedResponse(BaseModel):

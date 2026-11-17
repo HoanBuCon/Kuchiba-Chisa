@@ -52,6 +52,16 @@ class IAccountRepository(ABC):
     ) -> Account: ...
 
     @abstractmethod
+    async def unlink_external_identity(
+        self, account_id: uuid.UUID, provider: ExternalProvider
+    ) -> bool:
+        """Remove the account's identity for ``provider``; False if none was linked."""
+
+    @abstractmethod
+    async def lock_account(self, account_id: uuid.UUID) -> None:
+        """Serialize concurrent login-method changes on one account."""
+
+    @abstractmethod
     async def update_password_hash(self, account_id: uuid.UUID, password_hash: str) -> None: ...
 
     @abstractmethod

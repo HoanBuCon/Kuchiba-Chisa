@@ -13,8 +13,11 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Literal
 
-ExternalProvider = Literal["google"]
-AuthMethod = Literal["password", "google"]
+ExternalProvider = Literal["google", "discord"]
+AuthMethod = Literal["password", "google", "discord"]
+# Providers that may not create an account without a verified e-mail (IAM-005).
+# Discord accounts may exist without one; their e-mail is then left unset.
+PROVIDERS_REQUIRING_VERIFIED_EMAIL: frozenset[ExternalProvider] = frozenset({"google"})
 # Single-use, e-mailed secrets. Only their SHA-256 is stored.
 AccountTokenPurpose = Literal["verify_email", "password_reset"]
 

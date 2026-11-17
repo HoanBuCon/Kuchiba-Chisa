@@ -73,6 +73,14 @@ class SqlAlchemyAuthzRepository(IAuthzRepository):
         )
         return [(account_id, Role(role)) for account_id, role in rows.all()]
 
+    async def get_account_id_by_identity(self, provider: str, subject: str) -> uuid.UUID | None:
+        return await self.session.scalar(
+            select(AccountIdentityModel.account_id).where(
+                AccountIdentityModel.provider == provider,
+                AccountIdentityModel.provider_subject == subject,
+            )
+        )
+
     async def add_assignment(self, assignment: RoleAssignment) -> None:
         self.session.add(
             RoleAssignmentModel(
