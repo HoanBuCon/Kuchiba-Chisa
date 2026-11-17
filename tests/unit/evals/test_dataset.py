@@ -5,7 +5,8 @@ from pathlib import Path
 import pytest
 from pydantic import ValidationError
 
-from evals.dataset import Category, GoldenCase, Split, load_golden_set
+from evals.dataset import Behavior, Category, GoldenCase, Split, load_golden_set
+from evals.scoring import Observation, detect_abstain
 
 GOLDEN_V2 = Path("data/evaluations/golden_v2/golden_v2.yaml")
 
@@ -63,3 +64,19 @@ def test_committed_holdout_is_owner_confirmed_and_has_lore_follow_ups() -> None:
     assert len(holdout) >= 30
     assert any(len(case.turns) > 1 and case.relevant_pages for case in holdout)
     assert all(case.verified for case in holdout)
+
+
+def test_out_of_scope_cases_cover_only_unanswerable_lore_and_real_time_data() -> None:
+    golden = load_golden_set(GOLDEN_V2)
+    out_of_scope = [c for c in golden.cases if c.id.startswith("oos-4")]
+
+    assert golden.dataset_version == "golden-v2.6"
+    assert len(out_of_scope) == 11
+    assert all(case.expected_behavior is Behavior.ABSTAIN for case in out_of_scope)
+
+
+def test_real_time_data_decline_counts_as_abstention() -> None:
+    golden = load_golden_set(GOLDEN_V2)
+    answer = Observation("Em không có dữ liệu thời gian thực nên không dám nói con số, Senpai.")
+
+    assert detect_abstain(answer, golden.abstain_markers)
