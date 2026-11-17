@@ -21,7 +21,7 @@ AccountTokenPurpose = Literal["verify_email", "password_reset"]
 _EMAIL_PATTERN = re.compile(r"^[^@\s]{1,64}@[^@\s]+\.[^@\s]{2,}$")
 EMAIL_MAX_LENGTH = 254
 PASSWORD_MIN_CHARS = 10
-# bcrypt only consumes the first 72 bytes; longer secrets are rejected instead of
+# Legacy bcrypt only consumes the first 72 bytes; longer secrets are rejected instead of
 # being silently truncated.
 PASSWORD_MAX_BYTES = 72
 

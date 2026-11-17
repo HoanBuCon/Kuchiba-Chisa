@@ -180,7 +180,6 @@ class Settings(BaseSettings):
 
     # ── User accounts (email/password + Google OIDC) ───────────
     ACCOUNT_ACCESS_TOKEN_MINUTES: int = Field(default=15, ge=1, le=60)
-    BCRYPT_ROUNDS: int = Field(default=12, ge=10, le=15)
     # Secure cookies require HTTPS; only development over plain http may disable it.
     AUTH_COOKIE_SECURE: bool = True
     AUTH_RATE_LIMIT_PER_MINUTE: int = Field(default=10, ge=1, le=1_000)

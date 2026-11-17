@@ -129,7 +129,7 @@ class AccountAuthService:
     ) -> OutboundAccountEmail | None:
         """Create an unverified account, or e-mail the existing owner. Never signs in.
 
-        Every branch pays one bcrypt hash so response time does not reveal whether
+        Every branch pays one password hash so response time does not reveal whether
         the address is already registered. Returns the e-mail to send (if any).
         """
         normalized = normalize_email(email)
