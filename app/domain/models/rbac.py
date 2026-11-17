@@ -91,6 +91,66 @@ class AuthzSnapshot:
     permissions: frozenset[Permission]
 
 
+class GrantRejection(StrEnum):
+    """Why a Chia-con grant is refused (ROLE-003)."""
+
+    ACCOUNT_NOT_ACTIVE = "account_not_active"
+    IDENTITY_NOT_VERIFIED = "identity_not_verified"
+
+
+@dataclass(frozen=True, slots=True)
+class AccountSummary:
+    """What an Admin sees before confirming a grant (ROLE-002); the e-mail is already masked."""
+
+    account_id: uuid.UUID
+    masked_email: str | None
+    created_at: datetime
+    status: AccountStatus
+    email_verified: bool
+    linked_providers: tuple[str, ...]
+
+    @property
+    def has_verified_identity(self) -> bool:
+        # A provider link only exists after the provider's identity assertion was verified.
+        return self.email_verified or bool(self.linked_providers)
+
+
+class RoleAuditAction(StrEnum):
+    GRANT = "role.grant"
+    REVOKE = "role.revoke"
+    EXPIRE = "role.expire"
+
+
+@dataclass(frozen=True, slots=True)
+class RoleAuditEvent:
+    """One role change; carries no e-mail or other personal data (SEC-ADM-008)."""
+
+    action: RoleAuditAction
+    actor: str
+    account_id: uuid.UUID
+    role: Role
+    reason: str
+    at: datetime
+    expires_at: datetime | None = None
+    authz_ver_after: int | None = None
+
+
+EXPIRY_ACTOR = "system:expiry"
+
+
+def mask_email(email: str) -> str:
+    local, _, domain = email.partition("@")
+    return f"{local[:1]}***@{domain}"
+
+
+def grant_rejection(summary: AccountSummary) -> GrantRejection | None:
+    if summary.status is not AccountStatus.ACTIVE:
+        return GrantRejection.ACCOUNT_NOT_ACTIVE
+    if not summary.has_verified_identity:
+        return GrantRejection.IDENTITY_NOT_VERIFIED
+    return None
+
+
 def guest_permissions() -> frozenset[Permission]:
     return ROLE_PERMISSIONS[Role.GUEST]
 

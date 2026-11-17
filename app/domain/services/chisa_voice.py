@@ -27,3 +27,10 @@ SAFETY_SEXUAL_REFUSAL = (
     "Chuyện đó em không nói đâu Senpai. "
     "Senpai kể em nghe chuyện khác đi, hôm nay Senpai thế nào rồi?"
 )
+# Shown on the turn that falls back to Advanced, so nobody is left guessing (MODE-007, ROLE-007).
+AGENTIC_NOT_ENTITLED_NOTICE = (
+    "Chế độ Agentic chưa mở cho tài khoản của Senpai, nên em trả lời bằng Advanced nhé."
+)
+AGENTIC_ROLE_REVOKED_NOTICE = (
+    "Quyền Chía-con của Senpai đã kết thúc, nên cuộc trò chuyện này em chuyển về Advanced nhé."
+)

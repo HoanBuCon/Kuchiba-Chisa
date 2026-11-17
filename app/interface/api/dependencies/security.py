@@ -78,6 +78,11 @@ def require_permission(
     return dependency
 
 
+def require_step_up_mfa() -> None:
+    """Gate point for the step-up MFA that role changes need (SEC-ADM-006)."""
+    # TODO(ROLE-004): reject with 401 `step_up_required` once MFA and Admin sessions exist.
+
+
 def require_scope(scope: str) -> Callable[[PrincipalContext], PrincipalContext]:
     def dependency(principal: CurrentPrincipal) -> PrincipalContext:
         try:

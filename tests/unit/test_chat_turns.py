@@ -34,7 +34,11 @@ from app.domain.models.thread import (
     TurnRecord,
     resolve_mode,
 )
-from app.domain.services.chisa_voice import INPUT_BLOCKED
+from app.domain.services.chisa_voice import (
+    AGENTIC_NOT_ENTITLED_NOTICE,
+    AGENTIC_ROLE_REVOKED_NOTICE,
+    INPUT_BLOCKED,
+)
 from app.domain.services.knowledge.advanced_retrieval import AdvancedEvidence
 from app.domain.services.knowledge.composer import CitationSnapshot, ComposedAnswer
 from app.domain.services.knowledge.lane_router import Lane
@@ -143,6 +147,8 @@ async def _events(service, request):
         (ChatMode.AGENTIC, ChatMode.ADVANCED, None, True, ChatMode.AGENTIC, None),
         (ChatMode.ADVANCED, ChatMode.AGENTIC, None, True, ChatMode.ADVANCED, None),
         (ChatMode.AGENTIC, None, None, False, ChatMode.ADVANCED, DowngradeReason.NOT_ENTITLED),
+        (None, ChatMode.AGENTIC, None, False, ChatMode.ADVANCED, DowngradeReason.ROLE_REVOKED),
+        (None, None, ChatMode.AGENTIC, False, ChatMode.ADVANCED, DowngradeReason.NOT_ENTITLED),
     ],
 )
 def test_mode_precedence_and_permission_clamp(
@@ -185,6 +191,34 @@ async def test_agentic_request_is_downgraded_with_a_reason() -> None:
     assert events[0].data["downgrade_reason"] == "not_entitled"
     assert threads.turns[0].mode_requested is ChatMode.AGENTIC
     assert threads.turns[0].mode_effective is ChatMode.ADVANCED
+
+
+async def test_downgrade_carries_a_voice_notice() -> None:
+    service, _, _, _ = _service()
+
+    events = await _events(service, _request(mode_override=ChatMode.AGENTIC))
+
+    assert events[0].data["notice"] == AGENTIC_NOT_ENTITLED_NOTICE
+
+
+async def test_thread_left_in_agentic_after_role_loss_runs_advanced_with_notice() -> None:
+    service, threads, _, _ = _service()
+    thread = await threads.create(OWNER, "web", ChatMode.AGENTIC)
+
+    events = await _events(service, replace(_request(), thread_id=thread.id))
+
+    assert events[0].data["mode_effective"] == "advanced"
+    assert events[0].data["downgrade_reason"] == "role_revoked"
+    assert events[0].data["notice"] == AGENTIC_ROLE_REVOKED_NOTICE
+    assert threads.turns[0].downgrade_reason is DowngradeReason.ROLE_REVOKED
+
+
+async def test_turn_without_a_downgrade_has_no_notice() -> None:
+    service, _, _, _ = _service()
+
+    events = await _events(service, _request())
+
+    assert events[0].data["notice"] is None
 
 
 async def test_retry_with_the_same_turn_id_spends_nothing() -> None:
