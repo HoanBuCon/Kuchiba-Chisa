@@ -562,6 +562,27 @@ def _app_redirect(provider_name: str = "google", **params: str) -> RedirectRespo
     return response
 
 
+_SIGN_IN_FAILURES: dict[type[Exception], str] = {
+    AccountLinkRequiredError: "link_required",
+    EmailClaimRequiredError: "claim_email",
+    ExternalIdentityRejectedError: "rejected",
+    SessionInvalidError: "rejected",
+}
+
+
+async def _holds_linking_session(
+    request: Request,
+    session: AsyncSession,
+    service: AccountAuthService,
+    link_account_id: uuid.UUID | None,
+) -> bool:
+    """Defense in depth: a link must be completed by the browser that started it."""
+    if link_account_id is None:
+        return True
+    current = await service.account_for_refresh_token(session, request.cookies.get(REFRESH_COOKIE))
+    return current is not None and current.id == link_account_id
+
+
 async def _complete_oauth(
     request: Request,
     session: AsyncSession,
@@ -590,14 +611,8 @@ async def _complete_oauth(
         log.warning("OAuth callback rejected", provider=provider_name, reason_code="state_mismatch")
         return fail("state")
 
-    if transaction.link_account_id is not None:
-        # Defense in depth: the browser completing a link must still hold the
-        # refresh session of the account that started it.
-        current = await service.account_for_refresh_token(
-            session, request.cookies.get(REFRESH_COOKIE)
-        )
-        if current is None or current.id != transaction.link_account_id:
-            return fail("session")
+    if not await _holds_linking_session(request, session, service, transaction.link_account_id):
+        return fail("session")
 
     try:
         identity = await provider.exchange_code(
@@ -615,12 +630,8 @@ async def _complete_oauth(
         issued = await service.sign_in_with_external_identity(
             session, identity, link_to_account_id=transaction.link_account_id
         )
-    except AccountLinkRequiredError:
-        return fail("link_required")
-    except EmailClaimRequiredError:
-        return fail("claim_email")
-    except (ExternalIdentityRejectedError, SessionInvalidError):
-        return fail("rejected")
+    except tuple(_SIGN_IN_FAILURES) as sign_in_error:
+        return fail(_SIGN_IN_FAILURES[type(sign_in_error)])
     await session.commit()
     log.info(
         "OAuth sign-in completed",
