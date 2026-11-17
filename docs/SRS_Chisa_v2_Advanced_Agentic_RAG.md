@@ -1450,6 +1450,14 @@ Mục này **không phải yêu cầu** và không thuộc phạm vi phê duyệ
 
 # 13. Hệ thống Monitoring
 
+### BL-003 Provider LLM dự phòng
+
+**Ý tưởng:** khi DeepSeek lỗi hoặc hết tiền, gateway chuyển sang provider khác tương thích (REL-001).
+
+**Hiện trạng (2026-11-16):** cơ chế fallback đã có trong gateway (`LLM_FALLBACK_PROVIDERS`), adapter Gemini và Groq đã có và đều báo lỗi hết tiền đúng (PR #91). Danh sách fallback để trống theo quyết định của chủ dự án: phần lớn dùng DeepSeek.
+
+**Khi bật:** điền `LLM_FALLBACK_PROVIDERS`, kiểm tra provider đó gọi công cụ được (AGT) và điều khoản dữ liệu của gói đang dùng; ưu tiên gói trả trước.
+
 ## 13.1 Mục tiêu và nguyên tắc
 
 Mục tiêu:
