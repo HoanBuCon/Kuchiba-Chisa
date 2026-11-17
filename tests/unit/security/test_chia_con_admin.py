@@ -26,6 +26,7 @@ from app.infrastructure.database.engine import get_db_session
 from app.interface.api.dependencies.security import (
     get_current_principal,
     get_effective_permissions,
+    require_step_up_mfa,
 )
 from app.interface.api.routes import admin_roles
 
@@ -65,6 +66,8 @@ def _client(role: Role, repo: FakeRepo, audit: RecordingAudit) -> TestClient:
     app.dependency_overrides[get_effective_permissions] = lambda: ROLE_PERMISSIONS[role]
     app.dependency_overrides[get_authz_service] = lambda: _service(repo, audit)
     app.dependency_overrides[get_db_session] = no_session
+    # Step-up behaviour has its own tests in test_admin_mfa.py.
+    app.dependency_overrides[require_step_up_mfa] = lambda: None
     return TestClient(app)
 
 

@@ -9,7 +9,8 @@ from uuid import UUID
 from fastapi import Depends, HTTPException, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.application.dependencies import get_authz_service
+from app.application.dependencies import get_admin_mfa_service, get_authz_service
+from app.application.security.admin_mfa_service import AdminMfaService
 from app.application.security.authorization import AuthorizationError, AuthorizationPolicy
 from app.application.security.authz_service import (
     AccountNotFoundError,
@@ -42,6 +43,7 @@ CurrentPrincipal = Annotated[PrincipalContext, Depends(get_current_principal)]
 
 
 AuthzServiceDep = Annotated[AuthzService, Depends(get_authz_service)]
+AdminMfaServiceDep = Annotated[AdminMfaService, Depends(get_admin_mfa_service)]
 DbSession = Annotated[AsyncSession, Depends(get_db_session)]
 
 
@@ -80,9 +82,27 @@ def require_permission(
     return dependency
 
 
-def require_step_up_mfa() -> None:
-    """Gate point for the step-up MFA that role changes need (SEC-ADM-006)."""
-    # TODO(ROLE-004): reject with 401 `step_up_required` once MFA and Admin sessions exist.
+async def require_step_up_mfa(
+    principal: CurrentPrincipal, service: AdminMfaServiceDep, session: DbSession
+) -> None:
+    """Reject with 401 `step_up_required` unless this session passed MFA recently (SEC-ADM-006)."""
+    session_id = admin_session_id(principal)
+    if session_id is None or not await service.has_fresh_step_up(
+        session, UUID(principal.subject_id), session_id
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail={"code": "step_up_required"}
+        )
+
+
+def admin_session_id(principal: PrincipalContext) -> UUID | None:
+    """The server-side session an account token is bound to; None for any other caller."""
+    if principal.authentication != "account" or principal.session_id is None:
+        return None
+    try:
+        return UUID(principal.session_id)
+    except ValueError:
+        return None
 
 
 def require_scope(scope: str) -> Callable[[PrincipalContext], PrincipalContext]:

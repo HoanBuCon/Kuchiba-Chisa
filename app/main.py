@@ -23,6 +23,7 @@ from app.infrastructure.observability import (
 from app.infrastructure.vector.qdrant.qdrant_service import qdrant_service
 from app.interface.api.routes import (
     admin_ingestion,
+    admin_mfa,
     admin_roles,
     auth,
     chat,
@@ -191,6 +192,7 @@ def create_app() -> FastAPI:
     app.include_router(admin_ingestion.router, prefix="/api/v1")
     app.include_router(chat_v2.router, prefix="/api/v2")
     app.include_router(admin_roles.router, prefix="/api/v2")
+    app.include_router(admin_mfa.router, prefix="/api/v2")
 
     if ASSETS_DIR.is_dir():
         app.mount("/assets", StaticFiles(directory=str(ASSETS_DIR)), name="assets")

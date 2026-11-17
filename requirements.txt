@@ -90,6 +90,7 @@ pydantic==2.10.3
 pydantic_core==2.27.1
 Pygments==2.20.0
 PyJWT==2.15.1
+pyotp==2.9.0
 pypandoc==1.17
 python-dateutil==2.9.0.post0
 python-dotenv==1.2.2
