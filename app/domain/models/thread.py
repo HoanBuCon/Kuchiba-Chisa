@@ -18,6 +18,7 @@ class ChatMode(StrEnum):
 
 class DowngradeReason(StrEnum):
     NOT_ENTITLED = "not_entitled"
+    ROLE_REVOKED = "role_revoked"
 
 
 @dataclass(frozen=True)
@@ -84,5 +85,8 @@ def resolve_mode(
     """Message, then thread, then account, then clamped by permission (MODE-002, MODE-007)."""
     requested = override or thread_mode or account_default or ChatMode.ADVANCED
     if requested is ChatMode.AGENTIC and not can_use_agentic:
-        return ModeDecision(requested, ChatMode.ADVANCED, DowngradeReason.NOT_ENTITLED)
+        # A thread already in agentic means the person held the role once (ROLE-007).
+        inherited = override is None and thread_mode is ChatMode.AGENTIC
+        reason = DowngradeReason.ROLE_REVOKED if inherited else DowngradeReason.NOT_ENTITLED
+        return ModeDecision(requested, ChatMode.ADVANCED, reason)
     return ModeDecision(requested, requested)

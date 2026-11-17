@@ -9,8 +9,15 @@ from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domain.interfaces.authz import IAuthzRepository
-from app.domain.models.rbac import AccountAuthzState, AccountStatus, Role, RoleAssignment
-from app.infrastructure.database.models.account import AccountModel
+from app.domain.models.rbac import (
+    AccountAuthzState,
+    AccountStatus,
+    AccountSummary,
+    Role,
+    RoleAssignment,
+    mask_email,
+)
+from app.infrastructure.database.models.account import AccountIdentityModel, AccountModel
 from app.infrastructure.database.models.role_assignment import RoleAssignmentModel
 
 
@@ -25,14 +32,46 @@ class SqlAlchemyAuthzRepository(IAuthzRepository):
         rows = await self.session.scalars(
             select(RoleAssignmentModel).where(RoleAssignmentModel.account_id == account_id)
         )
-        # Until a status column exists, a deactivated account is the suspended state (IAM-010).
-        status = AccountStatus.ACTIVE if account.is_active else AccountStatus.SUSPENDED
         return AccountAuthzState(
             account_id=account_id,
-            status=status,
+            status=_status_of(account),
             authz_ver=account.authz_ver,
             assignments=tuple(_to_assignment(row) for row in rows.all()),
         )
+
+    async def get_summary(self, account_id: uuid.UUID) -> AccountSummary | None:
+        account = await self.session.get(AccountModel, account_id)
+        if account is None:
+            return None
+        providers = await self.session.scalars(
+            select(AccountIdentityModel.provider)
+            .where(AccountIdentityModel.account_id == account_id)
+            .order_by(AccountIdentityModel.provider)
+        )
+        return AccountSummary(
+            account_id=account_id,
+            masked_email=mask_email(account.email) if account.email else None,
+            created_at=account.created_at,
+            status=_status_of(account),
+            email_verified=account.email_verified,
+            linked_providers=tuple(providers.all()),
+        )
+
+    async def revoke_expired(
+        self, revoked_by: str, reason: str, now: datetime
+    ) -> list[tuple[uuid.UUID, Role]]:
+        # One statement picks the rows, so a concurrent re-grant cannot be revoked by mistake.
+        rows = await self.session.execute(
+            update(RoleAssignmentModel)
+            .where(
+                RoleAssignmentModel.revoked_at.is_(None),
+                RoleAssignmentModel.expires_at.is_not(None),
+                RoleAssignmentModel.expires_at <= now,
+            )
+            .values(revoked_at=now, revoked_by=revoked_by, revoke_reason=reason)
+            .returning(RoleAssignmentModel.account_id, RoleAssignmentModel.role)
+        )
+        return [(account_id, Role(role)) for account_id, role in rows.all()]
 
     async def add_assignment(self, assignment: RoleAssignment) -> None:
         self.session.add(
@@ -69,6 +108,11 @@ class SqlAlchemyAuthzRepository(IAuthzRepository):
             .returning(AccountModel.authz_ver)
         )
         return int(new_version or 0)
+
+
+def _status_of(account: AccountModel) -> AccountStatus:
+    # Until a status column exists, a deactivated account is the suspended state (IAM-010).
+    return AccountStatus.ACTIVE if account.is_active else AccountStatus.SUSPENDED
 
 
 def _to_assignment(row: RoleAssignmentModel) -> RoleAssignment:
