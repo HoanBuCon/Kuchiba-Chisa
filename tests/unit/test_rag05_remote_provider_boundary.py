@@ -248,7 +248,8 @@ async def test_provider_failures_use_one_call_and_observable_local_fallback(
             top_k=2,
         )
 
-    assert provider_calls == 1
+    # A 429 gets one bounded retry; every other failure is a single call.
+    assert provider_calls == (2 if failure == "rate_limit" else 1)
     assert [result[2]["point_id"] for result in results] == ["first", "second"]
     assert all(result[2]["reranker_mode"] == "lexical_fallback" for result in results)
     assert all(result[2]["reranker_fallback"] is True for result in results)

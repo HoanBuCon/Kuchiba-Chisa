@@ -3,10 +3,11 @@
 # v2.3 (2026-11-14) adds a holdout split (`split: holdout`) of 34 cases.
 # v2.4 (2026-11-15): the owner confirmed the 34 holdout labels; no label text changed.
 # v2.5 (2026-11-15): 20 out-of-scope dev cases added; QUAL-004 measured without multi-hop; owner approved.
+# v2.6 (2026-11-16): out-of-scope cases limited to unanswerable lore and real-time data; owner approved.
 # Ground truth comes from the Wuthering Waves Fandom wiki snapshot of 2026-10-30; pages are referenced by
 # wiki pageid so cases survive corpus rebuilds. New cases stay unverified until the owner confirms them.
 # expected_facts: each item is one fact; any listed surface form matches (case and diacritics ignored).
-dataset_version: golden-v2.5
+dataset_version: golden-v2.6
 source_snapshot: wuwa-wiki-20261030
 approval:
   status: approved
@@ -21,6 +22,9 @@ abstain_markers:
   - không tìm thấy
   - chưa được tiết lộ
   - chưa được công bố
+  - không có dữ liệu thời gian thực
+  - no real-time data
+  - không dám nói con số
 cases:
   # Lore canon, single hop
   - id: lore-001
@@ -599,49 +603,7 @@ cases:
     turns: [{message: "What is the exact date Startorch Academy was founded?"}]
     verified: true
     notes: Snapshot pages contain no founding date for Startorch Academy.
-  # Out of scope, dev split (v2.5): 20 abstain-expected cases for QUAL-004 sample size
-  - id: oos-401
-    category: out_of_scope
-    language: vi
-    expected_behavior: abstain
-    turns: [{message: "Elden Ring có boss nào khó nhất?"}]
-    verified: true
-    notes: Other game.
-  - id: oos-402
-    category: out_of_scope
-    language: en
-    expected_behavior: abstain
-    turns: [{message: "How do I beat the final boss in Genshin Impact?"}]
-    verified: true
-    notes: Other game.
-  - id: oos-403
-    category: out_of_scope
-    language: vi_no_diacritics
-    expected_behavior: abstain
-    turns: [{message: "lam sao de len rank cao trong lien minh huyen thoai"}]
-    verified: true
-    notes: Other game.
-  - id: oos-404
-    category: out_of_scope
-    language: vi
-    expected_behavior: abstain
-    turns: [{message: "Thủ đô của nước Pháp là thành phố nào?"}]
-    verified: true
-    notes: Real-world fact.
-  - id: oos-405
-    category: out_of_scope
-    language: en
-    expected_behavior: abstain
-    turns: [{message: "Who won the FIFA World Cup in 2018?"}]
-    verified: true
-    notes: Real-world fact.
-  - id: oos-406
-    category: out_of_scope
-    language: vi_no_diacritics
-    expected_behavior: abstain
-    turns: [{message: "nuoc soi bao nhieu do c o muc nuoc bien"}]
-    verified: true
-    notes: Real-world fact.
+  # Out of scope, dev split (v2.6): 11 abstain-expected cases (fictional or unreleased lore, real-time data)
   - id: oos-407
     category: out_of_scope
     language: vi
@@ -684,20 +646,6 @@ cases:
     turns: [{message: "Echo Nightmare Ciravel Hollow rơi ở khu vực nào?"}]
     verified: true
     notes: Fictional Echo.
-  - id: oos-413
-    category: out_of_scope
-    language: vi
-    expected_behavior: abstain
-    turns: [{message: "Tôi đang buồn chuyện tình cảm, Chisa khuyên tôi nên làm gì?"}]
-    verified: true
-    notes: Personal advice.
-  - id: oos-414
-    category: out_of_scope
-    language: en
-    expected_behavior: abstain
-    turns: [{message: "Should I quit my job and become a streamer?"}]
-    verified: true
-    notes: Personal advice.
   - id: oos-415
     category: out_of_scope
     language: vi
@@ -719,13 +667,6 @@ cases:
     turns: [{message: "hom nay gia vang bao nhieu mot chi"}]
     verified: true
     notes: Live data.
-  - id: oos-418
-    category: out_of_scope
-    language: vi
-    expected_behavior: abstain
-    turns: [{message: "Viết giúp tôi một đoạn code Python sắp xếp danh sách."}]
-    verified: true
-    notes: Unrelated task.
   - id: oos-419
     category: out_of_scope
     language: en

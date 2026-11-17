@@ -188,3 +188,63 @@ async def test_remote_adapter_redacts_pii_before_the_provider_boundary() -> None
     assert "user@example.com" not in received["query"]
     assert "user@example.com" not in received["documents"][0]
     assert "[REDACTED_EMAIL]" in received["query"]
+
+
+def _jina_reranker(client: httpx.AsyncClient, timeout: float = 5.0) -> ApiCrossEncoderReranker:
+    return ApiCrossEncoderReranker(
+        provider=ApiRerankerProvider.JINA,
+        api_key="test-key",
+        model_name="test-model",
+        timeout_seconds=timeout,
+        max_documents=15,
+        http_client=client,
+    )
+
+
+@pytest.mark.asyncio
+async def test_rate_limited_call_is_retried_once_after_retry_after() -> None:
+    calls: list[int] = []
+
+    def handler(_: httpx.Request) -> httpx.Response:
+        calls.append(1)
+        if len(calls) == 1:
+            return httpx.Response(429, headers={"Retry-After": "0"})
+        return httpx.Response(200, json={"results": [{"index": 0, "relevance_score": 0.7}]})
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
+        scores = await _jina_reranker(client).rerank("query", ["only"])
+
+    assert scores == [0.7]
+    assert len(calls) == 2
+
+
+@pytest.mark.asyncio
+async def test_persistent_rate_limit_stops_after_one_retry_as_rate_limit_failure() -> None:
+    calls: list[int] = []
+
+    def handler(_: httpx.Request) -> httpx.Response:
+        calls.append(1)
+        return httpx.Response(429, headers={"Retry-After": "0"})
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
+        with pytest.raises(RerankerUnavailableError) as error:
+            await _jina_reranker(client).rerank("query", ["only"])
+
+    assert error.value.failure_kind is RerankerFailureKind.RATE_LIMIT
+    assert len(calls) == 2
+
+
+@pytest.mark.asyncio
+async def test_rate_limit_is_not_retried_when_retry_after_exceeds_the_cap() -> None:
+    calls: list[int] = []
+
+    def handler(_: httpx.Request) -> httpx.Response:
+        calls.append(1)
+        return httpx.Response(429, headers={"Retry-After": "30"})
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
+        with pytest.raises(RerankerUnavailableError) as error:
+            await _jina_reranker(client).rerank("query", ["only"])
+
+    assert error.value.failure_kind is RerankerFailureKind.RATE_LIMIT
+    assert len(calls) == 1
