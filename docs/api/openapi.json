@@ -3079,6 +3079,76 @@
         ]
       }
     },
+    "/api/v2/images/{sha256}": {
+      "get": {
+        "description": "Authorised by the signature alone, because an img tag cannot send a bearer token.",
+        "operationId": "get_entity_image_api_v2_images__sha256__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "sha256",
+            "required": true,
+            "schema": {
+              "pattern": "^[0-9a-f]{64}$",
+              "title": "Sha256",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "expires",
+            "required": true,
+            "schema": {
+              "title": "Expires",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "sig",
+            "required": true,
+            "schema": {
+              "title": "Sig",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "original",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Original",
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Entity Image",
+        "tags": [
+          "Chat v2"
+        ]
+      }
+    },
     "/api/v2/me/memory/core": {
       "delete": {
         "operationId": "delete_core_memory_api_v2_me_memory_core_delete",

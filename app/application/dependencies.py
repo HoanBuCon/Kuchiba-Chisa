@@ -2,13 +2,16 @@ from __future__ import annotations
 
 import asyncio
 from dataclasses import dataclass
-from functools import cached_property
+from functools import cached_property, lru_cache
+from pathlib import Path
 from typing import Any
 
 import httpx
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.application.chat_turns import AdvancedTurnService
+from app.application.entity_images import IMAGE_ROUTE_PREFIX, EntityImageService
+from app.application.security.signed_image_url import ImageUrlSigner
 from app.config.settings import settings
 from app.domain.interfaces.embedding_provider import IEmbeddingProvider
 from app.domain.interfaces.llm_provider import BaseLLMAdapter
@@ -19,6 +22,7 @@ from app.domain.services.chat_engine import ChatEngine
 from app.domain.services.community.topic_summarizer import CommunityTopicSummarizer
 from app.domain.services.context_builder import ContextBuilder
 from app.domain.services.memory_extractor import MemoryExtractor
+from app.infrastructure.ingestion.entity_image_store import FileImageVault
 from app.infrastructure.vector.qdrant.qdrant_service import qdrant_service
 
 
@@ -598,6 +602,16 @@ class ChatTurnRuntime:
     core_memory: ICoreMemoryStore
 
 
+@lru_cache(maxsize=1)
+def get_entity_image_service() -> EntityImageService:
+    """Built from settings alone, so serving an image never loads the corpus."""
+    return EntityImageService(
+        FileImageVault(Path(settings.INGESTION_DATA_DIR)),
+        ImageUrlSigner(settings.SECRET_KEY, settings.IMAGE_URL_TTL_SECONDS),
+        IMAGE_ROUTE_PREFIX,
+    )
+
+
 _chat_turn_runtime: ChatTurnRuntime | None = None
 _chat_turn_runtime_lock = asyncio.Lock()
 # Calibrated per reranker scale on golden v2 (docs/r2-plan.md); none wrongly abstained.
@@ -676,6 +690,7 @@ async def _build_chat_turn_runtime() -> ChatTurnRuntime:
         composer,
         personal=personal,
         linker=linker,
+        images=get_entity_image_service(),
         understander=LlmQuestionUnderstander(
             container.llm, redis_service, telemetry=operational_telemetry
         ),

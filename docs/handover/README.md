@@ -56,4 +56,5 @@ Ghi đúng trạng thái PR, kể cả khi chưa merge. Không ghi secret hay d�
 | 2026-11-15 | R2 S7 | [Phạm vi QUAL-004 và 20 ca out_of_scope mới](2026-11-15_r2-s7_pham-vi-qual004.md) |
 | 2026-11-17 | R3 | [Lõi RBAC phía máy chủ](2026-11-17_r3_rbac-core.md) |
 | 2026-11-17 | R3 | [Cấp và thu hồi Chía-con](2026-11-17_r3_cap-thu-hoi-chia-con.md) |
+| 2026-11-17 | R2 S7 | [Ảnh thực thể qua URL ký của server (KNW-010)](2026-11-17_r2-s7_anh-thuc-the.md) |
 | 2026-11-16 | R2 S7 | [Độ tin cậy của phép đo: 429 reranker và ca out_of_scope](2026-11-16_r2-s7_do-tin-cay-cua-phep-do.md) |
