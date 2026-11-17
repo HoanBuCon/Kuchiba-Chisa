@@ -130,7 +130,7 @@ class IPasswordHasher(ABC):
 class IAccountTokenIssuer(ABC):
     @abstractmethod
     def issue_account_access_token(
-        self, account_id: uuid.UUID, session_id: uuid.UUID
+        self, account_id: uuid.UUID, session_id: uuid.UUID, authz_ver: int
     ) -> tuple[str, int]:
         """Return (signed access token, lifetime in seconds)."""
 

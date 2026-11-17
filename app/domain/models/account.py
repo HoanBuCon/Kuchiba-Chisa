@@ -57,6 +57,7 @@ class Account:
     has_password: bool
     linked_providers: tuple[ExternalProvider, ...] = ()
     is_active: bool = True
+    authz_ver: int = 1
 
 
 @dataclass(frozen=True, slots=True)

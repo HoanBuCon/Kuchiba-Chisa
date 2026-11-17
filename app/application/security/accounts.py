@@ -266,7 +266,9 @@ class AccountAuthService:
         )
         if not rotated:
             raise SessionInvalidError
-        access_token, access_ttl = self._tokens.issue_account_access_token(account.id, record.id)
+        access_token, access_ttl = self._tokens.issue_account_access_token(
+            account.id, record.id, account.authz_ver
+        )
         return IssuedAccountSession(
             account=account,
             session_id=record.id,
@@ -375,7 +377,9 @@ class AccountAuthService:
         record = await repo.create_session(
             account.id, hash_refresh_token(refresh_token), expires_at, method
         )
-        access_token, access_ttl = self._tokens.issue_account_access_token(account.id, record.id)
+        access_token, access_ttl = self._tokens.issue_account_access_token(
+            account.id, record.id, account.authz_ver
+        )
         return IssuedAccountSession(
             account=account,
             session_id=record.id,

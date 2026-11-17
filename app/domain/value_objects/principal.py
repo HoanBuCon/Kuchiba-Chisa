@@ -28,6 +28,8 @@ class PrincipalContext:
     display_name: str | None = None
     authentication: PrincipalAuthentication = "anonymous"
     session_id: str | None = None
+    # Version the token was minted at; compared with the server's value, never trusted for roles.
+    authz_ver: int | None = None
 
     def has_scope(self, scope: str) -> bool:
         return scope in self.scopes
