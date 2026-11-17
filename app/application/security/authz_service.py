@@ -103,6 +103,7 @@ class AuthzService:
         )
         authz_ver = await self._publish_change(repo, account_id)
         await self._audit.record(
+            session,
             RoleAuditEvent(
                 RoleAuditAction.GRANT,
                 granted_by,
@@ -126,6 +127,7 @@ class AuthzService:
         for account_id, role in expired:
             authz_ver = await self._publish_change(repo, account_id)
             await self._audit.record(
+                session,
                 RoleAuditEvent(
                     RoleAuditAction.EXPIRE,
                     EXPIRY_ACTOR,
@@ -151,6 +153,7 @@ class AuthzService:
             return False
         authz_ver = await self._publish_change(repo, account_id)
         await self._audit.record(
+            session,
             RoleAuditEvent(
                 RoleAuditAction.REVOKE,
                 revoked_by,
