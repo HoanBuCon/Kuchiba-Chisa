@@ -220,7 +220,8 @@ def _evidence(source_id: str, collection: str = ENTITY_COLLECTION):
 
 
 def _turn_service(service) -> AdvancedTurnService:
-    return AdvancedTurnService(SimpleNamespace(), SimpleNamespace(), SimpleNamespace(), images=service)
+    parts = (SimpleNamespace(), SimpleNamespace(), SimpleNamespace())
+    return AdvancedTurnService(*parts, images=service)
 
 
 def _found(*evidence, abstain=False, listed=()):

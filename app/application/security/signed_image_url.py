@@ -1,4 +1,4 @@
-"""Short-lived HMAC signatures for entity image URLs, so only the server hands out links (SEC-RAG-002)."""
+"""Short-lived HMAC signatures: only the server can hand out image links (SEC-RAG-002)."""
 
 from __future__ import annotations
 

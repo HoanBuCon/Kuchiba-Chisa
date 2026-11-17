@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Ngày | 16/11/2026 |
+| Ngày | 17/11/2026 |
 | Người thực hiện | Claude |
 | Nhánh | `feat/r2-entity-images` (từ `HBC`), chưa push, chưa có PR |
 
@@ -19,6 +19,7 @@
 
 - Chọn ảnh chính: ảnh có tên file chứa tên thực thể, nếu không thì theo tên file. Index chưa lưu thứ tự trong infobox nên đây là xấp xỉ.
 - Index nạp một lần khi dùng lần đầu; chạy ingestion mới thì cần khởi động lại, giống kho kiến thức.
+- Không có tải ảnh phía server lúc phục vụ nên không có bề mặt SSRF; ảnh chỉ đọc từ vault đã vetted lúc nạp (host cho phép nằm ở `images.yaml`).
 - Client chỉ nhận URL của server; host `static.wikia.nocookie.net` không bao giờ xuất hiện trong payload (có test).
 - `source_page` là trang File trên wiki (liên kết để người dùng xem nguồn, không dùng để tải ảnh).
 

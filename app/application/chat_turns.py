@@ -382,7 +382,9 @@ class AdvancedTurnService:
             return None
         return conversation.summary.version if conversation.summary else 0
 
-    def _entity_image(self, found: AdvancedEvidence, answer: ComposedAnswer) -> dict[str, Any] | None:
+    def _entity_image(
+        self, found: AdvancedEvidence, answer: ComposedAnswer
+    ) -> dict[str, Any] | None:
         """Only a grounded answer about exactly one entity shows an image (KNW-010)."""
         if self._images is None or answer.abstained or found.abstain or found.listed:
             return None
