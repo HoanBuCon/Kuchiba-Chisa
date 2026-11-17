@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 from app.domain.interfaces.authz import IRoleAuditSink
 from app.domain.models.rbac import RoleAuditEvent
 from app.infrastructure.logging.logger import get_logger
@@ -10,7 +12,7 @@ log = get_logger(__name__)
 
 
 class LoggingRoleAuditSink(IRoleAuditSink):
-    async def record(self, event: RoleAuditEvent) -> None:
+    async def record(self, session: Any, event: RoleAuditEvent) -> None:
         log.info(
             "role_audit",
             action=event.action.value,
