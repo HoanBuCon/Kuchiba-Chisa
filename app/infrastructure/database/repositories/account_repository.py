@@ -51,6 +51,7 @@ class SqlAlchemyAccountRepository(IAccountRepository):
             has_password=row.password_hash is not None,
             linked_providers=await self._providers(row.id),
             is_active=row.is_active,
+            authz_ver=row.authz_ver,
         )
 
     async def get_by_id(self, account_id: uuid.UUID) -> Account | None:

@@ -97,7 +97,9 @@ class JwtAuthenticator(IAccountTokenIssuer):
         }
         return jwt.encode(claims, settings.JWT_SECRET, algorithm=settings.JWT_ALGORITHM)
 
-    def issue_account_access_token(self, account_id: UUID, session_id: UUID) -> tuple[str, int]:
+    def issue_account_access_token(
+        self, account_id: UUID, session_id: UUID, authz_ver: int
+    ) -> tuple[str, int]:
         """Short-lived access token bound to a revocable server-side session."""
         lifetime_seconds = settings.ACCOUNT_ACCESS_TOKEN_MINUTES * 60
         now = datetime.now(UTC)
@@ -108,6 +110,7 @@ class JwtAuthenticator(IAccountTokenIssuer):
             "source": "web",
             "auth": "account",
             "sid": str(session_id),
+            "authz_ver": authz_ver,
             "iss": settings.JWT_ISSUER,
             "aud": settings.JWT_AUDIENCE,
             "iat": now,
@@ -161,6 +164,7 @@ class JwtAuthenticator(IAccountTokenIssuer):
             display_name=display_name,
             authentication=authentication,
             session_id=session_id,
+            authz_ver=JwtAuthenticator._authz_ver(claims) if authentication == "account" else None,
         )
 
     @staticmethod
@@ -178,6 +182,12 @@ class JwtAuthenticator(IAccountTokenIssuer):
         except ValueError as error:
             raise AuthenticationError("account credential is invalid") from error
         return "account", str(session_id)
+
+    @staticmethod
+    def _authz_ver(claims: dict[str, Any]) -> int | None:
+        value = claims.get("authz_ver")
+        # bool is an int subclass; a malformed claim reads as absent and so as stale.
+        return value if isinstance(value, int) and not isinstance(value, bool) else None
 
     @staticmethod
     def _scopes(value: object) -> set[str]:

@@ -503,6 +503,25 @@ class AppContainer:
         )
 
     @cached_property
+    def authz_service(self):
+        """Effective permissions and role changes, computed from the database (IAM-002)."""
+        from app.application.security.authz_service import AuthzService
+        from app.infrastructure.cache.redis.authz_snapshot_cache import (
+            RedisAuthzSnapshotCache,
+        )
+        from app.infrastructure.cache.redis.redis_service import redis_service
+        from app.infrastructure.database.repositories.authz_repository import (
+            SqlAlchemyAuthzRepository,
+        )
+
+        return AuthzService(
+            repo_factory=lambda session: SqlAlchemyAuthzRepository(
+                _require_async_session(session)
+            ),
+            cache=RedisAuthzSnapshotCache(redis_service),
+        )
+
+    @cached_property
     def account_email_dispatcher(self):
         """Account e-mail over SMTP; disabled (and sign-up with it) when SMTP is unset."""
         from app.application.security.account_email import AccountEmailDispatcher
@@ -703,6 +722,11 @@ def get_memory_policy_service():
 def get_account_auth_service():
     """FastAPI dependency for registered-account authentication."""
     return container.account_auth_service
+
+
+def get_authz_service():
+    """FastAPI dependency for RBAC permission checks."""
+    return container.authz_service
 
 
 def get_google_identity_provider():

@@ -24,6 +24,7 @@ from app.application.chat_turns import (
 from app.application.dependencies import get_chat_turn_runtime, get_memory_policy_service
 from app.config.settings import settings
 from app.domain.interfaces.llm_provider import LLMError
+from app.domain.models.rbac import Permission
 from app.domain.models.thread import ChatMode, Thread, TurnRecord, channel_thread_id
 from app.domain.services.chisa_voice import TURN_BUSY, TURN_FAILED
 from app.domain.services.core_memory import CoreMemory
@@ -31,12 +32,15 @@ from app.domain.services.guardrails.pii_redaction import PiiRedactor
 from app.domain.value_objects.principal import PrincipalContext
 from app.infrastructure.database.engine import get_db_session
 from app.interface.api.dependencies.chat_admission import Admission, admit_chat
-from app.interface.api.dependencies.security import require_scope
+from app.interface.api.dependencies.security import require_permission, require_scope
 from app.interface.middlewares.observability import mark_stream_first_token
 from app.shared.utils.user_identity import normalize_user_id, normalize_user_id_str
 
 router = APIRouter(tags=["Chat v2"])
 Writer = Annotated[PrincipalContext, Depends(require_scope("chat:write"))]
+Chatter = Annotated[
+    frozenset[Permission], Depends(require_permission(Permission.CHAT_WRITE))
+]
 MAX_MESSAGE_CHARS = 4000
 MAX_TITLE_CHARS = 255
 THREAD_LIST_LIMIT = 50
@@ -164,7 +168,11 @@ def _sse(event: str, data: dict) -> str:
 
 @router.post("/chat/turns", dependencies=[Depends(_enabled)])
 async def create_turn(
-    body: TurnBody, http_request: Request, principal: Writer, admission: Admission
+    body: TurnBody,
+    http_request: Request,
+    principal: Writer,
+    admission: Admission,
+    permissions: Chatter,
 ) -> StreamingResponse:
     reservation = await admit_chat(admission, principal, http_request)
     runtime = await get_chat_turn_runtime()
@@ -175,6 +183,7 @@ async def create_turn(
         turn_id=body.turn_id,
         thread_id=body.thread_id,
         mode_override=body.mode_override,
+        can_use_agentic=Permission.CHAT_AGENTIC in permissions,
         # Bot users keep the long-term memory they have on v1; consent still decides per person.
         is_guest=principal.authentication == ANONYMOUS_AUTHENTICATION,
         channel_thread_id=_bot_thread(principal),

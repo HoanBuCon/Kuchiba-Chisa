@@ -18,11 +18,15 @@ from app.application.chat_turns import (
 )
 from app.application.dependencies import get_chat_admission_control
 from app.domain.interfaces.llm_provider import LLMError
+from app.domain.models.rbac import ROLE_PERMISSIONS, Role, guest_permissions
 from app.domain.models.thread import ChatMode, Thread, TurnRecord, channel_thread_id
 from app.domain.services.chisa_voice import TURN_BUSY, TURN_FAILED
 from app.domain.value_objects.principal import PrincipalContext
 from app.interface.api.dependencies.chat_admission import admit_chat
-from app.interface.api.dependencies.security import get_current_principal
+from app.interface.api.dependencies.security import (
+    get_current_principal,
+    get_effective_permissions,
+)
 from app.interface.api.routes import chat_v2
 
 PRINCIPAL = PrincipalContext(
@@ -67,6 +71,7 @@ def client(monkeypatch) -> TestClient:
     app = FastAPI()
     app.include_router(chat_v2.router, prefix="/api/v2")
     app.dependency_overrides[get_current_principal] = lambda: PRINCIPAL
+    app.dependency_overrides[get_effective_permissions] = guest_permissions
     return TestClient(app)
 
 
@@ -369,7 +374,9 @@ async def _open_stream(monkeypatch, turns):
     monkeypatch.setattr(chat_v2, "admit_chat", reserved)
     monkeypatch.setattr(chat_v2, "get_chat_turn_runtime", runtime)
     body = chat_v2.TurnBody(message="Chisa là ai?", turn_id=uuid4())
-    response = await chat_v2.create_turn(body, SimpleNamespace(scope={}), PRINCIPAL, admission)
+    response = await chat_v2.create_turn(
+        body, SimpleNamespace(scope={}), PRINCIPAL, admission, guest_permissions()
+    )
     return response.body_iterator, admission
 
 
@@ -430,3 +437,21 @@ async def test_leaving_after_a_replay_refunds_only_once(monkeypatch) -> None:
         await stream.athrow(asyncio.CancelledError())
 
     assert admission.refunded == ["reservation"]
+
+
+def test_agentic_flag_follows_the_chat_agentic_permission(client, monkeypatch) -> None:
+    guest_request = _recorded_request(client, monkeypatch, PRINCIPAL)
+    assert guest_request.can_use_agentic is False
+
+    client.app.dependency_overrides[get_effective_permissions] = lambda: ROLE_PERMISSIONS[
+        Role.CHIA_CON
+    ]
+    chia_con_request = _recorded_request(client, monkeypatch, PRINCIPAL)
+    assert chia_con_request.can_use_agentic is True
+
+
+def test_an_account_without_chat_permission_is_refused(client, monkeypatch) -> None:
+    _enable(monkeypatch, True)
+    client.app.dependency_overrides[get_effective_permissions] = lambda: frozenset()
+
+    assert client.post("/api/v2/chat/turns", json=_turn()).status_code == 403
