@@ -22,6 +22,10 @@ class IAuthzRepository(ABC):
     async def get_state(self, account_id: uuid.UUID) -> AccountAuthzState | None: ...
 
     @abstractmethod
+    async def get_account_id_by_identity(self, provider: str, subject: str) -> uuid.UUID | None:
+        """Account that linked this external identity, if any (IAM-009)."""
+
+    @abstractmethod
     async def add_assignment(self, assignment: RoleAssignment) -> None: ...
 
     @abstractmethod

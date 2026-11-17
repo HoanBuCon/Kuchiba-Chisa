@@ -55,6 +55,8 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
             "/api/v1/auth/logout",
             "/api/v1/auth/google/start",
             "/api/v1/auth/google/callback",
+            "/api/v1/auth/discord/start",
+            "/api/v1/auth/discord/callback",
             "/api/v1/auth/verify-email",
             "/api/v1/auth/verify-email/resend",
             "/api/v1/auth/password/forgot",

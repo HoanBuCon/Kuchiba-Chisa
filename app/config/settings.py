@@ -194,6 +194,13 @@ class Settings(BaseSettings):
     # e.g. https://chisa.example.com/api/v1/auth/google/callback
     GOOGLE_OAUTH_REDIRECT_URI: str | None = None
     GOOGLE_OAUTH_TIMEOUT_SECONDS: float = Field(default=10.0, gt=0, le=30.0)
+    # Discord OAuth2 login/linking (IAM-005/006). The redirect URI must exactly match one
+    # registered in the Discord developer portal, e.g.
+    # https://chisa.example.com/api/v1/auth/discord/callback
+    DISCORD_OAUTH_CLIENT_ID: str | None = None
+    DISCORD_OAUTH_CLIENT_SECRET: SecretStr | None = None
+    DISCORD_OAUTH_REDIRECT_URI: str | None = None
+    DISCORD_OAUTH_TIMEOUT_SECONDS: float = Field(default=10.0, gt=0, le=30.0)
 
     # ── Account e-mail (verification + password reset, SMTP) ───
     # E-mailed secrets are random 256-bit values; only SHA-256 is stored.
@@ -336,6 +343,15 @@ class Settings(BaseSettings):
             and self.GOOGLE_OAUTH_REDIRECT_URI
         )
 
+    @property
+    def discord_oauth_enabled(self) -> bool:
+        return bool(
+            self.DISCORD_OAUTH_CLIENT_ID
+            and self.DISCORD_OAUTH_CLIENT_SECRET
+            and self.DISCORD_OAUTH_CLIENT_SECRET.get_secret_value()
+            and self.DISCORD_OAUTH_REDIRECT_URI
+        )
+
     @field_validator("DATABASE_URL")
     @classmethod
     def validate_database_url(cls, v: str) -> str:
@@ -387,13 +403,18 @@ class Settings(BaseSettings):
                 raise ValueError(
                     "PUBLIC_APP_URL and GOOGLE_OAUTH_REDIRECT_URI must use https in production"
                 )
-            secret = (
-                self.GOOGLE_OAUTH_CLIENT_SECRET.get_secret_value()
-                if self.GOOGLE_OAUTH_CLIENT_SECRET
-                else ""
-            )
-            if secret and _is_placeholder_secret(secret):
-                raise ValueError("production secrets must not use template values")
+            if self.discord_oauth_enabled and not (
+                self.PUBLIC_APP_URL.startswith("https://")
+                and str(self.DISCORD_OAUTH_REDIRECT_URI).startswith("https://")
+            ):
+                raise ValueError(
+                    "PUBLIC_APP_URL and DISCORD_OAUTH_REDIRECT_URI must use https in production"
+                )
+            oauth_secrets = (self.GOOGLE_OAUTH_CLIENT_SECRET, self.DISCORD_OAUTH_CLIENT_SECRET)
+            for oauth_secret in oauth_secrets:
+                secret = oauth_secret.get_secret_value() if oauth_secret else ""
+                if secret and _is_placeholder_secret(secret):
+                    raise ValueError("production secrets must not use template values")
             smtp_password = (
                 self.SMTP_PASSWORD.get_secret_value() if self.SMTP_PASSWORD else ""
             )

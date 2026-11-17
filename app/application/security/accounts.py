@@ -42,11 +42,13 @@ from app.domain.interfaces.accounts import (
 )
 from app.domain.interfaces.session import IDbSession
 from app.domain.models.account import (
+    PROVIDERS_REQUIRING_VERIFIED_EMAIL,
     Account,
     AccountPolicyError,
     AccountTokenPurpose,
     AuthMethod,
     AuthSessionRecord,
+    ExternalProvider,
     IssuedAccountSession,
     OutboundAccountEmail,
     VerifiedExternalIdentity,
@@ -87,8 +89,18 @@ class ExternalIdentityRejectedError(Exception):
     """External identity cannot be used (unverified e-mail or conflicting link)."""
 
 
+class LastLoginMethodError(Exception):
+    """Unlinking would leave the account with no way to sign in (IAM-006)."""
+
+
 def hash_refresh_token(token: str) -> str:
     return hashlib.sha256(token.encode("utf-8")).hexdigest()
+
+
+def _login_method_count(account: Account) -> int:
+    # A password only works once its e-mail is verified (login refuses otherwise).
+    password = 1 if account.has_password and account.email_verified else 0
+    return password + len(account.linked_providers)
 
 
 # E-mailed secrets use the same one-way hash as refresh secrets.
@@ -302,7 +314,7 @@ class AccountAuthService:
         account = await self._repo_factory(session).get_by_id(account_id)
         return account if account is not None and account.is_active else None
 
-    # ── External identity (Google) ────────────────────────────────────
+    # ── External identity (Google, Discord) ────────────────────────────────────
     async def sign_in_with_external_identity(
         self,
         session: IDbSession,
@@ -334,8 +346,37 @@ class AccountAuthService:
                 raise ExternalIdentityRejectedError("account is disabled")
             return await self._issue(repo, existing, identity.provider)
 
+        return await self._sign_up_with_external_identity(repo, identity)
+
+    async def unlink_external_identity(
+        self, session: IDbSession, account_id: uuid.UUID, provider: ExternalProvider
+    ) -> Account:
+        """Remove one linked provider, never the account's last way to sign in."""
+        repo = self._repo_factory(session)
+        await repo.lock_account(account_id)
+        account = await repo.get_by_id(account_id)
+        if account is None or not account.is_active:
+            raise SessionInvalidError
+        if provider not in account.linked_providers:
+            raise ExternalIdentityRejectedError("provider is not linked")
+        if _login_method_count(account) <= 1:
+            raise LastLoginMethodError
+        await repo.unlink_external_identity(account_id, provider)
+        unlinked = await repo.get_by_id(account_id)
+        if unlinked is None:  # pragma: no cover - locked row cannot vanish
+            raise SessionInvalidError
+        return unlinked
+
+    async def _sign_up_with_external_identity(
+        self, repo: IAccountRepository, identity: VerifiedExternalIdentity
+    ) -> IssuedAccountSession:
         if not identity.email or not identity.email_verified:
-            raise ExternalIdentityRejectedError("provider e-mail is not verified")
+            if identity.provider in PROVIDERS_REQUIRING_VERIFIED_EMAIL:
+                raise ExternalIdentityRejectedError("provider e-mail is not verified")
+            # The provider's e-mail is untrusted: never store it, so it cannot squat an address.
+            return await self._create_external_account(
+                repo, replace(identity, email=None, email_verified=False)
+            )
         try:
             normalized = normalize_email(identity.email)
         except AccountPolicyError as error:
@@ -348,8 +389,13 @@ class AccountAuthService:
             if not holder.account.email_verified:
                 raise EmailClaimRequiredError
             raise AccountLinkRequiredError
+        return await self._create_external_account(repo, replace(identity, email=normalized))
+
+    async def _create_external_account(
+        self, repo: IAccountRepository, identity: VerifiedExternalIdentity
+    ) -> IssuedAccountSession:
         try:
-            account = await repo.create_external_account(replace(identity, email=normalized))
+            account = await repo.create_external_account(identity)
         except (EmailAlreadyRegisteredError, ExternalIdentityAlreadyLinkedError) as error:
             raise AccountLinkRequiredError from error
         return await self._issue(repo, account, identity.provider)

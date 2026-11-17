@@ -1,10 +1,10 @@
-"""Web authentication endpoints: anonymous sessions, accounts and Google sign-in.
+"""Web authentication endpoints: anonymous sessions, accounts, Google and Discord sign-in.
 
 Identity is always server-derived: anonymous subjects are minted here, account
-subjects are account IDs from the database, and Google identities come only from
-a server-side verified ID token. No route accepts a user identifier from the body.
+subjects are account IDs from the database, and external identities (Google, Discord) come only from
+a server-side verified code redemption. No route accepts a user identifier from the body.
 
-Browser-cookie endpoints (refresh, logout, Google start) require the custom
+Browser-cookie endpoints (refresh, logout, Google/Discord start) require the custom
 ``X-Chisa-Client`` header; together with ``SameSite=Lax`` cookies this blocks
 cross-site request forgery because a foreign page cannot send custom headers to
 this origin without a CORS preflight that the API never approves. Every
@@ -22,7 +22,7 @@ from __future__ import annotations
 import hashlib
 import time
 import uuid
-from typing import Annotated, Any
+from typing import Annotated, Any, Literal
 from urllib.parse import urlencode
 
 from fastapi import (
@@ -41,6 +41,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.application.dependencies import (
     get_account_auth_service,
     get_account_email_dispatcher,
+    get_discord_identity_provider,
     get_google_identity_provider,
 )
 from app.application.security.account_email import AccountEmailDispatcher
@@ -52,6 +53,7 @@ from app.application.security.accounts import (
     EmailNotVerifiedError,
     ExternalIdentityRejectedError,
     InvalidCredentialsError,
+    LastLoginMethodError,
     SessionInvalidError,
 )
 from app.application.security.anonymous_session import AnonymousWebSessionService
@@ -86,6 +88,8 @@ from app.interface.api.schemas.auth import (
     AuthCapabilitiesResponse,
     ChangePasswordRequest,
     CurrentIdentityResponse,
+    DiscordStartRequest,
+    DiscordStartResponse,
     EmailPasswordRequest,
     EmailRequest,
     GoogleStartRequest,
@@ -100,13 +104,14 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 REFRESH_COOKIE = "chisa_refresh"
 REFRESH_COOKIE_PATH = "/api/v1/auth"
 OAUTH_COOKIE = "chisa_oauth"
-OAUTH_COOKIE_PATH = "/api/v1/auth/google"
+OAUTH_COOKIE_PATH_ROOT = "/api/v1/auth"
 CLIENT_HEADER = "x-chisa-client"
 _INVALID_CREDENTIALS = "Email hoặc mật khẩu không đúng."
 _EMAIL_NOT_VERIFIED = (
     "Email chưa được xác minh. Hãy mở liên kết trong email, hoặc gửi lại email xác minh."
 )
 _INVALID_LINK = "Liên kết không hợp lệ hoặc đã hết hạn."
+_LAST_LOGIN_METHOD = "Không thể huỷ liên kết phương thức đăng nhập cuối cùng."
 _EMAIL_UNAVAILABLE = "Đăng ký và khôi phục bằng email tạm thời chưa được bật."
 
 AccountService = Annotated[AccountAuthService, Depends(get_account_auth_service)]
@@ -278,6 +283,7 @@ async def issue_anonymous_session(request: Request) -> AnonymousSessionResponse:
 async def auth_capabilities(dispatcher: EmailDispatcher) -> AuthCapabilitiesResponse:
     return AuthCapabilitiesResponse(
         google=settings.google_oauth_enabled,
+        discord=settings.discord_oauth_enabled,
         password_registration=dispatcher.enabled,
     )
 
@@ -467,42 +473,47 @@ async def me(
     )
 
 
-# ── Google OpenID Connect (Authorization Code + PKCE) ─────────────────────
+# ── External identity providers (Authorization Code + PKCE) ────────────────
 
 
 GoogleProvider = Annotated[IExternalIdentityProvider | None, Depends(get_google_identity_provider)]
+DiscordProvider = Annotated[
+    IExternalIdentityProvider | None, Depends(get_discord_identity_provider)
+]
 
 
-@router.post("/google/start", response_model=GoogleStartResponse)
-async def google_start(
-    body: GoogleStartRequest,
+def _oauth_cookie_path(provider_name: str) -> str:
+    # One cookie path per provider keeps concurrent transactions from colliding.
+    return f"{OAUTH_COOKIE_PATH_ROOT}/{provider_name}"
+
+
+async def _start_oauth(
     request: Request,
-    provider: GoogleProvider,
+    provider: IExternalIdentityProvider | None,
+    provider_name: str,
+    intent: str,
 ) -> JSONResponse:
-    """Create a browser-bound OAuth transaction and return Google's authorization URL.
+    """Create a browser-bound OAuth transaction and return the authorization URL.
 
     Linking requires a verified *account* access token; the account to link is
     taken from that token, never from request parameters.
     """
     _require_client_header(request)
     if provider is None:
-        raise HTTPException(status_code=503, detail="Google sign-in is not configured")
+        raise HTTPException(status_code=503, detail=f"{provider_name} sign-in is not configured")
     link_account_id = None
-    if body.intent == "link":
+    if intent == "link":
         principal = _bearer_principal(request)
         if principal is None or principal.authentication != "account":
             raise HTTPException(status_code=401, detail="Authentication required")
         link_account_id = uuid.UUID(principal.subject_id)
     transaction = new_oauth_transaction(link_account_id)
-    response = JSONResponse(
-        content=GoogleStartResponse(
-            authorization_url=provider.authorization_url(
-                state=transaction.state,
-                nonce=transaction.nonce,
-                code_challenge=transaction.code_challenge,
-            )
-        ).model_dump()
+    url = provider.authorization_url(
+        state=transaction.state,
+        nonce=transaction.nonce,
+        code_challenge=transaction.code_challenge,
     )
+    response = JSONResponse(content={"authorization_url": url})
     response.headers["Cache-Control"] = "no-store"
     response.set_cookie(
         OAUTH_COOKIE,
@@ -511,23 +522,124 @@ async def google_start(
         httponly=True,
         secure=settings.AUTH_COOKIE_SECURE,
         samesite="lax",
-        path=OAUTH_COOKIE_PATH,
+        path=_oauth_cookie_path(provider_name),
     )
     return response
 
 
-def _app_redirect(**params: str) -> RedirectResponse:
+@router.post("/google/start", response_model=GoogleStartResponse)
+async def google_start(
+    body: GoogleStartRequest,
+    request: Request,
+    provider: GoogleProvider,
+) -> JSONResponse:
+    """Return Google's authorization URL for a new browser-bound OAuth transaction."""
+    return await _start_oauth(request, provider, "google", body.intent)
+
+
+@router.post("/discord/start", response_model=DiscordStartResponse)
+async def discord_start(
+    body: DiscordStartRequest,
+    request: Request,
+    provider: DiscordProvider,
+) -> JSONResponse:
+    """Return Discord's authorization URL (scopes ``identify email``, PKCE, state)."""
+    return await _start_oauth(request, provider, "discord", body.intent)
+
+
+def _app_redirect(provider_name: str = "google", **params: str) -> RedirectResponse:
     target = settings.PUBLIC_APP_URL.rstrip("/") + "/"
     response = RedirectResponse(f"{target}?{urlencode(params)}", status_code=303)
     response.headers["Cache-Control"] = "no-store"
     response.headers["Referrer-Policy"] = "no-referrer"
     response.delete_cookie(
         OAUTH_COOKIE,
-        path=OAUTH_COOKIE_PATH,
+        path=_oauth_cookie_path(provider_name),
         httponly=True,
         secure=settings.AUTH_COOKIE_SECURE,
         samesite="lax",
     )
+    return response
+
+
+_SIGN_IN_FAILURES: dict[type[Exception], str] = {
+    AccountLinkRequiredError: "link_required",
+    EmailClaimRequiredError: "claim_email",
+    ExternalIdentityRejectedError: "rejected",
+    SessionInvalidError: "rejected",
+}
+
+
+async def _holds_linking_session(
+    request: Request,
+    session: AsyncSession,
+    service: AccountAuthService,
+    link_account_id: uuid.UUID | None,
+) -> bool:
+    """Defense in depth: a link must be completed by the browser that started it."""
+    if link_account_id is None:
+        return True
+    current = await service.account_for_refresh_token(session, request.cookies.get(REFRESH_COOKIE))
+    return current is not None and current.id == link_account_id
+
+
+async def _complete_oauth(
+    request: Request,
+    session: AsyncSession,
+    service: AccountAuthService,
+    provider: IExternalIdentityProvider | None,
+    provider_name: str,
+    *,
+    code: str | None,
+    state: str | None,
+    error: str | None,
+) -> RedirectResponse:
+    """Complete a provider sign-in. Every failure redirects with a coarse, non-sensitive code."""
+
+    def fail(reason: str) -> RedirectResponse:
+        return _app_redirect(provider_name, auth_error=reason)
+
+    if provider is None:
+        return fail("unavailable")
+    if error:
+        return fail("cancelled")
+    try:
+        transaction = decode_oauth_transaction(request.cookies.get(OAUTH_COOKIE))
+    except OAuthTransactionError:
+        return fail("expired")
+    if not state_matches(transaction.state, state) or not code:
+        log.warning("OAuth callback rejected", provider=provider_name, reason_code="state_mismatch")
+        return fail("state")
+
+    if not await _holds_linking_session(request, session, service, transaction.link_account_id):
+        return fail("session")
+
+    try:
+        identity = await provider.exchange_code(
+            code=code, code_verifier=transaction.code_verifier, nonce=transaction.nonce
+        )
+    except Exception as exc:  # provider adapters raise typed, token-free errors
+        log.warning(
+            "OAuth identity verification failed",
+            provider=provider_name,
+            error_type=type(exc).__name__,
+        )
+        return fail("failed")
+
+    try:
+        issued = await service.sign_in_with_external_identity(
+            session, identity, link_to_account_id=transaction.link_account_id
+        )
+    except tuple(_SIGN_IN_FAILURES) as sign_in_error:
+        return fail(_SIGN_IN_FAILURES[type(sign_in_error)])
+    await session.commit()
+    log.info(
+        "OAuth sign-in completed",
+        provider=provider_name,
+        linked=transaction.link_account_id is not None,
+    )
+    response = _app_redirect(provider_name, auth=provider_name)
+    _set_refresh_cookie(response, issued)
     return response
 
 
@@ -541,51 +653,48 @@ async def google_callback(
     state: Annotated[str | None, Query(max_length=512)] = None,
     error: Annotated[str | None, Query(max_length=128)] = None,
 ) -> RedirectResponse:
-    """Complete Google sign-in. Every failure redirects with a coarse, non-sensitive code."""
-    if provider is None:
-        return _app_redirect(auth_error="unavailable")
-    if error:
-        return _app_redirect(auth_error="cancelled")
-    try:
-        transaction = decode_oauth_transaction(request.cookies.get(OAUTH_COOKIE))
-    except OAuthTransactionError:
-        return _app_redirect(auth_error="expired")
-    if not state_matches(transaction.state, state) or not code:
-        log.warning("Google callback rejected", reason_code="state_mismatch")
-        return _app_redirect(auth_error="state")
-
-    if transaction.link_account_id is not None:
-        # Defense in depth: the browser completing a link must still hold the
-        # refresh session of the account that started it.
-        current = await service.account_for_refresh_token(
-            session, request.cookies.get(REFRESH_COOKIE)
-        )
-        if current is None or current.id != transaction.link_account_id:
-            return _app_redirect(auth_error="session")
-
-    try:
-        identity = await provider.exchange_code(
-            code=code, code_verifier=transaction.code_verifier, nonce=transaction.nonce
-        )
-    except Exception as exc:  # provider adapters raise typed, token-free errors
-        log.warning("Google identity verification failed", error_type=type(exc).__name__)
-        return _app_redirect(auth_error="failed")
-
-    try:
-        issued = await service.sign_in_with_external_identity(
-            session, identity, link_to_account_id=transaction.link_account_id
-        )
-    except AccountLinkRequiredError:
-        return _app_redirect(auth_error="link_required")
-    except EmailClaimRequiredError:
-        return _app_redirect(auth_error="claim_email")
-    except (ExternalIdentityRejectedError, SessionInvalidError):
-        return _app_redirect(auth_error="rejected")
-    await session.commit()
-    log.info(
-        "Google sign-in completed",
-        linked=transaction.link_account_id is not None,
+    return await _complete_oauth(
+        request, session, service, provider, "google", code=code, state=state, error=error
     )
-    response = _app_redirect(auth="google")
-    _set_refresh_cookie(response, issued)
+
+
+@router.get("/discord/callback", include_in_schema=False)
+async def discord_callback(
+    request: Request,
+    session: DbSession,
+    service: AccountService,
+    provider: DiscordProvider,
+    code: Annotated[str | None, Query(max_length=2048)] = None,
+    state: Annotated[str | None, Query(max_length=512)] = None,
+    error: Annotated[str | None, Query(max_length=128)] = None,
+) -> RedirectResponse:
+    return await _complete_oauth(
+        request, session, service, provider, "discord", code=code, state=state, error=error
+    )
+
+
+@router.delete("/identities/{provider_name}", response_model=AccountSummary)
+async def unlink_identity(
+    provider_name: Literal["google", "discord"],
+    request: Request,
+    session: DbSession,
+    service: AccountService,
+) -> JSONResponse:
+    """Unlink a provider from the signed-in account; the last sign-in method is protected."""
+    _require_client_header(request)
+    principal = _account_principal(request)
+    try:
+        account = await service.unlink_external_identity(
+            session, uuid.UUID(principal.subject_id), provider_name
+        )
+    except SessionInvalidError as error:
+        raise HTTPException(status_code=401, detail="Authentication required") from error
+    except ExternalIdentityRejectedError as error:
+        raise HTTPException(status_code=404, detail="Provider is not linked") from error
+    except LastLoginMethodError as error:
+        raise HTTPException(status_code=409, detail=_LAST_LOGIN_METHOD) from error
+    await session.commit()
+    log.info("External identity unlinked", provider=provider_name)
+    response = JSONResponse(content=_summary(account).model_dump())
+    response.headers["Cache-Control"] = "no-store"
     return response
