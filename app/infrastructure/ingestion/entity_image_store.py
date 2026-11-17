@@ -117,6 +117,12 @@ class FileImageVault:
         self._write(display_path, display)
         return original_path, display_path
 
+    def read(self, relative_path: str) -> bytes | None:
+        target = (self._root / relative_path).resolve()
+        if not target.is_relative_to(self._root.resolve()) or not target.is_file():
+            return None
+        return target.read_bytes()
+
     def load_index(self) -> dict[str, ImageRecord]:
         path = self._root / IMAGES_DIR / INDEX_FILE
         if not path.is_file():
