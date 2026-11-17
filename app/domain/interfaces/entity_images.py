@@ -38,3 +38,13 @@ class IImageVault(Protocol):
     def load_index(self) -> dict[str, ImageRecord]: ...
 
     def save_index(self, records: Sequence[ImageRecord]) -> None: ...
+
+
+class IImageCatalog(Protocol):
+    """Read side of the vault, for serving images (KNW-010)."""
+
+    def load_index(self) -> dict[str, ImageRecord]: ...
+
+    def read(self, relative_path: str) -> bytes | None:
+        """The stored bytes, or None when the file is absent or outside the vault."""
+        ...
