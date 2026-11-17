@@ -5,6 +5,7 @@ from __future__ import annotations
 import uuid
 from abc import ABC, abstractmethod
 from datetime import datetime
+from typing import Any
 
 from app.domain.models.rbac import (
     AccountAuthzState,
@@ -60,4 +61,5 @@ class IAuthzSnapshotCache(ABC):
 
 class IRoleAuditSink(ABC):
     @abstractmethod
-    async def record(self, event: RoleAuditEvent) -> None: ...
+    async def record(self, session: Any, event: RoleAuditEvent) -> None:
+        """Persist the event in the caller's transaction so it commits with the role change."""

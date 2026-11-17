@@ -10,6 +10,7 @@ from app.infrastructure.database.models.account import (
     AccountTokenModel,
     AuthSessionModel,
 )
+from app.infrastructure.database.models.admin_audit_event import AdminAuditEventModel
 from app.infrastructure.database.models.background_job import DurableBackgroundJobModel
 from app.infrastructure.database.models.base import Base
 from app.infrastructure.database.models.conversation import Conversation
@@ -76,6 +77,7 @@ __all__ = [
     "AccountTokenModel",
     "AuthSessionModel",
     "Base",
+    "AdminAuditEventModel",
     "RoleAssignmentModel",
     "DurableBackgroundJobModel",
     "User",

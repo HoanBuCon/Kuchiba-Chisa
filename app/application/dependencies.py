@@ -517,14 +517,16 @@ class AppContainer:
         from app.infrastructure.database.repositories.authz_repository import (
             SqlAlchemyAuthzRepository,
         )
-        from app.infrastructure.security.role_audit_log import LoggingRoleAuditSink
+        from app.infrastructure.security.postgres_role_audit import (
+            PostgresRoleAuditSink,
+        )
 
         return AuthzService(
             repo_factory=lambda session: SqlAlchemyAuthzRepository(
                 _require_async_session(session)
             ),
             cache=RedisAuthzSnapshotCache(redis_service),
-            audit=LoggingRoleAuditSink(),
+            audit=PostgresRoleAuditSink(),
         )
 
     @cached_property

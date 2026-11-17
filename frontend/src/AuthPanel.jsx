@@ -1,8 +1,11 @@
 import { useState } from 'react';
-import { KeyRound, LogIn, LogOut, User, X, Link2 } from 'lucide-react';
+import { KeyRound, LogIn, LogOut, User, X, Link2, Unlink } from 'lucide-react';
+import { linkableProviders, loginProviders } from './auth.js';
+
+const providerName = (id) => id.charAt(0).toUpperCase() + id.slice(1);
 
 // Minimal account UI: sidebar status + one modal for every account flow.
-export function AccountStatus({ session, capabilities, onOpen, onLogout, onLinkGoogle, onChangePassword }) {
+export function AccountStatus({ session, capabilities, onOpen, onLogout, onLink, onUnlink, onChangePassword }) {
   const account = session?.kind === 'account' ? session.account : null;
   if (!account) {
     return (
@@ -12,19 +15,36 @@ export function AccountStatus({ session, capabilities, onOpen, onLogout, onLinkG
       </button>
     );
   }
-  const hasGoogle = account.providers?.includes('google');
+  const linked = account.providers ?? [];
+  const linkable = linkableProviders(capabilities, linked);
   return (
     <div className="account-status">
       <div className="account-identity" title={account.email || ''}>
         <User size={14} />
         <span className="account-email">{account.email || 'Tài khoản Google'}</span>
       </div>
-      {capabilities?.google && !hasGoogle && (
-        <button className="sidebar-item" onClick={onLinkGoogle} title="Liên kết tài khoản Google">
+      {linkable.map((provider) => (
+        <button
+          key={`link-${provider.id}`}
+          className="sidebar-item"
+          onClick={() => onLink(provider.id)}
+          title={`Liên kết tài khoản ${provider.label}`}
+        >
           <Link2 size={14} />
-          Liên kết Google
+          Liên kết {provider.label}
         </button>
-      )}
+      ))}
+      {linked.map((id) => (
+        <button
+          key={`unlink-${id}`}
+          className="sidebar-item"
+          onClick={() => onUnlink(id)}
+          title={`Huỷ liên kết ${providerName(id)}`}
+        >
+          <Unlink size={14} />
+          Huỷ liên kết {providerName(id)}
+        </button>
+      ))}
       {account.has_password && (
         <button className="sidebar-item" onClick={onChangePassword}>
           <KeyRound size={14} />
@@ -57,7 +77,7 @@ const SUBMIT_LABELS = {
   change: 'Đổi mật khẩu',
 };
 
-export function AuthModal({ open, mode, onModeChange, capabilities, onClose, handlers, onGoogle }) {
+export function AuthModal({ open, mode, onModeChange, capabilities, onClose, handlers, onOAuth }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -171,11 +191,17 @@ export function AuthModal({ open, mode, onModeChange, capabilities, onClose, han
         <button className="new-chat-btn auth-submit" type="submit" disabled={busy}>
           {busy ? 'Đang xử lý…' : SUBMIT_LABELS[mode]}
         </button>
-        {mode === 'login' && capabilities?.google && (
-          <button type="button" className="sidebar-item auth-google" onClick={onGoogle} disabled={busy}>
-            Tiếp tục với Google
+        {mode === 'login' && loginProviders(capabilities).map((provider) => (
+          <button
+            key={provider.id}
+            type="button"
+            className="sidebar-item auth-google"
+            onClick={() => onOAuth(provider.id)}
+            disabled={busy}
+          >
+            Tiếp tục với {provider.label}
           </button>
-        )}
+        ))}
         {mode === 'login' && canRegister && (
           <>
             <button type="button" className="auth-switch" onClick={() => switchMode('register')}>

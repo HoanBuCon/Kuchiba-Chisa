@@ -103,5 +103,5 @@ class RecordingAudit(IRoleAuditSink):
     def __init__(self) -> None:
         self.events: list[RoleAuditEvent] = []
 
-    async def record(self, event):
+    async def record(self, session, event):
         self.events.append(event)
