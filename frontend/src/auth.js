@@ -6,7 +6,7 @@
 // - The account refresh secret is an HttpOnly cookie the page cannot read.
 // - Every cookie-bearing auth call sends X-Chisa-Client (CSRF guard enforced by the API).
 
-const BASE = import.meta.env.VITE_API_BASE_URL ?? '/api/v1';
+const BASE = import.meta.env?.VITE_API_BASE_URL ?? '/api/v1';
 const ANON_STORAGE_KEY = 'chisa_web_session_v1';
 const CLIENT_HEADERS = { 'X-Chisa-Client': 'web' };
 const REFRESH_MARGIN_MS = 60_000;
@@ -154,15 +154,52 @@ export async function fetchCapabilities() {
   } catch {
     // capabilities are optional UI hints
   }
-  return { password: true, password_registration: false, google: false };
+  return { password: true, password_registration: false, google: false, discord: false };
 }
 
-// Starts Google sign-in (intent "login") or linking (intent "link", requires an
-// account access token). The browser is then sent to Google's consent screen.
-export async function startGoogle(intent = 'login', accessToken = null) {
+const PROVIDERS = [
+  { id: 'google', label: 'Google' },
+  { id: 'discord', label: 'Discord' },
+];
+
+// Buttons come only from what the server reports as configured.
+export const loginProviders = (capabilities) => PROVIDERS.filter((p) => capabilities?.[p.id]);
+
+export const linkableProviders = (capabilities, linked = []) =>
+  loginProviders(capabilities).filter((p) => !linked.includes(p.id));
+
+const providerLabel = (id) => PROVIDERS.find((p) => p.id === id)?.label ?? id;
+
+export function unlinkErrorMessage(status, provider) {
+  if (status === 409) {
+    return 'Không thể huỷ liên kết phương thức đăng nhập cuối cùng. Hãy thêm một cách đăng nhập khác trước nhé.';
+  }
+  if (status === 404) return `${providerLabel(provider)} chưa được liên kết với tài khoản này.`;
+  if (status === 401) return 'Phiên đã hết hạn, Senpai hãy đăng nhập lại rồi thử huỷ liên kết nhé.';
+  return 'Không thể huỷ liên kết lúc này, Senpai thử lại sau nhé.';
+}
+
+// Resolves with the updated account summary; failures carry a Vietnamese message.
+export async function unlinkIdentity(accessToken, provider, fetchImpl = fetch) {
+  const response = await fetchImpl(`${BASE}/auth/identities/${provider}`, {
+    method: 'DELETE',
+    credentials: 'same-origin',
+    headers: { ...CLIENT_HEADERS, authorization: `Bearer ${accessToken}` },
+  });
+  if (!response.ok) {
+    const error = new Error(unlinkErrorMessage(response.status, provider));
+    error.status = response.status;
+    throw error;
+  }
+  return response.json();
+}
+
+// Starts provider sign-in (intent "login") or linking (intent "link", requires an
+// account access token). The browser is then sent to the provider's consent screen.
+export async function startOAuth(provider, intent = 'login', accessToken = null) {
   const headers = { ...CLIENT_HEADERS, 'content-type': 'application/json' };
   if (intent === 'link' && accessToken) headers.authorization = `Bearer ${accessToken}`;
-  const response = await fetch(`${BASE}/auth/google/start`, {
+  const response = await fetch(`${BASE}/auth/${provider}/start`, {
     method: 'POST',
     credentials: 'same-origin',
     headers,
@@ -175,27 +212,33 @@ export async function startGoogle(intent = 'login', accessToken = null) {
 
 const OAUTH_ERRORS = {
   link_required:
-    'Email Google này đã thuộc một tài khoản có mật khẩu. Hãy đăng nhập bằng email/mật khẩu rồi chọn "Liên kết Google".',
-  rejected: 'Không thể dùng tài khoản Google này (email chưa xác minh hoặc đã liên kết nơi khác).',
-  session: 'Phiên liên kết không khớp. Hãy đăng nhập lại rồi thử liên kết Google.',
-  cancelled: 'Đăng nhập Google đã bị hủy.',
-  expired: 'Phiên đăng nhập Google đã hết hạn, hãy thử lại.',
-  state: 'Yêu cầu đăng nhập Google không hợp lệ, hãy thử lại.',
-  failed: 'Không xác minh được tài khoản Google, hãy thử lại.',
-  unavailable: 'Đăng nhập Google chưa được bật trên máy chủ.',
+    'Email này đã thuộc một tài khoản khác của Chisa. Hãy đăng nhập bằng cách cũ rồi chọn "Liên kết" để thêm nhà cung cấp này.',
+  rejected: 'Không thể dùng tài khoản này (email chưa xác minh hoặc đã liên kết nơi khác).',
+  session: 'Phiên liên kết không khớp. Hãy đăng nhập lại rồi thử liên kết.',
+  cancelled: 'Đăng nhập đã bị hủy.',
+  expired: 'Phiên đăng nhập đã hết hạn, hãy thử lại.',
+  state: 'Yêu cầu đăng nhập không hợp lệ, hãy thử lại.',
+  failed: 'Không xác minh được tài khoản, hãy thử lại.',
+  unavailable: 'Phương thức đăng nhập này chưa được bật trên máy chủ.',
   claim_email:
-    'Email Google này đang bị giữ bởi một tài khoản chưa xác minh. Hãy dùng "Quên mật khẩu" với email này để chứng minh quyền sở hữu, rồi đăng nhập và liên kết Google.',
+    'Email này đang bị giữ bởi một tài khoản chưa xác minh. Hãy dùng "Quên mật khẩu" với email này để chứng minh quyền sở hữu, rồi đăng nhập và liên kết.',
 };
 
-// Reads and removes ?auth= / ?auth_error= left by the Google callback redirect.
+// Turns the callback's ?auth= / ?auth_error= parameters into a UI notice.
+export function oauthRedirectNotice({ auth, auth_error: authError }) {
+  if (authError) return { type: 'error', text: OAUTH_ERRORS[authError] || 'Đăng nhập thất bại.' };
+  if (!auth) return null;
+  const label = PROVIDERS.some((p) => p.id === auth) ? ` ${providerLabel(auth)}` : '';
+  return { type: 'success', text: `Đăng nhập${label} thành công.` };
+}
+
+// Reads and removes ?auth= / ?auth_error= left by the OAuth callback redirect.
 export function consumeOAuthRedirect() {
   const url = new URL(window.location.href);
-  const success = url.searchParams.get('auth');
-  const error = url.searchParams.get('auth_error');
-  if (!success && !error) return null;
+  const params = { auth: url.searchParams.get('auth'), auth_error: url.searchParams.get('auth_error') };
+  if (!params.auth && !params.auth_error) return null;
   url.searchParams.delete('auth');
   url.searchParams.delete('auth_error');
   window.history.replaceState({}, '', `${url.pathname}${url.search}${url.hash}`);
-  if (error) return { type: 'error', text: OAUTH_ERRORS[error] || 'Đăng nhập Google thất bại.' };
-  return { type: 'success', text: 'Đăng nhập Google thành công.' };
+  return oauthRedirectNotice(params);
 }
