@@ -158,7 +158,7 @@ class Settings(BaseSettings):
     JINA_API_KEY: str | None = None
     COHERE_API_KEY: str | None = None
     RERANKER_MODEL: str | None = None
-    RERANKER_TIMEOUT_SECONDS: float = Field(default=1.5, gt=0, le=10)
+    RERANKER_TIMEOUT_SECONDS: float = Field(default=5.0, gt=0, le=10)
     RERANKER_BATCH_SIZE: int = Field(default=16, ge=1, le=64)
 
     # ── Search API Keys (Optional Free Tiers) ──────────────────

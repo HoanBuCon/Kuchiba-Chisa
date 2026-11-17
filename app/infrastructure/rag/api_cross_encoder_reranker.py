@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import math
 import time
 from collections.abc import Mapping, Sequence
@@ -23,6 +24,10 @@ from app.domain.interfaces.reranker import (
     RerankerUnavailableError,
 )
 from app.domain.services.guardrails.pii_redaction import PiiRedactor
+
+_RATE_LIMIT_STATUS = 429
+# Longer Retry-After hints are not honoured, so one throttled call cannot eat the deadline.
+_MAX_RETRY_AFTER_SECONDS = 1.0
 
 
 class ApiRerankerProvider(StrEnum):
@@ -122,14 +127,8 @@ class ApiCrossEncoderReranker:
         )
         try:
             with self._telemetry.span(TraceOperation.RAG_RERANK, dimensions) as span:
-                response = await self._http_client.post(
-                    self._ENDPOINTS[self._provider],
-                    headers={
-                        "Authorization": f"Bearer {self._api_key}",
-                        "Content-Type": "application/json",
-                    },
-                    json=payload,
-                    timeout=self._timeout_seconds,
+                response = await self._post_with_one_rate_limit_retry(
+                    payload, request_started
                 )
                 response.raise_for_status()
                 response_payload = response.json()
@@ -173,6 +172,46 @@ class ApiCrossEncoderReranker:
                 "remote reranker returned an invalid response",
                 failure_kind=RerankerFailureKind.INVALID_RESPONSE,
             ) from error
+
+    async def _post_with_one_rate_limit_retry(
+        self, payload: dict[str, Any], request_started: float
+    ) -> httpx.Response:
+        """POST once; on HTTP 429 wait Retry-After and retry once inside the same deadline."""
+        response = await self._post(payload, self._timeout_seconds)
+        if response.status_code != _RATE_LIMIT_STATUS:
+            return response
+        wait_seconds = self._retry_after_seconds(response)
+        remaining = self._timeout_seconds - (time.perf_counter() - request_started)
+        if wait_seconds is None or remaining - wait_seconds <= 0:
+            return response
+        await asyncio.sleep(wait_seconds)
+        remaining = self._timeout_seconds - (time.perf_counter() - request_started)
+        return await self._post(payload, remaining)
+
+    async def _post(self, payload: dict[str, Any], timeout_seconds: float) -> httpx.Response:
+        return await self._http_client.post(
+            self._ENDPOINTS[self._provider],
+            headers={
+                "Authorization": f"Bearer {self._api_key}",
+                "Content-Type": "application/json",
+            },
+            json=payload,
+            timeout=timeout_seconds,
+        )
+
+    @staticmethod
+    def _retry_after_seconds(response: httpx.Response) -> float | None:
+        """Return the Retry-After wait when within the cap, a short pause when absent."""
+        raw = response.headers.get("Retry-After")
+        if raw is None:
+            return _MAX_RETRY_AFTER_SECONDS / 2
+        try:
+            seconds = float(raw)
+        except ValueError:
+            return None
+        if not 0 <= seconds <= _MAX_RETRY_AFTER_SECONDS:
+            return None
+        return seconds
 
     def _parse_scores(self, response_payload: object, expected_count: int) -> list[float]:
         if not isinstance(response_payload, dict):
