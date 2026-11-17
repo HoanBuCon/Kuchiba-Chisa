@@ -61,11 +61,15 @@ class FakeRepo(IAuthzRepository):
         self.authz_ver = 1
         self.assignments: list[RoleAssignment] = []
         self.known = True
+        self.identities: dict[tuple[str, str], uuid.UUID] = {}
 
     async def get_state(self, account_id):
         if not self.known:
             return None
         return AccountAuthzState(account_id, self.status, self.authz_ver, tuple(self.assignments))
+
+    async def get_account_id_by_identity(self, provider, subject):
+        return self.identities.get((provider, subject))
 
     async def add_assignment(self, assignment):
         self.assignments.append(assignment)
@@ -409,8 +413,62 @@ def test_member_reaches_a_member_permission() -> None:
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("authentication", ["anonymous", "workload"])
-async def test_anonymous_and_workload_principals_only_get_guest(authentication) -> None:
-    permissions = await get_effective_permissions(_principal(authentication), None, None)  # type: ignore[arg-type]
+async def test_anonymous_principal_only_gets_guest() -> None:
+    permissions = await get_effective_permissions(_principal("anonymous"), None, None)  # type: ignore[arg-type]
 
     assert permissions == guest_permissions()
+
+
+def _workload(discord_user_id: str = "1234567890") -> PrincipalContext:
+    return PrincipalContext(
+        subject_id=discord_user_id,
+        tenant_id="guild-1",
+        channel_id="channel-1",
+        source="discord",
+        kind="workload",
+        scopes=frozenset({"chat:write"}),
+        authentication="workload",
+    )
+
+
+@pytest.mark.asyncio
+async def test_workload_with_an_unlinked_discord_user_gets_guest() -> None:
+    service = _service(FakeRepo())
+
+    permissions = await get_effective_permissions(_workload(), service, None)  # type: ignore[arg-type]
+
+    assert permissions == guest_permissions()
+
+
+@pytest.mark.asyncio
+async def test_workload_with_a_linked_discord_user_resolves_to_the_account() -> None:
+    repo = FakeRepo()
+    repo.identities[("discord", "1234567890")] = ACCOUNT_ID
+    service = _service(repo)
+
+    permissions = await get_effective_permissions(_workload(), service, None)  # type: ignore[arg-type]
+
+    assert permissions == ROLE_PERMISSIONS[Role.MEMBER]
+    assert Permission.CHAT_AGENTIC not in permissions
+
+
+@pytest.mark.asyncio
+async def test_linked_discord_user_inherits_a_chia_con_grant_from_the_database() -> None:
+    repo = FakeRepo()
+    repo.identities[("discord", "1234567890")] = ACCOUNT_ID
+    repo.assignments.append(_assignment())
+
+    permissions = await get_effective_permissions(_workload(), _service(repo), None)  # type: ignore[arg-type]
+
+    assert Permission.CHAT_AGENTIC in permissions
+
+
+@pytest.mark.asyncio
+async def test_linked_but_suspended_account_gives_the_discord_user_nothing() -> None:
+    repo = FakeRepo(AccountStatus.SUSPENDED)
+    repo.identities[("discord", "1234567890")] = ACCOUNT_ID
+
+    permissions = await get_effective_permissions(_workload(), _service(repo), None)  # type: ignore[arg-type]
+
+    assert permissions == frozenset()
+

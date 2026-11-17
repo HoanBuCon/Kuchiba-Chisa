@@ -105,6 +105,19 @@ class InMemoryAccountRepository(IAccountRepository):
         self.identities[key] = account_id
         return self._account(self.accounts[account_id])
 
+    async def unlink_external_identity(self, account_id: uuid.UUID, provider: str) -> bool:
+        keys = [
+            key
+            for key, owner in self.identities.items()
+            if owner == account_id and key[0] == provider
+        ]
+        for key in keys:
+            del self.identities[key]
+        return bool(keys)
+
+    async def lock_account(self, account_id: uuid.UUID) -> None:
+        return None
+
     async def update_password_hash(self, account_id: uuid.UUID, password_hash: str) -> None:
         self.accounts[account_id].password_hash = password_hash
 

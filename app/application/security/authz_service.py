@@ -15,6 +15,7 @@ from app.domain.models.rbac import (
     Role,
     RoleAssignment,
     effective_permissions,
+    guest_permissions,
 )
 
 SUPERSEDED_REASON = "superseded"
@@ -52,6 +53,22 @@ class AuthzService:
         if token_authz_ver != snapshot.authz_ver:
             raise StaleAuthzVersionError
         return snapshot.permissions
+
+    async def permissions_for_discord_user(
+        self, session: Any, discord_user_id: str
+    ) -> frozenset[Permission]:
+        """Resolve a bot-supplied Discord user only through a linked identity (IAM-009).
+
+        An unlinked user is a Discord guest; the bot cannot claim any role.
+        """
+        repo = self._repo_factory(session)
+        account_id = await repo.get_account_id_by_identity("discord", discord_user_id)
+        if account_id is None:
+            return guest_permissions()
+        try:
+            return (await self._snapshot(session, account_id)).permissions
+        except AccountNotFoundError:
+            return guest_permissions()
 
     async def grant_chia_con(
         self,

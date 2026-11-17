@@ -10,7 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domain.interfaces.authz import IAuthzRepository
 from app.domain.models.rbac import AccountAuthzState, AccountStatus, Role, RoleAssignment
-from app.infrastructure.database.models.account import AccountModel
+from app.infrastructure.database.models.account import AccountIdentityModel, AccountModel
 from app.infrastructure.database.models.role_assignment import RoleAssignmentModel
 
 
@@ -32,6 +32,14 @@ class SqlAlchemyAuthzRepository(IAuthzRepository):
             status=status,
             authz_ver=account.authz_ver,
             assignments=tuple(_to_assignment(row) for row in rows.all()),
+        )
+
+    async def get_account_id_by_identity(self, provider: str, subject: str) -> uuid.UUID | None:
+        return await self.session.scalar(
+            select(AccountIdentityModel.account_id).where(
+                AccountIdentityModel.provider == provider,
+                AccountIdentityModel.provider_subject == subject,
+            )
         )
 
     async def add_assignment(self, assignment: RoleAssignment) -> None:
