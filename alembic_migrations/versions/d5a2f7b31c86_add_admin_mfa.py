@@ -3,7 +3,7 @@
 Additive only: no existing table changes.
 
 Revision ID: d5a2f7b31c86
-Revises: c4d7a1e92b58
+Revises: d5e2b8f4a173
 Create Date: 2026-11-17
 """
 
@@ -12,7 +12,7 @@ from alembic import op
 from sqlalchemy.dialects import postgresql
 
 revision = "d5a2f7b31c86"
-down_revision = "c4d7a1e92b58"
+down_revision = "d5e2b8f4a173"
 branch_labels = None
 depends_on = None
 

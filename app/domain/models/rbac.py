@@ -133,6 +133,7 @@ class RoleAuditEvent:
     at: datetime
     expires_at: datetime | None = None
     authz_ver_after: int | None = None
+    request_id: str | None = None
 
 
 EXPIRY_ACTOR = "system:expiry"

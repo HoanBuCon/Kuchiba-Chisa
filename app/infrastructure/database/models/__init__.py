@@ -10,6 +10,7 @@ from app.infrastructure.database.models.account import (
     AccountTokenModel,
     AuthSessionModel,
 )
+from app.infrastructure.database.models.admin_audit_event import AdminAuditEventModel
 from app.infrastructure.database.models.admin_mfa import (
     AdminMfaFactorModel,
     AdminRecoveryCodeModel,
@@ -81,6 +82,7 @@ __all__ = [
     "AccountTokenModel",
     "AuthSessionModel",
     "Base",
+    "AdminAuditEventModel",
     "RoleAssignmentModel",
     "AdminMfaFactorModel",
     "AdminRecoveryCodeModel",

@@ -491,13 +491,13 @@ class AppContainer:
             SqlAlchemyAccountRepository,
         )
         from app.infrastructure.security.jwt_authenticator import jwt_authenticator
-        from app.infrastructure.security.password_hasher import BcryptPasswordHasher
+        from app.infrastructure.security.password_hasher import PasswordHasher
 
         return AccountAuthService(
             repo_factory=lambda session: SqlAlchemyAccountRepository(
                 _require_async_session(session)
             ),
-            password_hasher=BcryptPasswordHasher(settings.BCRYPT_ROUNDS),
+            password_hasher=PasswordHasher(),
             token_issuer=jwt_authenticator,
             refresh_ttl=timedelta(days=settings.JWT_REFRESH_EXPIRE_DAYS),
             verification_ttl=timedelta(hours=settings.EMAIL_VERIFICATION_TTL_HOURS),
@@ -517,14 +517,16 @@ class AppContainer:
         from app.infrastructure.database.repositories.authz_repository import (
             SqlAlchemyAuthzRepository,
         )
-        from app.infrastructure.security.role_audit_log import LoggingRoleAuditSink
+        from app.infrastructure.security.postgres_role_audit import (
+            PostgresRoleAuditSink,
+        )
 
         return AuthzService(
             repo_factory=lambda session: SqlAlchemyAuthzRepository(
                 _require_async_session(session)
             ),
             cache=RedisAuthzSnapshotCache(redis_service),
-            audit=LoggingRoleAuditSink(),
+            audit=PostgresRoleAuditSink(),
         )
 
     @cached_property
