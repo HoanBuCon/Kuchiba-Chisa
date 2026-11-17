@@ -5,7 +5,7 @@ from __future__ import annotations
 import uuid
 from datetime import datetime
 
-from sqlalchemy import func, select, update
+from sqlalchemy import delete, func, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -138,6 +138,22 @@ class SqlAlchemyAccountRepository(IAccountRepository):
         if account is None:  # pragma: no cover - FK guarantees existence
             raise ExternalIdentityAlreadyLinkedError
         return account
+
+    async def unlink_external_identity(
+        self, account_id: uuid.UUID, provider: ExternalProvider
+    ) -> bool:
+        result = await self.session.execute(
+            delete(AccountIdentityModel).where(
+                AccountIdentityModel.account_id == account_id,
+                AccountIdentityModel.provider == provider,
+            )
+        )
+        return bool(result.rowcount)  # type: ignore[attr-defined]
+
+    async def lock_account(self, account_id: uuid.UUID) -> None:
+        await self.session.execute(
+            select(AccountModel.id).where(AccountModel.id == account_id).with_for_update()
+        )
 
     async def update_password_hash(self, account_id: uuid.UUID, password_hash: str) -> None:
         await self.session.execute(

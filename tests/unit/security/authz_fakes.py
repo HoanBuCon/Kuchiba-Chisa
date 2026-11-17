@@ -29,11 +29,15 @@ class FakeRepo(IAuthzRepository):
         self.authz_ver = 1
         self.assignments: list[RoleAssignment] = []
         self.known = True
+        self.identities: dict[tuple[str, str], uuid.UUID] = {}
 
     async def get_state(self, account_id):
         if not self.known:
             return None
         return AccountAuthzState(account_id, self.status, self.authz_ver, tuple(self.assignments))
+
+    async def get_account_id_by_identity(self, provider, subject):
+        return self.identities.get((provider, subject))
 
     async def get_summary(self, account_id):
         if not self.known:

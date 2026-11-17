@@ -591,6 +591,22 @@ class AppContainer:
             timeout_seconds=settings.GOOGLE_OAUTH_TIMEOUT_SECONDS,
         )
 
+    @cached_property
+    def discord_identity_provider(self):
+        """Discord OAuth2 adapter, or None when Discord sign-in is not configured."""
+        if not settings.discord_oauth_enabled:
+            return None
+        from app.infrastructure.security.discord_oauth import DiscordOAuthProvider
+
+        secret = settings.DISCORD_OAUTH_CLIENT_SECRET
+        return DiscordOAuthProvider(
+            client_id=str(settings.DISCORD_OAUTH_CLIENT_ID),
+            client_secret=secret.get_secret_value() if secret else "",
+            redirect_uri=str(settings.DISCORD_OAUTH_REDIRECT_URI),
+            http_client=self.http_client,
+            timeout_seconds=settings.DISCORD_OAUTH_TIMEOUT_SECONDS,
+        )
+
 
 container = AppContainer()
 
@@ -749,6 +765,11 @@ def get_authz_service():
 def get_google_identity_provider():
     """FastAPI dependency for the optional Google OIDC provider."""
     return container.google_identity_provider
+
+
+def get_discord_identity_provider():
+    """FastAPI dependency for the optional Discord OAuth provider."""
+    return container.discord_identity_provider
 
 
 def get_account_email_dispatcher():
