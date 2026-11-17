@@ -25,7 +25,6 @@ from app.domain.interfaces.reranker import (
 )
 from app.domain.services.guardrails.pii_redaction import PiiRedactor
 
-
 _RATE_LIMIT_STATUS = 429
 # Longer Retry-After hints are not honoured, so one throttled call cannot eat the deadline.
 _MAX_RETRY_AFTER_SECONDS = 1.0
